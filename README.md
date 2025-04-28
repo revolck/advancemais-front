@@ -1,36 +1,120 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AdvanceMais Frontend
 
-## Getting Started
+Plataforma completa para gestão e avanço de negócios desenvolvida com Next.js, React e TypeScript.
 
-First, run the development server:
+## Estrutura do Projeto
+
+O projeto é organizado em três áreas principais:
+
+- **Website**: Interface pública (landing page, blog, etc.)
+- **Dashboard**: Área administrativa para usuários autenticados
+- **Autenticação**: Sistema de login, registro e gerenciamento de contas
+
+## Tecnologias Utilizadas
+
+- **Framework**: Next.js 15
+- **Linguagem**: TypeScript
+- **Estilização**: Tailwind CSS
+- **Gerenciador de Pacotes**: PNPM
+- **Hospedagem**: Vercel
+
+## Requisitos
+
+- Node.js 20 ou superior
+- PNPM 8 ou superior
+
+## Desenvolvimento Local
+
+1. Clone o repositório:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone https://github.com/advancemais/frontend.git
+cd frontend
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Instale as dependências:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+pnpm install
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+3. Execute o servidor de desenvolvimento:
 
-## Learn More
+```bash
+pnpm dev
+```
 
-To learn more about Next.js, take a look at the following resources:
+4. Acesse o projeto em [http://localhost:3000](http://localhost:3000)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Estrutura de Diretórios
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```
+src/
+├── app/                  # Rotas e páginas (Next.js App Router)
+│   ├── (auth)/           # Área de autenticação
+│   ├── api/              # API Routes
+│   ├── dashboard/        # Dashboard administrativo
+│   └── ...               # Páginas do website
+├── components/           # Componentes React reutilizáveis
+├── config/               # Configurações do projeto
+├── lib/                  # Utilitários e bibliotecas
+├── providers/            # Providers de contexto
+├── types/                # Definições de tipos TypeScript
+```
 
-## Deploy on Vercel
+## Convenções de Código
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- Utilizamos ESLint e Prettier para manter a consistência do código
+- Componentes seguem o padrão de nomeação PascalCase
+- Arquivos de utilitários seguem o padrão de nomeação camelCase
+- Utilizamos funções e não classes para componentes React
+- Preferimos hooks personalizados para lógica compartilhada
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Scripts Disponíveis
+
+- `pnpm dev`: Inicia o servidor de desenvolvimento
+- `pnpm build`: Gera o build de produção
+- `pnpm start`: Inicia a aplicação a partir do build
+- `pnpm lint`: Executa a verificação de linting
+
+## Segurança
+
+O projeto implementa várias camadas de segurança:
+
+- Middleware para proteção de rotas
+- Headers de segurança (CSP, CORS, etc.)
+- Sanitização de dados de entrada
+- Tokens de autenticação com expiração
+- Rate limiting para APIs
+
+## Logs
+
+Sistema de logs para monitoramento e depuração:
+
+- Diferentes níveis de log (debug, info, warn, error)
+- Contexto e metadados para cada log
+- Suporte para integração com serviços externos
+
+## Configuração de Projeto para VS Code
+
+O projeto inclui configurações recomendadas para VS Code que melhoram a experiência de desenvolvimento. Instale as seguintes extensões:
+
+- ESLint
+- Prettier
+- Tailwind CSS IntelliSense
+
+## Implantação
+
+O projeto está configurado para implantação automática na Vercel a partir de mudanças no branch principal.
+
+## Contribuição
+
+1. Crie um fork do projeto
+2. Crie uma branch para sua feature (`git checkout -b feature/amazing-feature`)
+3. Faça commit das suas alterações (`git commit -m 'Add some amazing feature'`)
+4. Envie para o branch (`git push origin feature/amazing-feature`)
+5. Abra um Pull Request
+
+## Licença
+
+Este projeto é privado e proprietário. Todos os direitos reservados.
