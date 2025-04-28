@@ -5,7 +5,17 @@ import { validators } from '@/lib/security';
 
 export const POST = apiHandler(async (req: NextRequest) => {
   const body = await req.json();
-  const { name, email, password, cpf, birthDate, gender, phone, roleId, address } = body;
+  const {
+    name,
+    email,
+    password,
+    cpf,
+    birthDate,
+    gender,
+    phone,
+    roleId, // Isso agora será tratado como role
+    address,
+  } = body;
 
   // Validação básica
   if (!name || !email || !password || !cpf || !birthDate || !gender || !phone || !address) {
@@ -42,8 +52,8 @@ export const POST = apiHandler(async (req: NextRequest) => {
   }
 
   try {
-    // Tenta registrar o usuário
-    const user = await registerUserPF(
+    // Tenta registrar o usuário - passando roleId como role
+    const result = await registerUserPF(
       name,
       email,
       password,
@@ -51,20 +61,21 @@ export const POST = apiHandler(async (req: NextRequest) => {
       birthDate,
       gender,
       phone,
-      roleId,
+      roleId, // Passando roleId como o papel do usuário
       address
     );
 
-    // Retorna os dados básicos do usuário
+    // Retorna os dados básicos do usuário e tokens
     return {
       user: {
-        id: user.id,
-        document: user.document,
-        email: user.email,
-        name: user.name,
-        type: user.type,
-        role: user.role,
+        id: result.user.id,
+        document: result.user.document,
+        email: result.user.email,
+        name: result.user.name,
+        type: result.user.type,
+        role: result.user.role,
       },
+      accessToken: result.accessToken, // Agora retornamos o accessToken
       success: true,
     };
   } catch (error: any) {

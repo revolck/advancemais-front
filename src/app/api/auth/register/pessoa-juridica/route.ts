@@ -5,8 +5,18 @@ import { validators } from '@/lib/security';
 
 export const POST = apiHandler(async (req: NextRequest) => {
   const body = await req.json();
-  const { companyName, tradeName, legalName, cnpj, email, password, phone, website, address } =
-    body;
+  const {
+    companyName,
+    tradeName,
+    legalName,
+    cnpj,
+    email,
+    password,
+    phone,
+    website,
+    address,
+    role = 'Empresa', // Valor padrão para role de pessoas jurídicas
+  } = body;
 
   // Validação básica
   if (
@@ -53,7 +63,7 @@ export const POST = apiHandler(async (req: NextRequest) => {
 
   try {
     // Tenta registrar o usuário
-    const user = await registerUserPJ(
+    const result = await registerUserPJ(
       companyName,
       tradeName,
       legalName,
@@ -61,21 +71,23 @@ export const POST = apiHandler(async (req: NextRequest) => {
       email,
       password,
       phone,
+      role,
       website,
       address
     );
 
-    // Retorna os dados básicos do usuário
+    // Retorna os dados básicos do usuário e tokens
     return {
       user: {
-        id: user.id,
-        document: user.document,
-        email: user.email,
-        companyName: user.companyName,
-        tradeName: user.tradeName,
-        type: user.type,
-        role: user.role,
+        id: result.user.id,
+        document: result.user.document,
+        email: result.user.email,
+        companyName: result.user.companyName,
+        tradeName: result.user.tradeName,
+        type: result.user.type,
+        role: result.user.role,
       },
+      accessToken: result.accessToken,
       success: true,
     };
   } catch (error: any) {

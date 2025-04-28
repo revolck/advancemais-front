@@ -19,10 +19,18 @@ export function sanitizeString(input: string): string {
 }
 
 /**
- * Gera um ID único seguro
+ * Gera um ID único seguro (UUID v4 simulado)
  */
 export function generateSecureId(length = 32): string {
-  return randomBytes(length).toString('hex');
+  const uuid = [
+    randomBytes(4).toString('hex'),
+    randomBytes(2).toString('hex'),
+    randomBytes(2).toString('hex'),
+    randomBytes(2).toString('hex'),
+    randomBytes(6).toString('hex'),
+  ].join('-');
+
+  return uuid;
 }
 
 /**
@@ -54,10 +62,30 @@ export function verifyHash(data: string, hashedData: string): boolean {
 }
 
 /**
- * Gera um token seguro para autenticação
+ * Simula verificação de token JWT
+ * Em produção, use uma biblioteca como jsonwebtoken
  */
-export function generateAuthToken(): string {
-  return randomBytes(48).toString('hex');
+export function verifyToken(token: string): any {
+  try {
+    // Esta é uma implementação simplificada para o desenvolvimento
+    // Em produção, você deve usar uma biblioteca adequada para JWT
+    const [headerB64, payloadB64] = token.split('.');
+
+    if (!headerB64 || !payloadB64) {
+      return null;
+    }
+
+    const payload = JSON.parse(Buffer.from(payloadB64, 'base64').toString('utf8'));
+
+    // Verificar se o token expirou
+    if (payload.exp && Date.now() >= payload.exp * 1000) {
+      return null;
+    }
+
+    return payload;
+  } catch (error) {
+    return null;
+  }
 }
 
 /**
