@@ -95,15 +95,13 @@ export function MainNav({ items, isScrolled = false }: MainNavProps) {
       <div
         ref={navRef}
         className={cn(
-          'fixed top-0 w-full z-40 transition-all duration-300',
-          shouldBeWhite
-            ? 'bg-white' // Fundo branco quando necessário
-            : '' // Fundo transparente conforme solicitado
+          ' fixed top-0 w-full z-40 transition-all duration-300',
+          shouldBeWhite ? 'bg-white' : ''
         )}
         onMouseEnter={() => setIsHovering(true)}
         onMouseLeave={() => setIsHovering(false)}
       >
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-[1250px] flex items-center justify-between h-16">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-[1250px] flex items-center justify-between h-25">
           {/* Logo */}
           <div className="flex items-center">
             <Link href="/" className="flex items-center">
@@ -131,7 +129,7 @@ export function MainNav({ items, isScrolled = false }: MainNavProps) {
                   <Link
                     href={item.href}
                     className={cn(
-                      'flex items-center px-2 py-1.5 text-base font-medium rounded-md transition-colors duration-300',
+                      'flex items-center px-2 py-1.5 font-medium rounded-md transition-colors duration-300 text-base',
                       shouldBeWhite
                         ? 'text-gray-800 hover:text-red-600'
                         : 'text-white hover:bg-white/10',

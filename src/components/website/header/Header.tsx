@@ -76,15 +76,15 @@ export default function Header() {
   }, []);
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <header className="flex min-h-screen flex-col">
       <MainNav items={navigationItems} isScrolled={isScrolled} />
       <main className="flex-1">
         <section className={styles.heroSection}>
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8 xl:max-w-6xl py-16 md:py-24">
-            teste
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8 xl:max-w-6xl py-16 md:py-24 h-full flex items-center">
+            <div className="font-title text-white">teste</div>
           </div>
         </section>
       </main>
-    </div>
+    </header>
   );
 }
