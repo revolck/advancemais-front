@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
-import { NavItem } from '@/config/dashboard';
+import { NavItem } from '@/configs/dashboard';
 
 interface SidebarProps {
   items: NavItem[];
