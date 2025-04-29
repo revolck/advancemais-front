@@ -1,5 +1,9 @@
+'use client';
+
 import Image from 'next/image';
 import Link from 'next/link';
+import { ArrowRight } from 'lucide-react';
+import { useState } from 'react';
 
 const solutionsData = [
   {
@@ -53,18 +57,31 @@ const solutionsData = [
 ];
 
 export function MegaMenu() {
-  return (
-    <div className="absolute left-0 right-0 z-50 bg-white shadow-lg border-t border-gray-100 animate-in fade-in-10 slide-in-from-top-5 duration-300">
-      <div className="container mx-auto px-4 md:px-8 lg:px-12 py-8">
-        <h3 className="text-xl font-bold text-gray-800 mb-6">Todas as nossas soluções</h3>
+  const [hoveredItem, setHoveredItem] = useState<number | null>(null);
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {solutionsData.map((solution, index) => (
-            <Link
-              href={`/solucoes/${solution.title.toLowerCase().replace(/\s+/g, '-')}`}
-              key={index}
-              className="group flex items-start space-x-3 hover:bg-gray-50 p-2 rounded-lg transition-colors"
-            >
+  return (
+    <div className="py-8">
+      <div className="flex justify-between items-center mb-6">
+        <h3 className="text-xl font-bold text-gray-800">Todas as nossas soluções</h3>
+        <Link
+          href="/solucoes"
+          className="text-red-600 hover:text-red-700 font-medium inline-flex items-center group"
+        >
+          Ver todas as soluções
+          <ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />
+        </Link>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {solutionsData.map((solution, index) => (
+          <Link
+            href={`/solucoes/${solution.title.toLowerCase().replace(/\s+/g, '-')}`}
+            key={index}
+            className="group relative flex flex-col hover:bg-gray-50 p-4 rounded-lg transition-all duration-200 border border-transparent hover:border-gray-100 hover:shadow-sm"
+            onMouseEnter={() => setHoveredItem(index)}
+            onMouseLeave={() => setHoveredItem(null)}
+          >
+            <div className="flex items-start space-x-4">
               <div
                 className={`relative rounded-lg overflow-hidden ${solution.color} w-16 h-16 flex-shrink-0`}
               >
@@ -76,15 +93,26 @@ export function MegaMenu() {
                   className="object-cover"
                 />
               </div>
-              <div>
+              <div className="flex-1">
                 <h4 className="font-medium text-gray-900 group-hover:text-red-600 transition-colors">
                   {solution.title}
                 </h4>
                 <p className="text-sm text-gray-600 mt-1">{solution.description}</p>
               </div>
-            </Link>
-          ))}
-        </div>
+            </div>
+
+            <span
+              className={`
+                absolute bottom-2 right-4 text-red-600 font-medium text-sm 
+                flex items-center opacity-0 transform translate-x-[-10px]
+                transition-all duration-200 ease-in-out
+                ${hoveredItem === index ? 'opacity-100 translate-x-0' : ''}
+              `}
+            >
+              Saiba mais <ArrowRight className="ml-1 h-3 w-3" />
+            </span>
+          </Link>
+        ))}
       </div>
     </div>
   );
