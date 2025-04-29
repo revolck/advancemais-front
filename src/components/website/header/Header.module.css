@@ -1,0 +1,76 @@
+.heroSection {
+  width: 100%;
+  background: url('https://www.ipm.com.br/wp-content/uploads/2024/07/bg-banner-hero.svg') no-repeat;
+  background-size: cover;
+  background-position: center;
+  position: relative;
+  border-radius: 0 0 12rem 0;
+  overflow: hidden;
+}
+
+.underlinedText {
+  text-decoration-line: underline;
+  position: relative;
+  display: inline-block;
+}
+
+.cta {
+  display: flex;
+  align-items: center;
+  color: #fff;
+  position: relative;
+  gap: 2.4rem;
+  transition: all 0.3s ease;
+  width: fit-content;
+}
+
+.cta span {
+  position: relative;
+  font-size: 2.2rem;
+  line-height: 160%;
+  font-family: 'Maven Pro', sans-serif;
+}
+
+.cta span::before {
+  content: '';
+  position: absolute;
+  bottom: -0.8rem;
+  left: 0;
+  width: 9rem;
+  height: 0.2rem;
+  background-color: #fff;
+  transition: all 0.3s ease;
+}
+
+.cta:hover {
+  gap: 3rem;
+}
+
+.cta:hover span::before {
+  width: 100%;
+}
+
+.heroImage {
+  position: relative;
+  height: 100%;
+  width: 100%;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.womanImage {
+  position: relative;
+  max-height: 600px;
+  width: auto;
+  object-fit: contain;
+}
+
+@media (max-width: 768px) {
+  .heroSection {
+    border-radius: 0 0 4rem 0;
+  }
+
+  .cta span {
+    font-size: 1.8rem;
+  }
+}
