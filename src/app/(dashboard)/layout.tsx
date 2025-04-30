@@ -7,11 +7,11 @@ import DashCodeHeader from '@/components/partials/dashboard/layout/header';
 const layout = async ({ children }: { children: React.ReactNode }) => {
   return (
     <LayoutProvider>
-      <ThemeCustomize />
-      <DashCodeHeader />
-      <DashCodeSidebar />
+      {/* <ThemeCustomize /> */}
+      {/* <DashCodeHeader /> */}
+      {/* <DashCodeSidebar /> */}
       <LayoutContentProvider>{children}</LayoutContentProvider>
-      <DashCodeFooter />
+      {/* <DashCodeFooter /> */}
     </LayoutProvider>
   );
 };
