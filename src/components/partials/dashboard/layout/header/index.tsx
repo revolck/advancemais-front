@@ -10,7 +10,6 @@ const DashHeader = () => {
   return (
     <>
       <HeaderContent>
-        {/* Mobile Logo */}
         <div className="flex gap-3 items-center"></div>
         <div className="nav-tools flex items-center md:gap-4 gap-3">
           <Messages />

@@ -15,17 +15,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import Image from 'next/image';
 import Link from 'next/link';
-import {
-  User,
-  ChevronDown,
-  Megaphone,
-  Languages,
-  UserPlus,
-  Users,
-  Variable,
-  Phone,
-  Power,
-} from 'lucide-react';
+import { User, ChevronDown, Megaphone, UserPlus, Users, Power } from 'lucide-react';
 
 const ProfileInfo = () => {
   const userProfile = {
