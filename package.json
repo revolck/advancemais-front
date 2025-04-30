@@ -2,6 +2,10 @@
   "name": "advancemais-front",
   "version": "0.1.0",
   "private": true,
+  "author": {
+    "name": "Revolck",
+    "url": "https://github.com/orgs/revolck"
+  },
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
