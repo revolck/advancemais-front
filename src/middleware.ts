@@ -11,23 +11,6 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Se o hostname começar com "app." (subdomínio app), acesse o dashboard
-  if (hostname.startsWith('app.')) {
-    // Reescrever a URL para acessar as páginas em (dashboard)
-    // sem mostrar "dashboard" na URL do navegador
-    const url = request.nextUrl.clone();
-
-    // Se a raiz do app (app.localhost:3001/), redirecionar para analytics
-    if (pathname === '/') {
-      url.pathname = '/analytics';
-      return NextResponse.redirect(url);
-    }
-
-    // Reescrever internamente para o Next.js processar a rota correta
-    // Exemplo: app.localhost:3001/analytics -> (dashboard)/analytics
-    return NextResponse.rewrite(new URL(`/${pathname}`, request.url));
-  }
-
   // Para o site principal (sem subdomínio app)
   // Se alguém tentar acessar /dashboard, redirecione para o subdomínio
   if (pathname === '/dashboard' || pathname.startsWith('/dashboard/')) {
@@ -36,6 +19,11 @@ export function middleware(request: NextRequest) {
     // Remover "dashboard" da URL
     url.pathname = pathname.replace('/dashboard', '') || '/';
     return NextResponse.redirect(url);
+  }
+
+  // Se o hostname começar com "app." (subdomínio app), permita que o roteamento interno do Next.js funcione
+  if (hostname.startsWith('app.')) {
+    return NextResponse.next();
   }
 
   return NextResponse.next();
