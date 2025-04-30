@@ -1,180 +1,80 @@
+export interface Notification {
+  title: string;
+  desc: string;
+  date: string;
+  avatar: string;
+  unreadmessage?: boolean;
+}
 
-
-export const notifications = [
+export const notifications: Notification[] = [
   {
-    id: 1,
-    title: "Your order is placed",
-    role: "Frontend Developer",
-    desc:
-      "Amet minim mollit non deser unt ullamco est sit aliqua.",
-    avatar: 'ss.png',
-    status: "online",
-    unreadmessage: false,
-    date: "2 days ago",
-  },
-  {
-    id: 2,
-    title: "Congratulations Darlene  🎉",
-    role: "UI/UX Designer",
-    desc:
-      "Won the monthly best seller badge",
-     avatar: 'ss.png',
-    status: "online",
+    title: 'John Doe',
+    desc: 'Sent you a friend request',
+    date: '3 hours ago',
+    avatar: '/avatar-1.png',
     unreadmessage: true,
-    date: "11 am",
   },
   {
-    id: 3,
-    title: "Joaquina Weisenborn",
-    role: "Town planner",
-    desc:
-      "Soufflé soufflé caramels sweet roll. Jelly lollipop sesame snaps bear claw jelly beans sugar plum sugar plum.",
-      avatar: 'ss.png',
-    status: "busy",
+    title: 'Jane Smith',
+    desc: 'Commented on your post',
+    date: '5 hours ago',
+    avatar: '/avatar-2.png',
     unreadmessage: true,
-    date: "12 pm",
   },
   {
-    id: 4,
-    title: "Brooklyn Simmons",
-    role: "Data scientist",
-    desc:
-      "Added you to Top Secret Project group...",
-    avatar: 'ss.png',
-    status: "online",
-    unreadmessage: true,
-    date: "1 pm",
+    title: 'Team Meeting',
+    desc: 'Reminder: Team meeting in 30 minutes',
+    date: 'Today, 2:00 PM',
+    avatar: '/avatar-3.png',
   },
   {
-    id: 5,
-    title: "Margot Henschke",
-    role: "Dietitian",
-    desc:
-      "Cake pie jelly jelly beans. Marzipan lemon drops halvah cake. Pudding cookie lemon drops icing",
-      avatar: 'ss.png',
-    status: "busy",
-    unreadmessage: false,
-    date: "3 pm",
+    title: 'System Update',
+    desc: 'Your system has been updated successfully',
+    date: 'Yesterday',
+    avatar: '/avatar-4.png',
   },
   {
-    id: 6,
-    title: "Sal Piggee",
-    role: "Marketing executive",
-    desc:
-      "Toffee caramels jelly-o tart gummi bears cake I love ice cream lollipop. Sweet liquorice croissant candy danish dessert icing. Cake macaroon gingerbread toffee sweet.",
-      avatar: 'ss.png',
-    status: "online",
-    unreadmessage: false,
-    date: "4 pm",
-  },
-  {
-    id: 7,
-    title: "Miguel Guelff",
-    role: "Special educational needs teacher",
-    desc:
-      "Biscuit powder oat cake donut brownie ice cream I love soufflé. I love tootsie roll I love powder tootsie roll.",
-      avatar: 'ss.png',
-    status: "online",
-    unreadmessage: true,
-    date: "7 pm",
-  },
-  {
-    id: 8,
-    title: "Mauro Elenbaas",
-    role: "Advertising copywriter",
-    desc:
-      "Bear claw ice cream lollipop gingerbread carrot cake. Brownie gummi bears chocolate muffin croissant jelly I love marzipan wafer.",
-     avatar: 'ss.png',
-    status: "away",
-    unreadmessage: true,
-    date: "10 pm",
-  },
-  {
-    id: 9,
-    title: "Bridgett Omohundro",
-    role: "Designer, television/film set",
-    desc:
-      "Gummies gummi bears I love candy icing apple pie I love marzipan bear claw. I love tart biscuit I love candy canes pudding chupa chups liquorice croissant.",
-     avatar: 'ss.png',
-    status: "offline",
-    unreadmessage: false,
-    date: "10 pm",
-  },
-  {
-    id: 10,
-    title: "Zenia Jacobs",
-    role: "Building surveyor",
-    desc:
-      "Cake pie jelly jelly beans. Marzipan lemon drops halvah cake. Pudding cookie lemon drops icing",
-     avatar: 'ss.png',
-    status: "away",
-    unreadmessage: false,
-    date: "10 am",
+    title: 'New Feature Available',
+    desc: 'Check out the new dashboard features',
+    date: '2 days ago',
+    avatar: '/avatar-5.png',
   },
 ];
 
-export const messages = [
+export interface Message {
+  title: string;
+  desc: string;
+  image: string;
+  hasnotifaction?: boolean;
+}
+
+export const messages: Message[] = [
   {
-    title: "Wade Warren",
-    desc: "Hi! How are you doing?.....",
-    active: true,
+    title: 'Wade Warren',
+    desc: 'Hi! How are you doing?...',
+    image: '/avatar-1.png',
     hasnotifaction: true,
-    notification_count: 1,
-    image: undefined,
-    link: "#",
   },
   {
-    title: "Savannah Nguyen",
-    desc: "Hi! How are you doing?.....",
-    active: false,
-    hasnotifaction: false,
-    image: undefined,
-    link: "#",
-  },
-  {
-    title: "Ralph Edwards",
-    desc: "Hi! How are you doing?.....",
-    active: false,
+    title: 'Savannah Nguyen',
+    desc: 'Are we still meeting today?',
+    image: '/avatar-2.png',
     hasnotifaction: true,
-    notification_count: 8,
-    image: undefined,
-    link: "#",
   },
   {
-    title: "Cody Fisher",
-    desc: "Hi! How are you doing?.....",
-    active: true,
-    hasnotifaction: false,
-    image: undefined,
-    link: "#",
+    title: 'Jacob Jones',
+    desc: "I've sent you the files you requested",
+    image: '/avatar-3.png',
   },
   {
-    title: "Savannah Nguyen",
-    desc: "Hi! How are you doing?.....",
-    active: false,
-    hasnotifaction: false,
-    image: undefined,
-    link: "#",
+    title: 'Leslie Alexander',
+    desc: 'Thanks for your help yesterday!',
+    image: '/avatar-4.png',
   },
   {
-    title: "Ralph Edwards",
-    desc: "Hi! How are you doing?.....",
-    active: false,
+    title: 'Courtney Henry',
+    desc: "Let's schedule that call we discussed",
+    image: '/avatar-5.png',
     hasnotifaction: true,
-    notification_count: 8,
-    image: undefined,
-    link: "#",
-  },
-  {
-    title: "Cody Fisher",
-    desc: "Hi! How are you doing?.....",
-    active: true,
-    hasnotifaction: false,
-    image: undefined,
-    link: "#",
   },
 ];
-
-export type Message  = ( typeof messages) [number]
-export type Notification =  (typeof notifications) [number]
-
