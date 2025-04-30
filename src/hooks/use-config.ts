@@ -1,36 +1,33 @@
-import { useAtom } from "jotai"
-import { atomWithStorage } from "jotai/utils"
-import { layoutType, sidebarType, navBarType} from "@/lib/type"
-
-
+import { useAtom } from 'jotai';
+import { atomWithStorage } from 'jotai/utils';
+import { layoutType, sidebarType, navBarType } from '@/lib/type';
 
 export type Config = {
-  collapsed: boolean
-  theme: string
-  skin: 'default' | 'bordered'
-  layout: layoutType
-  sidebar: sidebarType
-  menuHidden: boolean,
-  showSearchBar: boolean,
-  showSwitcher: boolean
-  topHeader: 'default' | 'links'
-  contentWidth: 'wide' | 'boxed'
-  navbar: navBarType
-  footer: 'sticky' | 'default' | 'hidden'
-  isRtl: boolean
-  subMenu: boolean
-  hasSubMenu: boolean
-  sidebarTheme: string,
-  headerTheme: string,
-  sidebarBgImage?: string
-  radius: number
-
-}
+  collapsed: boolean;
+  theme: string;
+  skin: 'default' | 'bordered';
+  layout: layoutType;
+  sidebar: sidebarType;
+  menuHidden: boolean;
+  showSearchBar: boolean;
+  showSwitcher: boolean;
+  topHeader: 'default' | 'links';
+  contentWidth: 'wide' | 'boxed';
+  navbar: navBarType;
+  footer: 'sticky' | 'default' | 'hidden';
+  isRtl: boolean;
+  subMenu: boolean;
+  hasSubMenu: boolean;
+  sidebarTheme: string;
+  headerTheme: string;
+  sidebarBgImage?: string;
+  radius: number;
+};
 export const defaultConfig: Config = {
   collapsed: false,
-  theme: "zinc",
+  theme: 'zinc',
   skin: 'default',
-  layout: "vertical",
+  layout: 'vertical',
   sidebar: 'classic',
   menuHidden: false,
   showSearchBar: true,
@@ -46,12 +43,10 @@ export const defaultConfig: Config = {
   headerTheme: 'light',
   sidebarBgImage: undefined,
   radius: 0.5,
-}
+};
 
-
-const configAtom = atomWithStorage<Config>("config", defaultConfig)
+const configAtom = atomWithStorage<Config>('config', defaultConfig);
 
 export function useConfig() {
-  
-  return useAtom(configAtom)
+  return useAtom(configAtom);
 }
