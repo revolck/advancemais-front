@@ -5,7 +5,8 @@ import { Menu } from './menu';
 const DashSidebar = () => {
   return (
     <SidebarContent>
-      <Menu />
+      {/* <Menu /> */}
+      <h1>teste</h1>
     </SidebarContent>
   );
 };

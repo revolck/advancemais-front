@@ -148,10 +148,6 @@
   font-family: var(--font-maven);
 }
 
-body {
-  background-color: #fe2626;
-}
-
 .bg-header {
   background-color: hsl(var(--header));
 }
