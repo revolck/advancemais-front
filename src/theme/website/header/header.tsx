@@ -121,7 +121,7 @@ const NavLink: React.FC<NavLinkProps> = ({
     {hasDropdown && <ChevronDownIcon />}
     {!hasDropdown && (
       <motion.div
-        className="absolute bottom-[-2px] left-0 right-0 h-[1px] bg-[#0CF2A0]"
+        className="absolute bottom-[-2px] left-0 right-0 h-[1px] bg-[#00257D]"
         variants={{
           initial: { scaleX: 0, originX: 0.5 },
           hover: { scaleX: 1, originX: 0.5 },
@@ -153,7 +153,7 @@ const DropdownMenu: React.FC<DropdownMenuProps> = ({ children, isOpen }) => (
         transition={{ duration: 0.2, ease: "easeOut" }}
         className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-56 origin-top z-40"
       >
-        <div className="bg-[#111111] border border-gray-700/50 rounded-md shadow-xl p-2">
+        <div className="bg-[#00257D] border border-blue-700/50 rounded-md shadow-xl p-2">
           {children}
         </div>
       </motion.div>
@@ -442,14 +442,14 @@ const InteractiveHero: React.FC = () => {
 
   const headerVariants: Variants = {
     top: {
-      backgroundColor: "rgba(17, 17, 17, 0.8)",
-      borderBottomColor: "rgba(55, 65, 81, 0.5)",
+      backgroundColor: "rgba(17, 17, 17, 0.0)",
+      borderBottomColor: "rgba(17, 17, 17, 0.5)",
       position: "fixed",
       boxShadow: "none",
     },
     scrolled: {
-      backgroundColor: "rgba(17, 17, 17, 0.95)",
-      borderBottomColor: "rgba(75, 85, 99, 0.7)",
+      backgroundColor: "rgba(7, 36, 104, 0.95)",
+      borderBottomColor: "rgba(7, 36, 104, 0.7)",
       boxShadow:
         "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
       position: "fixed",
@@ -471,7 +471,7 @@ const InteractiveHero: React.FC = () => {
   };
 
   return (
-    <div className="pt-[90px] relative bg-[#00257D] text-gray-300 flex flex-col overflow-x-hidden">
+    <div className="pt-[70px] relative bg-[#00257D] text-gray-300 flex flex-col overflow-x-hidden">
       <motion.header
         variants={headerVariants}
         initial="top"
@@ -558,17 +558,17 @@ const InteractiveHero: React.FC = () => {
 
           <div className="flex items-center flex-shrink-0 space-x-4 lg:space-x-6">
             <NavLink href="#" className="hidden md:inline-block">
-              Sign in
+              Entrar
             </NavLink>
 
             <motion.a
               href="#"
-              className="bg-[#0CF2A0] text-[#111111] px-4 py-[6px] rounded-md text-sm font-semibold hover:bg-opacity-90 transition-colors duration-200 whitespace-nowrap shadow-sm hover:shadow-md"
+              className="bg-[#dc2626] text-white px-4 py-[6px] rounded-md text-sm font-semibold hover:bg-opacity-90 transition-colors duration-200 whitespace-nowrap shadow-sm hover:shadow-md"
               whileHover={{ scale: 1.03, y: -1 }}
               whileTap={{ scale: 0.97 }}
               transition={{ type: "spring", stiffness: 400, damping: 15 }}
             >
-              Book a demo
+              Matricule-se
             </motion.a>
 
             <motion.button
@@ -590,7 +590,7 @@ const InteractiveHero: React.FC = () => {
               initial="hidden"
               animate="visible"
               exit="exit"
-              className="md:hidden absolute top-full left-0 right-0 bg-[#111111]/95 backdrop-blur-sm shadow-lg py-4 border-t border-gray-800/50"
+              className="md:hidden absolute top-full left-0 right-0 bg-[#00257D]/95 backdrop-blur-sm shadow-lg py-4 border-t border-blue-800/50"
             >
               <div className="flex flex-col items-center space-y-4 px-6">
                 <NavLink href="#" onClick={() => setIsMobileMenuOpen(false)}>
