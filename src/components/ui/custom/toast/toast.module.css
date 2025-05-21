@@ -1,0 +1,92 @@
+/* Toast Container */
+.toasterContainer {
+  --toast-border-radius: 0.625rem;
+  --toast-shadow: 0 0.25rem 1rem rgba(0, 0, 0, 0.05);
+  --toast-border-width: 1px;
+  --toast-transition: all 0.2s ease;
+}
+
+/* Toast */
+.toast {
+  position: relative;
+  padding-right: 2.5rem !important; /* Espaço para o botão de fechar */
+}
+
+/* Botão de fechar centralizado verticalmente à direita */
+.closeButton {
+  position: absolute !important;
+  top: 50% !important;
+  right: 0.75rem !important;
+  transform: translateY(-50%) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 1.5rem !important;
+  height: 1.5rem !important;
+  border-radius: 9999px !important;
+  opacity: 0.7 !important;
+  transition: all 0.15s ease !important;
+  background: transparent !important;
+  border: none !important;
+  cursor: pointer !important;
+  color: var(--normal-text);
+}
+
+.closeButton:hover {
+  background-color: rgba(0, 0, 0, 0.05) !important;
+  opacity: 1 !important;
+}
+
+.toast:is(.dark *) .closeButton:hover {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Animações de entrada e saída */
+.toast[data-state="open"] {
+  animation: slideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.toast[data-state="closed"] {
+  animation: slideOut 0.2s ease-out forwards;
+}
+
+/* Seção de ações */
+.toastActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  margin-top: 0.5rem;
+}
+
+/* Responsividade para telas pequenas */
+@media (max-width: 640px) {
+  .toast {
+    max-width: calc(100vw - 2rem) !important;
+    margin-left: 1rem !important;
+    margin-right: 1rem !important;
+  }
+}
+
+/* Animações */
+@keyframes slideIn {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOut {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(-120%);
+    opacity: 0;
+  }
+}

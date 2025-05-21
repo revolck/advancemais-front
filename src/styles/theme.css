@@ -1,0 +1,8 @@
+body {
+  font-family: var(--font-open-sans);
+}
+
+h1,
+h2 {
+  font-family: var(--font-nunito-sans);
+}
