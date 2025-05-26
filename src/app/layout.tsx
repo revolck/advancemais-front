@@ -1,34 +1,39 @@
-import type { Metadata } from "next";
+// src/app/layout.tsx
+import type { Metadata, Viewport } from "next";
 import { ThemeProvider } from "@/providers/theme-provider";
-import { ToasterCustom } from "@/components/ui/custom/toast";
-import HeaderWithBackground from "@/theme/website/header";
-import WebsiteFooter from "@/theme/website/footer";
 import "@/styles/globals.css";
 import "@/styles/theme.css";
 
+/**
+ * Layout raiz global da aplicação
+ *
+ * Este layout é o mais alto nível e contém apenas as configurações
+ * essenciais que são compartilhadas entre website e dashboard.
+ *
+ * Cada seção (website/dashboard) tem seu próprio layout específico
+ * com suas particularidades de header, footer, etc.
+ */
+
 export const metadata: Metadata = {
-  title: "IntegreApp - Plataforma de Gestão Integrada",
-  description: "Solução completa para gestão empresarial e social",
-  keywords: ["gestão", "plataforma", "integrada", "empresarial", "social"],
-  authors: [{ name: "IntegreApp Team" }],
-  viewport: "width=device-width, initial-scale=1",
-  robots: "index, follow",
-  openGraph: {
-    title: "IntegreApp - Plataforma de Gestão Integrada",
-    description: "Solução completa para gestão empresarial e social",
-    type: "website",
-    locale: "pt_BR",
+  title: {
+    template: "%s | AdvanceMais",
+    default: "AdvanceMais - Educação e Tecnologia",
   },
+  description: "Plataforma integrada de educação, tecnologia e gestão",
+  keywords: ["educação", "tecnologia", "gestão", "cursos", "AdvanceMais"],
+  authors: [{ name: "AdvanceMais" }],
+  robots: "index, follow",
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_BASE_URL || "https://advancemais.com.br"
+  ),
 };
 
-/**
- * Layout principal da aplicação
- *
- * Configura o tema, elementos globais e estrutura básica
- * Implementa ThemeProvider para suporte ao modo claro/escuro
- * Usa o header refatorado com animação de fundo otimizada
- * Inclui o footer responsivo com navegação e redes sociais
- */
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  themeColor: "#00257D",
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -37,34 +42,28 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" suppressHydrationWarning>
       <head>
-        {/* Meta tags e outros elementos de cabeçalho são gerenciados pelo Next.js */}
+        <meta charSet="utf-8" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin="anonymous"
+        />
+        <link rel="icon" href="/favicon.ico" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
       </head>
-      <body className="min-h-screen font-sans antialiased bg-gray-50 dark:bg-gray-900">
+      <body className="font-sans antialiased">
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
           enableSystem
           disableTransitionOnChange
         >
-          {/* Header refatorado com background animation */}
-          <HeaderWithBackground />
-
-          {/* Conteúdo principal da aplicação */}
-          <main className="relative z-10 min-h-screen">{children}</main>
-
-          {/* Footer responsivo */}
-          <WebsiteFooter />
-
-          {/* Container centralizado de notificações do sistema */}
-          <ToasterCustom
-            position="top-right"
-            theme="system"
-            richColors={true}
-            closeButton={false}
-            maxToasts={5}
-            gap={8}
-            defaultDuration={5000}
-          />
+          <div id="root-container" className="min-h-screen">
+            {children}
+          </div>
+          <div id="modal-portal" />
+          <div id="tooltip-portal" />
         </ThemeProvider>
       </body>
     </html>
