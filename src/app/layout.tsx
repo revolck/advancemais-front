@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { ThemeProvider } from "@/providers/theme-provider";
 import { ToasterCustom } from "@/components/ui/custom/toast";
 import HeaderWithBackground from "@/theme/website/header";
+import WebsiteFooter from "@/theme/website/footer";
 import "@/styles/globals.css";
 import "@/styles/theme.css";
 
@@ -26,6 +27,7 @@ export const metadata: Metadata = {
  * Configura o tema, elementos globais e estrutura básica
  * Implementa ThemeProvider para suporte ao modo claro/escuro
  * Usa o header refatorado com animação de fundo otimizada
+ * Inclui o footer responsivo com navegação e redes sociais
  */
 export default function RootLayout({
   children,
@@ -49,6 +51,9 @@ export default function RootLayout({
 
           {/* Conteúdo principal da aplicação */}
           <main className="relative z-10 min-h-screen">{children}</main>
+
+          {/* Footer responsivo */}
+          <WebsiteFooter />
 
           {/* Container centralizado de notificações do sistema */}
           <ToasterCustom
