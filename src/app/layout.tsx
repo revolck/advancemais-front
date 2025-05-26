@@ -1,14 +1,23 @@
 import type { Metadata } from "next";
 import { ThemeProvider } from "@/providers/theme-provider";
 import { ToasterCustom } from "@/components/ui/custom/toast";
-import InteractiveHero from "@/theme/website/header/header";
+import HeaderWithBackground from "@/theme/website/header";
 import "@/styles/globals.css";
 import "@/styles/theme.css";
 
 export const metadata: Metadata = {
   title: "IntegreApp - Plataforma de Gestão Integrada",
   description: "Solução completa para gestão empresarial e social",
+  keywords: ["gestão", "plataforma", "integrada", "empresarial", "social"],
+  authors: [{ name: "IntegreApp Team" }],
   viewport: "width=device-width, initial-scale=1",
+  robots: "index, follow",
+  openGraph: {
+    title: "IntegreApp - Plataforma de Gestão Integrada",
+    description: "Solução completa para gestão empresarial e social",
+    type: "website",
+    locale: "pt_BR",
+  },
 };
 
 /**
@@ -16,6 +25,7 @@ export const metadata: Metadata = {
  *
  * Configura o tema, elementos globais e estrutura básica
  * Implementa ThemeProvider para suporte ao modo claro/escuro
+ * Usa o header refatorado com animação de fundo otimizada
  */
 export default function RootLayout({
   children,
@@ -27,17 +37,18 @@ export default function RootLayout({
       <head>
         {/* Meta tags e outros elementos de cabeçalho são gerenciados pelo Next.js */}
       </head>
-      <body className="min-h-screen font-sans antialiased">
+      <body className="min-h-screen font-sans antialiased bg-gray-50 dark:bg-gray-900">
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
           enableSystem
           disableTransitionOnChange
         >
-          <InteractiveHero />
-          <main className="flex-grow flex flex-col items-center justify-center text-center px-4 pt-8 pb-16 relative z-10">
-            {children}
-          </main>
+          {/* Header refatorado com background animation */}
+          <HeaderWithBackground />
+
+          {/* Conteúdo principal da aplicação */}
+          <main className="relative z-10 min-h-screen">{children}</main>
 
           {/* Container centralizado de notificações do sistema */}
           <ToasterCustom
