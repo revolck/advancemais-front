@@ -4,7 +4,7 @@
 import React, { useEffect, useState } from "react";
 import { PageWrapper } from "@/components/layout/PageWrapper";
 import { usePageTitle } from "@/hooks/usePageTitle";
-import Slider from "@/theme/website/slider";
+import Slider from "@/theme/website/components/slider";
 
 /**
  * Página Inicial do Website Institucional

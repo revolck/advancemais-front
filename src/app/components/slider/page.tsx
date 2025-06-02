@@ -3,11 +3,11 @@
 import React from "react";
 import { PageWrapper } from "@/components/layout/PageWrapper";
 import { usePageTitle } from "@/hooks/usePageTitle";
-import Slider from "@/theme/website/slider";
-import { SliderAdvanced } from "@/theme/website/slider";
-import { SliderWithProgress } from "@/theme/website/slider";
-import { SliderGallery } from "@/theme/website/slider";
-import { SliderTestimonials } from "@/theme/website/slider";
+import Slider from "@/theme/website/components/slider";
+import { SliderAdvanced } from "@/theme/website/components/slider";
+import { SliderWithProgress } from "@/theme/website/components/slider";
+import { SliderGallery } from "@/theme/website/components/slider";
+import { SliderTestimonials } from "@/theme/website/components/slider";
 
 export default function HomePage() {
   usePageTitle("Início");

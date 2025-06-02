@@ -6,3 +6,170 @@ h1,
 h2 {
   font-family: var(--font-nunito-sans);
 }
+
+@keyframes slideInFromLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInFromRight {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Classes utilitárias para os componentes */
+.header-pages-animate-in-left {
+  animation: slideInFromLeft 0.6s ease-out;
+}
+
+.header-pages-animate-in-right {
+  animation: slideInFromRight 0.6s ease-out 0.2s both;
+}
+
+.header-pages-animate-fade-up {
+  animation: fadeInUp 0.5s ease-out;
+}
+
+/* Estilos para o carrossel de cursos */
+.courses-carousel-item {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.courses-carousel-item:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* Tags dos cursos */
+.course-tag-popular {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+}
+
+.course-tag-novo {
+  background: linear-gradient(135deg, #10b981, #059669);
+}
+
+.course-tag-destaque {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+}
+
+/* Estilo para breadcrumbs */
+.breadcrumbs-custom {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.breadcrumbs-custom a {
+  transition: color 0.2s ease;
+}
+
+.breadcrumbs-custom a:hover {
+  color: var(--global-cor-azul-ceruleo);
+}
+
+/* Responsividade específica */
+@media (max-width: 768px) {
+  .header-pages-title-mobile {
+    font-size: 2rem;
+    line-height: 2.25rem;
+    padding: 0 1rem;
+  }
+
+  .header-pages-description-mobile {
+    font-size: 1rem;
+    line-height: 1.5rem;
+    padding: 0 1.5rem;
+  }
+}
+
+@media (min-width: 769px) {
+  .header-pages-title-desktop {
+    font-size: 2.75rem;
+    line-height: 3rem;
+  }
+
+  .header-pages-description-desktop {
+    font-size: 1.125rem;
+    line-height: 1.75rem;
+  }
+}
+
+/* Estilo para skeleton loader */
+.skeleton-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Gradientes personalizados */
+.gradient-overlay {
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.8) 0%,
+    rgba(0, 0, 0, 0.4) 50%,
+    transparent 100%
+  );
+}
+
+/* Utilitários para texto truncado */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Focus states melhorados */
+.focus-ring-custom:focus {
+  outline: 2px solid var(--global-cor-azul-ceruleo);
+  outline-offset: 2px;
+}
+
+/* Hover effects para cartões */
+.card-hover-effect {
+  transition: all 0.3s ease;
+}
+
+.card-hover-effect:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 20px rgba(0, 0, 0, 0.15);
+}
