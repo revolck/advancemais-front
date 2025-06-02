@@ -26,7 +26,7 @@ export const Header: React.FC = () => {
       transition={{ duration: 0.3, ease: "easeInOut" }}
       className="px-6 w-full md:px-10 lg:px-16 sticky top-0 z-30 backdrop-blur-md"
     >
-      <nav className="flex justify-between items-center max-w-screen-xl mx-auto h-[80px]">
+      <nav className="flex justify-between items-center container mx-auto h-[80px]">
         <Logo />
 
         <Navigation

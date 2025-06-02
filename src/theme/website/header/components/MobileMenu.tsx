@@ -29,7 +29,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose }) => {
             ))}
             <hr className="w-full border-t border-gray-700/50 my-2" />
             <NavLink href="#" onClick={onClose}>
-              Sign in
+              Entrar
             </NavLink>
           </div>
         </motion.div>
