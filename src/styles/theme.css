@@ -1,10 +1,45 @@
+html,
 body {
-  font-family: var(--font-open-sans);
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+body {
+  font-family: var(--font-sans), sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--text-color);
+  background-color: #fff;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html {
+  font-family: "Inter", Arial, sans-serif;
+}
+
+img {
+  max-width: 100%;
+  display: block;
+  height: auto;
 }
 
 h1,
-h2 {
-  font-family: var(--font-nunito-sans);
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-weight: 700;
+  margin-bottom: 1rem;
+  line-height: 1.2;
+}
+
+p {
+  margin-bottom: 1rem;
 }
 
 @keyframes slideInFromLeft {
@@ -40,136 +75,55 @@ h2 {
   }
 }
 
-/* Classes utilitárias para os componentes */
-.header-pages-animate-in-left {
-  animation: slideInFromLeft 0.6s ease-out;
+/* Slider  */
+img.object-cover.object-center {
+  height: auto !important;
 }
 
-.header-pages-animate-in-right {
-  animation: slideInFromRight 0.6s ease-out 0.2s both;
+/*===========================================================
+   Barra de Rolagem Estilizada (Estilo Apple)
+===========================================================*/
+
+/* Estiliza o container da barra de rolagem */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+  background-color: #f5f5f5;
+  border-radius: 8px;
 }
 
-.header-pages-animate-fade-up {
-  animation: fadeInUp 0.5s ease-out;
+/* Estiliza o "thumb" da barra de rolagem */
+::-webkit-scrollbar-thumb {
+  background-color: #d1d1d1;
+  border-radius: 8px;
+  transition: background-color 0.3s ease;
 }
 
-/* Estilos para o carrossel de cursos */
-.courses-carousel-item {
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+/* Efeito ao passar o mouse sobre o "thumb" */
+::-webkit-scrollbar-thumb:hover {
+  background-color: #a6a6a6;
 }
 
-.courses-carousel-item:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
-    0 10px 10px -5px rgba(0, 0, 0, 0.04);
+/* Estiliza o canto da barra de rolagem (quando horizontal e vertical se encontram) */
+::-webkit-scrollbar-corner {
+  background-color: #f5f5f5;
 }
 
-/* Tags dos cursos */
-.course-tag-popular {
-  background: linear-gradient(135deg, #ef4444, #dc2626);
+/*=======================
+   Texto Secundário
+=======================*/
+p {
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.8;
+  color: #a5a5a5; /* Texto secundário para boa hierarquia */
 }
 
-.course-tag-novo {
-  background: linear-gradient(135deg, #10b981, #059669);
-}
+/*=======================
+   DASHBOARD
+=======================*/
 
-.course-tag-destaque {
-  background: linear-gradient(135deg, #3b82f6, #2563eb);
-}
-
-/* Estilo para breadcrumbs */
-.breadcrumbs-custom {
-  font-size: 0.875rem;
-  font-weight: 500;
-}
-
-.breadcrumbs-custom a {
-  transition: color 0.2s ease;
-}
-
-.breadcrumbs-custom a:hover {
-  color: var(--global-cor-azul-ceruleo);
-}
-
-/* Responsividade específica */
-@media (max-width: 768px) {
-  .header-pages-title-mobile {
-    font-size: 2rem;
-    line-height: 2.25rem;
-    padding: 0 1rem;
-  }
-
-  .header-pages-description-mobile {
-    font-size: 1rem;
-    line-height: 1.5rem;
-    padding: 0 1.5rem;
-  }
-}
-
-@media (min-width: 769px) {
-  .header-pages-title-desktop {
-    font-size: 2.75rem;
-    line-height: 3rem;
-  }
-
-  .header-pages-description-desktop {
-    font-size: 1.125rem;
-    line-height: 1.75rem;
-  }
-}
-
-/* Estilo para skeleton loader */
-.skeleton-pulse {
-  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-}
-
-@keyframes pulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
-}
-
-/* Gradientes personalizados */
-.gradient-overlay {
-  background: linear-gradient(
-    to top,
-    rgba(0, 0, 0, 0.8) 0%,
-    rgba(0, 0, 0, 0.4) 50%,
-    transparent 100%
-  );
-}
-
-/* Utilitários para texto truncado */
-.line-clamp-2 {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.line-clamp-3 {
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-/* Focus states melhorados */
-.focus-ring-custom:focus {
-  outline: 2px solid var(--global-cor-azul-ceruleo);
-  outline-offset: 2px;
-}
-
-/* Hover effects para cartões */
-.card-hover-effect {
-  transition: all 0.3s ease;
-}
-
-.card-hover-effect:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 20px rgba(0, 0, 0, 0.15);
+.required::after {
+  content: " *";
+  color: var(--secondary-color);
 }
