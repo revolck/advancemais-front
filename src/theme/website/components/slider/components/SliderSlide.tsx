@@ -25,7 +25,7 @@ export const SliderSlide: React.FC<SliderSlideProps> = ({
         ${
           isMobile
             ? "h-[300px] sm:h-[400px]"
-            : "h-[400px] md:h-[500px] lg:h-[600px]"
+            : "h-[400px] md:h-[500px] lg:h-[498px]"
         }
       `}
       >
