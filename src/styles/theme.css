@@ -1,3 +1,6 @@
+/* ========================================
+   RESET GLOBAL
+======================================== */
 html,
 body {
   height: 100%;
@@ -5,43 +8,116 @@ body {
   padding: 0;
   max-width: 100vw;
   overflow-x: hidden;
-}
-
-body {
-  font-family: var(--font-sans), sans-serif;
+  font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-size: 16px;
-  line-height: 1.5;
+  line-height: 1.6;
   color: var(--text-color);
   background-color: #fff;
+  font-weight: 400;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-html {
-  font-family: "Inter", Arial, sans-serif;
-}
-
-img {
-  max-width: 100%;
-  display: block;
-  height: auto;
-}
-
+/* ========================================
+   TIPOGRAFIA
+======================================== */
 h1,
 h2,
 h3,
 h4,
 h5,
 h6 {
+  font-family: inherit;
   font-weight: 700;
   margin-bottom: 1rem;
-  line-height: 1.2;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+}
+
+h1 {
+  font-size: 2.5rem;
+  font-weight: 800;
+}
+
+h2 {
+  font-size: 2rem;
+}
+
+h3 {
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+h4 {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+h5 {
+  font-size: 1.125rem;
+  font-weight: 500;
+}
+
+h6 {
+  font-size: 1rem;
+  font-weight: 500;
 }
 
 p {
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.8;
   margin-bottom: 1rem;
+  color: #6b6b6b;
 }
 
+/* ========================================
+   IMAGENS
+======================================== */
+img {
+  max-width: 100%;
+  display: block;
+  height: auto;
+}
+
+img.object-cover.object-center {
+  height: auto !important;
+}
+
+/* ========================================
+   UTILITÁRIOS DE FONTE
+======================================== */
+.font-light {
+  font-weight: 300;
+}
+.font-normal {
+  font-weight: 400;
+}
+.font-medium {
+  font-weight: 500;
+}
+.font-semibold {
+  font-weight: 600;
+}
+.font-bold {
+  font-weight: 700;
+}
+.font-extrabold {
+  font-weight: 800;
+}
+
+/* ========================================
+   ELEMENTOS ESPECÍFICOS
+======================================== */
+.required::after {
+  content: " *";
+  color: var(--secondary-color);
+  font-weight: 500;
+}
+
+/* ========================================
+   ANIMAÇÕES
+======================================== */
 @keyframes slideInFromLeft {
   from {
     opacity: 0;
@@ -75,16 +151,9 @@ p {
   }
 }
 
-/* Slider  */
-img.object-cover.object-center {
-  height: auto !important;
-}
-
-/*===========================================================
-   Barra de Rolagem Estilizada (Estilo Apple)
-===========================================================*/
-
-/* Estiliza o container da barra de rolagem */
+/* ========================================
+   BARRA DE ROLAGEM PERSONALIZADA
+======================================== */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -92,38 +161,46 @@ img.object-cover.object-center {
   border-radius: 8px;
 }
 
-/* Estiliza o "thumb" da barra de rolagem */
 ::-webkit-scrollbar-thumb {
   background-color: #d1d1d1;
   border-radius: 8px;
   transition: background-color 0.3s ease;
 }
 
-/* Efeito ao passar o mouse sobre o "thumb" */
 ::-webkit-scrollbar-thumb:hover {
   background-color: #a6a6a6;
 }
 
-/* Estiliza o canto da barra de rolagem (quando horizontal e vertical se encontram) */
 ::-webkit-scrollbar-corner {
   background-color: #f5f5f5;
 }
 
-/*=======================
-   Texto Secundário
-=======================*/
-p {
-  font-size: 16px;
-  font-weight: 400;
-  line-height: 1.8;
-  color: #a5a5a5; /* Texto secundário para boa hierarquia */
+/* ========================================
+   RESPONSIVIDADE
+======================================== */
+@media (max-width: 768px) {
+  h1 {
+    font-size: 2rem;
+  }
+  h2 {
+    font-size: 1.75rem;
+  }
+  h3 {
+    font-size: 1.375rem;
+  }
+
+  body,
+  p {
+    font-size: 14px;
+    line-height: 1.6;
+  }
 }
 
-/*=======================
-   DASHBOARD
-=======================*/
-
-.required::after {
-  content: " *";
-  color: var(--secondary-color);
+@media (max-width: 480px) {
+  h1 {
+    font-size: 1.75rem;
+  }
+  h2 {
+    font-size: 1.5rem;
+  }
 }

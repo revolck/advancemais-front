@@ -16,7 +16,7 @@ export default function WebsiteHomePage() {
   const [isClient, setIsClient] = useState(false);
 
   // Configura o título da página
-  usePageTitle("Início");
+  usePageTitle("Página Inicial");
 
   // Evita problemas de hidratação
   useEffect(() => {

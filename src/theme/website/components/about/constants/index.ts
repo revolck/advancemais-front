@@ -6,8 +6,7 @@ export const ABOUT_IMAGE = {
 };
 
 export const ABOUT_CONTENT = {
-  title: "Acelere o crescimento",
-  highlight: "do seu negócio",
+  title: "Acelere o crescimento do seu negócio",
   description: `
     Na Advance+, fornecemos soluções estratégicas em gestão de pessoas e
     recrutamento, focadas em elevar o desempenho e a competitividade da

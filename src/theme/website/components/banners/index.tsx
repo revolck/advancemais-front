@@ -20,7 +20,7 @@ const BannersGroup = () => {
   return (
     <section className="relative py-12 px-4 mt-[-40px] mb-8">
       <div className="relative max-w-[1560px] mx-auto z-10">
-        <h2 className="text-center text-2xl sm:text-3xl font-bold text-gray-800 mb-8 sm:mb-10 leading-snug sm:leading-tight">
+        <h2 className="text-center !text-[var(--primary-color)] mb-8 sm:mb-10 leading-snug sm:leading-tight">
           Confira os destaques para você <br className="sm:hidden" /> e sua
           empresa decolarem
         </h2>

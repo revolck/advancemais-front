@@ -1,5 +1,3 @@
-import React from "react";
-import { ExternalLinkIcon } from "../icons";
 import type { NavigationItem } from "../types";
 
 export const NAVIGATION_ITEMS: NavigationItem[] = [
@@ -31,18 +29,6 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
       { label: "Treinamento In Company", href: "/treinamento" },
     ],
   },
-  // {
-  //   key: "resources",
-  //   label: "Resources",
-  //   href: "#",
-  //   type: "dropdown",
-  //   items: [
-  //     { label: "Blog", href: "#", icon: React.createElement(ExternalLinkIcon) },
-  //     { label: "Guides", href: "#" },
-  //     { label: "Help Center", href: "#" },
-  //     { label: "API Reference", href: "#" },
-  //   ],
-  // },
   {
     key: "business",
     label: "Vagas",

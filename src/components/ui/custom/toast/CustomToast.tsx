@@ -1,7 +1,6 @@
 "use client";
 
 import React, { forwardRef, type ForwardedRef } from "react";
-import { useTheme } from "next-themes";
 import { Toaster as SonnerToaster, toast as sonnerToast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Icon } from "@/components/ui/custom/Icons";
@@ -117,9 +116,6 @@ export const ToastCloseButton = ({ onClick }: { onClick?: () => void }) => (
  * Contêiner de toasts personalizado com tema e estilos
  */
 export function ToasterCustom(props: CustomToasterProps) {
-  const { resolvedTheme } = useTheme();
-  const currentTheme = props.theme || resolvedTheme || "system";
-
   // Mesclar as configurações padrão com as props fornecidas
   const mergedProps = {
     ...DEFAULT_TOAST_CONFIG,
@@ -136,7 +132,6 @@ export function ToasterCustom(props: CustomToasterProps) {
 
   return (
     <SonnerToaster
-      theme={currentTheme as "light" | "dark" | "system"}
       className={cn(styles.toasterContainer, mergedProps.className)}
       position={mergedProps.position}
       expand={mergedProps.expand}

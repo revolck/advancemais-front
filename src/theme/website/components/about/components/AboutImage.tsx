@@ -12,7 +12,7 @@ const AboutImage = ({ src, alt, width, height }: AboutImageProps) => {
         width={width}
         height={height}
         layout="responsive"
-        className="rounded-lg shadow-lg object-cover"
+        className="rounded-lg object-cover"
       />
     </div>
   );

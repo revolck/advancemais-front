@@ -1,9 +1,14 @@
 "use client";
 
 import React from "react";
-import { ThemeProvider } from "@/providers/theme-provider";
 import "@/styles/globals.css";
-import "@/styles/theme.css";
+
+/**
+ * Layout de autenticação simplificado
+ *
+ * Removido o ThemeProvider para simplificar a estrutura
+ * e eliminar a complexidade do modo escuro.
+ */
 
 export default function AuthLayout({
   children,
@@ -11,14 +16,8 @@ export default function AuthLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <section className="min-h-screen">
-      <ThemeProvider
-        attribute="class"
-        defaultTheme="light"
-        disableTransitionOnChange
-      >
-        {children}
-      </ThemeProvider>
+    <section className="min-h-screen bg-[var(--background-color)]">
+      {children}
     </section>
   );
 }

@@ -25,7 +25,7 @@ export const NavLink: React.FC<NavLinkProps> = ({
     href={href}
     onClick={onClick}
     className={cn(
-      "relative group text-base font-bold text-gray-200 hover:text-white transition-colors duration-200 flex items-center py-1",
+      "relative group text-base font-semibold text-gray-200 hover:text-[var(--secondary-color)] transition-colors duration-200 flex items-center py-1",
       className
     )}
     whileHover="hover"
@@ -34,7 +34,7 @@ export const NavLink: React.FC<NavLinkProps> = ({
     {hasDropdown && <ChevronDownIcon />}
     {!hasDropdown && (
       <motion.div
-        className="absolute bottom-[-2px] left-0 right-0 h-[1px] bg-[#00257D]"
+        className="absolute bottom-[-2px] left-0 right-0 h-[1px] bg-[var(--color-blue)]"
         variants={{
           initial: { scaleX: 0, originX: 0.5 },
           hover: { scaleX: 1, originX: 0.5 },

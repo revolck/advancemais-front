@@ -1,17 +1,12 @@
 // src/app/layout.tsx
 import type { Metadata, Viewport } from "next";
-import { ThemeProvider } from "@/providers/theme-provider";
 import "@/styles/globals.css";
-import "@/styles/theme.css";
 
 /**
  * Layout raiz global da aplicação
  *
- * Este layout é o mais alto nível e contém apenas as configurações
- * essenciais que são compartilhadas entre website e dashboard.
- *
- * Cada seção (website/dashboard) tem seu próprio layout específico
- * com suas particularidades de header, footer, etc.
+ * Layout simplificado sem ThemeProvider, focado apenas no essencial.
+ * Configurações de fontes e estilos são gerenciadas diretamente no globals.css
  */
 
 export const metadata: Metadata = {
@@ -31,7 +26,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#00257D",
+  themeColor: "#001a57", // Usando a primary-color definida nas variáveis CSS
 };
 
 export default function RootLayout({
@@ -40,7 +35,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-BR" suppressHydrationWarning>
+    <html lang="pt-BR">
       <head>
         <meta charSet="utf-8" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -53,18 +48,11 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
       </head>
       <body className="font-sans antialiased">
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <div id="root-container" className="min-h-screen">
-            {children}
-          </div>
-          <div id="modal-portal" />
-          <div id="tooltip-portal" />
-        </ThemeProvider>
+        <div id="root-container" className="min-h-screen">
+          {children}
+        </div>
+        <div id="modal-portal" />
+        <div id="tooltip-portal" />
       </body>
     </html>
   );

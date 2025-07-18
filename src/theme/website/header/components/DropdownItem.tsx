@@ -13,7 +13,7 @@ export const DropdownItem: React.FC<DropdownItemProps> = ({
 }) => (
   <a
     href={href}
-    className="group flex items-center justify-between w-full px-4 py-3 text-base text-gray-300 hover:bg-[#011544]/30 hover:text-white rounded-md transition-colors duration-150 font-medium"
+    className="group flex items-center justify-between w-full px-4 py-3 text-base text-gray-300 hover:bg-[#011544]/30 hover:text-[var(--secondary-color)] rounded-md transition-colors duration-150 font-medium"
   >
     <span>{children}</span>
     {icon && (

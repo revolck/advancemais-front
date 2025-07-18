@@ -19,7 +19,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose }) => {
           initial="hidden"
           animate="visible"
           exit="exit"
-          className="md:hidden absolute top-full left-0 right-0 bg-[#00257D]/95 backdrop-blur-sm shadow-lg py-4 border-t border-blue-800/50"
+          className="md:hidden absolute top-full left-0 right-0 bg-[var(--color-blue)]/95 backdrop-blur-sm shadow-lg py-4 border-t border-blue-800/50"
         >
           <div className="flex flex-col items-center space-y-4 px-6">
             {NAVIGATION_ITEMS.map((item) => (
