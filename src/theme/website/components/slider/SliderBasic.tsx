@@ -2,6 +2,7 @@
 
 import React from "react";
 import { SliderContainer } from "./components/SliderContainer";
+import { ImageNotFound } from "@/components/ui/custom/image-not-found";
 import { SLIDER_CONFIG } from "./constants/config";
 import { useSlider } from "./hooks/useSlider";
 import { useSliderAutoplay } from "./hooks/useSliderAutoplay";
@@ -26,13 +27,19 @@ const SliderBasic: React.FC = () => {
   // Autoplay básico
   useSliderAutoplay(emblaApi, SLIDER_CONFIG.autoplay);
 
-  // Se não há slides, renderiza um fallback
+  // Se não há slides, renderiza um fallback elegante
   if (!slides || slides.length === 0) {
     return (
-      <div className="w-full h-[300px] md:h-[500px] bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-        <p className="text-gray-500 dark:text-gray-400">
-          Nenhum slide disponível
-        </p>
+      <div className="w-full h-[300px] md:h-[500px]">
+        <ImageNotFound
+          size="full"
+          variant="muted"
+          aspectRatio="landscape"
+          message="Nenhum slide disponível"
+          icon="ImageOff"
+          className="h-full"
+          showMessage={true}
+        />
       </div>
     );
   }

@@ -1,0 +1,115 @@
+/* src/styles/components.css */
+
+/* ===================================== */
+/* COURSES CAROUSEL STYLES - IGUAL AO ORIGINAL */
+/* ===================================== */
+
+.courses-carousel-button-previous {
+  position: absolute;
+  top: 49%;
+  left: -23px;
+  z-index: 50;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #001a57;
+  color: #fff;
+  width: 50px;
+  height: 50px;
+  opacity: 0.7;
+  border-radius: 50%;
+  border-color: transparent;
+  cursor: pointer;
+  transition: all 0.3s ease, box-shadow 0.3s ease;
+  margin-left: 0;
+}
+
+.courses-carousel-button-previous:hover {
+  opacity: 1;
+  background-color: #00257d;
+}
+
+.courses-carousel-button-next {
+  position: absolute;
+  top: 60%; /* Igual ao original */
+  left: -23px; /* Igual ao original - não right */
+  z-index: 50;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #001a57;
+  color: #fff;
+  width: 50px;
+  height: 50px;
+  opacity: 0.7;
+  border-radius: 50%;
+  border-color: transparent;
+  cursor: pointer;
+  transition: all 0.3s ease, box-shadow 0.3s ease;
+}
+
+.courses-carousel-button-next:hover {
+  opacity: 1;
+  background-color: #00257d;
+}
+
+/* Ajustes no título - IGUAL AO ORIGINAL */
+.carousel-item-title {
+  position: absolute;
+  top: 10%; /* Ajuste para mover o título para cima */
+  left: 50%; /* Centraliza horizontalmente */
+  transform: translateX(-50%); /* Garantindo a centralização */
+  text-align: center;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: white;
+  text-shadow: 0 4px 8px rgba(0, 0, 0, 0.5); /* Aumenta a sombra */
+}
+
+.ImagemGrid {
+  height: auto;
+  max-height: 270px;
+}
+
+/* Para dispositivos menores que 768px (mobile) */
+@media (max-width: 767px) {
+  .pxResponsive {
+    width: 94%;
+    text-align: center;
+  }
+  .gridCourses {
+    grid-template-columns: 1fr; /* 1 curso por linha */
+  }
+
+  .responsiveFilter {
+    text-align: left;
+    align-items: center;
+    padding-left: 5%;
+    align-content: center;
+  }
+
+  .titleFilter {
+    padding-top: 10px;
+    font-size: 25px;
+  }
+
+  .filter {
+    padding-left: 5%;
+  }
+}
+
+@media (min-width: 768px) {
+  /* md breakpoint (tablets ou maiores) */
+  .pxResponsive {
+    width: 94%;
+    padding-left: 3%;
+  }
+
+  .InforDias {
+    font-size: 12px;
+  }
+
+  .gridCourses {
+    grid-template-columns: repeat(2, 1fr); /* 2 cursos por linha */
+  }
+}

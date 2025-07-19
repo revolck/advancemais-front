@@ -84,10 +84,8 @@ export const SliderAdvanced: React.FC<SliderAdvancedProps> = ({
 
   if (!slides || slides.length === 0) {
     return (
-      <div className="w-full h-[300px] md:h-[500px] bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-        <p className="text-gray-500 dark:text-gray-400">
-          Nenhum slide disponível
-        </p>
+      <div className="w-full h-[300px] md:h-[500px] bg-gray-200 flex items-center justify-center">
+        <p className="text-gray-500">Nenhum slide disponível</p>
       </div>
     );
   }

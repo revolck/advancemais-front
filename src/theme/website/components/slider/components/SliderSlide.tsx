@@ -1,5 +1,8 @@
-import React from "react";
+"use client";
+
+import React, { useState } from "react";
 import Image from "next/image";
+import { ImageNotFound } from "@/components/ui/custom/image-not-found";
 import type { SliderSlideProps } from "../types";
 
 export const SliderSlide: React.FC<SliderSlideProps> = ({
@@ -7,6 +10,9 @@ export const SliderSlide: React.FC<SliderSlideProps> = ({
   index,
   isMobile,
 }) => {
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
+
   // Função para gerar alt text seguro
   const getAltText = (
     slide: { title?: string; subtitle?: string },
@@ -15,6 +21,15 @@ export const SliderSlide: React.FC<SliderSlideProps> = ({
     if (slide.title) return slide.title;
     if (slide.subtitle) return slide.subtitle;
     return `Slide ${index + 1}`;
+  };
+
+  const handleImageLoad = () => {
+    setIsLoading(false);
+  };
+
+  const handleImageError = () => {
+    setIsLoading(false);
+    setHasError(true);
   };
 
   return (
@@ -29,23 +44,54 @@ export const SliderSlide: React.FC<SliderSlideProps> = ({
         }
       `}
       >
-        <Image
-          src={slide.image}
-          alt={getAltText(slide, index)}
-          fill
-          className="object-cover object-center"
-          priority={index === 0}
-          quality={90}
-          sizes={
-            isMobile ? "(max-width: 768px) 100vw" : "(min-width: 769px) 100vw"
-          }
-        />
+        {/* Loading State */}
+        {isLoading && (
+          <div className="absolute inset-0 bg-gray-200 animate-pulse flex items-center justify-center z-10">
+            <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+          </div>
+        )}
+
+        {/* Error State usando ImageNotFound */}
+        {hasError && (
+          <ImageNotFound
+            size="full"
+            variant="muted"
+            aspectRatio="landscape"
+            message="Slide indisponível"
+            icon="ImageOff"
+            className="absolute inset-0"
+            showMessage={true}
+          />
+        )}
+
+        {/* Main Image */}
+        {!hasError && (
+          <Image
+            src={slide.image}
+            alt={getAltText(slide, index)}
+            fill
+            className={`
+              object-cover object-center
+              transition-opacity duration-500
+              ${isLoading ? "opacity-0" : "opacity-100"}
+            `}
+            priority={index === 0}
+            quality={90}
+            onLoad={handleImageLoad}
+            onError={handleImageError}
+            sizes={
+              isMobile ? "(max-width: 768px) 100vw" : "(min-width: 769px) 100vw"
+            }
+          />
+        )}
 
         {/* Overlay para melhor legibilidade do texto */}
-        {slide.overlay && <div className="absolute inset-0 bg-black/20" />}
+        {slide.overlay && !hasError && (
+          <div className="absolute inset-0 bg-black/20" />
+        )}
 
-        {/* Conteúdo do slide */}
-        {(slide.title || slide.subtitle || slide.cta) && (
+        {/* Conteúdo do slide - só mostra se não tiver erro */}
+        {!hasError && (slide.title || slide.subtitle || slide.cta) && (
           <div className="absolute inset-0 flex flex-col justify-center items-center text-center z-10 px-4 sm:px-6 lg:px-8">
             {slide.title && (
               <h2

@@ -1,51 +1,42 @@
 "use client";
 
+import React from "react";
 import useEmblaCarousel from "embla-carousel-react";
 import Autoplay from "embla-carousel-autoplay";
-import Image from "next/image";
-import Link from "next/link";
 import { BannerItem } from "../types";
-import { useEffect } from "react";
+import { BannerCard } from "./BannerCard";
+import { BANNER_CONFIG } from "../constants";
 
-interface Props {
-  slides: BannerItem[];
-  isMobile: boolean;
+interface BannerSliderProps {
+  banners: BannerItem[];
 }
 
-const BannerSlider = ({ slides, isMobile }: Props) => {
+export const BannerSlider: React.FC<BannerSliderProps> = ({ banners }) => {
   const [emblaRef, emblaApi] = useEmblaCarousel(
-    { loop: true, align: "center" },
-    isMobile ? [Autoplay({ delay: 3000, stopOnInteraction: false })] : []
+    {
+      loop: true,
+      align: "center",
+      dragFree: false,
+    },
+    [
+      Autoplay({
+        delay: BANNER_CONFIG.mobile.autoplay.delay,
+        stopOnInteraction: BANNER_CONFIG.mobile.autoplay.stopOnInteraction,
+      }),
+    ]
   );
 
-  useEffect(() => {
-    if (!isMobile && emblaApi) {
-      emblaApi.destroy();
-    }
-  }, [isMobile, emblaApi]);
-
   return (
-    <div ref={emblaRef} className="overflow-hidden w-full px-4">
-      <div className="flex touch-pan-x gap-4">
-        {slides.map((slide) => (
-          <div
-            key={slide.id}
-            className="min-w-[90%] sm:min-w-[300px] flex-shrink-0 flex justify-center"
-          >
-            <Link href={slide.linkUrl} className="block w-full">
-              <Image
-                src={slide.imagemUrl}
-                alt={`Banner ${slide.id}`}
-                width={600}
-                height={400}
-                className="rounded-xl object-cover w-full h-[220px] sm:h-[300px] shadow-lg"
-              />
-            </Link>
-          </div>
-        ))}
+    <div className="relative">
+      <div ref={emblaRef} className="overflow-hidden">
+        <div className="flex gap-4 px-4">
+          {banners.map((banner, index) => (
+            <div key={banner.id} className="flex-none w-[85vw] max-w-[320px]">
+              <BannerCard banner={banner} priority={index < 2} />
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
 };
-
-export default BannerSlider;

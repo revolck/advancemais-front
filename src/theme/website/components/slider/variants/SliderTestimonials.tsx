@@ -8,7 +8,7 @@ export const SliderTestimonials: React.FC = () => {
     <SliderWithProgress
       showNumbers={true}
       progressPosition="bottom"
-      className="w-full bg-gray-50 dark:bg-gray-800"
+      className="w-full bg-gray-50"
     />
   );
 };
