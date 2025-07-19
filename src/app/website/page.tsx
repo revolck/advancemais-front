@@ -8,6 +8,8 @@ import BannersGroup from "@/theme/website/components/banners";
 import CounterInformation from "@/theme/website/components/counter-information";
 import BusinessGroupInformation from "@/theme/website/components/business-group-information";
 import CoursesCarousel from "@/theme/website/components/courses-carousel";
+import BlogSection from "@/theme/website/components/blog-section";
+import LogoEnterprises from "@/theme/website/components/logo-enterprises";
 
 /**
  * Página Inicial do Website Institucional
@@ -46,13 +48,10 @@ export default function WebsiteHomePage() {
     <div className="min-h-screen">
       {/* Hero Slider - Banner principal */}
       <Slider />
-
       {/* Seção Sobre a Empresa */}
       <AboutSection />
-
       {/* Banners de Destaque */}
       <BannersGroup />
-
       {/* ============================================= */}
       {/* CONTADORES - OPÇÃO 1: Com dados padrão (SEM API) */}
       {/* ============================================= */}
@@ -67,7 +66,6 @@ export default function WebsiteHomePage() {
           console.warn("Erro ao carregar estatísticas:", error);
         }}
       />
-
       {/* 
       ============================================= 
       CONTADORES - OPÇÃO 2: Com API (quando estiver pronta)
@@ -84,7 +82,6 @@ export default function WebsiteHomePage() {
         }}
       />
       */}
-
       {/* ============================================= */}
       {/* SEÇÕES DE NEGÓCIO - OPÇÃO 1: Com dados padrão (SEM API) */}
       {/* ============================================= */}
@@ -97,7 +94,6 @@ export default function WebsiteHomePage() {
           console.warn("Erro ao carregar seções:", error);
         }}
       />
-
       {/* 
       ============================================= 
       SEÇÕES DE NEGÓCIO - OPÇÃO 2: Com API (quando estiver pronta)
@@ -112,7 +108,6 @@ export default function WebsiteHomePage() {
         }}
       />
       */}
-
       {/* ============================================= */}
       {/* CURSOS CAROUSEL - OPÇÃO 1: Com dados padrão (SEM API) */}
       {/* ============================================= */}
@@ -128,7 +123,6 @@ export default function WebsiteHomePage() {
           console.warn("Erro ao carregar cursos:", error);
         }}
       />
-
       {/* 
       ============================================= 
       CURSOS CAROUSEL - OPÇÃO 2: Com API (quando estiver pronta)
@@ -146,7 +140,6 @@ export default function WebsiteHomePage() {
         }}
       />
       */}
-
       {/* 
       ============================================= 
       CURSOS CAROUSEL - OPÇÃO 3: Com dados customizados
@@ -175,6 +168,28 @@ export default function WebsiteHomePage() {
         buttonUrl="/cursos-especiais"
       />
       */}
+      {/* ================================ */}
+      {/* BLOG: Com dados padrão (SEM API) */}
+      {/* ================================ */}
+      <BlogSection
+        fetchFromApi={false}
+        title="Últimas Notícias"
+        buttonText="Ver todas"
+      />
+      {/* // Com configurações customizadas
+      <BlogSection
+        maxPostsDesktop={6}
+        maxPostsMobile={3}
+        onPostClick={(post) => console.log("Post clicado:", post)}
+      /> */}
+
+      {/* ============================================= */}
+      {/* Logos Enterprises: Com dados padrão (SEM API) */}
+      {/* ============================================= */}
+      <LogoEnterprises
+        fetchFromApi={false}
+        title="Quem está com a gente nessa jornada"
+      />
     </div>
   );
 }

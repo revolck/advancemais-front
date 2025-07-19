@@ -1,5 +1,3 @@
-// src/theme/website/components/courses-carousel/constants/index.ts
-
 import type { CourseData } from "../types";
 
 /**
