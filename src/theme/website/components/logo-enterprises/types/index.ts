@@ -40,10 +40,6 @@ export interface LogoEnterprisesProps {
    */
   title?: string;
   /**
-   * Subtítulo/descrição da seção
-   */
-  subtitle?: string;
-  /**
    * Se deve carregar dados da API
    * @default true
    */

@@ -282,3 +282,416 @@
 .shadow-strong {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
 }
+
+/* ===================================== */
+/* Header Pages */
+/* ===================================== */
+.header-pages-container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  max-width: 55%;
+}
+
+.header-pages-image {
+  width: 810px;
+  height: 360px;
+  max-width: 810px;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  object-fit: cover;
+}
+
+.header-pages-breadcrumbs {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+  margin-bottom: 1rem;
+}
+
+.header-pages-subtitle {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 28px;
+  text-transform: uppercase;
+}
+
+.header-pages-main-title {
+  font-size: 43px;
+  line-height: 50px;
+  font-weight: bold;
+}
+
+.header-pages-main-title-mobile {
+  font-size: 33px;
+  line-height: 35px;
+  font-weight: bold;
+  padding: 0px 10px;
+}
+
+.header-pages-description {
+  font-size: 18px;
+  font-weight: 300;
+  line-height: 32px;
+}
+
+.header-pages-px-responsive {
+  width: 94%;
+}
+
+/* Loading state com tamanho fixo */
+.header-pages-image-loading {
+  width: 810px;
+  height: 360px;
+  background-color: #e5e7eb;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.header-pages-image-error {
+  width: 810px;
+  height: 360px;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Mobile Styles */
+@media (max-width: 767px) {
+  .header-pages-breadcrumbs {
+    display: flex;
+    justify-content: center;
+    text-align: center;
+    margin-bottom: 10px;
+    width: 100%;
+  }
+
+  .header-pages-description {
+    font-size: 17px;
+    padding: 0px 30px;
+    text-align: justify;
+    font-weight: 300;
+    line-height: 25px;
+  }
+
+  .header-pages-container {
+    max-width: 100%;
+    align-items: center;
+  }
+
+  .header-pages-image,
+  .header-pages-image-loading,
+  .header-pages-image-error {
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    aspect-ratio: 810/360;
+  }
+}
+
+/* Tablet and larger */
+@media (min-width: 768px) {
+  .header-pages-px-responsive {
+    width: 94%;
+  }
+}
+
+/* ===================================== */
+/* Video About Component */
+/* ===================================== */
+
+/* Responsividade para o componente Accordion */
+@media (min-width: 768px) {
+  /* md breakpoint (tablets ou maiores) */
+  .pxResponsive {
+    padding-left: 3%;
+    padding-right: 3%;
+  }
+}
+
+/* Para dispositivos menores que 768px (mobile) */
+@media (max-width: 767px) {
+  .pxResponsive {
+    padding-left: 3%;
+    padding-right: 3%;
+    text-align: center;
+  }
+  .playerVideo {
+    width: 100%;
+  }
+}
+
+/* Estilos melhorados para o player de vídeo */
+.playerVideo {
+  position: relative;
+}
+
+.playerVideo iframe,
+.playerVideo video {
+  width: 100%;
+  height: auto;
+  min-height: 300px;
+  border-radius: 16px;
+}
+
+/* Responsive video container melhorado */
+.video-container {
+  position: relative;
+  width: 100%;
+  height: 0;
+  padding-bottom: 56.25%; /* 16:9 aspect ratio */
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.video-container iframe,
+.video-container video {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 16px;
+}
+
+/* Animações melhoradas para accordions */
+.accordion-item {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.accordion-item:hover {
+  transform: translateY(-2px);
+}
+
+/* Estilo para números dos itens do accordion */
+.accordion-number {
+  background: linear-gradient(135deg, var(--primary-color), #1e40af);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
+
+/* Scrollbar customizada para o container do accordion */
+.accordion-container::-webkit-scrollbar {
+  width: 4px;
+}
+
+.accordion-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.accordion-container::-webkit-scrollbar-thumb {
+  background: rgba(59, 130, 246, 0.3);
+  border-radius: 2px;
+}
+
+.accordion-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(59, 130, 246, 0.5);
+}
+
+/* ===================================== */
+/* ABOUT ADVANTAGES COMPONENT */
+/* ===================================== */
+
+@media (min-width: 768px) {
+  /* md breakpoint (tablets ou maiores) */
+  .aboutAdvantagesPx {
+    padding-left: 3%;
+    padding-right: 3%;
+  }
+}
+
+/* Para dispositivos menores que 768px (mobile) */
+@media (max-width: 767px) {
+  .aboutAdvantagesPx {
+    padding-left: 3%;
+    padding-right: 3%;
+    text-align: center;
+    margin-top: -30px;
+  }
+  .playerVideo {
+    width: 100%;
+  }
+  .aboutAdvantagesSection {
+    margin-top: 1px;
+    margin-right: 0px;
+    padding-left: 3%;
+    padding-right: 3%;
+  }
+  .aboutAdvantagesImagem {
+    display: none;
+  }
+  .aboutAdvantagesSpaceMobile {
+    margin-bottom: -20px;
+  }
+}
+
+/* Estilos específicos para os cards de vantagens */
+.aboutAdvantagesCard {
+  transition: all 0.3s ease-in-out;
+  backdrop-filter: blur(10px);
+}
+
+.aboutAdvantagesCard:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 40px rgba(0, 26, 87, 0.3);
+}
+
+.aboutAdvantagesIconWrapper {
+  transition: transform 0.3s ease-in-out;
+}
+
+.aboutAdvantagesCard:hover .aboutAdvantagesIconWrapper {
+  transform: scale(1.1) rotate(5deg);
+}
+
+/* Overlay da imagem */
+.aboutAdvantagesOverlay {
+  background: linear-gradient(
+    135deg,
+    rgba(0, 26, 87, 0.8) 0%,
+    rgba(0, 26, 87, 0.6) 50%,
+    rgba(0, 26, 87, 0.8) 100%
+  );
+  backdrop-filter: blur(2px);
+}
+
+/* Animação de entrada para os cards */
+@keyframes aboutAdvantagesFadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.aboutAdvantagesCard {
+  animation: aboutAdvantagesFadeInUp 0.6s ease-out forwards;
+}
+
+/* Delay escalonado para os cards */
+.aboutAdvantagesCard:nth-child(1) {
+  animation-delay: 0.1s;
+}
+.aboutAdvantagesCard:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.aboutAdvantagesCard:nth-child(3) {
+  animation-delay: 0.3s;
+}
+.aboutAdvantagesCard:nth-child(4) {
+  animation-delay: 0.4s;
+}
+
+/* ===================================== */
+/* TESTIMONIALS CAROUSEL STYLES - UX MELHORADA */
+/* ===================================== */
+
+/* Garantir que o carousel tenha altura consistente */
+.testimonials-carousel-item {
+  height: 100%;
+  min-height: 200px;
+}
+
+/* Linha clamp para textos longos */
+.line-clamp-4 {
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Animação para botões de navegação */
+@keyframes pulse-ring {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Estados dos botões melhorados */
+.testimonials-nav-button:hover {
+  animation: pulse-ring 0.6s ease-in-out;
+}
+
+/* Responsividade melhorada */
+@media (max-width: 767px) {
+  .testimonials-carousel-item {
+    min-height: 180px;
+  }
+}
+
+@media (min-width: 768px) {
+  /* Garantir espaço para os botões externos */
+  .testimonials-container-with-nav {
+    padding-left: 3rem;
+    padding-right: 3rem;
+  }
+}
+
+/* Smooth scroll para o carousel */
+.testimonials-carousel {
+  scroll-behavior: smooth;
+}
+
+/* Estados de focus melhorados para acessibilidade */
+.testimonials-nav-button:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+/* Melhor contraste para dark mode */
+@media (prefers-color-scheme: dark) {
+  .testimonials-carousel-item {
+    background-color: #1f2937;
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .testimonials-carousel-item:hover {
+    border-color: rgba(59, 130, 246, 0.3);
+  }
+}
+
+/* ===================================== */
+/* PROBLEM SOLUTION SECTION ANIMATIONS */
+/* ===================================== */
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Animação de entrada para os cards de problema */
+.problem-card-enter {
+  animation: fade-in-up 0.6s ease-out forwards;
+}
+
+/* Delay escalonado para os cards */
+.problem-card-enter:nth-child(1) {
+  animation-delay: 0ms;
+}
+.problem-card-enter:nth-child(2) {
+  animation-delay: 150ms;
+}
+.problem-card-enter:nth-child(3) {
+  animation-delay: 300ms;
+}
+.problem-card-enter:nth-child(4) {
+  animation-delay: 450ms;
+}

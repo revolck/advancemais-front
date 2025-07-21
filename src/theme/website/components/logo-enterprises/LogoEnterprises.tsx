@@ -36,7 +36,6 @@ import type { LogoEnterprisesProps } from "./types";
 const LogoEnterprises: React.FC<LogoEnterprisesProps> = ({
   className,
   title = DEFAULT_CONTENT.title,
-  subtitle = DEFAULT_CONTENT.subtitle,
   fetchFromApi = true,
   staticData,
   onDataLoaded,
@@ -126,7 +125,9 @@ const LogoEnterprises: React.FC<LogoEnterprisesProps> = ({
     <section className={cn("py-12 mb-7", className)}>
       <div className="container mx-auto text-center px-6">
         {/* Título e subtítulo */}
-        <h2 className="text-4xl font-bold text-neutral-800 mb-4">{title}</h2>
+        <h2 className="text-4xl font-bold text-[var(--primary-color)] mb-4">
+          {title}
+        </h2>
 
         {/* Grid de logos */}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-6">

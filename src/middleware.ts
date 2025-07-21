@@ -31,7 +31,7 @@ const SYSTEM_CONFIG = {
   websiteRoutes: [
     "/",
     "/sobre",
-    "/contato",
+    "/fale-conosco",
     "/cursos",
     "/solucoes",
     "/plataforma",
