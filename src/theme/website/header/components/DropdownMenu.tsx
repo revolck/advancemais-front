@@ -20,11 +20,16 @@ export const DropdownMenu: React.FC<DropdownMenuProps> = ({
         initial="hidden"
         animate="visible"
         exit="exit"
-        className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-56 origin-top z-40"
+        className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 origin-top z-40"
       >
-        <div className="bg-[var(--color-blue)] border border-blue-700/50 rounded-md shadow-xl p-2">
+        <div className="bg-[var(--color-blue)] border border-blue-700/50 rounded-lg shadow-xl py-2 w-max min-w-[250px] max-w-[400px]">
           {items.map((item, index) => (
-            <DropdownItem key={index} href={item.href} icon={item.icon}>
+            <DropdownItem
+              key={index}
+              href={item.href}
+              icon={item.icon}
+              className="px-6 py-3 text-white hover:bg-blue-700/50 transition-colors duration-200 whitespace-nowrap text-base font-medium"
+            >
               {item.label}
             </DropdownItem>
           ))}

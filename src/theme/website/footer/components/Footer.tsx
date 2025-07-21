@@ -8,7 +8,7 @@ import { SocialLinks } from "./SocialLinks";
 import { FooterSection } from "./FooterSection";
 import { ContactInfo } from "./ContactInfo";
 import { FooterBottom } from "./FooterBottom";
-import { FOOTER_CONFIG } from "../constants/navigation";
+import { FOOTER_CONFIG } from "@/config/FooterNavigation";
 import {
   FOOTER_VARIANTS,
   FOOTER_SECTION_VARIANTS,
@@ -27,7 +27,6 @@ export const Footer: React.FC = () => {
         className="container mx-auto py-16 px-4"
       >
         {isMobile ? (
-          // Versão Mobile - Alinhamento à esquerda
           <div className="space-y-8">
             {/* Logo e Redes Sociais */}
             <motion.div

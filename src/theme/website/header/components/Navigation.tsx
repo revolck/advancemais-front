@@ -1,7 +1,7 @@
 import React from "react";
 import { NavLink } from "./NavLink";
 import { DropdownMenu } from "./DropdownMenu";
-import { NAVIGATION_ITEMS } from "../constants/navigation";
+import { NAVIGATION_ITEMS } from "@/config/HeaderNavigation";
 
 interface NavigationProps {
   openDropdown: string | null;

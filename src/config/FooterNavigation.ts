@@ -1,4 +1,4 @@
-import type { FooterConfig } from "../types";
+import type { FooterConfig } from "../theme/website/footer/types";
 
 export const FOOTER_CONFIG: FooterConfig = {
   sections: [

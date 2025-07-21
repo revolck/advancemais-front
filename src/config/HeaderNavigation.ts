@@ -1,4 +1,4 @@
-import type { NavigationItem } from "../types";
+import type { NavigationItem } from "@/theme/website/header/types";
 
 export const NAVIGATION_ITEMS: NavigationItem[] = [
   {

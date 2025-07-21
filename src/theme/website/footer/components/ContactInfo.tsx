@@ -2,7 +2,7 @@
 
 import React from "react";
 import { motion } from "framer-motion";
-import { Clock, Phone, MapPin } from "lucide-react";
+import { Clock, Phone } from "lucide-react";
 import { FOOTER_SECTION_VARIANTS } from "../constants/animations";
 import type { ContactInfo as ContactInfoType } from "../types";
 

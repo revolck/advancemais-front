@@ -2,7 +2,7 @@ import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { NavLink } from "./NavLink";
 import { MOBILE_MENU_VARIANTS } from "../constants/animations";
-import { NAVIGATION_ITEMS } from "../constants/navigation";
+import { NAVIGATION_ITEMS } from "@/config/HeaderNavigation";
 
 interface MobileMenuProps {
   isOpen: boolean;

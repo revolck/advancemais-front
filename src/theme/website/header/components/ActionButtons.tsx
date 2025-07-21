@@ -14,8 +14,7 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
 }) => {
   return (
     <div className="flex items-center flex-shrink-0 space-x-4 lg:space-x-6">
-      <motion.a
-        href="#"
+      <motion.div
         className="bg-white px-4 py-1 rounded-md hidden md:inline-block"
         whileHover={{ scale: 1.03, y: -1 }}
         whileTap={{ scale: 0.97 }}
@@ -27,10 +26,9 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
         >
           Entrar
         </NavLink>
-      </motion.a>
+      </motion.div>
 
-      <motion.a
-        href="#"
+      <motion.div
         className="bg-[var(--secondary-color)] px-4 py-1 rounded-md"
         whileHover={{ scale: 1.03, y: -1 }}
         whileTap={{ scale: 0.97 }}
@@ -39,7 +37,7 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
         <NavLink href="#" className="text-base text-white hover:text-white">
           Matricule-se
         </NavLink>
-      </motion.a>
+      </motion.div>
 
       <motion.button
         className="md:hidden text-gray-300 hover:text-white z-50"
