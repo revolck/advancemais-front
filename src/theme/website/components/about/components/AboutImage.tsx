@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Image from "next/image";
 import { ImageNotFound } from "@/components/ui/custom/image-not-found";
-import { AboutImageProps } from "../types";
+import { AboutImageProps } from "@/api/websites/components";
 
 const AboutImage = ({ src, alt, width, height }: AboutImageProps) => {
   const [isLoading, setIsLoading] = useState(true);

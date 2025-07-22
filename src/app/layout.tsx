@@ -1,5 +1,6 @@
 // src/app/layout.tsx
 import type { Metadata, Viewport } from "next";
+import { validateEnvVars } from "@/lib/env";
 import "@/styles/globals.css";
 
 /**
@@ -8,7 +9,6 @@ import "@/styles/globals.css";
  * Layout simplificado sem ThemeProvider, focado apenas no essencial.
  * Configurações de fontes e estilos são gerenciadas diretamente no globals.css
  */
-
 export const metadata: Metadata = {
   title: {
     template: "%s | AdvanceMais",
@@ -28,6 +28,11 @@ export const viewport: Viewport = {
   initialScale: 1,
   themeColor: "#001a57", // Usando a primary-color definida nas variáveis CSS
 };
+
+// Validar env vars na inicialização (apenas no servidor)
+if (typeof window === "undefined") {
+  validateEnvVars();
+}
 
 export default function RootLayout({
   children,

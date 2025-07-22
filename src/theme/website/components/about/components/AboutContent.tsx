@@ -1,6 +1,6 @@
 "use client";
 
-import { AboutContentProps } from "../types";
+import { AboutContentProps } from "@/api/websites/components";
 
 const AboutContent = ({ title, description }: AboutContentProps) => {
   return (

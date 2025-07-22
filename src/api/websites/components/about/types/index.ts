@@ -1,3 +1,9 @@
+export interface AboutApiResponse {
+  src: string;
+  title: string;
+  description: string;
+}
+
 export interface AboutImageProps {
   src: string;
   alt: string;
@@ -7,6 +13,5 @@ export interface AboutImageProps {
 
 export interface AboutContentProps {
   title: string;
-  highlight: string;
   description: string;
 }
