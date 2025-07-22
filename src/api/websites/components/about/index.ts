@@ -1,8 +1,22 @@
-import { apiConfig, buildApiUrl, logApiRequest } from "@/lib/api-config";
+/**
+ * API Client para componente About
+ * Busca dados do componente About do website
+ */
+
+import { apiConfig, buildApiUrl, env } from "@/lib/env";
 import { AboutApiResponse } from "./types";
 
 /**
- * Busca dados do componente About
+ * Helper para log de requisições (movido do api-config)
+ */
+function logApiRequest(url: string, method: string = "GET"): void {
+  if (env.isDevelopment) {
+    console.log(`🌐 API Request: ${method} ${url}`);
+  }
+}
+
+/**
+ * Busca dados do componente About (Server-side)
  * @returns Promise com os dados do about
  */
 export async function getAboutData(): Promise<AboutApiResponse> {
@@ -13,8 +27,8 @@ export async function getAboutData(): Promise<AboutApiResponse> {
 
     const response = await fetch(url, {
       method: "GET",
-      headers: apiConfig.defaultHeaders,
-      next: apiConfig.cache.default, // 1 hora de cache
+      headers: apiConfig.headers,
+      ...apiConfig.cache.medium, // 1 hora de cache
     });
 
     if (!response.ok) {
@@ -22,15 +36,21 @@ export async function getAboutData(): Promise<AboutApiResponse> {
     }
 
     const data: AboutApiResponse = await response.json();
+
+    if (env.isDevelopment) {
+      console.log("✅ About data loaded:", data);
+    }
+
     return data;
   } catch (error) {
-    console.error("Erro ao buscar dados do About:", error);
+    console.error("❌ Erro ao buscar dados do About:", error);
     throw new Error("Falha ao carregar dados do About");
   }
 }
 
 /**
- * Função para uso no lado do cliente
+ * Busca dados do componente About (Client-side)
+ * Sem cache para dados dinâmicos no cliente
  */
 export async function getAboutDataClient(): Promise<AboutApiResponse> {
   const url = buildApiUrl("/website/home/about");
@@ -39,16 +59,24 @@ export async function getAboutDataClient(): Promise<AboutApiResponse> {
     logApiRequest(url, "GET");
 
     const response = await fetch(url, {
-      headers: apiConfig.defaultHeaders,
+      method: "GET",
+      headers: apiConfig.headers,
+      // No cache para client-side
     });
 
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    return await response.json();
+    const data = await response.json();
+
+    if (env.isDevelopment) {
+      console.log("✅ About data loaded (client):", data);
+    }
+
+    return data;
   } catch (error) {
-    console.error("Erro ao buscar dados do About (client):", error);
+    console.error("❌ Erro ao buscar dados do About (client):", error);
     throw new Error("Falha ao carregar dados do About");
   }
 }
