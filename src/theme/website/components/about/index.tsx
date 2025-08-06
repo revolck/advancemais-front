@@ -1,7 +1,10 @@
-import { Suspense } from "react";
-import { getAboutData } from "@/api/websites/components/about";
-import AboutImage from "./components/AboutImage";
-import AboutContent from "./components/AboutContent";
+'use client';
+
+import { useEffect, useState } from 'react';
+import { getAboutDataClient } from '@/api/websites/components/about';
+import type { AboutApiResponse } from '@/api/websites/components/about/types';
+import AboutImage from './components/AboutImage';
+import AboutContent from './components/AboutContent';
 
 // Loading component
 function AboutSkeleton() {
@@ -27,31 +30,17 @@ function AboutSkeleton() {
   );
 }
 
-// Main About component
-async function AboutSection() {
-  try {
-    const aboutData = await getAboutData();
+export default function AboutSection() {
+  const [data, setData] = useState<AboutApiResponse | null>(null);
+  const [error, setError] = useState(false);
 
-    return (
-      <section className="py-16 px-4">
-        <div className="max-w-6xl mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <AboutImage
-              src={aboutData.src}
-              alt={aboutData.title}
-              width={600}
-              height={400}
-            />
-            <AboutContent
-              title={aboutData.title}
-              description={aboutData.description}
-            />
-          </div>
-        </div>
-      </section>
-    );
-  } catch (error) {
-    // Error boundary ou fallback
+  useEffect(() => {
+    getAboutDataClient()
+      .then(setData)
+      .catch(() => setError(true));
+  }, []);
+
+  if (error) {
     return (
       <section className="py-16 px-4">
         <div className="max-w-6xl mx-auto text-center">
@@ -62,13 +51,28 @@ async function AboutSection() {
       </section>
     );
   }
-}
 
-// Export with Suspense wrapper
-export default function About() {
+  if (!data) {
+    return <AboutSkeleton />;
+  }
+
   return (
-    <Suspense fallback={<AboutSkeleton />}>
-      <AboutSection />
-    </Suspense>
+    <section className="py-16 px-4">
+      <div className="max-w-6xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          <AboutImage
+            src={data.src}
+            alt={data.title}
+            width={600}
+            height={400}
+          />
+          <AboutContent
+            title={data.title}
+            description={data.description}
+          />
+        </div>
+      </div>
+    </section>
   );
 }
+
