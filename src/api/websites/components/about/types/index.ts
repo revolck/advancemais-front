@@ -4,6 +4,12 @@ export interface AboutApiResponse {
   description: string;
 }
 
+export interface AboutBackendResponse {
+  imagemUrl: string;
+  titulo: string;
+  descricao: string;
+}
+
 export interface AboutImageProps {
   src: string;
   alt: string;
