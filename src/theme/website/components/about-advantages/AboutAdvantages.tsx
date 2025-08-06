@@ -10,6 +10,8 @@ import { useAboutAdvantagesData } from "./hooks/useAboutAdvantagesData";
 import { ImageNotFound } from "@/components/ui/custom/image-not-found";
 import { ButtonCustom } from "@/components/ui/custom/button";
 import type { AboutAdvantagesProps } from "./types";
+import { env } from "@/lib/env";
+import { Loader } from "@/components/ui/loader";
 
 const AboutAdvantages: React.FC<AboutAdvantagesProps> = ({
   className,
@@ -37,6 +39,14 @@ const AboutAdvantages: React.FC<AboutAdvantagesProps> = ({
 
   // Estado de carregamento
   if (isLoading) {
+    if (env.apiFallback === "loading") {
+      return (
+        <div className={cn("py-16 flex justify-center", className)}>
+          <Loader />
+        </div>
+      );
+    }
+
     return (
       <div className={cn("py-8", className)}>
         {/* Loading da seção Why Choose */}
