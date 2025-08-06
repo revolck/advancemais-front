@@ -12,6 +12,7 @@ import {
   ABOUT_ADVANTAGES_CONFIG,
 } from "../constants";
 import { env } from "@/lib/env";
+import { apiFetch } from "@/api/client";
 
 interface UseAboutAdvantagesDataReturn {
   data: AboutAdvantagesApiData;
@@ -47,21 +48,24 @@ export function useAboutAdvantagesData(
         ABOUT_ADVANTAGES_CONFIG.api.timeout
       );
 
-      const response = await fetch(ABOUT_ADVANTAGES_CONFIG.api.endpoint, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        signal: controller.signal,
-      });
+      const result = await apiFetch<AboutAdvantagesApiResponse>(
+        ABOUT_ADVANTAGES_CONFIG.api.endpoint,
+        {
+          init: {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            signal: controller.signal,
+          },
+          mockData: {
+            success: true,
+            data: DEFAULT_ABOUT_ADVANTAGES_DATA,
+          },
+        }
+      );
 
       clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const result: AboutAdvantagesApiResponse = await response.json();
 
       if (!result.success || !result.data) {
         throw new Error(result.message || "Dados inválidos recebidos da API");
@@ -82,24 +86,18 @@ export function useAboutAdvantagesData(
         setError("Erro desconhecido");
       }
 
-      switch (env.apiFallback) {
-        case "mock":
-          setData(DEFAULT_ABOUT_ADVANTAGES_DATA);
-          setIsLoading(false);
-          break;
-        case "skeleton":
-          setIsLoading(true);
-          break;
-        case "loading":
-        default:
-          setIsLoading(true);
-          break;
+      if (env.apiFallback === "mock") {
+        setData(DEFAULT_ABOUT_ADVANTAGES_DATA);
+        setIsLoading(false);
+      } else {
+        setIsLoading(true);
       }
     }
   };
 
   useEffect(() => {
     fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchFromApi]);
 
   return {
