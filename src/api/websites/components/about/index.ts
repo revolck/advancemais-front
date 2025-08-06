@@ -41,14 +41,19 @@ export async function getAboutData(): Promise<AboutApiResponse> {
  * Sem cache para dados dinâmicos no cliente
  */
 export async function getAboutDataClient(): Promise<AboutApiResponse> {
+  const endpoint = routes.website.home.about();
+
   try {
-    const data = await apiFetch<AboutApiResponse>(
-      routes.website.home.about(),
-      {
-        init: { headers: apiConfig.headers, cache: "no-store" },
-        mockData: aboutMockData,
-      },
-    );
+    const res = await fetch(endpoint, {
+      cache: "no-store",
+      headers: apiConfig.headers,
+    });
+
+    if (!res.ok) {
+      throw new Error(`API responded with ${res.status}`);
+    }
+
+    const data = (await res.json()) as AboutApiResponse;
 
     if (env.isDevelopment) {
       console.debug("✅ About data loaded (client):", data);
@@ -59,6 +64,11 @@ export async function getAboutDataClient(): Promise<AboutApiResponse> {
     if (env.isDevelopment) {
       console.warn("❌ Erro ao buscar dados do About (client):", error);
     }
+
+    if (env.apiFallback === "mock") {
+      return aboutMockData;
+    }
+
     throw new Error("Falha ao carregar dados do About");
   }
 }
