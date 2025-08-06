@@ -39,7 +39,7 @@ export const ProcessStepItem: React.FC<ProcessStepItemProps> = ({
           // Renderiza imagem se fornecida
           <div className="relative w-16 h-16">
             {isImageLoading && (
-              <div className="absolute inset-0 bg-gray-200 dark:bg-gray-700 animate-pulse rounded-full flex items-center justify-center">
+              <div className="absolute inset-0 bg-gray-200 animate-pulse rounded-full flex items-center justify-center">
                 <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
               </div>
             )}

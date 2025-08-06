@@ -56,7 +56,7 @@ export const CourseCard: React.FC<CourseCardProps> = ({ course, index }) => {
         <div className="relative overflow-hidden">
           {/* Loading State */}
           {isLoading && course.imagem && (
-            <div className="w-full h-48 bg-gray-200 dark:bg-gray-700 animate-pulse flex items-center justify-center">
+            <div className="w-full h-48 bg-gray-200 animate-pulse flex items-center justify-center">
               <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
             </div>
           )}

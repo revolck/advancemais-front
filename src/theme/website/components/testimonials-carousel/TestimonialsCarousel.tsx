@@ -77,8 +77,8 @@ const TestimonialsCarousel: React.FC<TestimonialsCarouselProps> = ({
       <section className={cn("py-16", className)}>
         <div className="container mx-auto">
           <div className="text-center mb-12">
-            <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded w-64 mx-auto mb-4 animate-pulse" />
-            <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-96 mx-auto animate-pulse" />
+            <div className="h-10 bg-gray-200 rounded w-64 mx-auto mb-4 animate-pulse" />
+            <div className="h-6 bg-gray-200 rounded w-96 mx-auto animate-pulse" />
           </div>
         </div>
       </section>

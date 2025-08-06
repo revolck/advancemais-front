@@ -50,7 +50,7 @@ export const ServiceBenefitsItem: React.FC<ServiceBenefitsItemProps> = ({
           <div
             className={`rounded-lg shadow-${
               isMobile ? "md" : "lg"
-            } bg-gray-200 dark:bg-gray-700 animate-pulse flex items-center justify-center`}
+            } bg-gray-200 animate-pulse flex items-center justify-center`}
             style={{
               width: isMobile ? 300 : 600,
               height: isMobile ? 200 : 400,

@@ -42,11 +42,11 @@ export const HighlightSection: React.FC<HighlightSectionProps> = ({
         <h2 className="text-4xl text-[var(--primary-color)] sm:text-4xl mb-6 font-bold leading-tight text-center lg:text-left">
           {data.title}
         </h2>
-        <p className="text-gray-600 dark:text-gray-300 leading-relaxed text-justify text-lg mb-4">
+        <p className="text-gray-600 leading-relaxed text-justify text-lg mb-4">
           {data.description}
         </p>
         {data.highlightText && (
-          <p className="text-gray-600 dark:text-gray-300 leading-relaxed text-justify text-lg">
+          <p className="text-gray-600 leading-relaxed text-justify text-lg">
             <span className="text-red-500 font-bold">{data.highlightText}</span>
           </p>
         )}
@@ -57,7 +57,7 @@ export const HighlightSection: React.FC<HighlightSectionProps> = ({
         <div className="relative w-full max-w-[600px]">
           {/* Loading State */}
           {isLoading && (
-            <div className="aspect-[3/2] bg-gray-200 dark:bg-gray-700 animate-pulse rounded-lg shadow-lg flex items-center justify-center">
+            <div className="aspect-[3/2] bg-gray-200 animate-pulse rounded-lg shadow-lg flex items-center justify-center">
               <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
             </div>
           )}
@@ -115,7 +115,7 @@ export const HighlightSection: React.FC<HighlightSectionProps> = ({
             <h3 className="text-xl font-semibold text-[var(--primary-color)] mb-2">
               {benefit.title}
             </h3>
-            <p className="text-gray-600 dark:text-gray-300 leading-relaxed text-justify">
+            <p className="text-gray-600 leading-relaxed text-justify">
               {benefit.description}
             </p>
           </div>

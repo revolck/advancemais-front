@@ -33,7 +33,7 @@ export function SidebarContainer({ children }: SidebarContainerProps) {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-900">
+    <div className="flex h-screen overflow-hidden bg-gray-50">
       {/* Sidebar */}
       <Sidebar
         isMobileMenuOpen={isMobileOpen}
@@ -44,7 +44,7 @@ export function SidebarContainer({ children }: SidebarContainerProps) {
       {/* Conteúdo principal */}
       <div className="flex flex-col flex-1 w-0 overflow-hidden transition-all duration-200">
         {/* Barra superior com toggle do sidebar */}
-        <div className="flex items-center h-16 shadow-sm bg-white dark:bg-gray-800 px-4 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex items-center h-16 shadow-sm bg-white px-4 border-b border-gray-200">
           <Button
             variant="ghost"
             size="icon"

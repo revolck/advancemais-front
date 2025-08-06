@@ -39,7 +39,7 @@ export default function FaqPage() {
     return (
       <div className="min-h-screen">
         {/* Loading placeholder que é igual ao conteúdo */}
-        <section className="relative min-h-[300px] bg-gray-100 dark:bg-gray-800">
+        <section className="relative min-h-[300px] bg-gray-100">
           <div className="flex items-center justify-center h-[300px]">
             <div className="animate-pulse">
               <div className="h-4 bg-gray-300 rounded w-48 mb-2"></div>

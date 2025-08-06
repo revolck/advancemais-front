@@ -106,7 +106,7 @@ const LogoEnterprises: React.FC<LogoEnterprisesProps> = ({
             icon="Building2"
             className="mx-auto mb-6"
           />
-          <p className="text-gray-600 dark:text-gray-400 mb-4 max-w-md mx-auto">
+          <p className="text-gray-600 mb-4 max-w-md mx-auto">
             Não foi possível carregar os logos das empresas parceiras.
             {error.includes("padrão") ? " Exibindo dados de exemplo." : ""}
           </p>

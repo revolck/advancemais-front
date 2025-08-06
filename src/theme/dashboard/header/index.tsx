@@ -2,7 +2,6 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { DarkTheme } from "@/components/partials/darkTheme/darkTheme";
 import Image from "next/image";
 import { Bell } from "lucide-react";
 
@@ -27,16 +26,12 @@ export function DashboardHeader({
             alt="DashCode"
             width={130}
             height={45}
-            className="dark:invert transition-all duration-300"
+            className="transition-all duration-300"
           />
         </div>
       </div>
 
-      <div className="flex items-center gap-4">
-        {/* Theme toggle */}
-        <DarkTheme />
-
-        {/* Ícones de notificação */}
+      <div className="flex items-center gap-4">{/* Ícones de notificação */}
         <Button variant="ghost" size="icon" className="relative">
           <Bell size={20} />
           <span className="absolute top-0 right-0 h-2 w-2 rounded-full bg-red-500"></span>

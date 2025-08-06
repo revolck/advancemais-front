@@ -37,7 +37,7 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ images }) => {
         >
           {/* Loading State */}
           {loadingStates[image.id] && (
-            <div className="aspect-[4/3] bg-gray-200 dark:bg-gray-700 animate-pulse flex items-center justify-center">
+            <div className="aspect-[4/3] bg-gray-200 animate-pulse flex items-center justify-center">
               <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
             </div>
           )}

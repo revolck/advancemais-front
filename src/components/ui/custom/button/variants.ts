@@ -5,19 +5,19 @@ import { cva } from "class-variance-authority";
  * Atualizado para utilizar o novo sistema de cores global
  */
 export const buttonCustomVariants = cva(
-  "inline-flex items-center justify-center gap-2 hover:opacity-90 whitespace-nowrap text-sm font-medium transition-all duration-200 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive cursor-pointer",
+  "inline-flex items-center justify-center gap-2 hover:opacity-90 whitespace-nowrap text-sm font-medium transition-all duration-200 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 aria-invalid:border-destructive cursor-pointer",
   {
     variants: {
       variant: {
         default:
-          "bg-[var(--global-button)] hover:bg-[var(--global-button-hover)] text-[var(--global-cor-cinza-ardosia)] border-2 border-[var(--global-button-border)] !rounded-full relative pr-12 pl-4 font-semibold dark:text-[var(--global-bg-dark)] dark:hover:bg-[var(--global-button-hover-dark)]",
+          "bg-[var(--global-button)] hover:bg-[var(--global-button-hover)] text-[var(--global-cor-cinza-ardosia)] border-2 border-[var(--global-button-border)] !rounded-full relative pr-12 pl-4 font-semibold",
         primary:
           "bg-[var(--global-button)] text-[var(--global-cor-cinza-ardosia)] rounded-md",
         secondary: "bg-[var(--global-cor-roxo-medio)] text-white rounded-md",
         outline:
-          "border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 rounded-md",
+          "border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground rounded-md",
         ghost:
-          "hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50 rounded-md",
+          "hover:bg-accent hover:text-accent-foreground rounded-md",
         link: "text-primary underline-offset-4 hover:underline",
         danger: "bg-[var(--global-cor-vermelho-terra)] text-white rounded-md",
       },

@@ -62,27 +62,27 @@ const ServiceHighlight: React.FC<ServiceHighlightProps> = ({
           >
             {/* Skeleton do texto */}
             <div className="lg:col-span-1 space-y-4">
-              <div className="h-12 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-              <div className="h-12 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-3/4" />
+              <div className="h-12 bg-gray-200 rounded animate-pulse" />
+              <div className="h-12 bg-gray-200 rounded animate-pulse w-3/4" />
               <div className="space-y-2">
-                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-2/3" />
+                <div className="h-4 bg-gray-200 rounded animate-pulse" />
+                <div className="h-4 bg-gray-200 rounded animate-pulse" />
+                <div className="h-4 bg-gray-200 rounded animate-pulse w-2/3" />
               </div>
             </div>
 
             {/* Skeleton da imagem */}
             <div className="lg:col-span-1 flex justify-center">
-              <div className="aspect-[3/2] w-full max-w-[600px] bg-gray-200 dark:bg-gray-700 animate-pulse rounded-lg shadow-lg" />
+              <div className="aspect-[3/2] w-full max-w-[600px] bg-gray-200 animate-pulse rounded-lg shadow-lg" />
             </div>
 
             {/* Skeleton dos benefícios */}
             <div className="lg:col-span-1 space-y-6">
               {Array.from({ length: 3 }).map((_, benefitIndex) => (
                 <div key={benefitIndex} className="space-y-2">
-                  <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-2/3" />
-                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-5/6" />
+                  <div className="h-6 bg-gray-200 rounded animate-pulse w-2/3" />
+                  <div className="h-4 bg-gray-200 rounded animate-pulse" />
+                  <div className="h-4 bg-gray-200 rounded animate-pulse w-5/6" />
                 </div>
               ))}
             </div>
@@ -104,7 +104,7 @@ const ServiceHighlight: React.FC<ServiceHighlightProps> = ({
             icon="AlertCircle"
             className="mx-auto mb-6"
           />
-          <p className="text-gray-600 dark:text-gray-400 mb-4 max-w-md mx-auto">
+          <p className="text-gray-600 mb-4 max-w-md mx-auto">
             Não foi possível carregar as informações dos serviços.
             {error.includes("padrão") ? " Exibindo dados de exemplo." : ""}
           </p>

@@ -73,12 +73,12 @@ const ProblemSolutionSection: React.FC<ProblemSolutionSectionProps> = ({
         <div className="flex flex-col lg:flex-row items-center gap-16">
           {/* Skeleton do texto */}
           <div className="lg:w-1/2 space-y-6">
-            <div className="h-12 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-            <div className="h-12 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-3/4" />
+            <div className="h-12 bg-gray-200 rounded animate-pulse" />
+            <div className="h-12 bg-gray-200 rounded animate-pulse w-3/4" />
             <div className="space-y-3">
-              <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-              <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-              <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-2/3" />
+              <div className="h-4 bg-gray-200 rounded animate-pulse" />
+              <div className="h-4 bg-gray-200 rounded animate-pulse" />
+              <div className="h-4 bg-gray-200 rounded animate-pulse w-2/3" />
             </div>
           </div>
 
@@ -87,13 +87,13 @@ const ProblemSolutionSection: React.FC<ProblemSolutionSectionProps> = ({
             {Array.from({ length: 3 }).map((_, index) => (
               <div
                 key={index}
-                className="flex items-start gap-6 p-6 bg-gray-100 dark:bg-gray-800 rounded-lg animate-pulse"
+                className="flex items-start gap-6 p-6 bg-gray-100 rounded-lg animate-pulse"
               >
-                <div className="w-14 h-14 bg-gray-200 dark:bg-gray-700 rounded-full flex-shrink-0" />
+                <div className="w-14 h-14 bg-gray-200 rounded-full flex-shrink-0" />
                 <div className="flex-1 space-y-2">
-                  <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded" />
-                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded" />
-                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4" />
+                  <div className="h-6 bg-gray-200 rounded" />
+                  <div className="h-4 bg-gray-200 rounded" />
+                  <div className="h-4 bg-gray-200 rounded w-3/4" />
                 </div>
               </div>
             ))}
@@ -117,7 +117,7 @@ const ProblemSolutionSection: React.FC<ProblemSolutionSectionProps> = ({
             icon="AlertCircle"
             className="mx-auto mb-6"
           />
-          <p className="text-gray-600 dark:text-gray-400 mb-4 max-w-md mx-auto">
+          <p className="text-gray-600 mb-4 max-w-md mx-auto">
             Não foi possível carregar as informações.
             {error.includes("padrão") ? " Exibindo dados de exemplo." : ""}
           </p>
@@ -141,11 +141,11 @@ const ProblemSolutionSection: React.FC<ProblemSolutionSectionProps> = ({
     >
       {/* Texto no lado esquerdo */}
       <div className="lg:w-1/2 text-center lg:text-left">
-        <h2 className="text-3xl lg:text-4xl xl:text-5xl font-bold text-gray-900 dark:text-gray-100 mb-8 leading-tight">
+        <h2 className="text-3xl lg:text-4xl xl:text-5xl font-bold text-gray-900 mb-8 leading-tight">
           {data.mainTitle}
         </h2>
 
-        <p className="text-lg text-gray-600 dark:text-gray-300 leading-relaxed mb-8 text-justify lg:text-left">
+        <p className="text-lg text-gray-600 leading-relaxed mb-8 text-justify lg:text-left">
           {data.mainDescription}
         </p>
 
@@ -154,7 +154,7 @@ const ProblemSolutionSection: React.FC<ProblemSolutionSectionProps> = ({
           <div className="mt-8 lg:hidden">
             {/* Loading State */}
             {imageLoading && (
-              <div className="aspect-video bg-gray-200 dark:bg-gray-700 animate-pulse rounded-lg flex items-center justify-center">
+              <div className="aspect-video bg-gray-200 animate-pulse rounded-lg flex items-center justify-center">
                 <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
               </div>
             )}

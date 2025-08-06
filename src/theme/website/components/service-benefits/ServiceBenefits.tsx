@@ -62,23 +62,23 @@ const ServiceBenefits: React.FC<ServiceBenefitsProps> = ({
           >
             {/* Skeleton da imagem */}
             <div className="lg:w-1/2 w-full">
-              <div className="w-full h-64 lg:h-80 bg-gray-200 dark:bg-gray-700 animate-pulse rounded-lg" />
+              <div className="w-full h-64 lg:h-80 bg-gray-200 animate-pulse rounded-lg" />
             </div>
 
             {/* Skeleton do texto */}
             <div className="lg:w-1/2 w-full space-y-4">
-              <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-              <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-3/4" />
+              <div className="h-8 bg-gray-200 rounded animate-pulse" />
+              <div className="h-8 bg-gray-200 rounded animate-pulse w-3/4" />
               <div className="space-y-2">
-                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-2/3" />
+                <div className="h-4 bg-gray-200 rounded animate-pulse" />
+                <div className="h-4 bg-gray-200 rounded animate-pulse" />
+                <div className="h-4 bg-gray-200 rounded animate-pulse w-2/3" />
               </div>
               <div className="space-y-3 mt-6">
                 {Array.from({ length: 4 }).map((_, i) => (
                   <div
                     key={i}
-                    className="h-10 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse w-3/4"
+                    className="h-10 bg-gray-200 rounded-full animate-pulse w-3/4"
                   />
                 ))}
               </div>
@@ -101,7 +101,7 @@ const ServiceBenefits: React.FC<ServiceBenefitsProps> = ({
             icon="AlertCircle"
             className="mx-auto mb-6"
           />
-          <p className="text-gray-600 dark:text-gray-400 mb-4 max-w-md mx-auto">
+          <p className="text-gray-600 mb-4 max-w-md mx-auto">
             Não foi possível carregar as informações dos benefícios.
             {error.includes("padrão") ? " Exibindo dados de exemplo." : ""}
           </p>

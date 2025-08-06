@@ -31,7 +31,7 @@ export const WhyChooseSection: React.FC<WhyChooseSectionProps> = ({
           <h2 className="text-4xl font-bold text-[var(--primary-color)] mb-6">
             {data.title}
           </h2>
-          <p className="text-gray-600 dark:text-gray-300 text-lg leading-relaxed mb-6">
+          <p className="text-gray-600 text-lg leading-relaxed mb-6">
             {data.description}
           </p>
 

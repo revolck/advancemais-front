@@ -5,15 +5,15 @@ export default function NotFound() {
   return (
     <div className="min-h-screen flex items-center justify-center px-4">
       <div className="text-center space-y-6 max-w-md">
-        <div className="text-6xl font-bold text-gray-300 dark:text-gray-600">
+        <div className="text-6xl font-bold text-gray-300">
           404
         </div>
 
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">
             Página não encontrada
           </h2>
-          <p className="text-gray-600 dark:text-gray-300">
+          <p className="text-gray-600">
             A página que você está procurando não existe ou foi movida.
           </p>
         </div>

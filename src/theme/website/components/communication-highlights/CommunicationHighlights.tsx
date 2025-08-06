@@ -63,20 +63,20 @@ const CommunicationHighlights: React.FC<CommunicationHighlightsProps> = ({
       >
         {/* Skeleton do texto */}
         <div className="lg:w-1/2 w-full space-y-6">
-          <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mb-6" />
+          <div className="h-10 bg-gray-200 rounded animate-pulse mb-6" />
           <div className="space-y-4">
-            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-3/4" />
+            <div className="h-4 bg-gray-200 rounded animate-pulse" />
+            <div className="h-4 bg-gray-200 rounded animate-pulse" />
+            <div className="h-4 bg-gray-200 rounded animate-pulse w-3/4" />
           </div>
           <div className="space-y-4">
-            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-2/3" />
+            <div className="h-4 bg-gray-200 rounded animate-pulse" />
+            <div className="h-4 bg-gray-200 rounded animate-pulse w-2/3" />
           </div>
           <div className="space-y-4">
-            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-4/5" />
+            <div className="h-4 bg-gray-200 rounded animate-pulse" />
+            <div className="h-4 bg-gray-200 rounded animate-pulse" />
+            <div className="h-4 bg-gray-200 rounded animate-pulse w-4/5" />
           </div>
         </div>
 
@@ -85,7 +85,7 @@ const CommunicationHighlights: React.FC<CommunicationHighlightsProps> = ({
           {Array.from({ length: 4 }).map((_, index) => (
             <div
               key={index}
-              className="aspect-[4/3] bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse"
+              className="aspect-[4/3] bg-gray-200 rounded-lg animate-pulse"
             />
           ))}
         </div>
@@ -107,7 +107,7 @@ const CommunicationHighlights: React.FC<CommunicationHighlightsProps> = ({
             icon="AlertCircle"
             className="mx-auto mb-6"
           />
-          <p className="text-gray-600 dark:text-gray-400 mb-4 max-w-md mx-auto">
+          <p className="text-gray-600 mb-4 max-w-md mx-auto">
             Não foi possível carregar as informações de comunicação.
             {error.includes("padrão") ? " Exibindo dados de exemplo." : ""}
           </p>

@@ -46,19 +46,19 @@ const AboutAdvantages: React.FC<AboutAdvantagesProps> = ({
               {Array.from({ length: 4 }).map((_, index) => (
                 <div
                   key={index}
-                  className="bg-gray-200 dark:bg-gray-700 rounded-lg p-6 animate-pulse"
+                  className="bg-gray-200 rounded-lg p-6 animate-pulse"
                 >
-                  <div className="w-16 h-16 bg-gray-300 dark:bg-gray-600 rounded-full mx-auto mb-4" />
-                  <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded mb-2" />
-                  <div className="h-3 bg-gray-300 dark:bg-gray-600 rounded w-3/4 mx-auto" />
+                  <div className="w-16 h-16 bg-gray-300 rounded-full mx-auto mb-4" />
+                  <div className="h-4 bg-gray-300 rounded mb-2" />
+                  <div className="h-3 bg-gray-300 rounded w-3/4 mx-auto" />
                 </div>
               ))}
             </div>
             <div className="flex-1 space-y-4">
-              <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-              <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-              <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-3/4" />
-              <div className="h-12 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-48" />
+              <div className="h-8 bg-gray-200 rounded animate-pulse" />
+              <div className="h-4 bg-gray-200 rounded animate-pulse" />
+              <div className="h-4 bg-gray-200 rounded animate-pulse w-3/4" />
+              <div className="h-12 bg-gray-200 rounded animate-pulse w-48" />
             </div>
           </div>
         </section>
@@ -68,13 +68,13 @@ const AboutAdvantages: React.FC<AboutAdvantagesProps> = ({
           <div className="container mx-auto">
             <div className="flex flex-col lg:flex-row gap-8">
               <div className="w-full lg:w-1/2 space-y-4">
-                <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-2/3" />
+                <div className="h-8 bg-gray-200 rounded animate-pulse" />
+                <div className="h-4 bg-gray-200 rounded animate-pulse" />
+                <div className="h-4 bg-gray-200 rounded animate-pulse" />
+                <div className="h-4 bg-gray-200 rounded animate-pulse w-2/3" />
               </div>
               <div className="w-full lg:w-1/2">
-                <div className="aspect-[530/360] bg-gray-200 dark:bg-gray-700 animate-pulse rounded-lg" />
+                <div className="aspect-[530/360] bg-gray-200 animate-pulse rounded-lg" />
               </div>
             </div>
           </div>
@@ -95,7 +95,7 @@ const AboutAdvantages: React.FC<AboutAdvantagesProps> = ({
             icon="AlertCircle"
             className="mx-auto mb-6"
           />
-          <p className="text-gray-600 dark:text-gray-400 mb-4 max-w-md mx-auto">
+          <p className="text-gray-600 mb-4 max-w-md mx-auto">
             Não foi possível carregar as informações sobre a empresa.
             {error.includes("padrão") ? " Exibindo dados de exemplo." : ""}
           </p>

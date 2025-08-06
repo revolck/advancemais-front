@@ -28,7 +28,7 @@ export const CourseCard: React.FC<CourseCardProps> = ({ course }) => {
     <>
       {/* Loading State */}
       {isLoading && !hasError && (
-        <div className="absolute inset-0 bg-gray-200 dark:bg-gray-700 animate-pulse flex items-center justify-center z-10">
+        <div className="absolute inset-0 bg-gray-200 animate-pulse flex items-center justify-center z-10">
           <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
         </div>
       )}

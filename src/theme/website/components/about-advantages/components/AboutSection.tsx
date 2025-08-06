@@ -36,7 +36,7 @@ export const AboutSection: React.FC<AboutSectionProps> = ({ data }) => {
               {data.paragraphs.map((paragraph, index) => (
                 <p
                   key={index}
-                  className="text-lg text-gray-600 dark:text-gray-300 leading-relaxed max-w-4xl mx-auto mb-4"
+                  className="text-lg text-gray-600 leading-relaxed max-w-4xl mx-auto mb-4"
                 >
                   {paragraph}
                 </p>
@@ -49,7 +49,7 @@ export const AboutSection: React.FC<AboutSectionProps> = ({ data }) => {
             <div className="relative rounded-lg overflow-hidden shadow-lg h-full">
               {/* Loading State */}
               {isLoading && (
-                <div className="aspect-[530/360] bg-gray-200 dark:bg-gray-700 animate-pulse rounded-lg flex items-center justify-center">
+                <div className="aspect-[530/360] bg-gray-200 animate-pulse rounded-lg flex items-center justify-center">
                   <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
                 </div>
               )}

@@ -18,9 +18,9 @@ export default function HomePage() {
       <Slider />
 
       {/* Resto do conteúdo */}
-      <section className="py-20 bg-white dark:bg-gray-900">
+      <section className="py-20 bg-white">
         <PageWrapper maxWidth="xl">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-16 text-gray-900 dark:text-gray-100">
+          <h2 className="text-3xl md:text-4xl font-bold text-center mb-16 text-gray-900">
             Funcionalidades Principais
           </h2>
         </PageWrapper>

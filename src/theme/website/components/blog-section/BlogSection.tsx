@@ -95,9 +95,9 @@ const BlogSection: React.FC<BlogSectionProps> = ({
       >
         {/* Header Skeleton */}
         <div className="flex items-center justify-between mb-8">
-          <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-80" />
+          <div className="h-8 bg-gray-200 rounded animate-pulse w-80" />
           {!isMobile && (
-            <div className="h-12 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-48" />
+            <div className="h-12 bg-gray-200 rounded animate-pulse w-48" />
           )}
         </div>
 
@@ -106,7 +106,7 @@ const BlogSection: React.FC<BlogSectionProps> = ({
           {Array.from({ length: maxPosts }).map((_, index) => (
             <div
               key={index}
-              className="bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse"
+              className="bg-gray-200 rounded-lg animate-pulse"
               style={{ aspectRatio: "7/9" }}
             />
           ))}
@@ -115,7 +115,7 @@ const BlogSection: React.FC<BlogSectionProps> = ({
         {/* Mobile Button Skeleton */}
         {isMobile && (
           <div className="mt-4 flex justify-center">
-            <div className="h-12 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-48" />
+            <div className="h-12 bg-gray-200 rounded animate-pulse w-48" />
           </div>
         )}
       </section>
@@ -134,7 +134,7 @@ const BlogSection: React.FC<BlogSectionProps> = ({
             icon="FileText"
             className="mx-auto mb-6"
           />
-          <p className="text-gray-600 dark:text-gray-400 mb-4 max-w-md mx-auto">
+          <p className="text-gray-600 mb-4 max-w-md mx-auto">
             Não foi possível carregar os posts do blog.
             {error.includes("padrão") ? " Exibindo dados de exemplo." : ""}
           </p>
