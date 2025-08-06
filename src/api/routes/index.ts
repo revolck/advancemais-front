@@ -15,7 +15,7 @@ export const websiteRoutes = {
   update: (id: string) => `${prefix}/website/${id}`,
   delete: (id: string) => `${prefix}/website/${id}`,
   home: {
-    about: () => `${prefix}/website/home/about`,
+    about: () => `${prefix}/website/sobre`,
   },
 };
 
