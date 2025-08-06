@@ -198,7 +198,7 @@ const CourseCatalog: React.FC<CourseCatalogProps> = ({
               icon="AlertCircle"
               className="mx-auto mb-6"
             />
-            <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-md mx-auto">
+            <p className="text-gray-600 mb-6 max-w-md mx-auto">
               Não foi possível carregar o catálogo de cursos.
               {error.includes("padrão") ? " Exibindo dados de exemplo." : ""}
             </p>

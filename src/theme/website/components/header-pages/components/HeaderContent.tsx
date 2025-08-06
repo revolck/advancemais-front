@@ -39,7 +39,7 @@ export const HeaderContent: React.FC<HeaderContentProps> = ({ data }) => {
   // Componente de Breadcrumbs
   const BreadcrumbsComponent = () => (
     <nav className="header-pages-breadcrumbs">
-      <ol className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
+      <ol className="flex items-center space-x-2 text-sm text-gray-600">
         <li>
           <Link
             href="/"

@@ -79,8 +79,8 @@ const PricingPlans: React.FC<PricingPlansProps> = ({
         className={cn("pxResponsive container w-full mx-auto py-24", className)}
       >
         <div className="text-center animate-fade-in mb-12">
-          <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded w-64 mx-auto mb-4 animate-pulse" />
-          <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-96 mx-auto animate-pulse" />
+          <div className="h-10 bg-gray-200 rounded w-64 mx-auto mb-4 animate-pulse" />
+          <div className="h-6 bg-gray-200 rounded w-96 mx-auto animate-pulse" />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -125,7 +125,7 @@ const PricingPlans: React.FC<PricingPlansProps> = ({
             icon="AlertCircle"
             className="mx-auto mb-6"
           />
-          <p className="text-gray-600 dark:text-gray-400 mb-4 max-w-md mx-auto">
+          <p className="text-gray-600 mb-4 max-w-md mx-auto">
             Não foi possível carregar os planos de preços.
             {error.includes("padrão") ? " Exibindo dados de exemplo." : ""}
           </p>
@@ -146,10 +146,10 @@ const PricingPlans: React.FC<PricingPlansProps> = ({
     >
       {/* Header da seção */}
       <div className="text-center animate-fade-in mb-12">
-        <h2 className="text-4xl font-bold text-gray-900 dark:text-gray-100 mb-4">
+        <h2 className="text-4xl font-bold text-gray-900 mb-4">
           {title}
         </h2>
-        <p className="text-lg text-gray-600 dark:text-gray-400 leading-relaxed max-w-2xl mx-auto">
+        <p className="text-lg text-gray-600 leading-relaxed max-w-2xl mx-auto">
           {subtitle}
         </p>
       </div>

@@ -189,8 +189,8 @@ export function ProjectSelectorModal() {
                       className={cn(
                         "flex items-center gap-3 p-3 rounded-lg cursor-pointer border transition-all",
                         temporarySelectedProject?.id === project.id
-                          ? "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-700"
-                          : "hover:bg-gray-50 dark:hover:bg-gray-800/50 border-gray-200 dark:border-gray-700",
+                          ? "bg-blue-50 border-blue-200"
+                          : "hover:bg-gray-50 border-gray-200",
                         isConfirmingSelection &&
                           "opacity-60 pointer-events-none"
                       )}
@@ -204,10 +204,10 @@ export function ProjectSelectorModal() {
                       <ProjectAvatar project={project} size="md" />
 
                       <div className="flex-1 min-w-0">
-                        <h3 className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                        <h3 className="text-sm font-medium text-gray-900 truncate">
                           {project.name}
                         </h3>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                        <p className="text-xs text-gray-500">
                           Criado em:{" "}
                           {new Date(project.createdAt).toLocaleDateString()}
                         </p>
@@ -235,7 +235,7 @@ export function ProjectSelectorModal() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.2 }}
-                  className="flex flex-col items-center justify-center py-10 text-gray-500 dark:text-gray-400"
+                  className="flex flex-col items-center justify-center py-10 text-gray-500"
                 >
                   <Icon name="Info" size={40} className="mb-2 opacity-50" />
                   <p className="text-center">

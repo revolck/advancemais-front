@@ -105,7 +105,7 @@ const TrainingResults: React.FC<TrainingResultsProps> = ({
           icon="AlertCircle"
           className="mx-auto mb-6"
         />
-        <p className="text-gray-600 dark:text-gray-400 mb-4 max-w-md mx-auto">
+        <p className="text-gray-600 mb-4 max-w-md mx-auto">
           Não foi possível carregar os resultados do treinamento.
           {error.includes("padrão") ? " Exibindo dados de exemplo." : ""}
         </p>

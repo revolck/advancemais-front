@@ -44,22 +44,22 @@ const HeaderPages: React.FC<HeaderPagesProps> = ({
           <div className="w-full flex flex-col lg:flex-row items-start justify-between">
             {/* Skeleton do texto */}
             <div className="text-center lg:text-left" style={{ width: "43%" }}>
-              <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-32 mb-1" />
-              <div className="h-12 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mb-4" />
+              <div className="h-6 bg-gray-200 rounded animate-pulse w-32 mb-1" />
+              <div className="h-12 bg-gray-200 rounded animate-pulse mb-4" />
               <div className="space-y-2 mb-6">
-                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-3/4" />
+                <div className="h-4 bg-gray-200 rounded animate-pulse" />
+                <div className="h-4 bg-gray-200 rounded animate-pulse w-3/4" />
               </div>
-              <div className="h-12 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-32" />
+              <div className="h-12 bg-gray-200 rounded animate-pulse w-32" />
             </div>
 
             {/* Skeleton da imagem - CORRIGIDO: Tamanho fixo 810x360 */}
             <div className="header-pages-container">
               <div className="header-pages-breadcrumbs mb-4">
-                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-48" />
+                <div className="h-4 bg-gray-200 rounded animate-pulse w-48" />
               </div>
               <div
-                className="bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse"
+                className="bg-gray-200 rounded-lg animate-pulse"
                 style={{
                   width: "810px",
                   height: "360px",
@@ -84,7 +84,7 @@ const HeaderPages: React.FC<HeaderPagesProps> = ({
             icon="AlertCircle"
             className="mx-auto mb-6"
           />
-          <p className="text-gray-600 dark:text-gray-400 mb-4 max-w-md mx-auto">
+          <p className="text-gray-600 mb-4 max-w-md mx-auto">
             Não foi possível carregar as informações do header.
             {error.includes("padrão") ? " Exibindo dados de exemplo." : ""}
           </p>

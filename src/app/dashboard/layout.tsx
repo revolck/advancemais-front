@@ -1,7 +1,6 @@
 "use client";
 
 import { ReactNode, useEffect, useState } from "react";
-import { useTheme } from "next-themes";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { DashboardSidebar } from "@/theme";
 import { Icon } from "@/components/ui/custom/Icons";
@@ -14,9 +13,6 @@ interface DashboardLayoutProps {
  * Layout específico para a seção de Dashboard
  */
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
-  // Acesso ao tema atual
-  const { theme } = useTheme();
-
   // Hook personalizado para detectar dispositivos móveis
   const isMobileDevice = useIsMobile();
 
@@ -64,7 +60,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   }
 
   return (
-    <div className={`flex h-screen ${theme === "dark" ? "dark" : ""}`}>
+    <div className="flex h-screen">
       {/* Sidebar principal do dashboard */}
       <DashboardSidebar
         isMobileMenuOpen={isMobileMenuOpen}
@@ -73,13 +69,13 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       />
 
       {/* Container principal de conteúdo */}
-      <div className="w-full flex flex-1 flex-col transition-all duration-300 ease-in-out bg-white dark:bg-[#0F0F12]">
+      <div className="w-full flex flex-1 flex-col transition-all duration-300 ease-in-out bg-white">
         {/* Cabeçalho/barra superior */}
-        <header className="h-16 border-b border-gray-200 dark:border-[#1F1F23] flex items-center px-4 bg-white dark:bg-[#0F0F12] z-10">
+        <header className="h-16 border-b border-gray-200 flex items-center px-4 bg-white z-10">
           {/* Botão de toggle do sidebar */}
           <button
             onClick={toggleSidebar}
-            className="mr-4 p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            className="mr-4 p-2 rounded-md hover:bg-gray-100 transition-colors"
             aria-label={isCollapsed ? "Expandir sidebar" : "Colapsar sidebar"}
           >
             <Icon
@@ -97,19 +93,19 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
           {/* Ícones e controles de usuário na direita */}
           <div className="flex items-center gap-3">
-            <button className="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors relative">
+            <button className="p-2 rounded-md hover:bg-gray-100 transition-colors relative">
               <Icon name="Bell" size={20} />
               <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
             </button>
 
-            <button className="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+            <button className="p-2 rounded-md hover:bg-gray-100 transition-colors">
               <Icon name="User" size={20} />
             </button>
           </div>
         </header>
 
         {/* Conteúdo principal */}
-        <main className="flex-1 overflow-auto p-6 bg-white dark:bg-[#0F0F12]">
+        <main className="flex-1 overflow-auto p-6 bg-white">
           {children}
         </main>
       </div>

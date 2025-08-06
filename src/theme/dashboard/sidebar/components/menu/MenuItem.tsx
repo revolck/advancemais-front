@@ -52,8 +52,8 @@ export function MenuItem({
         className={cn(
           "relative w-10 h-10 mx-auto my-1 flex items-center justify-center rounded-md transition-colors",
           isActive || isSubmenuOpen
-            ? "bg-primary/90 text-primary-foreground dark:bg-primary/90 dark:text-primary-foreground"
-            : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#1F1F23]"
+            ? "bg-primary/90 text-primary-foreground"
+            : "text-gray-700 hover:bg-gray-100"
         )}
       >
         {item.icon && <Icon name={item.icon} size={20} />}
@@ -78,7 +78,7 @@ export function MenuItem({
         {hasSubmenu && isSubmenuOpen && (
           <div
             className={cn(
-              "absolute left-full top-0 ml-2 w-48 rounded-md bg-white dark:bg-[#202024] shadow-lg border border-gray-100 dark:border-gray-800 py-1 z-50",
+              "absolute left-full top-0 ml-2 w-48 rounded-md bg-white shadow-lg border border-gray-100 py-1 z-50",
               "origin-left transition-all duration-150 ease-out"
             )}
             onClick={(e) => e.stopPropagation()}
@@ -101,17 +101,17 @@ export function MenuItem({
                       onClick={handleItemNavigation}
                       className={cn(
                         "flex items-center px-2 py-1.5 text-sm rounded-md",
-                        "hover:bg-gray-100 dark:hover:bg-[#2A2A30]",
-                        "text-gray-700 dark:text-gray-300",
+                        "hover:bg-gray-100",
+                        "text-gray-700",
                         subItem.active &&
-                          "bg-gray-100 dark:bg-[#2A2A30] font-medium"
+                          "bg-gray-100 font-medium"
                       )}
                     >
                       {subItem.icon && (
                         <Icon
                           name={subItem.icon}
                           size={16}
-                          className="mr-2 text-gray-500 dark:text-gray-400"
+                          className="mr-2 text-gray-500"
                         />
                       )}
                       <span>{subItem.label}</span>
@@ -122,14 +122,14 @@ export function MenuItem({
                         e.stopPropagation();
                         toggleSubmenu(e);
                       }}
-                      className="flex items-center justify-between w-full px-2 py-1.5 text-sm rounded-md hover:bg-gray-100 dark:hover:bg-[#2A2A30] text-gray-700 dark:text-gray-300"
+                      className="flex items-center justify-between w-full px-2 py-1.5 text-sm rounded-md hover:bg-gray-100 text-gray-700"
                     >
                       <div className="flex items-center">
                         {subItem.icon && (
                           <Icon
                             name={subItem.icon}
                             size={16}
-                            className="mr-2 text-gray-500 dark:text-gray-400"
+                            className="mr-2 text-gray-500"
                           />
                         )}
                         <span>{subItem.label}</span>
@@ -161,10 +161,10 @@ export function MenuItem({
           onClick={handleItemNavigation}
           className={cn(
             "flex items-center px-3 py-2 text-sm rounded-md transition-colors w-full",
-            "hover:bg-gray-100 dark:hover:bg-[#1F1F23]",
+            "hover:bg-gray-100",
             isActive
-              ? "bg-gray-100 dark:bg-[#1F1F23] text-gray-900 dark:text-white font-medium"
-              : "text-gray-600 dark:text-gray-300",
+              ? "bg-gray-100 text-gray-900 font-medium"
+              : "text-gray-600",
             level > 0 && "text-xs"
           )}
         >
@@ -178,10 +178,10 @@ export function MenuItem({
           onClick={toggleSubmenu}
           className={cn(
             "flex items-center justify-between w-full px-3 py-2 text-sm rounded-md transition-colors",
-            "hover:bg-gray-100 dark:hover:bg-[#1F1F23]",
+            "hover:bg-gray-100",
             isSubmenuOpen || isActive
-              ? "bg-gray-100 dark:bg-[#1F1F23] text-gray-900 dark:text-white"
-              : "text-gray-600 dark:text-gray-300",
+              ? "bg-gray-100 text-gray-900"
+              : "text-gray-600",
             level > 0 && "text-xs"
           )}
         >
@@ -210,7 +210,7 @@ export function MenuItem({
       {hasSubmenu && (
         <div
           className={cn(
-            "mt-1 pl-4 border-l border-gray-200 dark:border-gray-700",
+            "mt-1 pl-4 border-l border-gray-200",
             "overflow-hidden transition-all duration-300 ease-in-out",
             isSubmenuOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
           )}

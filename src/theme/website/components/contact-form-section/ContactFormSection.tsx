@@ -81,23 +81,23 @@ const ContactFormSection: React.FC<ContactFormSectionProps> = ({
         <div className="flex flex-col lg:flex-row items-center gap-8">
           {/* Skeleton da imagem */}
           <div className="w-full lg:w-1/2">
-            <div className="aspect-[3/2] bg-gray-200 dark:bg-gray-700 animate-pulse rounded-lg" />
+            <div className="aspect-[3/2] bg-gray-200 animate-pulse rounded-lg" />
           </div>
 
           {/* Skeleton do formulário */}
           <div className="w-full lg:w-1/2">
-            <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-8 space-y-6">
-              <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mx-auto w-48" />
-              <div className="h-1 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mx-auto w-12" />
+            <div className="bg-gray-50 rounded-lg p-8 space-y-6">
+              <div className="h-8 bg-gray-200 rounded animate-pulse mx-auto w-48" />
+              <div className="h-1 bg-gray-200 rounded animate-pulse mx-auto w-12" />
               <div className="space-y-4">
                 {Array.from({ length: 6 }).map((_, i) => (
                   <div
                     key={i}
-                    className="h-12 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"
+                    className="h-12 bg-gray-200 rounded animate-pulse"
                   />
                 ))}
-                <div className="h-20 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-                <div className="h-12 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-32 mx-auto" />
+                <div className="h-20 bg-gray-200 rounded animate-pulse" />
+                <div className="h-12 bg-gray-200 rounded animate-pulse w-32 mx-auto" />
               </div>
             </div>
           </div>
@@ -113,7 +113,7 @@ const ContactFormSection: React.FC<ContactFormSectionProps> = ({
         <div className="lg:w-1/2 flex justify-center relative">
           {/* Loading State */}
           {isImageLoading && (
-            <div className="aspect-[3/2] w-full max-w-[600px] bg-gray-200 dark:bg-gray-700 animate-pulse rounded-lg flex items-center justify-center">
+            <div className="aspect-[3/2] w-full max-w-[600px] bg-gray-200 animate-pulse rounded-lg flex items-center justify-center">
               <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
             </div>
           )}

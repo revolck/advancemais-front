@@ -51,7 +51,7 @@ export function ProjectSelector({ isCollapsed = false }: ProjectSelectorProps) {
         className={cn(
           "w-full flex items-center p-2 rounded-lg transition-all duration-300",
           isCollapsed ? "justify-center" : "justify-between",
-          "hover:bg-slate-100 dark:hover:bg-slate-800",
+          "hover:bg-slate-100",
           "focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
         )}
         aria-label="Selecionar projeto"
@@ -63,8 +63,8 @@ export function ProjectSelector({ isCollapsed = false }: ProjectSelectorProps) {
               size={isCollapsed ? "md" : "sm"}
             />
           ) : (
-            <div className="w-8 h-8 rounded-md bg-slate-200 dark:bg-slate-700 flex items-center justify-center">
-              <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+            <div className="w-8 h-8 rounded-md bg-slate-200 flex items-center justify-center">
+              <span className="text-xs font-medium text-slate-500">
                 ?
               </span>
             </div>
@@ -81,11 +81,11 @@ export function ProjectSelector({ isCollapsed = false }: ProjectSelectorProps) {
                 transition={{ duration: 0.2 }}
                 className="text-left overflow-hidden"
               >
-                <p className="text-sm font-medium text-slate-900 dark:text-white truncate max-w-[160px]">
+                <p className="text-sm font-medium text-slate-900 truncate max-w-[160px]">
                   {truncateName(selectedProject.name)}
                 </p>
                 {isLoading && (
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                  <p className="text-xs text-slate-500">
                     Carregando dados...
                   </p>
                 )}
@@ -106,7 +106,7 @@ export function ProjectSelector({ isCollapsed = false }: ProjectSelectorProps) {
               <Icon
                 name="ChevronDown"
                 size={16}
-                className="text-slate-500 dark:text-slate-400 flex-shrink-0 transition-transform duration-200"
+                className="text-slate-500 flex-shrink-0 transition-transform duration-200"
               />
             </motion.div>
           )}

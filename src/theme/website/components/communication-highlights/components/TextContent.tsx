@@ -27,7 +27,7 @@ export const TextContent: React.FC<TextContentProps> = ({ content }) => {
           {highlight}
         </span>
         {citation && (
-          <span className="italic text-gray-600 dark:text-gray-400 ml-1">
+          <span className="italic text-gray-600 ml-1">
             {citation}
           </span>
         )}
@@ -49,7 +49,7 @@ export const TextContent: React.FC<TextContentProps> = ({ content }) => {
           {content.paragraphs.map((paragraph, index) => (
             <p
               key={index}
-              className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed text-justify lg:text-left"
+              className="text-lg text-gray-700 leading-relaxed text-justify lg:text-left"
             >
               {index === 0
                 ? renderParagraphWithHighlight(

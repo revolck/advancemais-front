@@ -43,12 +43,12 @@ export const ContactForm: React.FC<ContactFormProps> = ({
   // Se formulário foi enviado com sucesso
   if (formState.isSuccess) {
     return (
-      <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-8 text-center">
+      <div className="bg-gray-50 rounded-lg p-8 text-center">
         <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-        <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+        <h3 className="text-xl font-bold text-gray-900 mb-2">
           Enviado com sucesso!
         </h3>
-        <p className="text-gray-600 dark:text-gray-400 mb-6">
+        <p className="text-gray-600 mb-6">
           {config.successMessage}
         </p>
         <Button onClick={resetForm} variant="outline" className="mx-auto">
@@ -59,12 +59,12 @@ export const ContactForm: React.FC<ContactFormProps> = ({
   }
 
   return (
-    <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-8">
+    <div className="bg-gray-50 rounded-lg p-8">
       {/* Título */}
-      <h2 className="text-2xl font-bold text-center mb-2 text-gray-900 dark:text-gray-100">
+      <h2 className="text-2xl font-bold text-center mb-2 text-gray-900">
         {config.title}
       </h2>
-      <hr className="border-t-2 border-gray-900 dark:border-gray-100 w-12 mx-auto mb-6" />
+      <hr className="border-t-2 border-gray-900 w-12 mx-auto mb-6" />
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Primeira linha - Nome e Nome da Empresa */}
@@ -74,7 +74,7 @@ export const ContactForm: React.FC<ContactFormProps> = ({
               placeholder="Seu Nome"
               value={formState.formData.name}
               onChange={(e) => updateField("name", e.target.value)}
-              className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600"
+              className="bg-white border-gray-300"
               disabled={formState.isSubmitting}
             />
             {formState.errors.name && (
@@ -88,7 +88,7 @@ export const ContactForm: React.FC<ContactFormProps> = ({
               placeholder="Nome da Empresa"
               value={formState.formData.companyName}
               onChange={(e) => updateField("companyName", e.target.value)}
-              className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600"
+              className="bg-white border-gray-300"
               disabled={formState.isSubmitting}
             />
             {formState.errors.companyName && (
@@ -107,7 +107,7 @@ export const ContactForm: React.FC<ContactFormProps> = ({
               placeholder="Email"
               value={formState.formData.email}
               onChange={(e) => updateField("email", e.target.value)}
-              className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600"
+              className="bg-white border-gray-300"
               disabled={formState.isSubmitting}
             />
             {formState.errors.email && (
@@ -122,7 +122,7 @@ export const ContactForm: React.FC<ContactFormProps> = ({
               placeholder="Telefone"
               value={formState.formData.phone}
               onChange={(e) => handlePhoneChange(e.target.value)}
-              className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600"
+              className="bg-white border-gray-300"
               disabled={formState.isSubmitting}
             />
             {formState.errors.phone && (
@@ -139,7 +139,7 @@ export const ContactForm: React.FC<ContactFormProps> = ({
             placeholder="CEP"
             value={formState.formData.cep}
             onChange={(e) => handleCepChangeWithFormat(e.target.value)}
-            className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600"
+            className="bg-white border-gray-300"
             disabled={formState.isSubmitting}
             maxLength={9}
           />
@@ -155,7 +155,7 @@ export const ContactForm: React.FC<ContactFormProps> = ({
               placeholder="Endereço"
               value={formState.formData.address}
               onChange={(e) => updateField("address", e.target.value)}
-              className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600"
+              className="bg-white border-gray-300"
               disabled={formState.isSubmitting || formState.fieldsDisabled}
             />
             {formState.errors.address && (
@@ -169,7 +169,7 @@ export const ContactForm: React.FC<ContactFormProps> = ({
               placeholder="Cidade"
               value={formState.formData.city}
               onChange={(e) => updateField("city", e.target.value)}
-              className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600"
+              className="bg-white border-gray-300"
               disabled={formState.isSubmitting || formState.fieldsDisabled}
             />
             {formState.errors.city && (
@@ -186,7 +186,7 @@ export const ContactForm: React.FC<ContactFormProps> = ({
             placeholder="Estado"
             value={formState.formData.state}
             onChange={(e) => updateField("state", e.target.value)}
-            className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600"
+            className="bg-white border-gray-300"
             disabled={formState.isSubmitting || formState.fieldsDisabled}
           />
           {formState.errors.state && (
@@ -202,7 +202,7 @@ export const ContactForm: React.FC<ContactFormProps> = ({
             placeholder="Tem algo mais para informar?"
             value={formState.formData.additionalInfo}
             onChange={(e) => updateField("additionalInfo", e.target.value)}
-            className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 min-h-[100px]"
+            className="bg-white border-gray-300 min-h-[100px]"
             disabled={formState.isSubmitting}
             rows={4}
           />
