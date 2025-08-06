@@ -5,6 +5,7 @@ import { ProjectAvatar } from "./ProjectAvatar";
 import { useProjectStore } from "../store/projectStore";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
+import type { Variants } from "framer-motion";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { Input } from "@/components/ui/input";
 import { ButtonCustom } from "@/components/ui/custom/button";
@@ -96,7 +97,7 @@ export function ProjectSelectorModal() {
     },
   };
 
-  const itemVariants = {
+  const itemVariants: Variants = {
     hidden: { opacity: 0, y: 10 },
     visible: (i: number) => ({
       opacity: 1,
@@ -104,7 +105,7 @@ export function ProjectSelectorModal() {
       transition: {
         delay: i * 0.04,
         duration: 0.3,
-        ease: [0.25, 0.1, 0.25, 1.0],
+        ease: [0.25, 0.1, 0.25, 1.0] as [number, number, number, number],
       },
     }),
   };

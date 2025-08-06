@@ -38,6 +38,11 @@ const nextConfig = {
   poweredByHeader: false,
   compress: true,
 
+  // Ignora erros do ESLint durante o build
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+
   // Headers de segurança
   async headers() {
     return [

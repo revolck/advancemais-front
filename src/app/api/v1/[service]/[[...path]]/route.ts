@@ -1,14 +1,11 @@
 import { buildApiUrl, env } from "@/lib/env";
+import type { NextRequest } from "next/server";
 
-interface Params {
-  params: {
+async function proxy(req: NextRequest, context: any) {
+  const { service, path = [] } = context.params as {
     service: string;
     path?: string[];
   };
-}
-
-async function proxy(req: Request, { params }: Params) {
-  const { service, path = [] } = params;
   const hasApiPrefix = env.apiBaseUrl.replace(/\/$/, "").endsWith("/api");
   const endpoint = `${hasApiPrefix ? "" : "api/"}${env.apiVersion}/${service}${
     path.length ? "/" + path.join("/") : ""
@@ -38,4 +35,8 @@ async function proxy(req: Request, { params }: Params) {
   }
 }
 
-export { proxy as GET, proxy as POST, proxy as PUT, proxy as PATCH, proxy as DELETE };
+export async function GET(req: NextRequest, context: any) {
+  return proxy(req, context);
+}
+
+export { GET as POST, GET as PUT, GET as PATCH, GET as DELETE };
