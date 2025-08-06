@@ -7,7 +7,16 @@ import routes from "@/api/routes";
 import { apiFetch } from "@/api/client";
 import { apiConfig, env } from "@/lib/env";
 import { aboutMockData } from "./mock";
-import { AboutApiResponse } from "./types";
+import { AboutApiResponse, AboutBackendResponse } from "./types";
+
+function mapAboutResponse(data: AboutBackendResponse[]): AboutApiResponse {
+  const first = data[0];
+  return {
+    src: first?.imagemUrl ?? "",
+    title: first?.titulo ?? "",
+    description: first?.descricao ?? "",
+  };
+}
 
 /**
  * Busca dados do componente About (Server-side)
@@ -15,22 +24,20 @@ import { AboutApiResponse } from "./types";
  */
 export async function getAboutData(): Promise<AboutApiResponse> {
   try {
-    const data = await apiFetch<AboutApiResponse>(
+    const raw = await apiFetch<AboutBackendResponse[]>(
       routes.website.home.about(),
       {
         init: { headers: apiConfig.headers, ...apiConfig.cache.medium },
-        mockData: aboutMockData,
       },
     );
 
-    if (env.isDevelopment) {
-      console.debug("✅ About data loaded:", data);
-    }
-
+    const data = mapAboutResponse(raw);
+    console.log("✅ About data loaded:", data);
     return data;
   } catch (error) {
-    if (env.isDevelopment) {
-      console.warn("❌ Erro ao buscar dados do About:", error);
+    console.error("❌ Erro ao buscar dados do About:", error);
+    if (env.apiFallback === "mock") {
+      return aboutMockData;
     }
     throw new Error("Falha ao carregar dados do About");
   }
@@ -53,17 +60,12 @@ export async function getAboutDataClient(): Promise<AboutApiResponse> {
       throw new Error(`API responded with ${res.status}`);
     }
 
-    const data = (await res.json()) as AboutApiResponse;
-
-    if (env.isDevelopment) {
-      console.debug("✅ About data loaded (client):", data);
-    }
-
+    const raw = (await res.json()) as AboutBackendResponse[];
+    const data = mapAboutResponse(raw);
+    console.log("✅ About data loaded (client):", data);
     return data;
   } catch (error) {
-    if (env.isDevelopment) {
-      console.warn("❌ Erro ao buscar dados do About (client):", error);
-    }
+    console.error("❌ Erro ao buscar dados do About (client):", error);
 
     if (env.apiFallback === "mock") {
       return aboutMockData;
