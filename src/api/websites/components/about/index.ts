@@ -4,47 +4,34 @@
  */
 
 import routes from "@/api/routes";
-import { apiConfig, buildApiUrl, env } from "@/lib/env";
+import { apiFetch } from "@/api/client";
+import { apiConfig, env } from "@/lib/env";
+import { aboutMockData } from "./mock";
 import { AboutApiResponse } from "./types";
-
-/**
- * Helper para log de requisições (movido do api-config)
- */
-function logApiRequest(url: string, method: string = "GET"): void {
-  if (env.isDevelopment) {
-    console.log(`🌐 API Request: ${method} ${url}`);
-  }
-}
 
 /**
  * Busca dados do componente About (Server-side)
  * @returns Promise com os dados do about
  */
 export async function getAboutData(): Promise<AboutApiResponse> {
-  const url = buildApiUrl(routes.website.home.about());
-
   try {
-    logApiRequest(url);
-
-    const response = await fetch(url, {
-      method: "GET",
-      headers: apiConfig.headers,
-      ...apiConfig.cache.medium, // 1 hora de cache
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const data: AboutApiResponse = await response.json();
+    const data = await apiFetch<AboutApiResponse>(
+      routes.website.home.about(),
+      {
+        init: { headers: apiConfig.headers, ...apiConfig.cache.medium },
+        mockData: aboutMockData,
+      },
+    );
 
     if (env.isDevelopment) {
-      console.log("✅ About data loaded:", data);
+      console.debug("✅ About data loaded:", data);
     }
 
     return data;
   } catch (error) {
-    console.error("❌ Erro ao buscar dados do About:", error);
+    if (env.isDevelopment) {
+      console.warn("❌ Erro ao buscar dados do About:", error);
+    }
     throw new Error("Falha ao carregar dados do About");
   }
 }
@@ -54,30 +41,24 @@ export async function getAboutData(): Promise<AboutApiResponse> {
  * Sem cache para dados dinâmicos no cliente
  */
 export async function getAboutDataClient(): Promise<AboutApiResponse> {
-  const url = buildApiUrl(routes.website.home.about());
-
   try {
-    logApiRequest(url, "GET");
-
-    const response = await fetch(url, {
-      method: "GET",
-      headers: apiConfig.headers,
-      // No cache para client-side
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const data = await response.json();
+    const data = await apiFetch<AboutApiResponse>(
+      routes.website.home.about(),
+      {
+        init: { headers: apiConfig.headers, cache: "no-store" },
+        mockData: aboutMockData,
+      },
+    );
 
     if (env.isDevelopment) {
-      console.log("✅ About data loaded (client):", data);
+      console.debug("✅ About data loaded (client):", data);
     }
 
     return data;
   } catch (error) {
-    console.error("❌ Erro ao buscar dados do About (client):", error);
+    if (env.isDevelopment) {
+      console.warn("❌ Erro ao buscar dados do About (client):", error);
+    }
     throw new Error("Falha ao carregar dados do About");
   }
 }
