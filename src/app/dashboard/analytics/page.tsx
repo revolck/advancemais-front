@@ -13,11 +13,8 @@ function formatDate(): string {
   });
 }
 
-interface HeaderProps {
-  name: string;
-}
-
-export default function Header({ name }: HeaderProps) {
+export default function AnalyticsPage() {
+  const name = "Usuário";
   return (
     <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 gap-4">
       <div>
