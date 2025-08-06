@@ -5,11 +5,14 @@
 
 type Environment = "development" | "production" | "test";
 
+export type ApiFallback = "loading" | "skeleton" | "mock";
+
 interface AppConfig {
   // API
   readonly apiBaseUrl: string;
   readonly apiVersion: string;
   readonly baseUrl: string;
+  readonly apiFallback: ApiFallback;
 
   // App Info
   readonly appName: string;
@@ -47,6 +50,7 @@ export const env: AppConfig = {
   ),
   apiVersion: getEnvVar("NEXT_PUBLIC_API_VERSION", "v1"),
   baseUrl: getEnvVar("NEXT_PUBLIC_BASE_URL", "https://advancemais.com.br"),
+  apiFallback: getEnvVar("NEXT_PUBLIC_API_FALLBACK", "loading") as ApiFallback,
 
   // App Configuration
   appName: getEnvVar("NEXT_PUBLIC_APP_NAME", "AdvanceMais"),

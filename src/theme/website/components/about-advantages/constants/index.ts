@@ -1,6 +1,7 @@
 // src/theme/website/components/about-advantages/constants/index.ts
 
 import type { AboutAdvantagesApiData } from "../types";
+import { websiteRoutes } from "@/api/routes";
 
 /**
  * Dados padrão para fallback quando a API falha
@@ -77,7 +78,7 @@ export const DEFAULT_ABOUT_ADVANTAGES_DATA: AboutAdvantagesApiData = {
  */
 export const ABOUT_ADVANTAGES_CONFIG = {
   api: {
-    endpoint: "/api/about/advantages",
+    endpoint: websiteRoutes.home.about(),
     timeout: 5000,
     retryAttempts: 3,
     retryDelay: 1000,

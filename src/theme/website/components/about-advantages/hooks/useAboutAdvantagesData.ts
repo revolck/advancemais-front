@@ -11,6 +11,7 @@ import {
   DEFAULT_ABOUT_ADVANTAGES_DATA,
   ABOUT_ADVANTAGES_CONFIG,
 } from "../constants";
+import { env } from "@/lib/env";
 
 interface UseAboutAdvantagesDataReturn {
   data: AboutAdvantagesApiData;
@@ -67,22 +68,33 @@ export function useAboutAdvantagesData(
       }
 
       setData(result.data);
+      setIsLoading(false);
     } catch (err) {
       console.error("Erro ao buscar dados de vantagens:", err);
 
       if (err instanceof Error) {
         if (err.name === "AbortError") {
-          setError("Tempo limite excedido. Usando dados padrão.");
+          setError("Tempo limite excedido.");
         } else {
-          setError(`Erro na API: ${err.message}. Usando dados padrão.`);
+          setError(`Erro na API: ${err.message}`);
         }
       } else {
-        setError("Erro desconhecido. Usando dados padrão.");
+        setError("Erro desconhecido");
       }
 
-      setData(DEFAULT_ABOUT_ADVANTAGES_DATA);
-    } finally {
-      setIsLoading(false);
+      switch (env.apiFallback) {
+        case "mock":
+          setData(DEFAULT_ABOUT_ADVANTAGES_DATA);
+          setIsLoading(false);
+          break;
+        case "skeleton":
+          setIsLoading(true);
+          break;
+        case "loading":
+        default:
+          setIsLoading(true);
+          break;
+      }
     }
   };
 
