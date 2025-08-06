@@ -3,6 +3,7 @@
  * Busca dados do componente About do website
  */
 
+import routes from "@/api/routes";
 import { apiConfig, buildApiUrl, env } from "@/lib/env";
 import { AboutApiResponse } from "./types";
 
@@ -20,7 +21,7 @@ function logApiRequest(url: string, method: string = "GET"): void {
  * @returns Promise com os dados do about
  */
 export async function getAboutData(): Promise<AboutApiResponse> {
-  const url = buildApiUrl("/website/home/about");
+  const url = buildApiUrl(routes.website.home.about());
 
   try {
     logApiRequest(url);
@@ -53,7 +54,7 @@ export async function getAboutData(): Promise<AboutApiResponse> {
  * Sem cache para dados dinâmicos no cliente
  */
 export async function getAboutDataClient(): Promise<AboutApiResponse> {
-  const url = buildApiUrl("/website/home/about");
+  const url = buildApiUrl(routes.website.home.about());
 
   try {
     logApiRequest(url, "GET");
