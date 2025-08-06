@@ -1,8 +1,7 @@
 // src/app/website/layout.tsx
 import type { Metadata } from "next";
-import { ToasterCustom } from "@/components/ui/custom/toast";
-import HeaderWithBackground from "@/theme/website/header";
-import WebsiteFooter from "@/theme/website/footer";
+import type { ReactNode } from "react";
+import LayoutClient from "./layout-client";
 
 export const metadata: Metadata = {
   title: "AdvanceMais - Inovação em Educação e Tecnologia",
@@ -61,35 +60,7 @@ export const metadata: Metadata = {
 export default function WebsiteLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode;
+  children: ReactNode;
 }>) {
-  return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header responsivo com navegação */}
-      <HeaderWithBackground />
-
-      {/* Conteúdo principal da aplicação */}
-      <main
-        id="main-content"
-        className="relative z-10 min-h-screen"
-        role="main"
-      >
-        {children}
-      </main>
-
-      {/* Footer do website */}
-      <WebsiteFooter />
-
-      {/* Sistema de notificações */}
-      <ToasterCustom
-        position="top-right"
-        theme="system"
-        richColors={true}
-        closeButton={false}
-        maxToasts={5}
-        gap={8}
-        defaultDuration={5000}
-      />
-    </div>
-  );
+  return <LayoutClient>{children}</LayoutClient>;
 }

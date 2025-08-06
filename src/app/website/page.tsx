@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import Slider from "@/theme/website/components/slider";
 import AboutSection from "@/theme/website/components/about";
@@ -10,6 +10,7 @@ import BusinessGroupInformation from "@/theme/website/components/business-group-
 import CoursesCarousel from "@/theme/website/components/courses-carousel";
 import BlogSection from "@/theme/website/components/blog-section";
 import LogoEnterprises from "@/theme/website/components/logo-enterprises";
+import { useWebsiteLoading } from "./loading-context";
 
 /**
  * Página Inicial do Website Institucional
@@ -18,38 +19,28 @@ import LogoEnterprises from "@/theme/website/components/logo-enterprises";
  * e apresenta seus serviços, cursos e soluções.
  */
 export default function WebsiteHomePage() {
-  const [isClient, setIsClient] = useState(false);
+  const { register, init } = useWebsiteLoading();
 
   // Configura o título da página
   usePageTitle("Página Inicial");
 
-  // Evita problemas de hidratação
   useEffect(() => {
-    setIsClient(true);
-  }, []);
+    init(6);
+  }, [init]);
 
-  if (!isClient) {
-    return (
-      <div className="min-h-screen">
-        {/* Loading placeholder que é igual ao conteúdo */}
-        <section className="relative min-h-[300px] bg-gray-100">
-          <div className="flex items-center justify-center h-[300px]">
-            <div className="animate-pulse">
-              <div className="h-4 bg-gray-300 rounded w-48 mb-2"></div>
-              <div className="h-4 bg-gray-300 rounded w-36"></div>
-            </div>
-          </div>
-        </section>
-      </div>
-    );
-  }
+  const handleComponentLoaded = () => {
+    register();
+  };
 
   return (
     <div className="min-h-screen">
       {/* Hero Slider - Banner principal */}
       <Slider />
       {/* Seção Sobre a Empresa */}
-      <AboutSection />
+      <AboutSection
+        onDataLoaded={handleComponentLoaded}
+        onError={handleComponentLoaded}
+      />
       {/* Banners de Destaque */}
       <BannersGroup />
       {/* ============================================= */}
@@ -60,9 +51,11 @@ export default function WebsiteHomePage() {
         animated={true}
         animationDuration={1200}
         onDataLoaded={(data) => {
+          handleComponentLoaded();
           console.log("Estatísticas carregadas:", data);
         }}
         onError={(error) => {
+          handleComponentLoaded();
           console.warn("Erro ao carregar estatísticas:", error);
         }}
       />
@@ -88,9 +81,11 @@ export default function WebsiteHomePage() {
       <BusinessGroupInformation
         fetchFromApi={false}
         onDataLoaded={(data) => {
+          handleComponentLoaded();
           console.log("Seções de negócio carregadas:", data);
         }}
         onError={(error) => {
+          handleComponentLoaded();
           console.warn("Erro ao carregar seções:", error);
         }}
       />
@@ -117,9 +112,11 @@ export default function WebsiteHomePage() {
         buttonText="Ver todos os cursos"
         buttonUrl="/cursos"
         onDataLoaded={(data) => {
+          handleComponentLoaded();
           console.log("Cursos carregados:", data);
         }}
         onError={(error) => {
+          handleComponentLoaded();
           console.warn("Erro ao carregar cursos:", error);
         }}
       />
@@ -175,6 +172,8 @@ export default function WebsiteHomePage() {
         fetchFromApi={false}
         title="Últimas Notícias"
         buttonText="Ver todas"
+        onDataLoaded={() => handleComponentLoaded()}
+        onError={() => handleComponentLoaded()}
       />
       {/* // Com configurações customizadas
       <BlogSection
@@ -189,6 +188,8 @@ export default function WebsiteHomePage() {
       <LogoEnterprises
         fetchFromApi={false}
         title="Quem está com a gente nessa jornada"
+        onDataLoaded={() => handleComponentLoaded()}
+        onError={() => handleComponentLoaded()}
       />
     </div>
   );
