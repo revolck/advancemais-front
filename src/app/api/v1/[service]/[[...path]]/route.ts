@@ -1,11 +1,16 @@
 import { buildApiUrl, env } from "@/lib/env";
 import type { NextRequest } from "next/server";
 
-async function proxy(req: NextRequest, context: any) {
-  const { service, path = [] } = context.params as {
-    service: string;
-    path?: string[];
-  };
+interface RouteParams {
+  service: string;
+  path?: string[];
+}
+
+async function proxy(
+  req: NextRequest,
+  context: { params: Promise<RouteParams> }
+) {
+  const { service, path = [] } = await context.params;
   const hasApiPrefix = env.apiBaseUrl.replace(/\/$/, "").endsWith("/api");
   const endpoint = `${hasApiPrefix ? "" : "api/"}${env.apiVersion}/${service}${
     path.length ? "/" + path.join("/") : ""
@@ -26,7 +31,12 @@ async function proxy(req: NextRequest, context: any) {
     }
 
     const res = await fetch(url, init);
-    return new Response(res.body, { status: res.status, headers: res.headers });
+
+    const headers = new Headers(res.headers);
+    headers.delete("content-encoding");
+    headers.delete("content-length");
+
+    return new Response(res.body, { status: res.status, headers });
   } catch {
     return Response.json(
       { error: "Service unavailable", service, path },
@@ -35,7 +45,10 @@ async function proxy(req: NextRequest, context: any) {
   }
 }
 
-export async function GET(req: NextRequest, context: any) {
+export async function GET(
+  req: NextRequest,
+  context: { params: Promise<RouteParams> }
+) {
   return proxy(req, context);
 }
 
