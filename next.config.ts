@@ -32,7 +32,10 @@ const nextConfig = {
   },
 
   // Asset prefix baseado no ambiente
-  assetPrefix: process.env.NEXT_PUBLIC_BASE_URL || undefined,
+  assetPrefix:
+    process.env.NODE_ENV === "production"
+      ? process.env.NEXT_PUBLIC_BASE_URL || undefined
+      : undefined,
 
   // Configurações de performance
   poweredByHeader: false,
