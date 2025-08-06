@@ -5,8 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Icon } from "@/components/ui/custom/Icons";
 import { cn } from "@/lib/utils";
-import InputMaskService from "./InputMaskService";
-import type { InputCustomProps } from "./types";
+import { MaskService } from "@/services";
+import type { InputCustomProps } from "@/types/components/input";
 
 /**
  * Componente de input customizado com suporte para máscaras, validação,
@@ -47,7 +47,7 @@ export const InputCustom = React.forwardRef<HTMLInputElement, InputCustomProps>(
   ) => {
     // Refs e serviços
     const inputRef = useRef<HTMLInputElement>(null);
-    const maskService = InputMaskService.getInstance();
+    const maskService = MaskService.getInstance();
     const [isFocused, setIsFocused] = useState(false);
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
     const [innerValue, setInnerValue] = useState<string>(value as string);
@@ -94,7 +94,7 @@ export const InputCustom = React.forwardRef<HTMLInputElement, InputCustomProps>(
           onChange(syntheticEvent);
         }
       },
-      [mask, maskConfig, name, onChange]
+      [mask, maskConfig, name, onChange, maskService]
     );
 
     // Handler para foco no input

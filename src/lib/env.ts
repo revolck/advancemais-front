@@ -8,6 +8,7 @@ type Environment = "development" | "production" | "test";
 interface AppConfig {
   // API
   readonly apiBaseUrl: string;
+  readonly apiVersion: string;
   readonly baseUrl: string;
 
   // App Info
@@ -42,8 +43,9 @@ export const env: AppConfig = {
   // API Configuration
   apiBaseUrl: getEnvVar(
     "NEXT_PUBLIC_API_BASE_URL",
-    "https://api.advancemais.com.br"
+    "https://advancemais-api-7h1q.onrender.com"
   ),
+  apiVersion: getEnvVar("NEXT_PUBLIC_API_VERSION", "v1"),
   baseUrl: getEnvVar("NEXT_PUBLIC_BASE_URL", "https://advancemais.com.br"),
 
   // App Configuration
@@ -76,6 +78,7 @@ export function validateEnv(): void {
     console.log("🌍 Environment loaded:", {
       nodeEnv: env.nodeEnv,
       apiBaseUrl: env.apiBaseUrl,
+      apiVersion: env.apiVersion,
       baseUrl: env.baseUrl,
     });
   }
