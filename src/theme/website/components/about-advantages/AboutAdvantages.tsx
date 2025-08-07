@@ -11,7 +11,7 @@ import { ImageNotFound } from "@/components/ui/custom/image-not-found";
 import { ButtonCustom } from "@/components/ui/custom/button";
 import type { AboutAdvantagesProps } from "./types";
 import { env } from "@/lib/env";
-import { Loader } from "@/components/ui/loader";
+import { Loader } from "@/components/ui/custom/loader";
 
 const AboutAdvantages: React.FC<AboutAdvantagesProps> = ({
   className,
