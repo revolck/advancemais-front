@@ -18,12 +18,6 @@ export interface LoaderProps {
    * Classes CSS customizadas
    */
   className?: string;
-
-  /**
-   * Variant do loader
-   * @default 'default'
-   */
-  variant?: "default" | "minimal" | "compact";
 }
 
 /**
