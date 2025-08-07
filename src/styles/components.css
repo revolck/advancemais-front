@@ -2,35 +2,6 @@
 /* ENHANCED GLOBAL LOADER STYLES */
 /* ===================================== */
 
-.adv-loader-card {
-  /* Variável de cor para clipping suave */
-  --bg-color: #f6f3f4;
-  background-color: var(--bg-color);
-  padding: 2rem 3rem;
-  border-radius: 1.5rem;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-/* Variant minimal - menor padding */
-.adv-loader-card-minimal {
-  --bg-color: #f6f3f4;
-  background-color: var(--bg-color);
-  padding: 1.5rem 2rem;
-  border-radius: 1rem;
-  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
-}
-
-/* Variant compact - bem pequeno */
-.adv-loader-card-compact {
-  --bg-color: #f6f3f4;
-  background-color: var(--bg-color);
-  padding: 1rem 1.5rem;
-  border-radius: 0.75rem;
-  box-shadow: 0 3px 15px rgba(0, 0, 0, 0.2);
-}
-
 .adv-loader {
   color: rgb(124, 124, 124);
   font-family: "Poppins", sans-serif;
@@ -55,20 +26,6 @@
   position: relative;
   height: 40px;
   margin-left: 6px;
-}
-
-.adv-loader-words::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    var(--bg-color) 10%,
-    transparent 30%,
-    transparent 70%,
-    var(--bg-color) 90%
-  );
-  z-index: 20;
-  pointer-events: none;
 }
 
 .adv-loader-word {
@@ -110,11 +67,6 @@
 
 /* Responsividade do loader */
 @media (max-width: 768px) {
-  .adv-loader-card {
-    padding: 1.5rem 2rem;
-    border-radius: 1rem;
-  }
-
   .adv-loader {
     font-size: 20px;
     height: 32px;
@@ -131,11 +83,6 @@
 }
 
 @media (max-width: 480px) {
-  .adv-loader-card {
-    padding: 1rem 1.5rem;
-    border-radius: 0.75rem;
-  }
-
   .adv-loader {
     font-size: 18px;
     height: 28px;
@@ -168,8 +115,3 @@
   }
 }
 
-.adv-loader-card,
-.adv-loader-card-minimal,
-.adv-loader-card-compact {
-  animation: adv-loader-fade-in 0.6s ease-out forwards;
-}
