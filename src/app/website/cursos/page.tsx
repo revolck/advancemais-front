@@ -38,13 +38,7 @@ export default function CursosPage() {
 
   return (
     <div className="min-h-screen">
-      <CourseCatalog
-        fetchFromApi={false}
-        showHeader={false} // Se já tem header na página
-        onDataLoaded={(data) => {
-          console.log("Cursos carregados:", data);
-        }}
-      />
+      <CourseCatalog fetchFromApi={false} showHeader={false} />
     </div>
   );
 }

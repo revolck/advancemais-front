@@ -11,6 +11,7 @@ import CoursesCarousel from "@/theme/website/components/courses-carousel";
 import BlogSection from "@/theme/website/components/blog-section";
 import LogoEnterprises from "@/theme/website/components/logo-enterprises";
 import { useWebsiteLoading } from "./loading-context";
+import { apiKeepAlive } from "@/lib/api-keep-alive";
 
 /**
  * Página Inicial do Website Institucional
@@ -19,30 +20,49 @@ import { useWebsiteLoading } from "./loading-context";
  * e apresenta seus serviços, cursos e soluções.
  */
 export default function WebsiteHomePage() {
-  const { register, init } = useWebsiteLoading();
+  const { setReady, setError } = useWebsiteLoading();
 
   // Configura o título da página
   usePageTitle("Página Inicial");
 
   useEffect(() => {
-    init(6);
-  }, [init]);
+    // Inicia keep-alive da API
+    apiKeepAlive.start();
 
-  const handleComponentLoaded = () => {
-    register();
+    // Auto-ready após 2.5 segundos (antes do timeout de 3s)
+    const timer = setTimeout(() => {
+      console.log("📄 Página principal marcada como pronta");
+      setReady(true);
+    }, 2500);
+
+    return () => {
+      clearTimeout(timer);
+      apiKeepAlive.stop();
+    };
+  }, [setReady]);
+
+  const handleComponentLoaded = (componentName: string) => {
+    console.log(`✅ Componente carregado: ${componentName}`);
+  };
+
+  const handleComponentError = (componentName: string, error: string) => {
+    console.warn(`⚠️ Erro no componente ${componentName}:`, error);
   };
 
   return (
     <div className="min-h-screen">
       {/* Hero Slider - Banner principal */}
       <Slider />
+
       {/* Seção Sobre a Empresa */}
       <AboutSection
-        onDataLoaded={handleComponentLoaded}
-        onError={handleComponentLoaded}
+        onDataLoaded={() => handleComponentLoaded("About")}
+        onError={(error) => handleComponentError("About", error)}
       />
+
       {/* Banners de Destaque */}
       <BannersGroup />
+
       {/* ============================================= */}
       {/* CONTADORES - OPÇÃO 1: Com dados padrão (SEM API) */}
       {/* ============================================= */}
@@ -51,14 +71,14 @@ export default function WebsiteHomePage() {
         animated={true}
         animationDuration={1200}
         onDataLoaded={(data) => {
-          handleComponentLoaded();
+          handleComponentLoaded("Counter");
           console.log("Estatísticas carregadas:", data);
         }}
         onError={(error) => {
-          handleComponentLoaded();
-          console.warn("Erro ao carregar estatísticas:", error);
+          handleComponentError("Counter", error);
         }}
       />
+
       {/* 
       ============================================= 
       CONTADORES - OPÇÃO 2: Com API (quando estiver pronta)
@@ -75,121 +95,67 @@ export default function WebsiteHomePage() {
         }}
       />
       */}
+
       {/* ============================================= */}
       {/* SEÇÕES DE NEGÓCIO - OPÇÃO 1: Com dados padrão (SEM API) */}
       {/* ============================================= */}
       <BusinessGroupInformation
         fetchFromApi={false}
         onDataLoaded={(data) => {
-          handleComponentLoaded();
+          handleComponentLoaded("Business");
           console.log("Seções de negócio carregadas:", data);
         }}
         onError={(error) => {
-          handleComponentLoaded();
-          console.warn("Erro ao carregar seções:", error);
+          handleComponentError("Business", error);
         }}
       />
+
       {/* 
       ============================================= 
       SEÇÕES DE NEGÓCIO - OPÇÃO 2: Com API (quando estiver pronta)
       =============================================
-      <BusinessGroupInformation 
+      <BusinessGroupInformation
         fetchFromApi={true}
         onDataLoaded={(data) => {
           console.log("Seções de negócio carregadas da API:", data);
         }}
         onError={(error) => {
-          console.warn("Erro ao carregar seções da API:", error);
+          console.warn("Erro ao carregar seções de negócio da API:", error);
         }}
       />
       */}
-      {/* ============================================= */}
-      {/* CURSOS CAROUSEL - OPÇÃO 1: Com dados padrão (SEM API) */}
-      {/* ============================================= */}
+
+      {/* Carousel de Cursos */}
       <CoursesCarousel
-        fetchFromApi={false}
-        title="Cursos em destaque"
-        buttonText="Ver todos os cursos"
-        buttonUrl="/cursos"
         onDataLoaded={(data) => {
-          handleComponentLoaded();
+          handleComponentLoaded("Courses");
           console.log("Cursos carregados:", data);
         }}
         onError={(error) => {
-          handleComponentLoaded();
-          console.warn("Erro ao carregar cursos:", error);
+          handleComponentError("Courses", error);
         }}
       />
-      {/* 
-      ============================================= 
-      CURSOS CAROUSEL - OPÇÃO 2: Com API (quando estiver pronta)
-      =============================================
-      <CoursesCarousel
-        fetchFromApi={true}
-        title="Cursos em destaque"
-        buttonText="Ver todos os cursos"
-        buttonUrl="/cursos"
+
+      {/* Seção de Blog */}
+      <BlogSection
         onDataLoaded={(data) => {
-          console.log("Cursos carregados da API:", data);
+          handleComponentLoaded("Blog");
+          console.log("Posts do blog carregados:", data);
         }}
         onError={(error) => {
-          console.warn("Erro ao carregar cursos da API:", error);
+          handleComponentError("Blog", error);
         }}
       />
-      */}
-      {/* 
-      ============================================= 
-      CURSOS CAROUSEL - OPÇÃO 3: Com dados customizados
-      =============================================
-      <CoursesCarousel
-        fetchFromApi={false}
-        staticData={[
-          {
-            id: 1,
-            image: '/images/custom-course.jpg',
-            title: 'Meu Curso Customizado',
-            tag: 'Exclusivo',
-            description: 'Descrição do curso customizado',
-            duration: '20h',
-            price: 199,
-            instructor: 'Instrutor Custom',
-            url: '/curso-custom',
-            category: 'Custom',
-            isActive: true,
-            order: 1,
-            isFeatured: true,
-          },
-        ]}
-        title="Cursos Especiais"
-        buttonText="Ver cursos especiais"
-        buttonUrl="/cursos-especiais"
-      />
-      */}
-      {/* ================================ */}
-      {/* BLOG: Com dados padrão (SEM API) */}
-      {/* ================================ */}
-      <BlogSection
-        fetchFromApi={false}
-        title="Últimas Notícias"
-        buttonText="Ver todas"
-        onDataLoaded={() => handleComponentLoaded()}
-        onError={() => handleComponentLoaded()}
-      />
-      {/* // Com configurações customizadas
-      <BlogSection
-        maxPostsDesktop={6}
-        maxPostsMobile={3}
-        onPostClick={(post) => console.log("Post clicado:", post)}
-      /> */}
 
-      {/* ============================================= */}
-      {/* Logos Enterprises: Com dados padrão (SEM API) */}
-      {/* ============================================= */}
+      {/* Logos das Empresas */}
       <LogoEnterprises
-        fetchFromApi={false}
-        title="Quem está com a gente nessa jornada"
-        onDataLoaded={() => handleComponentLoaded()}
-        onError={() => handleComponentLoaded()}
+        onDataLoaded={(data) => {
+          handleComponentLoaded("Logos");
+          console.log("Logos das empresas carregados:", data);
+        }}
+        onError={(error) => {
+          handleComponentError("Logos", error);
+        }}
       />
     </div>
   );

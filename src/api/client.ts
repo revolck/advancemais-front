@@ -1,36 +1,149 @@
 import { buildApiUrl, env, ApiFallback } from "@/lib/env";
 
 interface FetchOptions<T> {
-  /** Optional RequestInit passed to fetch */
   init?: RequestInit;
-  /** Mock data returned when fallback mode is `mock` */
   mockData?: T;
-  /** Override global fallback strategy */
   fallback?: ApiFallback;
+  cache?: "no-cache" | "short" | "medium" | "long";
+  retries?: number;
+  timeout?: number;
 }
 
+// Cache em memória simples
+const memoryCache = new Map<
+  string,
+  { data: any; timestamp: number; ttl: number }
+>();
+
+// Tempos de cache (em ms)
+const CACHE_TTL = {
+  short: 5 * 60 * 1000, // 5 minutos
+  medium: 30 * 60 * 1000, // 30 minutos
+  long: 24 * 60 * 60 * 1000, // 24 horas
+};
+
 /**
- * Wrapper around `fetch` that applies global fallbacks when the API is unavailable.
- * - `mock`: returns the provided `mockData`.
- * - `skeleton`/`loading`: rethrows the error so the caller can render skeleton or loader.
+ * Cliente API otimizado com cache, retry automático e timeout
  */
 export async function apiFetch<T = unknown>(
   endpoint: string,
-  { init, mockData, fallback = env.apiFallback }: FetchOptions<T> = {}
+  {
+    init,
+    mockData,
+    fallback = env.apiFallback,
+    cache = "short",
+    retries = 3,
+    timeout = 15000,
+  }: FetchOptions<T> = {}
 ): Promise<T> {
   const url = endpoint.startsWith("http") ? endpoint : buildApiUrl(endpoint);
+  const cacheKey = `${url}-${JSON.stringify(init)}`;
 
-  try {
-    const res = await fetch(url, { cache: "no-store", ...init });
-    if (!res.ok) {
-      throw new Error(`API responded with ${res.status}`);
+  // Verifica cache primeiro
+  if (cache !== "no-cache") {
+    const cached = getFromCache<T>(cacheKey);
+    if (cached) {
+      console.log(`📋 Cache hit: ${endpoint}`);
+      return cached;
     }
-    return (await res.json()) as T;
-  } catch (err) {
-    if (fallback === "mock" && mockData) {
-      return mockData;
-    }
-    // skeleton or loading: propagate error so UI decides what to render
-    throw err;
   }
+
+  // Executa request com retry e timeout
+  let lastError: Error;
+
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      console.log(`🌐 API Request [${attempt}/${retries}]: ${endpoint}`);
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+      const res = await fetch(url, {
+        cache: "no-store",
+        signal: controller.signal,
+        ...init,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!res.ok) {
+        throw new Error(`API responded with ${res.status}: ${res.statusText}`);
+      }
+
+      const data = (await res.json()) as T;
+
+      // Armazena no cache
+      if (cache !== "no-cache") {
+        setCache(cacheKey, data, CACHE_TTL[cache]);
+      }
+
+      console.log(`✅ API Success: ${endpoint}`);
+      return data;
+    } catch (error) {
+      lastError = error as Error;
+      console.warn(`⚠️ API Error [${attempt}/${retries}]:`, error);
+
+      // Aguarda antes do próximo retry (backoff exponencial)
+      if (attempt < retries) {
+        const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      }
+    }
+  }
+
+  // Se chegou aqui, todas as tentativas falharam
+  console.error(`❌ API Failed após ${retries} tentativas:`, lastError!);
+
+  // Tenta retornar dados em cache expirados como fallback
+  const expiredCache = getFromCache<T>(cacheKey, true);
+  if (expiredCache) {
+    console.warn(`📋 Usando cache expirado: ${endpoint}`);
+    return expiredCache;
+  }
+
+  // Aplica estratégia de fallback
+  if (fallback === "mock" && mockData) {
+    console.warn(`🎭 Usando mock data: ${endpoint}`);
+    return mockData;
+  }
+
+  // Re-throw error para que o componente possa mostrar skeleton/loading
+  throw lastError!;
+}
+
+function getFromCache<T>(key: string, includeExpired = false): T | null {
+  const cached = memoryCache.get(key);
+  if (!cached) return null;
+
+  const isExpired = Date.now() > cached.timestamp + cached.ttl;
+  if (isExpired && !includeExpired) {
+    memoryCache.delete(key);
+    return null;
+  }
+
+  return cached.data as T;
+}
+
+function setCache(key: string, data: any, ttl: number): void {
+  memoryCache.set(key, {
+    data,
+    timestamp: Date.now(),
+    ttl,
+  });
+
+  // Limpa cache automaticamente (garbage collection)
+  setTimeout(() => {
+    if (memoryCache.has(key)) {
+      const cached = memoryCache.get(key)!;
+      if (Date.now() > cached.timestamp + cached.ttl) {
+        memoryCache.delete(key);
+      }
+    }
+  }, ttl + 1000);
+}
+
+// Limpa todo o cache
+export function clearApiCache(): void {
+  memoryCache.clear();
+  console.log("🗑️ Cache da API limpo");
 }

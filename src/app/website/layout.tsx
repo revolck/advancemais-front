@@ -1,6 +1,6 @@
-// src/app/website/layout.tsx
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import { LoadingProvider } from "./loading-context";
 import LayoutClient from "./layout-client";
 
 export const metadata: Metadata = {
@@ -48,19 +48,20 @@ export const metadata: Metadata = {
 };
 
 /**
- * Layout específico para o Website Institucional
+ * Layout do Website - VERSÃO SIMPLIFICADA E FUNCIONAL
  *
- * Características:
- * - Header responsivo com navegação completa
- * - Footer com links e informações da empresa
- * - Sistema de notificações integrado
- * - Otimizações de SEO e performance
- * - Estrutura semântica para acessibilidade
+ * - Loading de 3 segundos automático
+ * - Sem complexidade desnecessária
+ * - Funciona de verdade
  */
 export default function WebsiteLayout({
   children,
 }: Readonly<{
   children: ReactNode;
 }>) {
-  return <LayoutClient>{children}</LayoutClient>;
+  return (
+    <LoadingProvider>
+      <LayoutClient>{children}</LayoutClient>
+    </LoadingProvider>
+  );
 }

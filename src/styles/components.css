@@ -1,711 +1,34 @@
-/* src/styles/components.css */
-
 /* ===================================== */
-/* COURSES CAROUSEL STYLES - IGUAL AO ORIGINAL */
-/* ===================================== */
-
-.courses-carousel-button-previous {
-  position: absolute;
-  top: 49%;
-  left: -23px;
-  z-index: 50;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background-color: #001a57;
-  color: #fff;
-  width: 50px;
-  height: 50px;
-  opacity: 0.7;
-  border-radius: 50%;
-  border-color: transparent;
-  cursor: pointer;
-  transition: all 0.3s ease, box-shadow 0.3s ease;
-  margin-left: 0;
-}
-
-.courses-carousel-button-previous:hover {
-  opacity: 1;
-  background-color: #00257d;
-}
-
-.courses-carousel-button-next {
-  position: absolute;
-  top: 60%; /* Igual ao original */
-  left: -23px; /* Igual ao original - não right */
-  z-index: 50;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background-color: #001a57;
-  color: #fff;
-  width: 50px;
-  height: 50px;
-  opacity: 0.7;
-  border-radius: 50%;
-  border-color: transparent;
-  cursor: pointer;
-  transition: all 0.3s ease, box-shadow 0.3s ease;
-}
-
-.courses-carousel-button-next:hover {
-  opacity: 1;
-  background-color: #00257d;
-}
-
-/* Ajustes no título - IGUAL AO ORIGINAL */
-.carousel-item-title {
-  position: absolute;
-  top: 10%; /* Ajuste para mover o título para cima */
-  left: 50%; /* Centraliza horizontalmente */
-  transform: translateX(-50%); /* Garantindo a centralização */
-  text-align: center;
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: white;
-  text-shadow: 0 4px 8px rgba(0, 0, 0, 0.5); /* Aumenta a sombra */
-}
-
-.ImagemGrid {
-  height: auto;
-  max-height: 270px;
-}
-
-/* Para dispositivos menores que 768px (mobile) */
-@media (max-width: 767px) {
-  .pxResponsive {
-    width: 94%;
-    text-align: center;
-  }
-  .gridCourses {
-    grid-template-columns: 1fr; /* 1 curso por linha */
-  }
-
-  .responsiveFilter {
-    text-align: left;
-    align-items: center;
-    padding-left: 5%;
-    align-content: center;
-  }
-
-  .titleFilter {
-    padding-top: 10px;
-    font-size: 25px;
-  }
-
-  .filter {
-    padding-left: 5%;
-  }
-}
-
-@media (min-width: 768px) {
-  /* md breakpoint (tablets ou maiores) */
-  .pxResponsive {
-    width: 94%;
-    padding-left: 3%;
-  }
-
-  .InforDias {
-    font-size: 12px;
-  }
-
-  .gridCourses {
-    grid-template-columns: repeat(2, 1fr); /* 2 cursos por linha */
-  }
-}
-
-/* ===================================== */
-/* LOGO ENTERPRISES STYLES */
-/* ===================================== */
-
-/* Wrapper do logo */
-.logo-enterprise-wrapper {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 1rem;
-  background-color: #f0f0f0;
-  border-radius: 0.5rem;
-  transition: background-color 0.3s ease-in-out, transform 0.3s ease-in-out,
-    box-shadow 0.3s ease-in-out;
-  cursor: default;
-  position: relative;
-  min-height: 80px;
-}
-
-.logo-enterprise-wrapper[role="button"] {
-  cursor: pointer;
-}
-
-.logo-enterprise-wrapper:hover {
-  background-color: #e7e7e7;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.logo-enterprise-wrapper:focus {
-  outline: none;
-  ring: 2px;
-  ring-color: #3b82f6;
-  ring-opacity: 0.5;
-}
-
-/* Imagem do logo */
-.logo-enterprise-image {
-  max-width: 100px;
-  max-height: 40px;
-  object-fit: contain;
-  transition: filter 0.3s ease-in-out, transform 0.3s ease-in-out;
-  filter: grayscale(100%);
-  width: auto;
-  height: auto;
-}
-
-.logo-enterprise-wrapper:hover .logo-enterprise-image {
-  filter: grayscale(0%);
-  transform: scale(1.05);
-}
-
-/* Animação de entrada */
-@keyframes fade-in-up {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.animate-fade-in-up {
-  animation: fade-in-up 0.6s ease-out forwards;
-}
-
-/* Responsividade */
-@media (max-width: 640px) {
-  .logo-enterprise-wrapper {
-    padding: 0.75rem;
-    min-height: 70px;
-  }
-
-  .logo-enterprise-image {
-    max-width: 80px;
-    max-height: 32px;
-  }
-}
-
-@media (min-width: 768px) {
-  .logo-enterprise-wrapper {
-    padding: 1.25rem;
-    min-height: 90px;
-  }
-
-  .logo-enterprise-image {
-    max-width: 120px;
-    max-height: 48px;
-  }
-}
-
-@media (min-width: 1024px) {
-  .logo-enterprise-wrapper {
-    padding: 1.5rem;
-    min-height: 100px;
-  }
-
-  .logo-enterprise-image {
-    max-width: 100px;
-    max-height: 40px;
-  }
-}
-
-/* Estados especiais */
-.logo-enterprise-wrapper[data-loading="true"] {
-  background-color: #f3f4f6;
-  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-}
-
-.logo-enterprise-wrapper[data-error="true"] {
-  background-color: #fef2f2;
-  border: 1px dashed #fca5a5;
-}
-
-/* ===================================== */
-/* UTILIDADES COMPARTILHADAS */
-/* ===================================== */
-
-/* Classes de hover globais */
-.hover-lift {
-  transition: transform 0.2s ease-in-out;
-}
-
-.hover-lift:hover {
-  transform: translateY(-4px);
-}
-
-.hover-scale {
-  transition: transform 0.2s ease-in-out;
-}
-
-.hover-scale:hover {
-  transform: scale(1.05);
-}
-
-/* Gradientes úteis */
-.gradient-overlay-dark {
-  background: linear-gradient(
-    to top,
-    rgba(0, 0, 0, 0.8) 0%,
-    rgba(0, 0, 0, 0.4) 50%,
-    transparent 100%
-  );
-}
-
-.gradient-overlay-light {
-  background: linear-gradient(
-    to top,
-    rgba(255, 255, 255, 0.9) 0%,
-    rgba(255, 255, 255, 0.5) 50%,
-    transparent 100%
-  );
-}
-
-/* Sombras personalizadas */
-.shadow-soft {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-}
-
-.shadow-medium {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.shadow-strong {
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-}
-
-/* ===================================== */
-/* Header Pages */
-/* ===================================== */
-.header-pages-container {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  max-width: 55%;
-}
-
-.header-pages-image {
-  width: 810px;
-  height: 360px;
-  max-width: 810px;
-  border-radius: 0.5rem;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  object-fit: cover;
-}
-
-.header-pages-breadcrumbs {
-  display: flex;
-  justify-content: flex-end;
-  width: 100%;
-  margin-bottom: 1rem;
-}
-
-.header-pages-subtitle {
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 28px;
-  text-transform: uppercase;
-}
-
-.header-pages-main-title {
-  font-size: 43px;
-  line-height: 50px;
-  font-weight: bold;
-}
-
-.header-pages-main-title-mobile {
-  font-size: 33px;
-  line-height: 35px;
-  font-weight: bold;
-  padding: 0px 10px;
-}
-
-.header-pages-description {
-  font-size: 18px;
-  font-weight: 300;
-  line-height: 32px;
-}
-
-.header-pages-px-responsive {
-  width: 94%;
-}
-
-/* Loading state com tamanho fixo */
-.header-pages-image-loading {
-  width: 810px;
-  height: 360px;
-  background-color: #e5e7eb;
-  border-radius: 0.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.header-pages-image-error {
-  width: 810px;
-  height: 360px;
-  border-radius: 0.5rem;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-/* Mobile Styles */
-@media (max-width: 767px) {
-  .header-pages-breadcrumbs {
-    display: flex;
-    justify-content: center;
-    text-align: center;
-    margin-bottom: 10px;
-    width: 100%;
-  }
-
-  .header-pages-description {
-    font-size: 17px;
-    padding: 0px 30px;
-    text-align: justify;
-    font-weight: 300;
-    line-height: 25px;
-  }
-
-  .header-pages-container {
-    max-width: 100%;
-    align-items: center;
-  }
-
-  .header-pages-image,
-  .header-pages-image-loading,
-  .header-pages-image-error {
-    width: 100%;
-    max-width: 100%;
-    height: auto;
-    aspect-ratio: 810/360;
-  }
-}
-
-/* Tablet and larger */
-@media (min-width: 768px) {
-  .header-pages-px-responsive {
-    width: 94%;
-  }
-}
-
-/* ===================================== */
-/* Video About Component */
-/* ===================================== */
-
-/* Responsividade para o componente Accordion */
-@media (min-width: 768px) {
-  /* md breakpoint (tablets ou maiores) */
-  .pxResponsive {
-    padding-left: 3%;
-    padding-right: 3%;
-  }
-}
-
-/* Para dispositivos menores que 768px (mobile) */
-@media (max-width: 767px) {
-  .pxResponsive {
-    padding-left: 3%;
-    padding-right: 3%;
-    text-align: center;
-  }
-  .playerVideo {
-    width: 100%;
-  }
-}
-
-/* Estilos melhorados para o player de vídeo */
-.playerVideo {
-  position: relative;
-}
-
-.playerVideo iframe,
-.playerVideo video {
-  width: 100%;
-  height: auto;
-  min-height: 300px;
-  border-radius: 16px;
-}
-
-/* Responsive video container melhorado */
-.video-container {
-  position: relative;
-  width: 100%;
-  height: 0;
-  padding-bottom: 56.25%; /* 16:9 aspect ratio */
-  border-radius: 16px;
-  overflow: hidden;
-}
-
-.video-container iframe,
-.video-container video {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  border-radius: 16px;
-}
-
-/* Animações melhoradas para accordions */
-.accordion-item {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.accordion-item:hover {
-  transform: translateY(-2px);
-}
-
-/* Estilo para números dos itens do accordion */
-.accordion-number {
-  background: linear-gradient(135deg, var(--primary-color), #1e40af);
-  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
-}
-
-/* Scrollbar customizada para o container do accordion */
-.accordion-container::-webkit-scrollbar {
-  width: 4px;
-}
-
-.accordion-container::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.accordion-container::-webkit-scrollbar-thumb {
-  background: rgba(59, 130, 246, 0.3);
-  border-radius: 2px;
-}
-
-.accordion-container::-webkit-scrollbar-thumb:hover {
-  background: rgba(59, 130, 246, 0.5);
-}
-
-/* ===================================== */
-/* ABOUT ADVANTAGES COMPONENT */
-/* ===================================== */
-
-@media (min-width: 768px) {
-  /* md breakpoint (tablets ou maiores) */
-  .aboutAdvantagesPx {
-    padding-left: 3%;
-    padding-right: 3%;
-  }
-}
-
-/* Para dispositivos menores que 768px (mobile) */
-@media (max-width: 767px) {
-  .aboutAdvantagesPx {
-    padding-left: 3%;
-    padding-right: 3%;
-    text-align: center;
-    margin-top: -30px;
-  }
-  .playerVideo {
-    width: 100%;
-  }
-  .aboutAdvantagesSection {
-    margin-top: 1px;
-    margin-right: 0px;
-    padding-left: 3%;
-    padding-right: 3%;
-  }
-  .aboutAdvantagesImagem {
-    display: none;
-  }
-  .aboutAdvantagesSpaceMobile {
-    margin-bottom: -20px;
-  }
-}
-
-/* Estilos específicos para os cards de vantagens */
-.aboutAdvantagesCard {
-  transition: all 0.3s ease-in-out;
-  backdrop-filter: blur(10px);
-}
-
-.aboutAdvantagesCard:hover {
-  transform: translateY(-8px);
-  box-shadow: 0 20px 40px rgba(0, 26, 87, 0.3);
-}
-
-.aboutAdvantagesIconWrapper {
-  transition: transform 0.3s ease-in-out;
-}
-
-.aboutAdvantagesCard:hover .aboutAdvantagesIconWrapper {
-  transform: scale(1.1) rotate(5deg);
-}
-
-/* Overlay da imagem */
-.aboutAdvantagesOverlay {
-  background: linear-gradient(
-    135deg,
-    rgba(0, 26, 87, 0.8) 0%,
-    rgba(0, 26, 87, 0.6) 50%,
-    rgba(0, 26, 87, 0.8) 100%
-  );
-  backdrop-filter: blur(2px);
-}
-
-/* Animação de entrada para os cards */
-@keyframes aboutAdvantagesFadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.aboutAdvantagesCard {
-  animation: aboutAdvantagesFadeInUp 0.6s ease-out forwards;
-}
-
-/* Delay escalonado para os cards */
-.aboutAdvantagesCard:nth-child(1) {
-  animation-delay: 0.1s;
-}
-.aboutAdvantagesCard:nth-child(2) {
-  animation-delay: 0.2s;
-}
-.aboutAdvantagesCard:nth-child(3) {
-  animation-delay: 0.3s;
-}
-.aboutAdvantagesCard:nth-child(4) {
-  animation-delay: 0.4s;
-}
-
-/* ===================================== */
-/* TESTIMONIALS CAROUSEL STYLES - UX MELHORADA */
-/* ===================================== */
-
-/* Garantir que o carousel tenha altura consistente */
-.testimonials-carousel-item {
-  height: 100%;
-  min-height: 200px;
-}
-
-/* Linha clamp para textos longos */
-.line-clamp-4 {
-  display: -webkit-box;
-  -webkit-line-clamp: 4;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-/* Animação para botões de navegação */
-@keyframes pulse-ring {
-  0% {
-    transform: scale(1);
-    opacity: 1;
-  }
-  50% {
-    transform: scale(1.1);
-    opacity: 0.7;
-  }
-  100% {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
-
-/* Estados dos botões melhorados */
-.testimonials-nav-button:hover {
-  animation: pulse-ring 0.6s ease-in-out;
-}
-
-/* Responsividade melhorada */
-@media (max-width: 767px) {
-  .testimonials-carousel-item {
-    min-height: 180px;
-  }
-}
-
-@media (min-width: 768px) {
-  /* Garantir espaço para os botões externos */
-  .testimonials-container-with-nav {
-    padding-left: 3rem;
-    padding-right: 3rem;
-  }
-}
-
-/* Smooth scroll para o carousel */
-.testimonials-carousel {
-  scroll-behavior: smooth;
-}
-
-/* Estados de focus melhorados para acessibilidade */
-.testimonials-nav-button:focus-visible {
-  outline: 2px solid var(--primary-color);
-  outline-offset: 2px;
-}
-
-/* Melhor contraste para dark mode */
-@media (prefers-color-scheme: dark) {
-  .testimonials-carousel-item {
-    background-color: #1f2937;
-    border-color: rgba(255, 255, 255, 0.1);
-  }
-
-  .testimonials-carousel-item:hover {
-    border-color: rgba(59, 130, 246, 0.3);
-  }
-}
-
-/* ===================================== */
-/* PROBLEM SOLUTION SECTION ANIMATIONS */
-/* ===================================== */
-
-@keyframes fade-in-up {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* Animação de entrada para os cards de problema */
-.problem-card-enter {
-  animation: fade-in-up 0.6s ease-out forwards;
-}
-
-/* Delay escalonado para os cards */
-.problem-card-enter:nth-child(1) {
-  animation-delay: 0ms;
-}
-.problem-card-enter:nth-child(2) {
-  animation-delay: 150ms;
-}
-.problem-card-enter:nth-child(3) {
-  animation-delay: 300ms;
-}
-.problem-card-enter:nth-child(4) {
-  animation-delay: 450ms;
-}
-
-/* ===================================== */
-/* GLOBAL LOADER STYLES */
+/* ENHANCED GLOBAL LOADER STYLES */
 /* ===================================== */
 
 .adv-loader-card {
-  /* color used to softly clip top and bottom of the words container */
+  /* Variável de cor para clipping suave */
   --bg-color: #111;
   background-color: var(--bg-color);
-  padding: 1rem 2rem;
-  border-radius: 1.25rem;
+  padding: 2rem 3rem;
+  border-radius: 1.5rem;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Variant minimal - menor padding */
+.adv-loader-card-minimal {
+  --bg-color: #111;
+  background-color: var(--bg-color);
+  padding: 1.5rem 2rem;
+  border-radius: 1rem;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+}
+
+/* Variant compact - bem pequeno */
+.adv-loader-card-compact {
+  --bg-color: #111;
+  background-color: var(--bg-color);
+  padding: 1rem 1.5rem;
+  border-radius: 0.75rem;
+  box-shadow: 0 3px 15px rgba(0, 0, 0, 0.2);
 }
 
 .adv-loader {
@@ -715,14 +38,23 @@
   font-size: 25px;
   box-sizing: content-box;
   height: 40px;
-  padding: 10px 10px;
+  padding: 10px;
   display: flex;
+  align-items: center;
   border-radius: 8px;
+  user-select: none;
+}
+
+.adv-loader p {
+  margin: 0;
+  white-space: nowrap;
 }
 
 .adv-loader-words {
   overflow: hidden;
   position: relative;
+  height: 40px;
+  margin-left: 6px;
 }
 
 .adv-loader-words::after {
@@ -736,39 +68,108 @@
     var(--bg-color) 90%
   );
   z-index: 20;
+  pointer-events: none;
 }
 
 .adv-loader-word {
   display: block;
-  height: 100%;
+  height: 40px;
+  line-height: 40px;
   padding-left: 6px;
   color: #956afa;
   animation: adv-spin 4s infinite;
+  font-weight: 600;
 }
 
 @keyframes adv-spin {
   10% {
-    transform: translateY(-102%);
+    transform: translateY(-105%);
   }
   25% {
     transform: translateY(-100%);
   }
   35% {
-    transform: translateY(-202%);
+    transform: translateY(-205%);
   }
   50% {
     transform: translateY(-200%);
   }
   60% {
-    transform: translateY(-302%);
+    transform: translateY(-305%);
   }
   75% {
     transform: translateY(-300%);
   }
   85% {
-    transform: translateY(-402%);
+    transform: translateY(-405%);
   }
   100% {
     transform: translateY(-400%);
   }
+}
+
+/* Responsividade do loader */
+@media (max-width: 768px) {
+  .adv-loader-card {
+    padding: 1.5rem 2rem;
+    border-radius: 1rem;
+  }
+
+  .adv-loader {
+    font-size: 20px;
+    height: 32px;
+  }
+
+  .adv-loader-words {
+    height: 32px;
+  }
+
+  .adv-loader-word {
+    height: 32px;
+    line-height: 32px;
+  }
+}
+
+@media (max-width: 480px) {
+  .adv-loader-card {
+    padding: 1rem 1.5rem;
+    border-radius: 0.75rem;
+  }
+
+  .adv-loader {
+    font-size: 18px;
+    height: 28px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .adv-loader-words {
+    height: 28px;
+    margin-left: 0;
+  }
+
+  .adv-loader-word {
+    height: 28px;
+    line-height: 28px;
+    padding-left: 0;
+  }
+}
+
+/* Animação de entrada do loader */
+@keyframes adv-loader-fade-in {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.adv-loader-card,
+.adv-loader-card-minimal,
+.adv-loader-card-compact {
+  animation: adv-loader-fade-in 0.6s ease-out forwards;
 }

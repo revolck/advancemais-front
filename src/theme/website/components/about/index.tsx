@@ -1,15 +1,15 @@
-'use client';
+"use client";
 
-import { useCallback, useEffect, useState } from 'react';
-import { getAboutDataClient } from '@/api/websites/components/about';
-import type { AboutApiResponse } from '@/api/websites/components/about/types';
-import AboutImage from './components/AboutImage';
-import AboutContent from './components/AboutContent';
-import { ImageNotFound } from '@/components/ui/custom/image-not-found';
-import { ButtonCustom } from '@/components/ui/custom/button';
+import { useCallback, useEffect, useState } from "react";
+import { getAboutDataClient } from "@/api/websites/components/about";
+import type { AboutApiResponse } from "@/api/websites/components/about/types";
+import AboutImage from "./components/AboutImage";
+import AboutContent from "./components/AboutContent";
+import { ImageNotFound } from "@/components/ui/custom/image-not-found";
+import { ButtonCustom } from "@/components/ui/custom/button";
 
-// Loading component
-function AboutSkeleton({ className = '' }: { className?: string }) {
+// Loading skeleton component
+function AboutSkeleton({ className = "" }: { className?: string }) {
   return (
     <section
       className={`container mx-auto pt-16 lg:pb-6 px-4 flex flex-col lg:flex-row items-center lg:gap-20 gap-6 mt-5 ${className}`}
@@ -28,88 +28,166 @@ function AboutSkeleton({ className = '' }: { className?: string }) {
           <div className="h-4 bg-gray-200 rounded animate-pulse" />
           <div className="h-4 bg-gray-200 rounded animate-pulse w-5/6" />
         </div>
+        <div className="h-10 bg-gray-200 rounded animate-pulse w-32" />
       </div>
     </section>
   );
 }
 
+// Error component
+function AboutError({
+  error,
+  onRetry,
+  className = "",
+}: {
+  error: string;
+  onRetry: () => void;
+  className?: string;
+}) {
+  return (
+    <section
+      className={`container mx-auto py-16 px-4 text-center ${className}`}
+    >
+      <ImageNotFound
+        size="lg"
+        variant="error"
+        message="Erro ao carregar informações"
+        icon="AlertCircle"
+        className="mx-auto mb-6"
+        showMessage={true}
+      />
+      <p className="text-gray-600 mb-6 max-w-md mx-auto">{error}</p>
+      <ButtonCustom onClick={onRetry} variant="primary" size="md">
+        Tentar Novamente
+      </ButtonCustom>
+    </section>
+  );
+}
+
+// Main component interfaces
 interface AboutSectionProps {
   className?: string;
   onDataLoaded?: (data: AboutApiResponse) => void;
   onError?: (error: string) => void;
 }
 
-export default function AboutSection({
-  className,
-  onDataLoaded,
-  onError,
-}: AboutSectionProps) {
+// Hook personalizado para gerenciar loading status
+function useAboutLoading() {
   const [data, setData] = useState<AboutApiResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [retryCount, setRetryCount] = useState(0);
 
-  const fetchData = useCallback(() => {
+  const fetchData = useCallback(async () => {
     setIsLoading(true);
     setError(null);
-    getAboutDataClient()
-      .then(setData)
-      .catch((err: Error) => setError(err.message))
-      .finally(() => setIsLoading(false));
+
+    try {
+      console.log("🔄 Carregando dados do About...");
+      const result = await getAboutDataClient();
+      setData(result);
+      console.log("✅ About carregado com sucesso:", result);
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : "Erro desconhecido";
+      console.error("❌ Erro ao carregar About:", errorMessage);
+      setError(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
+  const retry = useCallback(() => {
+    setRetryCount((prev) => prev + 1);
+    fetchData();
+  }, [fetchData]);
+
+  // Auto-retry em caso de erro (máximo 2 tentativas automáticas)
+  useEffect(() => {
+    if (error && retryCount < 2) {
+      const timer = setTimeout(() => {
+        console.log(`🔄 Tentativa automática ${retryCount + 1} para About...`);
+        retry();
+      }, 2000 * (retryCount + 1)); // Delay crescente
+
+      return () => clearTimeout(timer);
+    }
+  }, [error, retryCount, retry]);
+
+  // Executa o fetch inicial
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
+  return {
+    data,
+    error,
+    isLoading,
+    retry,
+    hasAutoRetried: retryCount >= 2,
+  };
+}
+
+// Main About Section component
+export default function AboutSection({
+  className = "",
+  onDataLoaded,
+  onError,
+}: AboutSectionProps) {
+  const { data, error, isLoading, retry, hasAutoRetried } = useAboutLoading();
+
+  // Notify parent components about data loading
   useEffect(() => {
     if (data && !isLoading) {
       onDataLoaded?.(data);
     }
   }, [data, isLoading, onDataLoaded]);
 
+  // Notify parent components about errors
   useEffect(() => {
-    if (error) {
+    if (error && hasAutoRetried) {
       onError?.(error);
     }
-  }, [error, onError]);
+  }, [error, hasAutoRetried, onError]);
 
+  // Loading state
   if (isLoading) {
     return <AboutSkeleton className={className} />;
   }
 
+  // Error state (after auto-retries)
   if (error || !data) {
     return (
-      <div className="container mx-auto py-16 px-4 text-center">
-        <ImageNotFound
-          size="lg"
-          variant="error"
-          message="Erro ao carregar informações"
-          icon="AlertCircle"
-          className="mx-auto mb-6"
-          showMessage={true}
-        />
-        <p className="text-gray-600 mb-4 max-w-md mx-auto">
-          Não foi possível carregar as informações do about.
-        </p>
-        <ButtonCustom onClick={fetchData} variant="default" icon="RefreshCw">
-          Tentar Novamente
-        </ButtonCustom>
-      </div>
+      <AboutError
+        error={error || "Dados não encontrados"}
+        onRetry={retry}
+        className={className}
+      />
     );
   }
 
+  // Success state - render the actual content
   return (
     <section
       className={`container mx-auto pt-16 lg:pb-6 px-4 flex flex-col lg:flex-row items-center lg:gap-20 gap-6 mt-5 ${className}`}
     >
-      <AboutImage
-        src={data.src}
-        alt={data.title}
-        width={600}
-        height={400}
-      />
-      <AboutContent title={data.title} description={data.description} />
+      {/* Image Section - CORRIGIDO: removido priority, adicionado width/height */}
+      <div className="w-full lg:w-1/2">
+        <AboutImage
+          src={data.src}
+          alt={data.title || "Sobre nós"}
+          width={600}
+          height={400}
+        />
+      </div>
+
+      {/* Content Section */}
+      <div className="w-full lg:w-1/2">
+        <AboutContent title={data.title} description={data.description} />
+      </div>
     </section>
   );
 }
 
+// Export skeleton for external use if needed
+export { AboutSkeleton };
