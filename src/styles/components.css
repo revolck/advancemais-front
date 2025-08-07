@@ -6,9 +6,9 @@
   color: rgb(124, 124, 124);
   font-family: "Poppins", sans-serif;
   font-weight: 500;
-  font-size: 25px;
+  font-size: 32px;
   box-sizing: content-box;
-  height: 40px;
+  height: 52px;
   padding: 10px;
   display: flex;
   align-items: center;
@@ -24,14 +24,14 @@
 .adv-loader-words {
   overflow: hidden;
   position: relative;
-  height: 40px;
+  height: 52px;
   margin-left: 6px;
 }
 
 .adv-loader-word {
   display: block;
-  height: 40px;
-  line-height: 40px;
+  height: 52px;
+  line-height: 52px;
   padding-left: 6px;
   color: #00257d;
   animation: adv-spin 4s infinite;
@@ -68,37 +68,37 @@
 /* Responsividade do loader */
 @media (max-width: 768px) {
   .adv-loader {
-    font-size: 20px;
-    height: 32px;
+    font-size: 26px;
+    height: 42px;
   }
 
   .adv-loader-words {
-    height: 32px;
+    height: 42px;
   }
 
   .adv-loader-word {
-    height: 32px;
-    line-height: 32px;
+    height: 42px;
+    line-height: 42px;
   }
 }
 
 @media (max-width: 480px) {
   .adv-loader {
-    font-size: 18px;
-    height: 28px;
+    font-size: 22px;
+    height: 36px;
     flex-direction: column;
     align-items: flex-start;
     gap: 4px;
   }
 
   .adv-loader-words {
-    height: 28px;
+    height: 36px;
     margin-left: 0;
   }
 
   .adv-loader-word {
-    height: 28px;
-    line-height: 28px;
+    height: 36px;
+    line-height: 36px;
     padding-left: 0;
   }
 }
@@ -114,4 +114,3 @@
     transform: scale(1) translateY(0);
   }
 }
-
