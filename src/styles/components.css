@@ -4,7 +4,7 @@
 
 .adv-loader-card {
   /* Variável de cor para clipping suave */
-  --bg-color: #111;
+  --bg-color: #f6f3f4;
   background-color: var(--bg-color);
   padding: 2rem 3rem;
   border-radius: 1.5rem;
@@ -15,7 +15,7 @@
 
 /* Variant minimal - menor padding */
 .adv-loader-card-minimal {
-  --bg-color: #111;
+  --bg-color: #f6f3f4;
   background-color: var(--bg-color);
   padding: 1.5rem 2rem;
   border-radius: 1rem;
@@ -24,7 +24,7 @@
 
 /* Variant compact - bem pequeno */
 .adv-loader-card-compact {
-  --bg-color: #111;
+  --bg-color: #f6f3f4;
   background-color: var(--bg-color);
   padding: 1rem 1.5rem;
   border-radius: 0.75rem;
@@ -76,7 +76,7 @@
   height: 40px;
   line-height: 40px;
   padding-left: 6px;
-  color: #956afa;
+  color: #00257d;
   animation: adv-spin 4s infinite;
   font-weight: 600;
 }
