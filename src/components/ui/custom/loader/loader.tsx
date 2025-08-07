@@ -29,7 +29,7 @@ export function Loader({
   variant = "default",
 }: LoaderProps) {
   const overlayClasses = showOverlay
-    ? "fixed inset-0 bg-black bg-opacity-90 z-50"
+    ? "fixed inset-0 bg-white bg-opacity-90 z-50"
     : "";
 
   const containerClasses = fullScreen
