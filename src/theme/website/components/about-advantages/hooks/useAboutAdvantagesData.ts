@@ -72,7 +72,6 @@ export function useAboutAdvantagesData(
       }
 
       setData(result.data);
-      setIsLoading(false);
     } catch (err) {
       console.error("Erro ao buscar dados de vantagens:", err);
 
@@ -88,10 +87,9 @@ export function useAboutAdvantagesData(
 
       if (env.apiFallback === "mock") {
         setData(DEFAULT_ABOUT_ADVANTAGES_DATA);
-        setIsLoading(false);
-      } else {
-        setIsLoading(true);
       }
+    } finally {
+      setIsLoading(false);
     }
   };
 
