@@ -7,28 +7,29 @@ import AboutImage from "./components/AboutImage";
 import AboutContent from "./components/AboutContent";
 import { ImageNotFound } from "@/components/ui/custom/image-not-found";
 import { ButtonCustom } from "@/components/ui/custom/button";
+import { useLoadingStatus } from "@/hooks/use-loading-status";
 
 // Loading skeleton component
 function AboutSkeleton({ className = "" }: { className?: string }) {
   return (
-    <section
-      className={`container mx-auto pt-16 lg:pb-6 px-4 flex flex-col lg:flex-row items-center lg:gap-20 gap-6 mt-5 ${className}`}
-    >
-      {/* Image skeleton */}
-      <div className="w-full lg:w-1/2">
-        <div className="aspect-[3/2] bg-gray-200 animate-pulse rounded-lg" />
-      </div>
-
-      {/* Content skeleton */}
-      <div className="w-full lg:w-1/2 space-y-4">
-        <div className="h-8 bg-gray-200 rounded animate-pulse" />
-        <div className="h-8 bg-gray-200 rounded animate-pulse w-3/4" />
-        <div className="space-y-2">
-          <div className="h-4 bg-gray-200 rounded animate-pulse" />
-          <div className="h-4 bg-gray-200 rounded animate-pulse" />
-          <div className="h-4 bg-gray-200 rounded animate-pulse w-5/6" />
+    <section className={className}>
+      <div className="container mx-auto py-16 px-4 flex flex-col lg:flex-row items-center gap-20 mt-5">
+        {/* Image skeleton */}
+        <div className="w-full lg:w-1/2">
+          <div className="aspect-[3/2] bg-gray-200 animate-pulse rounded-lg" />
         </div>
-        <div className="h-10 bg-gray-200 rounded animate-pulse w-32" />
+
+        {/* Content skeleton */}
+        <div className="w-full lg:w-1/2 space-y-4">
+          <div className="h-8 bg-gray-200 rounded animate-pulse" />
+          <div className="h-8 bg-gray-200 rounded animate-pulse w-3/4" />
+          <div className="space-y-2">
+            <div className="h-4 bg-gray-200 rounded animate-pulse" />
+            <div className="h-4 bg-gray-200 rounded animate-pulse" />
+            <div className="h-4 bg-gray-200 rounded animate-pulse w-5/6" />
+          </div>
+          <div className="h-10 bg-gray-200 rounded animate-pulse w-32" />
+        </div>
       </div>
     </section>
   );
@@ -45,21 +46,21 @@ function AboutError({
   className?: string;
 }) {
   return (
-    <section
-      className={`container mx-auto py-16 px-4 text-center ${className}`}
-    >
-      <ImageNotFound
-        size="lg"
-        variant="error"
-        message="Erro ao carregar informações"
-        icon="AlertCircle"
-        className="mx-auto mb-6"
-        showMessage={true}
-      />
-      <p className="text-gray-600 mb-6 max-w-md mx-auto">{error}</p>
-      <ButtonCustom onClick={onRetry} variant="primary" size="md">
-        Tentar Novamente
-      </ButtonCustom>
+    <section className={className}>
+      <div className="container mx-auto py-16 px-4 text-center">
+        <ImageNotFound
+          size="lg"
+          variant="error"
+          message="Erro ao carregar informações"
+          icon="AlertCircle"
+          className="mx-auto mb-6"
+          showMessage={true}
+        />
+        <p className="text-gray-600 mb-6 max-w-md mx-auto">{error}</p>
+        <ButtonCustom onClick={onRetry} variant="primary" size="md">
+          Tentar Novamente
+        </ButtonCustom>
+      </div>
     </section>
   );
 }
@@ -135,20 +136,24 @@ export default function AboutSection({
   onError,
 }: AboutSectionProps) {
   const { data, error, isLoading, retry, hasAutoRetried } = useAboutLoading();
+  const { markAsLoaded, reportError } = useLoadingStatus({ componentName: "About" });
 
   // Notify parent components about data loading
   useEffect(() => {
     if (data && !isLoading) {
       onDataLoaded?.(data);
+      markAsLoaded();
     }
-  }, [data, isLoading, onDataLoaded]);
+  }, [data, isLoading, onDataLoaded, markAsLoaded]);
 
   // Notify parent components about errors
   useEffect(() => {
-    if (error && hasAutoRetried) {
+    if (error && hasAutoRetried && !isLoading) {
       onError?.(error);
+      reportError(error);
+      markAsLoaded();
     }
-  }, [error, hasAutoRetried, onError]);
+  }, [error, hasAutoRetried, isLoading, onError, reportError, markAsLoaded]);
 
   // Loading state
   if (isLoading) {
@@ -168,21 +173,17 @@ export default function AboutSection({
 
   // Success state - render the actual content
   return (
-    <section
-      className={`container mx-auto pt-16 lg:pb-6 px-4 flex flex-col lg:flex-row items-center lg:gap-20 gap-6 mt-5 ${className}`}
-    >
-      {/* Image Section - CORRIGIDO: removido priority, adicionado width/height */}
-      <div className="w-full lg:w-1/2">
+    <section className={className}>
+      <div className="container mx-auto py-16 px-4 flex flex-col lg:flex-row items-center gap-20 mt-5">
+        {/* Image Section */}
         <AboutImage
           src={data.src}
           alt={data.title || "Sobre nós"}
           width={600}
           height={400}
         />
-      </div>
 
-      {/* Content Section */}
-      <div className="w-full lg:w-1/2">
+        {/* Content Section */}
         <AboutContent title={data.title} description={data.description} />
       </div>
     </section>

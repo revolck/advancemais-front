@@ -6,20 +6,24 @@ import { apiKeepAlive } from "@/lib/api-keep-alive";
 
 interface SimpleLoadingContextValue {
   isReady: boolean;
-  setReady: (ready: boolean) => void;
+  startLoading: () => void;
+  finishLoading: () => void;
   error: string | null;
   setError: (error: string | null) => void;
 }
 
 const SimpleLoadingContext = createContext<SimpleLoadingContextValue>({
   isReady: false,
-  setReady: () => {},
+  startLoading: () => {},
+  finishLoading: () => {},
   error: null,
   setError: () => {},
 });
 
 export function LoadingProvider({ children }: { children: React.ReactNode }) {
   const [isClient, setIsClient] = useState(false);
+  const [loadingCount, setLoadingCount] = useState(0);
+  const [minTimeElapsed, setMinTimeElapsed] = useState(false);
   const [isReady, setIsReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -30,10 +34,10 @@ export function LoadingProvider({ children }: { children: React.ReactNode }) {
     // Inicia keep-alive da API
     apiKeepAlive.start();
 
-    // Timer simples: 3 segundos após montar, considera pronto
+    // Garante um tempo mínimo de loading
     const timer = setTimeout(() => {
-      console.log("✅ Loading automático completado");
-      setIsReady(true);
+      console.log("✅ Loading mínimo de 3s cumprido");
+      setMinTimeElapsed(true);
     }, 3000);
 
     return () => {
@@ -42,10 +46,26 @@ export function LoadingProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  const setReady = (ready: boolean) => {
+  // Atualiza status de pronto quando todos os carregamentos finalizam
+  useEffect(() => {
+    const ready = loadingCount === 0 && minTimeElapsed && !error;
     console.log(`📊 Loading status: ${ready ? "PRONTO" : "CARREGANDO"}`);
     setIsReady(ready);
-  };
+  }, [loadingCount, minTimeElapsed, error]);
+
+  const startLoading = () =>
+    setLoadingCount((prev) => {
+      const next = prev + 1;
+      console.log(`🔄 Loading iniciado (${next})`);
+      return next;
+    });
+
+  const finishLoading = () =>
+    setLoadingCount((prev) => {
+      const next = Math.max(0, prev - 1);
+      console.log(`✅ Loading concluído (${next})`);
+      return next;
+    });
 
   const setErrorCallback = (newError: string | null) => {
     console.log(newError ? `❌ Erro: ${newError}` : "✅ Erro limpo");
@@ -54,7 +74,8 @@ export function LoadingProvider({ children }: { children: React.ReactNode }) {
 
   const contextValue: SimpleLoadingContextValue = {
     isReady: isClient && isReady,
-    setReady,
+    startLoading,
+    finishLoading,
     error,
     setError: setErrorCallback,
   };

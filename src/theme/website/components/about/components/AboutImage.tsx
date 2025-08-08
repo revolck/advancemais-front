@@ -21,24 +21,24 @@ const AboutImage = ({ src, alt, width, height }: AboutImageProps) => {
   return (
     <div className="w-full lg:w-1/2 relative">
       {/* Loading State */}
-      {isLoading && (
-        <div className="aspect-[3/2] bg-gray-200 animate-pulse rounded-lg flex items-center justify-center">
-          <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-        </div>
-      )}
+        {isLoading && (
+          <div className="aspect-[3/2] bg-gray-200 animate-pulse rounded-lg flex items-center justify-center">
+            <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+          </div>
+        )}
 
       {/* Error State usando ImageNotFound */}
       {hasError && (
-        <ImageNotFound
-          size="full"
-          variant="muted"
-          aspectRatio="landscape"
-          message="Imagem indisponível"
-          icon="ImageOff"
-          className="aspect-[3/2] rounded-lg"
-          showMessage={true}
-        />
-      )}
+          <ImageNotFound
+            size="full"
+            variant="muted"
+            aspectRatio="landscape"
+            message="Imagem indisponível"
+            icon="ImageOff"
+            className="aspect-[3/2] rounded-lg shadow-lg"
+            showMessage={true}
+          />
+        )}
 
       {/* Main Image */}
       {!hasError && (
@@ -48,7 +48,7 @@ const AboutImage = ({ src, alt, width, height }: AboutImageProps) => {
           width={width}
           height={height}
           className={`
-            rounded-lg object-cover w-full
+            rounded-lg shadow-lg object-cover w-full
             transition-opacity duration-500
             ${isLoading ? "opacity-0 absolute inset-0" : "opacity-100"}
           `}
