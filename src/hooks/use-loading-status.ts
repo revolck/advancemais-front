@@ -1,5 +1,5 @@
 import { useWebsiteLoading } from "@/app/website/loading-context";
-import { useEffect, useState } from "react";
+import { useEffect, useRef } from "react";
 
 interface UseLoadingStatusOptions {
   componentName?: string;
@@ -12,27 +12,27 @@ interface UseLoadingStatusOptions {
 export function useLoadingStatus(options: UseLoadingStatusOptions = {}) {
   const { autoRegister = true } = options;
   const { startLoading, finishLoading, setError } = useWebsiteLoading();
-  const [isRegistered, setIsRegistered] = useState(false);
+  const isRegisteredRef = useRef(false);
 
   // Registra automaticamente o componente no contador global
   useEffect(() => {
-    if (autoRegister && !isRegistered) {
+    if (autoRegister) {
       startLoading();
-      setIsRegistered(true);
+      isRegisteredRef.current = true;
     }
 
     return () => {
-      if (autoRegister && isRegistered) {
+      if (autoRegister && isRegisteredRef.current) {
         finishLoading();
       }
     };
-  }, [autoRegister, isRegistered, startLoading, finishLoading]);
+  }, [autoRegister, startLoading, finishLoading]);
 
   // Marca o carregamento como concluído
   const markAsLoaded = () => {
-    if (isRegistered) {
+    if (isRegisteredRef.current) {
       finishLoading();
-      setIsRegistered(false);
+      isRegisteredRef.current = false;
     }
   };
 
