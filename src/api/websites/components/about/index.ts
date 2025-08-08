@@ -45,22 +45,17 @@ export async function getAboutData(): Promise<AboutApiResponse> {
 
 /**
  * Busca dados do componente About (Client-side)
- * Sem cache para dados dinâmicos no cliente
+ * Usa o cliente API com cache e suporte a mock
  */
 export async function getAboutDataClient(): Promise<AboutApiResponse> {
   const endpoint = routes.website.home.about();
 
   try {
-    const res = await fetch(endpoint, {
-      cache: "no-store",
-      headers: apiConfig.headers,
+    const raw = await apiFetch<AboutBackendResponse[]>(endpoint, {
+      init: { headers: apiConfig.headers },
+      cache: "short",
     });
 
-    if (!res.ok) {
-      throw new Error(`API responded with ${res.status}`);
-    }
-
-    const raw = (await res.json()) as AboutBackendResponse[];
     const data = mapAboutResponse(raw);
     console.log("✅ About data loaded (client):", data);
     return data;
