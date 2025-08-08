@@ -103,8 +103,8 @@ export function LoadingProvider({ children }: { children: React.ReactNode }) {
         </div>
       )}
 
-      {/* Content */}
-      {contextValue.isReady && !error && children}
+      {/* Content sempre renderizado; o Loader sobrepõe enquanto carrega */}
+      {!error && children}
     </SimpleLoadingContext.Provider>
   );
 }
