@@ -2,10 +2,13 @@
  * Keep-Alive para API da Render
  * Previne cold starts fazendo ping a cada 8 minutos
  */
+import { env } from "@/lib/env";
+
 class ApiKeepAlive {
   private interval: NodeJS.Timeout | null = null;
   private readonly PING_INTERVAL = 8 * 60 * 1000; // 8 minutos
-  private readonly API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+  // Usa a base da API ou fallback para rota relativa /api
+  private readonly API_URL = env.apiBaseUrl || "/api";
 
   start() {
     if (typeof window === "undefined" || !this.API_URL) return;

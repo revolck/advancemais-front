@@ -74,6 +74,17 @@ const nextConfig = {
     optimizeCss: true,
     scrollRestoration: true,
   },
+
+  // Proxy das rotas /api para o backend, evitando problemas de CORS
+  async rewrites() {
+    return [
+      {
+        source: "/api/:path*",
+        destination:
+          "https://advancemais-api-7h1q.onrender.com/api/:path*",
+      },
+    ];
+  },
 };
 
 module.exports = nextConfig;

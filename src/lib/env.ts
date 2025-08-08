@@ -44,10 +44,8 @@ function getEnvVar(key: string, fallback: string = ""): string {
  */
 export const env: AppConfig = {
   // API Configuration
-  apiBaseUrl: getEnvVar(
-    "NEXT_PUBLIC_API_BASE_URL",
-    "https://advancemais-api-7h1q.onrender.com"
-  ),
+  // Base da API. Quando vazio, usa o mesmo domínio do front com rewrites.
+  apiBaseUrl: getEnvVar("NEXT_PUBLIC_API_BASE_URL", ""),
   apiVersion: getEnvVar("NEXT_PUBLIC_API_VERSION", "v1"),
   baseUrl: getEnvVar("NEXT_PUBLIC_BASE_URL", "https://advancemais.com.br"),
   apiFallback: getEnvVar("NEXT_PUBLIC_API_FALLBACK", "loading") as ApiFallback,
