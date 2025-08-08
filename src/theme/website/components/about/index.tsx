@@ -5,8 +5,6 @@ import { getAboutDataClient } from "@/api/websites/components/about";
 import type { AboutApiResponse } from "@/api/websites/components/about/types";
 import AboutImage from "./components/AboutImage";
 import AboutContent from "./components/AboutContent";
-import { ImageNotFound } from "@/components/ui/custom/image-not-found";
-import { ButtonCustom } from "@/components/ui/custom/button";
 import { useLoadingStatus } from "@/hooks/use-loading-status";
 
 // Loading skeleton component
@@ -30,36 +28,6 @@ function AboutSkeleton({ className = "" }: { className?: string }) {
           </div>
           <div className="h-10 bg-gray-200 rounded animate-pulse w-32" />
         </div>
-      </div>
-    </section>
-  );
-}
-
-// Error component
-function AboutError({
-  error,
-  onRetry,
-  className = "",
-}: {
-  error: string;
-  onRetry: () => void;
-  className?: string;
-}) {
-  return (
-    <section className={className}>
-      <div className="container mx-auto py-16 px-4 text-center">
-        <ImageNotFound
-          size="lg"
-          variant="error"
-          message="Erro ao carregar informações"
-          icon="AlertCircle"
-          className="mx-auto mb-6"
-          showMessage={true}
-        />
-        <p className="text-gray-600 mb-6 max-w-md mx-auto">{error}</p>
-        <ButtonCustom onClick={onRetry} variant="primary" size="md">
-          Tentar Novamente
-        </ButtonCustom>
       </div>
     </section>
   );
@@ -135,7 +103,7 @@ export default function AboutSection({
   onDataLoaded,
   onError,
 }: AboutSectionProps) {
-  const { data, error, isLoading, retry, hasAutoRetried } = useAboutLoading();
+  const { data, error, isLoading, hasAutoRetried } = useAboutLoading();
   const { markAsLoaded, reportError } = useLoadingStatus({ componentName: "About" });
 
   // Notify parent components about data loading
@@ -160,15 +128,9 @@ export default function AboutSection({
     return <AboutSkeleton className={className} />;
   }
 
-  // Error state (after auto-retries)
+  // Error state (after auto-retries) - hide component if data is not available
   if (error || !data) {
-    return (
-      <AboutError
-        error={error || "Dados não encontrados"}
-        onRetry={retry}
-        className={className}
-      />
-    );
+    return null;
   }
 
   // Success state - render the actual content
