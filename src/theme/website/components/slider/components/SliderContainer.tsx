@@ -11,16 +11,17 @@ export const SliderContainer: React.FC<SliderContainerProps> = ({
   canScrollNext,
   onScrollPrev,
   onScrollNext,
+  slides,
 }) => {
   const isMobile = useIsMobile();
-  const slides = isMobile ? SLIDES.mobile : SLIDES.desktop;
+  const slideData = slides ?? (isMobile ? SLIDES.mobile : SLIDES.desktop);
 
   return (
     <section className="relative w-full overflow-hidden">
       {/* Container do Embla */}
       <div ref={emblaRef} className="overflow-hidden w-full">
         <div className="flex">
-          {slides.map((slide, index) => (
+          {slideData.map((slide, index) => (
             <SliderSlide
               key={slide.id}
               slide={slide}
