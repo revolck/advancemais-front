@@ -1,12 +1,8 @@
 export interface SlideData {
   id: number;
   image: string;
-  title?: string;
-  subtitle?: string;
-  cta?: {
-    text: string;
-    href: string;
-  };
+  alt?: string;
+  link?: string;
   overlay?: boolean;
 }
 
@@ -28,6 +24,7 @@ export interface SliderContainerProps {
   onScrollNext: () => void;
   currentSlide: number;
   slideCount: number;
+  slides?: SlideData[];
 }
 
 export interface SliderSlideProps {

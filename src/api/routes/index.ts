@@ -16,6 +16,7 @@ export const websiteRoutes = {
   delete: (id: string) => `${prefix}/website/${id}`,
   home: {
     about: () => `${prefix}/website/sobre`,
+    slide: () => `${prefix}/website/slide`,
   },
 };
 

@@ -1,17 +1,17 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { SliderContainer } from "./components/SliderContainer";
 import { ImageNotFound } from "@/components/ui/custom/image-not-found";
 import { SLIDER_CONFIG } from "./constants/config";
 import { useSlider } from "./hooks/useSlider";
 import { useSliderAutoplay } from "./hooks/useSliderAutoplay";
-import { SLIDES } from "./constants/slides";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { getSliderDataClient } from "@/api/websites/components/slide";
+import type { SlideData } from "./types";
 
 const SliderBasic: React.FC = () => {
-  const isMobile = useIsMobile();
-  const slides = isMobile ? SLIDES.mobile : SLIDES.desktop;
+  const [slides, setSlides] = useState<SlideData[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   const {
     emblaRef,
@@ -24,8 +24,38 @@ const SliderBasic: React.FC = () => {
     slideCount,
   } = useSlider(SLIDER_CONFIG);
 
+  // Carrega slides da API
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const data = await getSliderDataClient();
+        if (active) setSlides(data);
+      } catch (error) {
+        console.error("Erro ao carregar slides:", error);
+      } finally {
+        if (active) setIsLoading(false);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  // Re-inicializa o Embla quando os slides mudam
+  useEffect(() => {
+    if (emblaApi) {
+      emblaApi.reInit();
+    }
+  }, [emblaApi, slides]);
+
   // Autoplay básico
   useSliderAutoplay(emblaApi, SLIDER_CONFIG.autoplay);
+
+  // Enquanto carrega, mostra apenas um espaço reservado
+  if (isLoading) {
+    return <div className="w-full" style={{ aspectRatio: 16 / 9 }} />;
+  }
 
   // Se não há slides, renderiza um fallback elegante
   if (!slides || slides.length === 0) {
@@ -53,6 +83,7 @@ const SliderBasic: React.FC = () => {
       onScrollNext={scrollNext}
       currentSlide={currentSlide}
       slideCount={slideCount}
+      slides={slides}
     />
   );
 };
