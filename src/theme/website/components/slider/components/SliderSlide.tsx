@@ -12,22 +12,14 @@ export const SliderSlide: React.FC<SliderSlideProps> = ({
 }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
-  const [aspectRatio, setAspectRatio] = useState(
-    isMobile ? 9 / 16 : 16 / 9
-  );
-
   // Função para gerar alt text seguro
   const getAltText = (slide: { alt?: string }, index: number): string => {
     if (slide.alt) return slide.alt;
     return `Slide ${index + 1}`;
   };
 
-  const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+  const handleImageLoad = () => {
     setIsLoading(false);
-    const { naturalWidth, naturalHeight } = e.currentTarget;
-    if (naturalWidth && naturalHeight) {
-      setAspectRatio(naturalWidth / naturalHeight);
-    }
   };
 
   const handleImageError = () => {
@@ -52,7 +44,7 @@ export const SliderSlide: React.FC<SliderSlideProps> = ({
           aspectRatio="landscape"
           message="Slide indisponível"
           icon="ImageOff"
-          className="absolute inset-0"
+          className="absolute inset-0 !rounded-none !border-0 !bg-transparent"
           showMessage={true}
         />
       )}
@@ -69,7 +61,7 @@ export const SliderSlide: React.FC<SliderSlideProps> = ({
             ${isLoading ? "opacity-0" : "opacity-100"}
           `}
           priority={index === 0}
-          quality={90}
+          quality={80}
           onLoad={handleImageLoad}
           onError={handleImageError}
           sizes={
@@ -86,19 +78,13 @@ export const SliderSlide: React.FC<SliderSlideProps> = ({
   );
 
   return (
-    <div className="flex-none w-full relative">
+    <div className="flex-none w-full h-full relative">
       {slide.link ? (
-        <a
-          href={slide.link}
-          className="relative block w-full"
-          style={{ aspectRatio }}
-        >
+        <a href={slide.link} className="relative block w-full h-full">
           {content}
         </a>
       ) : (
-        <div className="relative w-full" style={{ aspectRatio }}>
-          {content}
-        </div>
+        <div className="relative w-full h-full">{content}</div>
       )}
     </div>
   );

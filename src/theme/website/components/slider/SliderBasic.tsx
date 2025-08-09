@@ -54,20 +54,19 @@ const SliderBasic: React.FC = () => {
 
   // Enquanto carrega, mostra apenas um espaço reservado
   if (isLoading) {
-    return <div className="w-full" style={{ aspectRatio: 16 / 9 }} />;
+    return <div className="w-full h-[400px] md:h-[500px] lg:h-[600px] xl:h-[800px]" />;
   }
 
   // Se não há slides, renderiza um fallback elegante
   if (!slides || slides.length === 0) {
     return (
-      <div className="w-full relative" style={{ aspectRatio: 16 / 9 }}>
+      <div className="w-full h-[400px] md:h-[500px] lg:h-[600px] xl:h-[800px]">
         <ImageNotFound
           size="full"
           variant="muted"
-          aspectRatio="landscape"
           message="Nenhum slide disponível"
           icon="ImageOff"
-          className="h-full"
+          className="w-full h-full !rounded-none !border-0 !bg-transparent"
           showMessage={true}
         />
       </div>
