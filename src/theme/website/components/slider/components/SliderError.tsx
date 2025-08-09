@@ -14,7 +14,10 @@ export const SliderError: React.FC<SliderErrorProps> = ({
   onRetry,
 }) => {
   return (
-    <div className="relative w-full h-[300px] sm:h-[400px] md:h-[500px] lg:h-[600px]">
+    <div
+      className="relative w-full"
+      style={{ aspectRatio: 16 / 9 }}
+    >
       {/* Usando o novo ImageNotFound */}
       <ImageNotFound
         size="full"

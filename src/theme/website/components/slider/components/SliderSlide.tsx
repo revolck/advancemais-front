@@ -12,6 +12,9 @@ export const SliderSlide: React.FC<SliderSlideProps> = ({
 }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
+  const [aspectRatio, setAspectRatio] = useState(
+    isMobile ? 9 / 16 : 16 / 9
+  );
 
   // Função para gerar alt text seguro
   const getAltText = (
@@ -23,8 +26,12 @@ export const SliderSlide: React.FC<SliderSlideProps> = ({
     return `Slide ${index + 1}`;
   };
 
-  const handleImageLoad = () => {
+  const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
     setIsLoading(false);
+    const { naturalWidth, naturalHeight } = e.currentTarget;
+    if (naturalWidth && naturalHeight) {
+      setAspectRatio(naturalWidth / naturalHeight);
+    }
   };
 
   const handleImageError = () => {
@@ -35,14 +42,8 @@ export const SliderSlide: React.FC<SliderSlideProps> = ({
   return (
     <div className="flex-none w-full relative">
       <div
-        className={`
-        relative w-full
-        ${
-          isMobile
-            ? "h-[300px] sm:h-[400px]"
-            : "h-[400px] md:h-[500px] lg:h-[498px]"
-        }
-      `}
+        className="relative w-full"
+        style={{ aspectRatio }}
       >
         {/* Loading State */}
         {isLoading && (

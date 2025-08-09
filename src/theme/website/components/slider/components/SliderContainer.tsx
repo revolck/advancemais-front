@@ -16,7 +16,7 @@ export const SliderContainer: React.FC<SliderContainerProps> = ({
   const slides = isMobile ? SLIDES.mobile : SLIDES.desktop;
 
   return (
-    <section className="relative w-full overflow-hidden bg-gray-100">
+    <section className="relative w-full overflow-hidden">
       {/* Container do Embla */}
       <div ref={emblaRef} className="overflow-hidden w-full">
         <div className="flex">
