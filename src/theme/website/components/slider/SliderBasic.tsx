@@ -30,7 +30,7 @@ const SliderBasic: React.FC = () => {
   // Se não há slides, renderiza um fallback elegante
   if (!slides || slides.length === 0) {
     return (
-      <div className="w-full h-[300px] md:h-[500px]">
+      <div className="w-full relative" style={{ aspectRatio: 16 / 9 }}>
         <ImageNotFound
           size="full"
           variant="muted"

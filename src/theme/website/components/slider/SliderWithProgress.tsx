@@ -38,7 +38,10 @@ export const SliderWithProgress: React.FC<SliderWithProgressProps> = ({
 
   if (!slides || slides.length === 0) {
     return (
-      <div className="w-full h-[300px] md:h-[500px] bg-gray-200flex items-center justify-center">
+      <div
+        className="w-full relative bg-gray-200 flex items-center justify-center"
+        style={{ aspectRatio: 16 / 9 }}
+      >
         <p className="text-gray-500">Nenhum slide disponível</p>
       </div>
     );
