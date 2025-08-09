@@ -8,6 +8,7 @@ import { useSliderKeyboard } from "./hooks/useSliderKeyboard";
 import { useSliderIntersection } from "./hooks/useSliderIntersection";
 import { SLIDES } from "./constants/slides";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { ImageNotFound } from "@/components/ui/custom/image-not-found";
 import type { SliderConfig } from "./types";
 
 interface SliderAdvancedProps {
@@ -84,11 +85,15 @@ export const SliderAdvanced: React.FC<SliderAdvancedProps> = ({
 
   if (!slides || slides.length === 0) {
     return (
-      <div
-        className="w-full relative bg-gray-200 flex items-center justify-center"
-        style={{ aspectRatio: 16 / 9 }}
-      >
-        <p className="text-gray-500">Nenhum slide disponível</p>
+      <div className="w-full h-[400px] md:h-[500px] lg:h-[600px] xl:h-[800px]">
+        <ImageNotFound
+          size="full"
+          variant="muted"
+          message="Nenhum slide disponível"
+          icon="ImageOff"
+          className="w-full h-full !rounded-none !border-0 !bg-transparent"
+          showMessage={true}
+        />
       </div>
     );
   }
