@@ -5,25 +5,21 @@ import useEmblaCarousel from "embla-carousel-react";
 import Autoplay from "embla-carousel-autoplay";
 import { BannerItem } from "../types";
 import { BannerCard } from "./BannerCard";
-import { BANNER_CONFIG } from "../constants";
 
 interface BannerSliderProps {
   banners: BannerItem[];
 }
 
+const AUTOPLAY_OPTIONS = { delay: 4000, stopOnInteraction: true };
+
 export const BannerSlider: React.FC<BannerSliderProps> = ({ banners }) => {
-  const [emblaRef, emblaApi] = useEmblaCarousel(
+  const [emblaRef] = useEmblaCarousel(
     {
       loop: true,
       align: "center",
       dragFree: false,
     },
-    [
-      Autoplay({
-        delay: BANNER_CONFIG.mobile.autoplay.delay,
-        stopOnInteraction: BANNER_CONFIG.mobile.autoplay.stopOnInteraction,
-      }),
-    ]
+    [Autoplay(AUTOPLAY_OPTIONS)]
   );
 
   return (

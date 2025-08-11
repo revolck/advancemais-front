@@ -17,6 +17,7 @@ export const websiteRoutes = {
   home: {
     about: () => `${prefix}/website/sobre`,
     slide: () => `${prefix}/website/slide`,
+    banner: () => `${prefix}/website/banner`,
   },
 };
 

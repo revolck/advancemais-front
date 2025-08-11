@@ -1,5 +1,5 @@
 export interface BannerItem {
-  id: number;
+  id: string;
   imagemUrl: string;
   linkUrl: string;
   position: number;

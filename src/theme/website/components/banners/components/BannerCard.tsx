@@ -5,7 +5,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { ImageNotFound } from "@/components/ui/custom/image-not-found";
 import { BannerCardProps } from "../types";
-import { BANNER_CONFIG } from "../constants";
 
 export const BannerCard: React.FC<BannerCardProps> = ({
   banner,
@@ -14,6 +13,9 @@ export const BannerCard: React.FC<BannerCardProps> = ({
 }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
+
+  const IMAGE_WIDTH = 400;
+  const IMAGE_HEIGHT = 600;
 
   const handleImageLoad = () => {
     setIsLoading(false);
@@ -64,8 +66,8 @@ export const BannerCard: React.FC<BannerCardProps> = ({
         <Image
           src={banner.imagemUrl}
           alt={banner.alt}
-          width={BANNER_CONFIG.dimensions.width}
-          height={BANNER_CONFIG.dimensions.height}
+          width={IMAGE_WIDTH}
+          height={IMAGE_HEIGHT}
           priority={priority}
           className={`
             w-full h-full object-cover
