@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { BannerSlider } from "./components/BannerSlider";
 import { BannerGrid } from "./components/BannerGrid";
-import { BANNERS } from "./constants";
-import { BannersGroupProps } from "./types";
+import { BannersGroupProps, BannerItem } from "./types";
+import { getBannerDataClient } from "@/api/websites/components/banner";
 
 const BannersGroup: React.FC<BannersGroupProps> = ({
   className = "",
@@ -12,6 +12,8 @@ const BannersGroup: React.FC<BannersGroupProps> = ({
 }) => {
   // Hook para detectar mobile - versão simplificada
   const [isMobile, setIsMobile] = useState(false);
+  const [banners, setBanners] = useState<BannerItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -24,10 +26,24 @@ const BannersGroup: React.FC<BannersGroupProps> = ({
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
-  const sortedBanners = useMemo(
-    () => [...BANNERS].sort((a, b) => a.position - b.position),
-    []
-  );
+  // Carrega banners da API
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const data = await getBannerDataClient();
+        if (active)
+          setBanners(data.sort((a, b) => a.position - b.position));
+      } catch (error) {
+        console.error("Erro ao carregar banners:", error);
+      } finally {
+        if (active) setIsLoading(false);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   return (
     <section className={`relative py-12 mt-[-40px] mb-5 ${className}`}>
@@ -51,10 +67,12 @@ const BannersGroup: React.FC<BannersGroupProps> = ({
           </h2>
         </header>
 
-        {isMobile ? (
-          <BannerSlider banners={sortedBanners} />
-        ) : (
-          <BannerGrid banners={sortedBanners} />
+        {!isLoading && banners.length > 0 && (
+          isMobile ? (
+            <BannerSlider banners={banners} />
+          ) : (
+            <BannerGrid banners={banners} />
+          )
         )}
       </div>
 
