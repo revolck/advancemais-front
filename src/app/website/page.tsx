@@ -4,6 +4,7 @@ import React from "react";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import Slider from "@/theme/website/components/slider";
 import AboutSection from "@/theme/website/components/about";
+import BannersGroup from "@/theme/website/components/banners";
 
 /**
  * Página Inicial do Website Institucional
@@ -33,6 +34,9 @@ export default function WebsiteHomePage() {
         onDataLoaded={() => handleComponentLoaded("About")}
         onError={(error) => handleComponentError("About", error)}
       />
+
+      {/* Banners de Destaque */}
+      <BannersGroup />
     </div>
   );
 }
