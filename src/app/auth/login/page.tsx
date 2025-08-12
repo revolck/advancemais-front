@@ -4,6 +4,7 @@ import { useTransition, useState, useEffect } from "react";
 import { SignInPage } from "@/components/partials/auth/login/sign-in";
 import { apiFetch } from "@/api/client";
 import { usuarioRoutes } from "@/api/routes";
+import { toastCustom } from "@/components/ui/custom/toast";
 
 const SignInPageDemo = () => {
   const [userName, setUserName] = useState<string | null>(null);
@@ -78,12 +79,17 @@ const SignInPageDemo = () => {
         // Redireciona para o subdomínio app
         const protocol = window.location.protocol;
         const port = window.location.port ? `:${window.location.port}` : "";
-        window.location.href = isLocalhost
-          ? "/dashboard"
-          : `${protocol}//app.${baseDomain}${port}/`;
+        toastCustom.success("Login realizado com sucesso!");
+        setTimeout(() => {
+          window.location.href = isLocalhost
+            ? "/dashboard"
+            : `${protocol}//app.${baseDomain}${port}/`;
+        }, 1000);
       } catch (error) {
         console.error("Erro ao fazer login:", error);
-        alert("Não foi possível realizar o login. Verifique suas credenciais.");
+        toastCustom.error(
+          "Não foi possível realizar o login. Verifique suas credenciais."
+        );
       }
     });
   };

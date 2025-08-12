@@ -2,6 +2,7 @@
 
 import React from "react";
 import "@/styles/globals.css";
+import { ToasterCustom } from "@/components/ui/custom/toast";
 
 /**
  * Layout de autenticação simplificado
@@ -18,6 +19,7 @@ export default function AuthLayout({
   return (
     <section className="min-h-screen bg-[var(--background-color)]">
       {children}
+      <ToasterCustom />
     </section>
   );
 }
