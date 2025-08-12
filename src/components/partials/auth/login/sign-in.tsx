@@ -81,13 +81,13 @@ export const SignInPage: React.FC<SignInPageProps> = ({
             <form className="space-y-5" onSubmit={onSignIn}>
               <div className="animate-element animate-delay-300">
                 <label className="text-sm font-medium text-muted-foreground">
-                  Email Address
+                  Documento (CPF ou CNPJ)
                 </label>
                 <GlassInputWrapper>
                   <input
-                    name="email"
-                    type="email"
-                    placeholder="Enter your email address"
+                    name="documento"
+                    type="text"
+                    placeholder="Digite seu CPF ou CNPJ"
                     className="w-full bg-transparent text-sm p-4 rounded-2xl focus:outline-none"
                   />
                 </GlassInputWrapper>
@@ -95,14 +95,14 @@ export const SignInPage: React.FC<SignInPageProps> = ({
 
               <div className="animate-element animate-delay-400">
                 <label className="text-sm font-medium text-muted-foreground">
-                  Password
+                  Senha
                 </label>
                 <GlassInputWrapper>
                   <div className="relative">
                     <input
-                      name="password"
+                      name="senha"
                       type={showPassword ? "text" : "password"}
-                      placeholder="Enter your password"
+                      placeholder="Digite sua senha"
                       className="w-full bg-transparent text-sm p-4 pr-12 rounded-2xl focus:outline-none"
                     />
                     <button
@@ -145,7 +145,7 @@ export const SignInPage: React.FC<SignInPageProps> = ({
                 type="submit"
                 className="animate-element animate-delay-600 w-full rounded-2xl bg-primary py-4 font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
               >
-                Sign In
+                Entrar
               </button>
             </form>
 
