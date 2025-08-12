@@ -1,21 +1,34 @@
 "use client";
 
-import { useTransition } from "react";
+import { useTransition, useState, useEffect } from "react";
 import { SignInPage } from "@/components/partials/auth/login/sign-in";
 import { apiFetch } from "@/api/client";
 import { usuarioRoutes } from "@/api/routes";
 
 const SignInPageDemo = () => {
+  const [userName, setUserName] = useState<string | null>(null);
   const [, startTransition] = useTransition();
+
+  useEffect(() => {
+    const storedName = localStorage.getItem("userName");
+    if (storedName) {
+      setUserName(storedName);
+    }
+  }, []);
 
   const handleSignIn = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     startTransition(async () => {
       const formData = new FormData(event.currentTarget);
-      const { documento, senha } = Object.fromEntries(formData.entries()) as {
+      const { documento, senha, rememberMe } = Object.fromEntries(
+        formData.entries()
+      ) as {
         documento: string;
         senha: string;
+        rememberMe: string;
       };
+      const documentoLimpo = documento.replace(/\D/g, "");
+      const remember = rememberMe === "true";
 
       try {
         const res = await apiFetch<{ token: string; refreshToken: string }>(
@@ -25,11 +38,30 @@ const SignInPageDemo = () => {
             init: {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ documento, senha }),
+              body: JSON.stringify({ documento: documentoLimpo, senha }),
             },
             retries: 1,
           }
         );
+
+        // Busca nome do usuário para saudar em futuros logins
+        try {
+          const profile = await apiFetch<{ nome?: string }>(
+            usuarioRoutes.profile.get(),
+            {
+              cache: "no-cache",
+              init: {
+                headers: { Authorization: `Bearer ${res.token}` },
+              },
+              retries: 1,
+            }
+          );
+          if (profile.nome) {
+            localStorage.setItem("userName", profile.nome);
+          }
+        } catch (profileError) {
+          console.error("Erro ao buscar perfil:", profileError);
+        }
 
         // Define cookies para compartilhamento entre subdomínios
         const host = window.location.hostname;
@@ -39,8 +71,9 @@ const SignInPageDemo = () => {
           .replace(/^auth\./, "");
         const domain = isLocalhost ? host : `.${baseDomain}`;
 
-        document.cookie = `token=${res.token}; path=/; domain=${domain};`;
-        document.cookie = `refresh_token=${res.refreshToken}; path=/; domain=${domain};`;
+        const maxAge = remember ? "; max-age=2592000" : "";
+        document.cookie = `token=${res.token}; path=/; domain=${domain}${maxAge};`;
+        document.cookie = `refresh_token=${res.refreshToken}; path=/; domain=${domain}${maxAge};`;
 
         // Redireciona para o subdomínio app
         const protocol = window.location.protocol;
@@ -53,11 +86,6 @@ const SignInPageDemo = () => {
         alert("Não foi possível realizar o login. Verifique suas credenciais.");
       }
     });
-  };
-
-  const handleGoogleSignIn = () => {
-    console.log("Continue with Google clicked");
-    alert("Continue with Google clicked");
   };
 
   const handleResetPassword = () => {
@@ -73,11 +101,13 @@ const SignInPageDemo = () => {
       <SignInPage
         heroImageSrc="https://images.unsplash.com/photo-1642615835477-d303d7dc9ee9?w=2160&q=80"
         onSignIn={handleSignIn}
-        onGoogleSignIn={handleGoogleSignIn}
         onResetPassword={handleResetPassword}
         onCreateAccount={handleCreateAccount}
-        title="Entre no seu perfil"
-        description="Access your account and continue your journey with us"
+        title={
+          userName
+            ? `Olá ${userName}, bem vindo de volta!`
+            : "Entre no seu perfil"
+        }
       />
     </div>
   );

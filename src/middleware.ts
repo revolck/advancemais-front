@@ -170,6 +170,21 @@ function applyWebsiteHeaders(
  */
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const host = request.headers.get("host") || "";
+  const [hostname] = host.split(":");
+
+  // Tratamento inicial para subdomínios específicos
+  if (hostname.startsWith("auth.")) {
+    if (pathname === "/") {
+      const url = new URL("/auth/login", request.url);
+      return setupDevCookies(NextResponse.rewrite(url));
+    }
+    return setupDevCookies(NextResponse.next());
+  }
+
+  if (hostname.startsWith("app.")) {
+    return setupDevCookies(NextResponse.next());
+  }
 
   // Log para desenvolvimento
   if (process.env.NODE_ENV === "development") {
