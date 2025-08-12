@@ -99,7 +99,7 @@ const SignInPageDemo = () => {
   };
 
   const handleCreateAccount = () => {
-    alert("Create Account clicked");
+    window.location.href = "/auth/register";
   };
 
   return (
