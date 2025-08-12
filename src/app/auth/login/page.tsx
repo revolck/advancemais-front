@@ -8,7 +8,7 @@ import { toastCustom } from "@/components/ui/custom/toast";
 
 const SignInPageDemo = () => {
   const [userName, setUserName] = useState<string | null>(null);
-  const [, startTransition] = useTransition();
+  const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
     const storedName = localStorage.getItem("userName");
@@ -109,6 +109,7 @@ const SignInPageDemo = () => {
         onSignIn={handleSignIn}
         onResetPassword={handleResetPassword}
         onCreateAccount={handleCreateAccount}
+        isLoading={isPending}
         title={
           userName
             ? `Olá ${userName}, bem vindo de volta!`

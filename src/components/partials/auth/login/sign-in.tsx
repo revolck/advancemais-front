@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 
 // --- TYPE DEFINITIONS ---
@@ -13,6 +13,7 @@ interface SignInPageProps {
   onSignIn?: (event: React.FormEvent<HTMLFormElement>) => void;
   onResetPassword?: () => void;
   onCreateAccount?: () => void;
+  isLoading?: boolean;
 }
 
 // --- SUB-COMPONENTS ---
@@ -34,6 +35,7 @@ export const SignInPage: React.FC<SignInPageProps> = ({
   onSignIn,
   onResetPassword,
   onCreateAccount,
+  isLoading,
 }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [documento, setDocumento] = useState("");
@@ -144,9 +146,14 @@ export const SignInPage: React.FC<SignInPageProps> = ({
               />
               <button
                 type="submit"
-                className="animate-element animate-delay-600 w-full rounded-2xl bg-primary py-4 font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+                disabled={isLoading}
+                className="animate-element animate-delay-600 w-full rounded-2xl bg-[var(--color-blue)] text-white py-4 font-medium hover:bg-[var(--color-blue)]/90 transition-colors flex items-center justify-center cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
               >
-                Entrar
+                {isLoading ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  "Entrar"
+                )}
               </button>
             </form>
 
