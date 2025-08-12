@@ -7,7 +7,7 @@ import { usuarioRoutes } from "@/api/routes";
 import { toastCustom } from "@/components/ui/custom/toast";
 
 const RegisterPage = () => {
-  const [, startTransition] = useTransition();
+  const [isPending, startTransition] = useTransition();
 
   const handleSignUp = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -59,6 +59,7 @@ const RegisterPage = () => {
       <SignUpPage
         heroImageSrc="https://images.unsplash.com/photo-1642615835477-d303d7dc9ee9?w=2160&q=80"
         onSignUp={handleSignUp}
+        isLoading={isPending}
       />
     </div>
   );

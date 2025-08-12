@@ -1,14 +1,22 @@
 "use client";
 
 import React, { useRef, useState } from "react";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface SignUpPageProps {
   title?: React.ReactNode;
   description?: React.ReactNode;
   heroImageSrc?: string;
   onSignUp?: (event: React.FormEvent<HTMLFormElement>) => void;
+  isLoading?: boolean;
 }
 
 const GlassInputWrapper = ({ children }: { children: React.ReactNode }) => (
@@ -26,6 +34,7 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({
   description,
   heroImageSrc,
   onSignUp,
+  isLoading,
 }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -35,6 +44,7 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({
   const [documento, setDocumento] = useState("");
   const [telefone, setTelefone] = useState("");
   const [aceitarTermos, setAceitarTermos] = useState(false);
+  const [genero, setGenero] = useState("MASCULINO");
   const [step, setStep] = useState(1);
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -112,20 +122,24 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({
                     Tipo de usuário
                   </label>
                   <GlassInputWrapper>
-                    <select
-                      name="tipoUsuario"
+                    <Select
                       value={tipoUsuario}
-                      onChange={(e) =>
+                      onValueChange={(v) =>
                         setTipoUsuario(
-                          e.target.value as "PESSOA_FISICA" | "PESSOA_JURIDICA"
+                          v as "PESSOA_FISICA" | "PESSOA_JURIDICA"
                         )
                       }
-                      className="w-full bg-transparent text-sm p-4 rounded-2xl focus:outline-none"
                     >
-                      <option value="PESSOA_FISICA">Pessoa Física</option>
-                      <option value="PESSOA_JURIDICA">Pessoa Jurídica</option>
-                    </select>
+                      <SelectTrigger className="w-full bg-transparent text-sm p-4 rounded-2xl focus:outline-none cursor-pointer">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="PESSOA_FISICA">Pessoa Física</SelectItem>
+                        <SelectItem value="PESSOA_JURIDICA">Pessoa Jurídica</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </GlassInputWrapper>
+                  <input type="hidden" name="tipoUsuario" value={tipoUsuario} />
                 </div>
 
                 <div className="animate-element animate-delay-300">
@@ -182,7 +196,7 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({
                 <button
                   type="button"
                   onClick={handleNextStep}
-                  className="animate-element animate-delay-600 w-full rounded-2xl bg-primary py-4 font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+                  className="animate-element animate-delay-600 w-full rounded-2xl bg-[var(--color-blue)] text-white py-4 font-medium hover:bg-[var(--color-blue)]/90 transition-colors cursor-pointer"
                 >
                   Continuar
                 </button>
@@ -210,17 +224,21 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({
                           Gênero
                         </label>
                         <GlassInputWrapper>
-                          <select
-                            name="genero"
-                            required
-                            className="w-full bg-transparent text-sm p-4 rounded-2xl focus:outline-none"
-                          >
-                            <option value="MASCULINO">Masculino</option>
-                            <option value="FEMININO">Feminino</option>
-                            <option value="OUTRO">Outro</option>
-                            <option value="NAO_INFORMAR">Prefiro não informar</option>
-                          </select>
+                          <Select value={genero} onValueChange={setGenero}>
+                            <SelectTrigger className="w-full bg-transparent text-sm p-4 rounded-2xl focus:outline-none cursor-pointer">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="MASCULINO">Masculino</SelectItem>
+                              <SelectItem value="FEMININO">Feminino</SelectItem>
+                              <SelectItem value="OUTRO">Outro</SelectItem>
+                              <SelectItem value="NAO_INFORMAR">
+                                Prefiro não informar
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
                         </GlassInputWrapper>
+                        <input type="hidden" name="genero" value={genero} />
                       </div>
                     </>
                   )}
@@ -301,12 +319,26 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({
                     value={aceitarTermos ? "true" : "false"}
                   />
 
-                  <button
-                    type="submit"
-                    className="animate-element animate-delay-600 w-full rounded-2xl bg-primary py-4 font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
-                  >
-                    Cadastrar
-                  </button>
+                  <div className="flex gap-4">
+                    <button
+                      type="button"
+                      onClick={() => setStep(1)}
+                      className="w-full rounded-2xl bg-muted py-4 font-medium text-muted-foreground hover:bg-muted/90 transition-colors cursor-pointer"
+                    >
+                      Voltar
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isLoading}
+                      className="w-full rounded-2xl bg-[var(--color-blue)] text-white py-4 font-medium hover:bg-[var(--color-blue)]/90 transition-colors flex items-center justify-center cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
+                    >
+                      {isLoading ? (
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                      ) : (
+                        "Cadastrar"
+                      )}
+                    </button>
+                  </div>
                 </div>
               )}
             </form>
