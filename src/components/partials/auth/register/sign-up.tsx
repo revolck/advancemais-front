@@ -44,7 +44,6 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({
   const [documento, setDocumento] = useState("");
   const [telefone, setTelefone] = useState("");
   const [aceitarTermos, setAceitarTermos] = useState(false);
-  const [genero, setGenero] = useState("MASCULINO");
   const [step, setStep] = useState(1);
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -204,45 +203,6 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({
 
               {step === 2 && (
                 <div className="space-y-5">
-                  {isPessoaFisica && (
-                    <>
-                      <div className="animate-element animate-delay-300">
-                        <label className="text-sm font-medium text-muted-foreground">
-                          Data de nascimento
-                        </label>
-                        <GlassInputWrapper>
-                          <input
-                            name="dataNasc"
-                            type="date"
-                            required
-                            className="w-full bg-transparent text-sm p-4 rounded-2xl focus:outline-none"
-                          />
-                        </GlassInputWrapper>
-                      </div>
-                      <div className="animate-element animate-delay-300">
-                        <label className="text-sm font-medium text-muted-foreground">
-                          Gênero
-                        </label>
-                        <GlassInputWrapper>
-                          <Select value={genero} onValueChange={setGenero}>
-                            <SelectTrigger className="w-full bg-transparent text-sm p-4 rounded-2xl focus:outline-none cursor-pointer">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="MASCULINO">Masculino</SelectItem>
-                              <SelectItem value="FEMININO">Feminino</SelectItem>
-                              <SelectItem value="OUTRO">Outro</SelectItem>
-                              <SelectItem value="NAO_INFORMAR">
-                                Prefiro não informar
-                              </SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </GlassInputWrapper>
-                        <input type="hidden" name="genero" value={genero} />
-                      </div>
-                    </>
-                  )}
-
                   <div className="animate-element animate-delay-400">
                     <label className="text-sm font-medium text-muted-foreground">
                       Senha

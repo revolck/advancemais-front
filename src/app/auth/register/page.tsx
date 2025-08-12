@@ -28,8 +28,6 @@ const RegisterPage = () => {
       };
       if (data.tipoUsuario === "PESSOA_FISICA") {
         payload.cpf = documentoLimpo;
-        payload.dataNasc = data.dataNasc;
-        payload.genero = data.genero;
       } else {
         payload.cnpj = documentoLimpo;
       }
