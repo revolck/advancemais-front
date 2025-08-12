@@ -1,14 +1,58 @@
 "use client";
 
+import { useTransition } from "react";
 import { SignInPage } from "@/components/partials/auth/login/sign-in";
+import { apiFetch } from "@/api/client";
+import { usuarioRoutes } from "@/api/routes";
 
 const SignInPageDemo = () => {
+  const [, startTransition] = useTransition();
+
   const handleSignIn = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const formData = new FormData(event.currentTarget);
-    const data = Object.fromEntries(formData.entries());
-    console.log("Sign In submitted:", data);
-    alert(`Sign In Submitted! Check the browser console for form data.`);
+    startTransition(async () => {
+      const formData = new FormData(event.currentTarget);
+      const { documento, senha } = Object.fromEntries(formData.entries()) as {
+        documento: string;
+        senha: string;
+      };
+
+      try {
+        const res = await apiFetch<{ token: string; refreshToken: string }>(
+          usuarioRoutes.login(),
+          {
+            cache: "no-cache",
+            init: {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ documento, senha }),
+            },
+            retries: 1,
+          }
+        );
+
+        // Define cookies para compartilhamento entre subdomínios
+        const host = window.location.hostname;
+        const isLocalhost = host === "localhost" || host === "127.0.0.1";
+        const baseDomain = host
+          .replace(/^app\./, "")
+          .replace(/^auth\./, "");
+        const domain = isLocalhost ? host : `.${baseDomain}`;
+
+        document.cookie = `token=${res.token}; path=/; domain=${domain};`;
+        document.cookie = `refresh_token=${res.refreshToken}; path=/; domain=${domain};`;
+
+        // Redireciona para o subdomínio app
+        const protocol = window.location.protocol;
+        const port = window.location.port ? `:${window.location.port}` : "";
+        window.location.href = isLocalhost
+          ? "/dashboard"
+          : `${protocol}//app.${baseDomain}${port}/`;
+      } catch (error) {
+        console.error("Erro ao fazer login:", error);
+        alert("Não foi possível realizar o login. Verifique suas credenciais.");
+      }
+    });
   };
 
   const handleGoogleSignIn = () => {

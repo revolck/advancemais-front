@@ -3,15 +3,39 @@ import { NextRequest, NextResponse } from "next/server";
 
 export function authMiddleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const host = request.headers.get("host") || "";
 
-  // Não redirecionamos mais /auth/login para a raiz
-  // Isso estava causando problemas com os estilos
-  // Apenas permitimos que a rota /auth/login seja renderizada normalmente
+  // Extrai hostname e porta
+  const [hostname, port] = host.split(":");
+  const isLocalhost = hostname === "localhost" || hostname === "127.0.0.1";
+  const baseDomain = hostname
+    .replace(/^app\./, "")
+    .replace(/^auth\./, "");
 
-  // Apenas gerencie redirecionamentos para outras rotas de autenticação, se necessário
+  // Garante que as rotas de autenticação utilizem o subdomínio auth.
+  const isAuthSubdomain = hostname.startsWith("auth.");
+  if (!isAuthSubdomain && !isLocalhost) {
+    const url = request.nextUrl.clone();
+    url.hostname = `auth.${baseDomain}`;
+    if (port) url.port = port;
+    return NextResponse.redirect(url);
+  }
+
+  // Se o usuário já estiver autenticado, redirecionar para o dashboard
+  const isAuthenticated =
+    request.cookies.has("token") || request.cookies.has("refresh_token");
+
+  if (isAuthenticated && !isLocalhost) {
+    const appUrl = request.nextUrl.clone();
+    appUrl.hostname = `app.${baseDomain}`;
+    appUrl.pathname = "/";
+    if (port) appUrl.port = port;
+    return NextResponse.redirect(appUrl);
+  }
+
+  // Não redirecionamos mais /auth/login para a raiz, permitindo renderização normal
   if (pathname.startsWith("/auth/") && pathname !== "/auth/login") {
     // Aqui você pode adicionar lógica específica para outras rotas de autenticação
-    // Por exemplo, redirecionar rotas protegidas para login
   }
 
   return NextResponse.next();

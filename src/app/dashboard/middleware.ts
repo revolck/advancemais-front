@@ -21,9 +21,34 @@ const ROLE_PERMISSIONS = {
 export function dashboardMiddleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const host = request.headers.get("host") || "";
-  const isAppSubdomain = host.startsWith("app.");
 
-  if (!isAppSubdomain) return NextResponse.next();
+  // Extrai hostname e porta
+  const [hostname, port] = host.split(":");
+  const isLocalhost = hostname === "localhost" || hostname === "127.0.0.1";
+  const baseDomain = hostname
+    .replace(/^app\./, "")
+    .replace(/^auth\./, "");
+
+  // Garante que o dashboard seja acessado via subdomínio app.
+  const isAppSubdomain = hostname.startsWith("app.");
+  if (!isAppSubdomain && !isLocalhost) {
+    const url = request.nextUrl.clone();
+    url.hostname = `app.${baseDomain}`;
+    if (port) url.port = port;
+    return NextResponse.redirect(url);
+  }
+
+  // Verifica autenticação básica através de cookies
+  const isAuthenticated =
+    request.cookies.has("token") || request.cookies.has("refresh_token");
+
+  if (!isAuthenticated && !isLocalhost) {
+    const authUrl = request.nextUrl.clone();
+    authUrl.hostname = `auth.${baseDomain}`;
+    authUrl.pathname = "/auth/login";
+    if (port) authUrl.port = port;
+    return NextResponse.redirect(authUrl);
+  }
 
   // Se estamos na raiz do app, redirecionar para analytics
   if (pathname === "/") {
