@@ -21,7 +21,7 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
         transition={{ type: "spring", stiffness: 400, damping: 15 }}
       >
         <NavLink
-          href="#"
+          href="/auth/login"
           className="text-base text-[var(--color-blue)] hover:text-[var(--color-blue)]"
         >
           Entrar
@@ -34,8 +34,8 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
         whileTap={{ scale: 0.97 }}
         transition={{ type: "spring", stiffness: 400, damping: 15 }}
       >
-        <NavLink href="#" className="text-base text-white hover:text-white">
-          Matricule-se
+        <NavLink href="/auth/register" className="text-base text-white hover:text-white">
+          Cadastre-se
         </NavLink>
       </motion.div>
 
