@@ -84,7 +84,7 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({
   const isPessoaFisica = tipoUsuario === "PESSOA_FISICA";
 
   return (
-    <div className="relative h-[100dvh] flex flex-col md:flex-row font-geist w-[100dvw]">
+    <div className="relative h-[100dvh] flex flex-col md:flex-row font-geist w-[100dvw] text-foreground">
       {onBack && (
         <button
           type="button"
@@ -94,8 +94,8 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({
           Voltar
         </button>
       )}
-      <section className="flex-1 flex items-center justify-center p-8">
-        <div className="w-full max-w-md">
+      <section className="flex-1 flex items-center justify-center p-4">
+        <div className="w-full max-w-md bg-white/90 backdrop-blur-md p-8 rounded-3xl shadow-xl">
           <div className="flex flex-col gap-6">
             <h1 className="animate-element animate-delay-100 text-4xl md:text-5xl font-semibold leading-tight">
               {title}
@@ -303,12 +303,14 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({
       </section>
 
       {heroImageSrc && (
-        <section className="hidden md:block flex-1 relative p-4">
-          <div
-            className="animate-slide-right animate-delay-300 absolute inset-4 rounded-3xl bg-cover bg-center"
-            style={{ backgroundImage: `url(${heroImageSrc})` }}
-          ></div>
-        </section>
+      <section className="hidden md:block flex-1 relative p-4">
+        <div
+          className="animate-slide-right animate-delay-300 absolute inset-4 rounded-3xl bg-cover bg-center shadow-xl overflow-hidden"
+          style={{ backgroundImage: `url(${heroImageSrc})` }}
+        >
+          <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-black/20" />
+        </div>
+      </section>
       )}
     </div>
   );
