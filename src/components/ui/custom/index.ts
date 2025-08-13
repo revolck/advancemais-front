@@ -15,3 +15,6 @@ export * from "./toast";
 
 // Checkbox
 export * from "./checkbox";
+
+// Offline
+export * from "./offline";
