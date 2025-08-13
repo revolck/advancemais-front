@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useState } from "react";
+import React, { useState } from "react";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -44,15 +44,6 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({
   const [documento, setDocumento] = useState("");
   const [telefone, setTelefone] = useState("");
   const [aceitarTermos, setAceitarTermos] = useState(false);
-  const [genero, setGenero] = useState("MASCULINO");
-  const [step, setStep] = useState(1);
-  const formRef = useRef<HTMLFormElement>(null);
-
-  const handleNextStep = () => {
-    if (formRef.current?.reportValidity()) {
-      setStep(2);
-    }
-  };
 
   const handleDocumentoChange = (
     e: React.ChangeEvent<HTMLInputElement>
@@ -100,254 +91,192 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({
               </p>
             )}
 
-            <form ref={formRef} className="space-y-5" onSubmit={onSignUp}>
-              <div className={step === 1 ? "space-y-5" : "hidden"}>
-                <div className="animate-element animate-delay-300">
-                  <label className="text-sm font-medium text-muted-foreground">
-                    Nome completo
-                  </label>
-                  <GlassInputWrapper>
-                    <input
-                      name="nomeCompleto"
-                      type="text"
-                      required
-                      placeholder="Digite seu nome completo"
-                      className="w-full bg-transparent text-sm p-4 rounded-2xl focus:outline-none"
-                    />
-                  </GlassInputWrapper>
-                </div>
-
-                <div className="animate-element animate-delay-300">
-                  <label className="text-sm font-medium text-muted-foreground">
-                    Tipo de usuário
-                  </label>
-                  <GlassInputWrapper>
-                    <Select
-                      value={tipoUsuario}
-                      onValueChange={(v) =>
-                        setTipoUsuario(
-                          v as "PESSOA_FISICA" | "PESSOA_JURIDICA"
-                        )
-                      }
-                    >
-                      <SelectTrigger className="w-full bg-transparent text-sm p-4 rounded-2xl focus:outline-none cursor-pointer">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="PESSOA_FISICA">Pessoa Física</SelectItem>
-                        <SelectItem value="PESSOA_JURIDICA">Pessoa Jurídica</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </GlassInputWrapper>
-                  <input type="hidden" name="tipoUsuario" value={tipoUsuario} />
-                </div>
-
-                <div className="animate-element animate-delay-300">
-                  <label className="text-sm font-medium text-muted-foreground">
-                    {isPessoaFisica ? "CPF" : "CNPJ"}
-                  </label>
-                  <GlassInputWrapper>
-                    <input
-                      name="documento"
-                      type="text"
-                      required
-                      value={documento}
-                      onChange={handleDocumentoChange}
-                      placeholder={
-                        isPessoaFisica ? "Digite seu CPF" : "Digite seu CNPJ"
-                      }
-                      className="w-full bg-transparent text-sm p-4 rounded-2xl focus:outline-none"
-                    />
-                  </GlassInputWrapper>
-                </div>
-
-                <div className="animate-element animate-delay-300">
-                  <label className="text-sm font-medium text-muted-foreground">
-                    Telefone
-                  </label>
-                  <GlassInputWrapper>
-                    <input
-                      name="telefone"
-                      type="text"
-                      required
-                      value={telefone}
-                      onChange={handleTelefoneChange}
-                      placeholder="Digite seu telefone"
-                      className="w-full bg-transparent text-sm p-4 rounded-2xl focus:outline-none"
-                    />
-                  </GlassInputWrapper>
-                </div>
-
-                <div className="animate-element animate-delay-300">
-                  <label className="text-sm font-medium text-muted-foreground">
-                    Email
-                  </label>
-                  <GlassInputWrapper>
-                    <input
-                      name="email"
-                      type="email"
-                      required
-                      placeholder="Digite seu email"
-                      className="w-full bg-transparent text-sm p-4 rounded-2xl focus:outline-none"
-                    />
-                  </GlassInputWrapper>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={handleNextStep}
-                  className="animate-element animate-delay-600 w-full rounded-2xl bg-[var(--color-blue)] text-white py-4 font-medium hover:bg-[var(--color-blue)]/90 transition-colors cursor-pointer"
-                >
-                  Continuar
-                </button>
+            <form className="space-y-5" onSubmit={onSignUp}>
+              <div className="animate-element animate-delay-300">
+                <label className="text-sm font-medium text-muted-foreground">
+                  Nome completo
+                </label>
+                <GlassInputWrapper>
+                  <input
+                    name="nomeCompleto"
+                    type="text"
+                    required
+                    placeholder="Digite seu nome completo"
+                    className="w-full bg-transparent text-sm p-4 rounded-2xl focus:outline-none"
+                  />
+                </GlassInputWrapper>
               </div>
 
-              {step === 2 && (
-                <div className="space-y-5">
-                  {isPessoaFisica && (
-                    <>
-                      <div className="animate-element animate-delay-300">
-                        <label className="text-sm font-medium text-muted-foreground">
-                          Data de nascimento
-                        </label>
-                        <GlassInputWrapper>
-                          <input
-                            name="dataNasc"
-                            type="date"
-                            required
-                            className="w-full bg-transparent text-sm p-4 rounded-2xl focus:outline-none"
-                          />
-                        </GlassInputWrapper>
-                      </div>
-                      <div className="animate-element animate-delay-300">
-                        <label className="text-sm font-medium text-muted-foreground">
-                          Gênero
-                        </label>
-                        <GlassInputWrapper>
-                          <Select value={genero} onValueChange={setGenero}>
-                            <SelectTrigger className="w-full bg-transparent text-sm p-4 rounded-2xl focus:outline-none cursor-pointer">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="MASCULINO">Masculino</SelectItem>
-                              <SelectItem value="FEMININO">Feminino</SelectItem>
-                              <SelectItem value="OUTRO">Outro</SelectItem>
-                              <SelectItem value="NAO_INFORMAR">
-                                Prefiro não informar
-                              </SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </GlassInputWrapper>
-                        <input type="hidden" name="genero" value={genero} />
-                      </div>
-                    </>
-                  )}
+              <div className="animate-element animate-delay-300">
+                <label className="text-sm font-medium text-muted-foreground">
+                  Tipo de usuário
+                </label>
+                <GlassInputWrapper>
+                  <Select
+                    value={tipoUsuario}
+                    onValueChange={(v) =>
+                      setTipoUsuario(
+                        v as "PESSOA_FISICA" | "PESSOA_JURIDICA"
+                      )
+                    }
+                  >
+                    <SelectTrigger className="w-full bg-transparent text-sm p-4 rounded-2xl focus:outline-none cursor-pointer">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="PESSOA_FISICA">Pessoa Física</SelectItem>
+                      <SelectItem value="PESSOA_JURIDICA">Pessoa Jurídica</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </GlassInputWrapper>
+                <input type="hidden" name="tipoUsuario" value={tipoUsuario} />
+              </div>
 
-                  <div className="animate-element animate-delay-400">
-                    <label className="text-sm font-medium text-muted-foreground">
-                      Senha
-                    </label>
-                    <GlassInputWrapper>
-                      <div className="relative">
-                        <input
-                          name="senha"
-                          type={showPassword ? "text" : "password"}
-                          placeholder="Digite sua senha"
-                          className="w-full bg-transparent text-sm p-4 pr-12 rounded-2xl focus:outline-none"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowPassword(!showPassword)}
-                          className="absolute inset-y-0 right-3 flex items-center"
-                        >
-                          {showPassword ? (
-                            <EyeOff className="w-5 h-5 text-muted-foreground hover:text-foreground transition-colors" />
-                          ) : (
-                            <Eye className="w-5 h-5 text-muted-foreground hover:text-foreground transition-colors" />
-                          )}
-                        </button>
-                      </div>
-                    </GlassInputWrapper>
-                  </div>
-
-                  <div className="animate-element animate-delay-400">
-                    <label className="text-sm font-medium text-muted-foreground">
-                      Confirmar senha
-                    </label>
-                    <GlassInputWrapper>
-                      <div className="relative">
-                        <input
-                          name="confirmarSenha"
-                          type={showConfirmPassword ? "text" : "password"}
-                          placeholder="Confirme sua senha"
-                          className="w-full bg-transparent text-sm p-4 pr-12 rounded-2xl focus:outline-none"
-                        />
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setShowConfirmPassword(!showConfirmPassword)
-                          }
-                          className="absolute inset-y-0 right-3 flex items-center"
-                        >
-                          {showConfirmPassword ? (
-                            <EyeOff className="w-5 h-5 text-muted-foreground hover:text-foreground transition-colors" />
-                          ) : (
-                            <Eye className="w-5 h-5 text-muted-foreground hover:text-foreground transition-colors" />
-                          )}
-                        </button>
-                      </div>
-                    </GlassInputWrapper>
-                  </div>
-
-                  <div className="animate-element animate-delay-500 flex items-center text-sm gap-3">
-                    <Checkbox
-                      id="aceitarTermos"
-                      checked={aceitarTermos}
-                      onCheckedChange={(v) => setAceitarTermos(!!v)}
-                    />
-                    <label
-                      htmlFor="aceitarTermos"
-                      className="text-foreground/90"
-                    >
-                      Aceito os termos de uso
-                    </label>
-                  </div>
-
+              <div className="animate-element animate-delay-300">
+                <label className="text-sm font-medium text-muted-foreground">
+                  {isPessoaFisica ? "CPF" : "CNPJ"}
+                </label>
+                <GlassInputWrapper>
                   <input
-                    type="hidden"
-                    name="aceitarTermos"
-                    value={aceitarTermos ? "true" : "false"}
+                    name="documento"
+                    type="text"
+                    required
+                    value={documento}
+                    onChange={handleDocumentoChange}
+                    placeholder={
+                      isPessoaFisica ? "Digite seu CPF" : "Digite seu CNPJ"
+                    }
+                    className="w-full bg-transparent text-sm p-4 rounded-2xl focus:outline-none"
                   />
+                </GlassInputWrapper>
+              </div>
 
-                  <div className="flex gap-4">
+              <div className="animate-element animate-delay-300">
+                <label className="text-sm font-medium text-muted-foreground">
+                  Telefone
+                </label>
+                <GlassInputWrapper>
+                  <input
+                    name="telefone"
+                    type="text"
+                    required
+                    value={telefone}
+                    onChange={handleTelefoneChange}
+                    placeholder="Digite seu telefone"
+                    className="w-full bg-transparent text-sm p-4 rounded-2xl focus:outline-none"
+                  />
+                </GlassInputWrapper>
+              </div>
+
+              <div className="animate-element animate-delay-300">
+                <label className="text-sm font-medium text-muted-foreground">
+                  Email
+                </label>
+                <GlassInputWrapper>
+                  <input
+                    name="email"
+                    type="email"
+                    required
+                    placeholder="Digite seu email"
+                    className="w-full bg-transparent text-sm p-4 rounded-2xl focus:outline-none"
+                  />
+                </GlassInputWrapper>
+              </div>
+
+              <div className="animate-element animate-delay-400">
+                <label className="text-sm font-medium text-muted-foreground">
+                  Senha
+                </label>
+                <GlassInputWrapper>
+                  <div className="relative">
+                    <input
+                      name="senha"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Digite sua senha"
+                      className="w-full bg-transparent text-sm p-4 pr-12 rounded-2xl focus:outline-none"
+                    />
                     <button
                       type="button"
-                      onClick={() => setStep(1)}
-                      className="w-full rounded-2xl bg-muted py-4 font-medium text-muted-foreground hover:bg-muted/90 transition-colors cursor-pointer"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute inset-y-0 right-3 flex items-center cursor-pointer"
                     >
-                      Voltar
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={isLoading}
-                      className="w-full rounded-2xl bg-[var(--color-blue)] text-white py-4 font-medium hover:bg-[var(--color-blue)]/90 transition-colors flex items-center justify-center cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
-                    >
-                      {isLoading ? (
-                        <Loader2 className="w-5 h-5 animate-spin" />
+                      {showPassword ? (
+                        <EyeOff className="w-5 h-5 text-muted-foreground hover:text-foreground transition-colors" />
                       ) : (
-                        "Cadastrar"
+                        <Eye className="w-5 h-5 text-muted-foreground hover:text-foreground transition-colors" />
                       )}
                     </button>
                   </div>
-                </div>
-              )}
+                </GlassInputWrapper>
+              </div>
+
+              <div className="animate-element animate-delay-400">
+                <label className="text-sm font-medium text-muted-foreground">
+                  Confirmar senha
+                </label>
+                <GlassInputWrapper>
+                  <div className="relative">
+                    <input
+                      name="confirmarSenha"
+                      type={showConfirmPassword ? "text" : "password"}
+                      placeholder="Confirme sua senha"
+                      className="w-full bg-transparent text-sm p-4 pr-12 rounded-2xl focus:outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setShowConfirmPassword(!showConfirmPassword)
+                      }
+                      className="absolute inset-y-0 right-3 flex items-center cursor-pointer"
+                    >
+                      {showConfirmPassword ? (
+                        <EyeOff className="w-5 h-5 text-muted-foreground hover:text-foreground transition-colors" />
+                      ) : (
+                        <Eye className="w-5 h-5 text-muted-foreground hover:text-foreground transition-colors" />
+                      )}
+                    </button>
+                  </div>
+                </GlassInputWrapper>
+              </div>
+
+              <div className="animate-element animate-delay-500 flex items-center text-sm gap-3">
+                <Checkbox
+                  id="aceitarTermos"
+                  checked={aceitarTermos}
+                  onCheckedChange={(v) => setAceitarTermos(!!v)}
+                />
+                <label
+                  htmlFor="aceitarTermos"
+                  className="text-foreground/90 cursor-pointer"
+                >
+                  Aceito os termos de uso
+                </label>
+              </div>
+
+              <input
+                type="hidden"
+                name="aceitarTermos"
+                value={aceitarTermos ? "true" : "false"}
+              />
+
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full rounded-2xl bg-[var(--color-blue)] text-white py-4 font-medium hover:bg-[var(--color-blue)]/90 transition-colors flex items-center justify-center cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
+              >
+                {isLoading ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  "Cadastrar"
+                )}
+              </button>
             </form>
 
             <p className="animate-element animate-delay-700 text-center text-sm text-muted-foreground">
               Já possui conta?{" "}
               <a
                 href="/auth/login"
-                className="text-violet-400 hover:underline transition-colors"
+                className="text-violet-400 hover:underline transition-colors cursor-pointer"
               >
                 Entre
               </a>
