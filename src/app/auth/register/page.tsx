@@ -28,8 +28,6 @@ const RegisterPage = () => {
       };
       if (data.tipoUsuario === "PESSOA_FISICA") {
         payload.cpf = documentoLimpo;
-        payload.dataNasc = data.dataNasc;
-        payload.genero = data.genero;
       } else {
         payload.cnpj = documentoLimpo;
       }
@@ -43,7 +41,9 @@ const RegisterPage = () => {
           },
           retries: 1,
         });
-        toastCustom.success("Cadastro realizado com sucesso!");
+        toastCustom.success(
+          "Cadastro realizado com sucesso! Verifique seu email para confirmar."
+        );
         setTimeout(() => {
           window.location.href = "/auth/login";
         }, 1000);

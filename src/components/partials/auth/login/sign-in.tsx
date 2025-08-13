@@ -106,7 +106,7 @@ export const SignInPage: React.FC<SignInPageProps> = ({
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute inset-y-0 right-3 flex items-center"
+                      className="absolute inset-y-0 right-3 flex items-center cursor-pointer"
                     >
                       {showPassword ? (
                         <EyeOff className="w-5 h-5 text-muted-foreground hover:text-foreground transition-colors" />
@@ -133,7 +133,7 @@ export const SignInPage: React.FC<SignInPageProps> = ({
                     e.preventDefault();
                     onResetPassword?.();
                   }}
-                  className="hover:underline text-violet-400 transition-colors"
+                  className="hover:underline text-violet-400 transition-colors cursor-pointer"
                 >
                   Recuperar senha
                 </a>
@@ -165,7 +165,7 @@ export const SignInPage: React.FC<SignInPageProps> = ({
                   e.preventDefault();
                   onCreateAccount?.();
                 }}
-                className="text-violet-400 hover:underline transition-colors"
+                className="text-violet-400 hover:underline transition-colors cursor-pointer"
               >
                 Crie sua conta
               </a>
