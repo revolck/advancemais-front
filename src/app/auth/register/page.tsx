@@ -2,31 +2,23 @@
 
 import { useState, useTransition } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
-  GraduationCap,
-  User,
-  Building,
-  ArrowLeft,
-  Eye,
-  EyeOff,
-  ChevronRight,
-} from "lucide-react";
+  InputCustom,
+  ButtonCustom,
+  toastCustom,
+  OfflineModal,
+} from "@/components/ui/custom";
+import { GraduationCap, User, Building, ChevronRight } from "lucide-react";
 import { apiFetch } from "@/api/client";
 import { usuarioRoutes } from "@/api/routes";
-import { toastCustom } from "@/components/ui/custom/toast";
-import { OfflineModal } from "@/components/ui/custom";
 
 type SelectedType = "student" | "candidate" | "company" | null;
 
 const RegisterPage = () => {
   const [selectedType, setSelectedType] = useState<SelectedType>(null);
   const [acceptTerms, setAcceptTerms] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [formData, setFormData] = useState({
     name: "",
@@ -124,7 +116,7 @@ const RegisterPage = () => {
         console.error("Erro ao cadastrar:", error);
         const message =
           error instanceof Error && /409/.test(error.message)
-            ? "Dados já cadastrados. Verifique seu email, CPF/CNPJ ou telefone."
+            ? "Usuário já cadastrado, por favor faça login."
             : "Não foi possível realizar o cadastro.";
         toastCustom.error(message);
       }
@@ -153,16 +145,20 @@ const RegisterPage = () => {
               {userTypes.find((type) => type.id === selectedType)?.description}
             </p>
           </div>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setSelectedType(null)}
-            type="button"
-            className="flex items-center space-x-2 text-xs sm:text-sm text-gray-500 hover:text-gray-700 transition-all duration-200 p-2 rounded-lg hover:bg-gray-100 cursor-pointer self-end sm:self-auto"
-          >
-            <ArrowLeft className="w-3 h-3 sm:w-4 sm:h-4" />
-            <span>Voltar</span>
-          </motion.button>
+          {/* Animate externally to avoid passing motion props to ButtonCustom */}
+          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            <ButtonCustom
+              onClick={() => setSelectedType(null)}
+              type="button"
+              variant="ghost"
+              size="sm"
+              icon="ArrowLeft"
+              withAnimation={false}
+              className="text-xs sm:text-sm text-gray-500 hover:text-gray-700 transition-all duration-200 p-2 rounded-lg hover:bg-gray-100 cursor-pointer self-end sm:self-auto"
+            >
+              Voltar
+            </ButtonCustom>
+          </motion.div>
         </div>
 
         <div className="space-y-3 sm:space-y-4">
@@ -170,17 +166,15 @@ const RegisterPage = () => {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="space-y-1.5"
           >
-            <Label htmlFor="name" className="text-xs sm:text-sm font-medium text-gray-700">
-              {isCompany ? "Nome da empresa" : "Nome completo"}
-            </Label>
-            <Input
-              id="name"
+            <InputCustom
+              label={isCompany ? "Nome da empresa" : "Nome completo"}
+              name="name"
               value={formData.name}
               onChange={(e) => handleInputChange("name", e.target.value)}
-              className="h-10 sm:h-11 text-sm border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all duration-200"
               placeholder={isCompany ? "Advance Tecnologia" : "João Silva"}
+              size="sm"
+              className="text-sm"
             />
           </motion.div>
 
@@ -188,17 +182,16 @@ const RegisterPage = () => {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.15 }}
-            className="space-y-1.5"
           >
-            <Label htmlFor="document" className="text-xs sm:text-sm font-medium text-gray-700">
-              {isCompany ? "CNPJ" : "CPF"}
-            </Label>
-            <Input
-              id="document"
+            <InputCustom
+              label={isCompany ? "CNPJ" : "CPF"}
+              name="document"
               value={formData.document}
               onChange={(e) => handleInputChange("document", e.target.value)}
-              className="h-10 sm:h-11 text-sm border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all duration-200"
+              mask={isCompany ? "cnpj" : "cpf"}
               placeholder={isCompany ? "00.000.000/0000-00" : "000.000.000-00"}
+              size="sm"
+              className="text-sm"
             />
           </motion.div>
 
@@ -208,32 +201,28 @@ const RegisterPage = () => {
             transition={{ delay: 0.2 }}
             className="space-y-3 sm:space-y-0 sm:grid sm:grid-cols-2 sm:gap-4"
           >
-            <div className="space-y-1.5">
-              <Label htmlFor="phone" className="text-xs sm:text-sm font-medium text-gray-700">
-                Telefone
-              </Label>
-              <Input
-                id="phone"
-                value={formData.phone}
-                onChange={(e) => handleInputChange("phone", e.target.value)}
-                className="h-10 sm:h-11 text-sm border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all duration-200"
-                placeholder="(11) 99999-9999"
-              />
-            </div>
+            <InputCustom
+              label="Telefone"
+              name="phone"
+              value={formData.phone}
+              onChange={(e) => handleInputChange("phone", e.target.value)}
+              mask="phone"
+              placeholder="(11) 99999-9999"
+              size="sm"
+              className="text-sm"
+            />
 
-            <div className="space-y-1.5">
-              <Label htmlFor="email" className="text-xs sm:text-sm font-medium text-gray-700">
-                Email
-              </Label>
-              <Input
-                id="email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => handleInputChange("email", e.target.value)}
-                className="h-10 sm:h-11 text-sm border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all duration-200"
-                placeholder="joao@email.com"
-              />
-            </div>
+            <InputCustom
+              label="Email"
+              name="email"
+              type="email"
+              value={formData.email}
+              onChange={(e) => handleInputChange("email", e.target.value)}
+              mask="email"
+              placeholder="joao@email.com"
+              size="sm"
+              className="text-sm"
+            />
           </motion.div>
 
           <motion.div
@@ -242,63 +231,29 @@ const RegisterPage = () => {
             transition={{ delay: 0.25 }}
             className="space-y-3 sm:space-y-0 sm:grid sm:grid-cols-2 sm:gap-4"
           >
-            <div className="space-y-1.5">
-              <Label htmlFor="password" className="text-xs sm:text-sm font-medium text-gray-700">
-                Senha
-              </Label>
-              <div className="relative">
-                <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  value={formData.password}
-                  onChange={(e) => handleInputChange("password", e.target.value)}
-                  className="h-10 sm:h-11 text-sm border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all duration-200 pr-10"
-                  placeholder="••••••••"
-                />
-                <motion.button
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
-                >
-                  {showPassword ? (
-                    <EyeOff className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                  ) : (
-                    <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                  )}
-                </motion.button>
-              </div>
-            </div>
+            <InputCustom
+              label="Senha"
+              name="password"
+              type="password"
+              value={formData.password}
+              onChange={(e) => handleInputChange("password", e.target.value)}
+              placeholder="••••••••"
+              showPasswordToggle
+              size="sm"
+              className="text-sm"
+            />
 
-            <div className="space-y-1.5">
-              <Label htmlFor="confirm-password" className="text-xs sm:text-sm font-medium text-gray-700">
-                Confirmar senha
-              </Label>
-              <div className="relative">
-                <Input
-                  id="confirm-password"
-                  type={showConfirmPassword ? "text" : "password"}
-                  value={formData.confirmPassword}
-                  onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
-                  className="h-10 sm:h-11 text-sm border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all duration-200 pr-10"
-                  placeholder="••••••••"
-                />
-                <motion.button
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                  type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
-                >
-                  {showConfirmPassword ? (
-                    <EyeOff className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                  ) : (
-                    <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                  )}
-                </motion.button>
-              </div>
-            </div>
+            <InputCustom
+              label="Confirmar senha"
+              name="confirmPassword"
+              type="password"
+              value={formData.confirmPassword}
+              onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
+              placeholder="••••••••"
+              showPasswordToggle
+              size="sm"
+              className="text-sm"
+            />
           </motion.div>
         </div>
 
@@ -340,13 +295,18 @@ const RegisterPage = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.35 }}
         >
-          <Button
+          <ButtonCustom
             type="submit"
-            className="w-full h-10 sm:h-11 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer text-sm"
+            fullWidth
+            size="md"
+            variant="primary"
+            className="h-10 sm:h-11 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer text-sm"
             disabled={!isFormValid() || isPending}
+            isLoading={isPending}
+            loadingText="Criando..."
           >
-            {isPending ? "Criando..." : "Criar conta"}
-          </Button>
+            Criar conta
+          </ButtonCustom>
         </motion.div>
       </motion.form>
     );
@@ -389,7 +349,8 @@ const RegisterPage = () => {
                     {userTypes.map((type, index) => {
                       const Icon = type.icon;
                       return (
-                        <motion.button
+                        // Wrap each card in motion.div so ButtonCustom stays animation-free
+                        <motion.div
                           key={type.id}
                           initial={{ opacity: 0, y: 20 }}
                           animate={{ opacity: 1, y: 0 }}
@@ -400,10 +361,12 @@ const RegisterPage = () => {
                           }}
                           whileHover={{ scale: 1.02, y: -2 }}
                           whileTap={{ scale: 0.98 }}
-                          onClick={() => setSelectedType(type.id as SelectedType)}
-                          className={`w-full p-2.5 sm:p-4 md:p-5 rounded-xl sm:rounded-2xl border-2 ${type.borderColor} ${type.bgColor} ${type.hoverBg} transition-all duration-300 text-left group shadow-sm hover:shadow-md cursor-pointer`}
                         >
-                          <div className="flex items-center justify-between">
+                          <ButtonCustom
+                            onClick={() => setSelectedType(type.id as SelectedType)}
+                            withAnimation={false}
+                            className={`w-full p-2.5 sm:p-4 md:p-5 rounded-xl sm:rounded-2xl border-2 ${type.borderColor} ${type.bgColor} ${type.hoverBg} transition-all duration-300 text-left group shadow-sm hover:shadow-md cursor-pointer flex items-center justify-between`}
+                          >
                             <div className="flex items-center space-x-2 sm:space-x-3 md:space-x-4">
                               <motion.div
                                 whileHover={{ rotate: 5 }}
@@ -426,8 +389,8 @@ const RegisterPage = () => {
                             >
                               <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5 text-gray-400 group-hover:text-gray-600 transition-colors" />
                             </motion.div>
-                          </div>
-                        </motion.button>
+                          </ButtonCustom>
+                        </motion.div>
                       );
                     })}
                   </div>
