@@ -17,6 +17,9 @@ interface SignUpPageProps {
   heroImageSrc?: string;
   onSignUp?: (event: React.FormEvent<HTMLFormElement>) => void;
   isLoading?: boolean;
+  defaultTipoUsuario?: "PESSOA_FISICA" | "PESSOA_JURIDICA";
+  showUserTypeSelect?: boolean;
+  onBack?: () => void;
 }
 
 const GlassInputWrapper = ({ children }: { children: React.ReactNode }) => (
@@ -35,12 +38,15 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({
   heroImageSrc,
   onSignUp,
   isLoading,
+  defaultTipoUsuario = "PESSOA_FISICA",
+  showUserTypeSelect = true,
+  onBack,
 }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [tipoUsuario, setTipoUsuario] = useState<
     "PESSOA_FISICA" | "PESSOA_JURIDICA"
-  >("PESSOA_FISICA");
+  >(defaultTipoUsuario);
   const [documento, setDocumento] = useState("");
   const [telefone, setTelefone] = useState("");
   const [aceitarTermos, setAceitarTermos] = useState(false);
@@ -78,7 +84,16 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({
   const isPessoaFisica = tipoUsuario === "PESSOA_FISICA";
 
   return (
-    <div className="h-[100dvh] flex flex-col md:flex-row font-geist w-[100dvw]">
+    <div className="relative h-[100dvh] flex flex-col md:flex-row font-geist w-[100dvw]">
+      {onBack && (
+        <button
+          type="button"
+          onClick={onBack}
+          className="absolute left-4 top-4 text-sm text-[var(--color-blue)] hover:underline"
+        >
+          Voltar
+        </button>
+      )}
       <section className="flex-1 flex items-center justify-center p-8">
         <div className="w-full max-w-md">
           <div className="flex flex-col gap-6">
@@ -107,30 +122,32 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({
                 </GlassInputWrapper>
               </div>
 
-              <div className="animate-element animate-delay-300">
-                <label className="text-sm font-medium text-muted-foreground">
-                  Tipo de usuário
-                </label>
-                <GlassInputWrapper>
-                  <Select
-                    value={tipoUsuario}
-                    onValueChange={(v) =>
-                      setTipoUsuario(
-                        v as "PESSOA_FISICA" | "PESSOA_JURIDICA"
-                      )
-                    }
-                  >
-                    <SelectTrigger className="w-full bg-transparent text-sm p-4 rounded-2xl focus:outline-none cursor-pointer">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="PESSOA_FISICA">Pessoa Física</SelectItem>
-                      <SelectItem value="PESSOA_JURIDICA">Pessoa Jurídica</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </GlassInputWrapper>
-                <input type="hidden" name="tipoUsuario" value={tipoUsuario} />
-              </div>
+              {showUserTypeSelect && (
+                <div className="animate-element animate-delay-300">
+                  <label className="text-sm font-medium text-muted-foreground">
+                    Tipo de usuário
+                  </label>
+                  <GlassInputWrapper>
+                    <Select
+                      value={tipoUsuario}
+                      onValueChange={(v) =>
+                        setTipoUsuario(
+                          v as "PESSOA_FISICA" | "PESSOA_JURIDICA"
+                        )
+                      }
+                    >
+                      <SelectTrigger className="w-full bg-transparent text-sm p-4 rounded-2xl focus:outline-none cursor-pointer">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="PESSOA_FISICA">Pessoa Física</SelectItem>
+                        <SelectItem value="PESSOA_JURIDICA">Pessoa Jurídica</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </GlassInputWrapper>
+                </div>
+              )}
+              <input type="hidden" name="tipoUsuario" value={tipoUsuario} />
 
               <div className="animate-element animate-delay-300">
                 <label className="text-sm font-medium text-muted-foreground">
