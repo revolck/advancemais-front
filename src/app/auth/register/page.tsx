@@ -64,7 +64,7 @@ const RegisterPage = () => {
   };
 
   return (
-    <div className="bg-background text-foreground">
+    <div className="min-h-[100dvh] w-full bg-gradient-to-br from-[var(--color-blue)] via-purple-700 to-fuchsia-600 text-white">
       {userType === null ? (
         <TypeSelection onSelect={setUserType} />
       ) : (
