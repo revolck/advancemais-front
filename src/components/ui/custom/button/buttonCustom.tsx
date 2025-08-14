@@ -80,6 +80,7 @@ const ButtonCustom = React.forwardRef<HTMLButtonElement, ButtonCustomProps>(
     }
 
     // Versão sem animação
+    const { disabled, ...rest } = props;
     return (
       <Comp
         data-slot="button-custom"
@@ -93,8 +94,8 @@ const ButtonCustom = React.forwardRef<HTMLButtonElement, ButtonCustomProps>(
           })
         )}
         ref={ref}
-        disabled={isLoading || props.disabled}
-        {...props}
+        disabled={isLoading || disabled}
+        {...(rest as React.ButtonHTMLAttributes<HTMLButtonElement>)}
       >
         {buttonContent}
       </Comp>
