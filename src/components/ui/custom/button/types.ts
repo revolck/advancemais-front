@@ -1,5 +1,5 @@
 import { VariantProps } from "class-variance-authority";
-import { ButtonHTMLAttributes } from "react";
+import type { HTMLMotionProps } from "framer-motion";
 import { IconName } from "../Icons";
 import { buttonCustomVariants } from "./variants";
 
@@ -7,7 +7,7 @@ import { buttonCustomVariants } from "./variants";
  * Props para o componente ButtonCustom
  */
 export interface ButtonCustomProps
-  extends ButtonHTMLAttributes<HTMLButtonElement>,
+  extends HTMLMotionProps<"button">,
     VariantProps<typeof buttonCustomVariants> {
   /**
    * Renderiza o filho como um slot
