@@ -43,10 +43,11 @@ export const usuarioRoutes = {
     reset: () => `${prefix}/usuarios/recuperar-senha/redefinir`,
   },
   verification: {
-    verify: (token: string) => `${prefix}/auth/verify-email?token=${token}`,
-    resend: () => `${prefix}/usuarios/reenviar-verificacao`,
+    verify: (token: string) =>
+      `${prefix}/brevo/verificar-email?token=${token}`,
+    resend: () => `${prefix}/brevo/reenviar-verificacao`,
     status: (userId: string) =>
-      `${prefix}/usuarios/status-verificacao/${userId}`,
+      `${prefix}/brevo/status-verificacao/${userId}`,
   },
 };
 
