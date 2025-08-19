@@ -26,6 +26,7 @@ export function dashboardMiddleware(request: NextRequest) {
   const [hostname, port] = host.split(":");
   const isLocalhost = hostname === "localhost" || hostname === "127.0.0.1";
   const baseDomain = hostname
+    .replace(/^www\./, "")
     .replace(/^app\./, "")
     .replace(/^auth\./, "");
 
@@ -45,7 +46,7 @@ export function dashboardMiddleware(request: NextRequest) {
   if (!isAuthenticated && !isLocalhost) {
     const authUrl = request.nextUrl.clone();
     authUrl.hostname = `auth.${baseDomain}`;
-    authUrl.pathname = "/auth/login";
+    authUrl.pathname = "/login";
     if (port) authUrl.port = port;
     return NextResponse.redirect(authUrl);
   }

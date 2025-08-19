@@ -9,6 +9,7 @@ export function authMiddleware(request: NextRequest) {
   const [hostname, port] = host.split(":");
   const isLocalhost = hostname === "localhost" || hostname === "127.0.0.1";
   const baseDomain = hostname
+    .replace(/^www\./, "")
     .replace(/^app\./, "")
     .replace(/^auth\./, "");
 
@@ -17,6 +18,7 @@ export function authMiddleware(request: NextRequest) {
   if (!isAuthSubdomain && !isLocalhost) {
     const url = request.nextUrl.clone();
     url.hostname = `auth.${baseDomain}`;
+    url.pathname = pathname.replace(/^\/auth/, "");
     if (port) url.port = port;
     return NextResponse.redirect(url);
   }
