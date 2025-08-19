@@ -18,8 +18,15 @@ export default function VerifyEmailPage() {
         return;
       }
       try {
-        await apiFetch(usuarioRoutes.verification.verify(token), {
+        await apiFetch(usuarioRoutes.verification.verify(), {
           cache: "no-cache",
+          init: {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ token }),
+          },
         });
         setStatus("success");
       } catch (err) {
