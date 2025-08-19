@@ -265,7 +265,6 @@ const RegisterPage = () => {
             id="terms"
             checked={acceptTerms}
             onCheckedChange={(v) => setAcceptTerms(!!v)}
-            className="mt-0.5 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600 cursor-pointer"
           />
           <Label
             htmlFor="terms"
@@ -311,174 +310,122 @@ const RegisterPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white">
-      <div className="absolute top-2 sm:top-4 md:top-6 left-3 sm:left-4 md:left-6 z-20">
-        <div className="flex items-center space-x-1.5 sm:space-x-2">
-          <div className="w-5 h-5 sm:w-7 sm:h-7 md:w-8 md:h-8 bg-gradient-to-r from-blue-600 to-red-600 rounded-lg flex items-center justify-center">
-            <span className="text-white font-bold text-xs">A+</span>
-          </div>
-          <span className="text-sm sm:text-lg md:text-xl font-bold text-gray-900">ADVANCE</span>
-        </div>
-      </div>
+    <div className="h-[100dvh] flex flex-col md:flex-row font-geist w-[100dvw] bg-white">
+      <section className="flex-1 flex items-center justify-center p-8">
+        <div className="w-full max-w-sm sm:max-w-md">
+          <AnimatePresence mode="wait">
+            {!selectedType ? (
+              <motion.div
+                key="selection"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+                className="space-y-3 sm:space-y-6 md:space-y-8"
+              >
+                <div className="space-y-1 sm:space-y-2">
+                  <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">
+                    Criar conta
+                  </h1>
+                  <p className="text-gray-600 text-xs sm:text-sm md:text-base leading-relaxed">
+                    Escolha o tipo de conta que melhor se adequa ao seu perfil
+                  </p>
+                </div>
 
-      <div className="min-h-screen flex flex-col lg:flex-row">
-        <div className="flex-1 flex items-center justify-center px-3 sm:px-6 md:px-8 py-3 sm:py-8 md:py-12 pt-12 sm:pt-20 md:pt-12">
-          <div className="w-full max-w-sm sm:max-w-md">
-            <AnimatePresence mode="wait">
-              {!selectedType ? (
-                <motion.div
-                  key="selection"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
-                  className="space-y-3 sm:space-y-6 md:space-y-8"
-                >
-                  <div className="space-y-1 sm:space-y-2">
-                    <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">
-                      Criar conta
-                    </h1>
-                    <p className="text-gray-600 text-xs sm:text-sm md:text-base leading-relaxed">
-                      Escolha o tipo de conta que melhor se adequa ao seu perfil
-                    </p>
-                  </div>
-
-                  <div className="space-y-2 sm:space-y-3 md:space-y-4">
-                    {userTypes.map((type, index) => {
-                      const Icon = type.icon;
-                      return (
-                        <ButtonCustom
-                          key={type.id}
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{
-                            delay: index * 0.1,
-                            duration: 0.4,
-                            ease: [0.4, 0, 0.2, 1],
-                          }}
-                          whileHover={{ scale: 1.02, y: -2 }}
-                          whileTap={{ scale: 0.98 }}
-                          onClick={() => setSelectedType(type.id as SelectedType)}
-                          className={`w-full p-2.5 sm:p-4 md:p-5 rounded-xl sm:rounded-2xl border-2 ${type.borderColor} ${type.bgColor} ${type.hoverBg} transition-all duration-300 text-left group shadow-sm hover:shadow-md cursor-pointer flex items-center justify-between`}
-                        >
-                          <div className="flex items-center space-x-2 sm:space-x-3 md:space-x-4">
-                            <motion.div
-                              whileHover={{ rotate: 5 }}
-                              className={`p-1.5 sm:p-2.5 md:p-3 rounded-lg sm:rounded-xl bg-gradient-to-r ${type.color} shadow-sm`}
-                            >
-                              <Icon className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-white" />
-                            </motion.div>
-                            <div className="flex-1">
-                              <h3 className="font-semibold text-gray-900 text-sm sm:text-base md:text-lg">
-                                {type.title}
-                              </h3>
-                              <p className="text-xs text-gray-600 mt-0.5 sm:mt-1 leading-relaxed">
-                                {type.description}
-                              </p>
-                            </div>
-                          </div>
+                <div className="space-y-4 sm:space-y-6 md:space-y-8">
+                  {userTypes.map((type, index) => {
+                    const Icon = type.icon;
+                    return (
+                      <ButtonCustom
+                        key={type.id}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{
+                          delay: index * 0.1,
+                          duration: 0.4,
+                          ease: [0.4, 0, 0.2, 1],
+                        }}
+                        whileHover={{ scale: 1.02, y: -2 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() =>
+                          setSelectedType(type.id as SelectedType)
+                        }
+                        className={`w-full p-4 sm:p-5 md:p-6 rounded-xl sm:rounded-2xl border-2 ${type.borderColor} ${type.bgColor} ${type.hoverBg} transition-all duration-300 text-left group shadow-sm hover:shadow-md cursor-pointer flex items-center justify-between`}
+                      >
+                        <div className="flex items-center space-x-4 sm:space-x-5 md:space-x-6">
                           <motion.div
-                            whileHover={{ x: 3 }}
-                            transition={{ duration: 0.2 }}
+                            whileHover={{ rotate: 5 }}
+                            className={`p-1.5 sm:p-2.5 md:p-3 rounded-lg sm:rounded-xl bg-gradient-to-r ${type.color} shadow-sm`}
                           >
-                            <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5 text-gray-400 group-hover:text-gray-600 transition-colors" />
+                            <Icon className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-white" />
                           </motion.div>
-                        </ButtonCustom>
-                      );
-                    })}
-                  </div>
+                          <div className="flex-1">
+                            <h3 className="font-semibold text-gray-900 text-sm sm:text-base md:text-lg">
+                              {type.title}
+                            </h3>
+                            <p className="text-xs text-gray-600 mt-0.5 sm:mt-1 leading-relaxed">
+                              {type.description}
+                            </p>
+                          </div>
+                        </div>
+                        <motion.div
+                          whileHover={{ x: 3 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5 text-gray-400 group-hover:text-gray-600 transition-colors" />
+                        </motion.div>
+                      </ButtonCustom>
+                    );
+                  })}
+                </div>
 
-                  <div className="pt-2 sm:pt-4 text-center">
-                    <p className="text-xs sm:text-sm text-gray-600">
-                      Já possui uma conta?{" "}
-                      <a
-                        href="/auth/login"
-                        className="text-blue-600 hover:text-blue-700 font-medium cursor-pointer hover:underline transition-all duration-200"
-                      >
-                        Fazer login
-                      </a>
-                    </p>
-                  </div>
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="form"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
-                >
-                  {renderForm()}
+                <div className="pt-2 sm:pt-4 text-center">
+                  <p className="text-xs sm:text-sm text-gray-600">
+                    Já possui uma conta?{" "}
+                    <a
+                      href="/auth/login"
+                      className="text-blue-600 hover:text-blue-700 font-medium cursor-pointer hover:underline transition-all duration-200"
+                    >
+                      Fazer login
+                    </a>
+                  </p>
+                </div>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="form"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+              >
+                {renderForm()}
 
-                  <div className="pt-3 sm:pt-6 text-center">
-                    <p className="text-xs sm:text-sm text-gray-600">
-                      Já possui uma conta?{" "}
-                      <a
-                        href="/auth/login"
-                        className="text-blue-600 hover:text-blue-700 font-medium cursor-pointer hover:underline transition-all duration-200"
-                      >
-                        Fazer login
-                      </a>
-                    </p>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+                <div className="pt-3 sm:pt-6 text-center">
+                  <p className="text-xs sm:text-sm text-gray-600">
+                    Já possui uma conta?{" "}
+                    <a
+                      href="/auth/login"
+                      className="text-blue-600 hover:text-blue-700 font-medium cursor-pointer hover:underline transition-all duration-200"
+                    >
+                      Fazer login
+                    </a>
+                  </p>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
-
+      </section>
+      <section className="hidden md:block flex-1 relative p-4">
         <div
-          className="hidden lg:flex flex-1 items-center justify-center p-12 relative"
+          className="animate-slide-right animate-delay-300 absolute inset-4 rounded-3xl bg-cover bg-center"
           style={{
             backgroundImage:
-              "linear-gradient(rgba(59, 130, 246, 0.8), rgba(37, 99, 235, 0.8)), url('/business-team-collaboration.png')",
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-            backgroundRepeat: "no-repeat",
+              "url('https://images.unsplash.com/photo-1642615835477-d303d7dc9ee9?w=2160&q=80')",
           }}
-        >
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="max-w-lg text-center space-y-6 text-white"
-          >
-            <motion.div
-              whileHover={{ scale: 1.05, rotate: 5 }}
-              transition={{ duration: 0.3 }}
-              className="w-24 h-24 bg-white/20 backdrop-blur-sm rounded-2xl mx-auto flex items-center justify-center border border-white/30 cursor-pointer"
-            >
-              <span className="text-white font-bold text-3xl">A+</span>
-            </motion.div>
-            <div className="space-y-4">
-              <h2 className="text-2xl font-bold">Conecte-se ao futuro</h2>
-              <p className="text-white/90 leading-relaxed">
-                Junte-se à plataforma que conecta talentos, empresas e oportunidades de crescimento profissional.
-              </p>
-            </div>
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4, duration: 0.5 }}
-              className="grid grid-cols-3 gap-4 pt-8"
-            >
-              {[{ value: "10k+", label: "Usuários" }, { value: "500+", label: "Empresas" }, { value: "1k+", label: "Vagas" }].map((stat, index) => (
-                <motion.div
-                  key={stat.label}
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.5 + index * 0.1, duration: 0.3 }}
-                  whileHover={{ scale: 1.1 }}
-                  className="text-center cursor-pointer"
-                >
-                  <div className="text-2xl font-bold">{stat.value}</div>
-                  <div className="text-sm text-white/80">{stat.label}</div>
-                </motion.div>
-              ))}
-            </motion.div>
-          </motion.div>
-        </div>
-      </div>
+        ></div>
+      </section>
       <OfflineModal />
     </div>
   );
