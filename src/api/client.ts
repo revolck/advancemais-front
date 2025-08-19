@@ -67,7 +67,28 @@ export async function apiFetch<T = unknown>(
       clearTimeout(timeoutId);
 
       if (!res.ok) {
-        throw new Error(`API responded with ${res.status}: ${res.statusText}`);
+        let errorMessage = `API responded with ${res.status}: ${res.statusText}`;
+
+        try {
+          const errorData = await res.json();
+          if (errorData && typeof errorData === "object") {
+            // many APIs retornam { message: "..." }
+            errorMessage =
+              (errorData as any).message || (errorData as any).error || errorMessage;
+          }
+        } catch {
+          // tenta obter texto puro caso não seja JSON
+          try {
+            const text = await res.text();
+            if (text) errorMessage = text;
+          } catch {
+            /* ignore */
+          }
+        }
+
+        const errorObj = new Error(errorMessage);
+        (errorObj as any).status = res.status;
+        throw errorObj;
       }
 
       const data = (await res.json()) as T;

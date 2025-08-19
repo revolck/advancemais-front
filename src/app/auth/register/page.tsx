@@ -13,6 +13,7 @@ import {
 import { GraduationCap, User, Building, ChevronRight } from "lucide-react";
 import { apiFetch } from "@/api/client";
 import { usuarioRoutes } from "@/api/routes";
+import { MaskService } from "@/services";
 
 type SelectedType = "student" | "candidate" | "company" | null;
 
@@ -62,14 +63,29 @@ const RegisterPage = () => {
     },
   ];
 
+  const maskService = MaskService.getInstance();
+
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   const isFormValid = () => {
+    const { name, document, phone, email, password, confirmPassword } = formData;
+    const fieldsFilled = [name, document, phone, email, password, confirmPassword].every(
+      (value) => value.trim() !== ""
+    );
+
+    const documentValid =
+      selectedType === "company"
+        ? maskService.validate(document, "cnpj")
+        : maskService.validate(document, "cpf");
+
     return (
-      Object.values(formData).every((value) => value.trim() !== "") &&
-      formData.password === formData.confirmPassword &&
+      fieldsFilled &&
+      maskService.validate(email, "email") &&
+      maskService.validate(phone, "phone") &&
+      documentValid &&
+      password === confirmPassword &&
       acceptTerms
     );
   };
@@ -114,10 +130,21 @@ const RegisterPage = () => {
         }, 1000);
       } catch (error) {
         console.error("Erro ao cadastrar:", error);
-        const message =
-          error instanceof Error && /409/.test(error.message)
-            ? "Usuário já cadastrado, por favor faça login."
-            : "Não foi possível realizar o cadastro.";
+        let message = "Não foi possível realizar o cadastro.";
+        if (error instanceof Error) {
+          const msg = error.message.toLowerCase();
+          if (msg.includes("cpf")) {
+            message = "CPF já cadastrado.";
+          } else if (msg.includes("cnpj")) {
+            message = "CNPJ já cadastrado.";
+          } else if (msg.includes("email")) {
+            message = "Email já cadastrado.";
+          } else if (msg.includes("usuario") || msg.includes("usuário")) {
+            message = "Usuário já cadastrado, por favor faça login.";
+          } else if ((error as any).status === 409) {
+            message = "Usuário já cadastrado, por favor faça login.";
+          }
+        }
         toastCustom.error(message);
       }
     });
