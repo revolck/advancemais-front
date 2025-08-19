@@ -173,13 +173,27 @@ export function middleware(request: NextRequest) {
   const host = request.headers.get("host") || "";
   const [hostname] = host.split(":");
 
+  // Normaliza hosts com prefixo www
+  if (hostname.startsWith("www.")) {
+    const url = request.nextUrl.clone();
+    url.hostname = hostname.replace(/^www\./, "");
+    return NextResponse.redirect(url);
+  }
+
   // Tratamento inicial para subdomínios específicos
   if (hostname.startsWith("auth.")) {
     if (pathname === "/") {
-      const url = new URL("/auth/login", request.url);
-      return setupDevCookies(NextResponse.rewrite(url));
+      const url = request.nextUrl.clone();
+      url.pathname = "/login";
+      return setupDevCookies(NextResponse.redirect(url));
     }
-    return setupDevCookies(NextResponse.next());
+    if (pathname.startsWith("/auth/")) {
+      const url = request.nextUrl.clone();
+      url.pathname = pathname.replace(/^\/auth/, "");
+      return setupDevCookies(NextResponse.redirect(url));
+    }
+    const url = new URL(`/auth${pathname}`, request.url);
+    return setupDevCookies(NextResponse.rewrite(url));
   }
 
   if (hostname.startsWith("app.")) {
