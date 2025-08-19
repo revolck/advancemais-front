@@ -270,20 +270,23 @@ const RegisterPage = () => {
             htmlFor="terms"
             className="text-xs sm:text-sm text-gray-600 leading-5 cursor-pointer"
           >
-            Aceito os{" "}
+            Li e aceito os{" "}
             <a
-              href="#"
+              href="http://advancemais.com/termos-uso"
+              target="_blank"
+              rel="noopener noreferrer"
               className="text-blue-600 hover:underline font-medium cursor-pointer"
             >
-              termos de uso
-            </a>{" "}
-            e{" "}
+              Termos de Uso
+            </a>, a{" "}
             <a
-              href="#"
+              href="http://advancemais.com/politica-privacidade"
+              target="_blank"
+              rel="noopener noreferrer"
               className="text-blue-600 hover:underline font-medium cursor-pointer"
             >
-              política de privacidade
-            </a>
+              Política de Privacidade
+            </a>{" "}e autorizo o uso das minhas informações conforme descrito.
           </Label>
         </motion.div>
 
@@ -312,7 +315,7 @@ const RegisterPage = () => {
   return (
     <div className="h-[100dvh] flex flex-col md:flex-row font-geist w-[100dvw] bg-white">
       <section className="flex-1 flex items-center justify-center p-8">
-        <div className="w-full max-w-sm sm:max-w-md">
+        <div className="w-full max-w-md sm:max-w-lg">
           <AnimatePresence mode="wait">
             {!selectedType ? (
               <motion.div
@@ -350,9 +353,9 @@ const RegisterPage = () => {
                         onClick={() =>
                           setSelectedType(type.id as SelectedType)
                         }
-                        className={`w-full p-4 sm:p-5 md:p-6 rounded-xl sm:rounded-2xl border-2 ${type.borderColor} ${type.bgColor} ${type.hoverBg} transition-all duration-300 text-left group shadow-sm hover:shadow-md cursor-pointer flex items-center justify-between`}
+                        className={`w-full px-5 py-4 sm:px-6 sm:py-5 md:px-7 md:py-6 rounded-xl sm:rounded-2xl border-2 ${type.borderColor} ${type.bgColor} ${type.hoverBg} transition-all duration-300 text-left group shadow-sm hover:shadow-md cursor-pointer flex items-center justify-between`}
                       >
-                        <div className="flex items-center space-x-4 sm:space-x-5 md:space-x-6">
+                        <div className="flex items-center space-x-6 sm:space-x-7 md:space-x-8">
                           <motion.div
                             whileHover={{ rotate: 5 }}
                             className={`p-1.5 sm:p-2.5 md:p-3 rounded-lg sm:rounded-xl bg-gradient-to-r ${type.color} shadow-sm`}
@@ -360,10 +363,10 @@ const RegisterPage = () => {
                             <Icon className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-white" />
                           </motion.div>
                           <div className="flex-1">
-                            <h3 className="font-semibold text-gray-900 text-sm sm:text-base md:text-lg">
+                            <h3 className="font-semibold text-gray-900 text-sm sm:text-base">
                               {type.title}
                             </h3>
-                            <p className="text-xs text-gray-600 mt-0.5 sm:mt-1 leading-relaxed">
+                            <p className="text-xs sm:text-sm text-gray-600 mt-0.5 sm:mt-1 leading-relaxed">
                               {type.description}
                             </p>
                           </div>
@@ -372,7 +375,7 @@ const RegisterPage = () => {
                           whileHover={{ x: 3 }}
                           transition={{ duration: 0.2 }}
                         >
-                          <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5 text-gray-400 group-hover:text-gray-600 transition-colors" />
+                          <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400 group-hover:text-gray-600 transition-colors" />
                         </motion.div>
                       </ButtonCustom>
                     );
