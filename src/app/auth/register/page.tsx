@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -18,17 +18,53 @@ import { MaskService } from "@/services";
 type SelectedType = "student" | "candidate" | "company" | null;
 
 const RegisterPage = () => {
-  const [selectedType, setSelectedType] = useState<SelectedType>(null);
-  const [acceptTerms, setAcceptTerms] = useState(false);
-  const [isPending, startTransition] = useTransition();
-  const [formData, setFormData] = useState({
+  const initialFormData = {
     name: "",
     document: "",
     phone: "",
     email: "",
     password: "",
     confirmPassword: "",
-  });
+  };
+
+  const [selectedType, setSelectedType] = useState<SelectedType>(null);
+  const [acceptTerms, setAcceptTerms] = useState(false);
+  const [isPending, startTransition] = useTransition();
+  const [formData, setFormData] = useState(initialFormData);
+  const [passwordError, setPasswordError] = useState("");
+
+  useEffect(() => {
+    const savedForm = localStorage.getItem("registerFormData");
+    const savedType = localStorage.getItem("registerSelectedType") as SelectedType;
+    if (savedForm) {
+      setFormData(JSON.parse(savedForm));
+    }
+    if (savedType) {
+      setSelectedType(savedType);
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("registerFormData", JSON.stringify(formData));
+  }, [formData]);
+
+  useEffect(() => {
+    if (selectedType) {
+      localStorage.setItem("registerSelectedType", selectedType);
+    }
+  }, [selectedType]);
+
+  useEffect(() => {
+    if (
+      formData.password &&
+      formData.confirmPassword &&
+      formData.password !== formData.confirmPassword
+    ) {
+      setPasswordError("As senhas não coincidem");
+    } else {
+      setPasswordError("");
+    }
+  }, [formData.password, formData.confirmPassword]);
 
   const userTypes = [
     {
@@ -67,6 +103,13 @@ const RegisterPage = () => {
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const resetForm = () => {
+    setSelectedType(null);
+    setFormData(initialFormData);
+    localStorage.removeItem("registerFormData");
+    localStorage.removeItem("registerSelectedType");
   };
 
   const isDocumentValid = () => {
@@ -180,7 +223,7 @@ const RegisterPage = () => {
           <ButtonCustom
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => setSelectedType(null)}
+            onClick={resetForm}
             type="button"
             variant="ghost"
             size="sm"
@@ -273,17 +316,18 @@ const RegisterPage = () => {
               className="text-sm"
             />
 
-            <InputCustom
-              label="Confirmar senha"
-              name="confirmPassword"
-              type="password"
-              value={formData.confirmPassword}
-              onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
-              placeholder="••••••••"
-              showPasswordToggle
-              size="sm"
-              className="text-sm"
-            />
+              <InputCustom
+                label="Confirmar senha"
+                name="confirmPassword"
+                type="password"
+                value={formData.confirmPassword}
+                onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
+                placeholder="••••••••"
+                showPasswordToggle
+                size="sm"
+                className="text-sm"
+                error={passwordError}
+              />
           </motion.div>
         </div>
 
