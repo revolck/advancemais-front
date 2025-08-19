@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import type { CommunicationData, CommunicationApiResponse } from "../types";
 import { DEFAULT_COMMUNICATION_DATA, COMMUNICATION_CONFIG } from "../constants";
 
@@ -26,7 +26,7 @@ export function useCommunicationData(
   const [isLoading, setIsLoading] = useState(fetchFromApi);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (!fetchFromApi) {
       setData(staticData || DEFAULT_COMMUNICATION_DATA);
       setIsLoading(false);
@@ -90,11 +90,11 @@ export function useCommunicationData(
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [fetchFromApi, staticData]);
 
   useEffect(() => {
     fetchData();
-  }, [fetchFromApi]);
+  }, [fetchData]);
 
   return {
     data,

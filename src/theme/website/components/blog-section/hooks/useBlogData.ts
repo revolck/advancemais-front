@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import type { BlogPostData, BlogApiResponse } from "../types";
 import { DEFAULT_BLOG_DATA, BLOG_CONFIG } from "../constants";
 
@@ -26,7 +26,7 @@ export function useBlogData(
   const [isLoading, setIsLoading] = useState(fetchFromApi);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (!fetchFromApi) {
       setData(staticData || DEFAULT_BLOG_DATA);
       setIsLoading(false);
@@ -87,11 +87,11 @@ export function useBlogData(
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [fetchFromApi, staticData]);
 
   useEffect(() => {
     fetchData();
-  }, [fetchFromApi]);
+  }, [fetchData]);
 
   return {
     data,

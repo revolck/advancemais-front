@@ -11,8 +11,11 @@
     "clean:dev": "rm -rf .next && npm run dev",
     "type-check": "tsc --noEmit",
     "build:analyze": "ANALYZE=true npm run build",
-    "env:check": "node -e \"require('./src/lib/env').validateEnvVars()\"",
-    "env:example": "cp .env.example .env.local"
+    "env:check": "tsx scripts/env-check.ts",
+    "env:example": "cp .env.example .env.local",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "prebuild": "npm test"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.1.1",
@@ -76,7 +79,9 @@
     "eslint": "^9.31.0",
     "eslint-config-next": "15.3.1",
     "tailwindcss": "^4.1.11",
+    "tsx": "^4.20.4",
     "tw-animate-css": "^1.3.5",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4"
   }
 }

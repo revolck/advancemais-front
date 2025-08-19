@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import type { LogoData, LogosApiResponse } from "../types";
 import { DEFAULT_LOGOS_DATA, LOGOS_CONFIG } from "../constants";
 
@@ -26,7 +26,7 @@ export function useLogosData(
   const [isLoading, setIsLoading] = useState(fetchFromApi);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (!fetchFromApi) {
       setData(staticData || DEFAULT_LOGOS_DATA);
       setIsLoading(false);
@@ -87,11 +87,11 @@ export function useLogosData(
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [fetchFromApi, staticData]);
 
   useEffect(() => {
     fetchData();
-  }, [fetchFromApi]);
+  }, [fetchData]);
 
   return {
     data,

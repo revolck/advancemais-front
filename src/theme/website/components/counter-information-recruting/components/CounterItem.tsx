@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { formatNumber, animateValue, isElementVisible } from "../utils";
 import { COUNTER_CONFIG } from "../constants";
 import type { CounterItemProps } from "../types";
@@ -18,7 +18,7 @@ export const CounterItem: React.FC<CounterItemProps> = ({
   const cancelAnimationRef = useRef<(() => void) | null>(null);
 
   // Função para iniciar animação
-  const startAnimation = () => {
+  const startAnimation = useCallback(() => {
     if (!animated || hasAnimated) return;
 
     const delay = index * COUNTER_CONFIG.animation.delay;
@@ -39,7 +39,7 @@ export const CounterItem: React.FC<CounterItemProps> = ({
         }
       );
     }, delay);
-  };
+  }, [animated, hasAnimated, index, animationDuration, data.value]);
 
   // Observer para detectar quando o elemento fica visível
   useEffect(() => {
@@ -77,7 +77,7 @@ export const CounterItem: React.FC<CounterItemProps> = ({
         cancelAnimationRef.current();
       }
     };
-  }, [animated, hasAnimated, data.value, index, animationDuration]);
+  }, [animated, hasAnimated, startAnimation]);
 
   // Cleanup na desmontagem
   useEffect(() => {

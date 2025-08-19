@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import type { ProcessSectionData, ProcessApiResponse } from "../types";
 import { DEFAULT_PROCESS_DATA, PROCESS_CONFIG } from "../constants";
 
@@ -26,7 +26,7 @@ export function useProcessData(
   const [isLoading, setIsLoading] = useState(fetchFromApi);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (!fetchFromApi) {
       setData(staticData || DEFAULT_PROCESS_DATA);
       setIsLoading(false);
@@ -90,11 +90,11 @@ export function useProcessData(
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [fetchFromApi, staticData]);
 
   useEffect(() => {
     fetchData();
-  }, [fetchFromApi]);
+  }, [fetchData]);
 
   return {
     data,

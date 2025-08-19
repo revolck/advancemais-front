@@ -4,6 +4,8 @@
  */
 
 type Environment = "development" | "production" | "test";
+const NODE_ENV: Environment =
+  (process.env.NODE_ENV as Environment) || "development";
 
 export type ApiFallback = "loading" | "skeleton" | "mock";
 
@@ -26,13 +28,19 @@ interface AppConfig {
 }
 
 /**
- * Helper para obter variável de ambiente com fallback
+ * Helper para obter variável de ambiente com fallback.
+ * Utiliza acesso direto às variáveis para garantir que o Next.js
+ * inclua os valores no bundle do cliente.
  */
-function getEnvVar(key: string, fallback: string = ""): string {
-  const value = process.env[key];
-
+function getEnvVar(
+  value: string | undefined,
+  key: string,
+  fallback: string = ""
+): string {
   if (!value && !fallback) {
-    console.warn(`⚠️  Environment variable ${key} is not defined`);
+    if (NODE_ENV === "production") {
+      console.warn(`⚠️  Environment variable ${key} is not defined`);
+    }
     return "";
   }
 
@@ -45,20 +53,43 @@ function getEnvVar(key: string, fallback: string = ""): string {
 export const env: AppConfig = {
   // API Configuration
   // Base da API. Quando vazio, usa o mesmo domínio do front com rewrites.
-  apiBaseUrl: getEnvVar("NEXT_PUBLIC_API_BASE_URL", ""),
-  apiVersion: getEnvVar("NEXT_PUBLIC_API_VERSION", "v1"),
-  baseUrl: getEnvVar("NEXT_PUBLIC_BASE_URL", "https://advancemais.com.br"),
-  apiFallback: getEnvVar("NEXT_PUBLIC_API_FALLBACK", "loading") as ApiFallback,
+  apiBaseUrl: getEnvVar(
+    process.env.NEXT_PUBLIC_API_BASE_URL,
+    "NEXT_PUBLIC_API_BASE_URL"
+  ),
+  apiVersion: getEnvVar(
+    process.env.NEXT_PUBLIC_API_VERSION,
+    "NEXT_PUBLIC_API_VERSION",
+    "v1"
+  ),
+  baseUrl: getEnvVar(
+    process.env.NEXT_PUBLIC_BASE_URL,
+    "NEXT_PUBLIC_BASE_URL",
+    "https://advancemais.com.br"
+  ),
+  apiFallback: getEnvVar(
+    process.env.NEXT_PUBLIC_API_FALLBACK,
+    "NEXT_PUBLIC_API_FALLBACK",
+    "loading"
+  ) as ApiFallback,
 
   // App Configuration
-  appName: getEnvVar("NEXT_PUBLIC_APP_NAME", "AdvanceMais"),
-  supportPhone: getEnvVar("NEXT_PUBLIC_SUPPORT_PHONE", "82994360962"),
+  appName: getEnvVar(
+    process.env.NEXT_PUBLIC_APP_NAME,
+    "NEXT_PUBLIC_APP_NAME",
+    "AdvanceMais"
+  ),
+  supportPhone: getEnvVar(
+    process.env.NEXT_PUBLIC_SUPPORT_PHONE,
+    "NEXT_PUBLIC_SUPPORT_PHONE",
+    "82994360962"
+  ),
 
   // Environment
-  nodeEnv: (process.env.NODE_ENV as Environment) || "development",
-  isDevelopment: process.env.NODE_ENV === "development",
-  isProduction: process.env.NODE_ENV === "production",
-  isTest: process.env.NODE_ENV === "test",
+  nodeEnv: NODE_ENV,
+  isDevelopment: NODE_ENV === "development",
+  isProduction: NODE_ENV === "production",
+  isTest: NODE_ENV === "test",
 } as const;
 
 /**
@@ -66,9 +97,13 @@ export const env: AppConfig = {
  * Apenas para produção ou quando explicitamente chamada
  */
 export function validateEnv(): void {
-  const requiredVars = ["NEXT_PUBLIC_API_BASE_URL", "NEXT_PUBLIC_BASE_URL"];
-
-  const missing = requiredVars.filter((key) => !process.env[key]);
+  const missing: string[] = [];
+  if (!process.env.NEXT_PUBLIC_API_BASE_URL) {
+    missing.push("NEXT_PUBLIC_API_BASE_URL");
+  }
+  if (!process.env.NEXT_PUBLIC_BASE_URL) {
+    missing.push("NEXT_PUBLIC_BASE_URL");
+  }
 
   if (missing.length > 0 && env.isProduction) {
     throw new Error(

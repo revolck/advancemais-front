@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import type { SectionData, ProblemSolutionApiResponse } from "../types";
 import { DEFAULT_SECTION_DATA, PROBLEM_SOLUTION_CONFIG } from "../constants";
 
@@ -26,7 +26,7 @@ export function useProblemSolutionData(
   const [isLoading, setIsLoading] = useState(fetchFromApi);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (!fetchFromApi) {
       setData(staticData || DEFAULT_SECTION_DATA);
       setIsLoading(false);
@@ -90,11 +90,11 @@ export function useProblemSolutionData(
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [fetchFromApi, staticData]);
 
   useEffect(() => {
     fetchData();
-  }, [fetchFromApi]);
+  }, [fetchData]);
 
   return {
     data,

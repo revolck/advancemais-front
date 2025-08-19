@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import type { ContactSectionData, ContactConfigApiResponse } from "../types";
 import { DEFAULT_CONTACT_DATA, CONTACT_CONFIG } from "../constants";
 
@@ -23,7 +23,7 @@ export function useContactConfig(
   const [isLoading, setIsLoading] = useState(fetchFromApi);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchConfig = async () => {
+  const fetchConfig = useCallback(async () => {
     if (!fetchFromApi) {
       setConfig(staticData || DEFAULT_CONTACT_DATA);
       setIsLoading(false);
@@ -79,11 +79,11 @@ export function useContactConfig(
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [fetchFromApi, staticData]);
 
   useEffect(() => {
     fetchConfig();
-  }, [fetchFromApi]);
+  }, [fetchConfig]);
 
   return {
     config,

@@ -29,7 +29,7 @@ export function MenuList({
       ...section,
       items: markActiveItems(section.items),
     }));
-  }, [sections, markActiveItems, ready, pathname]);
+  }, [sections, markActiveItems, ready]);
 
   return (
     <div className="space-y-6 transition-all duration-200">

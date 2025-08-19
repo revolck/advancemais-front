@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import type { TrainingResultData, TrainingResultsApiResponse } from "../types";
 import {
   DEFAULT_TRAINING_RESULTS,
@@ -29,7 +29,7 @@ export function useTrainingData(
   const [isLoading, setIsLoading] = useState(fetchFromApi);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (!fetchFromApi) {
       setData(staticData || DEFAULT_TRAINING_RESULTS);
       setIsLoading(false);
@@ -90,11 +90,12 @@ export function useTrainingData(
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [fetchFromApi, staticData]);
 
   useEffect(() => {
     fetchData();
-  }, [fetchFromApi]);
+    // fetchData already depends on fetchFromApi and staticData
+  }, [fetchData]);
 
   return {
     data,

@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { usePathname } from "next/navigation";
 import type { HeaderPageData, HeaderApiResponse } from "../types";
 import { DEFAULT_HEADER_DATA, HEADER_CONFIG } from "../constants";
@@ -47,7 +47,7 @@ export function useHeaderData(
     return header || null;
   };
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (!fetchFromApi) {
       const fallbackData = findHeaderForPage(DEFAULT_HEADER_DATA, targetPage);
       setData(fallbackData);
@@ -113,11 +113,11 @@ export function useHeaderData(
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [fetchFromApi, targetPage]);
 
   useEffect(() => {
     fetchData();
-  }, [fetchFromApi, targetPage]);
+  }, [fetchData]);
 
   return {
     data,
