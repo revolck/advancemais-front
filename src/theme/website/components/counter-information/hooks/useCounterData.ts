@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import type { CounterData, CounterApiResponse } from "../types";
 import { DEFAULT_COUNTER_DATA, COUNTER_CONFIG } from "../constants";
 
@@ -24,7 +24,7 @@ export function useCounterData(
   const [isLoading, setIsLoading] = useState(fetchFromApi);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (!fetchFromApi) {
       setData(staticData || DEFAULT_COUNTER_DATA);
       setIsLoading(false);
@@ -85,11 +85,11 @@ export function useCounterData(
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [fetchFromApi, staticData]);
 
   useEffect(() => {
     fetchData();
-  }, [fetchFromApi]);
+  }, [fetchData]);
 
   return {
     data,

@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import type { JobData, JobFilters, CareerApiResponse } from "../types";
 import {
   DEFAULT_JOBS_DATA,
@@ -96,7 +96,7 @@ export function useCareerData(
       });
   }, [data, filters]);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (!fetchFromApi) {
       setData(staticData || DEFAULT_JOBS_DATA);
       setIsLoading(false);
@@ -154,11 +154,11 @@ export function useCareerData(
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [fetchFromApi, staticData]);
 
   useEffect(() => {
     fetchData();
-  }, [fetchFromApi]);
+  }, [fetchData]);
 
   return {
     data,

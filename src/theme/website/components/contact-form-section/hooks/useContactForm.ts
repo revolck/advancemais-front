@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import type {
   ContactFormData,
   ContactFormState,
@@ -68,8 +68,9 @@ export function useContactForm(
   }, []);
 
   // Busca dados do CEP com debounce
-  const debouncedCepLookup = useCallback(
-    debounce(async (cep: string) => {
+  const debouncedCepLookup = useMemo(
+    () =>
+      debounce(async (cep: string) => {
       if (cep.replace(/\D/g, "").length === 8) {
         try {
           const result = await fetchCepData(cep);
@@ -110,7 +111,7 @@ export function useContactForm(
           }));
         }
       }
-    }, CONTACT_CONFIG.form.debounceDelay),
+      }, CONTACT_CONFIG.form.debounceDelay),
     []
   );
 

@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import type {
   CourseData,
   CategoryData,
@@ -38,7 +38,7 @@ export function useCourseCatalogData(
   const [isLoading, setIsLoading] = useState(fetchFromApi);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (!fetchFromApi) {
       setCourses(staticData?.courses || DEFAULT_COURSES_DATA);
       setCategories(staticData?.categories || DEFAULT_CATEGORIES_DATA);
@@ -102,11 +102,11 @@ export function useCourseCatalogData(
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [fetchFromApi, staticData]);
 
   useEffect(() => {
     fetchData();
-  }, [fetchFromApi]);
+  }, [fetchData]);
 
   return {
     courses,

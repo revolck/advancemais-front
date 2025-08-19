@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import type {
   ServiceHighlightData,
   ServiceHighlightApiResponse,
@@ -32,7 +32,7 @@ export function useServiceHighlightData(
   const [isLoading, setIsLoading] = useState(fetchFromApi);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (!fetchFromApi) {
       setData(staticData || DEFAULT_SERVICE_HIGHLIGHT_DATA);
       setIsLoading(false);
@@ -93,11 +93,11 @@ export function useServiceHighlightData(
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [fetchFromApi, staticData]);
 
   useEffect(() => {
     fetchData();
-  }, [fetchFromApi]);
+  }, [fetchData]);
 
   return {
     data,
