@@ -69,22 +69,27 @@ const RegisterPage = () => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
+  const isDocumentValid = () => {
+    const clean = formData.document.replace(/\D/g, "");
+    return selectedType === "company" ? clean.length === 14 : clean.length === 11;
+  };
+
+  const isPhoneValid = () => {
+    const clean = formData.phone.replace(/\D/g, "");
+    return clean.length >= 10 && clean.length <= 11;
+  };
+
   const isFormValid = () => {
     const { name, document, phone, email, password, confirmPassword } = formData;
     const fieldsFilled = [name, document, phone, email, password, confirmPassword].every(
       (value) => value.trim() !== ""
     );
 
-    const documentValid =
-      selectedType === "company"
-        ? maskService.validate(document, "cnpj")
-        : maskService.validate(document, "cpf");
-
     return (
       fieldsFilled &&
       maskService.validate(email, "email") &&
-      maskService.validate(phone, "phone") &&
-      documentValid &&
+      isPhoneValid() &&
+      isDocumentValid() &&
       password === confirmPassword &&
       acceptTerms
     );
