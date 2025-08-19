@@ -24,7 +24,7 @@ export default function VerifyEmailPage() {
           cache: "no-cache",
         });
         toastCustom.success("Conta confirmada com sucesso");
-        router.push("/auth/login");
+        router.push("https://auth.advancemais.com/login");
       } catch (err) {
         setStatus("error");
       }
@@ -44,7 +44,7 @@ export default function VerifyEmailPage() {
         <div className="flex flex-col items-center gap-4">
           <p className="text-lg font-medium">Token inválido ou expirado.</p>
           <a
-            href="/auth/login"
+            href="https://auth.advancemais.com/login"
             className="px-4 py-2 rounded-md bg-[var(--color-blue)] text-white hover:bg-[var(--color-blue)]/90 cursor-pointer"
           >
             Voltar ao login
