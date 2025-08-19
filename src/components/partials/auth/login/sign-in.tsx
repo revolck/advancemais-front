@@ -39,6 +39,7 @@ export const SignInPage: React.FC<SignInPageProps> = ({
 }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [documento, setDocumento] = useState("");
+  const [senha, setSenha] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
 
   const handleDocumentoChange = (
@@ -57,6 +58,11 @@ export const SignInPage: React.FC<SignInPageProps> = ({
           .replace(/(\d{4})(\d)/, "$1-$2");
     setDocumento(formatted);
   };
+
+  const documentoDigits = documento.replace(/\D/g, "");
+  const isFormValid =
+    (documentoDigits.length === 11 || documentoDigits.length === 14) &&
+    senha.length > 0;
 
   return (
     <div className="h-[100dvh] flex flex-col md:flex-row font-geist w-[100dvw]">
@@ -100,6 +106,9 @@ export const SignInPage: React.FC<SignInPageProps> = ({
                     <input
                       name="senha"
                       type={showPassword ? "text" : "password"}
+                      required
+                      value={senha}
+                      onChange={(e) => setSenha(e.target.value)}
                       placeholder="Digite sua senha"
                       className="w-full bg-transparent text-sm p-4 pr-12 rounded-2xl focus:outline-none"
                     />
@@ -146,7 +155,7 @@ export const SignInPage: React.FC<SignInPageProps> = ({
               />
               <button
                 type="submit"
-                disabled={isLoading}
+                disabled={isLoading || !isFormValid}
                 className="animate-element animate-delay-600 w-full rounded-2xl bg-[var(--color-blue)] text-white py-4 font-medium hover:bg-[var(--color-blue)]/90 transition-colors flex items-center justify-center cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
               >
                 {isLoading ? (
