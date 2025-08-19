@@ -91,15 +91,23 @@ export async function apiFetch<T = unknown>(
         throw errorObj;
       }
 
-      const data = (await res.json()) as T;
+      // Tenta determinar o tipo de conteúdo para parse adequado
+      let data: T | undefined;
+      const contentType = res.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        data = (await res.json()) as T;
+      } else if (res.status !== 204) {
+        // Se houver conteúdo mas não for JSON, retorna texto puro
+        data = (await res.text()) as unknown as T;
+      }
 
-      // Armazena no cache
-      if (cache !== "no-cache") {
+      // Armazena no cache apenas se houver dados
+      if (cache !== "no-cache" && data !== undefined) {
         setCache(cacheKey, data, CACHE_TTL[cache]);
       }
 
       console.log(`✅ API Success: ${endpoint}`);
-      return data;
+      return data as T;
     } catch (error) {
       lastError = error as Error;
       console.warn(`⚠️ API Error [${attempt}/${retries}]:`, error);
