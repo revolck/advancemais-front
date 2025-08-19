@@ -61,6 +61,10 @@ const RegisterPage = () => {
       formData.password !== formData.confirmPassword
     ) {
       setPasswordError("As senhas não coincidem");
+    } else if (formData.password && !isPasswordValid(formData.password)) {
+      setPasswordError(
+        "A senha deve conter letras maiúsculas, minúsculas e caracteres especiais"
+      );
     } else {
       setPasswordError("");
     }
@@ -122,6 +126,13 @@ const RegisterPage = () => {
     return clean.length >= 10 && clean.length <= 11;
   };
 
+  const isPasswordValid = (password: string) => {
+    const hasUpper = /[A-Z]/.test(password);
+    const hasLower = /[a-z]/.test(password);
+    const hasSpecial = /[^A-Za-z0-9]/.test(password);
+    return hasUpper && hasLower && hasSpecial;
+  };
+
   const isFormValid = () => {
     const { name, document, phone, email, password, confirmPassword } = formData;
     const fieldsFilled = [name, document, phone, email, password, confirmPassword].every(
@@ -134,6 +145,7 @@ const RegisterPage = () => {
       isPhoneValid() &&
       isDocumentValid() &&
       password === confirmPassword &&
+      isPasswordValid(password) &&
       acceptTerms
     );
   };
@@ -314,6 +326,7 @@ const RegisterPage = () => {
               showPasswordToggle
               size="sm"
               className="text-sm"
+              error={passwordError}
             />
 
               <InputCustom
