@@ -99,7 +99,7 @@ const SignInPageDemo = () => {
   };
 
   const handleCreateAccount = () => {
-    window.location.href = "/auth/register";
+    window.location.href = "https://auth.advancemais.com/register";
   };
 
   return (

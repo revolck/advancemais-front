@@ -186,7 +186,7 @@ const RegisterPage = () => {
           "Cadastro realizado com sucesso! Verifique seu email para confirmar."
         );
         setTimeout(() => {
-          window.location.href = "/auth/login";
+          window.location.href = "https://auth.advancemais.com/login";
         }, 1000);
       } catch (error) {
         console.error("Erro ao cadastrar:", error);
@@ -475,7 +475,7 @@ const RegisterPage = () => {
                   <p className="text-xs sm:text-sm text-gray-600">
                     Já possui uma conta?{" "}
                     <a
-                      href="/auth/login"
+                      href="https://auth.advancemais.com/login"
                       className="text-blue-600 hover:text-blue-700 font-medium cursor-pointer hover:underline transition-all duration-200"
                     >
                       Fazer login
@@ -497,7 +497,7 @@ const RegisterPage = () => {
                   <p className="text-xs sm:text-sm text-gray-600">
                     Já possui uma conta?{" "}
                     <a
-                      href="/auth/login"
+                      href="https://auth.advancemais.com/login"
                       className="text-blue-600 hover:text-blue-700 font-medium cursor-pointer hover:underline transition-all duration-200"
                     >
                       Fazer login

@@ -28,7 +28,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose }) => {
               </NavLink>
             ))}
             <hr className="w-full border-t border-gray-700/50 my-2" />
-            <NavLink href="/auth/login" onClick={onClose}>
+            <NavLink href="https://auth.advancemais.com/login" onClick={onClose}>
               Entrar
             </NavLink>
           </div>
