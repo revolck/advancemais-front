@@ -70,42 +70,42 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
       {/* Container principal de conteúdo */}
       <div className="w-full flex flex-1 flex-col transition-all duration-300 ease-in-out bg-white">
-        {/* Cabeçalho/barra superior */}
-        <header className="h-16 border-b border-gray-200 flex items-center px-4 bg-white z-10">
+        {/* Cabeçalho/barra superior melhorado */}
+        <header className="h-18 border-b border-gray-200 flex items-center px-6 bg-white z-10 shadow-sm">
           {/* Botão de toggle do sidebar */}
           <button
             onClick={toggleSidebar}
-            className="mr-4 p-2 rounded-md hover:bg-gray-100 transition-colors"
+            className="mr-5 p-2.5 rounded-lg hover:bg-gray-100 transition-colors duration-200"
             aria-label={isCollapsed ? "Expandir sidebar" : "Colapsar sidebar"}
           >
             <Icon
               name={isCollapsed ? "PanelLeft" : "PanelLeftClose"}
-              size={20}
+              size={22}
               className="transition-transform duration-300"
             />
           </button>
 
           {/* Título da página */}
-          <h1 className="text-lg font-semibold">Dashboard</h1>
+          <h1 className="text-xl font-semibold text-gray-800">Dashboard</h1>
 
           {/* Espaço flexível */}
           <div className="flex-1"></div>
 
           {/* Ícones e controles de usuário na direita */}
           <div className="flex items-center gap-3">
-            <button className="p-2 rounded-md hover:bg-gray-100 transition-colors relative">
-              <Icon name="Bell" size={20} />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+            <button className="p-2.5 rounded-lg hover:bg-gray-100 transition-colors duration-200 relative">
+              <Icon name="Bell" size={22} />
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full"></span>
             </button>
 
-            <button className="p-2 rounded-md hover:bg-gray-100 transition-colors">
-              <Icon name="User" size={20} />
+            <button className="p-2.5 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+              <Icon name="User" size={22} />
             </button>
           </div>
         </header>
 
         {/* Conteúdo principal */}
-        <main className="flex-1 overflow-auto p-6 bg-white">
+        <main className="flex-1 overflow-auto p-8 bg-white">
           {children}
         </main>
       </div>

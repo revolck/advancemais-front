@@ -36,16 +36,11 @@ export function Sidebar({
           onCloseMobile={() => setIsMobileMenuOpen(false)}
         />
 
-        {/* Linha divisória abaixo da logo */}
-        <div
-          className={cn(
-            "my-2 border-b border-[#314e93]",
-            isCollapsed ? "mx-2" : "mx-4"
-          )}
-        />
+        {/* Linha divisória abaixo da logo - agora pega toda a largura */}
+        <div className="border-b border-[#314e93]" />
 
-        {/* Conteúdo do Menu */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
+        {/* Conteúdo do Menu com espaçamento maior */}
+        <div className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent pt-6">
           <MenuList
             sections={menuSections}
             isCollapsed={isCollapsed}

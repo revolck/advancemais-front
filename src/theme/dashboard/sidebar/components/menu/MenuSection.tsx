@@ -12,11 +12,14 @@ export function MenuSection({
 }: MenuSectionProps) {
   return (
     <div
-      className={cn("px-4 transition-all duration-200", isCollapsed && "px-2")}
+      className={cn(
+        "px-4 mb-8 transition-all duration-200",
+        isCollapsed && "px-2 mb-6"
+      )}
     >
       {/* Título da seção - visível apenas quando não está colapsado */}
       {!isCollapsed && (
-        <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-secondary transition-opacity duration-200">
+        <div className="mb-4 text-xs font-bold uppercase tracking-wider text-[var(--secondary-color)] transition-opacity duration-200">
           {section.title}
         </div>
       )}
