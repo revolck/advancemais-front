@@ -196,7 +196,14 @@ export function middleware(request: NextRequest) {
     return setupDevCookies(NextResponse.rewrite(url));
   }
 
+  // Subdomínio do dashboard (app.)
+  // Garante que todas as rotas sejam servidas a partir de /dashboard
   if (hostname.startsWith("app.")) {
+    if (!pathname.startsWith("/dashboard")) {
+      const url = request.nextUrl.clone();
+      url.pathname = `/dashboard${pathname === "/" ? "" : pathname}`;
+      return setupDevCookies(NextResponse.rewrite(url));
+    }
     return setupDevCookies(NextResponse.next());
   }
 
