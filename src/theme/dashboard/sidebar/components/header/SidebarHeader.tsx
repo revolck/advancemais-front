@@ -1,6 +1,7 @@
 import React from "react";
 import Image from "next/image";
 import { Icon } from "@/components/ui/custom/Icons";
+import { cn } from "@/lib/utils";
 import { SidebarHeaderProps } from "../../types/sidebar.types";
 import { toastCustom } from "@/components/ui/custom/toast";
 
@@ -26,13 +27,18 @@ export function SidebarHeader({
   };
 
   return (
-    <div className="h-16 px-4 flex items-center justify-between border-b border-[var(--color-blue)] transition-all duration-300">
+    <div
+      className={cn(
+        "h-16 flex items-center justify-between transition-all duration-300",
+        isCollapsed ? "px-2" : "px-4"
+      )}
+    >
       <div onClick={handleLogoClick} className="cursor-pointer flex items-center">
         <Image
           src={isCollapsed ? "/images/logos/logo_mobile.webp" : "/images/logos/logo_branco.webp"}
           alt="Logo"
-          width={isCollapsed ? 32 : 120}
-          height={32}
+          width={isCollapsed ? 40 : 150}
+          height={40}
           priority
         />
       </div>
