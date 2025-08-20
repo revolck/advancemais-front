@@ -1,6 +1,7 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -10,70 +11,289 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { AvatarCustom } from "@/components/ui/custom/avatar";
 import { Icon } from "@/components/ui/custom/Icons";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
 interface UserButtonProps {
   className?: string;
 }
 
+interface User {
+  name: string;
+  email: string;
+  avatar?: string;
+  role: string;
+  status: "online" | "offline" | "away" | "busy";
+  plan: "free" | "pro" | "enterprise";
+}
+
 export function UserButton({ className }: UserButtonProps) {
+  const [isOpen, setIsOpen] = useState(false);
+
   // Mock de dados do usuário - substitua pela sua lógica real
-  const user = {
-    name: "João Silva",
-    email: "joao.silva@empresa.com",
-    avatar: null, // URL da imagem ou null para fallback
-    initials: "JS",
+  const user: User = {
+    name: "Bertha Bonner",
+    email: "berthabonner@gmail.com",
+    avatar: undefined, // URL da imagem ou undefined para usar iniciais
+    role: "Administrator",
+    status: "online",
+    plan: "pro",
+  };
+
+  const menuItems = [
+    {
+      group: "Conta",
+      items: [
+        {
+          icon: "User",
+          label: "Meu Perfil",
+          description: "Gerencie suas informações pessoais",
+          action: () => console.log("Navegar para perfil"),
+        },
+        {
+          icon: "Shield",
+          label: "Segurança",
+          description: "Senha, 2FA e configurações de segurança",
+          action: () => console.log("Navegar para segurança"),
+        },
+      ],
+    },
+    {
+      group: "Assinatura",
+      items: [
+        {
+          icon: "Crown",
+          label: "Assinatura",
+          description: "Gerencie seu plano atual",
+          action: () => console.log("Navegar para assinatura"),
+          badge:
+            user.plan === "pro"
+              ? "Pro"
+              : user.plan === "enterprise"
+              ? "Enterprise"
+              : null,
+        },
+        {
+          icon: "CreditCard",
+          label: "Fatura",
+          description: "Histórico de pagamentos e faturas",
+          action: () => console.log("Navegar para fatura"),
+        },
+      ],
+    },
+  ];
+
+  const getPlanBadgeColor = (plan: User["plan"]) => {
+    switch (plan) {
+      case "pro":
+        return "bg-blue-100 text-blue-700";
+      case "enterprise":
+        return "bg-purple-100 text-purple-700";
+      default:
+        return "bg-gray-100 text-gray-700";
+    }
+  };
+
+  const getStatusColor = (status: User["status"]) => {
+    switch (status) {
+      case "online":
+        return "text-green-500";
+      case "away":
+        return "text-yellow-500";
+      case "busy":
+        return "text-red-500";
+      default:
+        return "text-gray-400";
+    }
+  };
+
+  const handleLogout = () => {
+    // Implementar lógica de logout
+    console.log("Logout");
   };
 
   return (
-    <DropdownMenu>
+    <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
       <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          className={cn(
-            "relative h-10 w-10 p-0 rounded-full hover:bg-white/10 transition-colors duration-200",
-            className
-          )}
-        >
-          <Avatar className="h-8 w-8">
-            <AvatarImage src={user.avatar || undefined} alt={user.name} />
-            <AvatarFallback className="bg-white/20 text-white text-sm font-medium">
-              {user.initials}
-            </AvatarFallback>
-          </Avatar>
-          <span className="sr-only">Menu do usuário</span>
-        </Button>
+        <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+          <Button
+            variant="ghost"
+            className={cn(
+              "relative h-10 px-2 rounded-lg hover:bg-gray-100 active:bg-gray-200",
+              "transition-all duration-200 ease-in-out",
+              "focus:outline-none focus:ring-2 focus:ring-blue-500/20",
+              className
+            )}
+          >
+            <div className="flex items-center gap-3">
+              <AvatarCustom
+                name={user.name}
+                src={user.avatar}
+                size="sm"
+                showStatus={true}
+                status={user.status}
+                className="ring-2 ring-white shadow-sm"
+              />
+              <div className="hidden md:block text-left">
+                <p className="text-sm font-medium text-gray-900 leading-none">
+                  {user.name}
+                </p>
+                <p className="text-xs text-gray-500 mt-0.5">{user.email}</p>
+              </div>
+              <motion.div
+                animate={{ rotate: isOpen ? 180 : 0 }}
+                transition={{ duration: 0.2, ease: "easeInOut" }}
+              >
+                <Icon
+                  name="ChevronDown"
+                  size={14}
+                  className="text-gray-400 ml-1"
+                />
+              </motion.div>
+            </div>
+            <span className="sr-only">Menu do usuário</span>
+          </Button>
+        </motion.div>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56">
-        <DropdownMenuLabel className="font-normal">
-          <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">{user.name}</p>
-            <p className="text-xs leading-none text-muted-foreground">
-              {user.email}
-            </p>
+
+      <DropdownMenuContent align="end" className="w-80" sideOffset={8}>
+        {/* Header do usuário */}
+        <DropdownMenuLabel className="p-4">
+          <div className="flex items-start gap-3">
+            <AvatarCustom
+              name={user.name}
+              src={user.avatar}
+              size="md"
+              showStatus={true}
+              status={user.status}
+              className="ring-2 ring-white shadow-sm"
+            />
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <p className="text-sm font-semibold text-gray-900 truncate">
+                  {user.name}
+                </p>
+                <div
+                  className={cn(
+                    "flex items-center gap-1",
+                    getStatusColor(user.status)
+                  )}
+                >
+                  <div className="w-2 h-2 rounded-full bg-current" />
+                  <span className="text-xs capitalize">{user.status}</span>
+                </div>
+              </div>
+              <p className="text-xs text-gray-500 truncate mb-2">
+                {user.email}
+              </p>
+              <div className="flex items-center gap-2">
+                <Badge
+                  variant="secondary"
+                  className={cn(
+                    "text-xs px-2 py-0.5",
+                    getPlanBadgeColor(user.plan)
+                  )}
+                >
+                  {user.plan === "pro"
+                    ? "Plano Pro"
+                    : user.plan === "enterprise"
+                    ? "Enterprise"
+                    : "Plano Gratuito"}
+                </Badge>
+                <Badge variant="outline" className="text-xs px-2 py-0.5">
+                  {user.role}
+                </Badge>
+              </div>
+            </div>
           </div>
         </DropdownMenuLabel>
+
         <DropdownMenuSeparator />
-        <DropdownMenuItem className="cursor-pointer">
-          <Icon name="User" className="mr-2 h-4 w-4" />
-          <span>Perfil</span>
-        </DropdownMenuItem>
-        <DropdownMenuItem className="cursor-pointer">
-          <Icon name="Settings" className="mr-2 h-4 w-4" />
-          <span>Configurações</span>
-        </DropdownMenuItem>
-        <DropdownMenuItem className="cursor-pointer">
-          <Icon name="CreditCard" className="mr-2 h-4 w-4" />
-          <span>Cobrança</span>
-        </DropdownMenuItem>
+
+        {/* Menu items agrupados */}
+        {menuItems.map((group, groupIndex) => (
+          <motion.div
+            key={group.group}
+            initial={{ opacity: 0, y: 5 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: groupIndex * 0.05 }}
+          >
+            <div className="px-4 py-2">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                {group.group}
+              </p>
+            </div>
+            {group.items.map((item, itemIndex) => (
+              <DropdownMenuItem
+                key={item.label}
+                className="px-4 py-3 cursor-pointer hover:bg-gray-50 focus:bg-gray-50"
+                onClick={item.action}
+              >
+                <motion.div
+                  className="flex items-start gap-3 w-full"
+                  whileHover={{ x: 2 }}
+                  transition={{ duration: 0.1 }}
+                >
+                  <div className="p-1.5 rounded-md bg-gray-100 shrink-0 mt-0.5">
+                    <Icon name={item.icon as any} size={14} className="text-gray-600" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-medium text-gray-900">
+                        {item.label}
+                      </p>
+                      {item.badge && (
+                        <Badge variant="secondary" className="text-xs ml-2">
+                          {item.badge}
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">
+                      {item.description}
+                    </p>
+                  </div>
+                  <Icon
+                    name="ChevronRight"
+                    size={12}
+                    className="text-gray-400 mt-1 shrink-0"
+                  />
+                </motion.div>
+              </DropdownMenuItem>
+            ))}
+            {groupIndex < menuItems.length - 1 && <DropdownMenuSeparator />}
+          </motion.div>
+        ))}
+
         <DropdownMenuSeparator />
-        <DropdownMenuItem className="cursor-pointer text-red-600 focus:text-red-600">
-          <Icon name="LogOut" className="mr-2 h-4 w-4" />
-          <span>Sair</span>
+
+        {/* Botão de Logout */}
+        <DropdownMenuItem
+          className="px-4 py-3 cursor-pointer text-red-600 focus:text-red-700 hover:bg-red-50 focus:bg-red-50"
+          onClick={handleLogout}
+        >
+          <motion.div
+            className="flex items-center gap-3 w-full"
+            whileHover={{ x: 2 }}
+            transition={{ duration: 0.1 }}
+          >
+            <div className="p-1.5 rounded-md bg-red-100 shrink-0">
+              <Icon name="LogOut" size={14} className="text-red-600" />
+            </div>
+            <div>
+              <p className="text-sm font-medium">Sair</p>
+              <p className="text-xs text-red-500/70 mt-0.5">Encerrar sessão atual</p>
+            </div>
+            <Icon
+              name="ChevronRight"
+              size={12}
+              className="text-red-400 ml-auto shrink-0"
+            />
+          </motion.div>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
 }
+
