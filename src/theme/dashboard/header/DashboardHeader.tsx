@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Image from "next/image";
 import { motion } from "framer-motion";
 import { Icon } from "@/components/ui/custom/Icons";
 import { NotificationButton } from "./components/NotificationButton";
@@ -16,20 +17,29 @@ export function DashboardHeader({
     <>
       {/* Header Principal */}
       <motion.header
-        className="h-16 flex items-center justify-between px-6 bg-white border-b border-gray-200/80 shadow-sm backdrop-blur-md z-50"
+        className="h-16 flex items-center justify-between px-6 bg-sidebar text-sidebar-foreground border-b border-[#314e93] shadow-sm backdrop-blur-md z-50"
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.3, ease: "easeOut" }}
       >
         {/* Seção Esquerda - Toggle Sidebar */}
         <div className="flex items-center">
+          <Image
+            src="/images/logos/logo_branco.webp"
+            alt="Logo"
+            width={120}
+            height={40}
+            priority
+            className="h-8 w-auto"
+          />
+          <div className="h-8 border-l border-[#314e93] mx-6" />
           <motion.button
             onClick={toggleSidebar}
             className={cn(
               "flex items-center justify-center w-10 h-10 rounded-lg",
-              "hover:bg-gray-100 active:bg-gray-200",
+              "hover:bg-white/10 active:bg-white/20",
               "transition-all duration-200 ease-in-out",
-              "focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+              "focus:outline-none focus:ring-2 focus:ring-white/20"
             )}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
@@ -42,7 +52,7 @@ export function DashboardHeader({
               <Icon
                 name="PanelLeftClose"
                 size={20}
-                className="text-gray-600 hover:text-gray-800 transition-colors"
+                className="text-white transition-colors"
               />
             </motion.div>
           </motion.button>
@@ -55,30 +65,11 @@ export function DashboardHeader({
 
         {/* Seção Direita - Ações do Usuário */}
         <div className="flex items-center gap-2">
-          {/* Botão de Busca Rápida */}
-          <motion.button
-            className={cn(
-              "flex items-center justify-center w-10 h-10 rounded-lg",
-              "hover:bg-gray-100 active:bg-gray-200",
-              "transition-all duration-200 ease-in-out",
-              "focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-            )}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            aria-label="Busca rápida"
-          >
-            <Icon
-              name="Search"
-              size={18}
-              className="text-gray-600 hover:text-gray-800 transition-colors"
-            />
-          </motion.button>
-
           {/* Botão de Notificações */}
           <NotificationButton />
 
           {/* Separador */}
-          <div className="w-px h-6 bg-gray-200 mx-2" />
+          <div className="w-px h-6 bg-white/20 mx-2" />
 
           {/* Botão do Usuário */}
           <UserButton />

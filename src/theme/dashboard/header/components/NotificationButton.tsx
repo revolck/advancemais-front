@@ -108,9 +108,9 @@ export function NotificationButton({ className }: NotificationButtonProps) {
             variant="ghost"
             size="icon"
             className={cn(
-              "relative w-10 h-10 rounded-lg hover:bg-gray-100 active:bg-gray-200",
+              "relative w-10 h-10 rounded-lg hover:bg-white/10 active:bg-white/20",
               "transition-all duration-200 ease-in-out",
-              "focus:outline-none focus:ring-2 focus:ring-blue-500/20",
+              "focus:outline-none focus:ring-2 focus:ring-white/20",
               className
             )}
           >
@@ -125,7 +125,7 @@ export function NotificationButton({ className }: NotificationButtonProps) {
               <Icon
                 name="Bell"
                 size={18}
-                className="text-gray-600 hover:text-gray-800 transition-colors"
+                className="text-white transition-colors"
               />
             </motion.div>
 
