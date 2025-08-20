@@ -44,10 +44,10 @@ export function MenuItem({
       <button
         onClick={hasSubmenu ? toggleSubmenu : handleItemNavigation}
         className={cn(
-          "relative w-10 h-10 mx-auto my-1 flex items-center justify-center rounded-md transition-colors",
+          "relative w-10 h-10 mx-auto my-2 flex items-center justify-center rounded-md transition-colors",
           isActive || isSubmenuOpen
-            ? "bg-primary/90 text-primary-foreground"
-            : "text-gray-700 hover:bg-gray-100"
+            ? "bg-white/20 text-white"
+            : "text-white hover:bg-white/10"
         )}
       >
         {item.icon && <Icon name={item.icon} size={20} />}
@@ -57,11 +57,7 @@ export function MenuItem({
     return (
       <div className="relative group">
         {item.href && !hasSubmenu ? (
-          <Link
-            href={item.href}
-            onClick={handleItemNavigation}
-            className="block"
-          >
+          <Link href={item.href} onClick={handleItemNavigation} className="block">
             {menuContent}
           </Link>
         ) : (
@@ -78,10 +74,8 @@ export function MenuItem({
             onClick={(e) => e.stopPropagation()}
           >
             {/* Cabeçalho */}
-            <div className="flex items-center p-2 rounded-t-md bg-indigo-500 text-white font-medium">
-              {item.icon && (
-                <Icon name={item.icon} size={16} className="mr-2" />
-              )}
+            <div className="flex items-center p-2 rounded-t-md bg-[var(--color-blue)] text-white font-medium">
+              {item.icon && <Icon name={item.icon} size={16} className="mr-2" />}
               <p className="text-sm">{item.label}</p>
             </div>
 
@@ -97,8 +91,7 @@ export function MenuItem({
                         "flex items-center px-2 py-1.5 text-sm rounded-md",
                         "hover:bg-gray-100",
                         "text-gray-700",
-                        subItem.active &&
-                          "bg-gray-100 font-medium"
+                        subItem.active && "bg-gray-100 font-medium"
                       )}
                     >
                       {subItem.icon && (
@@ -154,12 +147,12 @@ export function MenuItem({
           href={item.href}
           onClick={handleItemNavigation}
           className={cn(
-            "flex items-center px-3 py-2 text-sm rounded-md transition-colors w-full",
-            "hover:bg-gray-100",
+            "flex items-center px-4 py-2.5 text-sm rounded-md transition-colors w-full",
+            "hover:bg-white/10",
             isActive
-              ? "bg-gray-100 text-gray-900 font-medium"
-              : "text-gray-600",
-            level > 0 && "text-xs"
+              ? "bg-white/20 text-white font-medium"
+              : "text-white/80",
+            level > 0 && "text-xs",
           )}
         >
           {item.icon && (
@@ -171,12 +164,12 @@ export function MenuItem({
         <button
           onClick={toggleSubmenu}
           className={cn(
-            "flex items-center justify-between w-full px-3 py-2 text-sm rounded-md transition-colors",
-            "hover:bg-gray-100",
+            "flex items-center justify-between w-full px-4 py-2.5 text-sm rounded-md transition-colors",
+            "hover:bg-white/10",
             isSubmenuOpen || isActive
-              ? "bg-gray-100 text-gray-900"
-              : "text-gray-600",
-            level > 0 && "text-xs"
+              ? "bg-white/20 text-white"
+              : "text-white/80",
+            level > 0 && "text-xs",
           )}
         >
           <div className="flex items-center">
@@ -204,7 +197,7 @@ export function MenuItem({
       {hasSubmenu && (
         <div
           className={cn(
-            "mt-1 pl-4 border-l border-gray-200",
+            "mt-2 pl-4 border-l border-white/20",
             "overflow-hidden transition-all duration-300 ease-in-out",
             isSubmenuOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
           )}
@@ -224,3 +217,4 @@ export function MenuItem({
     </div>
   );
 }
+
