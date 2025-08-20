@@ -4,7 +4,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 
 describe('buildApiUrl', () => {
   beforeEach(() => {
-    process.env.NEXT_PUBLIC_API_BASE_URL = 'https://api.example.com/'
+    ;(process as any).env.NEXT_PUBLIC_API_BASE_URL = 'https://api.example.com/'
     vi.resetModules()
   })
 
@@ -17,12 +17,12 @@ describe('buildApiUrl', () => {
 describe('validateEnv', () => {
   it('throws in production when required variables are missing', async () => {
     const originalEnv = process.env.NODE_ENV
-    process.env.NODE_ENV = 'production'
+    ;(process as any).env.NODE_ENV = 'production'
     delete process.env.NEXT_PUBLIC_API_BASE_URL
     delete process.env.NEXT_PUBLIC_BASE_URL
     vi.resetModules()
     const { validateEnv } = await import('./env')
     expect(() => validateEnv()).toThrow(/Missing required environment variables/)
-    process.env.NODE_ENV = originalEnv
+    ;(process as any).env.NODE_ENV = originalEnv
   })
 })

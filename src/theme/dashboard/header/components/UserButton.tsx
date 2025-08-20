@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import React, { useState, useEffect } from "react";
+import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -15,32 +15,68 @@ import { AvatarCustom } from "@/components/ui/custom/avatar";
 import { Icon } from "@/components/ui/custom/Icons";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { apiFetch } from "@/api/client";
+import { usuarioRoutes } from "@/api/routes";
 
 interface UserButtonProps {
   className?: string;
 }
 
 interface User {
-  name: string;
+  firstName: string;
+  lastName?: string;
   email: string;
   avatar?: string;
-  role: string;
-  status: "online" | "offline" | "away" | "busy";
   plan: "free" | "pro" | "enterprise";
 }
 
 export function UserButton({ className }: UserButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
 
-  // Mock de dados do usuário - substitua pela sua lógica real
-  const user: User = {
-    name: "Bertha Bonner",
-    email: "berthabonner@gmail.com",
-    avatar: undefined, // URL da imagem ou undefined para usar iniciais
-    role: "Administrator",
-    status: "online",
-    plan: "pro",
-  };
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const token = document.cookie
+          .split("; ")
+          .find((row) => row.startsWith("token="))?.split("=")[1];
+
+        if (!token) return;
+
+        const profile = await apiFetch<{
+          nome: string;
+          sobrenome?: string;
+          email: string;
+          avatar?: string;
+          plano?: string;
+        }>(usuarioRoutes.profile.get(), {
+          cache: "no-cache",
+          init: {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          },
+        });
+
+        setUser({
+          firstName: profile.nome,
+          lastName: profile.sobrenome,
+          email: profile.email,
+          avatar: profile.avatar,
+          plan:
+            profile.plano === "pro"
+              ? "pro"
+              : profile.plano === "enterprise"
+              ? "enterprise"
+              : "free",
+        });
+      } catch (error) {
+        console.error("Erro ao carregar perfil:", error);
+      }
+    };
+
+    fetchUser();
+  }, []);
 
   const menuItems = [
     {
@@ -69,9 +105,9 @@ export function UserButton({ className }: UserButtonProps) {
           description: "Gerencie seu plano atual",
           action: () => console.log("Navegar para assinatura"),
           badge:
-            user.plan === "pro"
+            user?.plan === "pro"
               ? "Pro"
-              : user.plan === "enterprise"
+              : user?.plan === "enterprise"
               ? "Enterprise"
               : null,
         },
@@ -85,7 +121,7 @@ export function UserButton({ className }: UserButtonProps) {
     },
   ];
 
-  const getPlanBadgeColor = (plan: User["plan"]) => {
+  const getPlanBadgeColor = (plan?: User["plan"]) => {
     switch (plan) {
       case "pro":
         return "bg-blue-100 text-blue-700";
@@ -96,23 +132,46 @@ export function UserButton({ className }: UserButtonProps) {
     }
   };
 
-  const getStatusColor = (status: User["status"]) => {
-    switch (status) {
-      case "online":
-        return "text-green-500";
-      case "away":
-        return "text-yellow-500";
-      case "busy":
-        return "text-red-500";
-      default:
-        return "text-gray-400";
+  const handleLogout = async () => {
+    try {
+      const token = document.cookie
+        .split("; ")
+        .find((row) => row.startsWith("token="))?.split("=")[1];
+
+      if (token) {
+        await apiFetch(usuarioRoutes.logout(), {
+          cache: "no-cache",
+          init: {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          },
+        });
+      }
+    } catch (error) {
+      console.error("Erro ao fazer logout:", error);
+    } finally {
+      const host = window.location.hostname;
+      const isLocalhost = host === "localhost" || host === "127.0.0.1";
+      const baseDomain = host
+        .replace(/^app\./, "")
+        .replace(/^auth\./, "");
+      const domain = isLocalhost ? host : `.${baseDomain}`;
+      document.cookie = `token=; path=/; domain=${domain}; max-age=0`;
+      document.cookie = `refresh_token=; path=/; domain=${domain}; max-age=0`;
+
+      const protocol = window.location.protocol;
+      const port = window.location.port ? `:${window.location.port}` : "";
+      window.location.href = isLocalhost
+        ? "/auth/login"
+        : `${protocol}//auth.${baseDomain}${port}/login`;
     }
   };
 
-  const handleLogout = () => {
-    // Implementar lógica de logout
-    console.log("Logout");
-  };
+  const displayName = user
+    ? `${user.firstName}${user.lastName ? ` ${user.lastName}` : ""}`
+    : "";
 
   return (
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
@@ -121,26 +180,24 @@ export function UserButton({ className }: UserButtonProps) {
           <Button
             variant="ghost"
             className={cn(
-              "relative h-10 px-2 rounded-lg hover:bg-gray-100 active:bg-gray-200",
+              "relative h-10 px-2 rounded-lg hover:bg-white/10 active:bg-white/20",
               "transition-all duration-200 ease-in-out",
-              "focus:outline-none focus:ring-2 focus:ring-blue-500/20",
+              "focus:outline-none focus:ring-2 focus:ring-white/20",
               className
             )}
           >
             <div className="flex items-center gap-3">
               <AvatarCustom
-                name={user.name}
-                src={user.avatar}
+                name={displayName}
+                src={user?.avatar}
                 size="sm"
-                showStatus={true}
-                status={user.status}
+                showStatus={false}
                 className="ring-2 ring-white shadow-sm"
               />
               <div className="hidden md:block text-left">
-                <p className="text-sm font-medium text-gray-900 leading-none">
-                  {user.name}
+                <p className="text-sm font-medium text-white leading-none">
+                  {displayName}
                 </p>
-                <p className="text-xs text-gray-500 mt-0.5">{user.email}</p>
               </div>
               <motion.div
                 animate={{ rotate: isOpen ? 180 : 0 }}
@@ -149,7 +206,7 @@ export function UserButton({ className }: UserButtonProps) {
                 <Icon
                   name="ChevronDown"
                   size={14}
-                  className="text-gray-400 ml-1"
+                  className="text-white/70 ml-1"
                 />
               </motion.div>
             </div>
@@ -163,47 +220,34 @@ export function UserButton({ className }: UserButtonProps) {
         <DropdownMenuLabel className="p-4">
           <div className="flex items-start gap-3">
             <AvatarCustom
-              name={user.name}
-              src={user.avatar}
+              name={displayName}
+              src={user?.avatar}
               size="md"
-              showStatus={true}
-              status={user.status}
+              showStatus={false}
               className="ring-2 ring-white shadow-sm"
             />
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
                 <p className="text-sm font-semibold text-gray-900 truncate">
-                  {user.name}
+                  {displayName}
                 </p>
-                <div
-                  className={cn(
-                    "flex items-center gap-1",
-                    getStatusColor(user.status)
-                  )}
-                >
-                  <div className="w-2 h-2 rounded-full bg-current" />
-                  <span className="text-xs capitalize">{user.status}</span>
-                </div>
               </div>
               <p className="text-xs text-gray-500 truncate mb-2">
-                {user.email}
+                {user?.email}
               </p>
               <div className="flex items-center gap-2">
                 <Badge
                   variant="secondary"
                   className={cn(
                     "text-xs px-2 py-0.5",
-                    getPlanBadgeColor(user.plan)
+                    getPlanBadgeColor(user?.plan)
                   )}
                 >
-                  {user.plan === "pro"
+                  {user?.plan === "pro"
                     ? "Plano Pro"
-                    : user.plan === "enterprise"
+                    : user?.plan === "enterprise"
                     ? "Enterprise"
                     : "Plano Gratuito"}
-                </Badge>
-                <Badge variant="outline" className="text-xs px-2 py-0.5">
-                  {user.role}
                 </Badge>
               </div>
             </div>
