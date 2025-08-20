@@ -2,8 +2,7 @@
 
 import { ReactNode, useEffect, useState } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { DashboardSidebar } from "@/theme";
-import { Icon } from "@/components/ui/custom/Icons";
+import { DashboardSidebar, DashboardHeader } from "@/theme";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -70,36 +69,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
       {/* Container principal de conteúdo */}
       <div className="w-full flex flex-1 flex-col transition-all duration-300 ease-in-out bg-white">
-        {/* Cabeçalho/barra superior */}
-        <header className="h-18 border-b border-[#314e93] flex items-center px-6 bg-[var(--color-blue)] text-white z-10">
-          {/* Botão de toggle do sidebar */}
-          <button
-            onClick={toggleSidebar}
-            className="mr-5 p-2.5 rounded-lg hover:bg-white/10 transition-colors duration-200"
-            aria-label={isCollapsed ? "Expandir sidebar" : "Colapsar sidebar"}
-          >
-            <Icon
-              name={isCollapsed ? "PanelLeft" : "PanelLeftClose"}
-              size={22}
-              className="text-white transition-transform duration-300"
-            />
-          </button>
-
-          {/* Espaço flexível */}
-          <div className="flex-1"></div>
-
-          {/* Ícones e controles de usuário na direita */}
-          <div className="flex items-center gap-3">
-            <button className="p-2.5 rounded-lg hover:bg-white/10 transition-colors duration-200 relative">
-              <Icon name="Bell" size={22} className="text-white" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full"></span>
-            </button>
-
-            <button className="p-2.5 rounded-lg hover:bg-white/10 transition-colors duration-200">
-              <Icon name="User" size={22} className="text-white" />
-            </button>
-          </div>
-        </header>
+        {/* Header do Dashboard */}
+        <DashboardHeader toggleSidebar={toggleSidebar} isCollapsed={isCollapsed} />
 
         {/* Conteúdo principal */}
         <main className="flex-1 overflow-auto p-8 bg-white">
