@@ -3,7 +3,6 @@ import Link from "next/link";
 import { Icon } from "@/components/ui/custom/Icons";
 import { cn } from "@/lib/utils";
 import { MenuItemProps } from "../../types/sidebar.types";
-import { useProjectStore } from "../../modules/project-selector/store/projectStore";
 
 /**
  * Componente que renderiza um item de menu individual
@@ -18,9 +17,6 @@ export function MenuItem({
   // Estado local para controlar o submenu
   const [isSubmenuOpen, setIsSubmenuOpen] = useState(false);
 
-  // Estados globais do projectStore
-  const { setNavigating } = useProjectStore();
-
   // Propriedades derivadas
   const hasSubmenu = item.submenu && item.submenu.length > 0;
   const isActive = item.active || false;
@@ -28,11 +24,9 @@ export function MenuItem({
 
   // Handler de navegação customizado
   const handleItemNavigation = () => {
-    setNavigating(true);
     if (typeof handleNavigation === "function") {
       handleNavigation();
     }
-    setTimeout(() => setNavigating(false), 300);
   };
 
   // Handler para o submenu
