@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import Image from "next/image";
 import { motion } from "framer-motion";
 import { Icon } from "@/components/ui/custom/Icons";
 import { NotificationButton } from "./components/NotificationButton";
@@ -24,15 +23,7 @@ export function DashboardHeader({
       >
         {/* Seção Esquerda - Toggle Sidebar */}
         <div className="flex items-center">
-          <Image
-            src="/images/logos/logo_branco.webp"
-            alt="Logo"
-            width={120}
-            height={40}
-            priority
-            className="h-8 w-auto"
-          />
-          <div className="h-8 border-l border-[#314e93] mx-6" />
+          <div className="border-l border-[#314e93] h-8 mr-6" />
           <motion.button
             onClick={toggleSidebar}
             className={cn(
