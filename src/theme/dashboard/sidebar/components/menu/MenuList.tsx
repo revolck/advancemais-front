@@ -32,7 +32,7 @@ export function MenuList({
   }, [sections, markActiveItems, ready]);
 
   return (
-    <div className="space-y-6 transition-all duration-200">
+    <div className="space-y-2 transition-all duration-200">
       {processedSections.map((section) => (
         <MenuSection
           key={section.title}
