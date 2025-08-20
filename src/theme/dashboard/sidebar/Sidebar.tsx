@@ -1,7 +1,6 @@
 import React from "react";
 import { cn } from "@/lib/utils";
 import { SidebarHeader } from "./components/header/SidebarHeader";
-import { ProjectSelector } from "./modules/project-selector";
 import { MenuList } from "./components/menu/MenuList";
 import { useSidebarNavigation } from "./hooks/useSidebarNavigation";
 import { menuSections } from "./config/menuConfig";
@@ -37,13 +36,8 @@ export function Sidebar({
           onCloseMobile={() => setIsMobileMenuOpen(false)}
         />
 
-        {/* Seletor de Projetos */}
-        <div className="px-4 py-4 border-b border-gray-200">
-          <ProjectSelector isCollapsed={isCollapsed} />
-        </div>
-
         {/* Conteúdo do Menu */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden py-4 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
           <MenuList
             sections={menuSections}
             isCollapsed={isCollapsed}

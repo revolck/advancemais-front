@@ -8,8 +8,5 @@
 // Exportação do componente principal
 export { Sidebar } from "./Sidebar";
 
-// Exportação do módulo de seleção de projetos
-export { ProjectSelector } from "./modules/project-selector";
-
 // Exportação dos tipos
 export type { SidebarProps } from "./types/sidebar.types";
