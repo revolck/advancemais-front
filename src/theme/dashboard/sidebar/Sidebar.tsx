@@ -22,8 +22,8 @@ export function Sidebar({
       {/* Container principal do sidebar */}
       <div
         className={cn(
-          "fixed inset-y-0 left-0 bg-white z-50",
-          "lg:translate-x-0 lg:static border-r border-gray-200",
+          "fixed inset-y-0 left-0 z-50 bg-sidebar text-sidebar-foreground",
+          "lg:translate-x-0 lg:static border-r border-[var(--color-blue)]",
           "h-full flex flex-col overflow-hidden",
           isMobileMenuOpen ? "translate-x-0" : "-translate-x-full",
           "transition-all duration-300 ease-in-out",

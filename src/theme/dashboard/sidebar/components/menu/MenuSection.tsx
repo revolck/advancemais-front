@@ -12,7 +12,7 @@ export function MenuSection({
 }: MenuSectionProps) {
   return (
     <div
-      className={cn("px-3 transition-all duration-200", isCollapsed && "px-1")}
+      className={cn("px-4 transition-all duration-200", isCollapsed && "px-2")}
     >
       {/* Título da seção - visível apenas quando não está colapsado */}
       {!isCollapsed && (
@@ -22,7 +22,7 @@ export function MenuSection({
       )}
 
       {/* Lista de itens desta seção */}
-      <div className="space-y-1">
+      <div className="space-y-2">
         {section.items.map((item) => (
           <MenuItem
             key={item.label}

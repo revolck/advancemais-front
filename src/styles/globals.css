@@ -38,14 +38,14 @@
   --chart-5: oklch(0.769 0.188 70.08);
 
   /* Sidebar */
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --sidebar: var(--color-blue);
+  --sidebar-foreground: #fff;
+  --sidebar-primary: var(--secondary-color);
+  --sidebar-primary-foreground: #fff;
+  --sidebar-accent: var(--primary-color);
+  --sidebar-accent-foreground: #fff;
+  --sidebar-border: var(--color-blue);
+  --sidebar-ring: var(--color-blue);
 
   /* Cores Customizadas do Projeto */
   --primary-color: #001a57;
