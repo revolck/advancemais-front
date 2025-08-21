@@ -6,6 +6,7 @@ import { SignInPage } from "@/components/partials/auth/login/sign-in";
 import { apiFetch } from "@/api/client";
 import { usuarioRoutes } from "@/api/routes";
 import { toastCustom } from "@/components/ui/custom/toast";
+import { UserRole } from "@/config/roles";
 
 const SignInPageDemo = () => {
   const [userName, setUserName] = useState<string | null>(null);
@@ -55,11 +56,15 @@ const SignInPageDemo = () => {
             retries: 1,
           }
         );
-
-        // Busca nome do usuário para saudar em futuros logins
+        let userRole: UserRole | undefined;
+        // Busca nome e role do usuário para saudar em futuros logins
         try {
           const profile = await apiFetch<{
-            usuario?: { nomeCompleto?: string };
+            usuario?: {
+              nomeCompleto?: string;
+              role?: UserRole;
+              roles?: UserRole[];
+            };
           }>(usuarioRoutes.profile.get(), {
             cache: "no-cache",
             init: {
@@ -73,6 +78,7 @@ const SignInPageDemo = () => {
             const [firstName] = fullName.split(" ");
             localStorage.setItem("userName", firstName);
           }
+          userRole = profile.usuario?.role || profile.usuario?.roles?.[0];
         } catch (profileError) {
           console.error("Erro ao buscar perfil:", profileError);
         }
@@ -88,6 +94,9 @@ const SignInPageDemo = () => {
         const maxAge = remember ? "; max-age=2592000" : "";
         document.cookie = `token=${res.token}; path=/; domain=${domain}${maxAge};`;
         document.cookie = `refresh_token=${res.refreshToken}; path=/; domain=${domain}${maxAge};`;
+        if (userRole) {
+          document.cookie = `user_role=${userRole}; path=/; domain=${domain}${maxAge};`;
+        }
 
         // Redireciona para o subdomínio app
         const protocol = window.location.protocol;

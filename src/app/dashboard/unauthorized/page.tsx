@@ -12,7 +12,7 @@ export default function UnauthorizedPage() {
     const userRole =
       document.cookie
         .split("; ")
-        .find((row) => row.startsWith("dev_role="))
+        .find((row) => row.startsWith("user_role="))
         ?.split("=")[1] || "não definido";
 
     setRole(userRole);
@@ -47,7 +47,7 @@ export default function UnauthorizedPage() {
                 variant="outline"
                 size="sm"
                 onClick={() => {
-                  document.cookie = "dev_role=admin; path=/";
+                  document.cookie = "user_role=ADMIN; path=/";
                   window.location.reload();
                 }}
               >
@@ -57,21 +57,11 @@ export default function UnauthorizedPage() {
                 variant="outline"
                 size="sm"
                 onClick={() => {
-                  document.cookie = "dev_role=manager; path=/";
+                  document.cookie = "user_role=ALUNO_CANDIDATO; path=/";
                   window.location.reload();
                 }}
               >
-                Manager
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  document.cookie = "dev_role=viewer; path=/";
-                  window.location.reload();
-                }}
-              >
-                Viewer
+                Aluno
               </Button>
             </div>
           </div>

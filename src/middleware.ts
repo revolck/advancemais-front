@@ -1,5 +1,6 @@
 // src/middleware.ts
 import { NextRequest, NextResponse } from "next/server";
+import { UserRole } from "@/config/roles";
 
 /**
  * Middleware principal da aplicação
@@ -117,9 +118,9 @@ function setupDevCookies(response: NextResponse): NextResponse {
     }
 
     // Role padrão para desenvolvimento
-    const existingRole = response.cookies.get("dev_role");
+    const existingRole = response.cookies.get("user_role");
     if (!existingRole) {
-      response.cookies.set("dev_role", "admin", {
+      response.cookies.set("user_role", UserRole.ADMIN, {
         path: "/",
         maxAge: 60 * 60 * 24 * 7,
       });
