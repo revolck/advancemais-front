@@ -7,8 +7,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -138,28 +136,6 @@ export function UserButton({ className }: UserButtonProps) {
     },
   ];
 
-  const getPlanBadgeVariant = (plan?: User["plan"]) => {
-    switch (plan) {
-      case "pro":
-        return "default";
-      case "enterprise":
-        return "secondary";
-      default:
-        return "outline";
-    }
-  };
-
-  const getPlanLabel = (plan?: User["plan"]) => {
-    switch (plan) {
-      case "pro":
-        return "Plano Pro";
-      case "enterprise":
-        return "Enterprise";
-      default:
-        return "Plano Gratuito";
-    }
-  };
-
   const handleLogout = async () => {
     setIsLoggingOut(true);
     try {
@@ -255,33 +231,6 @@ export function UserButton({ className }: UserButtonProps) {
       </DropdownMenuTrigger>
 
       <DropdownMenuContent align="end" className="w-72" sideOffset={8}>
-        {/* Header do usuário */}
-        <DropdownMenuLabel className="p-4 pb-3">
-          <div className="flex items-center gap-3">
-            <AvatarCustom name={displayName} size="lg" showStatus={false} />
-            <div className="flex-1 min-w-0">
-              <p className="text-base font-semibold text-gray-900 leading-tight">
-                {displayName}
-              </p>
-              <p className="text-sm text-gray-500 mt-0.5">{user.email}</p>
-            </div>
-            <div className="text-right">
-              <Badge
-                variant={getPlanBadgeVariant(user.plan)}
-                className="text-xs font-medium"
-              >
-                {user.plan === "pro"
-                  ? "PRO"
-                  : user.plan === "enterprise"
-                  ? "ENT"
-                  : "FREE"}
-              </Badge>
-            </div>
-          </div>
-        </DropdownMenuLabel>
-
-        <Separator />
-
         {/* Menu items */}
         {menuItems.map((item, index) => (
           <DropdownMenuItem
