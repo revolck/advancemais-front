@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -29,7 +28,7 @@ interface User {
   plan: "free" | "pro" | "enterprise";
 }
 
-// Skeleton component para o botão do usuário
+// Skeleton para o botão do usuário
 const UserButtonSkeleton = () => (
   <div className="flex items-center justify-center gap-3 px-0">
     <Skeleton className="h-8 w-8 rounded-full bg-white/20" />
@@ -67,17 +66,14 @@ export function UserButton({ className }: UserButtonProps) {
           };
         }>(usuarioRoutes.profile.get(), {
           cache: "no-cache",
-          init: {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          },
+          init: { headers: { Authorization: `Bearer ${token}` } },
         });
 
         const userData = profile.usuario;
-        if (userData?.nomeCompleto) {
-          const parts = userData.nomeCompleto.split(" ");
-          const firstName = parts[0];
+        if (userData) {
+          const full = userData.nomeCompleto?.trim();
+          const parts = full ? full.split(" ") : [];
+          const firstName = parts[0] || userData.email.split("@")[0];
           const lastName = parts.slice(1).join(" ") || undefined;
 
           setUser({
@@ -154,9 +150,7 @@ export function UserButton({ className }: UserButtonProps) {
           cache: "no-cache",
           init: {
             method: "POST",
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
+            headers: { Authorization: `Bearer ${token}` },
           },
         });
       }
@@ -182,13 +176,11 @@ export function UserButton({ className }: UserButtonProps) {
     ? `${user.firstName}${user.lastName ? ` ${user.lastName}` : ""}`
     : "";
 
-  // Se está carregando, mostra skeleton
   if (isLoading) {
     return (
       <div
         className={cn(
-          "relative h-10 px-3 rounded-lg",
-          "transition-all duration-200 ease-in-out",
+          "relative h-10 px-3 rounded-lg transition-all duration-200 ease-in-out",
           className
         )}
       >
@@ -197,53 +189,50 @@ export function UserButton({ className }: UserButtonProps) {
     );
   }
 
-  // Se não há usuário, não renderiza nada ou mostra um fallback
-  if (!user) {
-    return null;
-  }
+  if (!user) return null;
 
   return (
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
       <DropdownMenuTrigger asChild>
-        <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-          <Button
-            variant="ghost"
-            className={cn(
-              "relative h-10 px-3 rounded-xl hover:bg-white/10 active:bg-white/20",
-              "transition-all duration-200 ease-in-out",
-              "focus-visible:outline-none focus-visible:ring-0 focus:ring-0 outline-none border-none",
-              "data-[state=open]:bg-white/10",
-              className
-            )}
-          >
-            <div className="flex items-center justify-center gap-3">
-              {/* Avatar */}
-              <div className="relative">
-                <AvatarCustom name={displayName} size="sm" showStatus={false} />
-              </div>
-
-              {/* User Info - Hidden on mobile */}
-              <div className="hidden md:block text-left">
-                <p className="text-sm font-medium text-white leading-tight">
-                  Olá, {user.firstName}
-                </p>
-              </div>
-
-              {/* Chevron */}
-              <motion.div
-                animate={{ rotate: isOpen ? 180 : 0 }}
-                transition={{ duration: 0.2, ease: "easeInOut" }}
-              >
-                <Icon name="ChevronDown" size={14} className="text-white/70" />
-              </motion.div>
+        <Button
+          variant="ghost"
+          className={cn(
+            "group relative h-10 px-3 rounded-xl hover:bg-white/10 active:scale-95",
+            "transition-all duration-200 ease-in-out",
+            "focus-visible:outline-none focus-visible:ring-0 focus:ring-0 outline-none border-none",
+            "data-[state=open]:bg-white/10",
+            className
+          )}
+        >
+          <div className="flex items-center justify-center gap-3">
+            {/* Avatar */}
+            <div className="relative">
+              <AvatarCustom name={displayName} size="sm" showStatus={false} />
             </div>
-            <span className="sr-only">Menu do usuário</span>
-          </Button>
-        </motion.div>
+
+            {/* User Info - Hidden on mobile */}
+            <div className="hidden md:block text-left">
+              <p className="text-sm font-medium text-white leading-tight">
+                Olá, {user.firstName}
+              </p>
+            </div>
+
+            {/* Chevron (gira sem framer-motion) */}
+            <div
+              className={cn(
+                "transition-transform duration-200 ease-in-out",
+                isOpen ? "rotate-180" : "rotate-0"
+              )}
+            >
+              <Icon name="ChevronDown" size={14} className="text-white/70" />
+            </div>
+          </div>
+          <span className="sr-only">Menu do usuário</span>
+        </Button>
       </DropdownMenuTrigger>
 
       <DropdownMenuContent align="end" className="w-80 p-0" sideOffset={8}>
-        {/* User Header */}
+        {/* Cabeçalho do usuário */}
         <div className="p-4 bg-gradient-to-r from-gray-50 to-gray-100/50 border-b border-gray-100">
           <div className="flex items-center gap-3">
             <div className="relative">
@@ -266,20 +255,15 @@ export function UserButton({ className }: UserButtonProps) {
           </div>
         </div>
 
-        {/* Menu Items */}
+        {/* Itens do menu (sem motion) */}
         <div className="py-2">
-          {menuItems.map((item, index) => (
+          {menuItems.map((item) => (
             <DropdownMenuItem
               key={item.label}
               className="px-4 py-3 cursor-pointer focus:bg-gray-50 hover:bg-gray-50 group"
               onClick={item.action}
             >
-              <motion.div
-                className="flex items-center gap-3 w-full"
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.05 }}
-              >
+              <div className="flex items-center gap-3 w-full">
                 <div className="w-10 h-10 rounded-xl bg-gray-100 group-hover:bg-gray-200 flex items-center justify-center transition-colors duration-150 shrink-0">
                   <Icon
                     name={item.icon}
@@ -302,25 +286,21 @@ export function UserButton({ className }: UserButtonProps) {
                     {item.description}
                   </p>
                 </div>
-              </motion.div>
+              </div>
             </DropdownMenuItem>
           ))}
         </div>
 
         <DropdownMenuSeparator />
 
-        {/* Logout Button */}
+        {/* Sair */}
         <div className="p-2">
           <DropdownMenuItem
             className="px-4 py-3 cursor-pointer text-red-600 focus:text-red-700 hover:bg-red-50 focus:bg-red-50 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={handleLogout}
             disabled={isLoggingOut}
           >
-            <motion.div
-              className="flex items-center gap-3 w-full"
-              whileHover={{ x: 2 }}
-              transition={{ duration: 0.1 }}
-            >
+            <div className="flex items-center gap-3 w-full">
               <div className="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center transition-colors duration-150 shrink-0">
                 {isLoggingOut ? (
                   <Icon
@@ -340,7 +320,7 @@ export function UserButton({ className }: UserButtonProps) {
                   {isLoggingOut ? "Aguarde..." : "Sair da sua conta"}
                 </p>
               </div>
-            </motion.div>
+            </div>
           </DropdownMenuItem>
         </div>
       </DropdownMenuContent>
