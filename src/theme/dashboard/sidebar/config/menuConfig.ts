@@ -3,12 +3,22 @@ import { MenuSection } from "../types/sidebar.types";
 import { UserRole } from "@/config/roles";
 
 /**
- * Permissões compartilhadas por múltiplos itens.
+ * Permissões compartilhadas por itens administrativos.
  * Definidas como somente leitura para evitar mutações acidentais.
  */
-const COMMON_PERMISSIONS: readonly UserRole[] = Object.freeze([
+const ADMIN_PERMISSIONS: readonly UserRole[] = Object.freeze([
   UserRole.ADMIN,
   UserRole.MODERADOR,
+]);
+
+/** Permissões exclusivas para o administrador */
+const ADMIN_ONLY_PERMISSIONS: readonly UserRole[] = Object.freeze([
+  UserRole.ADMIN,
+]);
+
+/** Permissões exclusivas para o papel pedagógico */
+const PEDAGOGICO_PERMISSIONS: readonly UserRole[] = Object.freeze([
+  UserRole.PEDAGOGICO,
 ]);
 
 /**
@@ -36,166 +46,203 @@ function deepFreeze<T>(obj: T): T {
 /**
  * Configuração centralizada do menu do sidebar
  * Facilita a manutenção e extensão futura
- *
- * Removida a propriedade 'active' estática para que possa ser definida dinamicamente
  */
 const rawMenuSections: MenuSection[] = [
+  {
+    title: "ADMINISTRAÇÃO",
+    items: [
+      {
+        icon: "LayoutDashboard",
+        label: "Visão geral",
+        route: "/admin/overview",
+        permissions: ADMIN_PERMISSIONS,
+      },
+      {
+        icon: "BookOpen",
+        label: "Cursos",
+        permissions: ADMIN_PERMISSIONS,
+        submenu: [
+          {
+            icon: null,
+            label: "Visão geral",
+            route: "/admin/courses/overview",
+            permissions: ADMIN_PERMISSIONS,
+          },
+          {
+            icon: null,
+            label: "Listagem",
+            route: "/admin/courses/list",
+            permissions: ADMIN_PERMISSIONS,
+          },
+          {
+            icon: null,
+            label: "Matrículas",
+            route: "/admin/courses/enrollments",
+            permissions: ADMIN_PERMISSIONS,
+          },
+          {
+            icon: null,
+            label: "Instrutores",
+            route: "/admin/courses/instructors",
+            permissions: ADMIN_PERMISSIONS,
+          },
+          {
+            icon: null,
+            label: "Provas",
+            route: "/admin/courses/exams",
+            permissions: ADMIN_PERMISSIONS,
+          },
+          {
+            icon: null,
+            label: "Certificados",
+            route: "/admin/courses/certificates",
+            permissions: ADMIN_PERMISSIONS,
+          },
+          {
+            icon: null,
+            label: "Estágios",
+            route: "/admin/courses/internships",
+            permissions: ADMIN_PERMISSIONS,
+          },
+          {
+            icon: null,
+            label: "Agenda",
+            route: "/admin/courses/schedule",
+            permissions: ADMIN_PERMISSIONS,
+          },
+          {
+            icon: null,
+            label: "Configurações",
+            route: "/admin/courses/settings",
+            permissions: ADMIN_PERMISSIONS,
+          },
+        ],
+      },
+      {
+        icon: "Building2",
+        label: "Empresas",
+        permissions: ADMIN_PERMISSIONS,
+        submenu: [
+          {
+            icon: null,
+            label: "Visão Geral",
+            route: "/admin/companies/overview",
+            permissions: ADMIN_PERMISSIONS,
+          },
+          {
+            icon: null,
+            label: "Vagas",
+            route: "/admin/companies/jobs",
+            permissions: ADMIN_PERMISSIONS,
+          },
+          {
+            icon: null,
+            label: "Candidatos",
+            route: "/admin/companies/candidates",
+            permissions: ADMIN_PERMISSIONS,
+          },
+          {
+            icon: null,
+            label: "Configurações",
+            route: "/admin/companies/settings",
+            permissions: ADMIN_PERMISSIONS,
+          },
+        ],
+      },
+      {
+        icon: "Wallet",
+        label: "Financeiro",
+        route: "/admin/financeiro",
+        permissions: ADMIN_ONLY_PERMISSIONS,
+      },
+      {
+        icon: "FileSearch",
+        label: "Auditoria",
+        permissions: ADMIN_ONLY_PERMISSIONS,
+        submenu: [
+          {
+            icon: null,
+            label: "Logs",
+            route: "/admin/audit/logs",
+            permissions: ADMIN_ONLY_PERMISSIONS,
+          },
+          {
+            icon: null,
+            label: "Histórico de Usuários",
+            route: "/admin/audit/user-history",
+            permissions: ADMIN_ONLY_PERMISSIONS,
+          },
+          {
+            icon: null,
+            label: "Scripts",
+            route: "/admin/audit/scripts",
+            permissions: ADMIN_ONLY_PERMISSIONS,
+          },
+          {
+            icon: null,
+            label: "Assinaturas",
+            route: "/admin/audit/subscriptions",
+            permissions: ADMIN_ONLY_PERMISSIONS,
+          },
+          {
+            icon: null,
+            label: "Transações",
+            route: "/admin/audit/transactions",
+            permissions: ADMIN_ONLY_PERMISSIONS,
+          },
+        ],
+      },
+      {
+        icon: "Settings",
+        label: "Configurações",
+        route: "/admin/settings",
+        permissions: ADMIN_PERMISSIONS,
+      },
+    ],
+  },
   {
     title: "DASHBOARD",
     items: [
       {
-        icon: "Home",
-        label: "Dashboard",
-        route: "/dashboard/home",
-        permissions: COMMON_PERMISSIONS,
-        // active removido daqui
+        icon: "LayoutDashboard",
+        label: "Visão geral",
+        route: "/pedagogico/overview",
+        permissions: PEDAGOGICO_PERMISSIONS,
       },
       {
-        icon: "BarChart2",
-        label: "Analytics",
-        route: "/dashboard/analytics",
-        permissions: COMMON_PERMISSIONS,
-      },
-    ],
-  },
-  {
-    title: "APLICAÇÕES",
-    items: [
-      {
-        icon: "MessagesSquare",
-        label: "Chat",
-        route: "/chat",
-        permissions: COMMON_PERMISSIONS,
-      },
-      {
-        icon: "Mail",
-        label: "Email",
-        route: "/email",
-        permissions: COMMON_PERMISSIONS,
-      },
-      {
-        icon: "Calendar",
-        label: "Calendário",
-        route: "/calendar",
-        permissions: COMMON_PERMISSIONS,
-      },
-      {
-        icon: "FileText",
-        label: "Tarefas",
-        route: "/tasks",
-        permissions: COMMON_PERMISSIONS,
-      },
-      {
-        icon: "ShoppingBag",
-        label: "E-commerce",
-        permissions: COMMON_PERMISSIONS,
+        icon: "BookOpen",
+        label: "Cursos",
+        permissions: PEDAGOGICO_PERMISSIONS,
         submenu: [
           {
-            icon: "Users2",
-            label: "Usuários",
-            permissions: COMMON_PERMISSIONS,
-            submenu: [
-              {
-                icon: null,
-                label: "Perfis",
-                route: "/ecommerce/users/profiles",
-                permissions: COMMON_PERMISSIONS,
-              },
-              {
-                icon: null,
-                label: "Configurações",
-                route: "/ecommerce/users/settings",
-                permissions: COMMON_PERMISSIONS,
-              },
-            ],
+            icon: null,
+            label: "Listagem",
+            route: "/pedagogico/courses/list",
+            permissions: PEDAGOGICO_PERMISSIONS,
           },
           {
-            icon: "Building2",
-            label: "Produtos",
-            permissions: COMMON_PERMISSIONS,
-            submenu: [
-              {
-                icon: null,
-                label: "Listagem",
-                route: "/ecommerce/products/list",
-                permissions: COMMON_PERMISSIONS,
-              },
-              {
-                icon: null,
-                label: "Detalhes",
-                route: "/ecommerce/products/details",
-                permissions: COMMON_PERMISSIONS,
-              },
-              {
-                icon: null,
-                label: "Categorias",
-                route: "/ecommerce/products/categories",
-                permissions: COMMON_PERMISSIONS,
-              },
-            ],
+            icon: null,
+            label: "Matrículas",
+            route: "/pedagogico/courses/enrollments",
+            permissions: PEDAGOGICO_PERMISSIONS,
           },
           {
-            icon: "CreditCard",
-            label: "Pagamentos",
-            route: "/ecommerce/payments",
-            permissions: COMMON_PERMISSIONS,
+            icon: null,
+            label: "Provas",
+            route: "/pedagogico/courses/exams",
+            permissions: PEDAGOGICO_PERMISSIONS,
           },
           {
-            icon: "Receipt",
-            label: "Pedidos",
-            route: "/ecommerce/orders",
-            permissions: COMMON_PERMISSIONS,
+            icon: null,
+            label: "Agenda",
+            route: "/pedagogico/courses/schedule",
+            permissions: PEDAGOGICO_PERMISSIONS,
           },
         ],
-      },
-    ],
-  },
-  {
-    title: "FINANCEIRO",
-    items: [
-      {
-        icon: "Wallet",
-        label: "Transações",
-        route: "/financial/transactions",
-        permissions: COMMON_PERMISSIONS,
-      },
-      {
-        icon: "Receipt",
-        label: "Faturas",
-        route: "/financial/invoices",
-        permissions: COMMON_PERMISSIONS,
-      },
-      {
-        icon: "CreditCard",
-        label: "Pagamentos",
-        route: "/financial/payments",
-        permissions: COMMON_PERMISSIONS,
-      },
-    ],
-  },
-  {
-    title: "EQUIPE",
-    items: [
-      {
-        icon: "Users2",
-        label: "Membros",
-        route: "/team/members",
-        permissions: COMMON_PERMISSIONS,
-      },
-      {
-        icon: "Shield",
-        label: "Permissões",
-        route: "/team/permissions",
-        permissions: COMMON_PERMISSIONS,
-      },
-      {
-        icon: "Video",
-        label: "Reuniões",
-        route: "/team/meetings",
-        permissions: COMMON_PERMISSIONS,
       },
     ],
   },
 ];
 
 export const menuSections: ReadonlyArray<MenuSection> = deepFreeze(rawMenuSections);
+
