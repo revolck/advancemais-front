@@ -190,10 +190,10 @@ export function middleware(request: NextRequest) {
     const isAuthenticated =
       request.cookies.has("token") || request.cookies.has("refresh_token");
 
-    if (isAuthenticated && pathname === "/login") {
+    if (isAuthenticated && (pathname === "/" || pathname === "/login")) {
       const appUrl = request.nextUrl.clone();
       appUrl.hostname = `app.${baseDomain}`;
-      appUrl.pathname = "/dashboard";
+      appUrl.pathname = "/";
       return NextResponse.redirect(appUrl);
     }
 
