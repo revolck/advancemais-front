@@ -107,7 +107,6 @@ export function UserButton({ className }: UserButtonProps) {
       icon: "Users" as const,
       label: "Comunidade",
       action: () => console.log("Navegar para comunidade"),
-      trailingIcon: "Plus" as const,
     },
     {
       icon: "Cog" as const,
@@ -201,18 +200,11 @@ export function UserButton({ className }: UserButtonProps) {
             className
           )}
         >
-          <div className="flex items-center justify-center gap-3">
-            {/* Avatar */}
-            <div className="relative">
-              <AvatarCustom name={displayName} size="sm" showStatus={false} />
-            </div>
-
-            {/* User Info - Hidden on mobile */}
-            <div className="hidden md:block text-left">
-              <p className="text-sm font-medium text-white leading-tight">
-                Olá, {user.firstName}
-              </p>
-            </div>
+        <div className="flex items-center justify-center gap-2">
+          {/* Avatar */}
+          <div className="relative">
+            <AvatarCustom name={displayName} size="sm" showStatus={false} />
+          </div>
 
             {/* Chevron (gira sem framer-motion) */}
             <div
@@ -239,7 +231,6 @@ export function UserButton({ className }: UserButtonProps) {
                 showStatus={false}
                 className="ring-2 ring-pink-500"
               />
-              <span className="user-greeting-bubble">Hi, {user.firstName}</span>
             </div>
             <div className="flex-1 min-w-0">
               <h3 className="font-semibold text-gray-900 text-base truncate">
@@ -259,23 +250,23 @@ export function UserButton({ className }: UserButtonProps) {
         </div>
 
         {/* Itens do menu */}
-        <div className="py-2">
+        <div className="py-1.5">
           {menuItems.map((item) => (
             <DropdownMenuItem
               key={item.label}
-              className="px-4 py-3 cursor-pointer focus:bg-gray-50 hover:bg-gray-50 group"
+              className="px-3 py-2.5 cursor-pointer focus:bg-gray-50 hover:bg-gray-50 group"
               onClick={item.action}
             >
-              <div className="flex items-center gap-3 w-full">
+              <div className="flex items-center gap-2.5 w-full">
                 <div
                   className={cn(
-                    "w-10 h-10 rounded-xl flex items-center justify-center transition-colors duration-150 shrink-0",
+                    "w-8 h-8 rounded-lg flex items-center justify-center transition-colors duration-150 shrink-0",
                     item.iconBg || "bg-gray-100 group-hover:bg-gray-200"
                   )}
                 >
                   <Icon
                     name={item.icon}
-                    size={18}
+                    size={16}
                     className={cn(
                       item.iconColor || "text-gray-600 group-hover:text-gray-700"
                     )}
@@ -289,15 +280,6 @@ export function UserButton({ className }: UserButtonProps) {
                     {item.badge}
                   </span>
                 )}
-                {item.trailingIcon && (
-                  <div className="ml-auto w-6 h-6 rounded-full bg-gray-100 group-hover:bg-gray-200 flex items-center justify-center">
-                    <Icon
-                      name={item.trailingIcon}
-                      size={12}
-                      className="text-gray-600 group-hover:text-gray-700"
-                    />
-                  </div>
-                )}
               </div>
             </DropdownMenuItem>
           ))}
@@ -307,26 +289,26 @@ export function UserButton({ className }: UserButtonProps) {
 
         {/* Sair */}
         <div className="p-2">
-          <DropdownMenuItem
-            className="px-4 py-3 cursor-pointer text-red-600 focus:text-red-700 hover:bg-red-50 focus:bg-red-50 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
-            onClick={handleLogout}
-            disabled={isLoggingOut}
-          >
-            <div className="flex items-center gap-3 w-full">
-              <div className="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center transition-colors duration-150 shrink-0">
-                {isLoggingOut ? (
-                  <Icon
-                    name="Loader2"
-                    size={18}
-                    className="text-red-600 animate-spin"
-                  />
-                ) : (
-                  <Icon name="LogOut" size={18} className="text-red-600" />
-                )}
-              </div>
-              <div className="flex-1 text-left">
-                <p className="font-medium text-red-600 text-sm">
-                  {isLoggingOut ? "Saindo..." : "Sair"}
+            <DropdownMenuItem
+              className="px-3 py-2.5 cursor-pointer text-red-600 focus:text-red-700 hover:bg-red-50 focus:bg-red-50 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={handleLogout}
+              disabled={isLoggingOut}
+            >
+              <div className="flex items-center gap-2.5 w-full">
+                <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center transition-colors duration-150 shrink-0">
+                  {isLoggingOut ? (
+                    <Icon
+                      name="Loader2"
+                      size={16}
+                      className="text-red-600 animate-spin"
+                    />
+                  ) : (
+                    <Icon name="LogOut" size={16} className="text-red-600" />
+                  )}
+                </div>
+                <div className="flex-1 text-left">
+                  <p className="font-medium text-red-600 text-sm">
+                    {isLoggingOut ? "Saindo..." : "Sair"}
                 </p>
                 <p className="text-xs text-red-400 mt-0.5">
                   {isLoggingOut ? "Aguarde..." : "Sair da sua conta"}
