@@ -27,14 +27,14 @@ export function useActiveRoute() {
     (item: MenuItem): boolean => {
       if (!ready || !pathname) return false;
 
-      // Se o item tem um href, verificamos se corresponde à rota atual
-      if (item.href) {
+      // Se o item tem um route, verificamos se corresponde à rota atual
+      if (item.route) {
         // Correspondência exata
-        if (pathname === item.href) return true;
+        if (pathname === item.route) return true;
 
         // Correspondência parcial para subrotas (ex: /dashboard/analytics é uma subrota de /dashboard)
         // Exceto para a rota raiz, evitando que "/" corresponda a tudo
-        if (item.href !== "/" && pathname.startsWith(item.href)) return true;
+        if (item.route !== "/" && pathname.startsWith(item.route)) return true;
       }
 
       // Verifica recursivamente se algum submenu está ativo
@@ -54,7 +54,7 @@ export function useActiveRoute() {
    * @returns Array de itens com propriedade 'active' definida
    */
   const markActiveItems = useCallback(
-    (items: MenuItem[]): MenuItem[] => {
+    (items: readonly MenuItem[]): MenuItem[] => {
       return items.map((item) => ({
         ...item,
         active: isItemActive(item),

@@ -28,7 +28,7 @@ export function MenuSection({
       <div className="space-y-2">
         {section.items.map((item) => (
           <MenuItem
-            key={item.label}
+            key={item.route || item.label}
             item={item}
             isCollapsed={isCollapsed}
             handleNavigation={handleNavigation}

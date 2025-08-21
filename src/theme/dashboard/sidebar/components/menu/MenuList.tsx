@@ -4,7 +4,7 @@ import { useActiveRoute } from "@/hooks/useActiveRoute";
 import type { MenuSection as MenuSectionType } from "../../types/sidebar.types";
 
 interface MenuListProps {
-  sections: MenuSectionType[];
+  sections: readonly MenuSectionType[];
   isCollapsed: boolean;
   handleNavigation: () => void;
 }

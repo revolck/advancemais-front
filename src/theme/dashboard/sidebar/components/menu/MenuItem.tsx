@@ -20,7 +20,8 @@ export function MenuItem({
   // Propriedades derivadas
   const hasSubmenu = item.submenu && item.submenu.length > 0;
   const isActive = item.active || false;
-  const itemId = parentId ? `${parentId}-${item.label}` : item.label;
+  const baseId = item.route || item.label;
+  const itemId = parentId ? `${parentId}-${baseId}` : baseId;
 
   // Handler de navegação customizado
   const handleItemNavigation = () => {
@@ -56,8 +57,8 @@ export function MenuItem({
 
     return (
       <div className="relative group">
-        {item.href && !hasSubmenu ? (
-          <Link href={item.href} onClick={handleItemNavigation} className="block">
+        {item.route && !hasSubmenu ? (
+          <Link href={item.route} onClick={handleItemNavigation} className="block">
             {menuContent}
           </Link>
         ) : (
@@ -82,10 +83,13 @@ export function MenuItem({
             {/* Items do submenu */}
             <div className="py-1">
               {item.submenu?.map((subItem) => (
-                <div key={`${itemId}-${subItem.label}`} className="px-2 py-0.5">
-                  {subItem.href ? (
+                <div
+                  key={`${itemId}-${subItem.route || subItem.label}`}
+                  className="px-2 py-0.5"
+                >
+                  {subItem.route ? (
                     <Link
-                      href={subItem.href}
+                      href={subItem.route}
                       onClick={handleItemNavigation}
                       className={cn(
                         "flex items-center px-2 py-1.5 text-sm rounded-md",
@@ -142,9 +146,9 @@ export function MenuItem({
   // Renderização padrão (não colapsada ou para submenus)
   return (
     <div className="relative">
-      {item.href && !hasSubmenu ? (
+      {item.route && !hasSubmenu ? (
         <Link
-          href={item.href}
+          href={item.route}
           onClick={handleItemNavigation}
           className={cn(
             "flex items-center px-4 py-2.5 text-sm rounded-md transition-colors w-full",
@@ -204,7 +208,7 @@ export function MenuItem({
         >
           {item.submenu?.map((subItem) => (
             <MenuItem
-              key={`${itemId}-${subItem.label}`}
+              key={`${itemId}-${subItem.route || subItem.label}`}
               item={subItem}
               isCollapsed={isCollapsed}
               handleNavigation={handleNavigation}
