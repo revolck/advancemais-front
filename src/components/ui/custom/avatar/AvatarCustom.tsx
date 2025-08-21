@@ -97,4 +97,3 @@ const AvatarCustom = React.forwardRef<HTMLDivElement, AvatarCustomProps>(
 AvatarCustom.displayName = "AvatarCustom";
 
 export { AvatarCustom, avatarCustomVariants };
-

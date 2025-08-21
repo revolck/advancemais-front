@@ -192,12 +192,7 @@ export function UserButton({ className }: UserButtonProps) {
             )}
           >
             <div className="flex items-center gap-3">
-              <AvatarCustom
-                name={displayName}
-                size="sm"
-                showStatus={false}
-                className="ring-2 ring-white shadow-sm"
-              />
+              <AvatarCustom name={displayName} size="sm" showStatus={false} />
               <div className="hidden md:block text-left">
                 <p className="text-sm font-medium !text-white leading-none">
                   {displayName}
