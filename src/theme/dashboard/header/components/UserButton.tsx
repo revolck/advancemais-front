@@ -1,8 +1,15 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AvatarCustom } from "@/components/ui/custom/avatar";
 import { Icon } from "@/components/ui/custom/Icons";
@@ -195,168 +202,153 @@ export function UserButton({ className }: UserButtonProps) {
   }
 
   return (
-    <div className="relative">
-      {/* Trigger Button */}
-      <motion.button
-        onClick={() => setIsOpen(!isOpen)}
-        className={cn(
-          "flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-200",
-          "hover:bg-white/10 active:bg-white/15 focus:outline-none focus:ring-2 focus:ring-white/20",
-          isOpen ? "bg-white/10" : "",
-          className
-        )}
-        whileHover={{ scale: 1.02 }}
-        whileTap={{ scale: 0.98 }}
-      >
-        {/* Avatar */}
-        <div className="relative">
-          <AvatarCustom name={displayName} size="sm" showStatus={false} />
-        </div>
+    <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
+      <DropdownMenuTrigger asChild>
+        <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+          <Button
+            variant="ghost"
+            className={cn(
+              "relative h-10 px-3 rounded-xl hover:bg-white/10 active:bg-white/15",
+              "transition-all duration-200 ease-in-out",
+              "focus-visible:outline-none focus-visible:ring-0 focus:ring-0 outline-none border-none",
+              "data-[state=open]:bg-white/10",
+              className
+            )}
+          >
+            <div className="flex items-center justify-center gap-3">
+              {/* Avatar */}
+              <div className="relative">
+                <AvatarCustom name={displayName} size="sm" showStatus={false} />
+              </div>
 
-        {/* User Info - Hidden on mobile */}
-        <div className="hidden md:block text-left">
-          <p className="text-sm font-medium text-white leading-tight">
-            Olá, {user.firstName}
-          </p>
-        </div>
+              {/* User Info - Hidden on mobile */}
+              <div className="hidden md:block text-left">
+                <p className="text-sm font-medium text-white leading-tight">
+                  Olá, {user.firstName}
+                </p>
+              </div>
 
-        {/* Chevron */}
-        <motion.div
-          animate={{ rotate: isOpen ? 180 : 0 }}
-          transition={{ duration: 0.2, ease: "easeInOut" }}
-        >
-          <Icon name="ChevronDown" size={14} className="text-white/70" />
+              {/* Chevron */}
+              <motion.div
+                animate={{ rotate: isOpen ? 180 : 0 }}
+                transition={{ duration: 0.2, ease: "easeInOut" }}
+              >
+                <Icon name="ChevronDown" size={14} className="text-white/70" />
+              </motion.div>
+            </div>
+            <span className="sr-only">Menu do usuário</span>
+          </Button>
         </motion.div>
-        <span className="sr-only">Menu do usuário</span>
-      </motion.button>
+      </DropdownMenuTrigger>
 
-      {/* Dropdown Menu */}
-      <AnimatePresence>
-        {isOpen && (
-          <>
-            {/* Backdrop */}
-            <div
-              className="fixed inset-0 z-40"
-              onClick={() => setIsOpen(false)}
-            />
+      <DropdownMenuContent
+        align="end"
+        className="w-80 p-0 rounded-2xl shadow-2xl border-0 bg-white overflow-hidden"
+        sideOffset={8}
+      >
+        {/* User Header */}
+        <div className="p-4 bg-gradient-to-r from-gray-50 to-gray-100/50 border-b border-gray-100">
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <AvatarCustom name={displayName} size="md" showStatus={false} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="font-semibold text-gray-900 text-base truncate">
+                {displayName}
+              </h3>
+              <div className="flex items-center gap-1 mt-0.5">
+                <Icon name="Mail" size={12} className="text-gray-400" />
+                <p className="text-sm text-gray-500 truncate">{user.email}</p>
+              </div>
+            </div>
+            {user.plan === "pro" && (
+              <div className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-2.5 py-1 rounded-full text-xs font-semibold">
+                PRO
+              </div>
+            )}
+          </div>
+        </div>
 
-            {/* Menu Content */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: -10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: -10 }}
-              transition={{ duration: 0.15, ease: "easeOut" }}
-              className="absolute top-full right-0 mt-2 w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 overflow-hidden"
+        {/* Menu Items */}
+        <div className="py-2">
+          {menuItems.map((item, index) => (
+            <DropdownMenuItem
+              key={item.label}
+              className="p-0 focus:bg-transparent hover:bg-transparent cursor-pointer"
+              onClick={item.action}
             >
-              {/* User Header */}
-              <div className="p-4 bg-gradient-to-r from-gray-50 to-gray-100/50 border-b border-gray-100">
-                <div className="flex items-center gap-3">
-                  <div className="relative">
-                    <AvatarCustom
-                      name={displayName}
-                      size="md"
-                      showStatus={false}
-                    />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-gray-900 text-base truncate">
-                      {displayName}
-                    </h3>
-                    <div className="flex items-center gap-1 mt-0.5">
-                      <Icon name="Mail" size={12} className="text-gray-400" />
-                      <p className="text-sm text-gray-500 truncate">
-                        {user.email}
-                      </p>
-                    </div>
-                  </div>
-                  {user.plan === "pro" && (
-                    <div className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-2.5 py-1 rounded-full text-xs font-semibold">
-                      PRO
-                    </div>
-                  )}
+              <motion.div
+                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors duration-150 group"
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: index * 0.05 }}
+                whileHover={{ x: 2 }}
+              >
+                <div className="w-10 h-10 rounded-xl bg-gray-100 group-hover:bg-gray-200 flex items-center justify-center transition-colors duration-150">
+                  <Icon
+                    name={item.icon}
+                    size={18}
+                    className="text-gray-600 group-hover:text-gray-700"
+                  />
                 </div>
-              </div>
-
-              {/* Menu Items */}
-              <div className="py-2">
-                {menuItems.map((item, index) => (
-                  <motion.button
-                    key={item.label}
-                    onClick={item.action}
-                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors duration-150 group"
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: index * 0.05 }}
-                    whileHover={{ x: 2 }}
-                  >
-                    <div className="w-10 h-10 rounded-xl bg-gray-100 group-hover:bg-gray-200 flex items-center justify-center transition-colors duration-150">
-                      <Icon
-                        name={item.icon}
-                        size={18}
-                        className="text-gray-600 group-hover:text-gray-700"
-                      />
-                    </div>
-                    <div className="flex-1 text-left">
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium text-gray-900 text-sm">
-                          {item.label}
-                        </p>
-                        {item.badge && (
-                          <span className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-2 py-0.5 rounded-full text-xs font-semibold">
-                            {item.badge}
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-xs text-gray-500 mt-0.5">
-                        {item.description}
-                      </p>
-                    </div>
-                    <Icon
-                      name="ChevronRight"
-                      size={16}
-                      className="text-gray-400 group-hover:text-gray-600 transition-colors"
-                    />
-                  </motion.button>
-                ))}
-              </div>
-
-              {/* Separator */}
-              <div className="h-px bg-gray-200 mx-4" />
-
-              {/* Logout Button */}
-              <div className="p-2">
-                <motion.button
-                  onClick={handleLogout}
-                  disabled={isLoggingOut}
-                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-red-50 transition-colors duration-150 group rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
-                  whileHover={{ x: 2 }}
-                  transition={{ duration: 0.1 }}
-                >
-                  <div className="w-10 h-10 rounded-xl bg-red-100 group-hover:bg-red-200 flex items-center justify-center transition-colors duration-150">
-                    {isLoggingOut ? (
-                      <Icon
-                        name="Loader2"
-                        size={18}
-                        className="text-red-600 animate-spin"
-                      />
-                    ) : (
-                      <Icon name="LogOut" size={18} className="text-red-600" />
+                <div className="flex-1 text-left">
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium text-gray-900 text-sm">
+                      {item.label}
+                    </p>
+                    {item.badge && (
+                      <span className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-2 py-0.5 rounded-full text-xs font-semibold">
+                        {item.badge}
+                      </span>
                     )}
                   </div>
-                  <div className="flex-1 text-left">
-                    <p className="font-medium text-red-600 text-sm">
-                      {isLoggingOut ? "Saindo..." : "Sair"}
-                    </p>
-                    <p className="text-xs text-red-400 mt-0.5">
-                      {isLoggingOut ? "Aguarde..." : "Sair da sua conta"}
-                    </p>
-                  </div>
-                </motion.button>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    {item.description}
+                  </p>
+                </div>
+              </motion.div>
+            </DropdownMenuItem>
+          ))}
+        </div>
+
+        {/* Separator */}
+        <DropdownMenuSeparator className="bg-gray-200 mx-4" />
+
+        {/* Logout Button */}
+        <div className="p-2">
+          <DropdownMenuItem
+            className="p-0 focus:bg-transparent hover:bg-transparent cursor-pointer"
+            onClick={handleLogout}
+            disabled={isLoggingOut}
+          >
+            <motion.div
+              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-red-50 transition-colors duration-150 group rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
+              whileHover={{ x: 2 }}
+              transition={{ duration: 0.1 }}
+            >
+              <div className="w-10 h-10 rounded-xl bg-red-100 group-hover:bg-red-200 flex items-center justify-center transition-colors duration-150">
+                {isLoggingOut ? (
+                  <Icon
+                    name="Loader2"
+                    size={18}
+                    className="text-red-600 animate-spin"
+                  />
+                ) : (
+                  <Icon name="LogOut" size={18} className="text-red-600" />
+                )}
+              </div>
+              <div className="flex-1 text-left">
+                <p className="font-medium text-red-600 text-sm">
+                  {isLoggingOut ? "Saindo..." : "Sair"}
+                </p>
+                <p className="text-xs text-red-400 mt-0.5">
+                  {isLoggingOut ? "Aguarde..." : "Sair da sua conta"}
+                </p>
               </div>
             </motion.div>
-          </>
-        )}
-      </AnimatePresence>
-    </div>
+          </DropdownMenuItem>
+        </div>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
