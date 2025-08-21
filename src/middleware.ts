@@ -187,6 +187,16 @@ export function middleware(request: NextRequest) {
 
   // Tratamento inicial para subdomínios específicos
   if (hostname.startsWith("auth.")) {
+    const isAuthenticated =
+      request.cookies.has("token") || request.cookies.has("refresh_token");
+
+    if (isAuthenticated && pathname === "/login") {
+      const appUrl = request.nextUrl.clone();
+      appUrl.hostname = `app.${baseDomain}`;
+      appUrl.pathname = "/dashboard";
+      return NextResponse.redirect(appUrl);
+    }
+
     if (pathname === "/") {
       const url = request.nextUrl.clone();
       url.pathname = "/login";
