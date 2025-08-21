@@ -97,3 +97,78 @@
     transform: scale(1) translateY(0);
   }
 }
+
+@layer components {
+  /* Cartão base do menu (igual ao print) */
+  .user-menu {
+    @apply w-[22rem] max-w-[92vw] rounded-2xl p-0 bg-white
+           border border-gray-100 shadow-lg shadow-black/5;
+  }
+
+  .user-menu__header {
+    @apply flex items-center gap-4 p-4 border-b border-gray-100;
+  }
+
+  .user-menu__name {
+    @apply text-base md:text-lg font-semibold text-gray-900 leading-tight truncate;
+  }
+
+  .user-menu__email {
+    @apply text-sm text-gray-500 truncate;
+  }
+
+  .user-menu__list {
+    @apply py-2;
+  }
+
+  .user-menu__item {
+    @apply flex items-center gap-3 w-full px-4 py-3 rounded-xl
+           transition-colors select-none cursor-pointer
+           hover:bg-gray-50 focus:bg-gray-50;
+  }
+
+  .user-menu__icon {
+    @apply w-10 h-10 rounded-xl bg-gray-100 text-gray-600
+           flex items-center justify-center shrink-0;
+  }
+
+  .user-menu__label {
+    @apply flex-1 min-w-0 text-left;
+  }
+
+  .user-menu__title {
+    @apply text-sm font-medium text-gray-900;
+  }
+
+  .user-menu__desc {
+    @apply text-xs text-gray-500 mt-0.5;
+  }
+
+  .user-menu__plus-btn {
+    @apply ml-2 inline-flex items-center justify-center
+           w-6 h-6 rounded-full bg-gray-100 text-gray-600
+           hover:bg-gray-200 transition-colors;
+  }
+
+  .user-menu__badge {
+    @apply ml-2 inline-flex items-center gap-1
+           px-2 py-0.5 rounded-full text-[11px] font-semibold
+           bg-emerald-500 text-white;
+  }
+
+  .user-menu__logout {
+    @apply text-red-600 hover:bg-red-50 focus:bg-red-50;
+  }
+
+  /* Chip “Hi, Nome” preso ao avatar do trigger */
+  .user-chip {
+    @apply absolute -right-2 bottom-0 translate-y-1/2
+           rounded-full px-2 py-0.5 text-[11px] font-medium
+           bg-emerald-500 text-white shadow ring-1 ring-black/5;
+  }
+
+  /* Trigger do topo (apenas polimento) */
+  .user-trigger {
+    @apply text-white;
+  }
+}
