@@ -15,15 +15,9 @@ export function DashboardHeader({
   return (
     <>
       {/* Header Principal */}
-      <motion.header
-        className="h-16 flex items-center justify-between px-6 bg-sidebar text-sidebar-foreground border-b border-[#314e93] shadow-sm backdrop-blur-md z-50"
-        initial={{ y: -20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.3, ease: "easeOut" }}
-      >
+      <header className="h-16 flex border-l border-[#314e93] items-center justify-between px-6 bg-sidebar text-sidebar-foreground z-50">
         {/* Seção Esquerda - Toggle Sidebar */}
         <div className="flex items-center">
-          <div className="border-l border-[#314e93] h-8 mr-6" />
           <motion.button
             onClick={toggleSidebar}
             className={cn(
@@ -65,8 +59,7 @@ export function DashboardHeader({
           {/* Botão do Usuário */}
           <UserButton />
         </div>
-      </motion.header>
+      </header>
     </>
   );
 }
-

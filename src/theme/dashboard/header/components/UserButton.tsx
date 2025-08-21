@@ -38,7 +38,8 @@ export function UserButton({ className }: UserButtonProps) {
       try {
         const token = document.cookie
           .split("; ")
-          .find((row) => row.startsWith("token="))?.split("=")[1];
+          .find((row) => row.startsWith("token="))
+          ?.split("=")[1];
 
         if (!token) return;
 
@@ -141,7 +142,8 @@ export function UserButton({ className }: UserButtonProps) {
     try {
       const token = document.cookie
         .split("; ")
-        .find((row) => row.startsWith("token="))?.split("=")[1];
+        .find((row) => row.startsWith("token="))
+        ?.split("=")[1];
 
       if (token) {
         await apiFetch(usuarioRoutes.logout(), {
@@ -159,9 +161,7 @@ export function UserButton({ className }: UserButtonProps) {
     } finally {
       const host = window.location.hostname;
       const isLocalhost = host === "localhost" || host === "127.0.0.1";
-      const baseDomain = host
-        .replace(/^app\./, "")
-        .replace(/^auth\./, "");
+      const baseDomain = host.replace(/^app\./, "").replace(/^auth\./, "");
       const domain = isLocalhost ? host : `.${baseDomain}`;
       document.cookie = `token=; path=/; domain=${domain}; max-age=0`;
       document.cookie = `refresh_token=; path=/; domain=${domain}; max-age=0`;
@@ -199,7 +199,7 @@ export function UserButton({ className }: UserButtonProps) {
                 className="ring-2 ring-white shadow-sm"
               />
               <div className="hidden md:block text-left">
-                <p className="text-sm font-medium text-white leading-none">
+                <p className="text-sm font-medium !text-white leading-none">
                   {displayName}
                 </p>
               </div>
@@ -284,7 +284,11 @@ export function UserButton({ className }: UserButtonProps) {
                   transition={{ duration: 0.1 }}
                 >
                   <div className="p-1.5 rounded-md bg-gray-100 shrink-0 mt-0.5">
-                    <Icon name={item.icon as any} size={14} className="text-gray-600" />
+                    <Icon
+                      name={item.icon as any}
+                      size={14}
+                      className="text-gray-600"
+                    />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
@@ -330,7 +334,9 @@ export function UserButton({ className }: UserButtonProps) {
             </div>
             <div>
               <p className="text-sm font-medium">Sair</p>
-              <p className="text-xs text-red-500/70 mt-0.5">Encerrar sessão atual</p>
+              <p className="text-xs text-red-500/70 mt-0.5">
+                Encerrar sessão atual
+              </p>
             </div>
             <Icon
               name="ChevronRight"
@@ -343,4 +349,3 @@ export function UserButton({ className }: UserButtonProps) {
     </DropdownMenu>
   );
 }
-
