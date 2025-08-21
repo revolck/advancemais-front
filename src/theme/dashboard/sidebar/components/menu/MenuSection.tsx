@@ -19,7 +19,7 @@ export function MenuSection({
     >
       {/* Título da seção - visível apenas quando não está colapsado */}
       {!isCollapsed && (
-        <div className="mb-4 text-xs font-bold uppercase tracking-wider text-[var(--secondary-color)] transition-opacity duration-200">
+        <div className="mb-4 text-xs uppercase tracking-wider text-[var(--secondary-color)] transition-opacity duration-200">
           {section.title}
         </div>
       )}

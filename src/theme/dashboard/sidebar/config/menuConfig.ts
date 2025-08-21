@@ -21,6 +21,30 @@ const PEDAGOGICO_PERMISSIONS: readonly UserRole[] = Object.freeze([
   UserRole.PEDAGOGICO,
 ]);
 
+const EMPRESA_PERMISSIONS: readonly UserRole[] = Object.freeze([
+  UserRole.EMPRESA,
+]);
+
+const RECRUTADOR_PERMISSIONS: readonly UserRole[] = Object.freeze([
+  UserRole.RECRUTADOR,
+]);
+
+const PROFESSOR_PERMISSIONS: readonly UserRole[] = Object.freeze([
+  UserRole.PROFESSOR,
+]);
+
+const ALUNO_PERMISSIONS: readonly UserRole[] = Object.freeze([
+  UserRole.ALUNO_CANDIDATO,
+]);
+
+const PSICOLOGO_PERMISSIONS: readonly UserRole[] = Object.freeze([
+  UserRole.PSICOLOGO,
+]);
+
+const FINANCEIRO_PERMISSIONS: readonly UserRole[] = Object.freeze([
+  UserRole.FINANCEIRO,
+]);
+
 /**
  * Congela recursivamente um objeto, garantindo sua imutabilidade.
  * Isso evita alterações em tempo de execução que possam comprometer
@@ -49,7 +73,7 @@ function deepFreeze<T>(obj: T): T {
  */
 const rawMenuSections: MenuSection[] = [
   {
-    title: "ADMINISTRAÇÃO",
+    title: "DASHBOARD",
     items: [
       {
         icon: "LayoutDashboard",
@@ -76,7 +100,7 @@ const rawMenuSections: MenuSection[] = [
           },
           {
             icon: null,
-            label: "Matrículas",
+            label: "Alunos",
             route: "/admin/courses/enrollments",
             permissions: ADMIN_PERMISSIONS,
           },
@@ -222,7 +246,7 @@ const rawMenuSections: MenuSection[] = [
           },
           {
             icon: null,
-            label: "Matrículas",
+            label: "Alunos",
             route: "/pedagogico/courses/enrollments",
             permissions: PEDAGOGICO_PERMISSIONS,
           },
@@ -239,6 +263,216 @@ const rawMenuSections: MenuSection[] = [
             permissions: PEDAGOGICO_PERMISSIONS,
           },
         ],
+      },
+    ],
+  },
+  {
+    title: "DASHBOARD",
+    items: [
+      {
+        icon: "LayoutDashboard",
+        label: "Visão geral",
+        route: "/empresa/overview",
+        permissions: EMPRESA_PERMISSIONS,
+      },
+      {
+        icon: "Briefcase",
+        label: "Gerenciar Vagas",
+        route: "/empresa/jobs",
+        permissions: EMPRESA_PERMISSIONS,
+      },
+      {
+        icon: "Users",
+        label: "Candidatos",
+        route: "/empresa/candidates",
+        permissions: EMPRESA_PERMISSIONS,
+      },
+      {
+        icon: "Calendar",
+        label: "Agenda",
+        route: "/empresa/agenda",
+        permissions: EMPRESA_PERMISSIONS,
+      },
+      {
+        icon: "UserCheck",
+        label: "Entrevistas",
+        route: "/empresa/interviews",
+        permissions: EMPRESA_PERMISSIONS,
+      },
+      {
+        icon: "Settings",
+        label: "Configurações",
+        route: "/empresa/settings",
+        permissions: EMPRESA_PERMISSIONS,
+      },
+    ],
+  },
+  {
+    title: "DASHBOARD",
+    items: [
+      {
+        icon: "LayoutDashboard",
+        label: "Visão Geral",
+        route: "/recrutador/overview",
+        permissions: RECRUTADOR_PERMISSIONS,
+      },
+      {
+        icon: "Briefcase",
+        label: "Vagas Pendentes",
+        route: "/recrutador/jobs",
+        permissions: RECRUTADOR_PERMISSIONS,
+      },
+      {
+        icon: "Users",
+        label: "Candidatos",
+        route: "/recrutador/candidates",
+        permissions: RECRUTADOR_PERMISSIONS,
+      },
+      {
+        icon: "Calendar",
+        label: "Agenda",
+        route: "/recrutador/agenda",
+        permissions: RECRUTADOR_PERMISSIONS,
+      },
+      {
+        icon: "UserCheck",
+        label: "Entrevistas",
+        route: "/recrutador/interviews",
+        permissions: RECRUTADOR_PERMISSIONS,
+      },
+      {
+        icon: "Settings",
+        label: "Configurações",
+        route: "/recrutador/settings",
+        permissions: RECRUTADOR_PERMISSIONS,
+      },
+    ],
+  },
+  {
+    title: "DASHBOARD",
+    items: [
+      {
+        icon: "LayoutDashboard",
+        label: "Visão geral",
+        route: "/professor/overview",
+        permissions: PROFESSOR_PERMISSIONS,
+      },
+      {
+        icon: "GraduationCap",
+        label: "Alunos",
+        route: "/professor/students",
+        permissions: PROFESSOR_PERMISSIONS,
+      },
+      {
+        icon: "ClipboardList",
+        label: "Provas",
+        route: "/professor/exams",
+        permissions: PROFESSOR_PERMISSIONS,
+      },
+      {
+        icon: "ClipboardCheck",
+        label: "Notas",
+        route: "/professor/grades",
+        permissions: PROFESSOR_PERMISSIONS,
+      },
+      {
+        icon: "BookOpen",
+        label: "Cursos",
+        route: "/professor/courses",
+        permissions: PROFESSOR_PERMISSIONS,
+      },
+    ],
+  },
+  {
+    title: "DASHBOARD",
+    items: [
+      {
+        icon: "LayoutDashboard",
+        label: "Visão geral",
+        route: "/aluno/overview",
+        permissions: ALUNO_PERMISSIONS,
+      },
+      {
+        icon: "BookOpen",
+        label: "Cursos",
+        route: "/aluno/courses",
+        permissions: ALUNO_PERMISSIONS,
+      },
+      {
+        icon: "ClipboardCheck",
+        label: "Notas",
+        route: "/aluno/grades",
+        permissions: ALUNO_PERMISSIONS,
+      },
+      {
+        icon: "CalendarCheck",
+        label: "Frequência",
+        route: "/aluno/attendance",
+        permissions: ALUNO_PERMISSIONS,
+      },
+      {
+        icon: "Calendar",
+        label: "Agenda",
+        route: "/aluno/agenda",
+        permissions: ALUNO_PERMISSIONS,
+      },
+      {
+        icon: "Briefcase",
+        label: "Vagas de empregos",
+        route: "/aluno/jobs",
+        permissions: ALUNO_PERMISSIONS,
+      },
+      {
+        icon: "FileText",
+        label: "Currículo",
+        route: "/aluno/resume",
+        permissions: ALUNO_PERMISSIONS,
+      },
+      {
+        icon: "Award",
+        label: "Certificados",
+        route: "/aluno/certificates",
+        permissions: ALUNO_PERMISSIONS,
+      },
+    ],
+  },
+  {
+    title: "DASHBOARD",
+    items: [
+      {
+        icon: "LayoutDashboard",
+        label: "Visão geral",
+        route: "/psicologo/overview",
+        permissions: PSICOLOGO_PERMISSIONS,
+      },
+      {
+        icon: "Users",
+        label: "Candidatos",
+        route: "/psicologo/candidates",
+        permissions: PSICOLOGO_PERMISSIONS,
+      },
+      {
+        icon: "Briefcase",
+        label: "Vagas",
+        route: "/psicologo/jobs",
+        permissions: PSICOLOGO_PERMISSIONS,
+      },
+      {
+        icon: "BarChart2",
+        label: "Relatórios",
+        route: "/psicologo/reports",
+        permissions: PSICOLOGO_PERMISSIONS,
+      },
+    ],
+  },
+  {
+    title: "DASHBOARD",
+    items: [
+      {
+        icon: "Wallet",
+        label: "Financeiro",
+        route: "/financeiro/overview",
+        permissions: FINANCEIRO_PERMISSIONS,
       },
     ],
   },
