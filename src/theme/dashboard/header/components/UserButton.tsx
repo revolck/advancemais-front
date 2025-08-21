@@ -8,6 +8,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -32,7 +33,7 @@ interface User {
 
 // Skeleton component para o botão do usuário
 const UserButtonSkeleton = () => (
-  <div className="flex items-center gap-3 px-2">
+  <div className="flex items-center justify-center gap-3 px-0">
     <Skeleton className="h-8 w-8 rounded-full bg-white/20" />
     <div className="hidden md:block">
       <Skeleton className="h-4 w-24 bg-white/20" />
@@ -106,33 +107,34 @@ export function UserButton({ className }: UserButtonProps) {
   const menuItems = [
     {
       icon: "User" as const,
-      label: "Meu Perfil",
-      description: "Gerencie suas informações pessoais",
+      label: "Profile",
       action: () => console.log("Navegar para perfil"),
     },
     {
-      icon: "Shield" as const,
-      label: "Segurança",
-      description: "Senha, 2FA e configurações de segurança",
-      action: () => console.log("Navegar para segurança"),
+      icon: "Users" as const,
+      label: "Community",
+      action: () => console.log("Navegar para comunidade"),
     },
     {
       icon: "Crown" as const,
-      label: "Assinatura",
-      description: "Gerencie seu plano atual",
+      label: "Subscription",
       action: () => console.log("Navegar para assinatura"),
       badge:
         user?.plan === "pro"
-          ? "Pro"
+          ? "PRO"
           : user?.plan === "enterprise"
-          ? "Enterprise"
+          ? "ENT"
           : null,
     },
     {
-      icon: "CreditCard" as const,
-      label: "Fatura",
-      description: "Histórico de pagamentos e faturas",
-      action: () => console.log("Navegar para fatura"),
+      icon: "Settings" as const,
+      label: "Settings",
+      action: () => console.log("Navegar para configurações"),
+    },
+    {
+      icon: "HelpCircle" as const,
+      label: "Help Center",
+      action: () => console.log("Navegar para ajuda"),
     },
   ];
 
@@ -204,7 +206,7 @@ export function UserButton({ className }: UserButtonProps) {
     return (
       <div
         className={cn(
-          "relative h-10 px-2 rounded-lg",
+          "relative h-10 px-3 rounded-lg",
           "transition-all duration-200 ease-in-out",
           className
         )}
@@ -226,16 +228,17 @@ export function UserButton({ className }: UserButtonProps) {
           <Button
             variant="ghost"
             className={cn(
-              "relative h-10 px-2 rounded-lg hover:bg-white/10 active:bg-white/20",
+              "relative h-10 px-3 rounded-lg hover:bg-white/10 active:bg-white/20",
               "transition-all duration-200 ease-in-out",
-              "focus:outline-none focus:ring-2 focus:ring-white/20",
+              "focus-visible:outline-none focus-visible:ring-0 focus:ring-0 outline-none border-none",
+              "data-[state=open]:bg-white/10",
               className
             )}
           >
-            <div className="flex items-center gap-3">
+            <div className="flex items-center justify-center gap-3">
               <AvatarCustom name={displayName} size="sm" showStatus={false} />
-              <div className="hidden md:flex flex-col items-start justify-center">
-                <p className="text-sm font-medium text-white leading-tight">
+              <div className="hidden md:flex flex-col justify-center min-h-[32px]">
+                <p className="text-sm font-medium text-white leading-none text-center">
                   {displayName}
                 </p>
               </div>
@@ -251,26 +254,27 @@ export function UserButton({ className }: UserButtonProps) {
         </motion.div>
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent align="end" className="w-64" sideOffset={8}>
+      <DropdownMenuContent align="end" className="w-72" sideOffset={8}>
         {/* Header do usuário */}
-        <DropdownMenuLabel className="p-3">
+        <DropdownMenuLabel className="p-4 pb-3">
           <div className="flex items-center gap-3">
-            <AvatarCustom
-              name={displayName}
-              size="md"
-              showStatus={false}
-              className="ring-2 ring-white shadow-sm"
-            />
+            <AvatarCustom name={displayName} size="lg" showStatus={false} />
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-gray-900 truncate">
+              <p className="text-base font-semibold text-gray-900 leading-tight">
                 {displayName}
               </p>
-              <p className="text-xs text-gray-500 truncate">{user.email}</p>
+              <p className="text-sm text-gray-500 mt-0.5">{user.email}</p>
+            </div>
+            <div className="text-right">
               <Badge
                 variant={getPlanBadgeVariant(user.plan)}
-                className="mt-1.5 text-xs h-5"
+                className="text-xs font-medium"
               >
-                {getPlanLabel(user.plan)}
+                {user.plan === "pro"
+                  ? "PRO"
+                  : user.plan === "enterprise"
+                  ? "ENT"
+                  : "FREE"}
               </Badge>
             </div>
           </div>
@@ -279,88 +283,69 @@ export function UserButton({ className }: UserButtonProps) {
         <Separator />
 
         {/* Menu items */}
-        <div className="p-1">
-          {menuItems.map((item, index) => (
-            <DropdownMenuItem
-              key={item.label}
-              className="px-3 py-2 cursor-pointer rounded-sm"
-              onClick={item.action}
+        {menuItems.map((item, index) => (
+          <DropdownMenuItem
+            key={item.label}
+            className="px-4 py-2.5 cursor-pointer focus:bg-gray-50 hover:bg-gray-50"
+            onClick={item.action}
+          >
+            <motion.div
+              className="flex items-center gap-3 w-full"
+              initial={{ opacity: 0, x: -5 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: index * 0.03 }}
             >
-              <motion.div
-                className="flex items-center gap-3 w-full"
-                initial={{ opacity: 0, x: -5 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.03 }}
-              >
-                <div className="flex items-center justify-center w-8 h-8 rounded-md bg-gray-100 shrink-0">
-                  <Icon name={item.icon} size={16} className="text-gray-600" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm font-medium text-gray-900">
-                      {item.label}
-                    </p>
-                    {item.badge && (
-                      <Badge variant="secondary" className="text-xs ml-2 h-5">
-                        {item.badge}
-                      </Badge>
-                    )}
-                  </div>
-                  <p className="text-xs text-gray-500 leading-tight">
-                    {item.description}
-                  </p>
-                </div>
-                <Icon
-                  name="ChevronRight"
-                  size={14}
-                  className="text-gray-400 shrink-0"
-                />
-              </motion.div>
-            </DropdownMenuItem>
-          ))}
-        </div>
+              <Icon
+                name={item.icon}
+                size={16}
+                className="text-gray-600 shrink-0"
+              />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-gray-900">
+                  {item.label}
+                </p>
+              </div>
+              {item.badge && (
+                <Badge
+                  variant="default"
+                  className="text-xs h-5 bg-green-100 text-green-700 hover:bg-green-100"
+                >
+                  {item.badge}
+                </Badge>
+              )}
+            </motion.div>
+          </DropdownMenuItem>
+        ))}
 
         <Separator />
 
         {/* Botão de Logout */}
-        <div className="p-1">
-          <DropdownMenuItem
-            className="px-3 py-2 cursor-pointer rounded-sm text-red-600 focus:text-red-700 hover:bg-red-50 focus:bg-red-50"
-            onClick={handleLogout}
-            disabled={isLoggingOut}
+        <DropdownMenuItem
+          className="px-4 py-2.5 cursor-pointer text-red-600 focus:text-red-700 hover:bg-red-50 focus:bg-red-50"
+          onClick={handleLogout}
+          disabled={isLoggingOut}
+        >
+          <motion.div
+            className="flex items-center gap-3 w-full"
+            whileHover={{ x: 2 }}
+            transition={{ duration: 0.1 }}
           >
-            <motion.div
-              className="flex items-center gap-3 w-full"
-              whileHover={{ x: 2 }}
-              transition={{ duration: 0.1 }}
-            >
-              <div className="flex items-center justify-center w-8 h-8 rounded-md bg-red-100 shrink-0">
-                {isLoggingOut ? (
-                  <Icon
-                    name="Loader2"
-                    size={16}
-                    className="text-red-600 animate-spin"
-                  />
-                ) : (
-                  <Icon name="LogOut" size={16} className="text-red-600" />
-                )}
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-medium">
-                  {isLoggingOut ? "Saindo..." : "Sair"}
-                </p>
-                <p className="text-xs text-red-500/70 leading-tight">
-                  Encerrar sessão atual
-                </p>
-              </div>
+            {isLoggingOut ? (
               <Icon
-                name="ChevronRight"
-                size={14}
-                className="text-red-400 shrink-0"
+                name="Loader2"
+                size={16}
+                className="text-red-600 animate-spin shrink-0"
               />
-            </motion.div>
-          </DropdownMenuItem>
-        </div>
+            ) : (
+              <Icon name="LogOut" size={16} className="text-red-600 shrink-0" />
+            )}
+            <div className="flex-1">
+              <p className="text-sm font-medium">
+                {isLoggingOut ? "Signing out..." : "Sign out"}
+              </p>
+            </div>
+          </motion.div>
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
