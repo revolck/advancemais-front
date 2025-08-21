@@ -172,6 +172,11 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const host = request.headers.get("host") || "";
   const [hostname] = host.split(":");
+  const isLocalhost = hostname === "localhost" || hostname === "127.0.0.1";
+  const baseDomain = hostname
+    .replace(/^www\./, "")
+    .replace(/^app\./, "")
+    .replace(/^auth\./, "");
 
   // Normaliza hosts com prefixo www
   if (hostname.startsWith("www.")) {
@@ -199,6 +204,17 @@ export function middleware(request: NextRequest) {
   // Subdomínio do dashboard (app.)
   // Garante que todas as rotas sejam servidas a partir de /dashboard
   if (hostname.startsWith("app.")) {
+    const isAuthenticated =
+      request.cookies.has("token") || request.cookies.has("refresh_token");
+
+    if (!isAuthenticated && !isLocalhost) {
+      const loginUrl = request.nextUrl.clone();
+      loginUrl.hostname = `auth.${baseDomain}`;
+      loginUrl.pathname = "/login";
+      loginUrl.searchParams.set("error", "unauthorized");
+      return NextResponse.redirect(loginUrl);
+    }
+
     if (!pathname.startsWith("/dashboard")) {
       const url = request.nextUrl.clone();
       url.pathname = `/dashboard${pathname === "/" ? "" : pathname}`;
