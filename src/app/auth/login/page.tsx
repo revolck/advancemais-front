@@ -1,6 +1,7 @@
 "use client";
 
 import { useTransition, useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { SignInPage } from "@/components/partials/auth/login/sign-in";
 import { apiFetch } from "@/api/client";
 import { usuarioRoutes } from "@/api/routes";
@@ -9,6 +10,7 @@ import { toastCustom } from "@/components/ui/custom/toast";
 const SignInPageDemo = () => {
   const [userName, setUserName] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     const storedName = localStorage.getItem("userName");
@@ -16,6 +18,15 @@ const SignInPageDemo = () => {
       setUserName(storedName);
     }
   }, []);
+
+  useEffect(() => {
+    const error = searchParams.get("error");
+    if (error === "unauthorized") {
+      toastCustom.error(
+        "Você não tem autorização para acessar como visitante. Por favor realize seu cadastro."
+      );
+    }
+  }, [searchParams]);
 
   const handleSignIn = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
