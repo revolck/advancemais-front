@@ -1,22 +1,28 @@
 import { IconName } from "@/components/ui/custom/Icons";
+import { UserRole } from "@/config/roles";
 
 /**
  * Definição de um item do menu
  */
 export interface MenuItem {
-  icon: IconName | null;
-  label: string;
-  href?: string;
+  readonly icon: IconName | null;
+  readonly label: string;
+  readonly route?: string;
+  /**
+   * Propriedade mutável para marcar o item ativo dinamicamente.
+   * Mantida fora do objeto imutável original.
+   */
   active?: boolean;
-  submenu?: MenuItem[];
+  readonly submenu?: readonly MenuItem[];
+  readonly permissions?: readonly UserRole[];
 }
 
 /**
  * Definição de uma seção do menu
  */
 export interface MenuSection {
-  title: string;
-  items: MenuItem[];
+  readonly title: string;
+  readonly items: readonly MenuItem[];
 }
 
 /**

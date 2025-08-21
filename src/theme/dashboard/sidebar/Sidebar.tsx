@@ -6,9 +6,38 @@ import { SidebarHeader } from "./components/header/SidebarHeader";
 import { MenuList } from "./components/menu/MenuList";
 import { useSidebarNavigation } from "./hooks/useSidebarNavigation";
 import { menuSections } from "./config/menuConfig";
-import type { SidebarProps } from "./types/sidebar.types";
+import type {
+  SidebarProps,
+  MenuSection,
+  MenuItem,
+} from "./types/sidebar.types";
 import { useUserRole } from "@/hooks/useUserRole";
 import { UserRole } from "@/config/roles";
+
+const filterItemsByRole = (
+  items: readonly MenuItem[],
+  role: UserRole
+): MenuItem[] => {
+  return items
+    .filter((item) => !item.permissions || item.permissions.includes(role))
+    .map((item) => ({
+      ...item,
+      submenu: item.submenu ? filterItemsByRole(item.submenu, role) : undefined,
+    }))
+    .filter((item) => !item.submenu || item.submenu.length > 0);
+};
+
+const filterSectionsByRole = (
+  sections: readonly MenuSection[],
+  role: UserRole
+): MenuSection[] => {
+  return sections
+    .map((section) => ({
+      ...section,
+      items: filterItemsByRole(section.items, role),
+    }))
+    .filter((section) => section.items.length > 0);
+};
 
 /**
  * Componente principal do Sidebar
@@ -21,10 +50,11 @@ export function Sidebar({
   // Hook para navegação
   const { handleNavigation } = useSidebarNavigation(setIsMobileMenuOpen);
   const role = useUserRole();
-  const sections = useMemo(
-    () => (role === UserRole.ALUNO_CANDIDATO ? [] : menuSections),
-    [role]
-  );
+
+  const sections = useMemo(() => {
+    if (!role) return [];
+    return filterSectionsByRole(menuSections, role);
+  }, [role]);
 
   return (
     <>
