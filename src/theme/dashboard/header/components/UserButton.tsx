@@ -6,7 +6,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -102,19 +101,17 @@ export function UserButton({ className }: UserButtonProps) {
     {
       icon: "User" as const,
       label: "Perfil",
-      description: "Gerencie suas configurações de conta",
       action: () => console.log("Navegar para perfil"),
     },
     {
       icon: "Users" as const,
       label: "Comunidade",
-      description: "Conecte-se com outros usuários",
       action: () => console.log("Navegar para comunidade"),
+      trailingIcon: "Plus" as const,
     },
     {
-      icon: "Crown" as const,
+      icon: "Cog" as const,
       label: "Assinatura",
-      description: "Gerencie sua assinatura",
       action: () => console.log("Navegar para assinatura"),
       badge:
         user?.plan === "pro"
@@ -122,17 +119,17 @@ export function UserButton({ className }: UserButtonProps) {
           : user?.plan === "enterprise"
           ? "ENT"
           : null,
+      iconBg: "bg-emerald-100 group-hover:bg-emerald-200",
+      iconColor: "text-emerald-600 group-hover:text-emerald-700",
     },
     {
-      icon: "Settings" as const,
+      icon: "Sliders" as const,
       label: "Configurações",
-      description: "Personalize sua experiência",
       action: () => console.log("Navegar para configurações"),
     },
     {
-      icon: "HelpCircle" as const,
+      icon: "LifeBuoy" as const,
       label: "Central de Ajuda",
-      description: "Obtenha suporte e documentação",
       action: () => console.log("Navegar para ajuda"),
     },
   ];
@@ -233,10 +230,16 @@ export function UserButton({ className }: UserButtonProps) {
 
       <DropdownMenuContent align="end" className="w-80 p-0" sideOffset={8}>
         {/* Cabeçalho do usuário */}
-        <div className="p-4 bg-gradient-to-r from-gray-50 to-gray-100/50 border-b border-gray-100">
+        <div className="p-4 border-b border-gray-100">
           <div className="flex items-center gap-3">
             <div className="relative">
-              <AvatarCustom name={displayName} size="md" showStatus={false} />
+              <AvatarCustom
+                name={displayName}
+                size="md"
+                showStatus={false}
+                className="ring-2 ring-pink-500"
+              />
+              <span className="user-greeting-bubble">Hi, {user.firstName}</span>
             </div>
             <div className="flex-1 min-w-0">
               <h3 className="font-semibold text-gray-900 text-base truncate">
@@ -255,7 +258,7 @@ export function UserButton({ className }: UserButtonProps) {
           </div>
         </div>
 
-        {/* Itens do menu (sem motion) */}
+        {/* Itens do menu */}
         <div className="py-2">
           {menuItems.map((item) => (
             <DropdownMenuItem
@@ -264,28 +267,37 @@ export function UserButton({ className }: UserButtonProps) {
               onClick={item.action}
             >
               <div className="flex items-center gap-3 w-full">
-                <div className="w-10 h-10 rounded-xl bg-gray-100 group-hover:bg-gray-200 flex items-center justify-center transition-colors duration-150 shrink-0">
+                <div
+                  className={cn(
+                    "w-10 h-10 rounded-xl flex items-center justify-center transition-colors duration-150 shrink-0",
+                    item.iconBg || "bg-gray-100 group-hover:bg-gray-200"
+                  )}
+                >
                   <Icon
                     name={item.icon}
                     size={18}
-                    className="text-gray-600 group-hover:text-gray-700"
+                    className={cn(
+                      item.iconColor || "text-gray-600 group-hover:text-gray-700"
+                    )}
                   />
                 </div>
-                <div className="flex-1 text-left min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="font-medium text-gray-900 text-sm">
-                      {item.label}
-                    </p>
-                    {item.badge && (
-                      <span className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-2 py-0.5 rounded-full text-xs font-semibold">
-                        {item.badge}
-                      </span>
-                    )}
+                <p className="font-medium text-gray-900 text-sm flex-1">
+                  {item.label}
+                </p>
+                {item.badge && (
+                  <span className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-2 py-0.5 rounded-full text-xs font-semibold">
+                    {item.badge}
+                  </span>
+                )}
+                {item.trailingIcon && (
+                  <div className="ml-auto w-6 h-6 rounded-full bg-gray-100 group-hover:bg-gray-200 flex items-center justify-center">
+                    <Icon
+                      name={item.trailingIcon}
+                      size={12}
+                      className="text-gray-600 group-hover:text-gray-700"
+                    />
                   </div>
-                  <p className="text-xs text-gray-500 mt-0.5">
-                    {item.description}
-                  </p>
-                </div>
+                )}
               </div>
             </DropdownMenuItem>
           ))}
