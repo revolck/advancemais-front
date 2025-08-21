@@ -1,18 +1,16 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import { AvatarCustom } from "@/components/ui/custom/avatar";
 
 export default function AvatarDemo() {
-  const [showExamples, setShowExamples] = useState(false);
-
   const pessoas = [
-    { nome: "João Feitosa Fernandes", foto: "/avatars/joao.jpg" },
-    { nome: "Maria Silva Santos", foto: null },
-    { nome: "Pedro Oliveira", foto: "/avatars/pedro.jpg" },
-    { nome: "Ana Costa", foto: null },
-    { nome: "Carlos Eduardo Lima", foto: null },
-    { nome: "Fernanda Rodrigues", foto: "/avatars/fernanda.jpg" },
+    { nome: "João Feitosa Fernandes" },
+    { nome: "Maria Silva Santos" },
+    { nome: "Pedro Oliveira" },
+    { nome: "Ana Costa" },
+    { nome: "Carlos Eduardo Lima" },
+    { nome: "Fernanda Rodrigues" },
   ];
 
   return (
@@ -48,7 +46,6 @@ export default function AvatarDemo() {
             <div key={index} className="text-center space-y-3">
               <AvatarCustom
                 name={pessoa.nome}
-                src={pessoa.foto || undefined}
                 size="lg"
                 showStatus
                 status={
@@ -63,9 +60,6 @@ export default function AvatarDemo() {
               />
               <div>
                 <p className="font-medium text-sm">{pessoa.nome}</p>
-                <p className="text-xs text-muted-foreground">
-                  {pessoa.foto ? "Com foto" : "Só iniciais"}
-                </p>
               </div>
             </div>
           ))}
@@ -139,13 +133,6 @@ export default function AvatarDemo() {
           <pre className="text-sm">
             <code>{`// Avatar básico com iniciais
 <AvatarCustom name="João Feitosa Fernandes" />
-
-// Avatar com imagem
-<AvatarCustom 
-  name="Maria Silva"
-  src="/avatar.jpg"
-  size="lg"
-/>
 
 // Avatar com status
 <AvatarCustom

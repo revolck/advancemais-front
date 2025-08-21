@@ -26,7 +26,6 @@ interface User {
   firstName: string;
   lastName?: string;
   email: string;
-  avatar?: string;
   plan: "free" | "pro" | "enterprise";
 }
 
@@ -47,7 +46,6 @@ export function UserButton({ className }: UserButtonProps) {
           usuario?: {
             nomeCompleto?: string;
             email: string;
-            avatar?: string;
             plano?: string;
           };
         }>(usuarioRoutes.profile.get(), {
@@ -69,7 +67,6 @@ export function UserButton({ className }: UserButtonProps) {
             firstName,
             lastName,
             email: userData.email,
-            avatar: userData.avatar,
             plan:
               userData.plano === "pro"
                 ? "pro"
@@ -197,7 +194,6 @@ export function UserButton({ className }: UserButtonProps) {
             <div className="flex items-center gap-3">
               <AvatarCustom
                 name={displayName}
-                src={user?.avatar}
                 size="sm"
                 showStatus={false}
                 className="ring-2 ring-white shadow-sm"
@@ -229,7 +225,6 @@ export function UserButton({ className }: UserButtonProps) {
           <div className="flex items-start gap-3">
             <AvatarCustom
               name={displayName}
-              src={user?.avatar}
               size="md"
               showStatus={false}
               className="ring-2 ring-white shadow-sm"

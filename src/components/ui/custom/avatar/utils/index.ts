@@ -68,23 +68,6 @@ export function getAvatarColor(name: string): string {
 }
 
 /**
- * Valida se uma URL de imagem é válida
- * @param src URL da imagem
- * @returns true se a URL parece válida
- */
-export function isValidImageUrl(src?: string): boolean {
-  if (!src) return false;
-
-  try {
-    const url = new URL(src);
-    return ["http:", "https:", "data:"].includes(url.protocol);
-  } catch {
-    // Se não conseguir criar URL, assume que é path relativo válido
-    return src.startsWith("/") || src.startsWith("./") || src.startsWith("../");
-  }
-}
-
-/**
  * Gera um ID único para o avatar (útil para testes e debugging)
  * @param name Nome da pessoa
  * @returns ID único baseado no nome

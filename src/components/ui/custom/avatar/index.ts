@@ -2,7 +2,7 @@
 export { AvatarCustom, avatarCustomVariants } from "./AvatarCustom";
 
 // Utilitários
-export { getInitials, getAvatarColor, isValidImageUrl } from "./utils";
+export { getInitials, getAvatarColor } from "./utils";
 
 // Tipos e constantes
 export type { AvatarCustomProps } from "./types";
