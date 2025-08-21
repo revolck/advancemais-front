@@ -1,5 +1,6 @@
 // src/app/dashboard/middleware.ts
 import { NextRequest, NextResponse } from "next/server";
+import { UserRole } from "@/config/roles";
 
 // Lista de módulos disponíveis
 const SYSTEM_MODULES = [
@@ -11,11 +12,16 @@ const SYSTEM_MODULES = [
 ];
 
 // Matriz de permissões por função
-const ROLE_PERMISSIONS = {
-  admin: [...SYSTEM_MODULES],
-  manager: ["overview", "beneficiaries", "projects"],
-  operator: ["beneficiaries", "projects"],
-  viewer: ["overview"],
+const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
+  [UserRole.ADMIN]: [...SYSTEM_MODULES],
+  [UserRole.MODERADOR]: [],
+  [UserRole.FINANCEIRO]: [],
+  [UserRole.PROFESSOR]: [],
+  [UserRole.EMPRESA]: [],
+  [UserRole.PEDAGOGICO]: [],
+  [UserRole.RECRUTADOR]: [],
+  [UserRole.PSICOLOGO]: [],
+  [UserRole.ALUNO_CANDIDATO]: [],
 };
 
 export function dashboardMiddleware(request: NextRequest) {
@@ -62,9 +68,10 @@ export function dashboardMiddleware(request: NextRequest) {
   // Verificar se temos um módulo válido
   if (requestedModule && SYSTEM_MODULES.includes(requestedModule)) {
     // Verificação de acesso baseado em função
-    const userRole = request.cookies.get("dev_role")?.value || "viewer";
-    const allowedModules =
-      ROLE_PERMISSIONS[userRole as keyof typeof ROLE_PERMISSIONS] || [];
+    const userRole =
+      (request.cookies.get("user_role")?.value as UserRole) ||
+      UserRole.ALUNO_CANDIDATO;
+    const allowedModules = ROLE_PERMISSIONS[userRole] || [];
 
     // Se não tem permissão para o módulo
     if (!allowedModules.includes(requestedModule)) {
@@ -92,8 +99,8 @@ export function dashboardMiddleware(request: NextRequest) {
       });
     }
 
-    if (!request.cookies.has("dev_role")) {
-      response.cookies.set("dev_role", "admin", {
+    if (!request.cookies.has("user_role")) {
+      response.cookies.set("user_role", UserRole.ADMIN, {
         path: "/",
         maxAge: 60 * 60 * 24 * 7,
       });

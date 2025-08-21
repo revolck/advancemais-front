@@ -1,10 +1,14 @@
-import React from "react";
+"use client";
+
+import React, { useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { SidebarHeader } from "./components/header/SidebarHeader";
 import { MenuList } from "./components/menu/MenuList";
 import { useSidebarNavigation } from "./hooks/useSidebarNavigation";
 import { menuSections } from "./config/menuConfig";
 import type { SidebarProps } from "./types/sidebar.types";
+import { useUserRole } from "@/hooks/useUserRole";
+import { UserRole } from "@/config/roles";
 
 /**
  * Componente principal do Sidebar
@@ -16,6 +20,11 @@ export function Sidebar({
 }: SidebarProps) {
   // Hook para navegação
   const { handleNavigation } = useSidebarNavigation(setIsMobileMenuOpen);
+  const role = useUserRole();
+  const sections = useMemo(
+    () => (role === UserRole.ALUNO_CANDIDATO ? [] : menuSections),
+    [role]
+  );
 
   return (
     <>
@@ -42,7 +51,7 @@ export function Sidebar({
         {/* Conteúdo do Menu com espaçamento maior */}
         <div className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent pt-6">
           <MenuList
-            sections={menuSections}
+            sections={sections}
             isCollapsed={isCollapsed}
             handleNavigation={handleNavigation}
           />
