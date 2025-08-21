@@ -98,31 +98,3 @@
   }
 }
 
-/* ============================= */
-/* User dropdown greeting bubble */
-/* ============================= */
-
-.user-greeting-bubble {
-  position: absolute;
-  top: 0;
-  right: 0;
-  transform: translate(50%, -50%);
-  background-color: #10b981;
-  color: #fff;
-  padding: 2px 8px;
-  font-size: 0.75rem;
-  font-weight: 500;
-  border-radius: 9999px;
-  line-height: 1;
-}
-
-.user-greeting-bubble::after {
-  content: "";
-  position: absolute;
-  right: 100%;
-  top: 50%;
-  transform: translateY(-50%);
-  border-width: 6px;
-  border-style: solid;
-  border-color: transparent #10b981 transparent transparent;
-}
