@@ -44,11 +44,12 @@ export function UserButton({ className }: UserButtonProps) {
         if (!token) return;
 
         const profile = await apiFetch<{
-          nome: string;
-          sobrenome?: string;
-          email: string;
-          avatar?: string;
-          plano?: string;
+          usuario?: {
+            nomeCompleto?: string;
+            email: string;
+            avatar?: string;
+            plano?: string;
+          };
         }>(usuarioRoutes.profile.get(), {
           cache: "no-cache",
           init: {
@@ -58,18 +59,25 @@ export function UserButton({ className }: UserButtonProps) {
           },
         });
 
-        setUser({
-          firstName: profile.nome,
-          lastName: profile.sobrenome,
-          email: profile.email,
-          avatar: profile.avatar,
-          plan:
-            profile.plano === "pro"
-              ? "pro"
-              : profile.plano === "enterprise"
-              ? "enterprise"
-              : "free",
-        });
+        const userData = profile.usuario;
+        if (userData?.nomeCompleto) {
+          const parts = userData.nomeCompleto.split(" ");
+          const firstName = parts[0];
+          const lastName = parts.slice(1).join(" ") || undefined;
+
+          setUser({
+            firstName,
+            lastName,
+            email: userData.email,
+            avatar: userData.avatar,
+            plan:
+              userData.plano === "pro"
+                ? "pro"
+                : userData.plano === "enterprise"
+                ? "enterprise"
+                : "free",
+          });
+        }
       } catch (error) {
         console.error("Erro ao carregar perfil:", error);
       }

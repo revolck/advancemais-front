@@ -47,18 +47,20 @@ const SignInPageDemo = () => {
 
         // Busca nome do usuário para saudar em futuros logins
         try {
-          const profile = await apiFetch<{ nome?: string }>(
-            usuarioRoutes.profile.get(),
-            {
-              cache: "no-cache",
-              init: {
-                headers: { Authorization: `Bearer ${res.token}` },
-              },
-              retries: 1,
-            }
-          );
-          if (profile.nome) {
-            localStorage.setItem("userName", profile.nome);
+          const profile = await apiFetch<{
+            usuario?: { nomeCompleto?: string };
+          }>(usuarioRoutes.profile.get(), {
+            cache: "no-cache",
+            init: {
+              headers: { Authorization: `Bearer ${res.token}` },
+            },
+            retries: 1,
+          });
+
+          const fullName = profile.usuario?.nomeCompleto;
+          if (fullName) {
+            const [firstName] = fullName.split(" ");
+            localStorage.setItem("userName", firstName);
           }
         } catch (profileError) {
           console.error("Erro ao buscar perfil:", profileError);
