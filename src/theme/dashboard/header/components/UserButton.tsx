@@ -7,8 +7,9 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AvatarCustom } from "@/components/ui/custom/avatar";
@@ -208,7 +209,7 @@ export function UserButton({ className }: UserButtonProps) {
           <Button
             variant="ghost"
             className={cn(
-              "relative h-10 px-3 rounded-xl hover:bg-white/10 active:bg-white/15",
+              "relative h-10 px-3 rounded-xl hover:bg-white/10 active:bg-white/20",
               "transition-all duration-200 ease-in-out",
               "focus-visible:outline-none focus-visible:ring-0 focus:ring-0 outline-none border-none",
               "data-[state=open]:bg-white/10",
@@ -241,11 +242,7 @@ export function UserButton({ className }: UserButtonProps) {
         </motion.div>
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent
-        align="end"
-        className="w-80 p-0 rounded-2xl shadow-2xl border-0 bg-white overflow-hidden"
-        sideOffset={8}
-      >
+      <DropdownMenuContent align="end" className="w-80 p-0" sideOffset={8}>
         {/* User Header */}
         <div className="p-4 bg-gradient-to-r from-gray-50 to-gray-100/50 border-b border-gray-100">
           <div className="flex items-center gap-3">
@@ -274,24 +271,23 @@ export function UserButton({ className }: UserButtonProps) {
           {menuItems.map((item, index) => (
             <DropdownMenuItem
               key={item.label}
-              className="p-0 focus:bg-transparent hover:bg-transparent cursor-pointer"
+              className="px-4 py-3 cursor-pointer focus:bg-gray-50 hover:bg-gray-50 group"
               onClick={item.action}
             >
               <motion.div
-                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors duration-150 group"
+                className="flex items-center gap-3 w-full"
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.05 }}
-                whileHover={{ x: 2 }}
               >
-                <div className="w-10 h-10 rounded-xl bg-gray-100 group-hover:bg-gray-200 flex items-center justify-center transition-colors duration-150">
+                <div className="w-10 h-10 rounded-xl bg-gray-100 group-hover:bg-gray-200 flex items-center justify-center transition-colors duration-150 shrink-0">
                   <Icon
                     name={item.icon}
                     size={18}
                     className="text-gray-600 group-hover:text-gray-700"
                   />
                 </div>
-                <div className="flex-1 text-left">
+                <div className="flex-1 text-left min-w-0">
                   <div className="flex items-center gap-2">
                     <p className="font-medium text-gray-900 text-sm">
                       {item.label}
@@ -311,22 +307,21 @@ export function UserButton({ className }: UserButtonProps) {
           ))}
         </div>
 
-        {/* Separator */}
-        <DropdownMenuSeparator className="bg-gray-200 mx-4" />
+        <DropdownMenuSeparator />
 
         {/* Logout Button */}
         <div className="p-2">
           <DropdownMenuItem
-            className="p-0 focus:bg-transparent hover:bg-transparent cursor-pointer"
+            className="px-4 py-3 cursor-pointer text-red-600 focus:text-red-700 hover:bg-red-50 focus:bg-red-50 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={handleLogout}
             disabled={isLoggingOut}
           >
             <motion.div
-              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-red-50 transition-colors duration-150 group rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-3 w-full"
               whileHover={{ x: 2 }}
               transition={{ duration: 0.1 }}
             >
-              <div className="w-10 h-10 rounded-xl bg-red-100 group-hover:bg-red-200 flex items-center justify-center transition-colors duration-150">
+              <div className="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center transition-colors duration-150 shrink-0">
                 {isLoggingOut ? (
                   <Icon
                     name="Loader2"
