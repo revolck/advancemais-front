@@ -15,6 +15,7 @@ import { Icon } from "@/components/ui/custom/Icons";
 import { cn } from "@/lib/utils";
 import { apiFetch } from "@/api/client";
 import { usuarioRoutes } from "@/api/routes";
+import { logoutUser } from "@/lib/auth";
 
 interface UserButtonProps {
   className?: string;
@@ -153,18 +154,7 @@ export function UserButton({ className }: UserButtonProps) {
     } catch (error) {
       console.error("Erro ao fazer logout:", error);
     } finally {
-      const host = window.location.hostname;
-      const isLocalhost = host === "localhost" || host === "127.0.0.1";
-      const baseDomain = host.replace(/^app\./, "").replace(/^auth\./, "");
-      const domain = isLocalhost ? host : `.${baseDomain}`;
-      document.cookie = `token=; path=/; domain=${domain}; max-age=0`;
-      document.cookie = `refresh_token=; path=/; domain=${domain}; max-age=0`;
-
-      const protocol = window.location.protocol;
-      const port = window.location.port ? `:${window.location.port}` : "";
-      window.location.href = isLocalhost
-        ? "/auth/login"
-        : `${protocol}//auth.${baseDomain}${port}/login`;
+      logoutUser();
     }
   };
 
