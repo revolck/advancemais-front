@@ -1,49 +1,20 @@
 // src/theme/sidebar/config/menuConfig.ts
 import { MenuSection } from "../types/sidebar.types";
-import { UserRole } from "@/config/roles";
+import { getRoutePermissions } from "@/config/dashboardRoutes";
 
 /**
  * Permissões compartilhadas por itens administrativos.
  * Definidas como somente leitura para evitar mutações acidentais.
  */
-const ADMIN_PERMISSIONS: readonly UserRole[] = Object.freeze([
-  UserRole.ADMIN,
-  UserRole.MODERADOR,
-]);
-
-/** Permissões exclusivas para o administrador */
-const ADMIN_ONLY_PERMISSIONS: readonly UserRole[] = Object.freeze([
-  UserRole.ADMIN,
-]);
-
-/** Permissões exclusivas para o papel pedagógico */
-const PEDAGOGICO_PERMISSIONS: readonly UserRole[] = Object.freeze([
-  UserRole.PEDAGOGICO,
-]);
-
-const EMPRESA_PERMISSIONS: readonly UserRole[] = Object.freeze([
-  UserRole.EMPRESA,
-]);
-
-const RECRUTADOR_PERMISSIONS: readonly UserRole[] = Object.freeze([
-  UserRole.RECRUTADOR,
-]);
-
-const PROFESSOR_PERMISSIONS: readonly UserRole[] = Object.freeze([
-  UserRole.PROFESSOR,
-]);
-
-const ALUNO_PERMISSIONS: readonly UserRole[] = Object.freeze([
-  UserRole.ALUNO_CANDIDATO,
-]);
-
-const PSICOLOGO_PERMISSIONS: readonly UserRole[] = Object.freeze([
-  UserRole.PSICOLOGO,
-]);
-
-const FINANCEIRO_PERMISSIONS: readonly UserRole[] = Object.freeze([
-  UserRole.FINANCEIRO,
-]);
+const ADMIN_PERMISSIONS = getRoutePermissions("/admin");
+const ADMIN_ONLY_PERMISSIONS = getRoutePermissions("/admin/financeiro");
+const PEDAGOGICO_PERMISSIONS = getRoutePermissions("/pedagogico");
+const EMPRESA_PERMISSIONS = getRoutePermissions("/empresa");
+const RECRUTADOR_PERMISSIONS = getRoutePermissions("/recrutador");
+const PROFESSOR_PERMISSIONS = getRoutePermissions("/professor");
+const ALUNO_PERMISSIONS = getRoutePermissions("/aluno");
+const PSICOLOGO_PERMISSIONS = getRoutePermissions("/psicologo");
+const FINANCEIRO_PERMISSIONS = getRoutePermissions("/financeiro");
 
 /**
  * Congela recursivamente um objeto, garantindo sua imutabilidade.
