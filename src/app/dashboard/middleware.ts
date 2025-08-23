@@ -1,28 +1,7 @@
 // src/app/dashboard/middleware.ts
 import { NextRequest, NextResponse } from "next/server";
 import { UserRole } from "@/config/roles";
-
-// Lista de módulos disponíveis
-const SYSTEM_MODULES = [
-  "overview",
-  "beneficiaries",
-  "projects",
-  "users",
-  "settings",
-];
-
-// Matriz de permissões por função
-const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
-  [UserRole.ADMIN]: [...SYSTEM_MODULES],
-  [UserRole.MODERADOR]: [],
-  [UserRole.FINANCEIRO]: [],
-  [UserRole.PROFESSOR]: [],
-  [UserRole.EMPRESA]: [],
-  [UserRole.PEDAGOGICO]: [],
-  [UserRole.RECRUTADOR]: [],
-  [UserRole.PSICOLOGO]: [],
-  [UserRole.ALUNO_CANDIDATO]: [],
-};
+import { canAccessRoute } from "@/config/dashboardRoutes";
 
 export function dashboardMiddleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -57,31 +36,19 @@ export function dashboardMiddleware(request: NextRequest) {
     return NextResponse.redirect(authUrl);
   }
 
-  // Se estamos na raiz do app, redirecionar para analytics
+  // Se estamos na raiz do app, redirecionar para visão geral
   if (pathname === "/") {
-    return NextResponse.rewrite(new URL("/dashboard/overview", request.url));
+    return NextResponse.rewrite(new URL("/admin/overview", request.url));
   }
 
-  // Extrair o módulo solicitado da URL
-  let requestedModule = pathname.split("/")[1];
+  // Verificação de acesso baseado em função
+  const userRole =
+    (request.cookies.get("user_role")?.value as UserRole) ||
+    UserRole.ALUNO_CANDIDATO;
 
-  // Verificar se temos um módulo válido
-  if (requestedModule && SYSTEM_MODULES.includes(requestedModule)) {
-    // Verificação de acesso baseado em função
-    const userRole =
-      (request.cookies.get("user_role")?.value as UserRole) ||
-      UserRole.ALUNO_CANDIDATO;
-    const allowedModules = ROLE_PERMISSIONS[userRole] || [];
-
-    // Se não tem permissão para o módulo
-    if (!allowedModules.includes(requestedModule)) {
-      return NextResponse.redirect(new URL("/unauthorized", request.url));
-    }
-
-    // Remapear para o caminho correto no dashboard
-    return NextResponse.rewrite(
-      new URL(`/dashboard/${requestedModule}`, request.url)
-    );
+  if (!canAccessRoute(pathname, userRole)) {
+    const url = new URL("/?denied=1", request.url);
+    return NextResponse.redirect(url);
   }
 
   // Configurações de desenvolvimento

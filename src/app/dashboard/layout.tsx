@@ -1,8 +1,10 @@
 "use client";
 
 import { ReactNode, useEffect, useState } from "react";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { DashboardSidebar, DashboardHeader } from "@/theme";
+import { toastCustom } from "@/components/ui/custom/toast/CustomToast";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -19,6 +21,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [mounted, setMounted] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const router = useRouter();
 
   /**
    * Alterna o estado de colapso do sidebar
@@ -31,9 +36,19 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     }
   }
 
-  // Efeito para manipulação do estado inicial
+  // Efeito para manipulação do estado inicial e notificações
   useEffect(() => {
     setMounted(true);
+
+    if (searchParams.get("denied")) {
+      toastCustom.error("Acesso negado");
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete("denied");
+      const query = params.toString();
+      router.replace(query ? `${pathname}?${query}` : pathname, {
+        scroll: false,
+      });
+    }
 
     // Reset collapsed state when switching to mobile
     if (isMobileDevice && isCollapsed) {
@@ -51,7 +66,14 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     return () => {
       document.body.style.overflow = "";
     };
-  }, [isMobileDevice, isCollapsed, isMobileMenuOpen]);
+  }, [
+    isMobileDevice,
+    isCollapsed,
+    isMobileMenuOpen,
+    searchParams,
+    pathname,
+    router,
+  ]);
 
   // Evita problemas de hidratação SSR
   if (!mounted) {

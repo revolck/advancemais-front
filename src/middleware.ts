@@ -25,7 +25,6 @@ const SYSTEM_CONFIG = {
     "/projects",
     "/users",
     "/settings",
-    "/unauthorized",
   ],
 
   // Rotas que pertencem ao website
