@@ -1,4 +1,5 @@
 import { buildApiUrl, env, ApiFallback } from "@/lib/env";
+import { logoutUser } from "@/lib/auth";
 
 interface FetchOptions<T> {
   init?: RequestInit;
@@ -49,7 +50,7 @@ export async function apiFetch<T = unknown>(
   }
 
   // Executa request com retry e timeout
-  let lastError: Error;
+  let lastError: Error | null = null;
 
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
@@ -88,6 +89,9 @@ export async function apiFetch<T = unknown>(
 
         const errorObj = new Error(errorMessage);
         (errorObj as any).status = res.status;
+        if (res.status === 401) {
+          logoutUser();
+        }
         throw errorObj;
       }
 
@@ -112,12 +116,19 @@ export async function apiFetch<T = unknown>(
       lastError = error as Error;
       console.warn(`⚠️ API Error [${attempt}/${retries}]:`, error);
 
+      if ((error as any).status === 401) {
+        break;
+      }
+
       // Aguarda antes do próximo retry (backoff exponencial)
       if (attempt < retries) {
         const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
         await new Promise((resolve) => setTimeout(resolve, delay));
       }
     }
+  }
+  if (lastError && (lastError as any)?.status === 401) {
+    throw lastError;
   }
 
   // Se chegou aqui, todas as tentativas falharam
