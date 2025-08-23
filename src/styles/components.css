@@ -97,4 +97,60 @@
     transform: scale(1) translateY(0);
   }
 }
+/* ===================================== */
+/* DASHBOARD WEBSITE FEATURES STYLES */
+/* ===================================== */
 
+.dashboard-website-card {
+  position: relative;
+  transition: all 0.3s ease-in-out;
+  background-color: #fff;
+  border: 1px solid #ececec;
+}
+
+.dashboard-website-card:hover {
+  transform: translateY(-5px) scale(1.05);
+  background-color: #dc2626; /* var(--secondary-color) */
+  color: #fff;
+}
+
+/* Imagem principal */
+.dashboard-website-card-image {
+  transition: opacity 0.3s ease-in-out;
+  z-index: 10;
+}
+
+/* Imagem de hover, caso exista */
+.dashboard-website-card-image-hover {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: none;
+  transition: opacity 0.3s ease-in-out;
+  opacity: 0;
+  z-index: 20;
+}
+
+/* Some a imagem normal no hover e mostra a de hover */
+.dashboard-website-card:hover .dashboard-website-card-image {
+  opacity: 0;
+}
+
+.dashboard-website-card:hover .dashboard-website-card-image-hover {
+  display: block;
+  opacity: 1;
+}
+
+/* Responsividade para mobile */
+@media (max-width: 768px) {
+  .dashboard-website-card {
+    transform: none;
+    transition: background-color 0.3s ease-in-out;
+  }
+
+  .dashboard-website-card:hover {
+    transform: none;
+  }
+}
