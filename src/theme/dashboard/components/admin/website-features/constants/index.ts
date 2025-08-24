@@ -6,7 +6,7 @@ export const DEFAULT_WEBSITE_FEATURES: WebsiteFeature[] = [
     title: "Página Inicial",
     description:
       "Gerencie os textos, botões e imagens dos components dedicados a página inicial.",
-    link: "/dashboard/admin/website/home",
+    link: "/admin/website/home",
     imageUrl: "/images/dashboard/cards/homepage_1.webp",
     imageUrlHover: "/images/dashboard/cards/homepage.webp",
   },
@@ -15,7 +15,7 @@ export const DEFAULT_WEBSITE_FEATURES: WebsiteFeature[] = [
     title: "Sobre",
     description:
       "Gerencie os textos, botões e imagens dos components dedicados a página sobre.",
-    link: "/dashboard/admin/website/about",
+    link: "/admin/website/about",
     imageUrl: "/images/dashboard/cards/about_1.webp",
     imageUrlHover: "/images/dashboard/cards/about.webp",
   },
@@ -24,7 +24,7 @@ export const DEFAULT_WEBSITE_FEATURES: WebsiteFeature[] = [
     title: "Cursos",
     description:
       "Gerencie os textos, botões e imagens dos components dedicados a página cursos.",
-    link: "/dashboard/admin/website/courses",
+    link: "/admin/website/courses",
     imageUrl: "/images/dashboard/cards/course_1.webp",
     imageUrlHover: "/images/dashboard/cards/course.webp",
   },
@@ -33,7 +33,7 @@ export const DEFAULT_WEBSITE_FEATURES: WebsiteFeature[] = [
     title: "Recrutamento",
     description:
       "Gerencie os textos, botões e imagens dos components dedicados a página recrutamento.",
-    link: "/dashboard/admin/website/recruitment",
+    link: "/admin/website/recruitment",
     imageUrl: "/images/dashboard/cards/recruitment_1.webp",
     imageUrlHover: "/images/dashboard/cards/recruitment.webp",
   },
@@ -42,7 +42,7 @@ export const DEFAULT_WEBSITE_FEATURES: WebsiteFeature[] = [
     title: "Treinamento",
     description:
       "Gerencie os textos, botões e imagens dos components dedicados a página treinamento.",
-    link: "/dashboard/admin/website/training",
+    link: "/admin/website/training",
     imageUrl: "/images/dashboard/cards/training_1.webp",
     imageUrlHover: "/images/dashboard/cards/training.webp",
   },
@@ -51,7 +51,7 @@ export const DEFAULT_WEBSITE_FEATURES: WebsiteFeature[] = [
     title: "Contato",
     description:
       "Gerencie os textos, botões e imagens dos components dedicados a página contato.",
-    link: "/dashboard/admin/website/contact",
+    link: "/admin/website/contact",
     imageUrl: "/images/dashboard/cards/contact_1.webp",
     imageUrlHover: "/images/dashboard/cards/contact.webp",
   },
@@ -60,7 +60,7 @@ export const DEFAULT_WEBSITE_FEATURES: WebsiteFeature[] = [
     title: "Configurações Gerais",
     description:
       "Modifique informações de metadatas, favicons, titulo do site, redes sociais entre outros nas configurações gerais.",
-    link: "/dashboard/admin/website/settings",
+    link: "/admin/website/settings",
     imageUrl: "/images/dashboard/cards/settings_1.webp",
     imageUrlHover: "/images/dashboard/cards/settings.webp",
   },
