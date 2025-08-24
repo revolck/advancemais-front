@@ -10,6 +10,7 @@ export const verticalTabsVariants = cva(
       variant: {
         default: "",
         compact: "gap-2",
+        card: "gap-4",
         spacious: "gap-6",
       },
       size: {
@@ -41,6 +42,7 @@ export const tabsListVariants = cva(
         default: "flex-col gap-1 rounded-none px-1 py-0 text-foreground",
         compact: "flex-col gap-0.5 px-1 py-0 text-foreground",
         spacious: "flex-col gap-2 px-2 py-2 text-foreground",
+        card: "flex-col gap-1 bg-white rounded-lg p-3 shadow-sm border border-border",
       },
       tabsWidth: {
         auto: "w-auto",
@@ -68,6 +70,7 @@ export const tabsTriggerVariants = cva(
         default: "after:absolute after:inset-y-0 after:start-0 after:-ms-1 after:w-0.5 hover:bg-accent hover:text-foreground data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:after:bg-primary data-[state=active]:hover:bg-accent",
         compact: "after:absolute after:inset-y-0 after:start-0 after:-ms-1 after:w-0.5 hover:bg-accent hover:text-foreground data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:after:bg-primary data-[state=active]:hover:bg-accent",
         spacious: "after:absolute after:inset-y-0 after:start-0 after:-ms-1 after:w-0.5 hover:bg-accent hover:text-foreground data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:after:bg-primary data-[state=active]:hover:bg-accent",
+        card: "rounded-md px-3 py-2.5 text-muted-foreground hover:text-foreground hover:bg-muted/50 data-[state=active]:text-foreground data-[state=active]:bg-muted data-[state=active]:font-semibold",
       },
       size: {
         sm: "px-2 py-1.5 text-xs",

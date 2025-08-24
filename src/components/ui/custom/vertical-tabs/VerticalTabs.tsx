@@ -118,7 +118,20 @@ export function VerticalTabs({
               )}
             </div>
             
-            {/* Indicador customizado para estilos especiais */}
+            {/* Indicador customizado para variante card */}
+            {showIndicator && variant === "card" && (
+              <motion.div
+                className="absolute left-1 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-primary rounded-full"
+                initial={{ opacity: 0, scaleY: 0 }}
+                animate={{ 
+                  opacity: value === item.value ? 1 : 0,
+                  scaleY: value === item.value ? 1 : 0
+                }}
+                transition={{ duration: 0.2 }}
+              />
+            )}
+            
+            {/* Indicador customizado para variante spacious */}
             {showIndicator && variant === "spacious" && (
               <motion.div
                 className="absolute left-1 top-1/2 -translate-y-1/2 w-1 h-4 bg-primary rounded-full"
@@ -204,7 +217,7 @@ export const VerticalTabTrigger = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof TabsPrimitive.Trigger> & {
     icon?: string;
     badge?: string | number;
-    variant?: "default" | "compact" | "spacious";
+    variant?: "default" | "compact" | "spacious" | "card";
     size?: "sm" | "md" | "lg";
   }
 >(({ className, children, icon, badge, variant = "default", size = "md", ...props }, ref) => (
