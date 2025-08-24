@@ -11,16 +11,16 @@ interface RouteRule {
 
 /** Lista imutável de regras de acesso do dashboard */
 export const DASHBOARD_ROUTE_RULES: readonly RouteRule[] = Object.freeze([
-  { pattern: "/admin/financeiro/:path*", roles: [UserRole.ADMIN] },
-  { pattern: "/admin/audit/:path*", roles: [UserRole.ADMIN] },
-  { pattern: "/admin/:path*", roles: [UserRole.ADMIN, UserRole.MODERADOR] },
-  { pattern: "/pedagogico/:path*", roles: [UserRole.PEDAGOGICO] },
-  { pattern: "/empresa/:path*", roles: [UserRole.EMPRESA] },
-  { pattern: "/recrutador/:path*", roles: [UserRole.RECRUTADOR] },
-  { pattern: "/professor/:path*", roles: [UserRole.PROFESSOR] },
-  { pattern: "/aluno/:path*", roles: [UserRole.ALUNO_CANDIDATO] },
-  { pattern: "/psicologo/:path*", roles: [UserRole.PSICOLOGO] },
-  { pattern: "/financeiro/:path*", roles: [UserRole.FINANCEIRO] },
+  { pattern: "/admin/financeiro{/*path}", roles: [UserRole.ADMIN] },
+  { pattern: "/admin/audit{/*path}", roles: [UserRole.ADMIN] },
+  { pattern: "/admin{/*path}", roles: [UserRole.ADMIN, UserRole.MODERADOR] },
+  { pattern: "/pedagogico{/*path}", roles: [UserRole.PEDAGOGICO] },
+  { pattern: "/empresa{/*path}", roles: [UserRole.EMPRESA] },
+  { pattern: "/recrutador{/*path}", roles: [UserRole.RECRUTADOR] },
+  { pattern: "/professor{/*path}", roles: [UserRole.PROFESSOR] },
+  { pattern: "/aluno{/*path}", roles: [UserRole.ALUNO_CANDIDATO] },
+  { pattern: "/psicologo{/*path}", roles: [UserRole.PSICOLOGO] },
+  { pattern: "/financeiro{/*path}", roles: [UserRole.FINANCEIRO] },
 ]);
 
 const matchers = DASHBOARD_ROUTE_RULES.map((rule) => ({
