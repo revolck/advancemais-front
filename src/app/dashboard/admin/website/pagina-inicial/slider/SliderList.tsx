@@ -324,8 +324,8 @@ export default function SliderList() {
           <ModalBody className="space-y-4">
             <FormatSelector value={modalFormat} onChange={setModalFormat} />
             <div className="space-y-2">
-              <Label htmlFor="imagem">Upload do banner</Label>
               <InputCustom
+                label="Upload do banner"
                 id="imagem"
                 type="file"
                 onChange={(e) =>
@@ -334,8 +334,8 @@ export default function SliderList() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="link">Link do banner (opcional)</Label>
               <InputCustom
+                label="Link do banner (opcional)"
                 id="link"
                 value={link}
                 onChange={(e) => setLink(e.target.value)}
