@@ -18,3 +18,6 @@ export * from "./checkbox";
 
 // Offline
 export * from "./offline";
+
+// Vertical Tabs
+export * from "./vertical-tabs";
