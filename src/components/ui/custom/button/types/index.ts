@@ -1,7 +1,7 @@
 import { VariantProps } from "class-variance-authority";
 import type { HTMLMotionProps } from "framer-motion";
-import { IconName } from "../Icons";
-import { buttonCustomVariants } from "./variants";
+import { IconName } from "../../Icons";
+import { buttonCustomVariants } from "../variants";
 
 /**
  * Props para o componente ButtonCustom

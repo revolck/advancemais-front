@@ -21,3 +21,6 @@ export * from "./offline";
 
 // Vertical Tabs
 export * from "./vertical-tabs";
+
+// File Upload
+export * from "./file-upload";

@@ -1,5 +1,5 @@
 import { VariantProps } from "class-variance-authority";
-import { checkboxCustomVariants } from "./variants";
+import { checkboxCustomVariants } from "../variants";
 import * as CheckboxPrimitive from "@radix-ui/react-checkbox";
 
 /**
