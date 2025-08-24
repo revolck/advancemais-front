@@ -4,6 +4,7 @@ import * as React from "react";
 import * as TabsPrimitive from "@radix-ui/react-tabs";
 
 import { cn } from "@/lib/utils";
+import { Icon } from "../Icons";
 import type { VerticalTabsProps } from "./types";
 
 /**
@@ -55,7 +56,8 @@ export function VerticalTabs({
               triggerClassName
             )}
           >
-            <div className="py-1.5 px-3 rounded-lg duration-150 group-hover:text-primary group-hover:bg-muted font-medium">
+            <div className="flex items-center gap-2 py-1.5 px-3 rounded-lg duration-150 group-hover:text-primary group-hover:bg-muted font-medium">
+              {item.icon ? <Icon name={item.icon} className="size-4" /> : null}
               {item.label}
             </div>
           </TabsPrimitive.Trigger>

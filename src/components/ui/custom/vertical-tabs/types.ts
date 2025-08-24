@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import type { IconName } from "../Icons";
 
 /**
  * Item utilizado pelo componente VerticalTabs.
@@ -8,6 +9,8 @@ export interface VerticalTabItem {
   value: string;
   /** Rótulo exibido na aba. */
   label: string;
+  /** Ícone exibido antes do rótulo. */
+  icon?: IconName;
   /** Conteúdo a ser renderizado quando a aba estiver ativa. */
   content: ReactNode;
 }
