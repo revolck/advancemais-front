@@ -190,8 +190,72 @@ const rawMenuSections: MenuSection[] = [
       {
         icon: "Settings",
         label: "Configurações",
-        route: "/admin/settings",
         permissions: ADMIN_PERMISSIONS,
+        submenu: [
+          {
+            icon: "Globe",
+            label: "Website",
+            route: "/admin/website",
+            permissions: ADMIN_PERMISSIONS,
+            submenu: [
+              {
+                icon: null,
+                label: "Página Inicial",
+                route: "/admin/website/home",
+                permissions: ADMIN_PERMISSIONS,
+              },
+              {
+                icon: null,
+                label: "Sobre",
+                route: "/admin/website/about",
+                permissions: ADMIN_PERMISSIONS,
+              },
+              {
+                icon: null,
+                label: "Cursos",
+                route: "/admin/website/courses",
+                permissions: ADMIN_PERMISSIONS,
+              },
+              {
+                icon: null,
+                label: "Recrutamento",
+                route: "/admin/website/recruitment",
+                permissions: ADMIN_PERMISSIONS,
+              },
+              {
+                icon: null,
+                label: "Treinamento",
+                route: "/admin/website/training",
+                permissions: ADMIN_PERMISSIONS,
+              },
+              {
+                icon: null,
+                label: "Contato",
+                route: "/admin/website/contact",
+                permissions: ADMIN_PERMISSIONS,
+              },
+              {
+                icon: null,
+                label: "Geral",
+                route: "/admin/website/settings",
+                permissions: ADMIN_PERMISSIONS,
+              },
+            ],
+          },
+          {
+            icon: "LayoutDashboard",
+            label: "Dashboard",
+            permissions: ADMIN_PERMISSIONS,
+            submenu: [
+              {
+                icon: null,
+                label: "Planos empresarial",
+                route: "/admin/dashboard/enterprise-plans",
+                permissions: ADMIN_PERMISSIONS,
+              },
+            ],
+          },
+        ],
       },
     ],
   },
