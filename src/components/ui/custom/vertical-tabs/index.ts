@@ -1,2 +1,17 @@
-export { VerticalTabs } from "./VerticalTabs";
-export type { VerticalTabsProps, VerticalTabItem } from "./types";
+export { 
+  VerticalTabs,
+  VerticalTabTrigger,
+  VerticalTabContent
+} from "./VerticalTabs";
+
+export { 
+  verticalTabsVariants,
+  tabsListVariants,
+  tabsTriggerVariants,
+  tabsContentVariants
+} from "./variants";
+
+export type { 
+  VerticalTabsProps, 
+  VerticalTabItem 
+} from "./types";
