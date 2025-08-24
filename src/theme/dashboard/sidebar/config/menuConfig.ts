@@ -201,7 +201,7 @@ const rawMenuSections: MenuSection[] = [
               {
                 icon: null,
                 label: "Página Inicial",
-                route: "/admin/website/home",
+                route: "/admin/website/pagina-inicial",
                 permissions: ADMIN_PERMISSIONS,
               },
               {
