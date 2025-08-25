@@ -1,4 +1,3 @@
-import { DashboardHeader } from '@/components/layout';
 import { VerticalTabs, type VerticalTabItem } from "@/components/ui/custom";
 import SliderList from "./slider/SliderList";
 
@@ -61,14 +60,19 @@ export default function PaginaInicialPage() {
   ];
 
   return (
-    <div className='bg-white rounded-3xl p-5'>
+    <div className="bg-white rounded-3xl p-5 h-full min-h-[calc(92vh-8rem)] flex flex-col">
       {/* Conteúdo principal com VerticalTabs */}
-      <main className="flex-1">
+      <div className="flex-1 min-h-0">
         <VerticalTabs 
           items={items} 
           defaultValue="slider"
+          classNames={{
+            root: "h-full",
+            contentWrapper: "h-full",
+            tabsContent: "h-full overflow-auto"
+          }}
         />
-      </main>
+      </div>
     </div>
   );
 }

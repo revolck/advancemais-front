@@ -82,7 +82,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   }
 
   return (
-    <div className="flex h-screen w-full">
+    <div className="flex h-screen">
       {/* Sidebar principal do dashboard */}
       <DashboardSidebar
         isMobileMenuOpen={isMobileMenuOpen}
@@ -91,13 +91,13 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       />
 
       {/* Container principal de conteúdo */}
-      <div className="w-full flex flex-1 flex-col transition-all duration-300 ease-in-out bg-white">
+      <div className="flex flex-1 flex-col bg-white transition-all duration-300 ease-in-out">
         {/* Header do Dashboard */}
         <DashboardHeader toggleSidebar={toggleSidebar} isCollapsed={isCollapsed} />
 
         {/* Conteúdo principal */}
-        <main className="flex-1 overflow-auto p-10 bg-gray-100">
-          <div className="min-h-screen">
+        <main className="flex-1 overflow-auto bg-gray-100 p-10">
+          <div className="min-h-full">
             <Breadcrumb/>
             {children}
           </div>

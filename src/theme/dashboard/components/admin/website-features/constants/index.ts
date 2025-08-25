@@ -6,7 +6,7 @@ export const DEFAULT_WEBSITE_FEATURES: WebsiteFeature[] = [
     title: "Página Inicial",
     description:
       "Gerencie os textos, botões e imagens dos components dedicados a página inicial.",
-    link: "/admin/website/pagina-inicial",
+    link: "/config/website/pagina-inicial",
     imageUrl: "/images/dashboard/cards/homepage_1.webp",
     imageUrlHover: "/images/dashboard/cards/homepage.webp",
   },
