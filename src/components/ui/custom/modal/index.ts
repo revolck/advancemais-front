@@ -12,6 +12,7 @@ export {
   ModalOverlay,
   useModalContext,
 } from "./ModalCustom";
+export { ModalCustom as default } from "./ModalCustom";
 
 export type {
   ModalProps,
