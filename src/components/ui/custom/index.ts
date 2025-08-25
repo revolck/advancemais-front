@@ -24,3 +24,6 @@ export * from "./vertical-tabs";
 
 // File Upload
 export * from "./file-upload";
+
+// Slider List
+export * from "./slider-list";
