@@ -7,7 +7,6 @@ import {
   FileUpload,
   type FileUploadItem,
 } from "@/components/ui/custom";
-import { routes } from "@/api/routes";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toastCustom } from "@/components/ui/custom/toast";
@@ -105,8 +104,8 @@ export default function SobreForm() {
     formData.append("descricao", description);
 
     const file = files[0];
-    if (file?.uploadedUrl) {
-      formData.append("imagemUrl", file.uploadedUrl);
+    if (file?.file) {
+      formData.append("imagem", file.file);
     } else if (content.imagemUrl) {
       formData.append("imagemUrl", content.imagemUrl);
     }
@@ -158,7 +157,7 @@ export default function SobreForm() {
             maxSize: 5 * 1024 * 1024,
             acceptedTypes: ["image/*"],
           }}
-          uploadUrl={routes.upload.slider()}
+          onUpload={async (_file) => ({})}
           onFilesChange={handleFilesChange}
           showProgress={false}
         />
