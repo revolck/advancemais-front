@@ -5,6 +5,7 @@ import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { DashboardSidebar, DashboardHeader } from "@/theme";
 import { toastCustom } from "@/components/ui/custom/toast/CustomToast";
+import { DashboardHeader as Breadcrumb } from '@/components/layout';
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -81,7 +82,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   }
 
   return (
-    <div className="flex h-screen">
+    <div className="flex h-screen w-full">
       {/* Sidebar principal do dashboard */}
       <DashboardSidebar
         isMobileMenuOpen={isMobileMenuOpen}
@@ -95,8 +96,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         <DashboardHeader toggleSidebar={toggleSidebar} isCollapsed={isCollapsed} />
 
         {/* Conteúdo principal */}
-        <main className="flex-1 overflow-auto p-8 bg-white">
-          {children}
+        <main className="flex-1 overflow-auto p-10 bg-gray-100">
+          <div className="min-h-screen">
+            <Breadcrumb/>
+            {children}
+          </div>
         </main>
       </div>
     </div>
