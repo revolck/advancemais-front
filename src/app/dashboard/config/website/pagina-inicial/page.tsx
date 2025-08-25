@@ -11,6 +11,7 @@ import {
   ButtonCustom,
   Icon,
 } from "@/components/ui/custom";
+import { cn } from "@/lib/utils";
 
 /**
  * Página de configuração da página inicial

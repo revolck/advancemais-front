@@ -1,5 +1,16 @@
 // Icons
-export { Icon, type IconName } from "./Icons";
+export { Icon, Icons, type IconName } from "./Icons";
+
+// Card
+export {
+  Card,
+  CardHeader,
+  CardFooter,
+  CardTitle,
+  CardAction,
+  CardDescription,
+  CardContent,
+} from "../card";
 
 // Button
 export * from "./button";
@@ -23,7 +34,16 @@ export * from "./offline";
 export * from "./vertical-tabs";
 
 // File Upload
-export * from "./file-upload";
+export { FileUpload, type FileUploadItem } from "./file-upload";
 
 // Slider List
 export * from "./slider-list";
+
+// Avatar
+export * from "./avatar";
+
+// Loader
+export * from "./loader";
+
+// Image Not Found
+export * from "./image-not-found";

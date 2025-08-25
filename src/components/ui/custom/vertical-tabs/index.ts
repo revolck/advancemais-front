@@ -1,8 +1,9 @@
-export { 
+export {
   VerticalTabs,
   VerticalTabTrigger,
   VerticalTabContent
 } from "./VerticalTabs";
+export { VerticalTabs as default } from "./VerticalTabs";
 
 export { 
   verticalTabsVariants,

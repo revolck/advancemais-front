@@ -1,5 +1,6 @@
 // Componente principal
 export { AvatarCustom, avatarCustomVariants } from "./AvatarCustom";
+export { AvatarCustom as default } from "./AvatarCustom";
 
 // Utilitários
 export { getInitials, getAvatarColor } from "./utils";
