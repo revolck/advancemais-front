@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import * as TabsPrimitive from "@radix-ui/react-tabs";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { ChevronDown } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -11,13 +11,22 @@ import {
   verticalTabsVariants, 
   tabsListVariants, 
   tabsTriggerVariants, 
-  tabsContentVariants 
+  tabsContentVariants,
+  tabsIndicatorVariants,
+  tabsIconVariants,
+  tabsMobileSelectVariants
 } from "./variants";
 import type { VerticalTabsProps, VerticalTabItem } from "./types";
 
 /**
- * Componente de abas verticais responsivo e moderno.
- * Suporta múltiplas variantes, animações e funcionalidades avançadas.
+ * Componente VerticalTabs - Design Apple Minimalista
+ * 
+ * Design focado em:
+ * - Clareza visual e hierarquia
+ * - Estados intuitivos e sutis
+ * - Transições suaves SEM movimento vertical
+ * - Acessibilidade completa
+ * - Responsividade elegante
  */
 export function VerticalTabs({
   items,
@@ -38,7 +47,7 @@ export function VerticalTabs({
     defaultValue ?? controlledValue ?? items[0]?.value ?? ""
   );
 
-  // Determina se é controlado ou não controlado
+  // Estado controlado vs não controlado
   const isControlled = controlledValue !== undefined;
   const value = isControlled ? controlledValue : internalValue;
 
@@ -49,15 +58,16 @@ export function VerticalTabs({
     onValueChange?.(val);
   }, [isControlled, onValueChange]);
 
-  // Encontra o item ativo
-  const activeItem = items.find(item => item.value === value);
-
-  // Animações para o conteúdo
-  const contentAnimation = {
-    initial: { opacity: 0, y: 10 },
-    animate: { opacity: 1, y: 0 },
-    exit: { opacity: 0, y: -10 },
-    transition: { duration: 0.2, ease: [0.16, 1, 0.3, 1] as const }
+  // Map variant to content variant
+  const getContentVariant = (): "default" | "minimal" | "spacious" | "bordered" | "card" => {
+    switch(variant) {
+      case "minimal":
+        return "minimal";
+      case "spacious": 
+        return "spacious";
+      default:
+        return "default";
+    }
   };
 
   return (
@@ -71,9 +81,9 @@ export function VerticalTabs({
         className
       )}
     >
-      {/* Lista de abas - Desktop */}
+      {/* Navigation Sidebar - Desktop */}
       <TabsPrimitive.List
-        aria-label="Vertical tabs"
+        aria-label="Navigation tabs"
         className={cn(
           "hidden sm:flex",
           tabsListVariants({ variant, tabsWidth }),
@@ -90,78 +100,64 @@ export function VerticalTabs({
               classNames.tabsTrigger
             )}
           >
-            <div className="flex items-center gap-2 w-full">
+            {/* Indicador Visual Sutil */}
+            {showIndicator && (
+              <motion.div
+                className={cn(
+                  tabsIndicatorVariants({ variant, size }),
+                  classNames.indicator
+                )}
+                layout
+                transition={{ duration: 0.3, ease: [0.32, 0.72, 0, 1] }}
+              />
+            )}
+
+            {/* Conteúdo da Aba */}
+            <div className="flex items-center gap-3 w-full relative z-10">
               {/* Ícone */}
               {item.icon && (
                 <Icon 
                   name={item.icon} 
                   className={cn(
-                    "-ms-0.5 opacity-60",
-                    size === "sm" ? "size-3.5" : size === "lg" ? "size-5" : "size-4"
-                  )} 
+                    tabsIconVariants({ variant, size })
+                  )}
                 />
               )}
-              
+
               {/* Label */}
-              <span className="flex-1 text-left">{item.label}</span>
-              
-              {/* Badge */}
+              <span className="flex-1 truncate">
+                {item.label}
+              </span>
+
+              {/* Badge (opcional) */}
               {item.badge && (
                 <span className={cn(
-                  "inline-flex items-center justify-center rounded-full bg-primary/10 text-primary font-medium",
-                  size === "sm" ? "text-xs px-1.5 py-0.5 min-w-[18px] h-[18px]" : 
-                  size === "lg" ? "text-sm px-2 py-0.5 min-w-[22px] h-[22px]" : 
-                  "text-xs px-1.5 py-0.5 min-w-[20px] h-[20px]"
+                  "px-2 py-0.5 text-xs rounded-full font-medium",
+                  "bg-gray-100 text-gray-600 transition-all duration-300",
+                  "group-data-[state=active]:bg-blue-100 group-data-[state=active]:text-blue-700",
+                  variant === "spacious" && "group-data-[state=active]:bg-white/20 group-data-[state=active]:text-white"
                 )}>
                   {item.badge}
                 </span>
               )}
             </div>
-            
-            {/* Indicador customizado para variante card */}
-            {showIndicator && variant === "card" && (
-              <motion.div
-                className="absolute left-1 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-primary rounded-full"
-                initial={{ opacity: 0, scaleY: 0 }}
-                animate={{ 
-                  opacity: value === item.value ? 1 : 0,
-                  scaleY: value === item.value ? 1 : 0
-                }}
-                transition={{ duration: 0.2 }}
-              />
-            )}
-            
-            {/* Indicador customizado para variante spacious */}
-            {showIndicator && variant === "spacious" && (
-              <motion.div
-                className="absolute left-1 top-1/2 -translate-y-1/2 w-1 h-4 bg-primary rounded-full"
-                initial={{ opacity: 0, scaleY: 0 }}
-                animate={{ 
-                  opacity: value === item.value ? 1 : 0,
-                  scaleY: value === item.value ? 1 : 0
-                }}
-                transition={{ duration: 0.2 }}
-              />
-            )}
           </TabsPrimitive.Trigger>
         ))}
       </TabsPrimitive.List>
 
-      {/* Select para mobile */}
+      {/* Mobile Select Dropdown */}
       {showMobileSelect && (
         <div className={cn(
-          "relative text-muted-foreground sm:hidden mb-4",
+          "relative sm:hidden mb-6",
           classNames.mobileSelect
         )}>
-          <ChevronDown className="pointer-events-none w-4 h-4 absolute right-3 inset-y-0 my-auto" />
           <select
             value={value}
             onChange={(e) => handleChange(e.target.value)}
             className={cn(
-              "py-2.5 px-3 pr-8 w-full bg-background appearance-none outline-none border border-border rounded-lg shadow-sm focus:border-primary focus:ring-2 focus:ring-primary/20 text-sm transition-colors",
-              size === "sm" && "py-2 text-xs",
-              size === "lg" && "py-3 text-base"
+              tabsMobileSelectVariants({ size })
             )}
+            aria-label="Select tab"
           >
             {items.map((item) => (
               <option key={item.value} value={item.value} disabled={item.disabled}>
@@ -169,123 +165,117 @@ export function VerticalTabs({
               </option>
             ))}
           </select>
+          
+          {/* Chevron Icon */}
+          <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
         </div>
       )}
 
-      {/* Wrapper do conteúdo */}
+      {/* Content Area - SEM ANIMAÇÃO VERTICAL */}
       <div className={cn(
-        tabsContentVariants({ variant: variant === "default" ? "default" : "plain" }),
+        tabsContentVariants({ variant: getContentVariant(), padding: "md" }),
         classNames.contentWrapper
       )}>
-        <AnimatePresence mode="wait">
-          {items.map((item) => (
-            <TabsPrimitive.Content
-              key={item.value}
-              value={item.value}
-              className={cn(
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-                classNames.tabsContent
-              )}
-              forceMount={withAnimation ? true : undefined}
-            >
-              {withAnimation ? (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] as const }}
-                  style={{ display: value === item.value ? "block" : "none" }}
-                >
-                  {item.content}
-                </motion.div>
-              ) : (
-                value === item.value && item.content
-              )}
-            </TabsPrimitive.Content>
-          ))}
-        </AnimatePresence>
+        {items.map((item) => (
+          <TabsPrimitive.Content
+            key={item.value}
+            value={item.value}
+            className={cn(
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/30 focus-visible:ring-offset-4",
+              classNames.tabsContent
+            )}
+          >
+            {withAnimation ? (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: value === item.value ? 1 : 0 }}
+                transition={{ 
+                  duration: 0.2, 
+                  ease: [0.32, 0.72, 0, 1] as const
+                }}
+                className="h-full"
+                style={{ 
+                  display: value === item.value ? 'block' : 'none' 
+                }}
+              >
+                {item.content}
+              </motion.div>
+            ) : (
+              <div 
+                className="h-full"
+                style={{ 
+                  display: value === item.value ? 'block' : 'none' 
+                }}
+              >
+                {item.content}
+              </div>
+            )}
+          </TabsPrimitive.Content>
+        ))}
       </div>
     </TabsPrimitive.Root>
   );
 }
 
-/**
- * Componente de item individual para construção manual
- */
-export const VerticalTabTrigger = React.forwardRef<
-  React.ElementRef<typeof TabsPrimitive.Trigger>,
-  React.ComponentPropsWithoutRef<typeof TabsPrimitive.Trigger> & {
-    icon?: string;
-    badge?: string | number;
-    variant?: "default" | "compact" | "spacious" | "card";
-    size?: "sm" | "md" | "lg";
-  }
->(({ className, children, icon, badge, variant = "default", size = "md", ...props }, ref) => (
-  <TabsPrimitive.Trigger
-    ref={ref}
-    className={cn(
-      tabsTriggerVariants({ variant, size }),
-      className
-    )}
-    {...props}
-  >
-    <div className="flex items-center gap-2 w-full">
-      {icon && (
-        <Icon 
-          name={icon as any} 
-          className={cn(
-            "-ms-0.5 opacity-60",
-            size === "sm" ? "size-3.5" : size === "lg" ? "size-5" : "size-4"
-          )} 
-        />
-      )}
-      <span className="flex-1 text-left">{children}</span>
-      {badge && (
-        <span className={cn(
-          "inline-flex items-center justify-center rounded-full bg-primary/10 text-primary font-medium",
-          size === "sm" ? "text-xs px-1.5 py-0.5 min-w-[18px] h-[18px]" : 
-          size === "lg" ? "text-sm px-2 py-0.5 min-w-[22px] h-[22px]" : 
-          "text-xs px-1.5 py-0.5 min-w-[20px] h-[20px]"
-        )}>
-          {badge}
-        </span>
-      )}
-    </div>
-  </TabsPrimitive.Trigger>
-));
-
-VerticalTabTrigger.displayName = "VerticalTabTrigger";
+// Versão simplificada dos componentes individuais sem forwardRef
+// para evitar problemas de tipagem complexos
 
 /**
- * Componente de conteúdo individual
+ * Componente Trigger individual simplificado
  */
-export const VerticalTabContent = React.forwardRef<
-  React.ElementRef<typeof TabsPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof TabsPrimitive.Content> & {
-    withAnimation?: boolean;
-  }
->(({ className, children, withAnimation = true, ...props }, ref) => (
-  <TabsPrimitive.Content
-    ref={ref}
-    className={cn(
-      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-      className
-    )}
-    {...props}
-  >
-    {withAnimation ? (
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -10 }}
-        transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] as const }}
-      >
-        {children}
-      </motion.div>
-    ) : (
-      children
-    )}
-  </TabsPrimitive.Content>
-));
+export function VerticalTabTrigger({ 
+  className, 
+  variant = "default" as const, 
+  size = "md" as const, 
+  ...props 
+}: React.ComponentProps<typeof TabsPrimitive.Trigger> & {
+  variant?: "default" | "minimal" | "spacious";
+  size?: "sm" | "md" | "lg";
+}) {
+  return (
+    <TabsPrimitive.Trigger
+      className={cn(
+        tabsTriggerVariants({ variant, size }),
+        className
+      )}
+      {...props}
+    />
+  );
+}
 
-VerticalTabContent.displayName = "VerticalTabContent";
+/**
+ * Componente Content individual simplificado
+ */
+export function VerticalTabContent({ 
+  className, 
+  children, 
+  withAnimation = true,
+  ...props 
+}: React.ComponentProps<typeof TabsPrimitive.Content> & {
+  withAnimation?: boolean;
+}) {
+  return (
+    <TabsPrimitive.Content
+      className={cn(
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/30 focus-visible:ring-offset-4",
+        className
+      )}
+      {...props}
+    >
+      {withAnimation ? (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ 
+            duration: 0.2, 
+            ease: [0.32, 0.72, 0, 1] as const
+          }}
+        >
+          {children}
+        </motion.div>
+      ) : (
+        children
+      )}
+    </TabsPrimitive.Content>
+  );
+}

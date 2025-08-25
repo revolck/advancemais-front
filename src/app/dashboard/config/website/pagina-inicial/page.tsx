@@ -60,16 +60,23 @@ export default function PaginaInicialPage() {
   ];
 
   return (
-    <div className="bg-white rounded-3xl p-5 h-full min-h-[calc(92vh-8rem)] flex flex-col">
+    <div className="bg-white rounded-3xl p-5 h-full min-h-[calc(100vh-8rem)] flex flex-col">
       {/* Conteúdo principal com VerticalTabs */}
       <div className="flex-1 min-h-0">
         <VerticalTabs 
           items={items} 
           defaultValue="slider"
+          variant="spacious"
+          size="md"
+          withAnimation={true}
+          showIndicator={true}
+          tabsWidth="md"
           classNames={{
             root: "h-full",
-            contentWrapper: "h-full",
-            tabsContent: "h-full overflow-auto"
+            contentWrapper: "h-full overflow-hidden",
+            tabsContent: "h-full overflow-auto p-8",
+            tabsList: "bg-gray-50/40 rounded-2xl p-2",
+            tabsTrigger: "mb-1"
           }}
         />
       </div>

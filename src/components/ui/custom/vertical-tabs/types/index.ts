@@ -22,7 +22,7 @@ export interface VerticalTabItem {
 }
 
 /**
- * Propriedades do componente VerticalTabs.
+ * Propriedades do componente VerticalTabs - Apple Style Design
  */
 export interface VerticalTabsProps extends VariantProps<typeof verticalTabsVariants> {
   /** Lista de itens que compõem as abas. */
@@ -53,4 +53,26 @@ export interface VerticalTabsProps extends VariantProps<typeof verticalTabsVaria
   };
   /** Callback executado quando o valor da aba ativa muda. */
   onValueChange?: (value: string) => void;
+}
+
+/**
+ * Props específicas para os triggers das abas
+ */
+export interface VerticalTabTriggerProps {
+  variant?: "default" | "minimal" | "spacious";
+  size?: "sm" | "md" | "lg";
+  icon?: IconName;
+  badge?: string | number;
+  className?: string;
+  disabled?: boolean;
+}
+
+/**
+ * Props específicas para o conteúdo das abas  
+ */
+export interface VerticalTabContentProps {
+  variant?: "default" | "minimal" | "spacious" | "bordered" | "card";
+  padding?: "none" | "sm" | "md" | "lg";
+  withAnimation?: boolean;
+  className?: string;
 }

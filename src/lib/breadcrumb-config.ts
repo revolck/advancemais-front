@@ -25,7 +25,7 @@ export const breadcrumbConfig: Record<string, BreadcrumbConfig> = {
     ]
   },
   
-  '/dashboard/config/website/pagina-inicial': {
+  '/config/website/pagina-inicial': {
     title: 'Configuração Página Inicial',
     items: [
       { label: 'Dashboard', href: '/dashboard', icon: 'Home' },
