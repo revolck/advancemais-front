@@ -14,11 +14,13 @@ export interface VerticalTabItem {
   /** Ícone exibido antes do rótulo. */
   icon?: IconName;
   /** Conteúdo a ser renderizado quando a aba estiver ativa. */
-  content: ReactNode;
+  content?: ReactNode;
   /** Se o item está desabilitado */
   disabled?: boolean;
   /** Badge ou contador a ser exibido */
   badge?: string | number;
+  /** Lista de subitens para criação de submenus */
+  submenu?: VerticalTabItem[];
 }
 
 /**
