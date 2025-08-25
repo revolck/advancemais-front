@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useCallback, useMemo } from "react";
+import React, { useState, useRef, useCallback, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Icon } from "../Icons";
@@ -232,13 +232,19 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   const [internalFiles, setInternalFiles] = useState<FileUploadItem[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
   const [showAllFiles, setShowAllFiles] = useState(false);
-  
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dragCountRef = useRef(0);
 
   // Determine if controlled or uncontrolled
   const isControlled = controlledFiles !== undefined;
   const files = isControlled ? controlledFiles : internalFiles;
+
+  const filesRef = useRef<FileUploadItem[]>(files);
+
+  useEffect(() => {
+    filesRef.current = files;
+  }, [files]);
   
   // Merge validation config with defaults
   const validationConfig = useMemo(() => ({
@@ -307,55 +313,66 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   }, []);
 
   // Simulate file upload
-  const simulateUpload = useCallback((fileId: string) => {
-    let progress = 0;
-    const interval = setInterval(() => {
-      progress += Math.random() * 25;
-      
-      if (progress >= 100) {
-        progress = 100;
-        clearInterval(interval);
-        
-        // Simulate success/failure (90% success rate)
-        const isSuccess = Math.random() > 0.1;
-        const newStatus: FileUploadStatus = isSuccess ? "completed" : "failed";
-        
-        updateFiles(files.map(file => 
-          file.id === fileId 
-            ? { 
-                ...file, 
-                status: newStatus, 
-                progress: 100,
-                error: isSuccess ? undefined : DEFAULT_ERROR_MESSAGES.uploadFailed
-              }
-            : file
-        ));
+  const simulateUpload = useCallback(
+    (fileId: string) => {
+      let progress = 0;
+      const interval = setInterval(() => {
+        progress += Math.random() * 25;
 
-        // Trigger callbacks
-        const file = files.find(f => f.id === fileId);
-        if (file) {
-          if (isSuccess) {
-            onUploadComplete?.(file);
-          } else {
-            onUploadError?.(fileId, DEFAULT_ERROR_MESSAGES.uploadFailed);
+        if (progress >= 100) {
+          progress = 100;
+          clearInterval(interval);
+
+          // Simulate success/failure (90% success rate)
+          const isSuccess = Math.random() > 0.1;
+          const newStatus: FileUploadStatus = isSuccess
+            ? "completed"
+            : "failed";
+
+          updateFiles(
+            filesRef.current.map((file) =>
+              file.id === fileId
+                ? {
+                    ...file,
+                    status: newStatus,
+                    progress: 100,
+                    error: isSuccess
+                      ? undefined
+                      : DEFAULT_ERROR_MESSAGES.uploadFailed,
+                  }
+                : file
+            )
+          );
+
+          // Trigger callbacks
+          const file = filesRef.current.find((f) => f.id === fileId);
+          if (file) {
+            if (isSuccess) {
+              onUploadComplete?.(file);
+            } else {
+              onUploadError?.(fileId, DEFAULT_ERROR_MESSAGES.uploadFailed);
+            }
           }
-        }
-      } else {
-        updateFiles(files.map(file => 
-          file.id === fileId ? { ...file, progress } : file
-        ));
-        
-        onUploadProgress?.(fileId, progress);
-      }
-    }, DEFAULT_ANIMATION_CONFIG.progressUpdateInterval);
+        } else {
+          updateFiles(
+            filesRef.current.map((file) =>
+              file.id === fileId ? { ...file, progress } : file
+            )
+          );
 
-    return interval;
-  }, [files, updateFiles, onUploadComplete, onUploadError, onUploadProgress]);
+          onUploadProgress?.(fileId, progress);
+        }
+      }, DEFAULT_ANIMATION_CONFIG.progressUpdateInterval);
+
+      return interval;
+    },
+    [updateFiles, onUploadComplete, onUploadError, onUploadProgress]
+  );
 
   // Handle file processing
   const processFiles = useCallback((newFiles: File[]) => {
     // Check total file count
-    if (files.length + newFiles.length > validationConfig.maxFiles) {
+    if (filesRef.current.length + newFiles.length > validationConfig.maxFiles) {
       toastCustom.error({
         title: "Muitos arquivos!",
         description: DEFAULT_ERROR_MESSAGES.tooManyFiles.replace(
@@ -404,7 +421,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
 
     // Add valid files and start upload
     if (validFiles.length > 0) {
-      const updatedFiles = [...files, ...validFiles];
+      const updatedFiles = [...filesRef.current, ...validFiles];
       updateFiles(updatedFiles);
       onFilesAdded?.(validFiles);
 
@@ -420,7 +437,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         duration: 3000,
       });
     }
-  }, [files, validationConfig, validateFile, generatePreviewUrl, updateFiles, onFilesAdded, onUploadStart, simulateUpload]);
+  }, [validationConfig, validateFile, generatePreviewUrl, updateFiles, onFilesAdded, onUploadStart, simulateUpload]);
 
   // Drag & Drop handlers
   const handleDragEnter = useCallback((e: React.DragEvent) => {
@@ -471,42 +488,55 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   }, [processFiles]);
 
   // File action handlers
-  const handleFileRemove = useCallback((fileId: string) => {
-    const updatedFiles = files.filter(file => file.id !== fileId);
-    updateFiles(updatedFiles);
-    onFileRemove?.(fileId);
-    
-    toastCustom.success({
-      description: "Arquivo removido com sucesso.",
-      duration: 2000,
-    });
-  }, [files, updateFiles, onFileRemove]);
+  const handleFileRemove = useCallback(
+    (fileId: string) => {
+      const updatedFiles = filesRef.current.filter((file) => file.id !== fileId);
+      updateFiles(updatedFiles);
+      onFileRemove?.(fileId);
 
-  const handleFileRetry = useCallback((fileId: string) => {
-    updateFiles(files.map(file => 
-      file.id === fileId 
-        ? { ...file, status: "uploading", progress: 0, error: undefined }
-        : file
-    ));
-    
-    simulateUpload(fileId);
-    
-    toastCustom.info({
-      description: "Tentando enviar arquivo novamente...",
-      duration: 2000,
-    });
-  }, [files, updateFiles, simulateUpload]);
+      toastCustom.success({
+        description: "Arquivo removido com sucesso.",
+        duration: 2000,
+      });
+    },
+    [updateFiles, onFileRemove]
+  );
 
-  const handleFileCancel = useCallback((fileId: string) => {
-    updateFiles(files.map(file => 
-      file.id === fileId ? { ...file, status: "cancelled" } : file
-    ));
-    
-    toastCustom.info({
-      description: "Upload cancelado.",
-      duration: 2000,
-    });
-  }, [files, updateFiles]);
+  const handleFileRetry = useCallback(
+    (fileId: string) => {
+      updateFiles(
+        filesRef.current.map((file) =>
+          file.id === fileId
+            ? { ...file, status: "uploading", progress: 0, error: undefined }
+            : file
+        )
+      );
+
+      simulateUpload(fileId);
+
+      toastCustom.info({
+        description: "Tentando enviar arquivo novamente...",
+        duration: 2000,
+      });
+    },
+    [updateFiles, simulateUpload]
+  );
+
+  const handleFileCancel = useCallback(
+    (fileId: string) => {
+      updateFiles(
+        filesRef.current.map((file) =>
+          file.id === fileId ? { ...file, status: "cancelled" } : file
+        )
+      );
+
+      toastCustom.info({
+        description: "Upload cancelado.",
+        duration: 2000,
+      });
+    },
+    [updateFiles]
+  );
 
   // Generate accepted types string for display
   const acceptedTypesDisplay = useMemo(() => {
