@@ -1,5 +1,6 @@
 import { VerticalTabs, type VerticalTabItem } from "@/components/ui/custom";
 import SliderList from "./slider/SliderList";
+import SobreForm from "./sobre/SobreForm";
 
 export default function PaginaInicialPage() {
   const items: VerticalTabItem[] = [
@@ -26,17 +27,7 @@ export default function PaginaInicialPage() {
       value: "sobre",
       label: "Sobre",
       icon: "Info",
-      content: (
-        <div className="space-y-6">
-          <div>
-            <h3 className="text-lg font-semibold mb-4">Seção Sobre</h3>
-            <p className="text-muted-foreground">
-              Configure o conteúdo da seção sobre da página inicial.
-            </p>
-          </div>
-          {/* Aqui você pode adicionar formulários para configurar a seção sobre */}
-        </div>
-      ),
+      content: <SobreForm />,
     },
     {
       value: "banners",
