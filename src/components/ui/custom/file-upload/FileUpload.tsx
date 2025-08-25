@@ -213,6 +213,7 @@ const FileUploadItemComponent: React.FC<FileUploadItemProps> = ({
 export const FileUpload: React.FC<FileUploadProps> = ({
   files: controlledFiles,
   validation = {},
+  maxFiles,
   multiple = true,
   disabled = false,
   dropzoneText,
@@ -232,6 +233,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   onUploadComplete,
   onUploadError,
   onUpload,
+  uploadUrl,
 }) => {
   const [internalFiles, setInternalFiles] = useState<FileUploadItem[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
@@ -255,6 +257,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     ...DEFAULT_FILE_VALIDATION,
     ...validation,
   }), [validation]);
+
+  const maxFilesLimit = maxFiles ?? validationConfig.maxFiles;
 
   // File validation function
   const validateFile = useCallback((file: File): FileValidationResult => {
@@ -311,12 +315,22 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   }, [validationConfig]);
 
   // Handle file updates
-  const updateFiles = useCallback((newFiles: FileUploadItem[]) => {
-    if (!isControlled) {
-      setInternalFiles(newFiles);
-    }
-    onFilesChange?.(newFiles);
-  }, [isControlled, onFilesChange]);
+  const updateFiles = useCallback(
+    (newFiles: FileUploadItem[]) => {
+      // Keep reference in sync immediately so that subsequent
+      // operations (like simulated progress updates) always operate
+      // on the latest file list. This avoids race conditions where
+      // the ref still points to a stale array during asynchronous
+      // updates, which could result in lost file data.
+      filesRef.current = newFiles;
+
+      if (!isControlled) {
+        setInternalFiles(newFiles);
+      }
+      onFilesChange?.(newFiles);
+    },
+    [isControlled, onFilesChange]
+  );
 
   // Generate file preview URL
   const generatePreviewUrl = useCallback((file: File): string | undefined => {
@@ -383,15 +397,122 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     [updateFiles, onUploadComplete, onUploadError, onUploadProgress]
   );
 
+  const uploadFile = useCallback(
+    (fileId: string) => {
+      const target = filesRef.current.find(f => f.id === fileId);
+      if (!target || !target.file) return;
+
+      if (onUpload) {
+        onUploadStart?.(target);
+        onUpload(target.file).then(({ url, error }) => {
+          if (error) {
+            updateFiles(
+              filesRef.current.map(file =>
+                file.id === fileId
+                  ? { ...file, status: "failed", error }
+                  : file
+              )
+            );
+            onUploadError?.(fileId, error);
+            return;
+          }
+
+          updateFiles(
+            filesRef.current.map(file =>
+              file.id === fileId
+                ? { ...file, status: "completed", progress: 100, uploadedUrl: url }
+                : file
+            )
+          );
+          const updated = filesRef.current.find(f => f.id === fileId);
+          if (updated) {
+            onUploadComplete?.(updated);
+          }
+        });
+        return;
+      }
+
+      if (!uploadUrl) {
+        simulateUpload(fileId);
+        return;
+      }
+
+      onUploadStart?.(target);
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", uploadUrl);
+
+      xhr.upload.onprogress = (e) => {
+        if (!e.lengthComputable) return;
+        const progress = (e.loaded / e.total) * 100;
+        updateFiles(
+          filesRef.current.map(file =>
+            file.id === fileId ? { ...file, progress } : file
+          )
+        );
+        onUploadProgress?.(fileId, progress);
+      };
+
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          let url: string | undefined;
+          try {
+            const json = JSON.parse(xhr.responseText);
+            url = json.url;
+          } catch {
+            url = undefined;
+          }
+          updateFiles(
+            filesRef.current.map(file =>
+              file.id === fileId
+                ? { ...file, status: "completed", progress: 100, uploadedUrl: url }
+                : file
+            )
+          );
+          const updated = filesRef.current.find(f => f.id === fileId);
+          if (updated) {
+            onUploadComplete?.(updated);
+          }
+        } else {
+          const error = DEFAULT_ERROR_MESSAGES.uploadFailed;
+          updateFiles(
+            filesRef.current.map(file =>
+              file.id === fileId
+                ? { ...file, status: "failed", error }
+                : file
+            )
+          );
+          onUploadError?.(fileId, error);
+        }
+      };
+
+      xhr.onerror = () => {
+        const error = DEFAULT_ERROR_MESSAGES.uploadFailed;
+        updateFiles(
+          filesRef.current.map(file =>
+            file.id === fileId
+              ? { ...file, status: "failed", error }
+              : file
+          )
+        );
+        onUploadError?.(fileId, error);
+      };
+
+      const formData = new FormData();
+      formData.append("file", target.file);
+      xhr.send(formData);
+    },
+    [uploadUrl, onUpload, simulateUpload, updateFiles, onUploadStart, onUploadProgress, onUploadComplete, onUploadError]
+  );
+
   // Handle file processing
   const processFiles = useCallback((newFiles: File[]) => {
     // Check total file count
-    if (filesRef.current.length + newFiles.length > validationConfig.maxFiles) {
+    if (filesRef.current.length + newFiles.length > maxFilesLimit) {
       toastCustom.error({
         title: "Muitos arquivos!",
         description: DEFAULT_ERROR_MESSAGES.tooManyFiles.replace(
           "{maxFiles}",
-          validationConfig.maxFiles.toString()
+          maxFilesLimit.toString()
         ),
         duration: 5000,
       });
@@ -418,7 +539,6 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         };
         
         validFiles.push(fileItem);
-        onUploadStart?.(fileItem);
       } else {
         invalidFiles.push({ file, errors: validation.errors });
       }
@@ -439,9 +559,9 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       updateFiles(updatedFiles);
       onFilesAdded?.(validFiles);
 
-      // Start upload simulation for each file
+      // Start upload for each file
       validFiles.forEach(file => {
-        simulateUpload(file.id);
+        uploadFile(file.id);
       });
 
       // Show success message
@@ -451,7 +571,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         duration: 3000,
       });
     }
-  }, [validationConfig, validateFile, generatePreviewUrl, updateFiles, onFilesAdded, onUploadStart, simulateUpload]);
+  }, [maxFilesLimit, validateFile, generatePreviewUrl, updateFiles, onFilesAdded, uploadFile]);
 
   // Drag & Drop handlers
   const handleDragEnter = useCallback((e: React.DragEvent) => {
@@ -526,14 +646,14 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         )
       );
 
-      simulateUpload(fileId);
+      uploadFile(fileId);
 
       toastCustom.info({
         description: "Tentando enviar arquivo novamente...",
         duration: 2000,
       });
     },
-    [updateFiles, simulateUpload]
+    [updateFiles, uploadFile]
   );
 
   const handleFileCancel = useCallback(
@@ -568,77 +688,87 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   // Generate accept attribute for input
   const acceptAttribute = validationConfig.acceptedTypes.join(',');
 
+  // Check if maximum number of files has been reached
+  const isMaxFilesReached = files.length >= maxFilesLimit;
+
   return (
     <div className={cn(fileUploadVariants({ variant, size }), classNames.container)}>
       {/* Dropzone */}
-      <div
-        className={cn(
-          dropzoneVariants({
-            variant: variant === "minimal" ? "minimal" : "default",
-            state: disabled ? "disabled" : isDragOver ? "dragOver" : "idle",
-            size,
-          }),
-          classNames.dropzone
-        )}
-        onDragEnter={handleDragEnter}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-        onClick={() => !disabled && fileInputRef.current?.click()}
-        role="button"
-        tabIndex={disabled ? -1 : 0}
-        aria-label="File upload area"
-        onKeyDown={(e) => {
-          if ((e.key === 'Enter' || e.key === ' ') && !disabled) {
-            e.preventDefault();
-            fileInputRef.current?.click();
-          }
-        }}
-      >
-        <div className="flex flex-col items-center gap-3">
-          <div className="flex items-center justify-center w-12 h-12 bg-primary/10 rounded-full">
-            <Icon 
-              name={isDragOver ? "FileUp" : "Upload"} 
-              className={cn(
-                "w-5 h-5 transition-colors",
-                isDragOver ? "text-primary" : "text-primary/70"
-              )} 
-            />
-          </div>
-          
-          <div className="text-center">
-            {dropzoneText || (
-              <p className="text-foreground font-medium">
-                {DEFAULT_UI_TEXTS.dropzoneTitle}{" "}
-                <span className="text-primary hover:underline cursor-pointer">
-                  {browseText}
-                </span>{" "}
-                {DEFAULT_UI_TEXTS.dropzoneSubtitle}
-              </p>
-            )}
-            
-            <p className="text-xs text-muted-foreground mt-1">
-              {DEFAULT_UI_TEXTS.dropzoneDescription
-                .replace("{acceptedTypes}", acceptedTypesDisplay)
-                .replace("{maxSize}", formatFileSize(validationConfig.maxSize))}
-            </p>
-          </div>
-        </div>
+      {!isMaxFilesReached && (
+        <div
+          className={cn(
+            dropzoneVariants({
+              variant: variant === "minimal" ? "minimal" : "default",
+              state: disabled ? "disabled" : isDragOver ? "dragOver" : "idle",
+              size,
+            }),
+            classNames.dropzone
+          )}
+          onDragEnter={handleDragEnter}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          onClick={() => !disabled && fileInputRef.current?.click()}
+          role="button"
+          tabIndex={disabled ? -1 : 0}
+          aria-label="File upload area"
+          onKeyDown={(e) => {
+            if ((e.key === 'Enter' || e.key === ' ') && !disabled) {
+              e.preventDefault();
+              fileInputRef.current?.click();
+            }
+          }}
+        >
+          <div className="flex flex-col items-center gap-3">
+            <div className="flex items-center justify-center w-12 h-12 bg-primary/10 rounded-full">
+              <Icon
+                name={isDragOver ? "FileUp" : "Upload"}
+                className={cn(
+                  "w-5 h-5 transition-colors",
+                  isDragOver ? "text-primary" : "text-primary/70"
+                )}
+              />
+            </div>
 
-        <input
-          ref={fileInputRef}
-          type="file"
-          multiple={multiple}
-          accept={acceptAttribute}
-          onChange={handleFileSelect}
-          className="hidden"
-          disabled={disabled}
-        />
-      </div>
+            <div className="text-center">
+              {dropzoneText || (
+                <p className="text-foreground font-medium">
+                  {DEFAULT_UI_TEXTS.dropzoneTitle}{" "}
+                  <span className="text-primary hover:underline cursor-pointer">
+                    {browseText}
+                  </span>{" "}
+                  {DEFAULT_UI_TEXTS.dropzoneSubtitle}
+                </p>
+              )}
+
+              <p className="text-xs text-muted-foreground mt-1">
+                {DEFAULT_UI_TEXTS.dropzoneDescription
+                  .replace("{acceptedTypes}", acceptedTypesDisplay)
+                  .replace("{maxSize}", formatFileSize(validationConfig.maxSize))}
+              </p>
+            </div>
+          </div>
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple={multiple}
+            accept={acceptAttribute}
+            onChange={handleFileSelect}
+            className="hidden"
+            disabled={disabled}
+          />
+        </div>
+      )}
 
       {/* Files List */}
       {files.length > 0 && (
-        <div className={cn("mt-4 space-y-2", classNames.fileList)}>
+        <div
+          className={cn(
+            isMaxFilesReached ? "space-y-2" : "mt-4 space-y-2",
+            classNames.fileList
+          )}
+        >
           <AnimatePresence>
             {displayedFiles.map(file => (
               <FileUploadItemComponent
