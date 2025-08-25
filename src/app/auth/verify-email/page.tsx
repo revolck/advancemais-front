@@ -10,7 +10,7 @@ import { toastCustom } from "@/components/ui/custom/toast";
 export default function VerifyEmailPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const token = searchParams.get("token");
+  const token = searchParams?.get("token");
   const [status, setStatus] = useState<"loading" | "error">("loading");
 
   useEffect(() => {

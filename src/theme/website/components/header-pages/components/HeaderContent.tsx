@@ -22,7 +22,7 @@ export const HeaderContent: React.FC<HeaderContentProps> = ({ data }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
   const isMobile = useIsMobile();
-  const pathname = usePathname();
+  const pathname = usePathname() || "";
 
   const breadcrumbs = generateBreadcrumbs(pathname);
   const isExternal = isExternalUrl(data.buttonUrl);
