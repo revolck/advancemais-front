@@ -65,6 +65,16 @@ export const brevoRoutes = {
 };
 
 /**
+ * Endpoints for uploading files.
+ * Allows pages to specify the correct destination for each upload.
+ */
+export const uploadRoutes = {
+  base: () => `${prefix}/upload`,
+  slider: () => `${prefix}/upload/slider`,
+  banner: () => `${prefix}/upload/banner`,
+};
+
+/**
  * Collection of all API route groups.
  * Extend this object as new microservices are added.
  */
@@ -73,6 +83,7 @@ export const routes = {
   usuarios: usuarioRoutes,
   mercadopago: mercadoPagoRoutes,
   brevo: brevoRoutes,
+  upload: uploadRoutes,
 };
 
 export type Routes = typeof routes;

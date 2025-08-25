@@ -7,6 +7,7 @@ import {
   FileUpload,
   type FileUploadItem,
 } from "@/components/ui/custom";
+import { routes } from "@/api/routes";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toastCustom } from "@/components/ui/custom/toast";
@@ -49,6 +50,7 @@ export default function SobreForm() {
               status: "completed",
               uploadDate: new Date(first.criadoEm || Date.now()),
               previewUrl: first.imagemUrl,
+              uploadedUrl: first.imagemUrl,
             };
             setFiles([item]);
           }
@@ -85,29 +87,26 @@ export default function SobreForm() {
       return;
     }
 
+    const uploading = files.find(f => f.status === "uploading");
+    if (uploading) {
+      toastCustom.error("Aguarde o upload da imagem terminar.");
+      return;
+    }
+
+    const failed = files.find(f => f.status === "failed");
+    if (failed) {
+      toastCustom.error("Erro no upload da imagem.");
+      return;
+    }
+
     setIsLoading(true);
     const formData = new FormData();
     formData.append("titulo", title);
     formData.append("descricao", description);
 
     const file = files[0];
-    if (file?.file) {
-      try {
-        const uploadData = new FormData();
-        uploadData.append("file", file.file);
-        const uploadRes = await fetch("/api/upload/slider", {
-          method: "POST",
-          body: uploadData,
-        });
-        if (!uploadRes.ok) throw new Error("Falha no upload da imagem");
-        const { url } = await uploadRes.json();
-        formData.append("imagemUrl", url);
-      } catch (err) {
-        console.error(err);
-        toastCustom.error("Erro no upload da imagem.");
-        setIsLoading(false);
-        return;
-      }
+    if (file?.uploadedUrl) {
+      formData.append("imagemUrl", file.uploadedUrl);
     } else if (content.imagemUrl) {
       formData.append("imagemUrl", content.imagemUrl);
     }
@@ -136,6 +135,7 @@ export default function SobreForm() {
           status: "completed",
           uploadDate: new Date(saved.atualizadoEm || Date.now()),
           previewUrl: saved.imagemUrl,
+          uploadedUrl: saved.imagemUrl,
         },
       ]);
     } catch (err) {
@@ -153,11 +153,12 @@ export default function SobreForm() {
         <FileUpload
           files={files}
           multiple={false}
+          maxFiles={1}
           validation={{
             maxSize: 5 * 1024 * 1024,
             acceptedTypes: ["image/*"],
-            maxFiles: 1,
           }}
+          uploadUrl={routes.upload.slider()}
           onFilesChange={handleFilesChange}
           showProgress={false}
         />

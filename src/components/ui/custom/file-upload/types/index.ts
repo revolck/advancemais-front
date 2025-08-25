@@ -51,6 +51,8 @@ export interface FileUploadItem {
   error?: string;
   /** Arquivo original do navegador */
   file?: File;
+  /** URL retornada pelo servidor após upload */
+  uploadedUrl?: string;
 }
 
 /**
@@ -82,6 +84,8 @@ export interface FileUploadProps extends VariantProps<typeof fileUploadVariants>
   files?: FileUploadItem[];
   /** Configuração de validação */
   validation?: Partial<FileValidationConfig>;
+  /** Número máximo de arquivos permitidos */
+  maxFiles?: number;
   /** Se permite múltiplos arquivos */
   multiple?: boolean;
   /** Se está desabilitado */
@@ -124,6 +128,8 @@ export interface FileUploadProps extends VariantProps<typeof fileUploadVariants>
   onUploadError?: (fileId: string, error: string) => void;
   /** Callback personalizado de upload */
   onUpload?: (file: File) => Promise<{ url?: string; error?: string }>;
+  /** Endpoint para upload automático */
+  uploadUrl?: string;
 }
 
 /**
