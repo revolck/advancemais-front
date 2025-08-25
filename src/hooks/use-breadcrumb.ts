@@ -3,7 +3,7 @@ import { breadcrumbConfig } from '@/lib/breadcrumb-config';
 import type { BreadcrumbConfig } from '@/config/breadcrumb';
 
 export function useBreadcrumb(): BreadcrumbConfig {
-  const pathname = usePathname();
+  const pathname = usePathname() || "/";
   
   // Busca a configuração exata da rota
   const config = breadcrumbConfig[pathname];

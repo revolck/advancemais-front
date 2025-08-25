@@ -22,7 +22,7 @@ export function useHeaderData(
   staticData?: HeaderPageData,
   currentPage?: string
 ): UseHeaderDataReturn {
-  const pathname = usePathname();
+  const pathname = usePathname() || "";
   const targetPage = currentPage || pathname;
 
   const [data, setData] = useState<HeaderPageData | null>(staticData || null);

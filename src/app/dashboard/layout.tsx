@@ -23,7 +23,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const searchParams = useSearchParams();
-  const pathname = usePathname();
+  const pathname = usePathname() || "";
   const router = useRouter();
 
   /**
@@ -41,7 +41,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   useEffect(() => {
     setMounted(true);
 
-    if (searchParams.get("denied")) {
+    if (searchParams && searchParams.get("denied")) {
       toastCustom.error("Acesso negado");
       const params = new URLSearchParams(searchParams.toString());
       params.delete("denied");

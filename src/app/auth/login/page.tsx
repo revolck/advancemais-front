@@ -21,7 +21,7 @@ const SignInPageDemo = () => {
   }, []);
 
   useEffect(() => {
-    const error = searchParams.get("error");
+    const error = searchParams?.get("error");
     if (error === "unauthorized") {
       toastCustom.error(
         "Você não tem autorização para acessar como visitante. Por favor realize seu cadastro."
