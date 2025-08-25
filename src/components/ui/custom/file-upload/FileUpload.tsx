@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useCallback, useMemo, useEffect } from "react";
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Icon } from "../Icons";
@@ -69,10 +70,13 @@ const FileUploadItemComponent: React.FC<FileUploadItemProps> = ({
   const getFileIcon = () => {
     if (isImage) {
       return file.previewUrl ? (
-        <img
+        <Image
           src={file.previewUrl}
           alt={file.name}
-          className="w-full h-full object-cover"
+          fill
+          unoptimized
+          className="object-cover"
+          sizes="48px"
         />
       ) : (
         <Icon name="Image" className="w-6 h-6 text-blue-500" />
@@ -277,9 +281,19 @@ export const FileUpload: React.FC<FileUploadProps> = ({
 
     // Check file type
     const fileExt = `.${getFileExtension(file.name)}`;
-    const isTypeAllowed = validationConfig.acceptedTypes.some(type => 
-      type.startsWith('.') ? type === fileExt : file.type === type
-    );
+    const isTypeAllowed = validationConfig.acceptedTypes.some(type => {
+      if (type.startsWith('.')) {
+        return type === fileExt;
+      }
+
+      // Support wildcard types like "image/*"
+      if (type.endsWith('/*')) {
+        const baseType = type.slice(0, -1); // remove the '*'
+        return file.type.startsWith(baseType);
+      }
+
+      return file.type === type;
+    });
 
     if (!isTypeAllowed) {
       errors.push(

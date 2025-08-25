@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { apiFetch } from "@/api/client";
 import { env } from "@/lib/env";
 import {
@@ -22,7 +22,7 @@ export function useWebsiteFeaturesData(
   const [isLoading, setIsLoading] = useState(!customFeatures);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (customFeatures) {
       setFeatures(customFeatures);
       setIsLoading(false);
@@ -83,13 +83,11 @@ export function useWebsiteFeaturesData(
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [customFeatures]);
 
   useEffect(() => {
-    if (!customFeatures) {
-      fetchData();
-    }
-  }, []);
+    fetchData();
+  }, [fetchData]);
 
   return {
     features,
