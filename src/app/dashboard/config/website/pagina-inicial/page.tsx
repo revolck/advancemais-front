@@ -7,7 +7,20 @@ export default function PaginaInicialPage() {
       value: "slider",
       label: "Slider",
       icon: "Images",
-      content: <SliderList />,
+      submenu: [
+        {
+          value: "slider-desktop",
+          label: "Desktop",
+          icon: "Monitor",
+          content: <SliderList initialFormat="web" />,
+        },
+        {
+          value: "slider-mobile",
+          label: "Tablet/Mobile",
+          icon: "Smartphone",
+          content: <SliderList initialFormat="mobile" />,
+        },
+      ],
     },
     {
       value: "sobre",
@@ -63,9 +76,9 @@ export default function PaginaInicialPage() {
     <div className="bg-white rounded-3xl p-5 h-full min-h-[calc(100vh-8rem)] flex flex-col">
       {/* Conteúdo principal com VerticalTabs */}
       <div className="flex-1 min-h-0">
-        <VerticalTabs 
-          items={items} 
-          defaultValue="slider"
+        <VerticalTabs
+          items={items}
+          defaultValue="slider-desktop"
           variant="spacious"
           size="md"
           withAnimation={true}

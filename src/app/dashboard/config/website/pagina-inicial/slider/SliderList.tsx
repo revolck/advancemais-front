@@ -107,12 +107,16 @@ const FormatSelector = ({
   );
 };
 
-export default function SliderList() {
-  const [format, setFormat] = useState<"web" | "mobile">("web");
+interface SliderListProps {
+  initialFormat?: "web" | "mobile";
+}
+
+export default function SliderList({ initialFormat = "web" }: SliderListProps) {
+  const [format, setFormat] = useState<"web" | "mobile">(initialFormat);
   const [banners, setBanners] = useState<Banner[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingBanner, setEditingBanner] = useState<Banner | null>(null);
-  const [modalFormat, setModalFormat] = useState<"web" | "mobile">("web");
+  const [modalFormat, setModalFormat] = useState<"web" | "mobile">(initialFormat);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [link, setLink] = useState("");
 
@@ -133,7 +137,7 @@ export default function SliderList() {
 
   const openAddModal = () => {
     setEditingBanner(null);
-    setModalFormat("web");
+    setModalFormat(initialFormat);
     setImageFile(null);
     setLink("");
     setIsModalOpen(true);
