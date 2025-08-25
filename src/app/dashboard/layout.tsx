@@ -4,7 +4,7 @@ import { ReactNode, useEffect, useState } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { DashboardSidebar, DashboardHeader } from "@/theme";
-import { toastCustom } from "@/components/ui/custom/toast/CustomToast";
+import { toastCustom } from "@/components/ui/custom/toast";
 import { DashboardHeader as Breadcrumb } from '@/components/layout';
 
 interface DashboardLayoutProps {
