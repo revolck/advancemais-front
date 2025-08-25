@@ -80,7 +80,7 @@ export default function SobreForm() {
       toastCustom.error("A descrição deve ter entre 10 e 500 caracteres.");
       return;
     }
-    if (files.length === 0) {
+    if (files.length === 0 && !content.imagemUrl) {
       toastCustom.error("Selecione uma imagem.");
       return;
     }
@@ -91,8 +91,23 @@ export default function SobreForm() {
     formData.append("descricao", description);
 
     const file = files[0];
-    if (file.file) {
-      formData.append("imagem", file.file);
+    if (file?.file) {
+      try {
+        const uploadData = new FormData();
+        uploadData.append("file", file.file);
+        const uploadRes = await fetch("/api/upload/slider", {
+          method: "POST",
+          body: uploadData,
+        });
+        if (!uploadRes.ok) throw new Error("Falha no upload da imagem");
+        const { url } = await uploadRes.json();
+        formData.append("imagemUrl", url);
+      } catch (err) {
+        console.error(err);
+        toastCustom.error("Erro no upload da imagem.");
+        setIsLoading(false);
+        return;
+      }
     } else if (content.imagemUrl) {
       formData.append("imagemUrl", content.imagemUrl);
     }
@@ -162,7 +177,9 @@ export default function SobreForm() {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="descricao">Descrição</Label>
+        <Label htmlFor="descricao">
+          Descrição <span className="text-destructive">*</span>
+        </Label>
         <Textarea
           id="descricao"
           value={content.descricao}
