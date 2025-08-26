@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Label } from "@/components/ui/label";
 import { InputCustom, ButtonCustom, CheckboxCustom } from "@/components/ui/custom";
 import Image from "next/image";
@@ -14,6 +14,11 @@ interface SignInPageProps {
   onSignIn?: (event: React.FormEvent<HTMLFormElement>) => void;
   onResetPassword?: () => void;
   onCreateAccount?: () => void;
+  /**
+   * Estado de carregamento externo, usado para bloquear o botão enquanto a
+   * requisição de login está em andamento.
+   */
+  isLoading?: boolean;
 }
 
 // --- MAIN COMPONENT ---
@@ -27,11 +32,19 @@ export const SignInPage: React.FC<SignInPageProps> = ({
   onSignIn,
   onResetPassword,
   onCreateAccount,
+  isLoading = false,
 }) => {
   const [documento, setDocumento] = useState("");
   const [senha, setSenha] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Quando o carregamento externo terminar, liberamos o formulário para novos envios
+  useEffect(() => {
+    if (!isLoading) {
+      setIsSubmitting(false);
+    }
+  }, [isLoading]);
 
   // Determina se é CPF (11 dígitos) ou CNPJ (14 dígitos)
   const documentoDigits = documento.replace(/\D/g, "");
@@ -71,14 +84,10 @@ export const SignInPage: React.FC<SignInPageProps> = ({
 
             <form
               className="space-y-5"
-              onSubmit={async (e) => {
+              onSubmit={(e) => {
                 e.preventDefault();
                 setIsSubmitting(true);
-                try {
-                  await onSignIn?.(e);
-                } finally {
-                  setIsSubmitting(false);
-                }
+                onSignIn?.(e);
               }}
             >
               <div className="animate-element animate-delay-300 space-y-1">
@@ -153,8 +162,8 @@ export const SignInPage: React.FC<SignInPageProps> = ({
               
               <ButtonCustom
                 type="submit"
-                isLoading={isSubmitting}
-                disabled={!isFormValid || isSubmitting}
+                isLoading={isLoading || isSubmitting}
+                disabled={!isFormValid || isSubmitting || isLoading}
                 fullWidth
                 withAnimation
                 className={[
