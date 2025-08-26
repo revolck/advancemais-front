@@ -318,8 +318,6 @@ export default function SobreForm() {
 
         {/* Upload de Imagem */}
         <div className="space-y-4">
-          <h4 className="text-sm font-medium text-gray-900">Imagem</h4>
-          
           <div>
             <Label className="text-sm font-medium text-gray-700">
               Imagem de Destaque <span className="text-red-500">*</span>
