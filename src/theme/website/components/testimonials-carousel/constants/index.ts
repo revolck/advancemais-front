@@ -9,7 +9,7 @@ export const DEFAULT_TESTIMONIALS_DATA: TestimonialData[] = [
     position: "Gerente de Gente e Gestão",
     company: "Empresa ABC",
     testimonial:
-      "Para a contratação, precisávamos ser assertivos. Com o suporte da AdvanceMais, realizamos contratações mais rápidas e eficazes, otimizando nosso processo.",
+      "Para a contratação, precisávamos ser assertivos. Com o suporte da Advance+, realizamos contratações mais rápidas e eficazes, otimizando nosso processo.",
     imageUrl: "/images/testemonials/face_1.png",
     rating: 5,
     order: 1,
@@ -21,7 +21,7 @@ export const DEFAULT_TESTIMONIALS_DATA: TestimonialData[] = [
     position: "Coordenador de Gente & Cultura",
     company: "Empresa XYZ",
     testimonial:
-      "A AdvanceMais trouxe automação e inovação para nosso processo seletivo. Conseguimos reduzir o tempo de contratação e focar mais no desenvolvimento dos colaboradores.",
+      "A Advance+ trouxe automação e inovação para nosso processo seletivo. Conseguimos reduzir o tempo de contratação e focar mais no desenvolvimento dos colaboradores.",
     imageUrl: "/images/testemonials/face_2.png",
     rating: 5,
     order: 2,
@@ -33,7 +33,7 @@ export const DEFAULT_TESTIMONIALS_DATA: TestimonialData[] = [
     position: "Coordenador Administrativo",
     company: "Empresa 123",
     testimonial:
-      "Com as soluções da AdvanceMais, otimizamos os processos internos e conseguimos atingir resultados que antes pareciam impossíveis.",
+      "Com as soluções da Advance+, otimizamos os processos internos e conseguimos atingir resultados que antes pareciam impossíveis.",
     imageUrl: "/images/testemonials/face_3.png",
     rating: 5,
     order: 3,
@@ -45,7 +45,7 @@ export const DEFAULT_TESTIMONIALS_DATA: TestimonialData[] = [
     position: "Coordenadora de RH",
     company: "Empresa DEF",
     testimonial:
-      "Com a AdvanceMais, otimizamos todo o ciclo de recrutamento e seleção. Um processo que durava 45 dias agora é concluído em apenas 15.",
+      "Com a Advance+, otimizamos todo o ciclo de recrutamento e seleção. Um processo que durava 45 dias agora é concluído em apenas 15.",
     imageUrl: "/images/testemonials/face_4.png",
     rating: 5,
     order: 4,
@@ -57,7 +57,7 @@ export const DEFAULT_TESTIMONIALS_DATA: TestimonialData[] = [
     position: "Diretor de Operações",
     company: "Empresa GHI",
     testimonial:
-      "A parceria com a AdvanceMais transformou nossa forma de trabalhar. Processos que antes eram manuais agora são automatizados e muito mais eficientes.",
+      "A parceria com a Advance+ transformou nossa forma de trabalhar. Processos que antes eram manuais agora são automatizados e muito mais eficientes.",
     imageUrl: "/images/testemonials/face_5.png",
     rating: 5,
     order: 5,

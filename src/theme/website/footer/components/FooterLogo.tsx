@@ -13,7 +13,7 @@ export const FooterLogo: React.FC = () => {
     >
       <Image
         src="/images/logos/logo_branco.webp"
-        alt="AdvanceMais Logo"
+        alt="Advance+ Logo"
         width={170}
         height={100}
         className="mb-4"

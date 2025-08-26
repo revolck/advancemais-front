@@ -77,7 +77,7 @@ export const env: AppConfig = {
   appName: getEnvVar(
     process.env.NEXT_PUBLIC_APP_NAME,
     "NEXT_PUBLIC_APP_NAME",
-    "AdvanceMais"
+    "Advance+"
   ),
   supportPhone: getEnvVar(
     process.env.NEXT_PUBLIC_SUPPORT_PHONE,

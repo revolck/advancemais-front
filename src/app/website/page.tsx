@@ -9,7 +9,7 @@ import BannersGroup from "@/theme/website/components/banners";
 /**
  * Página Inicial do Website Institucional
  *
- * Esta é a homepage que representa a AdvanceMais como empresa
+ * Esta é a homepage que representa a Advance+ como empresa
  * e apresenta seus serviços, cursos e soluções.
  */
 export default function WebsiteHomePage() {
