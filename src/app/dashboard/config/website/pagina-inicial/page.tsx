@@ -5,6 +5,7 @@ import {
   VerticalTabs,
   type VerticalTabItem,
 } from "@/components/ui/custom";
+import SobreForm from "./sobre/SobreForm";
 
 /**
  * Página principal de configuração da página inicial
@@ -52,26 +53,7 @@ export default function PaginaInicialPage() {
       icon: "Info",
       content: (
         <div className="space-y-6">
-          <div>
-            <h3 className="text-lg font-semibold mb-2">Seção Sobre</h3>
-            <p className="text-muted-foreground mb-4">
-              Configure o conteúdo da seção "Sobre Nós" da página inicial.
-            </p>
-          </div>
-
-          {/* Placeholder para SobreForm quando estiver disponível */}
-          <div className="p-6 border-2 border-dashed border-border/50 rounded-lg text-center">
-            <div className="w-12 h-12 mx-auto bg-muted rounded-full flex items-center justify-center mb-3">
-              <span className="text-muted-foreground text-xl">📝</span>
-            </div>
-            <h4 className="font-medium text-foreground mb-2">
-              Formulário de Configuração
-            </h4>
-            <p className="text-sm text-muted-foreground">
-              O componente SobreForm será implementado aqui para gerenciar
-              título, descrição, imagem e botão de call-to-action.
-            </p>
-          </div>
+          <SobreForm />
         </div>
       ),
     },
@@ -188,15 +170,15 @@ export default function PaginaInicialPage() {
           items={items}
           defaultValue="slider-desktop"
           variant="spacious"
-          size="md"
+          size="sm"
           withAnimation={true}
           showIndicator={true}
           tabsWidth="md"
           classNames={{
             root: "h-full",
             contentWrapper: "h-full overflow-hidden",
-            tabsContent: "h-full overflow-auto p-8",
-            tabsList: "bg-gray-50/40 rounded-2xl p-2",
+            tabsContent: "h-full overflow-auto p-6",
+            tabsList: "p-2",
             tabsTrigger: "mb-1",
           }}
         />
