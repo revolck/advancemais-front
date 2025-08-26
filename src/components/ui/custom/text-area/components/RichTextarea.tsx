@@ -9,7 +9,13 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Info, Bold, Italic, Strikethrough } from "lucide-react";
+import {
+  Info,
+  Bold,
+  Italic,
+  Strikethrough,
+  RemoveFormatting,
+} from "lucide-react";
 import { textareaVariants } from "../variants";
 import type { RichTextareaProps } from "../types";
 
@@ -35,9 +41,8 @@ const TOOLBAR_BUTTONS = [
   },
 ];
 
-type ToolbarAction = (typeof TOOLBAR_BUTTONS)[number]["action"];
+type ToolbarAction = (typeof TOOLBAR_BUTTONS)[number]["action"] | "clear";
 
-// Interface corrigida para usar HTMLDivElement ao invés de HTMLTextAreaElement
 const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
   (
     {
@@ -95,24 +100,51 @@ const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
       return element.textContent || "";
     };
 
-    // Função para verificar se um nó ou seus pais têm determinada tag
+    // Função melhorada para verificar se um nó tem determinada formatação
     const hasFormatTag = (node: Node | null, tagName: string): boolean => {
-      if (!node) return false;
+      if (!node || !contentEditableRef.current) return false;
 
-      if (node.nodeType === Node.ELEMENT_NODE) {
-        const element = node as Element;
-        if (element.tagName.toLowerCase() === tagName.toLowerCase()) {
-          return true;
+      // Navega pelos pais até o contentEditable root
+      let currentNode: Node | null = node;
+      while (currentNode && currentNode !== contentEditableRef.current) {
+        if (currentNode.nodeType === Node.ELEMENT_NODE) {
+          const element = currentNode as HTMLElement;
+          if (element.tagName.toLowerCase() === tagName.toLowerCase()) {
+            return true;
+          }
         }
-      }
-
-      // Verifica os pais até encontrar o contentEditable
-      const parent = node.parentNode;
-      if (parent && parent !== contentEditableRef.current) {
-        return hasFormatTag(parent, tagName);
+        currentNode = currentNode.parentNode;
       }
 
       return false;
+    };
+
+    // Função para obter todas as formatações ativas em um nó
+    const getAllActiveFormats = (node: Node | null): Set<string> => {
+      const formats = new Set<string>();
+      if (!node || !contentEditableRef.current) return formats;
+
+      let currentNode: Node | null = node;
+      while (currentNode && currentNode !== contentEditableRef.current) {
+        if (currentNode.nodeType === Node.ELEMENT_NODE) {
+          const element = currentNode as HTMLElement;
+          const tagName = element.tagName.toLowerCase();
+
+          // Mapeia tags HTML para actions
+          const actionMap: Record<string, string> = {
+            strong: "bold",
+            em: "italic",
+            del: "strikethrough",
+          };
+
+          if (actionMap[tagName]) {
+            formats.add(actionMap[tagName]);
+          }
+        }
+        currentNode = currentNode.parentNode;
+      }
+
+      return formats;
     };
 
     // Função para verificar formatos ativos na posição do cursor
@@ -124,88 +156,63 @@ const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
       }
 
       const range = selection.getRangeAt(0);
-      const formats = new Set<string>();
 
-      // Verifica se o cursor está dentro de tags de formatação
-      TOOLBAR_BUTTONS.forEach((button) => {
-        if (hasFormatTag(range.startContainer, button.tag)) {
-          formats.add(button.action);
-        }
-      });
+      // Se há texto selecionado, verifica formatação em ambos os pontos
+      if (!range.collapsed) {
+        const startFormats = getAllActiveFormats(range.startContainer);
+        const endFormats = getAllActiveFormats(range.endContainer);
 
-      setActiveFormats(formats);
-    };
+        // Só considera ativo se está presente em todo o range
+        const commonFormats = new Set<string>();
+        startFormats.forEach((format) => {
+          if (endFormats.has(format)) {
+            commonFormats.add(format);
+          }
+        });
 
-    // Função moderna para aplicar formatação usando ranges
-    const toggleFormat = (format: ToolbarAction) => {
-      if (!contentEditableRef.current) return;
-
-      contentEditableRef.current.focus();
-
-      const selection = window.getSelection();
-      if (!selection) return;
-
-      const button = TOOLBAR_BUTTONS.find((b) => b.action === format);
-      if (!button) return;
-
-      // Se não há seleção, tenta selecionar a palavra atual ou todo o conteúdo
-      if (selection.rangeCount === 0 || selection.toString().trim() === "") {
-        if (contentEditableRef.current.textContent?.trim()) {
-          // Seleciona todo o conteúdo
-          const range = document.createRange();
-          range.selectNodeContents(contentEditableRef.current);
-          selection.removeAllRanges();
-          selection.addRange(range);
-        } else {
-          return; // Sem conteúdo para formatar
-        }
-      }
-
-      const range = selection.getRangeAt(0);
-      const selectedText = range.toString();
-
-      if (selectedText.trim() === "") return;
-
-      // Verifica se já está formatado
-      const isAlreadyFormatted = hasFormatTag(range.startContainer, button.tag);
-
-      if (isAlreadyFormatted) {
-        // Remove a formatação
-        removeFormatFromRange(range, button.tag);
+        setActiveFormats(commonFormats);
       } else {
-        // Adiciona a formatação
-        applyFormatToRange(range, button.tag);
+        // Cursor único - verifica formatações no ponto atual
+        setActiveFormats(getAllActiveFormats(range.startContainer));
       }
-
-      // Atualiza os valores
-      updateValues();
-
-      // Verifica formatos ativos após mudança
-      setTimeout(checkActiveFormats, 10);
     };
 
-    // Função para aplicar formatação a um range
-    const applyFormatToRange = (range: Range, tagName: string) => {
+    // Função para remover TODAS as formatações de um range
+    const clearAllFormatting = (range: Range) => {
       try {
-        const formatElement = document.createElement(tagName);
-
-        // Se o range está vazio ou só tem whitespace, não aplica formatação
         if (range.toString().trim() === "") return;
 
-        // Extrai o conteúdo do range
+        const contents = range.extractContents();
+        const textContent = contents.textContent || "";
+
+        // Insere apenas o texto sem formatação
+        range.insertNode(document.createTextNode(textContent));
+
+        // Reposiciona cursor
+        range.collapse(false);
+        const selection = window.getSelection();
+        if (selection) {
+          selection.removeAllRanges();
+          selection.addRange(range);
+        }
+      } catch (error) {
+        console.warn("Erro ao limpar formatações:", error);
+      }
+    };
+
+    // Função melhorada para aplicar formatação
+    const applyFormatToRange = (range: Range, tagName: string) => {
+      try {
+        if (range.toString().trim() === "") return;
+
+        const formatElement = document.createElement(tagName);
         const contents = range.extractContents();
 
-        // Coloca o conteúdo dentro do elemento de formatação
         formatElement.appendChild(contents);
-
-        // Insere o elemento formatado no range
         range.insertNode(formatElement);
 
-        // Reposiciona o cursor após o elemento inserido
-        range.setStartAfter(formatElement);
-        range.setEndAfter(formatElement);
-        range.collapse(true);
-
+        // Seleciona o conteúdo formatado
+        range.selectNodeContents(formatElement);
         const selection = window.getSelection();
         if (selection) {
           selection.removeAllRanges();
@@ -216,39 +223,148 @@ const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
       }
     };
 
-    // Função para remover formatação de um range
+    // Função melhorada para remover formatação específica
     const removeFormatFromRange = (range: Range, tagName: string) => {
       try {
-        // Encontra o elemento pai com a tag
-        let formatElement: HTMLElement | null = null;
-        let node: Node | null = range.startContainer;
+        const selectedText = range.toString();
+        if (!selectedText.trim()) return;
 
-        while (node && node !== contentEditableRef.current) {
-          if (node.nodeType === Node.ELEMENT_NODE) {
-            const element = node as HTMLElement;
-            if (element.tagName.toLowerCase() === tagName.toLowerCase()) {
-              formatElement = element;
-              break;
-            }
+        // Encontra todos os elementos com a tag específica na seleção
+        const treeWalker = document.createTreeWalker(
+          range.commonAncestorContainer,
+          NodeFilter.SHOW_ELEMENT,
+          {
+            acceptNode: (node) => {
+              const element = node as HTMLElement;
+              if (element.tagName.toLowerCase() === tagName.toLowerCase()) {
+                // Verifica se o elemento intersecta com o range
+                const elementRange = document.createRange();
+                elementRange.selectNodeContents(element);
+
+                if (range.intersectsNode(element)) {
+                  return NodeFilter.FILTER_ACCEPT;
+                }
+              }
+              return NodeFilter.FILTER_REJECT;
+            },
           }
-          node = node.parentNode;
+        );
+
+        const elementsToUnwrap: HTMLElement[] = [];
+        let node = treeWalker.nextNode();
+        while (node) {
+          elementsToUnwrap.push(node as HTMLElement);
+          node = treeWalker.nextNode();
         }
 
-        if (formatElement) {
-          // Remove o elemento de formatação, mantendo o conteúdo
-          const parent = formatElement.parentNode;
+        // Remove as tags encontradas
+        elementsToUnwrap.forEach((element) => {
+          const parent = element.parentNode;
           if (parent) {
-            // Move todos os nós filhos para antes do elemento de formatação
-            while (formatElement.firstChild) {
-              parent.insertBefore(formatElement.firstChild, formatElement);
+            while (element.firstChild) {
+              parent.insertBefore(element.firstChild, element);
             }
-            // Remove o elemento de formatação vazio
-            parent.removeChild(formatElement);
+            parent.removeChild(element);
+          }
+        });
+
+        // Se nada foi encontrado via TreeWalker, tenta a abordagem manual
+        if (elementsToUnwrap.length === 0) {
+          const commonAncestor = range.commonAncestorContainer;
+          let currentNode: Node | null = commonAncestor;
+
+          // Procura elementos de formatação nos pais
+          while (currentNode && currentNode !== contentEditableRef.current) {
+            if (currentNode.nodeType === Node.ELEMENT_NODE) {
+              const element = currentNode as HTMLElement;
+              if (element.tagName.toLowerCase() === tagName.toLowerCase()) {
+                const parent = element.parentNode;
+                if (parent) {
+                  while (element.firstChild) {
+                    parent.insertBefore(element.firstChild, element);
+                  }
+                  parent.removeChild(element);
+                  break;
+                }
+              }
+            }
+            currentNode = currentNode.parentNode;
           }
         }
       } catch (error) {
         console.warn(`Erro ao remover formatação ${tagName}:`, error);
       }
+    };
+
+    // Função principal para toggle de formatação
+    const toggleFormat = (format: ToolbarAction) => {
+      if (!contentEditableRef.current) return;
+
+      contentEditableRef.current.focus();
+      const selection = window.getSelection();
+      if (!selection) return;
+
+      // Clear formatting é caso especial
+      if (format === "clear") {
+        handleClearFormatting();
+        return;
+      }
+
+      const button = TOOLBAR_BUTTONS.find((b) => b.action === format);
+      if (!button) return;
+
+      // Se não há seleção, seleciona todo o conteúdo se existir
+      if (selection.rangeCount === 0 || selection.toString().trim() === "") {
+        if (contentEditableRef.current.textContent?.trim()) {
+          const range = document.createRange();
+          range.selectNodeContents(contentEditableRef.current);
+          selection.removeAllRanges();
+          selection.addRange(range);
+        } else {
+          return;
+        }
+      }
+
+      const range = selection.getRangeAt(0);
+      if (range.toString().trim() === "") return;
+
+      // Verifica se já está formatado
+      const isAlreadyFormatted =
+        hasFormatTag(range.startContainer, button.tag) &&
+        hasFormatTag(range.endContainer, button.tag);
+
+      if (isAlreadyFormatted) {
+        removeFormatFromRange(range, button.tag);
+      } else {
+        applyFormatToRange(range, button.tag);
+      }
+
+      updateValues();
+      setTimeout(checkActiveFormats, 10);
+    };
+
+    // Nova função para limpar TODAS as formatações
+    const handleClearFormatting = () => {
+      const selection = window.getSelection();
+      if (!selection || selection.rangeCount === 0) return;
+
+      let range = selection.getRangeAt(0);
+
+      // Se não há seleção, seleciona todo o conteúdo
+      if (range.toString().trim() === "") {
+        if (contentEditableRef.current?.textContent?.trim()) {
+          range = document.createRange();
+          range.selectNodeContents(contentEditableRef.current);
+          selection.removeAllRanges();
+          selection.addRange(range);
+        } else {
+          return;
+        }
+      }
+
+      clearAllFormatting(range);
+      updateValues();
+      setTimeout(checkActiveFormats, 10);
     };
 
     // Função para atualizar os valores internos
@@ -276,12 +392,14 @@ const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
 
       // Verifica limite de caracteres
       if (maxLength && currentPlainText.length > maxLength) {
-        // Restaura o valor anterior
         e.currentTarget.innerHTML = htmlValue;
         return;
       }
 
       updateValues();
+
+      // Atualiza formatos ativos após input
+      setTimeout(checkActiveFormats, 10);
     };
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
@@ -299,6 +417,10 @@ const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
           case "u":
             e.preventDefault();
             toggleFormat("strikethrough");
+            return;
+          case "\\": // Ctrl+\ para limpar formatação
+            e.preventDefault();
+            toggleFormat("clear");
             return;
         }
       }
@@ -326,7 +448,6 @@ const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
     };
 
     const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
-      // Intercepta colar para respeitar maxLength
       if (maxLength) {
         e.preventDefault();
         const clipboardData = e.clipboardData?.getData("text/plain") || "";
@@ -345,9 +466,26 @@ const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
           range.collapse(false);
 
           updateValues();
+          setTimeout(checkActiveFormats, 10);
         }
       }
     };
+
+    // Event handlers para detectar mudanças na seleção
+    const handleSelectionChange = () => {
+      // Só executa se o elemento está focado
+      if (isFocused) {
+        setTimeout(checkActiveFormats, 10);
+      }
+    };
+
+    // Effect para escutar mudanças de seleção globais
+    React.useEffect(() => {
+      document.addEventListener("selectionchange", handleSelectionChange);
+      return () => {
+        document.removeEventListener("selectionchange", handleSelectionChange);
+      };
+    }, [isFocused]);
 
     return (
       <div className="w-full space-y-2">
@@ -394,6 +532,25 @@ const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
                   </TooltipContent>
                 </Tooltip>
               ))}
+
+              {/* Botão para limpar formatação */}
+              <div className="h-4 border-l border-input mx-1" />
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                    onClick={() => handleToolbarAction("clear")}
+                    type="button"
+                  >
+                    <RemoveFormatting className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Limpar Formatação (Ctrl+\)</p>
+                </TooltipContent>
+              </Tooltip>
             </div>
           </TooltipProvider>
 
@@ -431,7 +588,7 @@ const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
             role="textbox"
             aria-label={label || "Rich text editor"}
             aria-multiline="true"
-            {...(props as any)} // Cast necessário devido à diferença de tipos
+            {...(props as any)}
           />
 
           {(showCharCount || maxLength) && (

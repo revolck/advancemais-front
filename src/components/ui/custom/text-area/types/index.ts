@@ -11,10 +11,17 @@ export interface BaseTextareaProps
   maxLength?: number;
   showCharCount?: boolean;
 }
+
 export interface RichTextareaProps
   extends Omit<
       React.HTMLAttributes<HTMLDivElement>,
-      "onChange" | "value" | "defaultValue"
+      | "onChange"
+      | "value"
+      | "defaultValue"
+      | "onKeyDown"
+      | "onPaste"
+      | "onFocus"
+      | "onBlur"
     >,
     VariantProps<typeof textareaVariants> {
   label?: string;
@@ -22,13 +29,22 @@ export interface RichTextareaProps
   onInfoClick?: () => void;
   maxLength?: number;
   showCharCount?: boolean;
-  // Mantém compatibilidade com textarea props
+  // Propriedades essenciais para compatibilidade com forms
   value?: string;
   defaultValue?: string;
-  placeholder?: string; // 🔧 ADICIONADO
+  placeholder?: string;
+  required?: boolean; // 🔧 CORRIGE o erro de build
+  name?: string;
+  id?: string;
+  disabled?: boolean;
+  readOnly?: boolean;
+  autoFocus?: boolean;
+  // Event handlers compatíveis com textarea
   onChange?: (event: React.ChangeEvent<HTMLTextAreaElement>) => void;
   onKeyDown?: (event: React.KeyboardEvent<HTMLDivElement>) => void;
   onPaste?: (event: React.ClipboardEvent<HTMLDivElement>) => void;
+  onFocus?: (event: React.FocusEvent<HTMLDivElement>) => void;
+  onBlur?: (event: React.FocusEvent<HTMLDivElement>) => void;
 }
 
 export type SimpleTextareaProps = BaseTextareaProps;
