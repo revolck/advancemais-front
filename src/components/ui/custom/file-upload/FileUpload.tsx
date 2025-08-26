@@ -4,6 +4,7 @@ import React, { useState, useRef, useCallback, useMemo, useEffect } from "react"
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import routes from "@/api/routes";
 import { Icon } from "../Icons";
 import { toastCustom } from "../toast";
 import {
@@ -234,6 +235,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   onUploadError,
   onUpload,
   uploadUrl,
+  publicUrl,
 }) => {
   const [internalFiles, setInternalFiles] = useState<FileUploadItem[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
@@ -260,6 +262,13 @@ export const FileUpload: React.FC<FileUploadProps> = ({
 
   const maxFilesLimit = maxFiles ?? validationConfig.maxFiles;
 
+  const resolvedUploadUrl = useMemo(() => {
+    if (uploadUrl) return uploadUrl;
+    const sanitized = (publicUrl || "").replace(/^\/+/g, "").replace(/\.+/g, "");
+    const base = routes.upload.base();
+    return sanitized ? `${base}?path=${encodeURIComponent(sanitized)}` : base;
+  }, [uploadUrl, publicUrl]);
+
   // File validation function
   const validateFile = useCallback((file: File): FileValidationResult => {
     const errors: string[] = [];
@@ -285,7 +294,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
 
     // Check file type
     const fileExt = `.${getFileExtension(file.name)}`;
-    const isTypeAllowed = validationConfig.acceptedTypes.some(type => {
+    const isTypeAllowed = validationConfig.accept.some(type => {
       if (type.startsWith('.')) {
         return type === fileExt;
       }
@@ -303,7 +312,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       errors.push(
         DEFAULT_ERROR_MESSAGES.fileTypeNotAllowed.replace(
           "{allowedTypes}",
-          validationConfig.acceptedTypes.filter(t => t.startsWith('.')).join(', ')
+          validationConfig.accept.filter(t => t.startsWith('.')).join(', ')
         )
       );
     }
@@ -432,14 +441,14 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         return;
       }
 
-      if (!uploadUrl) {
+      if (!resolvedUploadUrl) {
         simulateUpload(fileId);
         return;
       }
 
       onUploadStart?.(target);
       const xhr = new XMLHttpRequest();
-      xhr.open("POST", uploadUrl);
+      xhr.open("POST", resolvedUploadUrl);
 
       xhr.upload.onprogress = (e) => {
         if (!e.lengthComputable) return;
@@ -501,7 +510,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       formData.append("file", target.file);
       xhr.send(formData);
     },
-    [uploadUrl, onUpload, simulateUpload, updateFiles, onUploadStart, onUploadProgress, onUploadComplete, onUploadError]
+    [resolvedUploadUrl, onUpload, simulateUpload, updateFiles, onUploadStart, onUploadProgress, onUploadComplete, onUploadError]
   );
 
   // Handle file processing
@@ -622,8 +631,22 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   }, [processFiles]);
 
   // File action handlers
+  const removeFromServer = useCallback(async (file: FileUploadItem) => {
+    if (!file.uploadedUrl) return;
+    const relative = file.uploadedUrl.replace(/^\/+/g, "");
+    try {
+      await fetch(`${routes.upload.base()}?file=${encodeURIComponent(relative)}`, {
+        method: "DELETE",
+      });
+    } catch {}
+  }, []);
+
   const handleFileRemove = useCallback(
-    (fileId: string) => {
+    async (fileId: string) => {
+      const target = filesRef.current.find((f) => f.id === fileId);
+      if (target) {
+        await removeFromServer(target);
+      }
       const updatedFiles = filesRef.current.filter((file) => file.id !== fileId);
       updateFiles(updatedFiles);
       onFileRemove?.(fileId);
@@ -633,7 +656,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         duration: 2000,
       });
     },
-    [updateFiles, onFileRemove]
+    [removeFromServer, updateFiles, onFileRemove]
   );
 
   const handleFileRetry = useCallback(
@@ -673,12 +696,12 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   );
 
   // Generate accepted types string for display
-  const acceptedTypesDisplay = useMemo(() => {
-    const extensions = validationConfig.acceptedTypes
+  const acceptDisplay = useMemo(() => {
+    const extensions = validationConfig.accept
       .filter(type => type.startsWith('.'))
       .join(', ');
     return extensions || 'Vários formatos';
-  }, [validationConfig.acceptedTypes]);
+  }, [validationConfig.accept]);
 
   // File display logic
   const INITIAL_DISPLAY_COUNT = 3;
@@ -686,7 +709,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   const hasMoreFiles = files.length > INITIAL_DISPLAY_COUNT;
 
   // Generate accept attribute for input
-  const acceptAttribute = validationConfig.acceptedTypes.join(',');
+  const acceptAttribute = validationConfig.accept.join(',');
 
   // Check if maximum number of files has been reached
   const isMaxFilesReached = files.length >= maxFilesLimit;
@@ -743,7 +766,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
 
               <p className="text-xs text-muted-foreground mt-1">
                 {DEFAULT_UI_TEXTS.dropzoneDescription
-                  .replace("{acceptedTypes}", acceptedTypesDisplay)
+                  .replace("{acceptedTypes}", acceptDisplay)
                   .replace("{maxSize}", formatFileSize(validationConfig.maxSize))}
               </p>
             </div>

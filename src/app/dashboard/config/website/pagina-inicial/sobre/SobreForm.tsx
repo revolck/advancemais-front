@@ -11,6 +11,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { toastCustom } from "@/components/ui/custom/toast";
 import { listAbout, createAbout, updateAbout } from "@/api/websites/components";
+import routes from "@/api/routes";
 
 interface SobreContent {
   id?: string;
@@ -263,6 +264,17 @@ export default function SobreForm() {
           }
           break;
       }
+
+      if (files[0]?.uploadedUrl) {
+        try {
+          await fetch(
+            `${routes.upload.base()}?file=${encodeURIComponent(
+              files[0].uploadedUrl.replace(/^\/+/g, ""),
+            )}`,
+            { method: "DELETE" },
+          );
+        } catch {}
+      }
     } finally {
       setIsLoading(false);
     }
@@ -282,11 +294,8 @@ export default function SobreForm() {
                 files={files}
                 multiple={false}
                 maxFiles={1}
-                validation={{
-                  maxSize: 5 * 1024 * 1024,
-                  acceptedTypes: ["image/*"],
-                }}
-                onUpload={async (_file) => ({})}
+                validation={{ accept: ["image/*"] }}
+                publicUrl="/sobre"
                 onFilesChange={handleFilesChange}
                 showProgress={false}
               />

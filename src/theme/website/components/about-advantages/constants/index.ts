@@ -78,7 +78,7 @@ export const DEFAULT_ABOUT_ADVANTAGES_DATA: AboutAdvantagesApiData = {
  */
 export const ABOUT_ADVANTAGES_CONFIG = {
   api: {
-    endpoint: websiteRoutes.home.about.list(),
+    endpoint: websiteRoutes.about.list(),
     timeout: 5000,
     retryAttempts: 3,
     retryDelay: 1000,
