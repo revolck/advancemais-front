@@ -35,7 +35,9 @@ const RegisterPage = () => {
 
   useEffect(() => {
     const savedForm = localStorage.getItem("registerFormData");
-    const savedType = localStorage.getItem("registerSelectedType") as SelectedType;
+    const savedType = localStorage.getItem(
+      "registerSelectedType"
+    ) as SelectedType;
     if (savedForm) {
       setFormData(JSON.parse(savedForm));
     }
@@ -118,7 +120,9 @@ const RegisterPage = () => {
 
   const isDocumentValid = () => {
     const clean = formData.document.replace(/\D/g, "");
-    return selectedType === "company" ? clean.length === 14 : clean.length === 11;
+    return selectedType === "company"
+      ? clean.length === 14
+      : clean.length === 11;
   };
 
   const isPhoneValid = () => {
@@ -134,10 +138,16 @@ const RegisterPage = () => {
   };
 
   const isFormValid = () => {
-    const { name, document, phone, email, password, confirmPassword } = formData;
-    const fieldsFilled = [name, document, phone, email, password, confirmPassword].every(
-      (value) => value.trim() !== ""
-    );
+    const { name, document, phone, email, password, confirmPassword } =
+      formData;
+    const fieldsFilled = [
+      name,
+      document,
+      phone,
+      email,
+      password,
+      confirmPassword,
+    ].every((value) => value.trim() !== "");
 
     return (
       fieldsFilled &&
@@ -225,8 +235,9 @@ const RegisterPage = () => {
       >
         <div className="flex items-start justify-between flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
           <div className="space-y-1">
-            <h1 className="text-lg sm:text-xl md:text-2xl font-semibold text-gray-900 leading-tight">
-              Criar conta como {userTypes.find((type) => type.id === selectedType)?.title}
+            <h1 className="!text-2xl sm:text-xl md:text-2xl font-semibold text-gray-900 leading-tight">
+              Criar conta como{" "}
+              {userTypes.find((type) => type.id === selectedType)?.title}
             </h1>
             <p className="text-xs sm:text-sm text-gray-500">
               {userTypes.find((type) => type.id === selectedType)?.description}
@@ -257,9 +268,12 @@ const RegisterPage = () => {
               name="name"
               value={formData.name}
               onChange={(e) => handleInputChange("name", e.target.value)}
-              placeholder={isCompany ? "Advance Tecnologia" : "João Silva"}
+              placeholder={
+                isCompany ? "Digite o nome da sua empresa" : "Digite seu nome"
+              }
               size="sm"
               className="text-sm"
+              required
             />
           </motion.div>
 
@@ -277,6 +291,7 @@ const RegisterPage = () => {
               placeholder={isCompany ? "00.000.000/0000-00" : "000.000.000-00"}
               size="sm"
               className="text-sm"
+              required
             />
           </motion.div>
 
@@ -292,9 +307,10 @@ const RegisterPage = () => {
               value={formData.phone}
               onChange={(e) => handleInputChange("phone", e.target.value)}
               mask="phone"
-              placeholder="(11) 99999-9999"
+              placeholder="(00) 00000-0000"
               size="sm"
               className="text-sm"
+              required
             />
 
             <InputCustom
@@ -304,9 +320,10 @@ const RegisterPage = () => {
               value={formData.email}
               onChange={(e) => handleInputChange("email", e.target.value)}
               mask="email"
-              placeholder="joao@email.com"
+              placeholder="seuemail@email.com"
               size="sm"
               className="text-sm"
+              required
             />
           </motion.div>
 
@@ -327,20 +344,24 @@ const RegisterPage = () => {
               size="sm"
               className="text-sm"
               error={passwordError}
+              required
             />
 
-              <InputCustom
-                label="Confirmar senha"
-                name="confirmPassword"
-                type="password"
-                value={formData.confirmPassword}
-                onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
-                placeholder="••••••••"
-                showPasswordToggle
-                size="sm"
-                className="text-sm"
-                error={passwordError}
-              />
+            <InputCustom
+              label="Confirmar senha"
+              name="confirmPassword"
+              type="password"
+              value={formData.confirmPassword}
+              onChange={(e) =>
+                handleInputChange("confirmPassword", e.target.value)
+              }
+              placeholder="••••••••"
+              showPasswordToggle
+              size="sm"
+              className="text-sm"
+              error={passwordError}
+              required
+            />
           </motion.div>
         </div>
 
@@ -354,6 +375,7 @@ const RegisterPage = () => {
             id="terms"
             checked={acceptTerms}
             onCheckedChange={(v) => setAcceptTerms(!!v)}
+            required
           />
           <Label
             htmlFor="terms"
@@ -367,7 +389,8 @@ const RegisterPage = () => {
               className="text-blue-600 hover:underline font-medium cursor-pointer"
             >
               Termos de Uso
-            </a>, a{" "}
+            </a>
+            , a{" "}
             <a
               href="http://advancemais.com/politica-privacidade"
               target="_blank"
@@ -375,7 +398,8 @@ const RegisterPage = () => {
               className="text-blue-600 hover:underline font-medium cursor-pointer"
             >
               Política de Privacidade
-            </a>{" "}e autorizo o uso das minhas informações conforme descrito.
+            </a>{" "}
+            e autorizo o uso das minhas informações conforme descrito.
           </Label>
         </motion.div>
 
@@ -439,9 +463,7 @@ const RegisterPage = () => {
                         }}
                         whileHover={{ scale: 1.02, y: -2 }}
                         whileTap={{ scale: 0.98 }}
-                        onClick={() =>
-                          setSelectedType(type.id as SelectedType)
-                        }
+                        onClick={() => setSelectedType(type.id as SelectedType)}
                         className={`w-full px-5 py-4 sm:px-6 sm:py-5 md:px-7 md:py-6 rounded-xl sm:rounded-2xl border-2 ${type.borderColor} ${type.bgColor} ${type.hoverBg} transition-all duration-300 text-left group shadow-sm hover:shadow-md cursor-pointer flex items-center justify-between`}
                       >
                         <div className="flex items-center space-x-6 sm:space-x-7 md:space-x-8">
@@ -524,4 +546,3 @@ const RegisterPage = () => {
 };
 
 export default RegisterPage;
-

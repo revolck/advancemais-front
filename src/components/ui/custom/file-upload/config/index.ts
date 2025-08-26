@@ -7,25 +7,7 @@ export const DEFAULT_FILE_VALIDATION: FileValidationConfig = {
   maxSize: 2 * 1024 * 1024, // 2MB em bytes
   minSize: 0,
   maxFiles: 10,
-  acceptedTypes: [
-    ".csv",
-    ".xlsx", 
-    ".xls",
-    ".pdf",
-    ".jpg",
-    ".jpeg", 
-    ".png",
-    ".webp",
-    ".json",
-    "text/csv",
-    "application/vnd.ms-excel",
-    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    "application/pdf",
-    "image/jpeg",
-    "image/png",
-    "image/webp",
-    "application/json",
-  ] as AcceptedFileType[],
+  accept: ["image/*"] as AcceptedFileType[],
 };
 
 /**

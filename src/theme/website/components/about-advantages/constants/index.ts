@@ -9,7 +9,7 @@ import { websiteRoutes } from "@/api/routes";
 export const DEFAULT_ABOUT_ADVANTAGES_DATA: AboutAdvantagesApiData = {
   whyChoose: {
     id: "why-choose",
-    title: "Por que escolher AdvanceMais?",
+    title: "Por que escolher Advance+?",
     description:
       "Oferecemos soluções inovadoras e personalizadas que transformam desafios em oportunidades reais de crescimento para sua empresa.",
     buttonText: "Conheça nossos serviços",
@@ -18,14 +18,14 @@ export const DEFAULT_ABOUT_ADVANTAGES_DATA: AboutAdvantagesApiData = {
   },
   aboutSection: {
     id: "about-section",
-    title: "Sobre a AdvanceMais",
+    title: "Sobre a Advance+",
     paragraphs: [
-      "A AdvanceMais é uma empresa especializada em soluções de gestão de pessoas e tecnologia, com foco em resultados que impulsionam o crescimento sustentável dos nossos clientes.",
+      "A Advance+ é uma empresa especializada em soluções de gestão de pessoas e tecnologia, com foco em resultados que impulsionam o crescimento sustentável dos nossos clientes.",
       "Com anos de experiência no mercado, desenvolvemos metodologias próprias que combinam inovação tecnológica com expertise em recursos humanos, oferecendo um serviço diferenciado e personalizado.",
       "Nossa missão é conectar talentos e tecnologia para criar soluções que geram valor real para empresas de todos os portes, sempre com foco na excelência e na satisfação do cliente.",
     ],
     imageUrl: "/images/home/about-advantages.webp",
-    imageAlt: "Sobre a AdvanceMais - Transformando desafios em oportunidades",
+    imageAlt: "Sobre a Advance+ - Transformando desafios em oportunidades",
     overlayTitle: "Transformamos desafios em oportunidades reais.",
     overlayDescription:
       "Descubra como podemos conectar talentos, transformar desafios em oportunidades e criar soluções que impulsionam resultados.",
@@ -78,7 +78,7 @@ export const DEFAULT_ABOUT_ADVANTAGES_DATA: AboutAdvantagesApiData = {
  */
 export const ABOUT_ADVANTAGES_CONFIG = {
   api: {
-    endpoint: websiteRoutes.home.about(),
+    endpoint: websiteRoutes.about.list(),
     timeout: 5000,
     retryAttempts: 3,
     retryDelay: 1000,

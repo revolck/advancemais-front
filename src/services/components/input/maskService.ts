@@ -156,7 +156,11 @@ class MaskService {
         }
       } else {
         // Caractere fixo da máscara
-        result += maskChar;
+        if (config.alwaysShowMask || valueIndex < value.length) {
+          result += maskChar;
+        } else {
+          break;
+        }
       }
     }
 
@@ -262,8 +266,8 @@ class MaskService {
     if (maskType === "alphanumeric") {
       return value.replace(/[^a-zA-Z0-9]/g, "");
     }
-
-    return this.applyMask(value, maskType, customConfig);
+    const unmaskedValue = this.removeMask(value, maskType);
+    return this.applyMask(unmaskedValue, maskType, customConfig);
   }
 }
 

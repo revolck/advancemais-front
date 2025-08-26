@@ -17,7 +17,7 @@ export const DEFAULT_ACCORDION_DATA: AccordionSectionData[] = [
         value: "nossa-historia",
         trigger: "Nossa História",
         content:
-          "Fundada em 2014, a AdvanceMais nasceu com o propósito de transformar a educação e o desenvolvimento empresarial no Brasil. Ao longo dos anos, construímos uma trajetória sólida baseada na inovação, excelência e compromisso com nossos clientes. Nossa jornada é marcada por conquistas significativas e pela constante busca por soluções que realmente fazem a diferença na vida das pessoas e no crescimento das empresas.",
+          "Fundada em 2014, a Advance+ nasceu com o propósito de transformar a educação e o desenvolvimento empresarial no Brasil. Ao longo dos anos, construímos uma trajetória sólida baseada na inovação, excelência e compromisso com nossos clientes. Nossa jornada é marcada por conquistas significativas e pela constante busca por soluções que realmente fazem a diferença na vida das pessoas e no crescimento das empresas.",
         order: 1,
         isActive: true,
       },

@@ -42,5 +42,5 @@ export const FOOTER_CONFIG: FooterConfig = {
     { label: "Termos de Uso", href: "/termos" },
     { label: "Preferências de Cookies", href: "/cookies" },
   ],
-  copyright: "Todos os Direitos Reservados AdvanceMais",
+  copyright: "Todos os Direitos Reservados Advance+",
 };
