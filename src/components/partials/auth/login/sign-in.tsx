@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { InputCustom, ButtonCustom, CheckboxCustom } from "@/components/ui/custom";
+import Image from "next/image";
 
 // --- TYPE DEFINITIONS ---
 
@@ -15,14 +16,6 @@ interface SignInPageProps {
   onCreateAccount?: () => void;
   isLoading?: boolean;
 }
-
-// --- SUB-COMPONENTS ---
-
-const GlassInputWrapper = ({ children }: { children: React.ReactNode }) => (
-  <div className="rounded-2xl border border-border bg-foreground/5 backdrop-blur-sm transition-colors focus-within:border-violet-400/70 focus-within:bg-violet-500/10">
-    {children}
-  </div>
-);
 
 // --- MAIN COMPONENT ---
 
@@ -37,29 +30,15 @@ export const SignInPage: React.FC<SignInPageProps> = ({
   onCreateAccount,
   isLoading,
 }) => {
-  const [showPassword, setShowPassword] = useState(false);
   const [documento, setDocumento] = useState("");
   const [senha, setSenha] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
 
-  const handleDocumentoChange = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const digits = e.target.value.replace(/\D/g, "").slice(0, 14);
-    const formatted = digits.length <= 11
-      ? digits
-          .replace(/(\d{3})(\d)/, "$1.$2")
-          .replace(/(\d{3})(\d)/, "$1.$2")
-          .replace(/(\d{3})(\d{1,2})$/, "$1-$2")
-      : digits
-          .replace(/(\d{2})(\d)/, "$1.$2")
-          .replace(/(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
-          .replace(/\.(\d{3})(\d)/, ".$1/$2")
-          .replace(/(\d{4})(\d)/, "$1-$2");
-    setDocumento(formatted);
-  };
-
+  // Determina se é CPF (11 dígitos) ou CNPJ (14 dígitos)
   const documentoDigits = documento.replace(/\D/g, "");
+  const documentoMask = documentoDigits.length <= 11 ? "cpf" : "cnpj";
+  
+  // Validação do formulário
   const isFormValid =
     (documentoDigits.length === 11 || documentoDigits.length === 14) &&
     senha.length > 0;
@@ -70,79 +49,87 @@ export const SignInPage: React.FC<SignInPageProps> = ({
       <section className="flex-1 flex items-center justify-center p-8">
         <div className="w-full max-w-md">
           <div className="flex flex-col gap-6">
-            <h1 className="animate-element animate-delay-100 text-4xl md:text-5xl font-semibold leading-tight">
+            {/* Logo */}
+            <div className="animate-element animate-delay-50 flex justify-center mb-4">
+              <Image
+                src="/images/logos/logo_mobile.webp"
+                alt="Logo"
+                width={120}
+                height={40}
+                priority
+                className="object-contain"
+              />
+            </div>
+
+            <h1 className="animate-element animate-delay-100 text-4xl md:text-5xl font-semibold leading-tight text-center">
               {title}
             </h1>
             {description && (
-              <p className="animate-element animate-delay-200 text-muted-foreground">
+              <p className="animate-element animate-delay-200 text-muted-foreground text-center">
                 {description}
               </p>
             )}
 
             <form className="space-y-5" onSubmit={onSignIn}>
-              <div className="animate-element animate-delay-300">
-                <label className="text-sm font-medium text-muted-foreground">
-                  CPF ou CNPJ
-                </label>
-                <GlassInputWrapper>
-                  <input
-                    name="documento"
-                    type="text"
-                    required
-                    value={documento}
-                    onChange={handleDocumentoChange}
-                    placeholder="Digite seu CPF ou CNPJ"
-                    className="w-full bg-transparent text-sm p-4 rounded-2xl focus:outline-none"
-                  />
-                </GlassInputWrapper>
+              <div className="animate-element animate-delay-300 space-y-1">
+                <Label htmlFor="documento" className="required text-sm font-medium text-muted-foreground">
+                  CPF ou CNPJ 
+                </Label>
+                <InputCustom
+                  label=""
+                  id="documento"
+                  name="documento"
+                  value={documento}
+                  onChange={(e) => setDocumento(e.target.value)}
+                  mask={documentoMask}
+                  placeholder="Digite seu CPF ou CNPJ"
+                  required
+                  size="md"
+                  className="bg-foreground/5 rounded-sm"
+                />
               </div>
 
-              <div className="animate-element animate-delay-400">
-                <label className="text-sm font-medium text-muted-foreground">
+              <div className="animate-element animate-delay-400 space-y-1">
+                <Label htmlFor="senha" className="required text-sm font-medium text-muted-foreground">
                   Senha
-                </label>
-                <GlassInputWrapper>
-                  <div className="relative">
-                    <input
-                      name="senha"
-                      type={showPassword ? "text" : "password"}
-                      required
-                      value={senha}
-                      onChange={(e) => setSenha(e.target.value)}
-                      placeholder="Digite sua senha"
-                      className="w-full bg-transparent text-sm p-4 pr-12 rounded-2xl focus:outline-none"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute inset-y-0 right-3 flex items-center cursor-pointer"
-                    >
-                      {showPassword ? (
-                        <EyeOff className="w-5 h-5 text-muted-foreground hover:text-foreground transition-colors" />
-                      ) : (
-                        <Eye className="w-5 h-5 text-muted-foreground hover:text-foreground transition-colors" />
-                      )}
-                    </button>
-                  </div>
-                </GlassInputWrapper>
+                </Label>
+                <InputCustom
+                  label=""
+                  id="senha"
+                  name="senha"
+                  type="password"
+                  value={senha}
+                  onChange={(e) => setSenha(e.target.value)}
+                  placeholder="Digite sua senha"
+                  showPasswordToggle
+                  required
+                  size="md"
+                  className="bg-foreground/5 rounded-sm"
+                />
               </div>
 
               <div className="animate-element animate-delay-500 flex items-center justify-between text-sm">
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <Checkbox
+                <div className="flex items-center gap-3 cursor-pointer">
+                  <CheckboxCustom
                     id="rememberMe"
                     checked={rememberMe}
                     onCheckedChange={(v) => setRememberMe(!!v)}
+                    size="md"
                   />
-                  <span className="text-foreground/90">Me mantenha conectado</span>
-                </label>
+                  <Label 
+                    htmlFor="rememberMe" 
+                    className="text-foreground/90 cursor-pointer"
+                  >
+                    Me mantenha conectado
+                  </Label>
+                </div>
                 <a
                   href="#"
                   onClick={(e) => {
                     e.preventDefault();
                     onResetPassword?.();
                   }}
-                  className="hover:underline text-violet-400 transition-colors cursor-pointer"
+                  className="hover:text-gray-800 transition-colors text-muted-foreground cursor-pointer"
                 >
                   Recuperar senha
                 </a>
@@ -153,17 +140,17 @@ export const SignInPage: React.FC<SignInPageProps> = ({
                 name="rememberMe"
                 value={rememberMe ? "true" : "false"}
               />
-              <button
+              
+              <ButtonCustom
                 type="submit"
-                disabled={isLoading || !isFormValid}
-                className="animate-element animate-delay-600 w-full rounded-2xl bg-[var(--color-blue)] text-white py-4 font-medium hover:bg-[var(--color-blue)]/90 transition-colors flex items-center justify-center cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
+                isLoading={isLoading}
+                disabled={!isFormValid}
+                fullWidth
+                withAnimation
+                className="animate-element animate-delay-600 rounded-2xl bg-[var(--color-blue)] text-white py-6 font-medium hover:bg-[var(--color-blue)]/90 transition-colors disabled:opacity-70"
               >
-                {isLoading ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                ) : (
-                  "Entrar"
-                )}
-              </button>
+                Entrar
+              </ButtonCustom>
             </form>
 
             <p className="animate-element animate-delay-700 text-center text-sm text-muted-foreground">
@@ -174,7 +161,7 @@ export const SignInPage: React.FC<SignInPageProps> = ({
                   e.preventDefault();
                   onCreateAccount?.();
                 }}
-                className="text-violet-400 hover:underline transition-colors cursor-pointer"
+                className="hover:opacity-100 transition-colors text-[var(--primary-color)] cursor-pointer opacity-70"
               >
                 Crie sua conta
               </a>
