@@ -112,6 +112,7 @@ export const SignInPage: React.FC<SignInPageProps> = ({
                   required
                   size="md"
                   className="bg-foreground/5 rounded-sm"
+                  disabled={isSubmitting || isLoading}
                 />
               </div>
 
@@ -134,6 +135,7 @@ export const SignInPage: React.FC<SignInPageProps> = ({
                   required
                   size="md"
                   className="bg-foreground/5 rounded-sm"
+                  disabled={isSubmitting || isLoading}
                 />
               </div>
 
