@@ -1,10 +1,7 @@
 "use client";
 
 import React from "react";
-import {
-  VerticalTabs,
-  type VerticalTabItem,
-} from "@/components/ui/custom";
+import { VerticalTabs, type VerticalTabItem } from "@/components/ui/custom";
 import SobreForm from "./sobre/SobreForm";
 
 /**
@@ -12,7 +9,6 @@ import SobreForm from "./sobre/SobreForm";
  * Usa VerticalTabs para organizar as diferentes seções
  */
 export default function PaginaInicialPage() {
-
   const items: VerticalTabItem[] = [
     {
       value: "slider",
@@ -69,93 +65,39 @@ export default function PaginaInicialPage() {
               Gerencie os banners promocionais que aparecem na página inicial.
             </p>
           </div>
-
-          <div className="grid gap-4">
-            <div className="p-6 border-2 border-dashed border-border/50 rounded-lg text-center">
-              <div className="w-12 h-12 mx-auto bg-muted rounded-full flex items-center justify-center mb-3">
-                <span className="text-muted-foreground text-xl">🎨</span>
-              </div>
-              <h4 className="font-medium text-foreground mb-2">
-                Banner Principal
-              </h4>
-              <p className="text-sm text-muted-foreground mb-3">
-                Configure o banner de destaque da página inicial
-              </p>
-              <button className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm hover:bg-primary/90 transition-colors">
-                Configurar Banner
-              </button>
-            </div>
-
-            <div className="p-6 border-2 border-dashed border-border/50 rounded-lg text-center">
-              <div className="w-12 h-12 mx-auto bg-muted rounded-full flex items-center justify-center mb-3">
-                <span className="text-muted-foreground text-xl">📢</span>
-              </div>
-              <h4 className="font-medium text-foreground mb-2">
-                Banners Secundários
-              </h4>
-              <p className="text-sm text-muted-foreground mb-3">
-                Gerencie banners adicionais e promoções
-              </p>
-              <button className="px-4 py-2 bg-secondary text-secondary-foreground rounded-md text-sm hover:bg-secondary/90 transition-colors">
-                Gerenciar Banners
-              </button>
-            </div>
+        </div>
+      ),
+    },
+    {
+      value: "consultoria",
+      label: "Consultoria",
+      icon: "Briefcase",
+      content: (
+        <div className="space-y-6">
+          <div>
+            <h3 className="text-lg font-semibold mb-2">Seção de Consultoria</h3>
+            <p className="text-muted-foreground mb-4">
+              Configure conteúdos, serviços e destaques da sua área de
+              consultoria.
+            </p>
           </div>
         </div>
       ),
     },
     {
-      value: "empresarial",
-      label: "Empresarial",
-      icon: "Briefcase",
+      value: "recrutamento-selecao",
+      label: "Recrutamento & Seleção",
+      icon: "Users",
       content: (
         <div className="space-y-6">
           <div>
-            <h3 className="text-lg font-semibold mb-2">Seção Empresarial</h3>
+            <h3 className="text-lg font-semibold mb-2">
+              Recrutamento & Seleção
+            </h3>
             <p className="text-muted-foreground mb-4">
-              Configure o conteúdo da seção empresarial e institucional.
+              Defina textos, vitrines de vagas, depoimentos e CTAs desta seção.
             </p>
-          </div>
-
-          <div className="grid gap-4">
-            <div className="p-6 border border-border rounded-lg">
-              <h4 className="font-medium text-foreground mb-2 flex items-center gap-2">
-                <span className="text-blue-600">🏢</span>
-                Informações da Empresa
-              </h4>
-              <p className="text-sm text-muted-foreground mb-3">
-                Atualize missão, visão, valores e história da empresa
-              </p>
-              <button className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700 transition-colors">
-                Editar Informações
-              </button>
-            </div>
-
-            <div className="p-6 border border-border rounded-lg">
-              <h4 className="font-medium text-foreground mb-2 flex items-center gap-2">
-                <span className="text-green-600">📊</span>
-                Estatísticas e Números
-              </h4>
-              <p className="text-sm text-muted-foreground mb-3">
-                Configure contadores e métricas de destaque
-              </p>
-              <button className="px-4 py-2 bg-green-600 text-white rounded-md text-sm hover:bg-green-700 transition-colors">
-                Configurar Estatísticas
-              </button>
-            </div>
-
-            <div className="p-6 border border-border rounded-lg">
-              <h4 className="font-medium text-foreground mb-2 flex items-center gap-2">
-                <span className="text-purple-600">🎯</span>
-                Call-to-Actions
-              </h4>
-              <p className="text-sm text-muted-foreground mb-3">
-                Gerencie botões de ação e links importantes
-              </p>
-              <button className="px-4 py-2 bg-purple-600 text-white rounded-md text-sm hover:bg-purple-700 transition-colors">
-                Gerenciar CTAs
-              </button>
-            </div>
+            {/* TODO: Substitua por <RecrutamentoSelecaoForm /> quando existir */}
           </div>
         </div>
       ),
