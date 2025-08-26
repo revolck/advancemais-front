@@ -64,7 +64,7 @@ export interface FileValidationConfig {
   /** Tamanho mínimo em bytes */
   minSize?: number;
   /** Tipos de arquivo aceitos */
-  acceptedTypes: AcceptedFileType[];
+  accept: AcceptedFileType[];
   /** Número máximo de arquivos */
   maxFiles: number;
   /** Se deve validar dimensões de imagem */
@@ -130,6 +130,8 @@ export interface FileUploadProps extends VariantProps<typeof fileUploadVariants>
   onUpload?: (file: File) => Promise<{ url?: string; error?: string }>;
   /** Endpoint para upload automático */
   uploadUrl?: string;
+  /** Caminho público para salvar o arquivo */
+  publicUrl?: string;
 }
 
 /**

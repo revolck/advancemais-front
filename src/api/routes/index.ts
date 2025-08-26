@@ -14,14 +14,14 @@ export const websiteRoutes = {
   put: () => `${prefix}/website`,
   update: (id: string) => `${prefix}/website/${id}`,
   delete: (id: string) => `${prefix}/website/${id}`,
+  about: {
+    list: () => `${prefix}/website/sobre`,
+    create: () => `${prefix}/website/sobre`,
+    get: (id: string) => `${prefix}/website/sobre/${id}`,
+    update: (id: string) => `${prefix}/website/sobre/${id}`,
+    delete: (id: string) => `${prefix}/website/sobre/${id}`,
+  },
   home: {
-    about: {
-      list: () => `${prefix}/website/sobre`,
-      create: () => `${prefix}/website/sobre`,
-      get: (id: string) => `${prefix}/website/sobre/${id}`,
-      update: (id: string) => `${prefix}/website/sobre/${id}`,
-      delete: (id: string) => `${prefix}/website/sobre/${id}`,
-    },
     slide: () => `${prefix}/website/slide`,
     banner: () => `${prefix}/website/banner`,
   },
@@ -75,8 +75,6 @@ export const brevoRoutes = {
  */
 export const uploadRoutes = {
   base: () => `${prefix}/upload`,
-  slider: () => `${prefix}/upload/slider`,
-  banner: () => `${prefix}/upload/banner`,
 };
 
 /**

@@ -3,7 +3,7 @@
  * Busca dados do componente About do website
  */
 
-import routes from "@/api/routes";
+import { websiteRoutes } from "@/api/routes";
 import { apiFetch } from "@/api/client";
 import { apiConfig, env } from "@/lib/env";
 import { aboutMockData } from "./mock";
@@ -71,7 +71,7 @@ export async function getAboutDataClient(): Promise<AboutApiResponse> {
 export async function listAbout(
   init?: RequestInit,
 ): Promise<AboutBackendResponse[]> {
-  return apiFetch<AboutBackendResponse[]>(routes.website.home.about.list(), {
+  return apiFetch<AboutBackendResponse[]>(websiteRoutes.about.list(), {
     init: init ?? { headers: apiConfig.headers },
   });
 }
@@ -80,7 +80,7 @@ export async function getAboutById(
   id: string,
 ): Promise<AboutBackendResponse> {
   return apiFetch<AboutBackendResponse>(
-    routes.website.home.about.get(id),
+    websiteRoutes.about.get(id),
     { init: { headers: apiConfig.headers } },
   );
 }
@@ -100,7 +100,7 @@ export async function createAbout(
   data: CreateAboutPayload,
 ): Promise<AboutBackendResponse> {
   const form = buildFormData(data);
-  return apiFetch<AboutBackendResponse>(routes.website.home.about.create(), {
+  return apiFetch<AboutBackendResponse>(websiteRoutes.about.create(), {
     init: {
       method: "POST",
       body: form,
@@ -116,7 +116,7 @@ export async function updateAbout(
 ): Promise<AboutBackendResponse> {
   const form = buildFormData(data);
   return apiFetch<AboutBackendResponse>(
-    routes.website.home.about.update(id),
+    websiteRoutes.about.update(id),
     {
       init: {
         method: "PUT",
@@ -129,7 +129,7 @@ export async function updateAbout(
 }
 
 export async function deleteAbout(id: string): Promise<void> {
-  await apiFetch<void>(routes.website.home.about.delete(id), {
+  await apiFetch<void>(websiteRoutes.about.delete(id), {
     init: {
       method: "DELETE",
       headers: { Accept: apiConfig.headers.Accept },
