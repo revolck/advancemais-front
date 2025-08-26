@@ -6,8 +6,8 @@ import {
   InputCustom,
   FileUpload,
   type FileUploadItem,
+  RichTextarea,
 } from "@/components/ui/custom";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toastCustom } from "@/components/ui/custom/toast";
 
@@ -302,15 +302,17 @@ export default function SobreForm() {
               <Label htmlFor="descricao" className="text-sm font-medium text-gray-700">
                 Descrição <span className="text-red-500">*</span>
               </Label>
-              <Textarea
-                id="descricao"
-                value={content.descricao}
-                onChange={(e) => setContent(prev => ({ ...prev, descricao: e.target.value }))}
-                maxLength={500}
-                placeholder="Descreva sobre sua empresa..."
-                className="mt-1 min-h-[100px] resize-none"
-                required
-              />
+              <div className="mt-1">
+                <RichTextarea
+                  id="descricao"
+                  value={content.descricao}
+                  onChange={(e) => setContent(prev => ({ ...prev, descricao: e.target.value }))}
+                  maxLength={500}
+                  placeholder="Descreva sobre sua empresa..."
+                  className="min-h-[100px]"
+                  required
+                />
+              </div>
             </div>
           </div>
 
