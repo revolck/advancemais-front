@@ -89,13 +89,13 @@ export function LoadingProvider({ children }: { children: React.ReactNode }) {
 
       {/* Error Screen */}
       {error && (
-        <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50">
-          <div className="text-center text-white max-w-md mx-auto p-6">
+        <div className="fixed inset-0 bg-white bg-opacity-90 flex items-center justify-center z-50">
+          <div className="text-center text-[var(--primary-color)] max-w-md mx-auto p-6">
             <h2 className="text-xl font-semibold mb-4">Ops! Algo deu errado</h2>
             <p className="text-gray-300 mb-6">{error}</p>
             <button
               onClick={() => window.location.reload()}
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="px-6 py-3 bg-[var(--primary-color)] text-white rounded-lg transition-colors"
             >
               Tentar Novamente
             </button>
