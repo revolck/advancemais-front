@@ -11,6 +11,24 @@ export interface BaseTextareaProps
   maxLength?: number;
   showCharCount?: boolean;
 }
+export interface RichTextareaProps
+  extends Omit<
+      React.HTMLAttributes<HTMLDivElement>,
+      "onChange" | "value" | "defaultValue"
+    >,
+    VariantProps<typeof textareaVariants> {
+  label?: string;
+  showInfo?: boolean;
+  onInfoClick?: () => void;
+  maxLength?: number;
+  showCharCount?: boolean;
+  // Mantém compatibilidade com textarea props
+  value?: string;
+  defaultValue?: string;
+  placeholder?: string; // 🔧 ADICIONADO
+  onChange?: (event: React.ChangeEvent<HTMLTextAreaElement>) => void;
+  onKeyDown?: (event: React.KeyboardEvent<HTMLDivElement>) => void;
+  onPaste?: (event: React.ClipboardEvent<HTMLDivElement>) => void;
+}
 
-export type RichTextareaProps = BaseTextareaProps;
 export type SimpleTextareaProps = BaseTextareaProps;

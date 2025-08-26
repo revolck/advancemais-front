@@ -13,20 +13,32 @@ import { Info, Bold, Italic, Strikethrough } from "lucide-react";
 import { textareaVariants } from "../variants";
 import type { RichTextareaProps } from "../types";
 
-// Configuração simplificada sem undo/redo
+// Configuração da toolbar
 const TOOLBAR_BUTTONS = [
-  { icon: Bold, action: "bold" as const, tooltip: "Negrito (Ctrl+B)" },
-  { icon: Italic, action: "italic" as const, tooltip: "Itálico (Ctrl+I)" },
+  {
+    icon: Bold,
+    action: "bold" as const,
+    tooltip: "Negrito (Ctrl+B)",
+    tag: "strong",
+  },
+  {
+    icon: Italic,
+    action: "italic" as const,
+    tooltip: "Itálico (Ctrl+I)",
+    tag: "em",
+  },
   {
     icon: Strikethrough,
     action: "strikethrough" as const,
     tooltip: "Riscado (Ctrl+U)",
+    tag: "del",
   },
 ];
 
 type ToolbarAction = (typeof TOOLBAR_BUTTONS)[number]["action"];
 
-const RichTextarea = React.forwardRef<HTMLTextAreaElement, RichTextareaProps>(
+// Interface corrigida para usar HTMLDivElement ao invés de HTMLTextAreaElement
+const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
   (
     {
       className,
@@ -41,7 +53,8 @@ const RichTextarea = React.forwardRef<HTMLTextAreaElement, RichTextareaProps>(
     },
     ref
   ) => {
-    const [value, setValue] = React.useState<string>(
+    const [htmlValue, setHtmlValue] = React.useState<string>("");
+    const [plainTextValue, setPlainTextValue] = React.useState<string>(
       typeof props.value === "string" ? props.value : ""
     );
     const contentEditableRef = React.useRef<HTMLDivElement>(null);
@@ -50,9 +63,20 @@ const RichTextarea = React.forwardRef<HTMLTextAreaElement, RichTextareaProps>(
     );
     const [isFocused, setIsFocused] = React.useState(false);
 
-    const charCount = value.length;
+    const charCount = plainTextValue.length;
 
-    // Estilos para prevenir redimensionamento do contentEditable
+    // Sincronização com props.value
+    React.useEffect(() => {
+      if (props.value !== undefined && props.value !== plainTextValue) {
+        const newValue = typeof props.value === "string" ? props.value : "";
+        setPlainTextValue(newValue);
+        if (contentEditableRef.current) {
+          contentEditableRef.current.innerHTML = newValue;
+        }
+      }
+    }, [props.value, plainTextValue]);
+
+    // Estilos para o contentEditable
     const contentEditableStyles: React.CSSProperties = {
       resize: "none",
       minWidth: "100%",
@@ -62,49 +86,72 @@ const RichTextarea = React.forwardRef<HTMLTextAreaElement, RichTextareaProps>(
       overflowX: "hidden",
       whiteSpace: "pre-wrap",
       wordWrap: "break-word",
+      outline: "none",
       ...style,
     };
 
+    // Função para extrair texto sem formatação
+    const getPlainText = (element: HTMLElement): string => {
+      return element.textContent || "";
+    };
+
+    // Função para verificar se um nó ou seus pais têm determinada tag
+    const hasFormatTag = (node: Node | null, tagName: string): boolean => {
+      if (!node) return false;
+
+      if (node.nodeType === Node.ELEMENT_NODE) {
+        const element = node as Element;
+        if (element.tagName.toLowerCase() === tagName.toLowerCase()) {
+          return true;
+        }
+      }
+
+      // Verifica os pais até encontrar o contentEditable
+      const parent = node.parentNode;
+      if (parent && parent !== contentEditableRef.current) {
+        return hasFormatTag(parent, tagName);
+      }
+
+      return false;
+    };
+
+    // Função para verificar formatos ativos na posição do cursor
     const checkActiveFormats = () => {
       const selection = window.getSelection();
-      if (!selection || selection.rangeCount === 0) return;
+      if (!selection || selection.rangeCount === 0) {
+        setActiveFormats(new Set());
+        return;
+      }
 
+      const range = selection.getRangeAt(0);
       const formats = new Set<string>();
 
-      // Verifica formatação ativa usando queryCommandState
-      try {
-        if (document.queryCommandState("bold")) {
-          formats.add("bold");
+      // Verifica se o cursor está dentro de tags de formatação
+      TOOLBAR_BUTTONS.forEach((button) => {
+        if (hasFormatTag(range.startContainer, button.tag)) {
+          formats.add(button.action);
         }
-        if (document.queryCommandState("italic")) {
-          formats.add("italic");
-        }
-        if (document.queryCommandState("strikeThrough")) {
-          formats.add("strikethrough");
-        }
-      } catch (error) {
-        // Fallback se queryCommandState não funcionar
-        console.warn("queryCommandState não suportado:", error);
-      }
+      });
 
       setActiveFormats(formats);
     };
 
+    // Função moderna para aplicar formatação usando ranges
     const toggleFormat = (format: ToolbarAction) => {
-      // Garante que o contentEditable está focado
-      if (contentEditableRef.current) {
-        contentEditableRef.current.focus();
-      }
+      if (!contentEditableRef.current) return;
 
-      let selection = window.getSelection();
+      contentEditableRef.current.focus();
+
+      const selection = window.getSelection();
       if (!selection) return;
 
-      // Se não há seleção ou seleção vazia, seleciona todo o conteúdo
+      const button = TOOLBAR_BUTTONS.find((b) => b.action === format);
+      if (!button) return;
+
+      // Se não há seleção, tenta selecionar a palavra atual ou todo o conteúdo
       if (selection.rangeCount === 0 || selection.toString().trim() === "") {
-        if (
-          contentEditableRef.current &&
-          contentEditableRef.current.textContent?.trim()
-        ) {
+        if (contentEditableRef.current.textContent?.trim()) {
+          // Seleciona todo o conteúdo
           const range = document.createRange();
           range.selectNodeContents(contentEditableRef.current);
           selection.removeAllRanges();
@@ -114,66 +161,127 @@ const RichTextarea = React.forwardRef<HTMLTextAreaElement, RichTextareaProps>(
         }
       }
 
-      // Aplica a formatação usando execCommand
+      const range = selection.getRangeAt(0);
+      const selectedText = range.toString();
+
+      if (selectedText.trim() === "") return;
+
+      // Verifica se já está formatado
+      const isAlreadyFormatted = hasFormatTag(range.startContainer, button.tag);
+
+      if (isAlreadyFormatted) {
+        // Remove a formatação
+        removeFormatFromRange(range, button.tag);
+      } else {
+        // Adiciona a formatação
+        applyFormatToRange(range, button.tag);
+      }
+
+      // Atualiza os valores
+      updateValues();
+
+      // Verifica formatos ativos após mudança
+      setTimeout(checkActiveFormats, 10);
+    };
+
+    // Função para aplicar formatação a um range
+    const applyFormatToRange = (range: Range, tagName: string) => {
       try {
-        let command: string;
-        switch (format) {
-          case "bold":
-            command = "bold";
-            break;
-          case "italic":
-            command = "italic";
-            break;
-          case "strikethrough":
-            command = "strikeThrough";
-            break;
-          default:
-            return;
-        }
+        const formatElement = document.createElement(tagName);
 
-        // Aplica o comando
-        const success = document.execCommand(command, false);
+        // Se o range está vazio ou só tem whitespace, não aplica formatação
+        if (range.toString().trim() === "") return;
 
-        if (success) {
-          // Atualiza o valor após formatação
-          const newValue = contentEditableRef.current?.textContent || "";
-          setValue(newValue);
-          props.onChange?.({
-            target: { value: newValue },
-          } as React.ChangeEvent<HTMLTextAreaElement>);
+        // Extrai o conteúdo do range
+        const contents = range.extractContents();
 
-          // Verifica formatação ativa após aplicar
-          setTimeout(checkActiveFormats, 10);
+        // Coloca o conteúdo dentro do elemento de formatação
+        formatElement.appendChild(contents);
+
+        // Insere o elemento formatado no range
+        range.insertNode(formatElement);
+
+        // Reposiciona o cursor após o elemento inserido
+        range.setStartAfter(formatElement);
+        range.setEndAfter(formatElement);
+        range.collapse(true);
+
+        const selection = window.getSelection();
+        if (selection) {
+          selection.removeAllRanges();
+          selection.addRange(range);
         }
       } catch (error) {
-        console.warn("Erro ao aplicar formatação:", error);
+        console.warn(`Erro ao aplicar formatação ${tagName}:`, error);
       }
+    };
+
+    // Função para remover formatação de um range
+    const removeFormatFromRange = (range: Range, tagName: string) => {
+      try {
+        // Encontra o elemento pai com a tag
+        let formatElement: HTMLElement | null = null;
+        let node: Node | null = range.startContainer;
+
+        while (node && node !== contentEditableRef.current) {
+          if (node.nodeType === Node.ELEMENT_NODE) {
+            const element = node as HTMLElement;
+            if (element.tagName.toLowerCase() === tagName.toLowerCase()) {
+              formatElement = element;
+              break;
+            }
+          }
+          node = node.parentNode;
+        }
+
+        if (formatElement) {
+          // Remove o elemento de formatação, mantendo o conteúdo
+          const parent = formatElement.parentNode;
+          if (parent) {
+            // Move todos os nós filhos para antes do elemento de formatação
+            while (formatElement.firstChild) {
+              parent.insertBefore(formatElement.firstChild, formatElement);
+            }
+            // Remove o elemento de formatação vazio
+            parent.removeChild(formatElement);
+          }
+        }
+      } catch (error) {
+        console.warn(`Erro ao remover formatação ${tagName}:`, error);
+      }
+    };
+
+    // Função para atualizar os valores internos
+    const updateValues = () => {
+      if (!contentEditableRef.current) return;
+
+      const plainText = getPlainText(contentEditableRef.current);
+      const htmlContent = contentEditableRef.current.innerHTML;
+
+      setPlainTextValue(plainText);
+      setHtmlValue(htmlContent);
+
+      // Chama onChange com o texto plano
+      props.onChange?.({
+        target: { value: plainText },
+      } as React.ChangeEvent<HTMLTextAreaElement>);
     };
 
     const handleToolbarAction = (action: ToolbarAction) => {
-      switch (action) {
-        case "bold":
-        case "italic":
-        case "strikethrough":
-          toggleFormat(action);
-          break;
-      }
+      toggleFormat(action);
     };
 
     const handleInput = (e: React.FormEvent<HTMLDivElement>) => {
-      const newValue = e.currentTarget.textContent || "";
+      const currentPlainText = getPlainText(e.currentTarget);
 
-      // Bloqueia se exceder maxLength
-      if (maxLength && newValue.length > maxLength) {
+      // Verifica limite de caracteres
+      if (maxLength && currentPlainText.length > maxLength) {
         // Restaura o valor anterior
-        e.currentTarget.textContent = value;
+        e.currentTarget.innerHTML = htmlValue;
         return;
       }
 
-      setValue(newValue);
-      props.onChange?.({
-        target: { value: newValue },
-      } as React.ChangeEvent<HTMLTextAreaElement>);
+      updateValues();
     };
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
@@ -195,8 +303,8 @@ const RichTextarea = React.forwardRef<HTMLTextAreaElement, RichTextareaProps>(
         }
       }
 
-      // Bloqueia teclas que adicionam caracteres se já atingiu o limite
-      if (maxLength && value.length >= maxLength) {
+      // Bloqueia teclas se já atingiu o limite
+      if (maxLength && plainTextValue.length >= maxLength) {
         const allowedKeys = [
           "Backspace",
           "Delete",
@@ -215,35 +323,6 @@ const RichTextarea = React.forwardRef<HTMLTextAreaElement, RichTextareaProps>(
           return;
         }
       }
-
-      // Handle Enter separately for line breaks
-      if (e.key === "Enter") {
-        // Se já está no limite, não permite nova linha
-        if (maxLength && value.length >= maxLength) {
-          e.preventDefault();
-          return;
-        }
-
-        const selection = window.getSelection();
-        if (selection && selection.rangeCount > 0) {
-          const range = selection.getRangeAt(0);
-
-          e.preventDefault();
-          const br = document.createElement("br");
-          range.insertNode(br);
-          range.setStartAfter(br);
-          range.setEndAfter(br);
-          selection.removeAllRanges();
-          selection.addRange(range);
-
-          // Atualiza o valor após adicionar quebra de linha
-          const newValue = contentEditableRef.current?.textContent || "";
-          setValue(newValue);
-          props.onChange?.({
-            target: { value: newValue },
-          } as React.ChangeEvent<HTMLTextAreaElement>);
-        }
-      }
     };
 
     const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
@@ -251,7 +330,7 @@ const RichTextarea = React.forwardRef<HTMLTextAreaElement, RichTextareaProps>(
       if (maxLength) {
         e.preventDefault();
         const clipboardData = e.clipboardData?.getData("text/plain") || "";
-        const currentValue = value || "";
+        const currentValue = plainTextValue || "";
         const availableChars = maxLength - currentValue.length;
 
         if (availableChars <= 0) return;
@@ -265,11 +344,7 @@ const RichTextarea = React.forwardRef<HTMLTextAreaElement, RichTextareaProps>(
           range.insertNode(document.createTextNode(textToInsert));
           range.collapse(false);
 
-          const newValue = contentEditableRef.current?.textContent || "";
-          setValue(newValue);
-          props.onChange?.({
-            target: { value: newValue },
-          } as React.ChangeEvent<HTMLTextAreaElement>);
+          updateValues();
         }
       }
     };
@@ -304,11 +379,12 @@ const RichTextarea = React.forwardRef<HTMLTextAreaElement, RichTextareaProps>(
                       variant="ghost"
                       size="sm"
                       className={cn(
-                        "h-8 w-8 p-0 text-muted-foreground hover:text-foreground hover:bg-accent",
+                        "h-8 w-8 p-0 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors",
                         activeFormats.has(button.action) &&
                           "bg-accent text-foreground"
                       )}
                       onClick={() => handleToolbarAction(button.action)}
+                      type="button"
                     >
                       <button.icon className="h-4 w-4" />
                     </Button>
@@ -322,34 +398,40 @@ const RichTextarea = React.forwardRef<HTMLTextAreaElement, RichTextareaProps>(
           </TooltipProvider>
 
           <div
-            ref={contentEditableRef}
+            ref={ref || contentEditableRef}
             contentEditable
             className={cn(
               textareaVariants({ size }),
-              // Classes CSS adicionais para garantir travamento
               "rich-textarea-content !resize-none !min-w-full !max-w-full !w-full !overflow-y-auto !overflow-x-hidden",
+              "focus:outline-none focus-visible:outline-none",
               className
             )}
             style={contentEditableStyles}
             onInput={handleInput}
             onFocus={() => {
               setIsFocused(true);
-              if (!value && contentEditableRef.current) {
-                contentEditableRef.current.innerHTML = "";
-              }
+              setTimeout(checkActiveFormats, 10);
             }}
             onBlur={() => {
               setIsFocused(false);
+              setActiveFormats(new Set());
             }}
             onKeyDown={handleKeyDown}
             onClick={checkActiveFormats}
             onKeyUp={checkActiveFormats}
             onMouseUp={checkActiveFormats}
+            onSelect={checkActiveFormats}
             onPaste={handlePaste}
             suppressContentEditableWarning
             data-placeholder={
-              !value && !isFocused ? props.placeholder || "Digite aqui..." : ""
+              !plainTextValue && !isFocused
+                ? props.placeholder || "Digite algo..."
+                : undefined
             }
+            role="textbox"
+            aria-label={label || "Rich text editor"}
+            aria-multiline="true"
+            {...(props as any)} // Cast necessário devido à diferença de tipos
           />
 
           {(showCharCount || maxLength) && (

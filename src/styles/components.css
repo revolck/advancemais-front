@@ -156,7 +156,7 @@
 }
 
 /* 
- * TextArea
+ * TextArea Components Styles
  */
 
 .simple-textarea {
@@ -168,6 +168,7 @@
   width: 100% !important;
   word-wrap: break-word !important;
   white-space: pre-wrap !important;
+  outline: none !important;
 }
 
 .rich-textarea-content {
@@ -180,8 +181,11 @@
   word-wrap: break-word !important;
   white-space: pre-wrap !important;
   outline: none !important;
+  /* Remove a modificação webkit que estava causando problemas */
+  -webkit-user-modify: read-write !important;
 }
 
+/* Removedores de resize para ambos os componentes */
 .simple-textarea::-webkit-resizer,
 .rich-textarea-content::-webkit-resizer {
   display: none !important;
@@ -200,6 +204,29 @@
   color: rgb(107 114 128); /* text-gray-500 */
   pointer-events: none;
   position: absolute;
+  opacity: 0.7;
+}
+
+/* Estilos para formatação rica */
+.rich-textarea-content strong {
+  font-weight: 700;
+}
+
+.rich-textarea-content em {
+  font-style: italic;
+}
+
+.rich-textarea-content del {
+  text-decoration: line-through;
+}
+
+/* Garante que elementos formatados não quebrem o layout */
+.rich-textarea-content strong,
+.rich-textarea-content em,
+.rich-textarea-content del {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
 }
 
 /* Previne overflow horizontal em textos longos sem quebras */
@@ -207,20 +234,17 @@
 .rich-textarea-content {
   overflow-wrap: break-word !important;
   word-break: break-word !important;
+  hyphens: auto;
 }
 
 /* Estilo para quando está focado */
 .simple-textarea:focus,
 .rich-textarea-content:focus {
   resize: none !important;
+  outline: none !important;
 }
 
-/* Fix específico para contentEditable em Webkit */
-.rich-textarea-content {
-  -webkit-user-modify: read-write-plaintext-only;
-}
-
-/* Garante que o scroll funcione corretamente */
+/* Scrollbar personalizada */
 .simple-textarea::-webkit-scrollbar,
 .rich-textarea-content::-webkit-scrollbar {
   width: 8px;
@@ -235,9 +259,25 @@
 .rich-textarea-content::-webkit-scrollbar-thumb {
   background: rgb(203 213 225); /* slate-300 */
   border-radius: 4px;
+  transition: background-color 0.2s;
 }
 
 .simple-textarea::-webkit-scrollbar-thumb:hover,
 .rich-textarea-content::-webkit-scrollbar-thumb:hover {
   background: rgb(148 163 184); /* slate-400 */
+}
+
+/* Estilos para seleção dentro do rich textarea */
+.rich-textarea-content ::selection {
+  background-color: rgb(59 130 246 / 0.3); /* blue-500 with opacity */
+}
+
+/* Firefox */
+.rich-textarea-content ::-moz-selection {
+  background-color: rgb(59 130 246 / 0.3);
+}
+
+/* Melhor visual para quebras de linha */
+.rich-textarea-content br {
+  line-height: 1.5;
 }
