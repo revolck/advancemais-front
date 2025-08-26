@@ -1,3 +1,4 @@
+"use client";
 import { useState, useCallback } from "react";
 import type { SliderItem, SliderModalState, UploadStatus } from "../types";
 

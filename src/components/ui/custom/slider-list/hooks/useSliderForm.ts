@@ -1,6 +1,4 @@
-/**
- * Hook para gerenciar estado do formulário de slider
- */
+"use client";
 import React, { useReducer, useCallback, useEffect, useState } from "react";
 import { toastCustom } from "../../toast";
 import { validateSliderForm } from "../services";

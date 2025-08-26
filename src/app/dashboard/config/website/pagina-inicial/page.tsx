@@ -1,247 +1,280 @@
 "use client";
 
 import React from "react";
-import Link from "next/link";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-  ButtonCustom,
-  Icon,
+  VerticalTabs,
+  SliderList,
+  type VerticalTabItem,
 } from "@/components/ui/custom";
-import { cn } from "@/lib/utils";
+import type { SliderItem } from "@/components/ui/custom/slider-list/types";
 
 /**
- * Página de configuração da página inicial
- * Dashboard centralizado para gerenciar componentes da home
+ * Página principal de configuração da página inicial
+ * Usa VerticalTabs para organizar as diferentes seções
  */
-export default function PaginaInicialConfigPage() {
-  const configSections = [
+export default function PaginaInicialPage() {
+  // Handlers para slider desktop
+  const handleDesktopSlidersChange = (sliders: SliderItem[]) => {
+    console.log("Sliders desktop atualizados:", sliders);
+  };
+
+  const handleDesktopError = (error: string) => {
+    console.error("Erro nos sliders desktop:", error);
+  };
+
+  // Handlers para slider mobile
+  const handleMobileSlidersChange = (sliders: SliderItem[]) => {
+    console.log("Sliders mobile atualizados:", sliders);
+  };
+
+  const handleMobileError = (error: string) => {
+    console.error("Erro nos sliders mobile:", error);
+  };
+
+  const items: VerticalTabItem[] = [
     {
-      title: "Sliders",
-      description: "Gerencie os sliders do carrossel principal",
-      icon: "Image" as const,
-      links: [
+      value: "slider",
+      label: "Slider",
+      icon: "Images",
+      submenu: [
         {
-          href: "/dashboard/website/slider/desktop",
-          label: "Sliders Desktop",
-          description: "Configurar para telas grandes",
+          value: "slider-desktop",
+          label: "Desktop",
+          icon: "Monitor",
+          content: (
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-lg font-semibold mb-2">Sliders Desktop</h3>
+                <p className="text-muted-foreground mb-4">
+                  Gerencie os sliders que aparecem na versão desktop do site.
+                  Resolução recomendada: 1920x800px.
+                </p>
+              </div>
+
+              <SliderList
+                deviceType="desktop"
+                maxSliders={4}
+                allowReorder={true}
+                onSlidersChange={handleDesktopSlidersChange}
+                onError={handleDesktopError}
+                className="w-full"
+              />
+            </div>
+          ),
         },
         {
-          href: "/dashboard/website/slider/mobile",
-          label: "Sliders Mobile",
-          description: "Configurar para dispositivos móveis",
+          value: "slider-mobile",
+          label: "Tablet/Mobile",
+          icon: "Smartphone",
+          content: (
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-lg font-semibold mb-2">
+                  Sliders Mobile/Tablet
+                </h3>
+                <p className="text-muted-foreground mb-4">
+                  Gerencie os sliders para dispositivos móveis e tablets.
+                  Resolução recomendada: 768x400px.
+                </p>
+              </div>
+
+              <SliderList
+                deviceType="tablet-mobile"
+                maxSliders={4}
+                allowReorder={true}
+                onSlidersChange={handleMobileSlidersChange}
+                onError={handleMobileError}
+                className="w-full"
+              />
+
+              <div className="mt-6 p-4 bg-muted/30 rounded-lg border border-border/30">
+                <h4 className="font-medium text-foreground mb-2">
+                  Especificações Mobile/Tablet
+                </h4>
+                <div className="grid md:grid-cols-2 gap-4 text-sm text-muted-foreground">
+                  <div>
+                    <h5 className="font-medium text-foreground mb-1">
+                      Técnicas
+                    </h5>
+                    <ul className="space-y-1">
+                      <li>• Resolução: 768x400px</li>
+                      <li>• Formato: JPEG, PNG, WebP</li>
+                      <li>• Máximo: 5MB</li>
+                      <li>• Proporção: 16:9</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <h5 className="font-medium text-foreground mb-1">
+                      Otimizações
+                    </h5>
+                    <ul className="space-y-1">
+                      <li>• Touch gestures</li>
+                      <li>• Auto-play adaptativo</li>
+                      <li>• Carregamento otimizado</li>
+                      <li>• Compressão automática</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ),
         },
       ],
-      status: "active",
-      stats: "4/4 configurados",
     },
     {
-      title: "Seção Sobre",
-      description: "Configure o conteúdo da seção 'Sobre Nós'",
-      icon: "FileText" as const,
-      links: [
-        {
-          href: "/dashboard/config/website/pagina-inicial/sobre",
-          label: "Editar Conteúdo",
-          description: "Texto, imagens e call-to-action",
-        },
-      ],
-      status: "active",
-      stats: "Atualizado",
+      value: "sobre",
+      label: "Sobre",
+      icon: "Info",
+      content: (
+        <div className="space-y-6">
+          <div>
+            <h3 className="text-lg font-semibold mb-2">Seção Sobre</h3>
+            <p className="text-muted-foreground mb-4">
+              Configure o conteúdo da seção "Sobre Nós" da página inicial.
+            </p>
+          </div>
+
+          {/* Placeholder para SobreForm quando estiver disponível */}
+          <div className="p-6 border-2 border-dashed border-border/50 rounded-lg text-center">
+            <div className="w-12 h-12 mx-auto bg-muted rounded-full flex items-center justify-center mb-3">
+              <span className="text-muted-foreground text-xl">📝</span>
+            </div>
+            <h4 className="font-medium text-foreground mb-2">
+              Formulário de Configuração
+            </h4>
+            <p className="text-sm text-muted-foreground">
+              O componente SobreForm será implementado aqui para gerenciar
+              título, descrição, imagem e botão de call-to-action.
+            </p>
+          </div>
+        </div>
+      ),
     },
     {
-      title: "Seção Serviços",
-      description: "Gerencie os serviços em destaque na home",
-      icon: "Briefcase" as const,
-      links: [
-        {
-          href: "/dashboard/config/website/pagina-inicial/servicos",
-          label: "Gerenciar Serviços",
-          description: "Adicionar, editar ou reordenar serviços",
-        },
-      ],
-      status: "pending",
-      stats: "3 serviços",
+      value: "banners",
+      label: "Banners",
+      icon: "Image",
+      content: (
+        <div className="space-y-6">
+          <div>
+            <h3 className="text-lg font-semibold mb-2">Banners Promocionais</h3>
+            <p className="text-muted-foreground mb-4">
+              Gerencie os banners promocionais que aparecem na página inicial.
+            </p>
+          </div>
+
+          <div className="grid gap-4">
+            <div className="p-6 border-2 border-dashed border-border/50 rounded-lg text-center">
+              <div className="w-12 h-12 mx-auto bg-muted rounded-full flex items-center justify-center mb-3">
+                <span className="text-muted-foreground text-xl">🎨</span>
+              </div>
+              <h4 className="font-medium text-foreground mb-2">
+                Banner Principal
+              </h4>
+              <p className="text-sm text-muted-foreground mb-3">
+                Configure o banner de destaque da página inicial
+              </p>
+              <button className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm hover:bg-primary/90 transition-colors">
+                Configurar Banner
+              </button>
+            </div>
+
+            <div className="p-6 border-2 border-dashed border-border/50 rounded-lg text-center">
+              <div className="w-12 h-12 mx-auto bg-muted rounded-full flex items-center justify-center mb-3">
+                <span className="text-muted-foreground text-xl">📢</span>
+              </div>
+              <h4 className="font-medium text-foreground mb-2">
+                Banners Secundários
+              </h4>
+              <p className="text-sm text-muted-foreground mb-3">
+                Gerencie banners adicionais e promoções
+              </p>
+              <button className="px-4 py-2 bg-secondary text-secondary-foreground rounded-md text-sm hover:bg-secondary/90 transition-colors">
+                Gerenciar Banners
+              </button>
+            </div>
+          </div>
+        </div>
+      ),
     },
     {
-      title: "SEO & Meta Tags",
-      description: "Otimização para mecanismos de busca",
-      icon: "Search" as const,
-      links: [
-        {
-          href: "/dashboard/config/website/pagina-inicial/seo",
-          label: "Configurar SEO",
-          description: "Título, descrição e palavras-chave",
-        },
-      ],
-      status: "warning",
-      stats: "Requer atenção",
+      value: "empresarial",
+      label: "Empresarial",
+      icon: "Briefcase",
+      content: (
+        <div className="space-y-6">
+          <div>
+            <h3 className="text-lg font-semibold mb-2">Seção Empresarial</h3>
+            <p className="text-muted-foreground mb-4">
+              Configure o conteúdo da seção empresarial e institucional.
+            </p>
+          </div>
+
+          <div className="grid gap-4">
+            <div className="p-6 border border-border rounded-lg">
+              <h4 className="font-medium text-foreground mb-2 flex items-center gap-2">
+                <span className="text-blue-600">🏢</span>
+                Informações da Empresa
+              </h4>
+              <p className="text-sm text-muted-foreground mb-3">
+                Atualize missão, visão, valores e história da empresa
+              </p>
+              <button className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700 transition-colors">
+                Editar Informações
+              </button>
+            </div>
+
+            <div className="p-6 border border-border rounded-lg">
+              <h4 className="font-medium text-foreground mb-2 flex items-center gap-2">
+                <span className="text-green-600">📊</span>
+                Estatísticas e Números
+              </h4>
+              <p className="text-sm text-muted-foreground mb-3">
+                Configure contadores e métricas de destaque
+              </p>
+              <button className="px-4 py-2 bg-green-600 text-white rounded-md text-sm hover:bg-green-700 transition-colors">
+                Configurar Estatísticas
+              </button>
+            </div>
+
+            <div className="p-6 border border-border rounded-lg">
+              <h4 className="font-medium text-foreground mb-2 flex items-center gap-2">
+                <span className="text-purple-600">🎯</span>
+                Call-to-Actions
+              </h4>
+              <p className="text-sm text-muted-foreground mb-3">
+                Gerencie botões de ação e links importantes
+              </p>
+              <button className="px-4 py-2 bg-purple-600 text-white rounded-md text-sm hover:bg-purple-700 transition-colors">
+                Gerenciar CTAs
+              </button>
+            </div>
+          </div>
+        </div>
+      ),
     },
   ];
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "active":
-        return "text-green-600 bg-green-100";
-      case "pending":
-        return "text-blue-600 bg-blue-100";
-      case "warning":
-        return "text-orange-600 bg-orange-100";
-      default:
-        return "text-gray-600 bg-gray-100";
-    }
-  };
-
   return (
-    <div className="container mx-auto py-6 px-4">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-foreground mb-2">
-          Configuração da Página Inicial
-        </h1>
-        <p className="text-muted-foreground text-lg">
-          Gerencie todos os componentes e conteúdos da página inicial do seu
-          site.
-        </p>
-      </div>
-
-      {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <Icon name="Eye" className="w-4 h-4 text-green-600" />
-              <div>
-                <p className="text-sm text-muted-foreground">
-                  Visualizações hoje
-                </p>
-                <p className="text-lg font-semibold">1,234</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <Icon name="Users" className="w-4 h-4 text-blue-600" />
-              <div>
-                <p className="text-sm text-muted-foreground">
-                  Visitantes únicos
-                </p>
-                <p className="text-lg font-semibold">892</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <Icon name="Clock" className="w-4 h-4 text-orange-600" />
-              <div>
-                <p className="text-sm text-muted-foreground">Tempo médio</p>
-                <p className="text-lg font-semibold">2m 34s</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <Icon name="TrendingUp" className="w-4 h-4 text-purple-600" />
-              <div>
-                <p className="text-sm text-muted-foreground">Taxa conversão</p>
-                <p className="text-lg font-semibold">3.2%</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Configuration Sections */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {configSections.map((section) => (
-          <Card key={section.title} className="relative">
-            <CardHeader>
-              <div className="flex items-start justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="p-2 bg-primary/10 rounded-lg">
-                    <Icon
-                      name={section.icon}
-                      className="w-5 h-5 text-primary"
-                    />
-                  </div>
-                  <div>
-                    <CardTitle className="text-lg">{section.title}</CardTitle>
-                    <CardDescription className="text-sm mt-1">
-                      {section.description}
-                    </CardDescription>
-                  </div>
-                </div>
-
-                <span
-                  className={cn(
-                    "px-2 py-1 text-xs font-medium rounded-full",
-                    getStatusColor(section.status)
-                  )}
-                >
-                  {section.stats}
-                </span>
-              </div>
-            </CardHeader>
-
-            <CardContent className="space-y-3">
-              {section.links.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className="flex items-center justify-between p-3 rounded-lg border border-border/50 hover:border-primary/50 hover:bg-primary/5 transition-all group"
-                >
-                  <div>
-                    <p className="font-medium text-foreground group-hover:text-primary transition-colors">
-                      {link.label}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {link.description}
-                    </p>
-                  </div>
-                  <Icon
-                    name="ArrowRight"
-                    className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors"
-                  />
-                </Link>
-              ))}
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* Quick Actions */}
-      <div className="mt-8 p-6 bg-muted/30 rounded-lg border border-border/30">
-        <h3 className="font-semibold text-foreground mb-4">Ações Rápidas</h3>
-        <div className="flex flex-wrap gap-3">
-          <ButtonCustom variant="outline" size="sm">
-            <Icon name="Eye" className="w-4 h-4 mr-2" />
-            Visualizar Site
-          </ButtonCustom>
-          <ButtonCustom variant="outline" size="sm">
-            <Icon name="RefreshCw" className="w-4 h-4 mr-2" />
-            Limpar Cache
-          </ButtonCustom>
-          <ButtonCustom variant="outline" size="sm">
-            <Icon name="Download" className="w-4 h-4 mr-2" />
-            Exportar Configurações
-          </ButtonCustom>
-          <ButtonCustom variant="outline" size="sm">
-            <Icon name="BarChart3" className="w-4 h-4 mr-2" />
-            Relatório de Performance
-          </ButtonCustom>
-        </div>
+    <div className="bg-white rounded-3xl p-5 h-full min-h-[calc(100vh-8rem)] flex flex-col">
+      {/* Conteúdo principal com VerticalTabs */}
+      <div className="flex-1 min-h-0">
+        <VerticalTabs
+          items={items}
+          defaultValue="slider-desktop"
+          variant="spacious"
+          size="md"
+          withAnimation={true}
+          showIndicator={true}
+          tabsWidth="md"
+          classNames={{
+            root: "h-full",
+            contentWrapper: "h-full overflow-hidden",
+            tabsContent: "h-full overflow-auto p-8",
+            tabsList: "bg-gray-50/40 rounded-2xl p-2",
+            tabsTrigger: "mb-1",
+          }}
+        />
       </div>
     </div>
   );
