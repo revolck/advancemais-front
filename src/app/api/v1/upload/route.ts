@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import fs from "fs";
-import path from "path";
+import { put, del } from "@vercel/blob";
+import { serverEnv } from "@/lib/env";
 
 export const runtime = "nodejs";
 
@@ -12,39 +12,36 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
     }
 
-    const raw = req.nextUrl.searchParams.get("path") || "";
-    const safe = raw.replace(/\.+/g, "").replace(/^\/+/g, "");
+    const rawPath = req.nextUrl.searchParams.get("path") || "";
+    const safePath = rawPath.replace(/\.+/g, "").replace(/^\/+/g, "");
+    const safeName = file.name.replace(/[^a-zA-Z0-9.]/g, "_");
+    const unique = `${Date.now()}-${safeName}`;
+    const key = safePath ? `${safePath}/${unique}` : unique;
 
-    const uploadDir = path.join(process.cwd(), "public", "images", "uploads", safe);
-    fs.mkdirSync(uploadDir, { recursive: true });
+    const blob = await put(key, file, {
+      access: "public",
+      token: serverEnv.blobToken,
+    });
 
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-
-    const unique = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    const filename = unique + path.extname(file.name);
-    const filepath = path.join(uploadDir, filename);
-    fs.writeFileSync(filepath, buffer);
-
-    const relative = `/images/uploads${safe ? "/" + safe : ""}/${filename}`;
-    return NextResponse.json({ url: relative });
+    return NextResponse.json({ url: blob.url });
   } catch {
     return NextResponse.json({ error: "Upload failed" }, { status: 500 });
   }
 }
 
 export async function DELETE(req: NextRequest) {
-  const raw = req.nextUrl.searchParams.get("file") || "";
-  const safe = raw.replace(/^\/+/g, "");
-  if (!safe) {
+  const url = req.nextUrl.searchParams.get("file");
+  if (!url) {
     return NextResponse.json({ error: "File path is required" }, { status: 400 });
   }
 
-  const filePath = path.join(process.cwd(), "public", safe);
   try {
-    fs.unlinkSync(filePath);
+    await del(url, {
+      token: serverEnv.blobToken,
+    });
     return new Response(null, { status: 204 });
   } catch {
     return NextResponse.json({ error: "Delete failed" }, { status: 500 });
   }
 }
+

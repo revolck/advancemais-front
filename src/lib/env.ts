@@ -27,6 +27,10 @@ interface AppConfig {
   readonly isTest: boolean;
 }
 
+interface ServerEnv {
+  readonly blobToken: string;
+}
+
 /**
  * Helper para obter variável de ambiente com fallback.
  * Utiliza acesso direto às variáveis para garantir que o Next.js
@@ -92,6 +96,13 @@ export const env: AppConfig = {
   isTest: NODE_ENV === "test",
 } as const;
 
+export const serverEnv: ServerEnv = {
+  blobToken: getEnvVar(
+    process.env.ADVANCEMAIS_BLOG_READ_WRITE_TOKEN,
+    "ADVANCEMAIS_BLOG_READ_WRITE_TOKEN"
+  ),
+} as const;
+
 /**
  * Validação opcional das variáveis críticas
  * Apenas para produção ou quando explicitamente chamada
@@ -103,6 +114,9 @@ export function validateEnv(): void {
   }
   if (!process.env.NEXT_PUBLIC_BASE_URL) {
     missing.push("NEXT_PUBLIC_BASE_URL");
+  }
+  if (!serverEnv.blobToken) {
+    missing.push("ADVANCEMAIS_BLOG_READ_WRITE_TOKEN");
   }
 
   if (missing.length > 0 && env.isProduction) {

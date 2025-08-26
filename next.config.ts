@@ -73,7 +73,6 @@ const nextConfig = {
   experimental: {
     optimizeCss: true,
     scrollRestoration: true,
-    serverComponentsExternalPackages: ["multer"],
   },
 
   // Proxy das rotas /api para o backend, evitando problemas de CORS
