@@ -2,7 +2,11 @@
 
 import React, { useState, useEffect } from "react";
 import { Label } from "@/components/ui/label";
-import { InputCustom, ButtonCustom, CheckboxCustom } from "@/components/ui/custom";
+import {
+  InputCustom,
+  ButtonCustom,
+  CheckboxCustom,
+} from "@/components/ui/custom";
 import Image from "next/image";
 
 // --- TYPE DEFINITIONS ---
@@ -49,7 +53,7 @@ export const SignInPage: React.FC<SignInPageProps> = ({
   // Determina se é CPF (11 dígitos) ou CNPJ (14 dígitos)
   const documentoDigits = documento.replace(/\D/g, "");
   const documentoMask = documentoDigits.length <= 11 ? "cpf" : "cnpj";
-  
+
   // Validação do formulário
   const isFormValid =
     (documentoDigits.length === 11 || documentoDigits.length === 14) &&
@@ -64,7 +68,7 @@ export const SignInPage: React.FC<SignInPageProps> = ({
             {/* Logo */}
             <div className="animate-element animate-delay-50 flex justify-center mb-4">
               <Image
-                src="/images/logos/logo_mobile.webp"
+                src="/images/logos/logo_padrao.webp"
                 alt="Logo"
                 width={120}
                 height={40}
@@ -91,8 +95,11 @@ export const SignInPage: React.FC<SignInPageProps> = ({
               }}
             >
               <div className="animate-element animate-delay-300 space-y-1">
-                <Label htmlFor="documento" className="required text-sm font-medium text-muted-foreground">
-                  CPF ou CNPJ 
+                <Label
+                  htmlFor="documento"
+                  className="required text-sm font-medium text-muted-foreground"
+                >
+                  CPF ou CNPJ
                 </Label>
                 <InputCustom
                   label=""
@@ -109,7 +116,10 @@ export const SignInPage: React.FC<SignInPageProps> = ({
               </div>
 
               <div className="animate-element animate-delay-400 space-y-1">
-                <Label htmlFor="senha" className="required text-sm font-medium text-muted-foreground">
+                <Label
+                  htmlFor="senha"
+                  className="required text-sm font-medium text-muted-foreground"
+                >
                   Senha
                 </Label>
                 <InputCustom
@@ -135,8 +145,8 @@ export const SignInPage: React.FC<SignInPageProps> = ({
                     onCheckedChange={(v) => setRememberMe(!!v)}
                     size="md"
                   />
-                  <Label 
-                    htmlFor="rememberMe" 
+                  <Label
+                    htmlFor="rememberMe"
                     className="text-foreground/90 cursor-pointer"
                   >
                     Me mantenha conectado
@@ -159,7 +169,7 @@ export const SignInPage: React.FC<SignInPageProps> = ({
                 name="rememberMe"
                 value={rememberMe ? "true" : "false"}
               />
-              
+
               <ButtonCustom
                 type="submit"
                 isLoading={isLoading || isSubmitting}
