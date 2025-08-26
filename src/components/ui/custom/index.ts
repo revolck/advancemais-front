@@ -44,3 +44,6 @@ export * from "./loader";
 
 // Image Not Found
 export * from "./image-not-found";
+
+// Text Area
+export * from "./text-area";
