@@ -11,12 +11,12 @@ import "@/styles/globals.css";
 
 export const metadata: Metadata = {
   title: {
-    template: "%s | AdvanceMais",
-    default: "AdvanceMais - Educação e Tecnologia",
+    template: "%s | Advance+",
+    default: "Advance+ - Educação e Tecnologia",
   },
   description: "Plataforma integrada de educação, tecnologia e gestão",
-  keywords: ["educação", "tecnologia", "gestão", "cursos", "AdvanceMais"],
-  authors: [{ name: "AdvanceMais" }],
+  keywords: ["educação", "tecnologia", "gestão", "cursos", "Advance+"],
+  authors: [{ name: "Advance+" }],
   robots: "index, follow",
   metadataBase: new URL(
     process.env.NEXT_PUBLIC_BASE_URL || "https://advancemais.com.br"

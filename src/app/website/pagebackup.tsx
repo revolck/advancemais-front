@@ -14,7 +14,7 @@ import LogoEnterprises from "@/theme/website/components/logo-enterprises";
 /**
  * Página Inicial do Website Institucional
  *
- * Esta é a homepage que representa a AdvanceMais como empresa
+ * Esta é a homepage que representa a Advance+ como empresa
  * e apresenta seus serviços, cursos e soluções.
  */
 export default function WebsiteHomePage() {

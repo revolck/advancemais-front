@@ -18,14 +18,14 @@ export default function CookiesPage() {
   // Dados mockados específicos para esta página
   const headerData: HeaderPageData = {
     id: "sobre-custom",
-    title: "Sobre a AdvanceMais",
+    title: "Sobre a Advance+",
     subtitle: "Nossa História",
     description:
       "Conheça nossa trajetória, missão e valores. Há mais de 10 anos transformando empresas e desenvolvendo talentos com soluções inovadoras e personalizadas.",
     buttonText: "Nossa equipe",
     buttonUrl: "/sobre/equipe",
     imageUrl: "/images/headers/sobre-header.webp",
-    imageAlt: "Sobre a AdvanceMais - Nossa História",
+    imageAlt: "Sobre a Advance+ - Nossa História",
     isActive: true,
     targetPages: ["/sobre"],
   };

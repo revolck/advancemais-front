@@ -16,7 +16,7 @@ export const DEFAULT_HEADER_DATA: HeaderPageData[] = [
     buttonText: "Fale com nossos especialistas",
     buttonUrl: "/sobre/equipe",
     imageUrl: "/images/headers/sobre-header.webp",
-    imageAlt: "Sobre a AdvanceMais - Nossa História",
+    imageAlt: "Sobre a Advance+ - Nossa História",
     isActive: true,
     targetPages: ["/sobre"],
   },
