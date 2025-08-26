@@ -65,7 +65,9 @@ export default function SobreForm() {
             toastCustom.error("Sessão expirada. Faça login novamente");
             break;
           case 403:
-            toastCustom.error("Você não tem permissão para acessar este conteúdo");
+            toastCustom.error(
+              "Você não tem permissão para acessar este conteúdo"
+            );
             break;
           case 500:
             toastCustom.error("Erro do servidor ao carregar dados existentes");
@@ -82,20 +84,20 @@ export default function SobreForm() {
   const handleFilesChange = (list: FileUploadItem[]) => {
     const previousCount = files.length;
     const currentCount = list.length;
-    
+
     setFiles(list);
-    
+
     // Feedback quando arquivo é adicionado
     if (currentCount > previousCount) {
       toastCustom.success("Imagem adicionada com sucesso");
     }
-    
+
     // Feedback quando arquivo é removido
     if (currentCount < previousCount) {
       toastCustom.info("Imagem removida");
       setContent((prev) => ({ ...prev, imagemUrl: undefined }));
     }
-    
+
     // Limpar imagemUrl se não há arquivos
     if (currentCount === 0) {
       setContent((prev) => ({ ...prev, imagemUrl: undefined }));
@@ -104,10 +106,10 @@ export default function SobreForm() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    
+
     // Bloqueia múltiplos cliques
     if (isLoading) return;
-    
+
     const title = content.titulo.trim();
     const description = content.descricao.trim();
 
@@ -133,35 +135,42 @@ export default function SobreForm() {
       toastCustom.error("A descrição deve ter pelo menos 10 caracteres");
       return;
     }
-    if (description.length > 500) {
-      toastCustom.error("A descrição deve ter no máximo 500 caracteres");
-      return;
-    }
+
+    // ✅ REMOVIDA: Validação de máximo de caracteres - agora é automática
+    // ❌ if (description.length > 500) {
+    // ❌   toastCustom.error("A descrição deve ter no máximo 500 caracteres");
+    // ❌   return;
+    // ❌ }
 
     if (files.length === 0 && !content.imagemUrl) {
       toastCustom.error("Uma imagem é obrigatória");
       return;
     }
 
-    const uploading = files.find(f => f.status === "uploading");
+    const uploading = files.find((f) => f.status === "uploading");
     if (uploading) {
       toastCustom.error("Aguarde o upload da imagem terminar");
       return;
     }
 
-    const failed = files.find(f => f.status === "failed");
+    const failed = files.find((f) => f.status === "failed");
     if (failed) {
       toastCustom.error("Erro no upload da imagem. Tente novamente");
       return;
     }
 
     setIsLoading(true);
-    
+
     // Toast de loading
     toastCustom.info("Salvando conteúdo...");
 
     try {
-      const payload: { titulo: string; descricao: string; imagem?: File; imagemUrl?: string } = {
+      const payload: {
+        titulo: string;
+        descricao: string;
+        imagem?: File;
+        imagemUrl?: string;
+      } = {
         titulo: title,
         descricao: description,
       };
@@ -206,13 +215,15 @@ export default function SobreForm() {
           },
         ]);
       }
-
     } catch (err) {
       console.error("Erro ao salvar:", err);
       const status = (err as any)?.status;
       switch (status) {
         case 400:
-          toastCustom.error((err as Error).message || "Dados inválidos. Verifique os campos e tente novamente");
+          toastCustom.error(
+            (err as Error).message ||
+              "Dados inválidos. Verifique os campos e tente novamente"
+          );
           break;
         case 401:
           toastCustom.error("Sessão expirada. Faça login novamente");
@@ -221,22 +232,34 @@ export default function SobreForm() {
           toastCustom.error("Você não tem permissão para esta ação");
           break;
         case 413:
-          toastCustom.error("Arquivo muito grande. Selecione uma imagem menor que 5MB");
+          toastCustom.error(
+            "Arquivo muito grande. Selecione uma imagem menor que 5MB"
+          );
           break;
         case 422:
-          toastCustom.error((err as Error).message || "Erro de validação nos dados enviados");
+          toastCustom.error(
+            (err as Error).message || "Erro de validação nos dados enviados"
+          );
           break;
         case 500:
-          toastCustom.error("Erro interno do servidor. Tente novamente em alguns minutos");
+          toastCustom.error(
+            "Erro interno do servidor. Tente novamente em alguns minutos"
+          );
           break;
         case 503:
-          toastCustom.error("Serviço temporariamente indisponível. Tente novamente");
+          toastCustom.error(
+            "Serviço temporariamente indisponível. Tente novamente"
+          );
           break;
         default:
           if (err instanceof TypeError) {
-            toastCustom.error("Erro de conexão. Verifique sua internet e tente novamente");
+            toastCustom.error(
+              "Erro de conexão. Verifique sua internet e tente novamente"
+            );
           } else {
-            toastCustom.error(`Erro ao salvar${status ? ` (${status})` : ""}. Tente novamente`);
+            toastCustom.error(
+              `Erro ao salvar${status ? ` (${status})` : ""}. Tente novamente`
+            );
           }
           break;
       }
@@ -248,38 +271,6 @@ export default function SobreForm() {
   return (
     <div className="space-y-8">
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Conteúdo Básico */}
-        <div className="space-y-3">
-            <div>
-              <InputCustom
-                label="Título"
-                id="titulo"
-                value={content.titulo}
-                onChange={(e) => setContent(prev => ({ ...prev, titulo: e.target.value }))}
-                maxLength={50}
-                placeholder="Digite o título da seção sobre"
-                required
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="descricao" className="text-sm font-medium text-gray-700">
-                Descrição <span className="text-red-500">*</span>
-              </Label>
-              <div className="mt-1">
-                <RichTextarea
-                  id="descricao"
-                  value={content.descricao}
-                  onChange={(e) => setContent(prev => ({ ...prev, descricao: e.target.value }))}
-                  maxLength={500}
-                  placeholder="Descreva sobre sua empresa..."
-                  className="min-h-[100px]"
-                  required
-                />
-              </div>
-            </div>
-          </div>
-
         {/* Upload de Imagem */}
         <div className="space-y-4">
           <div>
@@ -303,14 +294,56 @@ export default function SobreForm() {
           </div>
         </div>
 
+        {/* Conteúdo Básico */}
+        <div className="space-y-3">
+          <div>
+            <InputCustom
+              label="Título"
+              id="titulo"
+              value={content.titulo}
+              onChange={(e) =>
+                setContent((prev) => ({ ...prev, titulo: e.target.value }))
+              }
+              maxLength={50}
+              placeholder="Digite o título da seção sobre"
+              required
+            />
+          </div>
+
+          <div>
+            <Label
+              htmlFor="descricao"
+              className="text-sm font-medium text-gray-700"
+            >
+              Descrição <span className="text-red-500">*</span>
+            </Label>
+            <div className="mt-1">
+              <RichTextarea
+                id="descricao"
+                value={content.descricao}
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                  setContent((prev) => ({ ...prev, descricao: e.target.value }))
+                }
+                maxLength={500}
+                showCharCount={true}
+                placeholder="Descreva sobre sua empresa."
+                className="min-h-[250px]"
+                required
+              />
+            </div>
+          </div>
+        </div>
+
         {/* Botão de Salvar */}
         <div className="pt-4 flex justify-end">
           <ButtonCustom
             type="submit"
             isLoading={isLoading}
             disabled={isLoading}
-            withAnimation={false}
-            className="rounded-2xl bg-[var(--color-blue)] text-white py-4 px-8 font-medium hover:bg-[var(--color-blue)]/90 transition-colors cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed min-w-[120px]"
+            size="lg"
+            variant="default"
+            className="w-40"
+            withAnimation={true}
           >
             Salvar
           </ButtonCustom>

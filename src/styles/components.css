@@ -154,3 +154,90 @@
     transform: none;
   }
 }
+
+/* 
+ * TextArea
+ */
+
+.simple-textarea {
+  resize: none !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  min-width: 100% !important;
+  max-width: 100% !important;
+  width: 100% !important;
+  word-wrap: break-word !important;
+  white-space: pre-wrap !important;
+}
+
+.rich-textarea-content {
+  resize: none !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  min-width: 100% !important;
+  max-width: 100% !important;
+  width: 100% !important;
+  word-wrap: break-word !important;
+  white-space: pre-wrap !important;
+  outline: none !important;
+}
+
+.simple-textarea::-webkit-resizer,
+.rich-textarea-content::-webkit-resizer {
+  display: none !important;
+}
+
+/* Firefox */
+.simple-textarea,
+.rich-textarea-content {
+  resize: none !important;
+  -moz-resize: none !important;
+}
+
+/* Estilos para placeholder no contentEditable */
+.rich-textarea-content[data-placeholder]:empty::before {
+  content: attr(data-placeholder);
+  color: rgb(107 114 128); /* text-gray-500 */
+  pointer-events: none;
+  position: absolute;
+}
+
+/* Previne overflow horizontal em textos longos sem quebras */
+.simple-textarea,
+.rich-textarea-content {
+  overflow-wrap: break-word !important;
+  word-break: break-word !important;
+}
+
+/* Estilo para quando está focado */
+.simple-textarea:focus,
+.rich-textarea-content:focus {
+  resize: none !important;
+}
+
+/* Fix específico para contentEditable em Webkit */
+.rich-textarea-content {
+  -webkit-user-modify: read-write-plaintext-only;
+}
+
+/* Garante que o scroll funcione corretamente */
+.simple-textarea::-webkit-scrollbar,
+.rich-textarea-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.simple-textarea::-webkit-scrollbar-track,
+.rich-textarea-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.simple-textarea::-webkit-scrollbar-thumb,
+.rich-textarea-content::-webkit-scrollbar-thumb {
+  background: rgb(203 213 225); /* slate-300 */
+  border-radius: 4px;
+}
+
+.simple-textarea::-webkit-scrollbar-thumb:hover,
+.rich-textarea-content::-webkit-scrollbar-thumb:hover {
+  background: rgb(148 163 184); /* slate-400 */
+}

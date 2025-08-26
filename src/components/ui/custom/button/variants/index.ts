@@ -10,14 +10,14 @@ export const buttonCustomVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-[var(--global-button)] hover:bg-[var(--global-button-hover)] text-[var(--global-cor-cinza-ardosia)] border-2 border-[var(--global-button-border)] !rounded-full relative pr-12 pl-4 font-semibold",
+          "bg-[var(--primary-color)] hover:bg-[var(--primary-color)] text-white !rounded-full relative pr-12 pl-4 font-semibold",
         primary:
-          "bg-[var(--global-button)] text-[var(--global-cor-cinza-ardosia)] rounded-md",
-        secondary: "bg-[var(--global-cor-roxo-medio)] text-white rounded-md",
+          "bg-[var(--primary-color)] hover:bg-[var(--primary-color)] text-white !rounded-full relative pr-12 pl-4 font-semibold",
+        secondary:
+          "bg-[var(--secondary-color)] hover:bg-[var(--secondary-color)] text-white !rounded-full relative pr-12 pl-4 font-semibold",
         outline:
           "border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground rounded-md",
-        ghost:
-          "hover:bg-accent hover:text-accent-foreground rounded-md",
+        ghost: "hover:bg-accent hover:text-accent-foreground rounded-md",
         link: "text-primary underline-offset-4 hover:underline",
         danger: "bg-[var(--global-cor-vermelho-terra)] text-white rounded-md",
       },
