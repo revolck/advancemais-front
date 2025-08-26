@@ -5,9 +5,13 @@ export interface AboutApiResponse {
 }
 
 export interface AboutBackendResponse {
+  id: string;
   imagemUrl: string;
+  imagemTitulo: string;
   titulo: string;
   descricao: string;
+  criadoEm: string;
+  atualizadoEm: string;
 }
 
 export interface AboutImageProps {
@@ -20,4 +24,18 @@ export interface AboutImageProps {
 export interface AboutContentProps {
   title: string;
   description: string;
+}
+
+export interface CreateAboutPayload {
+  titulo: string;
+  descricao: string;
+  imagem?: File | Blob;
+  imagemUrl?: string;
+}
+
+export interface UpdateAboutPayload {
+  titulo?: string;
+  descricao?: string;
+  imagem?: File | Blob;
+  imagemUrl?: string;
 }
