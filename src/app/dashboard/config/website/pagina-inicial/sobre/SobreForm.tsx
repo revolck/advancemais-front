@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useState, FormEvent } from "react";
-import { Loader2 } from "lucide-react";
 import {
   InputCustom,
   FileUpload,
   type FileUploadItem,
   RichTextarea,
+  ButtonCustom,
 } from "@/components/ui/custom";
 import { Label } from "@/components/ui/label";
 import { toastCustom } from "@/components/ui/custom/toast";
@@ -341,17 +341,15 @@ export default function SobreForm() {
 
         {/* Botão de Salvar */}
         <div className="pt-4 flex justify-end">
-          <button
+          <ButtonCustom
             type="submit"
+            isLoading={isLoading}
             disabled={isLoading}
-            className="rounded-2xl bg-[var(--color-blue)] text-white py-4 px-8 font-medium hover:bg-[var(--color-blue)]/90 transition-colors flex items-center justify-center cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed min-w-[120px]"
+            withAnimation={false}
+            className="rounded-2xl bg-[var(--color-blue)] text-white py-4 px-8 font-medium hover:bg-[var(--color-blue)]/90 transition-colors cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed min-w-[120px]"
           >
-            {isLoading ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
-            ) : (
-              "Salvar"
-            )}
-          </button>
+            Salvar
+          </ButtonCustom>
         </div>
       </form>
     </div>
