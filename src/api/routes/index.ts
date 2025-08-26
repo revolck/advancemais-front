@@ -15,8 +15,13 @@ export const websiteRoutes = {
   update: (id: string) => `${prefix}/website/${id}`,
   delete: (id: string) => `${prefix}/website/${id}`,
   home: {
-    about: () => `${prefix}/website/sobre`,
-    aboutById: (id: string) => `${prefix}/website/sobre/${id}`,
+    about: {
+      list: () => `${prefix}/website/sobre`,
+      create: () => `${prefix}/website/sobre`,
+      get: (id: string) => `${prefix}/website/sobre/${id}`,
+      update: (id: string) => `${prefix}/website/sobre/${id}`,
+      delete: (id: string) => `${prefix}/website/sobre/${id}`,
+    },
     slide: () => `${prefix}/website/slide`,
     banner: () => `${prefix}/website/banner`,
   },

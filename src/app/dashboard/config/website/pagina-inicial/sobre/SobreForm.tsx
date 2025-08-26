@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/custom";
 import { Label } from "@/components/ui/label";
 import { toastCustom } from "@/components/ui/custom/toast";
+import { listAbout, createAbout, updateAbout } from "@/api/websites/components";
 
 interface SobreContent {
   id?: string;
@@ -29,34 +30,9 @@ export default function SobreForm() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await fetch("/api/v1/website/sobre");
-        
-        // Se não encontrar dados (404), não é erro - apenas não há conteúdo ainda
-        if (res.status === 404) {
-          return;
-        }
-        
-        // Outros erros são tratados
-        if (!res.ok) {
-          switch (res.status) {
-            case 401:
-              toastCustom.error("Sessão expirada. Faça login novamente");
-              break;
-            case 403:
-              toastCustom.error("Você não tem permissão para acessar este conteúdo");
-              break;
-            case 500:
-              toastCustom.error("Erro do servidor ao carregar dados existentes");
-              break;
-            default:
-              toastCustom.error("Erro ao carregar dados existentes");
-          }
-          return;
-        }
-        
-        const data: any[] = await res.json();
+        const data = await listAbout();
         const first = data[0];
-        
+
         if (first) {
           setContent({
             id: first.id,
@@ -64,7 +40,7 @@ export default function SobreForm() {
             descricao: first.descricao ?? "",
             imagemUrl: first.imagemUrl ?? undefined,
           });
-          
+
           if (first.imagemUrl) {
             const item: FileUploadItem = {
               id: "existing",
@@ -78,22 +54,28 @@ export default function SobreForm() {
             };
             setFiles([item]);
           }
-          
-          // Toast informativo quando carrega dados existentes
+
           toastCustom.info("Conteúdo existente carregado");
         }
       } catch (err) {
         console.error("Erro ao carregar dados:", err);
-        
-        // Tratamento de erros de rede
-        if (err instanceof TypeError && err.message.includes('fetch')) {
-          toastCustom.error("Erro de conexão ao carregar dados. Verifique sua internet");
-        } else {
-          toastCustom.error("Erro inesperado ao carregar dados existentes");
+        const status = (err as any)?.status;
+        switch (status) {
+          case 401:
+            toastCustom.error("Sessão expirada. Faça login novamente");
+            break;
+          case 403:
+            toastCustom.error("Você não tem permissão para acessar este conteúdo");
+            break;
+          case 500:
+            toastCustom.error("Erro do servidor ao carregar dados existentes");
+            break;
+          default:
+            toastCustom.error("Erro ao carregar dados existentes");
         }
       }
     };
-    
+
     fetchData();
   }, []);
 
@@ -177,79 +159,39 @@ export default function SobreForm() {
     
     // Toast de loading
     toastCustom.info("Salvando conteúdo...");
-    
+
     try {
-      const formData = new FormData();
-      formData.append("titulo", title);
-      formData.append("descricao", description);
+      const payload: { titulo: string; descricao: string; imagem?: File; imagemUrl?: string } = {
+        titulo: title,
+        descricao: description,
+      };
 
       const file = files[0];
       if (file?.file) {
-        formData.append("imagem", file.file);
+        payload.imagem = file.file;
       } else if (content.imagemUrl) {
-        formData.append("imagemUrl", content.imagemUrl);
+        payload.imagemUrl = content.imagemUrl;
       }
 
-      const method = content.id ? "PUT" : "POST";
-      const url = content.id
-        ? `/api/v1/website/sobre/${content.id}`
-        : "/api/v1/website/sobre";
-        
-      const res = await fetch(url, { method, body: formData });
-      
-      // Tratamento de erros específicos da API
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => null);
-        
-        switch (res.status) {
-          case 400:
-            toastCustom.error(errorData?.message || "Dados inválidos. Verifique os campos e tente novamente");
-            break;
-          case 401:
-            toastCustom.error("Sessão expirada. Faça login novamente");
-            break;
-          case 403:
-            toastCustom.error("Você não tem permissão para esta ação");
-            break;
-          case 413:
-            toastCustom.error("Arquivo muito grande. Selecione uma imagem menor que 5MB");
-            break;
-          case 422:
-            toastCustom.error(errorData?.message || "Erro de validação nos dados enviados");
-            break;
-          case 500:
-            toastCustom.error("Erro interno do servidor. Tente novamente em alguns minutos");
-            break;
-          case 503:
-            toastCustom.error("Serviço temporariamente indisponível. Tente novamente");
-            break;
-          default:
-            toastCustom.error(`Erro ao salvar (${res.status}). Tente novamente`);
-        }
-        return;
-      }
-      
-      const saved = await res.json();
-      
-      // Verificar se a resposta contém os dados esperados
+      const saved = content.id
+        ? await updateAbout(content.id, payload)
+        : await createAbout(payload);
+
       if (!saved || !saved.id) {
         toastCustom.error("Resposta inválida do servidor");
         return;
       }
-      
-      // Toast de sucesso detalhado
+
       const action = content.id ? "atualizado" : "criado";
       toastCustom.success(`Conteúdo ${action} com sucesso!`);
-      
-      // Atualizar estado
+
       setContent({
         id: saved.id,
         titulo: saved.titulo,
         descricao: saved.descricao,
         imagemUrl: saved.imagemUrl,
       });
-      
-      // Atualizar files se houver imagem
+
       if (saved.imagemUrl) {
         setFiles([
           {
@@ -264,17 +206,39 @@ export default function SobreForm() {
           },
         ]);
       }
-      
+
     } catch (err) {
       console.error("Erro ao salvar:", err);
-      
-      // Tratamento de erros de rede
-      if (err instanceof TypeError && err.message.includes('fetch')) {
-        toastCustom.error("Erro de conexão. Verifique sua internet e tente novamente");
-      } else if (err instanceof Error) {
-        toastCustom.error(`Erro inesperado: ${err.message}`);
-      } else {
-        toastCustom.error("Erro inesperado. Tente novamente");
+      const status = (err as any)?.status;
+      switch (status) {
+        case 400:
+          toastCustom.error((err as Error).message || "Dados inválidos. Verifique os campos e tente novamente");
+          break;
+        case 401:
+          toastCustom.error("Sessão expirada. Faça login novamente");
+          break;
+        case 403:
+          toastCustom.error("Você não tem permissão para esta ação");
+          break;
+        case 413:
+          toastCustom.error("Arquivo muito grande. Selecione uma imagem menor que 5MB");
+          break;
+        case 422:
+          toastCustom.error((err as Error).message || "Erro de validação nos dados enviados");
+          break;
+        case 500:
+          toastCustom.error("Erro interno do servidor. Tente novamente em alguns minutos");
+          break;
+        case 503:
+          toastCustom.error("Serviço temporariamente indisponível. Tente novamente");
+          break;
+        default:
+          if (err instanceof TypeError) {
+            toastCustom.error("Erro de conexão. Verifique sua internet e tente novamente");
+          } else {
+            toastCustom.error(`Erro ao salvar${status ? ` (${status})` : ""}. Tente novamente`);
+          }
+          break;
       }
     } finally {
       setIsLoading(false);
