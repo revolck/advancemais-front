@@ -14,7 +14,6 @@ interface SignInPageProps {
   onSignIn?: (event: React.FormEvent<HTMLFormElement>) => void;
   onResetPassword?: () => void;
   onCreateAccount?: () => void;
-  isLoading?: boolean;
 }
 
 // --- MAIN COMPONENT ---
@@ -28,11 +27,11 @@ export const SignInPage: React.FC<SignInPageProps> = ({
   onSignIn,
   onResetPassword,
   onCreateAccount,
-  isLoading,
 }) => {
   const [documento, setDocumento] = useState("");
   const [senha, setSenha] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Determina se é CPF (11 dígitos) ou CNPJ (14 dígitos)
   const documentoDigits = documento.replace(/\D/g, "");
@@ -70,7 +69,18 @@ export const SignInPage: React.FC<SignInPageProps> = ({
               </p>
             )}
 
-            <form className="space-y-5" onSubmit={onSignIn}>
+            <form
+              className="space-y-5"
+              onSubmit={async (e) => {
+                e.preventDefault();
+                setIsSubmitting(true);
+                try {
+                  await onSignIn?.(e);
+                } finally {
+                  setIsSubmitting(false);
+                }
+              }}
+            >
               <div className="animate-element animate-delay-300 space-y-1">
                 <Label htmlFor="documento" className="required text-sm font-medium text-muted-foreground">
                   CPF ou CNPJ 
@@ -143,11 +153,14 @@ export const SignInPage: React.FC<SignInPageProps> = ({
               
               <ButtonCustom
                 type="submit"
-                isLoading={isLoading}
-                disabled={!isFormValid}
+                isLoading={isSubmitting}
+                disabled={!isFormValid || isSubmitting}
                 fullWidth
                 withAnimation
-                className="animate-element animate-delay-600 rounded-2xl bg-[var(--color-blue)] text-white py-6 font-medium hover:bg-[var(--color-blue)]/90 transition-colors disabled:opacity-70"
+                className={[
+                  "animate-element animate-delay-600 rounded-2xl bg-[var(--color-blue)] text-white py-6 font-medium",
+                  "hover:bg-[var(--color-blue)]/90 transition-colors disabled:opacity-70",
+                ].join(" ")}
               >
                 Entrar
               </ButtonCustom>
