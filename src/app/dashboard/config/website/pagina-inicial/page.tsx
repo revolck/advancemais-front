@@ -44,11 +44,7 @@ export default function PaginaInicialPage() {
           content: (
             <div className="space-y-6">
               <div>
-                <h3 className="text-lg font-semibold mb-2">Sliders Desktop</h3>
-                <p className="text-muted-foreground mb-4">
-                  Gerencie os sliders que aparecem na versão desktop do site.
-                  Resolução recomendada: 1920x800px.
-                </p>
+                <h3 className="text-lg font-semibold mb-0">Sliders Desktop</h3>
               </div>
 
               <SliderList
@@ -72,10 +68,6 @@ export default function PaginaInicialPage() {
                 <h3 className="text-lg font-semibold mb-2">
                   Sliders Mobile/Tablet
                 </h3>
-                <p className="text-muted-foreground mb-4">
-                  Gerencie os sliders para dispositivos móveis e tablets.
-                  Resolução recomendada: 768x400px.
-                </p>
               </div>
 
               <SliderList
@@ -86,36 +78,6 @@ export default function PaginaInicialPage() {
                 onError={handleMobileError}
                 className="w-full"
               />
-
-              <div className="mt-6 p-4 bg-muted/30 rounded-lg border border-border/30">
-                <h4 className="font-medium text-foreground mb-2">
-                  Especificações Mobile/Tablet
-                </h4>
-                <div className="grid md:grid-cols-2 gap-4 text-sm text-muted-foreground">
-                  <div>
-                    <h5 className="font-medium text-foreground mb-1">
-                      Técnicas
-                    </h5>
-                    <ul className="space-y-1">
-                      <li>• Resolução: 768x400px</li>
-                      <li>• Formato: JPEG, PNG, WebP</li>
-                      <li>• Máximo: 5MB</li>
-                      <li>• Proporção: 16:9</li>
-                    </ul>
-                  </div>
-                  <div>
-                    <h5 className="font-medium text-foreground mb-1">
-                      Otimizações
-                    </h5>
-                    <ul className="space-y-1">
-                      <li>• Touch gestures</li>
-                      <li>• Auto-play adaptativo</li>
-                      <li>• Carregamento otimizado</li>
-                      <li>• Compressão automática</li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
             </div>
           ),
         },
