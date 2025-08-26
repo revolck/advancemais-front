@@ -3,33 +3,14 @@
 import React from "react";
 import {
   VerticalTabs,
-  SliderList,
   type VerticalTabItem,
 } from "@/components/ui/custom";
-import type { SliderItem } from "@/components/ui/custom/slider-list/types";
 
 /**
  * Página principal de configuração da página inicial
  * Usa VerticalTabs para organizar as diferentes seções
  */
 export default function PaginaInicialPage() {
-  // Handlers para slider desktop
-  const handleDesktopSlidersChange = (sliders: SliderItem[]) => {
-    console.log("Sliders desktop atualizados:", sliders);
-  };
-
-  const handleDesktopError = (error: string) => {
-    console.error("Erro nos sliders desktop:", error);
-  };
-
-  // Handlers para slider mobile
-  const handleMobileSlidersChange = (sliders: SliderItem[]) => {
-    console.log("Sliders mobile atualizados:", sliders);
-  };
-
-  const handleMobileError = (error: string) => {
-    console.error("Erro nos sliders mobile:", error);
-  };
 
   const items: VerticalTabItem[] = [
     {
@@ -46,15 +27,6 @@ export default function PaginaInicialPage() {
               <div>
                 <h3 className="text-lg font-semibold mb-0">Sliders Desktop</h3>
               </div>
-
-              <SliderList
-                deviceType="desktop"
-                maxSliders={4}
-                allowReorder={true}
-                onSlidersChange={handleDesktopSlidersChange}
-                onError={handleDesktopError}
-                className="w-full"
-              />
             </div>
           ),
         },
@@ -69,15 +41,6 @@ export default function PaginaInicialPage() {
                   Sliders Mobile/Tablet
                 </h3>
               </div>
-
-              <SliderList
-                deviceType="tablet-mobile"
-                maxSliders={4}
-                allowReorder={true}
-                onSlidersChange={handleMobileSlidersChange}
-                onError={handleMobileError}
-                className="w-full"
-              />
             </div>
           ),
         },

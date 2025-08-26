@@ -36,9 +36,6 @@ export * from "./vertical-tabs";
 // File Upload
 export { FileUpload, type FileUploadItem } from "./file-upload";
 
-// Slider List
-export * from "./slider-list";
-
 // Avatar
 export * from "./avatar";
 
