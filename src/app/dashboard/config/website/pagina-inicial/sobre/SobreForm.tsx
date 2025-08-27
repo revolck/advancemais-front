@@ -129,19 +129,6 @@ export default function SobreForm({ initialData }: SobreFormProps) {
     }
 
     if (currentCount < previousCount) {
-      const removed = files.filter(
-        (f) => !list.some((nf) => nf.id === f.id),
-      );
-      removed.forEach((f) => {
-        if (f.uploadedUrl && f.uploadedUrl !== oldImageUrl) {
-          fetch(
-            `${routes.upload.base()}?file=${encodeURIComponent(
-              f.uploadedUrl.replace(/^\/+/g, ""),
-            )}`,
-            { method: "DELETE" },
-          ).catch(() => {});
-        }
-      });
       toastCustom.info("Imagem removida");
       setContent((prev) => ({ ...prev, imagemUrl: undefined }));
       addLog("Arquivo removido");
@@ -208,6 +195,8 @@ export default function SobreForm({ initialData }: SobreFormProps) {
     // Toast de loading
     toastCustom.info("Salvando conteúdo...");
 
+    let uploadedUrl: string | undefined;
+
     try {
       const payload: {
         titulo: string;
@@ -219,10 +208,31 @@ export default function SobreForm({ initialData }: SobreFormProps) {
         descricao: description,
       };
 
-      const file = files[0];
+      const fileItem = files[0];
       const previousUrl = oldImageUrl;
-      if (file?.uploadedUrl) {
-        if (previousUrl && previousUrl !== file.uploadedUrl) {
+
+      if (fileItem?.file) {
+        addLog(`Upload iniciado: ${fileItem.name}`);
+        const formData = new FormData();
+        formData.append("file", fileItem.file);
+        try {
+          const response = await fetch(
+            `${routes.upload.base()}?path=${encodeURIComponent("sobre")}`,
+            {
+              method: "POST",
+              body: formData,
+            },
+          );
+          const result = await response.json();
+          uploadedUrl = result.url;
+          addLog(`Upload concluído: ${uploadedUrl}`);
+        } catch (err) {
+          addLog(`Upload erro: ${String(err)}`);
+          toastCustom.error("Erro no upload da imagem. Tente novamente");
+          return;
+        }
+
+        if (previousUrl && previousUrl !== uploadedUrl) {
           try {
             await fetch(
               `${routes.upload.base()}?file=${encodeURIComponent(
@@ -233,9 +243,21 @@ export default function SobreForm({ initialData }: SobreFormProps) {
             addLog(`Arquivo antigo removido: ${previousUrl}`);
           } catch {}
         }
-        payload.imagemUrl = file.uploadedUrl;
-        payload.imagemTitulo = extractImageTitle(file.uploadedUrl);
-        addLog(`Usando imagem via URL: ${file.uploadedUrl}`);
+
+        if (uploadedUrl) {
+          payload.imagemUrl = uploadedUrl;
+          payload.imagemTitulo = extractImageTitle(uploadedUrl);
+        }
+      } else if (!fileItem && previousUrl) {
+        try {
+          await fetch(
+            `${routes.upload.base()}?file=${encodeURIComponent(
+              previousUrl.replace(/^\/+/g, "")
+            )}`,
+            { method: "DELETE" },
+          );
+          addLog(`Arquivo antigo removido: ${previousUrl}`);
+        } catch {}
       } else if (previousUrl) {
         payload.imagemUrl = previousUrl;
         payload.imagemTitulo = extractImageTitle(previousUrl);
@@ -290,6 +312,8 @@ export default function SobreForm({ initialData }: SobreFormProps) {
             uploadedUrl: finalImageUrl,
           },
         ]);
+      } else {
+        setFiles([]);
       }
 
       setOldImageUrl(finalImageUrl);
@@ -336,12 +360,12 @@ export default function SobreForm({ initialData }: SobreFormProps) {
       );
       addLog(`Erro da API: ${errorMessage}`);
 
-      if (files[0]?.uploadedUrl) {
+      if (uploadedUrl) {
         try {
           await fetch(
-            `${routes.upload.base()}?file=${encodeURIComponent(
-              files[0].uploadedUrl.replace(/^\\+/g, ""),
-            )}`,
+              `${routes.upload.base()}?file=${encodeURIComponent(
+                uploadedUrl.replace(/^\/+/g, ""),
+              )}`,
             { method: "DELETE" },
           );
         } catch {}
@@ -374,20 +398,9 @@ export default function SobreForm({ initialData }: SobreFormProps) {
                     multiple={false}
                     maxFiles={1}
                     validation={{ accept: ["image/*"] }}
-                    publicUrl="/sobre"
-                    deleteOnRemove={false}
+                    autoUpload={false}
                     onFilesChange={handleFilesChange}
                     showProgress={false}
-                    onUploadStart={(file) => addLog(`Upload iniciado: ${file.name}`)}
-                    onUploadProgress={(id, progress) =>
-                      addLog(`Upload progresso ${id}: ${Math.round(progress)}%`)
-                    }
-                    onUploadComplete={(file) =>
-                      addLog(`Upload concluído: ${file.uploadedUrl}`)
-                    }
-                    onUploadError={(id, error) =>
-                      addLog(`Upload erro ${id}: ${error}`)
-                    }
                   />
                 </div>
               </div>

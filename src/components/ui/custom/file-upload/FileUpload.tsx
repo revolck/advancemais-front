@@ -237,6 +237,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   uploadUrl,
   publicUrl,
   deleteOnRemove = true,
+  autoUpload = true,
 }) => {
   const [internalFiles, setInternalFiles] = useState<FileUploadItem[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
@@ -541,8 +542,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           name: file.name,
           size: file.size,
           type: file.type,
-          status: "uploading",
-          progress: 0,
+          status: autoUpload ? "uploading" : "idle",
+          progress: autoUpload ? 0 : undefined,
           uploadDate: new Date(),
           previewUrl: generatePreviewUrl(file),
           file,
@@ -569,19 +570,23 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       updateFiles(updatedFiles);
       onFilesAdded?.(validFiles);
 
-      // Start upload for each file
-      validFiles.forEach(file => {
-        uploadFile(file.id);
-      });
+      if (autoUpload) {
+        // Start upload for each file
+        validFiles.forEach(file => {
+          uploadFile(file.id);
+        });
+      }
 
       // Show success message
       toastCustom.success({
         title: "Arquivos adicionados!",
-        description: `${validFiles.length} arquivo(s) sendo enviado(s).`,
+        description: autoUpload
+          ? `${validFiles.length} arquivo(s) sendo enviado(s).`
+          : `${validFiles.length} arquivo(s) pronto(s) para upload.`,
         duration: 3000,
       });
     }
-  }, [maxFilesLimit, validateFile, generatePreviewUrl, updateFiles, onFilesAdded, uploadFile]);
+  }, [maxFilesLimit, validateFile, generatePreviewUrl, updateFiles, onFilesAdded, uploadFile, autoUpload]);
 
   // Drag & Drop handlers
   const handleDragEnter = useCallback((e: React.DragEvent) => {
