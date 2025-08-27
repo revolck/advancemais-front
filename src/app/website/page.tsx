@@ -5,7 +5,7 @@ import { usePageTitle } from "@/hooks/usePageTitle";
 import Slider from "@/theme/website/components/slider";
 import AboutSection from "@/theme/website/components/about";
 import BannersGroup from "@/theme/website/components/banners";
-import BusinessGroupInformation from "@/theme/website/components/consultoria-empresarial";
+import ConsultoriaSection from "@/theme/website/components/consultoria-empresarial";
 
 /**
  * Página Inicial do Website Institucional
@@ -36,15 +36,9 @@ export default function WebsiteHomePage() {
         onError={(error) => handleComponentError("About", error)}
       />
 
-      <BusinessGroupInformation
-        fetchFromApi={false}
-        onDataLoaded={(data) => {
-          handleComponentLoaded("Business");
-          console.log("Seções de negócio carregadas:", data);
-        }}
-        onError={(error) => {
-          handleComponentError("Business", error);
-        }}
+      <ConsultoriaSection
+        onDataLoaded={() => handleComponentLoaded("Consultoria")}
+        onError={(error) => handleComponentError("Consultoria", error)}
       />
 
       {/* Banners de Destaque */}

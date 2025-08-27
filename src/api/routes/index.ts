@@ -21,6 +21,13 @@ export const websiteRoutes = {
     update: (id: string) => `${prefix}/website/sobre/${id}`,
     delete: (id: string) => `${prefix}/website/sobre/${id}`,
   },
+  consultoria: {
+    list: () => `${prefix}/website/consultoria`,
+    create: () => `${prefix}/website/consultoria`,
+    get: (id: string) => `${prefix}/website/consultoria/${id}`,
+    update: (id: string) => `${prefix}/website/consultoria/${id}`,
+    delete: (id: string) => `${prefix}/website/consultoria/${id}`,
+  },
   home: {
     slide: () => `${prefix}/website/slide`,
     banner: () => `${prefix}/website/banner`,

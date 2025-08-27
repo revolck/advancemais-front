@@ -6,7 +6,7 @@ import Slider from "@/theme/website/components/slider";
 import AboutSection from "@/theme/website/components/about";
 import BannersGroup from "@/theme/website/components/banners";
 import CounterInformation from "@/theme/website/components/counter-information";
-import BusinessGroupInformation from "@/theme/website/components/consultoria-empresarial";
+import ConsultoriaSection from "@/theme/website/components/consultoria-empresarial";
 import CoursesCarousel from "@/theme/website/components/courses-carousel";
 import BlogSection from "@/theme/website/components/blog-section";
 import LogoEnterprises from "@/theme/website/components/logo-enterprises";
@@ -79,14 +79,13 @@ export default function WebsiteHomePage() {
       {/* ============================================= */}
       {/* SEÇÕES DE NEGÓCIO - OPÇÃO 1: Com dados padrão (SEM API) */}
       {/* ============================================= */}
-      <BusinessGroupInformation
-        fetchFromApi={false}
+      <ConsultoriaSection
         onDataLoaded={(data) => {
-          handleComponentLoaded("Business");
-          console.log("Seções de negócio carregadas:", data);
+          handleComponentLoaded("Consultoria");
+          console.log("Dados de consultoria carregados:", data);
         }}
         onError={(error) => {
-          handleComponentError("Business", error);
+          handleComponentError("Consultoria", error);
         }}
       />
 
