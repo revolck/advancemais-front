@@ -85,16 +85,35 @@ export async function getAboutById(
   );
 }
 
-function buildFormData(
+function buildRequest(
   data: CreateAboutPayload | UpdateAboutPayload,
-): FormData {
-  const form = new FormData();
-  if (data.titulo !== undefined) form.append("titulo", data.titulo);
-  if (data.descricao !== undefined) form.append("descricao", data.descricao);
-  if (data.imagem) form.append("imagem", data.imagem);
-  if (data.imagemUrl) form.append("imagemUrl", data.imagemUrl);
-  if (data.imagemTitulo) form.append("imagemTitulo", data.imagemTitulo);
-  return form;
+): { body: BodyInit; headers: Record<string, string> } {
+  const baseHeaders = {
+    Accept: apiConfig.headers.Accept,
+    ...getAuthHeader(),
+  };
+
+  if (data.imagem) {
+    const form = new FormData();
+    if (data.titulo !== undefined) form.append("titulo", data.titulo);
+    if (data.descricao !== undefined) form.append("descricao", data.descricao);
+    form.append("imagem", data.imagem);
+    if (data.imagemUrl) form.append("imagemUrl", data.imagemUrl);
+    if (data.imagemTitulo) form.append("imagemTitulo", data.imagemTitulo);
+    return { body: form, headers: baseHeaders };
+  }
+
+  const jsonPayload: Record<string, unknown> = {};
+  if (data.titulo !== undefined) jsonPayload.titulo = data.titulo;
+  if (data.descricao !== undefined) jsonPayload.descricao = data.descricao;
+  if (data.imagemUrl !== undefined) jsonPayload.imagemUrl = data.imagemUrl;
+  if (data.imagemTitulo !== undefined)
+    jsonPayload.imagemTitulo = data.imagemTitulo;
+
+  return {
+    body: JSON.stringify(jsonPayload),
+    headers: { "Content-Type": "application/json", ...baseHeaders },
+  };
 }
 
 function getAuthHeader(): Record<string, string> {
@@ -110,12 +129,12 @@ function getAuthHeader(): Record<string, string> {
 export async function createAbout(
   data: CreateAboutPayload,
 ): Promise<AboutBackendResponse> {
-  const form = buildFormData(data);
+  const { body, headers } = buildRequest(data);
   return apiFetch<AboutBackendResponse>(websiteRoutes.about.create(), {
     init: {
       method: "POST",
-      body: form,
-      headers: { Accept: apiConfig.headers.Accept, ...getAuthHeader() },
+      body,
+      headers,
     },
     cache: "no-cache",
   });
@@ -125,18 +144,15 @@ export async function updateAbout(
   id: string,
   data: UpdateAboutPayload,
 ): Promise<AboutBackendResponse> {
-  const form = buildFormData(data);
-  return apiFetch<AboutBackendResponse>(
-    websiteRoutes.about.update(id),
-    {
-      init: {
-        method: "PUT",
-        body: form,
-        headers: { Accept: apiConfig.headers.Accept, ...getAuthHeader() },
-      },
-      cache: "no-cache",
+  const { body, headers } = buildRequest(data);
+  return apiFetch<AboutBackendResponse>(websiteRoutes.about.update(id), {
+    init: {
+      method: "PUT",
+      body,
+      headers,
     },
-  );
+    cache: "no-cache",
+  });
 }
 
 export async function deleteAbout(id: string): Promise<void> {
