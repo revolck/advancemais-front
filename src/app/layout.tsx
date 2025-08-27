@@ -1,5 +1,7 @@
 // src/app/layout.tsx
 import type { Metadata, Viewport } from "next";
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import "@/styles/globals.css";
 
 /**
@@ -53,6 +55,8 @@ export default function RootLayout({
         </div>
         <div id="modal-portal" />
         <div id="tooltip-portal" />
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
