@@ -40,12 +40,14 @@ export default function SobreForm({ initialData }: SobreFormProps) {
   const [logs, setLogs] = useState<string[]>([]);
   const [isFetching, setIsFetching] = useState(!initialData);
   const [oldImageUrl, setOldImageUrl] = useState<string | undefined>(
-    initialData?.imagemUrl,
+    initialData?.imagemUrl
   );
 
-
   const addLog = (message: string) =>
-    setLogs((prev) => [...prev, `[${new Date().toLocaleTimeString()}] ${message}`]);
+    setLogs((prev) => [
+      ...prev,
+      `[${new Date().toLocaleTimeString()}] ${message}`,
+    ]);
 
   useEffect(() => {
     const applyData = (first: AboutBackendResponse) => {
@@ -95,7 +97,9 @@ export default function SobreForm({ initialData }: SobreFormProps) {
             toastCustom.error("Sessão expirada. Faça login novamente");
             break;
           case 403:
-            toastCustom.error("Você não tem permissão para acessar este conteúdo");
+            toastCustom.error(
+              "Você não tem permissão para acessar este conteúdo"
+            );
             break;
           case 500:
             toastCustom.error("Erro do servidor ao carregar dados existentes");
@@ -249,7 +253,7 @@ export default function SobreForm({ initialData }: SobreFormProps) {
 
       if (payload.imagemUrl && payload.imagemUrl !== saved.imagemUrl) {
         addLog(
-          `Forçando uso da imagem enviada: ${payload.imagemUrl} (API retornou ${saved.imagemUrl})`,
+          `Forçando uso da imagem enviada: ${payload.imagemUrl} (API retornou ${saved.imagemUrl})`
         );
       }
 
@@ -314,10 +318,13 @@ export default function SobreForm({ initialData }: SobreFormProps) {
           errorMessage =
             err instanceof TypeError
               ? "Erro de conexão. Verifique sua internet e tente novamente"
-              : `Erro ao salvar${status ? ` (${status})` : ""}. Tente novamente`;
+              : `Erro ao salvar${
+                  status ? ` (${status})` : ""
+                }. Tente novamente`;
       }
       toastCustom.error(
-        errorMessage || "Não foi possível salvar as informações. Tente novamente",
+        errorMessage ||
+          "Não foi possível salvar as informações. Tente novamente"
       );
       addLog(`Erro da API: ${errorMessage}`);
 
@@ -423,15 +430,6 @@ export default function SobreForm({ initialData }: SobreFormProps) {
               </ButtonCustom>
             </div>
           </form>
-          {/* Console de Debug */}
-          <div className="pt-6">
-            <Label className="text-sm font-medium text-gray-700">Console</Label>
-            <div className="mt-2 bg-black text-green-400 p-3 rounded max-h-60 overflow-auto text-xs font-mono">
-              {logs.map((log, idx) => (
-                <div key={idx}>{log}</div>
-              ))}
-            </div>
-          </div>
         </>
       )}
     </div>
