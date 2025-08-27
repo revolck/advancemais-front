@@ -31,6 +31,7 @@ export interface CreateAboutPayload {
   descricao: string;
   imagem?: File | Blob;
   imagemUrl?: string;
+  imagemTitulo?: string;
 }
 
 export interface UpdateAboutPayload {
@@ -38,4 +39,5 @@ export interface UpdateAboutPayload {
   descricao?: string;
   imagem?: File | Blob;
   imagemUrl?: string;
+  imagemTitulo?: string;
 }

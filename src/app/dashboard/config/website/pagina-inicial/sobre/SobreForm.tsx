@@ -39,10 +39,18 @@ export default function SobreForm({ initialData }: SobreFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [logs, setLogs] = useState<string[]>([]);
   const [isFetching, setIsFetching] = useState(!initialData);
-  const [removedFiles, setRemovedFiles] = useState<string[]>([]);
+  const [oldImageUrl, setOldImageUrl] = useState<string | undefined>(
+    initialData?.imagemUrl,
+  );
+
 
   const addLog = (message: string) =>
     setLogs((prev) => [...prev, `[${new Date().toLocaleTimeString()}] ${message}`]);
+
+  const extractImageTitle = (url: string) => {
+    const fileName = url.split("/").pop() ?? "";
+    return fileName.replace(/\.[^/.]+$/, "");
+  };
 
   useEffect(() => {
     const applyData = (first: AboutBackendResponse) => {
@@ -52,6 +60,7 @@ export default function SobreForm({ initialData }: SobreFormProps) {
         descricao: first.descricao ?? "",
         imagemUrl: first.imagemUrl ?? undefined,
       });
+      setOldImageUrl(first.imagemUrl ?? undefined);
 
       if (first.imagemUrl) {
         const item: FileUploadItem = {
@@ -121,11 +130,16 @@ export default function SobreForm({ initialData }: SobreFormProps) {
 
     if (currentCount < previousCount) {
       const removed = files.filter(
-        (f) => !list.some((nf) => nf.id === f.id)
+        (f) => !list.some((nf) => nf.id === f.id),
       );
       removed.forEach((f) => {
-        if (f.uploadedUrl) {
-          setRemovedFiles((prev) => [...prev, f.uploadedUrl as string]);
+        if (f.uploadedUrl && f.uploadedUrl !== oldImageUrl) {
+          fetch(
+            `${routes.upload.base()}?file=${encodeURIComponent(
+              f.uploadedUrl.replace(/^\/+/g, ""),
+            )}`,
+            { method: "DELETE" },
+          ).catch(() => {});
         }
       });
       toastCustom.info("Imagem removida");
@@ -199,18 +213,33 @@ export default function SobreForm({ initialData }: SobreFormProps) {
         titulo: string;
         descricao: string;
         imagemUrl?: string;
+        imagemTitulo?: string;
       } = {
         titulo: title,
         descricao: description,
       };
 
       const file = files[0];
+      const previousUrl = oldImageUrl;
       if (file?.uploadedUrl) {
+        if (previousUrl && previousUrl !== file.uploadedUrl) {
+          try {
+            await fetch(
+              `${routes.upload.base()}?file=${encodeURIComponent(
+                previousUrl.replace(/^\/+/g, "")
+              )}`,
+              { method: "DELETE" },
+            );
+            addLog(`Arquivo antigo removido: ${previousUrl}`);
+          } catch {}
+        }
         payload.imagemUrl = file.uploadedUrl;
+        payload.imagemTitulo = extractImageTitle(file.uploadedUrl);
         addLog(`Usando imagem via URL: ${file.uploadedUrl}`);
-      } else if (content.imagemUrl) {
-        payload.imagemUrl = content.imagemUrl;
-        addLog(`Usando imagem existente: ${content.imagemUrl}`);
+      } else if (previousUrl) {
+        payload.imagemUrl = previousUrl;
+        payload.imagemTitulo = extractImageTitle(previousUrl);
+        addLog(`Usando imagem existente: ${previousUrl}`);
       }
 
       addLog(`Payload enviado: ${JSON.stringify(payload)}`);
@@ -253,22 +282,7 @@ export default function SobreForm({ initialData }: SobreFormProps) {
           },
         ]);
       }
-
-      if (removedFiles.length) {
-        for (const url of removedFiles) {
-          if (url && url !== saved.imagemUrl) {
-            try {
-              await fetch(
-                `${routes.upload.base()}?file=${encodeURIComponent(
-                  url.replace(/^\/+/g, "")
-                )}`,
-                { method: "DELETE" }
-              );
-            } catch {}
-          }
-        }
-        setRemovedFiles([]);
-      }
+      setOldImageUrl(saved.imagemUrl);
     } catch (err) {
       addLog(`Erro ao salvar: ${String(err)}`);
       const status = (err as any)?.status;
@@ -417,7 +431,11 @@ export default function SobreForm({ initialData }: SobreFormProps) {
               <ButtonCustom
                 type="submit"
                 isLoading={isLoading}
-                disabled={isLoading}
+                disabled={
+                  isLoading ||
+                  (!content.imagemUrl && files.length === 0) ||
+                  files.some((f) => f.status === "uploading")
+                }
                 size="lg"
                 variant="default"
                 className="w-40"

@@ -4,7 +4,7 @@ import { ReactNode, useEffect, useState } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { DashboardSidebar, DashboardHeader } from "@/theme";
-import { toastCustom } from "@/components/ui/custom/toast";
+import { toastCustom, ToasterCustom } from "@/components/ui/custom/toast";
 import { DashboardHeader as Breadcrumb } from '@/components/layout';
 
 interface DashboardLayoutProps {
@@ -82,27 +82,30 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   }
 
   return (
-    <div className="flex h-screen">
-      {/* Sidebar principal do dashboard */}
-      <DashboardSidebar
-        isMobileMenuOpen={isMobileMenuOpen}
-        setIsMobileMenuOpen={setIsMobileMenuOpen}
-        isCollapsed={isCollapsed}
-      />
+    <>
+      <div className="flex h-screen">
+        {/* Sidebar principal do dashboard */}
+        <DashboardSidebar
+          isMobileMenuOpen={isMobileMenuOpen}
+          setIsMobileMenuOpen={setIsMobileMenuOpen}
+          isCollapsed={isCollapsed}
+        />
 
-      {/* Container principal de conteúdo */}
-      <div className="flex flex-1 flex-col bg-white transition-all duration-300 ease-in-out">
-        {/* Header do Dashboard */}
-        <DashboardHeader toggleSidebar={toggleSidebar} isCollapsed={isCollapsed} />
+        {/* Container principal de conteúdo */}
+        <div className="flex flex-1 flex-col bg-white transition-all duration-300 ease-in-out">
+          {/* Header do Dashboard */}
+          <DashboardHeader toggleSidebar={toggleSidebar} isCollapsed={isCollapsed} />
 
-        {/* Conteúdo principal */}
-        <main className="flex-1 overflow-auto bg-gray-100 p-10">
-          <div className="min-h-full">
-            <Breadcrumb/>
-            {children}
-          </div>
-        </main>
+          {/* Conteúdo principal */}
+          <main className="flex-1 overflow-auto bg-gray-100 p-10">
+            <div className="min-h-full">
+              <Breadcrumb/>
+              {children}
+            </div>
+          </main>
+        </div>
       </div>
-    </div>
+      <ToasterCustom />
+    </>
   );
 }
