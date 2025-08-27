@@ -15,11 +15,11 @@ import {
 } from "./types";
 
 function mapAboutResponse(data: AboutBackendResponse[]): AboutApiResponse {
-  const first = data[0];
+  const latest = data[data.length - 1];
   return {
-    src: first?.imagemUrl ?? "",
-    title: first?.titulo ?? "",
-    description: first?.descricao ?? "",
+    src: latest?.imagemUrl ?? "",
+    title: latest?.titulo ?? "",
+    description: latest?.descricao ?? "",
   };
 }
 
@@ -93,6 +93,7 @@ function buildFormData(
   if (data.descricao !== undefined) form.append("descricao", data.descricao);
   if (data.imagem) form.append("imagem", data.imagem);
   if (data.imagemUrl) form.append("imagemUrl", data.imagemUrl);
+  if (data.imagemTitulo) form.append("imagemTitulo", data.imagemTitulo);
   return form;
 }
 
