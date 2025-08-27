@@ -112,6 +112,12 @@ export interface FileUploadProps extends VariantProps<typeof fileUploadVariants>
     errorMessage?: string;
     preview?: string;
   };
+  /** Endpoint para upload automático */
+  uploadUrl?: string;
+  /** Caminho público para salvar o arquivo */
+  publicUrl?: string;
+  /** Se deve remover o arquivo do servidor ao ser excluído do componente */
+  deleteOnRemove?: boolean;
   /** Callbacks */
   onFilesChange?: (files: FileUploadItem[]) => void;
   /** Callback para quando arquivos são adicionados */
@@ -128,10 +134,6 @@ export interface FileUploadProps extends VariantProps<typeof fileUploadVariants>
   onUploadError?: (fileId: string, error: string) => void;
   /** Callback personalizado de upload */
   onUpload?: (file: File) => Promise<{ url?: string; error?: string }>;
-  /** Endpoint para upload automático */
-  uploadUrl?: string;
-  /** Caminho público para salvar o arquivo */
-  publicUrl?: string;
 }
 
 /**
