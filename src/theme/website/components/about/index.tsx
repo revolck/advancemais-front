@@ -104,7 +104,9 @@ export default function AboutSection({
   onError,
 }: AboutSectionProps) {
   const { data, error, isLoading, hasAutoRetried } = useAboutLoading();
-  const { markAsLoaded, reportError } = useLoadingStatus({ componentName: "About" });
+  const { markAsLoaded, reportError } = useLoadingStatus({
+    componentName: "About",
+  });
 
   // Notify parent components about data loading
   useEffect(() => {
@@ -136,7 +138,7 @@ export default function AboutSection({
   // Success state - render the actual content
   return (
     <section className={className}>
-      <div className="container mx-auto py-16 px-4 flex flex-col lg:flex-row items-center gap-20 mt-5">
+      <div className="container mx-auto py-16 px-4 flex flex-col lg:flex-row items-center gap-10 mt-5 lg:gap-20 md:gap-20">
         {/* Image Section */}
         <AboutImage
           src={data.src}
