@@ -395,6 +395,7 @@ export default function SobreForm({ initialData }: SobreFormProps) {
                     maxFiles={1}
                     validation={{ accept: ["image/*"] }}
                     autoUpload={false}
+                    deleteOnRemove={false}
                     onFilesChange={handleFilesChange}
                     showProgress={false}
                   />
