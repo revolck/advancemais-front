@@ -1,5 +1,3 @@
-// src/theme/website/components/business-group-information/constants/index.ts
-
 import type { BusinessSectionData } from "../types";
 
 /**
@@ -8,7 +6,7 @@ import type { BusinessSectionData } from "../types";
 export const DEFAULT_BUSINESS_DATA: BusinessSectionData[] = [
   {
     id: "consultoria",
-    title: "Conheça nosso serviço de Consultoria Empresarial",
+    title: "Conheça nosso serviço de consultoria empresarial",
     description:
       "O segredo para uma empresa de sucesso está em decisões estratégicas bem fundamentadas. A Advance+ oferece consultoria personalizada para auxiliar no crescimento sustentável e inovação do seu negócio.",
     buttonLabel: "Saiba mais",
@@ -17,19 +15,6 @@ export const DEFAULT_BUSINESS_DATA: BusinessSectionData[] = [
     imageAlt: "Conheça nosso serviço de Consultoria Empresarial",
     reverse: false,
     order: 1,
-    isActive: true,
-  },
-  {
-    id: "recrutamento",
-    title: "Conheça nosso serviço de Recrutamento & Seleção",
-    description:
-      "O segredo para uma empresa de sucesso está em decisões estratégicas bem fundamentadas. A Advance+ oferece consultoria personalizada para auxiliar no crescimento sustentável e inovação do seu negócio.",
-    buttonLabel: "Saiba mais",
-    buttonUrl: "/recrutamento",
-    imageUrl: "/images/home/banner_site_3.webp",
-    imageAlt: "Conheça nosso serviço de Recrutamento & Seleção",
-    reverse: true,
-    order: 2,
     isActive: true,
   },
 ];

@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { ButtonCustom } from "@/components/ui/custom";
 import { ImageNotFound } from "@/components/ui/custom/image-not-found";
 import { BUSINESS_CONFIG } from "../constants";
 import type { ContentSectionProps } from "../types";
@@ -79,22 +79,17 @@ export const ContentSection: React.FC<ContentSectionProps> = ({
       </div>
 
       {/* Lado do texto */}
-      <div className="w-full text-center lg:w-1/2 lg:text-left">
-        <h2 className="text-3xl lg:text-4xl font-bold mb-4 text-[var(--primary-color)] leading-tight">
+      <div className="w-full lg:w-1/2 lg:text-left">
+        <h1 className="text-[var(--primary-color)] font-bold !leading-tight">
           {data.title}
-        </h2>
+        </h1>
 
-        <p className="text-gray-600 mb-6 leading-relaxed text-justify lg:text-left text-base lg:text-lg">
-          {data.description}
-        </p>
+        <p className="!leading-relaxed !text-justify">{data.description}</p>
 
         <Link href={data.buttonUrl}>
-          <Button
-            size="lg"
-            className="bg-red-600 hover:bg-red-700 text-white py-3 px-8 rounded-lg text-base font-medium transition-all duration-200 hover:scale-105 shadow-lg hover:shadow-xl"
-          >
+          <ButtonCustom size="lg" variant="secondary" withAnimation>
             {data.buttonLabel}
-          </Button>
+          </ButtonCustom>
         </Link>
       </div>
     </section>

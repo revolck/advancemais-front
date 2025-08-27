@@ -1,5 +1,3 @@
-// src/theme/website/components/business-group-information/hooks/useBusinessData.ts
-
 "use client";
 
 import { useState, useEffect, useCallback } from "react";

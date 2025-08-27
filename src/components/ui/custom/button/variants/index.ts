@@ -12,9 +12,9 @@ export const buttonCustomVariants = cva(
         default:
           "bg-[var(--primary-color)] hover:bg-[var(--primary-color)] text-white !rounded-full relative pr-12 pl-4 font-semibold",
         primary:
-          "bg-[var(--primary-color)] hover:bg-[var(--primary-color)] text-white !rounded-full relative pr-12 pl-4 font-semibold",
+          "!bg-[var(--primary-color)] hover:bg-[var(--primary-color)] text-white !rounded-full relative pr-12 pl-4 font-semibold",
         secondary:
-          "bg-[var(--secondary-color)] hover:bg-[var(--secondary-color)] text-white !rounded-full relative pr-12 pl-4 font-semibold",
+          "!bg-[var(--secondary-color)] !hover:bg-[var(--secondary-color-hover)] text-white !rounded-full relative pr-12 pl-4 font-semibold",
         outline:
           "border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground rounded-md",
         ghost: "hover:bg-accent hover:text-accent-foreground rounded-md",

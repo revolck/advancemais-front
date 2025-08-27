@@ -6,7 +6,7 @@ import Slider from "@/theme/website/components/slider";
 import AboutSection from "@/theme/website/components/about";
 import BannersGroup from "@/theme/website/components/banners";
 import CounterInformation from "@/theme/website/components/counter-information";
-import BusinessGroupInformation from "@/theme/website/components/business-group-information";
+import BusinessGroupInformation from "@/theme/website/components/consultoria-empresarial";
 import CoursesCarousel from "@/theme/website/components/courses-carousel";
 import BlogSection from "@/theme/website/components/blog-section";
 import LogoEnterprises from "@/theme/website/components/logo-enterprises";
