@@ -4,7 +4,13 @@ import React, { useEffect, useState } from "react";
 import { VerticalTabs, type VerticalTabItem } from "@/components/ui/custom";
 import { Skeleton } from "@/components/ui/skeleton";
 import SobreForm from "./sobre/SobreForm";
-import { listAbout, type AboutBackendResponse } from "@/api/websites/components";
+import ConsultoriaForm from "./consultoria/ConsultoriaForm";
+import {
+  listAbout,
+  type AboutBackendResponse,
+  listConsultoria,
+  type ConsultoriaBackendResponse,
+} from "@/api/websites/components";
 
 /**
  * Página principal de configuração da página inicial
@@ -12,19 +18,25 @@ import { listAbout, type AboutBackendResponse } from "@/api/websites/components"
  */
 export default function PaginaInicialPage() {
   const [aboutData, setAboutData] = useState<AboutBackendResponse | null>(null);
+  const [consultoriaData, setConsultoriaData] =
+    useState<ConsultoriaBackendResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const data = await listAbout();
-        setAboutData(data[0] ?? null);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+      const fetchData = async () => {
+        try {
+          const [about, consultoria] = await Promise.all([
+            listAbout(),
+            listConsultoria(),
+          ]);
+          setAboutData(about[0] ?? null);
+          setConsultoriaData(consultoria[0] ?? null);
+        } finally {
+          setIsLoading(false);
+        }
+      };
 
-    fetchData();
+      fetchData();
   }, []);
 
   if (isLoading) {
@@ -112,13 +124,7 @@ export default function PaginaInicialPage() {
       icon: "Briefcase",
       content: (
         <div className="space-y-6">
-          <div>
-            <h3 className="text-lg font-semibold mb-2">Seção de Consultoria</h3>
-            <p className="text-muted-foreground mb-4">
-              Configure conteúdos, serviços e destaques da sua área de
-              consultoria.
-            </p>
-          </div>
+          <ConsultoriaForm initialData={consultoriaData ?? undefined} />
         </div>
       ),
     },
