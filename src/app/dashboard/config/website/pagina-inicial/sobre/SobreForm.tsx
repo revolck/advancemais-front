@@ -16,8 +16,8 @@ import {
   updateAbout,
   type AboutBackendResponse,
 } from "@/api/websites/components";
-import routes from "@/api/routes";
 import { Skeleton } from "@/components/ui/skeleton";
+import { uploadImage, deleteImage, getImageTitle } from "@/services/upload";
 
 interface SobreContent {
   id?: string;
@@ -46,11 +46,6 @@ export default function SobreForm({ initialData }: SobreFormProps) {
 
   const addLog = (message: string) =>
     setLogs((prev) => [...prev, `[${new Date().toLocaleTimeString()}] ${message}`]);
-
-  const extractImageTitle = (url: string) => {
-    const fileName = url.split("/").pop() ?? "";
-    return fileName.replace(/\.[^/.]+$/, "");
-  };
 
   useEffect(() => {
     const applyData = (first: AboutBackendResponse) => {
@@ -191,7 +186,7 @@ export default function SobreForm({ initialData }: SobreFormProps) {
     // Toast de loading
     toastCustom.info("Salvando conteúdo...");
 
-    let uploadedUrl: string | undefined;
+    let uploadResult: { url: string; title: string } | undefined;
 
     try {
       const payload: {
@@ -209,55 +204,25 @@ export default function SobreForm({ initialData }: SobreFormProps) {
 
       if (fileItem?.file) {
         addLog(`Upload iniciado: ${fileItem.name}`);
-        const formData = new FormData();
-        formData.append("file", fileItem.file);
         try {
-          const response = await fetch(
-            `${routes.upload.base()}?path=${encodeURIComponent("sobre")}`,
-            {
-              method: "POST",
-              body: formData,
-            },
-          );
-          const result = await response.json();
-          uploadedUrl = result.url;
-          addLog(`Upload concluído: ${uploadedUrl}`);
+          uploadResult = await uploadImage(fileItem.file, "sobre", previousUrl);
+          addLog(`Upload concluído: ${uploadResult.url}`);
         } catch (err) {
           addLog(`Upload erro: ${String(err)}`);
           toastCustom.error("Erro no upload da imagem. Tente novamente");
           return;
         }
-
-        if (previousUrl && previousUrl !== uploadedUrl) {
-          try {
-            await fetch(
-              `${routes.upload.base()}?file=${encodeURIComponent(
-                previousUrl.replace(/^\/+/g, "")
-              )}`,
-              { method: "DELETE" },
-            );
-            addLog(`Arquivo antigo removido: ${previousUrl}`);
-          } catch {}
-        }
-
-        if (uploadedUrl) {
-          payload.imagemUrl = uploadedUrl;
-          payload.imagemTitulo = extractImageTitle(uploadedUrl);
-        }
       } else if (!fileItem && previousUrl) {
-        try {
-          await fetch(
-            `${routes.upload.base()}?file=${encodeURIComponent(
-              previousUrl.replace(/^\/+/g, "")
-            )}`,
-            { method: "DELETE" },
-          );
-          addLog(`Arquivo antigo removido: ${previousUrl}`);
-        } catch {}
+        await deleteImage(previousUrl);
+        addLog(`Arquivo antigo removido: ${previousUrl}`);
       } else if (previousUrl) {
-        payload.imagemUrl = previousUrl;
-        payload.imagemTitulo = extractImageTitle(previousUrl);
+        uploadResult = { url: previousUrl, title: getImageTitle(previousUrl) };
         addLog(`Usando imagem existente: ${previousUrl}`);
+      }
+
+      if (uploadResult) {
+        payload.imagemUrl = uploadResult.url;
+        payload.imagemTitulo = uploadResult.title;
       }
 
       addLog(`Payload enviado: ${JSON.stringify(payload)}`);
@@ -356,15 +321,8 @@ export default function SobreForm({ initialData }: SobreFormProps) {
       );
       addLog(`Erro da API: ${errorMessage}`);
 
-      if (uploadedUrl) {
-        try {
-          await fetch(
-              `${routes.upload.base()}?file=${encodeURIComponent(
-                uploadedUrl.replace(/^\/+/g, ""),
-              )}`,
-            { method: "DELETE" },
-          );
-        } catch {}
+      if (uploadResult?.url) {
+        await deleteImage(uploadResult.url);
       }
     } finally {
       setIsLoading(false);
