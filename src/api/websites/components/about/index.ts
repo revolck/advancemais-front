@@ -96,6 +96,16 @@ function buildFormData(
   return form;
 }
 
+function getAuthHeader(): Record<string, string> {
+  if (typeof document === "undefined") return {};
+  const token = document.cookie
+    .split("; ")
+    .find((row) => row.startsWith("token="))
+    ?.split("=")[1];
+
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 export async function createAbout(
   data: CreateAboutPayload,
 ): Promise<AboutBackendResponse> {
@@ -104,7 +114,7 @@ export async function createAbout(
     init: {
       method: "POST",
       body: form,
-      headers: { Accept: apiConfig.headers.Accept },
+      headers: { Accept: apiConfig.headers.Accept, ...getAuthHeader() },
     },
     cache: "no-cache",
   });
@@ -121,7 +131,7 @@ export async function updateAbout(
       init: {
         method: "PUT",
         body: form,
-        headers: { Accept: apiConfig.headers.Accept },
+        headers: { Accept: apiConfig.headers.Accept, ...getAuthHeader() },
       },
       cache: "no-cache",
     },
@@ -132,7 +142,7 @@ export async function deleteAbout(id: string): Promise<void> {
   await apiFetch<void>(websiteRoutes.about.delete(id), {
     init: {
       method: "DELETE",
-      headers: { Accept: apiConfig.headers.Accept },
+      headers: { Accept: apiConfig.headers.Accept, ...getAuthHeader() },
     },
     cache: "no-cache",
   });

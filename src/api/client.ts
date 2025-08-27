@@ -59,11 +59,12 @@ export async function apiFetch<T = unknown>(
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), timeout);
 
-      const res = await fetch(url, {
-        cache: "no-store",
-        signal: controller.signal,
-        ...init,
-      });
+        const res = await fetch(url, {
+          cache: "no-store",
+          signal: controller.signal,
+          ...init,
+          credentials: "include",
+        });
 
       clearTimeout(timeoutId);
 
