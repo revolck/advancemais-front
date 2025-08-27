@@ -261,28 +261,38 @@ export default function SobreForm({ initialData }: SobreFormProps) {
         toastCustom.success("Informações criadas com sucesso!");
       }
 
+      const finalImageUrl = payload.imagemUrl || saved.imagemUrl;
+      const finalImageTitle = payload.imagemTitulo || saved.imagemTitulo;
+
+      if (payload.imagemUrl && payload.imagemUrl !== saved.imagemUrl) {
+        addLog(
+          `Forçando uso da imagem enviada: ${payload.imagemUrl} (API retornou ${saved.imagemUrl})`,
+        );
+      }
+
       setContent({
         id: saved.id,
         titulo: saved.titulo,
         descricao: saved.descricao,
-        imagemUrl: saved.imagemUrl,
+        imagemUrl: finalImageUrl,
       });
 
-      if (saved.imagemUrl) {
+      if (finalImageUrl) {
         setFiles([
           {
             id: saved.id,
-            name: saved.imagemTitulo || "imagem",
+            name: finalImageTitle || "imagem",
             size: 0,
             type: "image",
             status: "completed",
             uploadDate: new Date(saved.atualizadoEm || Date.now()),
-            previewUrl: saved.imagemUrl,
-            uploadedUrl: saved.imagemUrl,
+            previewUrl: finalImageUrl,
+            uploadedUrl: finalImageUrl,
           },
         ]);
       }
-      setOldImageUrl(saved.imagemUrl);
+
+      setOldImageUrl(finalImageUrl);
     } catch (err) {
       addLog(`Erro ao salvar: ${String(err)}`);
       const status = (err as any)?.status;
