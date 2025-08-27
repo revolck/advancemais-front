@@ -118,6 +118,8 @@ export interface FileUploadProps extends VariantProps<typeof fileUploadVariants>
   publicUrl?: string;
   /** Se deve remover o arquivo do servidor ao ser excluído do componente */
   deleteOnRemove?: boolean;
+  /** Se deve iniciar upload automaticamente ao adicionar arquivos */
+  autoUpload?: boolean;
   /** Callbacks */
   onFilesChange?: (files: FileUploadItem[]) => void;
   /** Callback para quando arquivos são adicionados */
