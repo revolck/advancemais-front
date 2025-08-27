@@ -75,8 +75,6 @@ export default function SobreForm({ initialData }: SobreFormProps) {
         };
         setFiles([item]);
       }
-
-      toastCustom.info("Conteúdo existente carregado");
     };
 
     if (initialData) {
@@ -124,12 +122,10 @@ export default function SobreForm({ initialData }: SobreFormProps) {
 
     // Feedback quando arquivo é adicionado
     if (currentCount > previousCount) {
-      toastCustom.success("Imagem adicionada com sucesso");
       addLog(`Arquivo selecionado: ${list.map((f) => f.name).join(", ")}`);
     }
 
     if (currentCount < previousCount) {
-      toastCustom.info("Imagem removida");
       setContent((prev) => ({ ...prev, imagemUrl: undefined }));
       addLog("Arquivo removido");
     }
