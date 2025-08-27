@@ -10,8 +10,14 @@ import {
 } from "@/components/ui/custom";
 import { Label } from "@/components/ui/label";
 import { toastCustom } from "@/components/ui/custom/toast";
-import { listAbout, createAbout, updateAbout } from "@/api/websites/components";
+import {
+  listAbout,
+  createAbout,
+  updateAbout,
+  type AboutBackendResponse,
+} from "@/api/websites/components";
 import routes from "@/api/routes";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface SobreContent {
   id?: string;
@@ -20,7 +26,11 @@ interface SobreContent {
   imagemUrl?: string;
 }
 
-export default function SobreForm() {
+interface SobreFormProps {
+  initialData?: AboutBackendResponse;
+}
+
+export default function SobreForm({ initialData }: SobreFormProps) {
   const [content, setContent] = useState<SobreContent>({
     titulo: "",
     descricao: "",
@@ -28,51 +38,61 @@ export default function SobreForm() {
   const [files, setFiles] = useState<FileUploadItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [logs, setLogs] = useState<string[]>([]);
+  const [isFetching, setIsFetching] = useState(!initialData);
 
   const addLog = (message: string) =>
     setLogs((prev) => [...prev, `[${new Date().toLocaleTimeString()}] ${message}`]);
 
   useEffect(() => {
+    const applyData = (first: AboutBackendResponse) => {
+      setContent({
+        id: first.id,
+        titulo: first.titulo ?? "",
+        descricao: first.descricao ?? "",
+        imagemUrl: first.imagemUrl ?? undefined,
+      });
+
+      if (first.imagemUrl) {
+        const item: FileUploadItem = {
+          id: "existing",
+          name: first.imagemTitulo || "imagem",
+          size: 0,
+          type: "image",
+          status: "completed",
+          uploadDate: new Date(first.criadoEm || Date.now()),
+          previewUrl: first.imagemUrl,
+          uploadedUrl: first.imagemUrl,
+        };
+        setFiles([item]);
+      }
+
+      toastCustom.info("Conteúdo existente carregado");
+    };
+
+    if (initialData) {
+      applyData(initialData);
+      setIsFetching(false);
+      return;
+    }
+
     const fetchData = async () => {
+      setIsFetching(true);
       try {
         const data = await listAbout();
         const first = data[0];
 
         if (first) {
-          setContent({
-            id: first.id,
-            titulo: first.titulo ?? "",
-            descricao: first.descricao ?? "",
-            imagemUrl: first.imagemUrl ?? undefined,
-          });
-
-          if (first.imagemUrl) {
-            const item: FileUploadItem = {
-              id: "existing",
-              name: first.imagemTitulo || "imagem",
-              size: 0,
-              type: "image",
-              status: "completed",
-              uploadDate: new Date(first.criadoEm || Date.now()),
-              previewUrl: first.imagemUrl,
-              uploadedUrl: first.imagemUrl,
-            };
-            setFiles([item]);
-          }
-
-          toastCustom.info("Conteúdo existente carregado");
+          applyData(first);
         }
       } catch (err) {
-        console.error("Erro ao carregar dados:", err);
+        addLog(`Erro ao carregar dados: ${String(err)}`);
         const status = (err as any)?.status;
         switch (status) {
           case 401:
             toastCustom.error("Sessão expirada. Faça login novamente");
             break;
           case 403:
-            toastCustom.error(
-              "Você não tem permissão para acessar este conteúdo"
-            );
+            toastCustom.error("Você não tem permissão para acessar este conteúdo");
             break;
           case 500:
             toastCustom.error("Erro do servidor ao carregar dados existentes");
@@ -80,11 +100,13 @@ export default function SobreForm() {
           default:
             toastCustom.error("Erro ao carregar dados existentes");
         }
+      } finally {
+        setIsFetching(false);
       }
     };
 
     fetchData();
-  }, []);
+  }, [initialData]);
 
   const handleFilesChange = (list: FileUploadItem[]) => {
     const previousCount = files.length;
@@ -140,12 +162,6 @@ export default function SobreForm() {
       toastCustom.error("A descrição deve ter pelo menos 10 caracteres");
       return;
     }
-
-    // ✅ REMOVIDA: Validação de máximo de caracteres - agora é automática
-    // ❌ if (description.length > 500) {
-    // ❌   toastCustom.error("A descrição deve ter no máximo 500 caracteres");
-    // ❌   return;
-    // ❌ }
 
     if (files.length === 0 && !content.imagemUrl) {
       toastCustom.error("Uma imagem é obrigatória");
@@ -214,22 +230,22 @@ export default function SobreForm() {
         imagemUrl: saved.imagemUrl,
       });
 
-        if (saved.imagemUrl) {
-          setFiles([
-            {
-              id: saved.id,
-              name: saved.imagemTitulo || "imagem",
-              size: 0,
-              type: "image",
-              status: "completed",
-              uploadDate: new Date(saved.atualizadoEm || Date.now()),
-              previewUrl: saved.imagemUrl,
-              uploadedUrl: saved.imagemUrl,
-            },
-          ]);
-        }
+      if (saved.imagemUrl) {
+        setFiles([
+          {
+            id: saved.id,
+            name: saved.imagemTitulo || "imagem",
+            size: 0,
+            type: "image",
+            status: "completed",
+            uploadDate: new Date(saved.atualizadoEm || Date.now()),
+            previewUrl: saved.imagemUrl,
+            uploadedUrl: saved.imagemUrl,
+          },
+        ]);
+      }
     } catch (err) {
-      console.error("Erro ao salvar:", err);
+      addLog(`Erro ao salvar: ${String(err)}`);
       const status = (err as any)?.status;
       let errorMessage: string;
       switch (status) {
@@ -275,7 +291,7 @@ export default function SobreForm() {
         try {
           await fetch(
             `${routes.upload.base()}?file=${encodeURIComponent(
-              files[0].uploadedUrl.replace(/^\/+/g, ""),
+              files[0].uploadedUrl.replace(/^\\+/g, ""),
             )}`,
             { method: "DELETE" },
           );
@@ -288,101 +304,114 @@ export default function SobreForm() {
 
   return (
     <div className="space-y-8">
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Upload de Imagem */}
-        <div className="space-y-4">
-          <div>
-            <Label className="text-sm font-medium text-gray-700">
-              Imagem de Destaque <span className="text-red-500">*</span>
-            </Label>
-            <div className="mt-2">
-              <FileUpload
-                files={files}
-                multiple={false}
-                maxFiles={1}
-                validation={{ accept: ["image/*"] }}
-                publicUrl="/sobre"
-                onFilesChange={handleFilesChange}
-                showProgress={false}
-                onUploadStart={(file) => addLog(`Upload iniciado: ${file.name}`)}
-                onUploadProgress={(id, progress) =>
-                  addLog(`Upload progresso ${id}: ${Math.round(progress)}%`)
-                }
-                onUploadComplete={(file) =>
-                  addLog(`Upload concluído: ${file.uploadedUrl}`)
-                }
-                onUploadError={(id, error) =>
-                  addLog(`Upload erro ${id}: ${error}`)
-                }
-              />
+      {isFetching ? (
+        <div className="space-y-6">
+          <Skeleton className="h-40 w-full" />
+          <Skeleton className="h-10 w-1/3" />
+          <Skeleton className="h-32 w-full" />
+        </div>
+      ) : (
+        <>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Upload de Imagem */}
+            <div className="space-y-4">
+              <div>
+                <Label className="text-sm font-medium text-gray-700">
+                  Imagem de Destaque <span className="text-red-500">*</span>
+                </Label>
+                <div className="mt-2">
+                  <FileUpload
+                    files={files}
+                    multiple={false}
+                    maxFiles={1}
+                    validation={{ accept: ["image/*"] }}
+                    publicUrl="/sobre"
+                    onFilesChange={handleFilesChange}
+                    showProgress={false}
+                    onUploadStart={(file) => addLog(`Upload iniciado: ${file.name}`)}
+                    onUploadProgress={(id, progress) =>
+                      addLog(`Upload progresso ${id}: ${Math.round(progress)}%`)
+                    }
+                    onUploadComplete={(file) =>
+                      addLog(`Upload concluído: ${file.uploadedUrl}`)
+                    }
+                    onUploadError={(id, error) =>
+                      addLog(`Upload erro ${id}: ${error}`)
+                    }
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Conteúdo Básico */}
+            <div className="space-y-3">
+              <div>
+                <InputCustom
+                  label="Título"
+                  id="titulo"
+                  value={content.titulo}
+                  onChange={(e) =>
+                    setContent((prev) => ({ ...prev, titulo: e.target.value }))
+                  }
+                  maxLength={50}
+                  placeholder="Digite o título da seção sobre"
+                  required
+                />
+              </div>
+
+              <div>
+                <Label
+                  htmlFor="descricao"
+                  className="text-sm font-medium text-gray-700"
+                >
+                  Descrição <span className="text-red-500">*</span>
+                </Label>
+                <div className="mt-1">
+                  <RichTextarea
+                    id="descricao"
+                    value={content.descricao}
+                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                      setContent((prev) => ({
+                        ...prev,
+                        descricao: e.target.value,
+                      }))
+                    }
+                    maxLength={500}
+                    showCharCount={true}
+                    placeholder="Descreva sobre sua empresa."
+                    className="min-h-[250px]"
+                    required
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Botão de Salvar */}
+            <div className="pt-4 flex justify-end">
+              <ButtonCustom
+                type="submit"
+                isLoading={isLoading}
+                disabled={isLoading}
+                size="lg"
+                variant="default"
+                className="w-40"
+                withAnimation={true}
+              >
+                Salvar
+              </ButtonCustom>
+            </div>
+          </form>
+          {/* Console de Debug */}
+          <div className="pt-6">
+            <Label className="text-sm font-medium text-gray-700">Console</Label>
+            <div className="mt-2 bg-black text-green-400 p-3 rounded max-h-60 overflow-auto text-xs font-mono">
+              {logs.map((log, idx) => (
+                <div key={idx}>{log}</div>
+              ))}
             </div>
           </div>
-        </div>
-
-        {/* Conteúdo Básico */}
-        <div className="space-y-3">
-          <div>
-            <InputCustom
-              label="Título"
-              id="titulo"
-              value={content.titulo}
-              onChange={(e) =>
-                setContent((prev) => ({ ...prev, titulo: e.target.value }))
-              }
-              maxLength={50}
-              placeholder="Digite o título da seção sobre"
-              required
-            />
-          </div>
-
-          <div>
-            <Label
-              htmlFor="descricao"
-              className="text-sm font-medium text-gray-700"
-            >
-              Descrição <span className="text-red-500">*</span>
-            </Label>
-            <div className="mt-1">
-              <RichTextarea
-                id="descricao"
-                value={content.descricao}
-                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-                  setContent((prev) => ({ ...prev, descricao: e.target.value }))
-                }
-                maxLength={500}
-                showCharCount={true}
-                placeholder="Descreva sobre sua empresa."
-                className="min-h-[250px]"
-                required
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Botão de Salvar */}
-        <div className="pt-4 flex justify-end">
-          <ButtonCustom
-            type="submit"
-            isLoading={isLoading}
-            disabled={isLoading}
-            size="lg"
-            variant="default"
-            className="w-40"
-            withAnimation={true}
-          >
-            Salvar
-          </ButtonCustom>
-        </div>
-      </form>
-      {/* Console de Debug */}
-      <div className="pt-6">
-        <Label className="text-sm font-medium text-gray-700">Console</Label>
-        <div className="mt-2 bg-black text-green-400 p-3 rounded max-h-60 overflow-auto text-xs font-mono">
-          {logs.map((log, idx) => (
-            <div key={idx}>{log}</div>
-          ))}
-        </div>
-      </div>
+        </>
+      )}
     </div>
   );
 }
