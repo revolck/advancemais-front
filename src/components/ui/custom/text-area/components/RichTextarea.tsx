@@ -148,7 +148,7 @@ const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
     };
 
     // Função para verificar formatos ativos na posição do cursor
-    const checkActiveFormats = () => {
+    const checkActiveFormats = React.useCallback(() => {
       const selection = window.getSelection();
       if (!selection || selection.rangeCount === 0) {
         setActiveFormats(new Set());
@@ -175,7 +175,7 @@ const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
         // Cursor único - verifica formatações no ponto atual
         setActiveFormats(getAllActiveFormats(range.startContainer));
       }
-    };
+    }, []);
 
     // Função para remover TODAS as formatações de um range
     const clearAllFormatting = (range: Range) => {
@@ -472,12 +472,12 @@ const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
     };
 
     // Event handlers para detectar mudanças na seleção
-    const handleSelectionChange = () => {
+    const handleSelectionChange = React.useCallback(() => {
       // Só executa se o elemento está focado
       if (isFocused) {
         setTimeout(checkActiveFormats, 10);
       }
-    };
+    }, [isFocused, checkActiveFormats]);
 
     // Effect para escutar mudanças de seleção globais
     React.useEffect(() => {
@@ -485,7 +485,7 @@ const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
       return () => {
         document.removeEventListener("selectionchange", handleSelectionChange);
       };
-    }, [isFocused]);
+    }, [handleSelectionChange]);
 
     return (
       <div className="w-full space-y-2">
