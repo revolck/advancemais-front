@@ -27,6 +27,10 @@ export default function SobreForm() {
   });
   const [files, setFiles] = useState<FileUploadItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [logs, setLogs] = useState<string[]>([]);
+
+  const addLog = (message: string) =>
+    setLogs((prev) => [...prev, `[${new Date().toLocaleTimeString()}] ${message}`]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -91,15 +95,15 @@ export default function SobreForm() {
     // Feedback quando arquivo é adicionado
     if (currentCount > previousCount) {
       toastCustom.success("Imagem adicionada com sucesso");
+      addLog(`Arquivo selecionado: ${list.map((f) => f.name).join(", ")}`);
     }
 
-    // Feedback quando arquivo é removido
     if (currentCount < previousCount) {
       toastCustom.info("Imagem removida");
       setContent((prev) => ({ ...prev, imagemUrl: undefined }));
+      addLog("Arquivo removido");
     }
 
-    // Limpar imagemUrl se não há arquivos
     if (currentCount === 0) {
       setContent((prev) => ({ ...prev, imagemUrl: undefined }));
     }
@@ -169,7 +173,6 @@ export default function SobreForm() {
       const payload: {
         titulo: string;
         descricao: string;
-        imagem?: File;
         imagemUrl?: string;
       } = {
         titulo: title,
@@ -177,23 +180,32 @@ export default function SobreForm() {
       };
 
       const file = files[0];
-      if (file?.file) {
-        payload.imagem = file.file;
+      if (file?.uploadedUrl) {
+        payload.imagemUrl = file.uploadedUrl;
+        addLog(`Usando imagem via URL: ${file.uploadedUrl}`);
       } else if (content.imagemUrl) {
         payload.imagemUrl = content.imagemUrl;
+        addLog(`Usando imagem existente: ${content.imagemUrl}`);
       }
+
+      addLog(`Payload enviado: ${JSON.stringify(payload)}`);
 
       const saved = content.id
         ? await updateAbout(content.id, payload)
         : await createAbout(payload);
+
+      addLog(`Resposta da API: ${JSON.stringify(saved)}`);
 
       if (!saved || !saved.id) {
         toastCustom.error("Resposta inválida do servidor");
         return;
       }
 
-      const action = content.id ? "atualizado" : "criado";
-      toastCustom.success(`Conteúdo ${action} com sucesso!`);
+      if (content.id) {
+        toastCustom.success("Informações atualizadas com sucesso!");
+      } else {
+        toastCustom.success("Informações criadas com sucesso!");
+      }
 
       setContent({
         id: saved.id,
@@ -202,68 +214,62 @@ export default function SobreForm() {
         imagemUrl: saved.imagemUrl,
       });
 
-      if (saved.imagemUrl) {
-        setFiles([
-          {
-            id: saved.id,
-            name: saved.imagemTitulo || "imagem",
-            size: 0,
-            type: "image",
-            status: "completed",
-            uploadDate: new Date(saved.atualizadoEm || Date.now()),
-            previewUrl: saved.imagemUrl,
-            uploadedUrl: saved.imagemUrl,
-          },
-        ]);
-      }
+        if (saved.imagemUrl) {
+          setFiles([
+            {
+              id: saved.id,
+              name: saved.imagemTitulo || "imagem",
+              size: 0,
+              type: "image",
+              status: "completed",
+              uploadDate: new Date(saved.atualizadoEm || Date.now()),
+              previewUrl: saved.imagemUrl,
+              uploadedUrl: saved.imagemUrl,
+            },
+          ]);
+        }
     } catch (err) {
       console.error("Erro ao salvar:", err);
       const status = (err as any)?.status;
+      let errorMessage: string;
       switch (status) {
         case 400:
-          toastCustom.error(
+          errorMessage =
             (err as Error).message ||
-              "Dados inválidos. Verifique os campos e tente novamente"
-          );
+            "Dados inválidos. Verifique os campos e tente novamente";
           break;
         case 401:
-          toastCustom.error("Sessão expirada. Faça login novamente");
+          errorMessage = "Sessão expirada. Faça login novamente";
           break;
         case 403:
-          toastCustom.error("Você não tem permissão para esta ação");
+          errorMessage = "Você não tem permissão para esta ação";
           break;
         case 413:
-          toastCustom.error(
-            "Arquivo muito grande. Selecione uma imagem menor que 5MB"
-          );
+          errorMessage =
+            "Arquivo muito grande. Selecione uma imagem menor que 5MB";
           break;
         case 422:
-          toastCustom.error(
-            (err as Error).message || "Erro de validação nos dados enviados"
-          );
+          errorMessage =
+            (err as Error).message || "Erro de validação nos dados enviados";
           break;
         case 500:
-          toastCustom.error(
-            "Erro interno do servidor. Tente novamente em alguns minutos"
-          );
+          errorMessage =
+            "Erro interno do servidor. Tente novamente em alguns minutos";
           break;
         case 503:
-          toastCustom.error(
-            "Serviço temporariamente indisponível. Tente novamente"
-          );
+          errorMessage =
+            "Serviço temporariamente indisponível. Tente novamente";
           break;
         default:
-          if (err instanceof TypeError) {
-            toastCustom.error(
-              "Erro de conexão. Verifique sua internet e tente novamente"
-            );
-          } else {
-            toastCustom.error(
-              `Erro ao salvar${status ? ` (${status})` : ""}. Tente novamente`
-            );
-          }
-          break;
+          errorMessage =
+            err instanceof TypeError
+              ? "Erro de conexão. Verifique sua internet e tente novamente"
+              : `Erro ao salvar${status ? ` (${status})` : ""}. Tente novamente`;
       }
+      toastCustom.error(
+        errorMessage || "Não foi possível salvar as informações. Tente novamente",
+      );
+      addLog(`Erro da API: ${errorMessage}`);
 
       if (files[0]?.uploadedUrl) {
         try {
@@ -298,6 +304,16 @@ export default function SobreForm() {
                 publicUrl="/sobre"
                 onFilesChange={handleFilesChange}
                 showProgress={false}
+                onUploadStart={(file) => addLog(`Upload iniciado: ${file.name}`)}
+                onUploadProgress={(id, progress) =>
+                  addLog(`Upload progresso ${id}: ${Math.round(progress)}%`)
+                }
+                onUploadComplete={(file) =>
+                  addLog(`Upload concluído: ${file.uploadedUrl}`)
+                }
+                onUploadError={(id, error) =>
+                  addLog(`Upload erro ${id}: ${error}`)
+                }
               />
             </div>
           </div>
@@ -358,6 +374,15 @@ export default function SobreForm() {
           </ButtonCustom>
         </div>
       </form>
+      {/* Console de Debug */}
+      <div className="pt-6">
+        <Label className="text-sm font-medium text-gray-700">Console</Label>
+        <div className="mt-2 bg-black text-green-400 p-3 rounded max-h-60 overflow-auto text-xs font-mono">
+          {logs.map((log, idx) => (
+            <div key={idx}>{log}</div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
