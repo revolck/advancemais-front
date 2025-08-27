@@ -236,6 +236,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   onUpload,
   uploadUrl,
   publicUrl,
+  deleteOnRemove = true,
 }) => {
   const [internalFiles, setInternalFiles] = useState<FileUploadItem[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
@@ -644,7 +645,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   const handleFileRemove = useCallback(
     async (fileId: string) => {
       const target = filesRef.current.find((f) => f.id === fileId);
-      if (target) {
+      if (target && deleteOnRemove) {
         await removeFromServer(target);
       }
       const updatedFiles = filesRef.current.filter((file) => file.id !== fileId);
@@ -656,7 +657,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         duration: 2000,
       });
     },
-    [removeFromServer, updateFiles, onFileRemove]
+    [removeFromServer, updateFiles, onFileRemove, deleteOnRemove]
   );
 
   const handleFileRetry = useCallback(

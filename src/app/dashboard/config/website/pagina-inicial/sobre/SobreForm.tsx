@@ -39,6 +39,7 @@ export default function SobreForm({ initialData }: SobreFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [logs, setLogs] = useState<string[]>([]);
   const [isFetching, setIsFetching] = useState(!initialData);
+  const [removedFiles, setRemovedFiles] = useState<string[]>([]);
 
   const addLog = (message: string) =>
     setLogs((prev) => [...prev, `[${new Date().toLocaleTimeString()}] ${message}`]);
@@ -112,8 +113,6 @@ export default function SobreForm({ initialData }: SobreFormProps) {
     const previousCount = files.length;
     const currentCount = list.length;
 
-    setFiles(list);
-
     // Feedback quando arquivo é adicionado
     if (currentCount > previousCount) {
       toastCustom.success("Imagem adicionada com sucesso");
@@ -121,6 +120,14 @@ export default function SobreForm({ initialData }: SobreFormProps) {
     }
 
     if (currentCount < previousCount) {
+      const removed = files.filter(
+        (f) => !list.some((nf) => nf.id === f.id)
+      );
+      removed.forEach((f) => {
+        if (f.uploadedUrl) {
+          setRemovedFiles((prev) => [...prev, f.uploadedUrl as string]);
+        }
+      });
       toastCustom.info("Imagem removida");
       setContent((prev) => ({ ...prev, imagemUrl: undefined }));
       addLog("Arquivo removido");
@@ -129,6 +136,8 @@ export default function SobreForm({ initialData }: SobreFormProps) {
     if (currentCount === 0) {
       setContent((prev) => ({ ...prev, imagemUrl: undefined }));
     }
+
+    setFiles(list);
   };
 
   const handleSubmit = async (e: FormEvent) => {
@@ -244,6 +253,22 @@ export default function SobreForm({ initialData }: SobreFormProps) {
           },
         ]);
       }
+
+      if (removedFiles.length) {
+        for (const url of removedFiles) {
+          if (url && url !== saved.imagemUrl) {
+            try {
+              await fetch(
+                `${routes.upload.base()}?file=${encodeURIComponent(
+                  url.replace(/^\/+/g, "")
+                )}`,
+                { method: "DELETE" }
+              );
+            } catch {}
+          }
+        }
+        setRemovedFiles([]);
+      }
     } catch (err) {
       addLog(`Erro ao salvar: ${String(err)}`);
       const status = (err as any)?.status;
@@ -326,6 +351,7 @@ export default function SobreForm({ initialData }: SobreFormProps) {
                     maxFiles={1}
                     validation={{ accept: ["image/*"] }}
                     publicUrl="/sobre"
+                    deleteOnRemove={false}
                     onFilesChange={handleFilesChange}
                     showProgress={false}
                     onUploadStart={(file) => addLog(`Upload iniciado: ${file.name}`)}
