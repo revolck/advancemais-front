@@ -14,7 +14,6 @@ export const Logo: React.FC = () => {
         alt={`Logo ${isMobile ? "Mobile" : "Desktop"}`}
         width={isMobile ? 120 : 240}
         height={40}
-        priority={true}
         quality={100}
         className={isMobile ? "h-3 w-auto" : "h-5 w-auto"}
       />

@@ -46,7 +46,6 @@ export function SidebarHeader({
           alt="Logo"
           width={isCollapsed ? 48 : 180}
           height={isCollapsed ? 48 : 48}
-          priority
           className="transition-all duration-300"
         />
       </div>
