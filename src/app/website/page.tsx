@@ -6,6 +6,7 @@ import Slider from "@/theme/website/components/slider";
 import AboutSection from "@/theme/website/components/about";
 import BannersGroup from "@/theme/website/components/banners";
 import ConsultoriaSection from "@/theme/website/components/consultoria-empresarial";
+import RecrutamentoSection from "@/theme/website/components/recrutamento";
 
 /**
  * Página Inicial do Website Institucional
@@ -39,6 +40,11 @@ export default function WebsiteHomePage() {
       <ConsultoriaSection
         onDataLoaded={() => handleComponentLoaded("Consultoria")}
         onError={(error) => handleComponentError("Consultoria", error)}
+      />
+
+      <RecrutamentoSection
+        onDataLoaded={() => handleComponentLoaded("Recrutamento")}
+        onError={(error) => handleComponentError("Recrutamento", error)}
       />
 
       {/* Banners de Destaque */}
