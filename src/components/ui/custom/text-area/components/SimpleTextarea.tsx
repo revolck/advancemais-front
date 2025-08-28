@@ -25,9 +25,33 @@ const SimpleTextarea = React.forwardRef<
     },
     ref
   ) => {
+    const {
+      value: controlledValue,
+      defaultValue,
+      onChange,
+      onKeyDown,
+      onPaste,
+      ...restProps
+    } = props as SimpleTextareaProps & {
+      value?: string;
+      defaultValue?: string;
+    };
+
     const [value, setValue] = React.useState<string>(
-      typeof props.value === "string" ? props.value : ""
+      typeof controlledValue === "string"
+        ? controlledValue
+        : typeof defaultValue === "string"
+        ? defaultValue
+        : ""
     );
+
+    // Mantém o estado sincronizado quando o componente é controlado externamente
+    React.useEffect(() => {
+      if (typeof controlledValue === "string" && controlledValue !== value) {
+        setValue(controlledValue);
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [controlledValue]);
 
     const charCount = value.length;
 
@@ -51,10 +75,12 @@ const SimpleTextarea = React.forwardRef<
       }
 
       setValue(newValue);
-      props.onChange?.(e);
+      onChange?.(e);
     };
 
-    const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    const handleKeyDownInternal = (
+      e: React.KeyboardEvent<HTMLTextAreaElement>,
+    ) => {
       // Bloqueia teclas que adicionam caracteres se já atingiu o limite
       if (maxLength && value.length >= maxLength) {
         const allowedKeys = [
@@ -77,10 +103,12 @@ const SimpleTextarea = React.forwardRef<
         }
       }
 
-      props.onKeyDown?.(e);
+      onKeyDown?.(e);
     };
 
-    const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const handlePasteInternal = (
+      e: React.ClipboardEvent<HTMLTextAreaElement>,
+    ) => {
       // Intercepta colar para respeitar maxLength
       if (maxLength) {
         const clipboardData = e.clipboardData?.getData("text/plain") || "";
@@ -104,7 +132,7 @@ const SimpleTextarea = React.forwardRef<
         const newValue = currentValue + textToInsert;
 
         setValue(newValue);
-        props.onChange?.({
+        onChange?.({
           target: { value: newValue },
         } as React.ChangeEvent<HTMLTextAreaElement>);
       }
@@ -139,13 +167,13 @@ const SimpleTextarea = React.forwardRef<
               className
             )}
             ref={ref}
+            {...restProps}
             value={value}
             maxLength={maxLength}
             style={textareaStyles}
             onChange={handleChange}
-            onKeyDown={handleKeyDown}
-            onPaste={handlePaste}
-            {...props}
+            onKeyDown={handleKeyDownInternal}
+            onPaste={handlePasteInternal}
           />
 
           {(showCharCount || maxLength) && (
