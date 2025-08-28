@@ -3,16 +3,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import type {
-  AboutAdvantagesApiData,
-  AboutAdvantagesApiResponse,
-} from "../types";
-import {
-  DEFAULT_ABOUT_ADVANTAGES_DATA,
-  ABOUT_ADVANTAGES_CONFIG,
-} from "../constants";
+import type { AboutAdvantagesApiData } from "../types";
+import { DEFAULT_ABOUT_ADVANTAGES_DATA } from "../constants";
 import { env } from "@/lib/env";
-import { apiFetch } from "@/api/client";
+import {
+  listDiferenciais,
+  type DiferenciaisBackendResponse,
+} from "@/api/websites/components";
 
 interface UseAboutAdvantagesDataReturn {
   data: AboutAdvantagesApiData;
@@ -42,36 +39,15 @@ export function useAboutAdvantagesData(
       setIsLoading(true);
       setError(null);
 
-      const controller = new AbortController();
-      const timeoutId = setTimeout(
-        () => controller.abort(),
-        ABOUT_ADVANTAGES_CONFIG.api.timeout
-      );
+      const result = await listDiferenciais();
+      const first = result[0];
 
-      const result = await apiFetch<AboutAdvantagesApiResponse>(
-        ABOUT_ADVANTAGES_CONFIG.api.endpoint,
-        {
-          init: {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            signal: controller.signal,
-          },
-          mockData: {
-            success: true,
-            data: DEFAULT_ABOUT_ADVANTAGES_DATA,
-          },
-        }
-      );
-
-      clearTimeout(timeoutId);
-
-      if (!result.success || !result.data) {
-        throw new Error(result.message || "Dados inválidos recebidos da API");
+      if (!first) {
+        throw new Error("Dados não encontrados");
       }
 
-      setData(result.data);
+      const mapped = mapDiferenciaisToData(first);
+      setData(mapped);
     } catch (err) {
       console.error("Erro ao buscar dados de vantagens:", err);
 
@@ -91,6 +67,35 @@ export function useAboutAdvantagesData(
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const mapDiferenciaisToData = (
+    item: DiferenciaisBackendResponse,
+  ): AboutAdvantagesApiData => {
+    const cards = [1, 2, 3, 4].map((i) => ({
+      id: `card-${i}`,
+      icon:
+        (item as any)[`icone${i}`] ||
+        DEFAULT_ABOUT_ADVANTAGES_DATA.advantageCards[i - 1].icon,
+      title: (item as any)[`titulo${i}`] || "",
+      description: (item as any)[`descricao${i}`] || "",
+      order: i,
+      isActive: true,
+    }));
+
+    return {
+      whyChoose: {
+        id: item.id,
+        title: item.titulo || "",
+        description: item.descricao || "",
+        buttonText: item.botaoLabel || "",
+        buttonUrl: item.botaoUrl || "",
+        isActive: true,
+      },
+      aboutSection:
+        DEFAULT_ABOUT_ADVANTAGES_DATA.aboutSection,
+      advantageCards: cards,
+    };
   };
 
   useEffect(() => {

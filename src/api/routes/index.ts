@@ -35,6 +35,13 @@ export const websiteRoutes = {
     update: (id: string) => `${prefix}/website/recrutamento/${id}`,
     delete: (id: string) => `${prefix}/website/recrutamento/${id}`,
   },
+  diferenciais: {
+    list: () => `${prefix}/website/diferenciais`,
+    create: () => `${prefix}/website/diferenciais`,
+    get: (id: string) => `${prefix}/website/diferenciais/${id}`,
+    update: (id: string) => `${prefix}/website/diferenciais/${id}`,
+    delete: (id: string) => `${prefix}/website/diferenciais/${id}`,
+  },
   sobreEmpresa: {
     list: () => `${prefix}/website/sobre-empresa`,
     create: () => `${prefix}/website/sobre-empresa`,

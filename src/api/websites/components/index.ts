@@ -33,6 +33,13 @@ export {
   updateSobreEmpresa,
   deleteSobreEmpresa,
 } from "./sobre-empresa";
+export {
+  listDiferenciais,
+  getDiferenciaisById,
+  createDiferenciais,
+  updateDiferenciais,
+  deleteDiferenciais,
+} from "./diferenciais";
 
 export { getSliderData, getSliderDataClient } from "./slide";
 export { getBannerData, getBannerDataClient } from "./banner";
@@ -69,5 +76,10 @@ export type {
   AccordionSectionData,
   AccordionItemData,
 } from "./sobre-empresa/types";
+export type {
+  DiferenciaisBackendResponse,
+  CreateDiferenciaisPayload,
+  UpdateDiferenciaisPayload,
+} from "./diferenciais/types";
 
 export type { BannerBackendResponse, BannerApiResponse } from "./banner/types";
