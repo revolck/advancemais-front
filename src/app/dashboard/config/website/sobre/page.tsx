@@ -3,8 +3,8 @@
 import React, { useEffect, useState } from "react";
 import { VerticalTabs, type VerticalTabItem } from "@/components/ui/custom";
 import { Skeleton } from "@/components/ui/skeleton";
-import SobreEmpresaForm from "./SobreEmpresaForm";
-import DiferenciaisForm from "./DiferenciaisForm";
+import SobreEmpresaForm from "./about/SobreEmpresaForm";
+import DiferenciaisForm from "./diferenciais/DiferenciaisForm";
 import {
   listSobreEmpresa,
   listDiferenciais,

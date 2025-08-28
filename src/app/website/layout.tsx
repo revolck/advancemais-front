@@ -4,7 +4,7 @@ import { LoadingProvider } from "./loading-context";
 import LayoutClient from "./layout-client";
 
 export const metadata: Metadata = {
-  title: "Advance+ - Inovação em Educação e Tecnologia",
+  title: "Advance+ | Inovação em Educação e Tecnologia",
   description:
     "Plataforma integrada de educação, cursos profissionalizantes e soluções tecnológicas para empresas e pessoas",
   keywords: [
@@ -20,7 +20,7 @@ export const metadata: Metadata = {
   authors: [{ name: "Advance+" }],
   robots: "index, follow",
   openGraph: {
-    title: "Advance+ - Inovação em Educação e Tecnologia",
+    title: "Advance+ | Inovação em Educação e Tecnologia",
     description:
       "Plataforma integrada de educação, cursos profissionalizantes e soluções tecnológicas",
     type: "website",
@@ -31,13 +31,13 @@ export const metadata: Metadata = {
         url: "/images/og-image.jpg",
         width: 1200,
         height: 630,
-        alt: "Advance+ - Educação e Tecnologia",
+        alt: "Advance+ | Educação e Tecnologia",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Advance+ - Inovação em Educação e Tecnologia",
+    title: "Advance+ | Inovação em Educação e Tecnologia",
     description:
       "Plataforma integrada de educação, cursos profissionalizantes e soluções tecnológicas",
     images: ["/images/og-image.jpg"],

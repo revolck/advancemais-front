@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useState, FormEvent } from "react";
-import { InputCustom, RichTextarea, ButtonCustom } from "@/components/ui/custom";
+import {
+  InputCustom,
+  RichTextarea,
+  ButtonCustom,
+} from "@/components/ui/custom";
+import { IconSelector } from "@/components/ui/custom/icon-selector";
 import { Label } from "@/components/ui/label";
 import { toastCustom } from "@/components/ui/custom/toast";
 import {
@@ -11,6 +16,8 @@ import {
   type DiferenciaisBackendResponse,
 } from "@/api/websites/components";
 import { Skeleton } from "@/components/ui/skeleton";
+import * as LucideIcons from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
 interface DiferenciaisContent {
   id?: string;
@@ -36,7 +43,9 @@ interface DiferenciaisFormProps {
   initialData?: DiferenciaisBackendResponse;
 }
 
-export default function DiferenciaisForm({ initialData }: DiferenciaisFormProps) {
+export default function DiferenciaisForm({
+  initialData,
+}: DiferenciaisFormProps) {
   const [content, setContent] = useState<DiferenciaisContent>({
     titulo: "",
     descricao: "",
@@ -60,7 +69,10 @@ export default function DiferenciaisForm({ initialData }: DiferenciaisFormProps)
   const [logs, setLogs] = useState<string[]>([]);
 
   const addLog = (message: string) =>
-    setLogs((prev) => [...prev, `[${new Date().toLocaleTimeString()}] ${message}`]);
+    setLogs((prev) => [
+      ...prev,
+      `[${new Date().toLocaleTimeString()}] ${message}`,
+    ]);
 
   useEffect(() => {
     const applyData = (data: DiferenciaisBackendResponse) => {
@@ -106,7 +118,9 @@ export default function DiferenciaisForm({ initialData }: DiferenciaisFormProps)
             toastCustom.error("Sessão expirada. Faça login novamente");
             break;
           case 403:
-            toastCustom.error("Você não tem permissão para acessar este conteúdo");
+            toastCustom.error(
+              "Você não tem permissão para acessar este conteúdo"
+            );
             break;
           case 500:
             toastCustom.error("Erro do servidor ao carregar dados existentes");
@@ -155,6 +169,14 @@ export default function DiferenciaisForm({ initialData }: DiferenciaisFormProps)
     }
   };
 
+  // Helper para renderizar preview do ícone
+  const renderIconPreview = (iconName: string) => {
+    const IconComponent = (LucideIcons as any)[iconName] as LucideIcon;
+    return IconComponent ? (
+      <IconComponent className="h-5 w-5 text-gray-600" />
+    ) : null;
+  };
+
   if (isFetching) {
     return (
       <div className="space-y-4">
@@ -174,7 +196,9 @@ export default function DiferenciaisForm({ initialData }: DiferenciaisFormProps)
             label="Título Geral"
             id="titulo"
             value={content.titulo}
-            onChange={(e) => setContent((p) => ({ ...p, titulo: e.target.value }))}
+            onChange={(e) =>
+              setContent((p) => ({ ...p, titulo: e.target.value }))
+            }
             maxLength={100}
             placeholder="Digite o título geral"
             required
@@ -183,7 +207,9 @@ export default function DiferenciaisForm({ initialData }: DiferenciaisFormProps)
             label="Descrição Geral"
             id="descricao"
             value={content.descricao}
-            onChange={(e) => setContent((p) => ({ ...p, descricao: e.target.value }))}
+            onChange={(e) =>
+              setContent((p) => ({ ...p, descricao: e.target.value }))
+            }
             maxLength={255}
             placeholder="Digite a descrição geral"
             required
@@ -193,7 +219,9 @@ export default function DiferenciaisForm({ initialData }: DiferenciaisFormProps)
             id="botaoUrl"
             type="url"
             value={content.botaoUrl}
-            onChange={(e) => setContent((p) => ({ ...p, botaoUrl: e.target.value }))}
+            onChange={(e) =>
+              setContent((p) => ({ ...p, botaoUrl: e.target.value }))
+            }
             placeholder="https://exemplo.com"
             required
           />
@@ -201,7 +229,9 @@ export default function DiferenciaisForm({ initialData }: DiferenciaisFormProps)
             label="Texto do Botão"
             id="botaoLabel"
             value={content.botaoLabel}
-            onChange={(e) => setContent((p) => ({ ...p, botaoLabel: e.target.value }))}
+            onChange={(e) =>
+              setContent((p) => ({ ...p, botaoLabel: e.target.value }))
+            }
             maxLength={50}
             placeholder="Digite o texto do botão"
             required
@@ -211,19 +241,34 @@ export default function DiferenciaisForm({ initialData }: DiferenciaisFormProps)
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {[1, 2, 3, 4].map((i) => (
             <div key={i} className="border rounded-md p-4 space-y-3">
-              <Label>Card {i}</Label>
+              <div className="flex items-center justify-between mb-2">
+                <Label className="text-base font-semibold">Card {i}</Label>
+                {/* Preview do ícone selecionado */}
+                <div className="flex items-center gap-2 text-xs text-gray-500">
+                  <span>Icone selecionado:</span>
+                  {renderIconPreview((content as any)[`icone${i}`])}
+                </div>
+              </div>
+
+              {/* Substituir InputCustom por IconSelector */}
+              <div className="space-y-1">
+                <Label
+                  htmlFor={`icone${i}`}
+                  className="text-sm font-medium text-gray-700"
+                >
+                  Ícone
+                </Label>
+                <IconSelector
+                  value={(content as any)[`icone${i}`]}
+                  onValueChange={(iconName) =>
+                    setContent((p) => ({ ...p, [`icone${i}`]: iconName }))
+                  }
+                  placeholder="Selecionar ícone"
+                />
+              </div>
+
               <InputCustom
-                label={`Ícone ${i}`}
-                id={`icone${i}`}
-                value={(content as any)[`icone${i}`]}
-                onChange={(e) =>
-                  setContent((p) => ({ ...p, [`icone${i}`]: e.target.value }))
-                }
-                placeholder="Nome do ícone Lucide"
-                required
-              />
-              <InputCustom
-                label={`Título ${i}`}
+                label={`Título`}
                 id={`titulo${i}`}
                 value={(content as any)[`titulo${i}`]}
                 onChange={(e) =>
@@ -237,7 +282,10 @@ export default function DiferenciaisForm({ initialData }: DiferenciaisFormProps)
                 id={`descricao${i}`}
                 value={(content as any)[`descricao${i}`]}
                 onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-                  setContent((p) => ({ ...p, [`descricao${i}`]: e.target.value }))
+                  setContent((p) => ({
+                    ...p,
+                    [`descricao${i}`]: e.target.value,
+                  }))
                 }
                 maxLength={200}
                 showCharCount={true}
@@ -276,4 +324,3 @@ export default function DiferenciaisForm({ initialData }: DiferenciaisFormProps)
     </div>
   );
 }
-

@@ -14,7 +14,7 @@ import "@/styles/globals.css";
 export const metadata: Metadata = {
   title: {
     template: "%s | Advance+",
-    default: "Advance+ - Educação e Tecnologia",
+    default: "Advance+ | Educação e Tecnologia",
   },
   description: "Plataforma integrada de educação, tecnologia e gestão",
   keywords: ["educação", "tecnologia", "gestão", "cursos", "Advance+"],
