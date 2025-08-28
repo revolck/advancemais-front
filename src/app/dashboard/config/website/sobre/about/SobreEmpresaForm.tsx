@@ -3,7 +3,7 @@
 import { useEffect, useState, FormEvent } from "react";
 import {
   InputCustom,
-  RichTextarea,
+  SimpleTextarea,
   ButtonCustom,
 } from "@/components/ui/custom";
 import { Label } from "@/components/ui/label";
@@ -179,7 +179,7 @@ export default function SobreEmpresaForm({ initialData }: SobreEmpresaFormProps)
                   Descrição <span className="text-red-500">*</span>
                 </Label>
                 <div className="mt-1">
-                  <RichTextarea
+                  <SimpleTextarea
                     id="descricao"
                     value={content.descricao}
                     onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
@@ -205,7 +205,7 @@ export default function SobreEmpresaForm({ initialData }: SobreEmpresaFormProps)
                   Visão <span className="text-red-500">*</span>
                 </Label>
                 <div className="mt-1">
-                  <RichTextarea
+                  <SimpleTextarea
                     id="descricaoVisao"
                     value={content.descricaoVisao}
                     onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
@@ -231,7 +231,7 @@ export default function SobreEmpresaForm({ initialData }: SobreEmpresaFormProps)
                   Missão <span className="text-red-500">*</span>
                 </Label>
                 <div className="mt-1">
-                  <RichTextarea
+                  <SimpleTextarea
                     id="descricaoMissao"
                     value={content.descricaoMissao}
                     onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
@@ -257,7 +257,7 @@ export default function SobreEmpresaForm({ initialData }: SobreEmpresaFormProps)
                   Valores <span className="text-red-500">*</span>
                 </Label>
                 <div className="mt-1">
-                  <RichTextarea
+                  <SimpleTextarea
                     id="descricaoValores"
                     value={content.descricaoValores}
                     onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>

@@ -5,7 +5,7 @@ import {
   InputCustom,
   FileUpload,
   type FileUploadItem,
-  RichTextarea,
+  SimpleTextarea,
   ButtonCustom,
 } from "@/components/ui/custom";
 import { Label } from "@/components/ui/label";
@@ -455,7 +455,7 @@ export default function ConsultoriaForm({ initialData }: ConsultoriaFormProps) {
                   Descrição <span className="text-red-500">*</span>
                 </Label>
                 <div className="mt-1">
-                  <RichTextarea
+                  <SimpleTextarea
                     id="descricao"
                     value={content.descricao}
                     onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>

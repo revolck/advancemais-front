@@ -3,12 +3,12 @@
 import { useEffect, useState, FormEvent } from "react";
 import {
   InputCustom,
-  RichTextarea,
+  SimpleTextarea,
   ButtonCustom,
+  toastCustom,
+  IconSelector,
 } from "@/components/ui/custom";
-import { IconSelector } from "@/components/ui/custom/icon-selector";
 import { Label } from "@/components/ui/label";
-import { toastCustom } from "@/components/ui/custom/toast";
 import {
   listDiferenciais,
   createDiferenciais,
@@ -258,7 +258,10 @@ export default function DiferenciaisForm({
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="border rounded-md p-4 space-y-3">
+            <div
+              key={i}
+              className="border border-gray-200 rounded-md p-4 space-y-3"
+            >
               <div className="flex items-center justify-between mb-2">
                 <Label className="text-base font-semibold">Card {i}</Label>
                 {/* Preview do ícone selecionado */}
@@ -294,7 +297,7 @@ export default function DiferenciaisForm({
                 placeholder="Título do card"
                 required
               />
-              <RichTextarea
+              <SimpleTextarea
                 id={`descricao${i}`}
                 value={(content as any)[`descricao${i}`]}
                 onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
