@@ -3,28 +3,25 @@ import { cva } from "class-variance-authority";
 /**
  * Variantes do componente FileUpload usando CVA
  */
-export const fileUploadVariants = cva(
-  "relative w-full",
-  {
-    variants: {
-      variant: {
-        default: "bg-background border border-border rounded-lg",
-        bordered: "bg-background border-2 border-dashed border-border rounded-lg",
-        filled: "bg-muted/50 border border-border rounded-lg",
-        minimal: "bg-transparent border-none",
-      },
-      size: {
-        sm: "text-sm",
-        md: "",
-        lg: "text-lg",
-      },
+export const fileUploadVariants = cva("relative w-full", {
+  variants: {
+    variant: {
+      default: "bg-background border border-border rounded-lg",
+      bordered: "bg-background border-1 border-solid border-border rounded-lg",
+      filled: "bg-muted/50 border border-border rounded-lg",
+      minimal: "bg-transparent border-none",
     },
-    defaultVariants: {
-      variant: "bordered",
-      size: "md",
+    size: {
+      sm: "text-sm",
+      md: "",
+      lg: "text-lg",
     },
-  }
-);
+  },
+  defaultVariants: {
+    variant: "bordered",
+    size: "md",
+  },
+});
 
 /**
  * Variantes da área de dropzone
@@ -35,24 +32,25 @@ export const dropzoneVariants = cva(
     variants: {
       variant: {
         default: [
-          "border-2 border-dashed border-border rounded-lg p-8 text-center",
-          "hover:border-primary/50 hover:bg-primary/5",
-          "focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2",
+          "rounded-lg p-8 text-center",
+          "hover:bg-gray-900/3",
+          "focus:outline-none focus:ring-1 focus:ring-red-200 focus:ring-offset-1",
         ],
         compact: [
-          "border border-dashed border-border rounded-md p-4 text-center",
+          "rounded-md p-4 text-center",
           "hover:border-primary/50 hover:bg-primary/5",
-          "focus:outline-none focus:ring-1 focus:ring-primary",
+          "focus:outline-none focus:ring-1 focus:ring-red-200",
         ],
         minimal: [
-          "border border-dashed border-border/50 rounded-md p-6 text-center",
+          "rounded-md p-6 text-center",
           "hover:border-primary/30 hover:bg-primary/2",
         ],
       },
       state: {
         idle: "",
         dragOver: "border-primary bg-primary/10 scale-[1.02]",
-        disabled: "opacity-50 cursor-not-allowed hover:border-border hover:bg-transparent",
+        disabled:
+          "opacity-50 cursor-not-allowed hover:border-border hover:bg-transparent",
         error: "border-destructive/50 bg-destructive/5",
       },
       size: {
@@ -83,10 +81,10 @@ export const fileItemVariants = cva(
       },
       status: {
         idle: "",
-        uploading: "bg-blue-50 border-blue-200",
-        completed: "bg-green-50 border-green-200",
-        failed: "bg-red-50 border-red-200",
-        cancelled: "bg-gray-50 border-gray-200 opacity-75",
+        uploading: "bg-blue-50 border-blue-200 hover:bg-blue-50",
+        completed: "bg-green-50 border-green-200 hover:bg-green-50",
+        failed: "bg-red-50 border-red-200 hover:bg-red-50",
+        cancelled: "bg-gray-50 border-gray-200 opacity-75 hover:bg-gray-50",
       },
       size: {
         sm: "p-2 text-sm",
@@ -156,41 +154,41 @@ export const progressIndicatorVariants = cva(
 /**
  * Variantes do preview de arquivo
  */
-export const filePreviewVariants = cva(
-  "relative overflow-hidden rounded-md",
-  {
-    variants: {
-      type: {
-        image: "aspect-square bg-gray-100",
-        document: "aspect-[4/3] bg-gray-50 flex items-center justify-center",
-        generic: "aspect-square bg-gray-50 flex items-center justify-center",
-      },
-      size: {
-        sm: "w-8 h-8",
-        md: "w-12 h-12",
-        lg: "w-16 h-16",
-        xl: "w-20 h-20",
-      },
+export const filePreviewVariants = cva("relative overflow-hidden rounded-md", {
+  variants: {
+    type: {
+      image: "aspect-square bg-gray-100",
+      document: "aspect-[4/3] bg-gray-50 flex items-center justify-center",
+      generic: "aspect-square bg-gray-50 flex items-center justify-center",
     },
-    defaultVariants: {
-      type: "generic",
-      size: "md",
+    size: {
+      sm: "w-8 h-8",
+      md: "w-12 h-12",
+      lg: "w-16 h-16",
+      xl: "w-20 h-20",
     },
-  }
-);
+  },
+  defaultVariants: {
+    type: "generic",
+    size: "md",
+  },
+});
 
 /**
  * Variantes dos botões de ação nos arquivos
  */
 export const fileActionVariants = cva(
-  "inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+  "inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 cursor-pointer disabled:cursor-not-allowed disabled:pointer-events-none disabled:opacity-50",
   {
     variants: {
       variant: {
         default: "bg-primary text-primary-foreground hover:bg-primary/90",
-        destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
-        outline: "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
-        secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
+        destructive:
+          "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+        outline:
+          "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
+        secondary:
+          "bg-secondary text-secondary-foreground hover:bg-secondary/80",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
       },
@@ -210,19 +208,16 @@ export const fileActionVariants = cva(
 /**
  * Variantes para mensagens de erro/sucesso
  */
-export const messageVariants = cva(
-  "text-sm font-medium",
-  {
-    variants: {
-      type: {
-        error: "text-destructive",
-        warning: "text-yellow-600",
-        success: "text-green-600",
-        info: "text-blue-600",
-      },
+export const messageVariants = cva("text-sm font-medium", {
+  variants: {
+    type: {
+      error: "text-destructive",
+      warning: "text-yellow-600",
+      success: "text-green-600",
+      info: "text-blue-600",
     },
-    defaultVariants: {
-      type: "error",
-    },
-  }
-);
+  },
+  defaultVariants: {
+    type: "error",
+  },
+});

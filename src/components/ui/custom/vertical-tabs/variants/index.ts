@@ -74,7 +74,7 @@ export const tabsListVariants = cva(
 export const tabsTriggerVariants = cva(
   [
     // Base styles - Clean and minimal
-    "relative w-full justify-start text-left group",
+    "relative w-full justify-start text-left group cursor-pointer",
     "transition-all duration-300 ease-out",
     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/30 focus-visible:ring-offset-4",
     "disabled:pointer-events-none disabled:opacity-40",

@@ -20,14 +20,14 @@ export const MIME_TYPE_MAP: Record<string, string> = {
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "Excel",
   "application/pdf": "PDF",
   "application/json": "JSON",
-  
+
   // Imagens
   "image/jpeg": "JPEG",
-  "image/jpg": "JPG", 
+  "image/jpg": "JPG",
   "image/png": "PNG",
   "image/webp": "WebP",
   "image/svg+xml": "SVG",
-  
+
   // Genéricos
   "text/plain": "Texto",
   "application/octet-stream": "Arquivo",
@@ -37,29 +37,29 @@ export const MIME_TYPE_MAP: Record<string, string> = {
  * Extensões que são consideradas imagens
  */
 export const IMAGE_EXTENSIONS = [
-  "jpg", 
-  "jpeg", 
-  "png", 
-  "webp", 
-  "svg", 
+  "jpg",
+  "jpeg",
+  "png",
+  "webp",
+  "svg",
   "gif",
   "bmp",
-  "tiff"
+  "tiff",
 ];
 
 /**
  * Extensões que são consideradas documentos
  */
 export const DOCUMENT_EXTENSIONS = [
-  "pdf", 
-  "doc", 
-  "docx", 
-  "xls", 
-  "xlsx", 
+  "pdf",
+  "doc",
+  "docx",
+  "xls",
+  "xlsx",
   "csv",
   "txt",
   "json",
-  "xml"
+  "xml",
 ];
 
 /**
@@ -68,7 +68,8 @@ export const DOCUMENT_EXTENSIONS = [
 export const DEFAULT_ERROR_MESSAGES = {
   fileTooLarge: "Arquivo muito grande. Tamanho máximo permitido: {maxSize}",
   fileTooSmall: "Arquivo muito pequeno. Tamanho mínimo: {minSize}",
-  fileTypeNotAllowed: "Tipo de arquivo não permitido. Tipos aceitos: {allowedTypes}",
+  fileTypeNotAllowed:
+    "Tipo de arquivo não permitido. Tipos aceitos: {allowedTypes}",
   tooManyFiles: "Muitos arquivos selecionados. Máximo permitido: {maxFiles}",
   uploadFailed: "Falha no upload do arquivo",
   networkError: "Erro de rede. Tente novamente.",
@@ -76,17 +77,17 @@ export const DEFAULT_ERROR_MESSAGES = {
   cancelled: "Upload cancelado pelo usuário",
   invalidImageDimensions: "Dimensões da imagem inválidas",
   duplicateFile: "Arquivo duplicado detectado",
-  unknownError: "Erro desconhecido ocorreu durante o upload"
+  unknownError: "Erro desconhecido ocorreu durante o upload",
 };
 
 /**
  * Configuração padrão para textos da interface
  */
 export const DEFAULT_UI_TEXTS = {
-  dropzoneTitle: "Arraste e Solte ou",
-  dropzoneBrowse: "Procurar",
-  dropzoneSubtitle: "para Enviar",
-  dropzoneDescription: "Formatos suportados: {acceptedTypes} (máximo {maxSize} por arquivo)",
+  dropzoneTitle: "Arraste aqui ou",
+  dropzoneBrowse: "escolha um arquivo.",
+  dropzoneDescription:
+    "Formatos suportados: {acceptedTypes} (máximo {maxSize} por arquivo)",
   uploading: "Enviando...",
   completed: "Concluído",
   failed: "Falha no Envio",
@@ -116,29 +117,29 @@ export const DEFAULT_ANIMATION_CONFIG = {
 export const STATUS_COLORS = {
   idle: {
     bg: "bg-gray-50",
-    border: "border-gray-200", 
-    text: "text-gray-600"
+    border: "border-gray-200",
+    text: "text-gray-600",
   },
   uploading: {
     bg: "bg-blue-50",
     border: "border-blue-200",
-    text: "text-blue-600"
+    text: "text-blue-600",
   },
   completed: {
-    bg: "bg-green-50", 
+    bg: "bg-green-50",
     border: "border-green-200",
-    text: "text-green-600"
+    text: "text-green-600",
   },
   failed: {
     bg: "bg-red-50",
-    border: "border-red-200", 
-    text: "text-red-600"
+    border: "border-red-200",
+    text: "text-red-600",
   },
   cancelled: {
     bg: "bg-gray-50",
     border: "border-gray-200",
-    text: "text-gray-500"
-  }
+    text: "text-gray-500",
+  },
 };
 
 /**
@@ -146,11 +147,11 @@ export const STATUS_COLORS = {
  */
 export function formatFileSize(bytes: number): string {
   if (bytes === 0) return "0 Bytes";
-  
+
   const k = 1024;
   const sizes = ["Bytes", "KB", "MB", "GB", "TB"];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  
+
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
 }
 
@@ -158,7 +159,10 @@ export function formatFileSize(bytes: number): string {
  * Utilitário para obter extensão do arquivo
  */
 export function getFileExtension(filename: string): string {
-  return filename.split('.').pop()?.toLowerCase() || '';
+  if (!filename) return "";
+  const lastDot = filename.lastIndexOf(".");
+  if (lastDot <= 0 || lastDot === filename.length - 1) return ""; // sem extensão ou ponto no início/fim
+  return filename.slice(lastDot + 1).toLowerCase();
 }
 
 /**
@@ -180,12 +184,15 @@ export function isDocumentFile(filename: string): boolean {
 /**
  * Utilitário para obter nome legível do tipo de arquivo
  */
-export function getReadableFileType(mimeType: string, filename: string): string {
+export function getReadableFileType(
+  mimeType: string,
+  filename: string
+): string {
   // Tenta primeiro pelo MIME type
   if (MIME_TYPE_MAP[mimeType]) {
     return MIME_TYPE_MAP[mimeType];
   }
-  
+
   // Fallback para extensão
   const ext = getFileExtension(filename).toUpperCase();
   return ext || "Arquivo";
