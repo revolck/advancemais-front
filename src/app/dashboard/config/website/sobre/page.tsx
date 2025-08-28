@@ -4,18 +4,30 @@ import React, { useEffect, useState } from "react";
 import { VerticalTabs, type VerticalTabItem } from "@/components/ui/custom";
 import { Skeleton } from "@/components/ui/skeleton";
 import SobreEmpresaForm from "./SobreEmpresaForm";
-import { listSobreEmpresa, type SobreEmpresaBackendResponse } from "@/api/websites/components";
+import DiferenciaisForm from "./DiferenciaisForm";
+import {
+  listSobreEmpresa,
+  listDiferenciais,
+  type SobreEmpresaBackendResponse,
+  type DiferenciaisBackendResponse,
+} from "@/api/websites/components";
 
 export default function SobrePage() {
   const [sobreData, setSobreData] =
     useState<SobreEmpresaBackendResponse | null>(null);
+  const [diferenciaisData, setDiferenciaisData] =
+    useState<DiferenciaisBackendResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const sobre = await listSobreEmpresa();
+        const [sobre, diferenciais] = await Promise.all([
+          listSobreEmpresa(),
+          listDiferenciais(),
+        ]);
         setSobreData(sobre[0] ?? null);
+        setDiferenciaisData(diferenciais[0] ?? null);
       } finally {
         setIsLoading(false);
       }
@@ -76,11 +88,11 @@ export default function SobrePage() {
     },
     {
       value: "escolha",
-      label: "Escolha",
+      label: "Diferenciais",
       icon: "CheckCircle",
       content: (
         <div className="space-y-6">
-          <h3 className="text-lg font-semibold mb-2">Escolha</h3>
+          <DiferenciaisForm initialData={diferenciaisData ?? undefined} />
         </div>
       ),
     },
