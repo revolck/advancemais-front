@@ -5,11 +5,14 @@ import { VerticalTabs, type VerticalTabItem } from "@/components/ui/custom";
 import { Skeleton } from "@/components/ui/skeleton";
 import SobreForm from "./sobre/SobreForm";
 import ConsultoriaForm from "./consultoria/ConsultoriaForm";
+import RecrutamentoForm from "./recrutamento/RecrutamentoForm";
 import {
   listAbout,
   type AboutBackendResponse,
   listConsultoria,
+  listRecrutamento,
   type ConsultoriaBackendResponse,
+  type RecrutamentoBackendResponse,
 } from "@/api/websites/components";
 
 /**
@@ -20,17 +23,20 @@ export default function PaginaInicialPage() {
   const [aboutData, setAboutData] = useState<AboutBackendResponse | null>(null);
   const [consultoriaData, setConsultoriaData] =
     useState<ConsultoriaBackendResponse | null>(null);
+  const [recrutamentoData, setRecrutamentoData] = useState<RecrutamentoBackendResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
       const fetchData = async () => {
         try {
-          const [about, consultoria] = await Promise.all([
+          const [about, consultoria, recrutamento] = await Promise.all([
             listAbout(),
             listConsultoria(),
+            listRecrutamento(),
           ]);
           setAboutData(about[0] ?? null);
           setConsultoriaData(consultoria[0] ?? null);
+          setRecrutamentoData(recrutamento[0] ?? null);
         } finally {
           setIsLoading(false);
         }
@@ -129,20 +135,12 @@ export default function PaginaInicialPage() {
       ),
     },
     {
-      value: "recrutamento-selecao",
+      value: "recrutamento",
       label: "Recrutamento & Seleção",
       icon: "Users",
       content: (
         <div className="space-y-6">
-          <div>
-            <h3 className="text-lg font-semibold mb-2">
-              Recrutamento & Seleção
-            </h3>
-            <p className="text-muted-foreground mb-4">
-              Defina textos, vitrines de vagas, depoimentos e CTAs desta seção.
-            </p>
-            {/* TODO: Substitua por <RecrutamentoSelecaoForm /> quando existir */}
-          </div>
+          <RecrutamentoForm initialData={recrutamentoData ?? undefined} />
         </div>
       ),
     },

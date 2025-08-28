@@ -28,6 +28,13 @@ export const websiteRoutes = {
     update: (id: string) => `${prefix}/website/consultoria/${id}`,
     delete: (id: string) => `${prefix}/website/consultoria/${id}`,
   },
+  recrutamento: {
+    list: () => `${prefix}/website/recrutamento`,
+    create: () => `${prefix}/website/recrutamento`,
+    get: (id: string) => `${prefix}/website/recrutamento/${id}`,
+    update: (id: string) => `${prefix}/website/recrutamento/${id}`,
+    delete: (id: string) => `${prefix}/website/recrutamento/${id}`,
+  },
   home: {
     slide: () => `${prefix}/website/slide`,
     banner: () => `${prefix}/website/banner`,
