@@ -35,6 +35,13 @@ export const websiteRoutes = {
     update: (id: string) => `${prefix}/website/recrutamento/${id}`,
     delete: (id: string) => `${prefix}/website/recrutamento/${id}`,
   },
+  sobreEmpresa: {
+    list: () => `${prefix}/website/sobre-empresa`,
+    create: () => `${prefix}/website/sobre-empresa`,
+    get: (id: string) => `${prefix}/website/sobre-empresa/${id}`,
+    update: (id: string) => `${prefix}/website/sobre-empresa/${id}`,
+    delete: (id: string) => `${prefix}/website/sobre-empresa/${id}`,
+  },
   home: {
     slide: () => `${prefix}/website/slide`,
     banner: () => `${prefix}/website/banner`,
