@@ -169,6 +169,24 @@ export default function DiferenciaisForm({
     }
   };
 
+  // Atualiza ícone localmente e envia para API (se já existir registro)
+  const handleIconChange = async (index: number, iconName: string) => {
+    setContent((prev) => ({ ...prev, [`icone${index}`]: iconName } as any));
+
+    if (!content.id) return; // ainda não existe registro para atualizar
+
+    try {
+      const payload: Record<string, string> = {};
+      payload[`icone${index}`] = iconName;
+      await updateDiferenciais(content.id, payload);
+      addLog(`Ícone do card ${index} atualizado para: ${iconName}`);
+      toastCustom.success(`Ícone do card ${index} atualizado`);
+    } catch (err) {
+      addLog(`Erro ao atualizar ícone ${index}: ${String(err)}`);
+      toastCustom.error(`Erro ao atualizar ícone do card ${index}`);
+    }
+  };
+
   // Helper para renderizar preview do ícone
   const renderIconPreview = (iconName: string) => {
     const IconComponent = (LucideIcons as any)[iconName] as LucideIcon;
@@ -260,9 +278,7 @@ export default function DiferenciaisForm({
                 </Label>
                 <IconSelector
                   value={(content as any)[`icone${i}`]}
-                  onValueChange={(iconName) =>
-                    setContent((p) => ({ ...p, [`icone${i}`]: iconName }))
-                  }
+                  onValueChange={(iconName) => handleIconChange(i, iconName)}
                   placeholder="Selecionar ícone"
                 />
               </div>
