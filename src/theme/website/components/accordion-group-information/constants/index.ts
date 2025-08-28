@@ -49,12 +49,6 @@ export const DEFAULT_ACCORDION_DATA: AccordionSectionData[] = [
  * Configurações do componente
  */
 export const ACCORDION_CONFIG = {
-  api: {
-    endpoint: "/api/accordion/sections",
-    timeout: 5000,
-    retryAttempts: 3,
-    retryDelay: 1000,
-  },
   animation: {
     staggerDelay: 300,
     duration: 600,

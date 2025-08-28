@@ -3,8 +3,9 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import type { AccordionSectionData, AccordionApiResponse } from "../types";
-import { DEFAULT_ACCORDION_DATA, ACCORDION_CONFIG } from "../constants";
+import type { AccordionSectionData } from "../types";
+import { DEFAULT_ACCORDION_DATA } from "../constants";
+import { getSobreEmpresaDataClient } from "@/api/websites/components";
 
 interface UseAccordionDataReturn {
   data: AccordionSectionData[];
@@ -37,34 +38,10 @@ export function useAccordionData(
       setIsLoading(true);
       setError(null);
 
-      const controller = new AbortController();
-      const timeoutId = setTimeout(
-        () => controller.abort(),
-        ACCORDION_CONFIG.api.timeout
-      );
-
-      const response = await fetch(ACCORDION_CONFIG.api.endpoint, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        signal: controller.signal,
-      });
-
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const result: AccordionApiResponse = await response.json();
-
-      if (!result.success || !result.data) {
-        throw new Error(result.message || "Dados inválidos recebidos da API");
-      }
+      const result = await getSobreEmpresaDataClient();
 
       // Filtra apenas dados ativos e ordena
-      const activeData = result.data
+      const activeData = result
         .filter((item) => item.isActive)
         .sort((a, b) => a.order - b.order)
         .map((section) => ({

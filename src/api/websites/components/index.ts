@@ -25,6 +25,14 @@ export {
   updateRecrutamento,
   deleteRecrutamento,
 } from "./recrutamento";
+export {
+  getSobreEmpresaDataClient,
+  listSobreEmpresa,
+  getSobreEmpresaById,
+  createSobreEmpresa,
+  updateSobreEmpresa,
+  deleteSobreEmpresa,
+} from "./sobre-empresa";
 
 export { getSliderData, getSliderDataClient } from "./slide";
 export { getBannerData, getBannerDataClient } from "./banner";
@@ -53,5 +61,13 @@ export type {
   CreateRecrutamentoPayload,
   UpdateRecrutamentoPayload,
 } from "./recrutamento/types";
+
+export type {
+  SobreEmpresaBackendResponse,
+  CreateSobreEmpresaPayload,
+  UpdateSobreEmpresaPayload,
+  AccordionSectionData,
+  AccordionItemData,
+} from "./sobre-empresa/types";
 
 export type { BannerBackendResponse, BannerApiResponse } from "./banner/types";
