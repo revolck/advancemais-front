@@ -80,7 +80,12 @@ export const SliderSlide: React.FC<SliderSlideProps> = ({
   return (
     <div className="flex-none w-full h-full relative">
       {slide.link ? (
-        <a href={slide.link} className="relative block w-full h-full">
+        <a
+          href={slide.link}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="relative block w-full h-full"
+        >
           {content}
         </a>
       ) : (

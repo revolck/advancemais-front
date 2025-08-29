@@ -19,12 +19,13 @@ export {
   MIME_TYPE_MAP,
   IMAGE_EXTENSIONS,
   DOCUMENT_EXTENSIONS,
-  STATUS_COLORS,
+  STATUS_COLORS as FILE_UPLOAD_STATUS_COLORS,
   formatFileSize,
   getFileExtension,
   isImageFile,
   isDocumentFile,
   getReadableFileType,
+  formatAcceptedTypes,
 } from "./config";
 
 export type {

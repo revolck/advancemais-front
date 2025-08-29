@@ -232,7 +232,7 @@ export default function RecrutamentoForm({ initialData }: RecrutamentoFormProps)
         try {
           uploadResult = await uploadImage(
             fileItem.file,
-            "recrutamento",
+            "website/recrutamento",
             previousUrl,
           );
           addLog(`Upload concluído: ${uploadResult.url}`);

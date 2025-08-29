@@ -53,7 +53,9 @@ const ButtonCustom = React.forwardRef<HTMLButtonElement, ButtonCustomProps>(
 
     // Se withAnimation for true, aplica animação no próprio botão
     if (withAnimation) {
-      const MotionComp = motion(Comp as any);
+      const MotionComp = (motion as any).create
+        ? (motion as any).create(Comp as any)
+        : (motion as any)(Comp as any);
       return (
         <MotionComp
           data-slot="button-custom"

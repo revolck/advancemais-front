@@ -2,11 +2,11 @@
 
 import React, { useEffect, useState } from "react";
 import { SliderContainer } from "./components/SliderContainer";
-import { ImageNotFound } from "@/components/ui/custom/image-not-found";
+import { Icon } from "@/components/ui/custom/Icons";
 import { SLIDER_CONFIG } from "./constants/config";
 import { useSlider } from "./hooks/useSlider";
 import { useSliderAutoplay } from "./hooks/useSliderAutoplay";
-import { getSliderDataClient } from "@/api/websites/components/slide";
+import { getSliderDataClient } from "@/api/websites/components/slider";
 import type { SlideData } from "./types";
 
 const SliderBasic: React.FC = () => {
@@ -24,12 +24,12 @@ const SliderBasic: React.FC = () => {
     slideCount,
   } = useSlider(SLIDER_CONFIG);
 
-  // Carrega slides da API
+  // Carrega slides da API (orientação DESKTOP por padrão)
   useEffect(() => {
     let active = true;
     (async () => {
       try {
-        const data = await getSliderDataClient();
+        const data = await getSliderDataClient("DESKTOP");
         if (active) setSlides(data);
       } catch (error) {
         console.error("Erro ao carregar slides:", error);
@@ -54,21 +54,19 @@ const SliderBasic: React.FC = () => {
 
   // Enquanto carrega, mostra apenas um espaço reservado
   if (isLoading) {
-    return <div className="w-full h-[400px] md:h-[500px] lg:h-[600px] xl:h-[800px]" />;
+    return (
+      <div className="w-full h-[400px] md:h-[500px] lg:h-[600px] xl:h-[600px]" />
+    );
   }
 
-  // Se não há slides, renderiza um fallback elegante
+  // Se não há slides, renderiza um fallback com cor primária
   if (!slides || slides.length === 0) {
     return (
-      <div className="w-full h-[400px] md:h-[500px] lg:h-[600px] xl:h-[800px]">
-        <ImageNotFound
-          size="full"
-          variant="muted"
-          message="Nenhum slide disponível"
-          icon="ImageOff"
-          className="w-full h-full !rounded-none !border-0 !bg-transparent"
-          showMessage={true}
-        />
+      <div className="w-full h-[400px] md:h-[500px] lg:h-[600px] xl:h-[600px] bg-[var(--primary-color)] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <Icon name="ImageOff" className="w-8 h-8 text-white opacity-90" />
+          <span className="text-white/90">Nenhum slider disponível</span>
+        </div>
       </div>
     );
   }

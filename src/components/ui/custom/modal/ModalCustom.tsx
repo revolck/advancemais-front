@@ -123,24 +123,18 @@ export function ModalCustom({
     onOpenChange?.(false);
   }, [onClose, onOpenChange]);
 
-  // Efeito para bloquear o scroll quando a modal está aberta
+  // Efeito para bloquear o scroll quando a modal está aberta (sem jitter)
   React.useEffect(() => {
     if (!shouldBlockScroll) return;
-
+    const previous = document.body.style.overflow;
     if (isOpen) {
-      // Salva a posição atual do scroll
-      const scrollY = window.scrollY;
-      document.body.style.position = "fixed";
-      document.body.style.top = `-${scrollY}px`;
-      document.body.style.width = "100%";
+      document.body.style.overflow = "hidden"; // evita scroll sem reposicionar layout
     } else {
-      // Restaura a posição do scroll
-      const scrollY = document.body.style.top;
-      document.body.style.position = "";
-      document.body.style.top = "";
-      document.body.style.width = "";
-      window.scrollTo(0, parseInt(scrollY || "0") * -1);
+      document.body.style.overflow = previous || "";
     }
+    return () => {
+      document.body.style.overflow = previous || "";
+    };
   }, [isOpen, shouldBlockScroll]);
 
   // Contexto para ser passado para os componentes filhos
@@ -230,7 +224,7 @@ export function ModalClose({
   return (
     <DialogPrimitive.Close
       data-slot="modal-close"
-      className={cn("", className)}
+      className={cn("cursor-pointer", className)}
       {...props}
     />
   );
@@ -246,24 +240,19 @@ export function ModalOverlay({
 }: React.ComponentProps<typeof DialogPrimitive.Overlay> & {
   backdrop?: ModalBackdrop;
 }) {
+  // Usa asChild para evitar loops de ref entre Radix e Framer Motion
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.2 }}
-    >
-      <DialogPrimitive.Overlay
+    <DialogPrimitive.Overlay asChild {...props}>
+      <motion.div
         data-slot="modal-overlay"
         data-backdrop={backdrop}
-        className={cn(
-          "fixed inset-0 z-50",
-          backdropClasses[backdrop],
-          className
-        )}
-        {...props}
+        className={cn("fixed inset-0 z-[100]", backdropClasses[backdrop], className)}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
       />
-    </motion.div>
+    </DialogPrimitive.Overlay>
   );
 }
 
@@ -335,7 +324,7 @@ export function ModalContent({
         }
       }}
       className={cn(
-        "fixed z-50 grid w-full gap-4 border p-6 bg-background",
+        "fixed z-[101] grid w-full gap-4 border p-6 bg-background",
         sizeClasses[size],
         radiusClasses[radius],
         shadowClasses[shadow],
@@ -393,16 +382,17 @@ export function ModalContentWrapper({
   disableAnimation = false,
   ...props
 }: ModalContentWrapperProps) {
+  const ctx = useModalContext();
   // Definições de animações padrão
   const defaultMotionProps = {
-    initial: { opacity: 0, scale: 0.95, y: 10 },
+    initial: { opacity: 0, scale: 0.96, y: 8 },
     animate: { opacity: 1, scale: 1, y: 0 },
-    exit: { opacity: 0, scale: 0.98, y: 5 },
+    exit: { opacity: 0, scale: 0.98, y: 4 },
     transition: {
-      duration: 0.2,
-      ease: [0.16, 1, 0.3, 1], // Easing personalizado para animações mais suaves
+      duration: 0.24,
+      ease: [0.22, 1, 0.36, 1],
     },
-  };
+  } as const;
 
   // Combina props padrão com personalizadas
   const combinedMotionProps = {
@@ -427,23 +417,45 @@ export function ModalContentWrapper({
           {children}
         </ModalContent>
       ) : (
-        <motion.div
-          {...combinedMotionProps}
-          style={{ width: "100%", zIndex: 50 }}
+        <DialogPrimitive.Content
+          data-slot="modal-content"
+          aria-describedby={undefined}
+          onEscapeKeyDown={(e) => {
+            if ((props as any)?.onEscapeKeyDown) (props as any).onEscapeKeyDown(e);
+            if (isKeyboardDismissDisabled) e.preventDefault();
+          }}
+          onPointerDownOutside={(e) => {
+            if ((props as any)?.onPointerDownOutside)
+              (props as any).onPointerDownOutside(e);
+            if (isDismissable === false) e.preventDefault();
+          }}
+          onInteractOutside={(e) => {
+            if ((props as any)?.onInteractOutside) (props as any).onInteractOutside(e);
+            if (isDismissable === false) e.preventDefault();
+          }}
+          className={cn(
+            "fixed z-[101] grid w-full gap-4 border p-6 bg-background transform-gpu will-change-transform",
+            sizeClasses[ctx.size],
+            radiusClasses[ctx.radius],
+            shadowClasses[shadow],
+            placementClasses[placement],
+            scrollBehaviorClasses[ctx.scrollBehavior || "normal"],
+            ctx.classNames?.base,
+            className
+          )}
+          asChild
+          {...(props as any)}
         >
-          <ModalContent
-            className={className}
-            isDismissable={isDismissable}
-            isKeyboardDismissDisabled={isKeyboardDismissDisabled}
-            hideCloseButton={hideCloseButton}
-            closeButton={closeButton}
-            shadow={shadow}
-            placement={placement}
-            {...props}
-          >
+          <motion.div {...combinedMotionProps} style={{ width: "100%" }}>
+            {!hideCloseButton && (
+              <ModalClose className="absolute right-4 top-4 rounded-md opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 p-1">
+                {closeButton || <XIcon className="h-4 w-4" aria-hidden="true" />}
+                <span className="sr-only">Fechar</span>
+              </ModalClose>
+            )}
             {children}
-          </ModalContent>
-        </motion.div>
+          </motion.div>
+        </DialogPrimitive.Content>
       )}
     </ModalPortal>
   );

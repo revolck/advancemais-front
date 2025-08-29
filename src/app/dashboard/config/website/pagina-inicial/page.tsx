@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import SobreForm from "./sobre/SobreForm";
 import ConsultoriaForm from "./consultoria/ConsultoriaForm";
 import RecrutamentoForm from "./recrutamento/RecrutamentoForm";
+import DesktopSliderManager from "./slider/Desktop";
 import {
   listAbout,
   type AboutBackendResponse,
@@ -77,9 +78,7 @@ export default function PaginaInicialPage() {
           icon: "Monitor",
           content: (
             <div className="space-y-6">
-              <div>
-                <h3 className="text-lg font-semibold mb-0">Sliders Desktop</h3>
-              </div>
+              <DesktopSliderManager />
             </div>
           ),
         },

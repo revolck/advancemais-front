@@ -175,9 +175,13 @@ const FileUploadItemComponent: React.FC<FileUploadItemProps> = ({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -10 }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{
+        duration: DEFAULT_ANIMATION_CONFIG.fadeInDuration / 1000,
+        ease: "easeOut",
+      }}
       className={cn(
         fileItemVariants({
           status: file.status,
@@ -538,29 +542,39 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       }
 
       onUploadStart?.(target);
-      const xhr = new XMLHttpRequest();
-      xhr.open("POST", resolvedUploadUrl);
+      const formData = new FormData();
+      formData.append("file", target.file);
 
-      xhr.upload.onprogress = (e) => {
-        if (!e.lengthComputable) return;
-        const progress = (e.loaded / e.total) * 100;
+      // Usa fetch para compatibilidade consistente e captura de erros
+      // Simula progresso durante o fetch (que não expõe progresso nativo)
+      let prog = 5;
+      const tick = setInterval(() => {
+        prog = Math.min(prog + 10, 95);
         updateFiles(
-          filesRef.current.map((file) =>
-            file.id === fileId ? { ...file, progress } : file
+          filesRef.current.map((f) =>
+            f.id === fileId ? { ...f, progress: prog } : f
           )
         );
-        onUploadProgress?.(fileId, progress);
-      };
+        onUploadProgress?.(fileId, prog);
+      }, 150);
 
-      xhr.onload = () => {
-        if (xhr.status >= 200 && xhr.status < 300) {
+      fetch(resolvedUploadUrl, {
+        method: "POST",
+        body: formData,
+        // inclui cookies de mesma origem automaticamente
+        credentials: "include",
+      })
+        .then(async (res) => {
+          clearInterval(tick);
+          if (!res.ok) {
+            throw new Error(`HTTP ${res.status}`);
+          }
           let url: string | undefined;
           try {
-            const json = JSON.parse(xhr.responseText);
-            url = json.url;
-          } catch {
-            url = undefined;
-          }
+            const json = await res.json();
+            url = json?.url;
+          } catch {}
+
           updateFiles(
             filesRef.current.map((file) =>
               file.id === fileId
@@ -574,10 +588,10 @@ export const FileUpload: React.FC<FileUploadProps> = ({
             )
           );
           const updated = filesRef.current.find((f) => f.id === fileId);
-          if (updated) {
-            onUploadComplete?.(updated);
-          }
-        } else {
+          if (updated) onUploadComplete?.(updated);
+        })
+        .catch(() => {
+          clearInterval(tick);
           const error = DEFAULT_ERROR_MESSAGES.uploadFailed;
           updateFiles(
             filesRef.current.map((file) =>
@@ -585,22 +599,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
             )
           );
           onUploadError?.(fileId, error);
-        }
-      };
-
-      xhr.onerror = () => {
-        const error = DEFAULT_ERROR_MESSAGES.uploadFailed;
-        updateFiles(
-          filesRef.current.map((file) =>
-            file.id === fileId ? { ...file, status: "failed", error } : file
-          )
-        );
-        onUploadError?.(fileId, error);
-      };
-
-      const formData = new FormData();
-      formData.append("file", target.file);
-      xhr.send(formData);
+        });
     },
     [
       resolvedUploadUrl,
@@ -676,15 +675,6 @@ export const FileUpload: React.FC<FileUploadProps> = ({
             uploadFile(file.id);
           });
         }
-
-        // Show success message
-        toastCustom.success({
-          title: "Arquivos adicionados!",
-          description: autoUpload
-            ? `${validFiles.length} arquivo(s) sendo enviado(s).`
-            : `${validFiles.length} arquivo(s) pronto(s) para upload.`,
-          duration: 3000,
-        });
       }
     },
     [
@@ -780,11 +770,6 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       );
       updateFiles(updatedFiles);
       onFileRemove?.(fileId);
-
-      toastCustom.success({
-        description: "Arquivo removido com sucesso.",
-        duration: 2000,
-      });
     },
     [removeFromServer, updateFiles, onFileRemove, deleteOnRemove]
   );
@@ -845,7 +830,14 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   const isMaxFilesReached = files.length >= maxFilesLimit;
 
   return (
-    <div
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{
+        duration: DEFAULT_ANIMATION_CONFIG.fadeInDuration / 1000,
+        ease: "easeOut",
+      }}
       className={cn(
         fileUploadVariants({ variant, size }),
         classNames.container
@@ -853,7 +845,14 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     >
       {/* Dropzone */}
       {!isMaxFilesReached && (
-        <div
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{
+            duration: DEFAULT_ANIMATION_CONFIG.fadeInDuration / 1000,
+            ease: "easeOut",
+          }}
           className={cn(
             dropzoneVariants({
               variant: variant === "minimal" ? "minimal" : "default",
@@ -918,7 +917,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
             className="hidden"
             disabled={disabled}
           />
-        </div>
+        </motion.div>
       )}
 
       {/* Files List */}
@@ -984,7 +983,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           )}
         </div>
       )}
-    </div>
+    </motion.div>
   );
 };
 

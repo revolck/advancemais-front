@@ -49,9 +49,12 @@ export const websiteRoutes = {
     update: (id: string) => `${prefix}/website/sobre-empresa/${id}`,
     delete: (id: string) => `${prefix}/website/sobre-empresa/${id}`,
   },
-  home: {
-    slide: () => `${prefix}/website/slide`,
-    banner: () => `${prefix}/website/banner`,
+  slider: {
+    list: () => `${prefix}/website/slider`,
+    create: () => `${prefix}/website/slider`,
+    get: (id: string) => `${prefix}/website/slider/${id}`,
+    update: (id: string) => `${prefix}/website/slider/${id}`,
+    delete: (id: string) => `${prefix}/website/slider/${id}`,
   },
 };
 
@@ -77,11 +80,9 @@ export const usuarioRoutes = {
     reset: () => `${prefix}/usuarios/recuperar-senha/redefinir`,
   },
   verification: {
-    verify: (token: string) =>
-      `${prefix}/brevo/verificar-email?token=${token}`,
+    verify: (token: string) => `${prefix}/brevo/verificar-email?token=${token}`,
     resend: () => `${prefix}/brevo/reenviar-verificacao`,
-    status: (userId: string) =>
-      `${prefix}/brevo/status-verificacao/${userId}`,
+    status: (userId: string) => `${prefix}/brevo/status-verificacao/${userId}`,
   },
 };
 

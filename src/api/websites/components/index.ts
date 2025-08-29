@@ -41,7 +41,7 @@ export {
   deleteDiferenciais,
 } from "./diferenciais";
 
-export { getSliderData, getSliderDataClient } from "./slide";
+export { getSliderData, getSliderDataClient } from "./slider";
 export { getBannerData, getBannerDataClient } from "./banner";
 export type {
   AboutApiResponse,
@@ -59,7 +59,7 @@ export type {
   CreateConsultoriaPayload,
   UpdateConsultoriaPayload,
 } from "./consultoria/types";
-export type { SlideBackendResponse, SlideApiResponse } from "./slide/types";
+export type { SlideBackendResponse, SlideApiResponse } from "./slider/types";
 export type {
   RecrutamentoApiResponse,
   RecrutamentoImageProps,

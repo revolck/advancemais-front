@@ -10,8 +10,9 @@ import { sliderMockData } from "./mock";
 import type { SlideBackendResponse } from "./types";
 import type { SlideData } from "@/theme/website/components/slider/types";
 
-function mapSlideResponse(data: SlideBackendResponse[]): SlideData[] {
+function mapSlideResponse(data: SlideBackendResponse[], orientation: "DESKTOP" | "MOBILE" = "DESKTOP"): SlideData[] {
   return data
+    .filter((item) => item.status === "PUBLICADO" && item.orientacao === orientation)
     .sort((a, b) => a.ordem - b.ordem)
     .map((item) => ({
       id: item.ordem,
@@ -22,16 +23,13 @@ function mapSlideResponse(data: SlideBackendResponse[]): SlideData[] {
     }));
 }
 
-export async function getSliderData(): Promise<SlideData[]> {
+export async function getSliderData(orientation: "DESKTOP" | "MOBILE" = "DESKTOP"): Promise<SlideData[]> {
   try {
-    const raw = await apiFetch<SlideBackendResponse[]>(
-      routes.website.home.slide(),
-      {
-        init: { headers: apiConfig.headers, ...apiConfig.cache.medium },
-      },
-    );
+    const raw = await apiFetch<SlideBackendResponse[]>(routes.website.slider.list(), {
+      init: { headers: apiConfig.headers, ...apiConfig.cache.medium },
+    });
 
-    const data = mapSlideResponse(raw);
+    const data = mapSlideResponse(raw, orientation);
     console.log("✅ Slider data loaded:", data);
     return data;
   } catch (error) {
@@ -43,8 +41,8 @@ export async function getSliderData(): Promise<SlideData[]> {
   }
 }
 
-export async function getSliderDataClient(): Promise<SlideData[]> {
-  const endpoint = routes.website.home.slide();
+export async function getSliderDataClient(orientation: "DESKTOP" | "MOBILE" = "DESKTOP"): Promise<SlideData[]> {
+  const endpoint = routes.website.slider.list();
 
   try {
     const raw = await apiFetch<SlideBackendResponse[]>(endpoint, {
@@ -52,7 +50,7 @@ export async function getSliderDataClient(): Promise<SlideData[]> {
       cache: "short",
     });
 
-    const data = mapSlideResponse(raw);
+    const data = mapSlideResponse(raw, orientation);
     console.log("✅ Slider data loaded (client):", data);
     return data;
   } catch (error) {
