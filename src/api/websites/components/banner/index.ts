@@ -25,10 +25,10 @@ function mapBannerResponse(data: BannerBackendResponse[]): BannerItem[] {
 export async function getBannerData(): Promise<BannerItem[]> {
   try {
     const raw = await apiFetch<BannerBackendResponse[]>(
-      routes.website.home.banner(),
+      routes.website.banner.list(),
       {
         init: { headers: apiConfig.headers, ...apiConfig.cache.medium },
-      },
+      }
     );
 
     const data = mapBannerResponse(raw);
@@ -44,7 +44,7 @@ export async function getBannerData(): Promise<BannerItem[]> {
 }
 
 export async function getBannerDataClient(): Promise<BannerItem[]> {
-  const endpoint = routes.website.home.banner();
+  const endpoint = routes.website.banner.list();
 
   try {
     const raw = await apiFetch<BannerBackendResponse[]>(endpoint, {

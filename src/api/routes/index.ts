@@ -56,6 +56,13 @@ export const websiteRoutes = {
     update: (id: string) => `${prefix}/website/slider/${id}`,
     delete: (id: string) => `${prefix}/website/slider/${id}`,
   },
+  banner: {
+    list: () => `${prefix}/website/banner`,
+    create: () => `${prefix}/website/banner`,
+    get: (id: string) => `${prefix}/website/banner/${id}`,
+    update: (id: string) => `${prefix}/website/banner/${id}`,
+    delete: (id: string) => `${prefix}/website/banner/${id}`,
+  },
 };
 
 /**
