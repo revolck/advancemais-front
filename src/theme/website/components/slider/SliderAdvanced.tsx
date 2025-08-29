@@ -7,6 +7,7 @@ import { useSliderAutoplay } from "./hooks/useSliderAutoplay";
 import { useSliderKeyboard } from "./hooks/useSliderKeyboard";
 import { useSliderIntersection } from "./hooks/useSliderIntersection";
 import { SLIDES } from "./constants/slides";
+import { SLIDER_CONFIG as DEFAULT_CONFIG } from "./constants/config";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ImageNotFound } from "@/components/ui/custom/image-not-found";
 import type { SliderConfig } from "./types";
@@ -31,16 +32,18 @@ export const SliderAdvanced: React.FC<SliderAdvancedProps> = ({
   const [isVisible, setIsVisible] = useState(true);
   const [isPaused, setIsPaused] = useState(false);
 
-  // Configuração personalizada
+  // Configuração personalizada com defaults globais
   const sliderConfig: SliderConfig = {
-    loop: true,
-    align: "center",
-    dragFree: false,
-    autoplay: {
-      enabled: true,
-      delay: 5000,
-    },
+    ...DEFAULT_CONFIG,
     ...config,
+    autoplay: {
+      ...DEFAULT_CONFIG.autoplay!,
+      ...(config?.autoplay ?? {}),
+    },
+    ui: {
+      ...DEFAULT_CONFIG.ui,
+      ...(config?.ui ?? {}),
+    },
   };
 
   // Hooks do slider
@@ -84,8 +87,9 @@ export const SliderAdvanced: React.FC<SliderAdvancedProps> = ({
   };
 
   if (!slides || slides.length === 0) {
+    const h = DEFAULT_CONFIG.ui.height;
     return (
-      <div className="w-full h-[400px] md:h-[500px] lg:h-[600px] xl:h-[800px]">
+      <div className="w-full" style={{ height: h, minHeight: h, maxHeight: h }}>
         <ImageNotFound
           size="full"
           variant="muted"
@@ -111,6 +115,7 @@ export const SliderAdvanced: React.FC<SliderAdvancedProps> = ({
         onScrollNext={scrollNext}
         currentSlide={currentSlide}
         slideCount={slideCount}
+        height={DEFAULT_CONFIG.ui.height}
       />
 
       {/* Controle de Play/Pause */}

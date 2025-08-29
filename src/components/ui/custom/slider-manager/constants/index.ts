@@ -84,16 +84,17 @@ export const SLIDER_ANIMATIONS = {
 
 // CSS Classes for consistent styling
 export const SLIDER_STYLES = {
-  CARD: "border border-border/30 hover:border-primary/30 transition-all duration-300 bg-card rounded-xl",
+  CARD: "border border-border/30 !bg-gray-100 shadow-none hover:border-primary/30 transition-all duration-300 bg-card rounded-xl",
   BUTTON_PRIMARY:
     "bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg font-medium",
   BUTTON_SECONDARY: "bg-transparent rounded-lg border-border/50",
   INPUT: "h-10 text-sm rounded-lg",
   INPUT_ERROR: "border-destructive focus-visible:ring-destructive",
+  // Badges alinhadas ao design do modal (Label do Switch no formulário)
   BADGE_ACTIVE:
-    "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800 px-3 py-1",
+    "!bg-emerald-100 !text-emerald-700 !border-emerald-200 px-3 py-1",
   BADGE_INACTIVE:
-    "bg-gray-50 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700 px-3 py-1",
+    "!bg-red-100 !text-red-700 !border-red-200 px-3 py-1",
 } as const;
 
 export const SLIDER_DRAG_CONFIG = {

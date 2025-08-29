@@ -7,6 +7,7 @@ import { useSlider } from "./hooks/useSlider";
 import { useSliderAutoplay } from "./hooks/useSliderAutoplay";
 import { SLIDER_CONFIG } from "./constants/config";
 import { SLIDES } from "./constants/slides";
+import { SLIDER_CONFIG as DEFAULT_CONFIG } from "./constants/config";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ImageNotFound } from "@/components/ui/custom/image-not-found";
 
@@ -38,8 +39,9 @@ export const SliderWithProgress: React.FC<SliderWithProgressProps> = ({
   useSliderAutoplay(emblaApi, SLIDER_CONFIG.autoplay);
 
   if (!slides || slides.length === 0) {
+    const h = DEFAULT_CONFIG.ui.height;
     return (
-      <div className="w-full h-[400px] md:h-[500px] lg:h-[600px] xl:h-[800px]">
+      <div className="w-full" style={{ height: h, minHeight: h, maxHeight: h }}>
         <ImageNotFound
           size="full"
           variant="muted"
@@ -71,6 +73,7 @@ export const SliderWithProgress: React.FC<SliderWithProgressProps> = ({
         onScrollNext={scrollNext}
         currentSlide={currentSlide}
         slideCount={slideCount}
+        height={DEFAULT_CONFIG.ui.height}
       />
 
       {/* Barra de progresso na parte inferior */}

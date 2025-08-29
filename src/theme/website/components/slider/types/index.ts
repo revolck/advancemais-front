@@ -14,6 +14,9 @@ export interface SliderConfig {
     enabled: boolean;
     delay: number;
   };
+  ui: {
+    height: number; // altura fixa em px (ex.: 600)
+  };
 }
 
 export interface SliderContainerProps {
@@ -25,12 +28,15 @@ export interface SliderContainerProps {
   currentSlide: number;
   slideCount: number;
   slides?: SlideData[];
+  heightClass?: string;
+  height?: number;
 }
 
 export interface SliderSlideProps {
   slide: SlideData;
   index: number;
   isMobile: boolean;
+  height?: number;
 }
 
 export interface SliderControlsProps {

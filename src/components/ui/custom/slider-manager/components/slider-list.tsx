@@ -7,8 +7,12 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion, Reorder, AnimatePresence } from "framer-motion";
-import { ExternalLink, GripVertical } from "lucide-react";
-import Image from "next/image";
+import {
+  ExternalLink,
+  GripVertical,
+  Calendar as CalendarIcon,
+} from "lucide-react";
+// Removido Next/Image aqui para usar background cover na thumbnail
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -50,6 +54,17 @@ export function SliderList({
   onReorder,
   isLoading = false,
 }: SliderListProps) {
+  const formatDateTime = (iso?: string) => {
+    if (!iso) return "—";
+    try {
+      return new Date(iso).toLocaleString("pt-BR", {
+        dateStyle: "short",
+        timeStyle: "short",
+      });
+    } catch {
+      return iso;
+    }
+  };
   // State for managing delete confirmation
   const [deleteSlider, setDeleteSlider] = useState<Slider | null>(null);
 
@@ -127,12 +142,9 @@ export function SliderList({
     );
   }
 
-  const activeCount = sliders.filter((s) => s.status).length;
-  const totalCount = sliders.length;
-
   return (
     <TooltipProvider>
-      <div className="space-y-8">
+      <div className="space-y-6">
         {/* Loading Skeleton Block (shown at top when loading) */}
         {isLoading && (
           <div className="space-y-3" aria-hidden>
@@ -144,20 +156,6 @@ export function SliderList({
             ))}
           </div>
         )}
-
-        {/* Header Section */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-2xl font-semibold text-foreground">
-              Seus Sliders
-            </h3>
-            <p className="text-muted-foreground mt-2 text-lg">
-              {SLIDER_CONFIG.features.enableDragReorder &&
-                "Arraste para reordenar • "}
-              {activeCount} de {totalCount} ativos
-            </p>
-          </div>
-        </div>
 
         {/* Slider List */}
         <Reorder.Group
@@ -192,7 +190,7 @@ export function SliderList({
                   transition={{
                     duration: SLIDER_DRAG_CONFIG.TRANSITION_DURATION,
                   }}
-                  className="group"
+                  className="group object-cover"
                 >
                   <Card className={SLIDER_STYLES.CARD}>
                     <CardContent className="p-6">
@@ -209,14 +207,13 @@ export function SliderList({
 
                         {/* Position Number */}
                         <div className="flex-shrink-0">
-                          <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center border border-primary/20">
+                          <div className="w-9 h-9 bg-primary/5 rounded-lg flex items-center justify-center border border-gray-500/10">
                             <span className="text-base font-semibold text-primary">
                               {index + 1}
                             </span>
                           </div>
                         </div>
 
-                        {/* ✅ CORRIGIDO: Thumbnail usando Next.js Image com fallback */}
                         <div className="flex-shrink-0">
                           <div className="relative w-24 h-16 rounded-xl overflow-hidden border border-border/30 bg-muted/20">
                             {slider.image ? (
@@ -239,8 +236,8 @@ export function SliderList({
 
                         {/* Slider Info */}
                         <div className="flex-1 min-w-0 space-y-3">
-                          <div className="flex items-center gap-4">
-                            <h4 className="font-semibold text-foreground truncate text-xl">
+                          <div className="flex items-center gap-4 mb-0">
+                            <h4 className="font-semibold text-foreground truncate text-xl !mb-0">
                               {slider.title}
                             </h4>
                             <Badge
@@ -253,6 +250,16 @@ export function SliderList({
                             >
                               {slider.status ? "Ativo" : "Inativo"}
                             </Badge>
+                          </div>
+
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground mt-3">
+                            <CalendarIcon className="h-3.5 w-3.5" />
+                            <span>
+                              Upload:{" "}
+                              {formatDateTime(
+                                slider.updatedAt || slider.createdAt
+                              )}
+                            </span>
                           </div>
 
                           {slider.url && (
@@ -274,7 +281,7 @@ export function SliderList({
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => onToggleStatus(slider.id)}
-                                className="h-10 w-10 p-0 hover:bg-muted/50 rounded-lg"
+                                className="h-10 w-10 p-0 hover:bg-muted/50 rounded-lg cursor-pointer disabled:cursor-not-allowed"
                                 disabled={isLoading}
                                 aria-label={
                                   slider.status
@@ -309,7 +316,7 @@ export function SliderList({
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => onEdit(slider)}
-                                className="h-10 w-10 p-0 hover:bg-muted/50 rounded-lg"
+                                className="h-10 w-10 p-0 hover:bg-muted/50 rounded-lg cursor-pointer disabled:cursor-not-allowed"
                                 disabled={isLoading}
                                 aria-label={
                                   SLIDER_CONFIG.a11y.labels.editButton
@@ -331,7 +338,7 @@ export function SliderList({
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => setDeleteSlider(slider)}
-                                className="h-10 w-10 p-0 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 rounded-lg"
+                                className="h-10 w-10 p-0 hover:bg-red-50 hover:text-red-600 rounded-lg cursor-pointer disabled:cursor-not-allowed"
                                 disabled={isLoading}
                                 aria-label={
                                   SLIDER_CONFIG.a11y.labels.deleteButton
@@ -359,7 +366,7 @@ export function SliderList({
         >
           <AlertDialogContent className="rounded-2xl border border-border/50">
             <AlertDialogHeader>
-              <AlertDialogTitle className="text-2xl">
+              <AlertDialogTitle className="!text-2xl">
                 Confirmar Exclusão
               </AlertDialogTitle>
               <AlertDialogDescription className="text-base leading-relaxed text-muted-foreground">
@@ -370,14 +377,14 @@ export function SliderList({
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel
-                className="rounded-xl"
+                className="rounded-xl cursor-pointer"
                 onClick={handleCloseDeleteDialog}
               >
                 Cancelar
               </AlertDialogCancel>
               <AlertDialogAction
                 onClick={handleDeleteSlider}
-                className="bg-destructive hover:bg-destructive/90 text-destructive-foreground rounded-xl"
+                className="bg-destructive hover:bg-destructive/90 !text-destructive-foreground rounded-xl cursor-pointer"
               >
                 Excluir Slider
               </AlertDialogAction>
@@ -389,7 +396,6 @@ export function SliderList({
   );
 }
 
-// ✅ CORRIGIDO: Componente auxiliar para imagem com fallback
 const SliderImageWithFallback = ({
   src,
   alt,
@@ -404,14 +410,27 @@ const SliderImageWithFallback = ({
   const [hasError, setHasError] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  const handleImageError = () => {
-    setHasError(true);
-    setIsLoading(false);
-  };
-
-  const handleImageLoad = () => {
-    setIsLoading(false);
-  };
+  // Preload manual para controlar loading/erro
+  useEffect(() => {
+    setIsLoading(true);
+    setHasError(false);
+    if (!src) {
+      setHasError(true);
+      setIsLoading(false);
+      return;
+    }
+    const img = new Image();
+    img.onload = () => setIsLoading(false);
+    img.onerror = () => {
+      setHasError(true);
+      setIsLoading(false);
+    };
+    img.src = src;
+    return () => {
+      img.onload = null;
+      img.onerror = null;
+    };
+  }, [src]);
 
   if (hasError) {
     return (
@@ -436,15 +455,11 @@ const SliderImageWithFallback = ({
           />
         </div>
       )}
-      <Image
-        src={src}
-        alt={alt}
-        width={width}
-        height={height}
-        className="w-full h-full object-cover"
-        onError={handleImageError}
-        onLoad={handleImageLoad}
+      <div
+        aria-label={alt}
+        className="absolute inset-0 bg-cover bg-center"
         style={{
+          backgroundImage: `url(${src})`,
           opacity: isLoading ? 0 : 1,
           transition: "opacity 0.3s ease-in-out",
         }}

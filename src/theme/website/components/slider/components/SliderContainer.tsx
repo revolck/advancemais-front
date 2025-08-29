@@ -2,6 +2,7 @@ import React from "react";
 import { SliderSlide } from "./SliderSlide";
 import { SliderControls } from "./SliderControls";
 import { SLIDES } from "../constants/slides";
+import { SLIDER_CONFIG } from "../constants/config";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { SliderContainerProps } from "../types";
 
@@ -12,12 +13,18 @@ export const SliderContainer: React.FC<SliderContainerProps> = ({
   onScrollPrev,
   onScrollNext,
   slides,
+  heightClass,
+  height,
 }) => {
   const isMobile = useIsMobile();
   const slideData = slides ?? (isMobile ? SLIDES.mobile : SLIDES.desktop);
+  const containerHeight = height ?? SLIDER_CONFIG.ui.height;
 
   return (
-    <section className="relative w-full h-[400px] md:h-[500px] lg:h-[600px] xl:h-[600px] overflow-hidden">
+    <section
+      className={heightClass || "relative w-full overflow-hidden"}
+      style={{ height: containerHeight, minHeight: containerHeight, maxHeight: containerHeight }}
+    >
       {/* Container do Embla */}
       <div ref={emblaRef} className="overflow-hidden w-full h-full">
         <div className="flex h-full">
@@ -27,6 +34,7 @@ export const SliderContainer: React.FC<SliderContainerProps> = ({
               slide={slide}
               index={index}
               isMobile={isMobile}
+              height={containerHeight}
             />
           ))}
         </div>

@@ -9,6 +9,7 @@ export const SliderSlide: React.FC<SliderSlideProps> = ({
   slide,
   index,
   isMobile,
+  height,
 }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
@@ -78,18 +79,29 @@ export const SliderSlide: React.FC<SliderSlideProps> = ({
   );
 
   return (
-    <div className="flex-none w-full h-full relative">
+    <div
+      className="flex-none w-full h-full relative"
+      style={
+        height ? { height, minHeight: height, maxHeight: height } : undefined
+      }
+    >
       {slide.link ? (
         <a
           href={slide.link}
           target="_blank"
           rel="noopener noreferrer"
           className="relative block w-full h-full"
+          style={height ? { height: "100%" } : undefined}
         >
           {content}
         </a>
       ) : (
-        <div className="relative w-full h-full">{content}</div>
+        <div
+          className="relative w-full h-full"
+          style={height ? { height: "100%" } : undefined}
+        >
+          {content}
+        </div>
       )}
     </div>
   );

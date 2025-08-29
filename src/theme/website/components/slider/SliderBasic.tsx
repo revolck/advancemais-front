@@ -7,6 +7,7 @@ import { SLIDER_CONFIG } from "./constants/config";
 import { useSlider } from "./hooks/useSlider";
 import { useSliderAutoplay } from "./hooks/useSliderAutoplay";
 import { getSliderDataClient } from "@/api/websites/components/slider";
+import { useIsMobile } from "@/hooks/use-mobile";
 import type { SlideData } from "./types";
 
 const SliderBasic: React.FC = () => {
@@ -24,12 +25,15 @@ const SliderBasic: React.FC = () => {
     slideCount,
   } = useSlider(SLIDER_CONFIG);
 
-  // Carrega slides da API (orientação DESKTOP por padrão)
+  const isMobile = useIsMobile();
+
+  // Carrega slides da API conforme orientação (DESKTOP / TABLET_MOBILE)
   useEffect(() => {
     let active = true;
     (async () => {
       try {
-        const data = await getSliderDataClient("DESKTOP");
+        const orientation = isMobile ? "TABLET_MOBILE" : "DESKTOP";
+        const data = await getSliderDataClient(orientation);
         if (active) setSlides(data);
       } catch (error) {
         console.error("Erro ao carregar slides:", error);
@@ -40,7 +44,7 @@ const SliderBasic: React.FC = () => {
     return () => {
       active = false;
     };
-  }, []);
+  }, [isMobile]);
 
   // Re-inicializa o Embla quando os slides mudam
   useEffect(() => {
@@ -54,15 +58,18 @@ const SliderBasic: React.FC = () => {
 
   // Enquanto carrega, mostra apenas um espaço reservado
   if (isLoading) {
-    return (
-      <div className="w-full h-[400px] md:h-[500px] lg:h-[600px] xl:h-[600px]" />
-    );
+    const h = SLIDER_CONFIG.ui.height;
+    return <div className="w-full" style={{ height: h, minHeight: h, maxHeight: h }} />;
   }
 
   // Se não há slides, renderiza um fallback com cor primária
   if (!slides || slides.length === 0) {
+    const h = SLIDER_CONFIG.ui.height;
     return (
-      <div className="w-full h-[400px] md:h-[500px] lg:h-[600px] xl:h-[600px] bg-[var(--primary-color)] flex items-center justify-center">
+      <div
+        className="w-full bg-[var(--primary-color)] flex items-center justify-center"
+        style={{ height: h, minHeight: h, maxHeight: h }}
+      >
         <div className="flex flex-col items-center gap-3">
           <Icon name="ImageOff" className="w-8 h-8 text-white opacity-90" />
           <span className="text-white/90">Nenhum slider disponível</span>

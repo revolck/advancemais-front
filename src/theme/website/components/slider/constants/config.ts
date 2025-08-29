@@ -6,6 +6,9 @@ export const SLIDER_CONFIG: SliderConfig = {
   dragFree: false,
   autoplay: {
     enabled: true,
-    delay: 5000, // 5 segundos
+    delay: 10000,
+  },
+  ui: {
+    height: 500,
   },
 };

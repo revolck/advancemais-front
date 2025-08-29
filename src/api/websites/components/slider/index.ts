@@ -103,32 +103,20 @@ function buildRequest(
     ...getAuthHeader(),
   };
 
-  if (data.imagem) {
-    const form = new FormData();
-    if (data.sliderName !== undefined) form.append("sliderName", data.sliderName);
-    if (data.link !== undefined) form.append("link", data.link);
-    if (data.orientacao !== undefined) form.append("orientacao", data.orientacao);
-    if (data.status !== undefined) form.append("status", data.status);
-    if (data.ordem !== undefined) form.append("ordem", String(data.ordem));
-    form.append("imagem", data.imagem);
-    if (data.imagemUrl) form.append("imagemUrl", data.imagemUrl);
-    if (data.imagemTitulo) form.append("imagemTitulo", data.imagemTitulo);
-    return { body: form, headers: baseHeaders };
-  }
+  // API do Slider espera multipart/form-data mesmo para updates simples
+  const form = new FormData();
+  if (data.sliderName !== undefined) form.append("sliderName", data.sliderName);
+  if (data.link !== undefined) form.append("link", String(data.link));
+  if (data.orientacao !== undefined) form.append("orientacao", data.orientacao);
+  if (data.status !== undefined) form.append("status", data.status);
+  if (data.ordem !== undefined) form.append("ordem", String(data.ordem));
+  if (data.imagem) form.append("imagem", data.imagem);
+  if (data.imagemUrl !== undefined && data.imagemUrl)
+    form.append("imagemUrl", data.imagemUrl);
+  if (data.imagemTitulo !== undefined && data.imagemTitulo)
+    form.append("imagemTitulo", data.imagemTitulo);
 
-  const jsonPayload: Record<string, unknown> = {};
-  if (data.sliderName !== undefined) jsonPayload.sliderName = data.sliderName;
-  if (data.link !== undefined) jsonPayload.link = data.link;
-  if (data.orientacao !== undefined) jsonPayload.orientacao = data.orientacao;
-  if (data.status !== undefined) jsonPayload.status = data.status;
-  if (data.ordem !== undefined) jsonPayload.ordem = data.ordem;
-  if (data.imagemUrl !== undefined) jsonPayload.imagemUrl = data.imagemUrl;
-  if (data.imagemTitulo !== undefined) jsonPayload.imagemTitulo = data.imagemTitulo;
-
-  return {
-    body: JSON.stringify(jsonPayload),
-    headers: { "Content-Type": "application/json", ...baseHeaders },
-  };
+  return { body: form, headers: baseHeaders };
 }
 
 export async function createSlider(

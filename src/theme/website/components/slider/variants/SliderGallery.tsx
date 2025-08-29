@@ -3,6 +3,7 @@
 import React from "react";
 import { SliderAdvanced } from "../SliderAdvanced";
 import type { SliderConfig } from "../types";
+import { SLIDER_CONFIG as DEFAULT_CONFIG } from "../constants/config";
 
 const GALLERY_CONFIG: SliderConfig = {
   loop: false,
@@ -12,6 +13,7 @@ const GALLERY_CONFIG: SliderConfig = {
     enabled: false,
     delay: 0,
   },
+  ui: { height: DEFAULT_CONFIG.ui.height },
 };
 
 export const SliderGallery: React.FC = () => {

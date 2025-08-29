@@ -107,7 +107,10 @@ export function SliderManager({
                 className="text-muted-foreground mt-[-16] text-lg"
               >
                 O sistema está gerenciando{" "}
-                <span className="font-semibold">{activeSliders} sliders ativos</span>.
+                <span className="font-semibold">
+                  {activeSliders} sliders ativos
+                </span>
+                .
               </motion.p>
             </div>
           </div>
@@ -148,12 +151,16 @@ export function SliderManager({
       {/* Content */}
       <div className="p-0">
         <AnimatePresence mode="wait">
-          <motion.div key="list" {...SLIDER_ANIMATIONS.FADE_IN} className="p-6">
-              <SliderList
-                sliders={sliders}
-                onEdit={(s) => {
-                  editSlider(s);
-                }}
+          <motion.div
+            key="list"
+            {...SLIDER_ANIMATIONS.FADE_IN}
+            className="pt-4"
+          >
+            <SliderList
+              sliders={sliders}
+              onEdit={(s) => {
+                editSlider(s);
+              }}
               onDelete={async (id) => {
                 await deleteSlider(id);
                 await refreshSliders?.();
