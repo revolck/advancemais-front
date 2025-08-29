@@ -18,7 +18,7 @@ function mapFromBackend(item: SlideBackendResponse): Slider {
     id: item.id,
     title: item.sliderName,
     image: item.imagemUrl,
-    url: item.link,
+    url: item.link || "",
     content: "",
     status: item.status === "PUBLICADO",
     position: item.ordem,
