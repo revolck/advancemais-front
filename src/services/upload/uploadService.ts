@@ -59,7 +59,19 @@ export async function uploadImage(
   );
 
   if (!response.ok) {
-    throw new Error(`Falha no upload (${response.status})`);
+    let reason = "";
+    try {
+      const data = await response.json();
+      reason = (data?.error || data?.message || "").toString();
+    } catch {
+      try {
+        reason = await response.text();
+      } catch {
+        /* ignore */
+      }
+    }
+    const suffix = reason ? `: ${reason}` : "";
+    throw new Error(`Falha no upload (${response.status})${suffix}`);
   }
 
   const result = await response.json();
@@ -86,4 +98,3 @@ export async function uploadImage(
 
   return { url: uploadedUrl, title: getImageTitle(uploadedUrl) };
 }
-

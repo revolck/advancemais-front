@@ -3,14 +3,22 @@
  * Busca dados do componente Slider do website
  */
 
-import routes from "@/api/routes";
+import routes, { websiteRoutes } from "@/api/routes";
 import { apiFetch } from "@/api/client";
 import { apiConfig, env } from "@/lib/env";
 import { sliderMockData } from "./mock";
-import type { SlideBackendResponse } from "./types";
+import type {
+  SlideBackendResponse,
+  CreateSliderPayload,
+  UpdateSliderPayload,
+  SliderOrientation,
+} from "./types";
 import type { SlideData } from "@/theme/website/components/slider/types";
 
-function mapSlideResponse(data: SlideBackendResponse[], orientation: "DESKTOP" | "MOBILE" = "DESKTOP"): SlideData[] {
+function mapSlideResponse(
+  data: SlideBackendResponse[],
+  orientation: SliderOrientation = "DESKTOP"
+): SlideData[] {
   return data
     .filter((item) => item.status === "PUBLICADO" && item.orientacao === orientation)
     .sort((a, b) => a.ordem - b.ordem)
@@ -23,7 +31,7 @@ function mapSlideResponse(data: SlideBackendResponse[], orientation: "DESKTOP" |
     }));
 }
 
-export async function getSliderData(orientation: "DESKTOP" | "MOBILE" = "DESKTOP"): Promise<SlideData[]> {
+export async function getSliderData(orientation: SliderOrientation = "DESKTOP"): Promise<SlideData[]> {
   try {
     const raw = await apiFetch<SlideBackendResponse[]>(routes.website.slider.list(), {
       init: { headers: apiConfig.headers, ...apiConfig.cache.medium },
@@ -41,7 +49,7 @@ export async function getSliderData(orientation: "DESKTOP" | "MOBILE" = "DESKTOP
   }
 }
 
-export async function getSliderDataClient(orientation: "DESKTOP" | "MOBILE" = "DESKTOP"): Promise<SlideData[]> {
+export async function getSliderDataClient(orientation: SliderOrientation = "DESKTOP"): Promise<SlideData[]> {
   const endpoint = routes.website.slider.list();
 
   try {
@@ -62,4 +70,106 @@ export async function getSliderDataClient(orientation: "DESKTOP" | "MOBILE" = "D
 
     throw new Error("Falha ao carregar dados do Slider");
   }
+}
+
+// ----- CRUD para Slider (admin) -----
+
+export async function listSliders(init?: RequestInit): Promise<SlideBackendResponse[]> {
+  return apiFetch<SlideBackendResponse[]>(websiteRoutes.slider.list(), {
+    init: init ?? { headers: apiConfig.headers },
+  });
+}
+
+export async function getSliderById(id: string): Promise<SlideBackendResponse> {
+  return apiFetch<SlideBackendResponse>(websiteRoutes.slider.get(id), {
+    init: { headers: apiConfig.headers },
+  });
+}
+
+function getAuthHeader(): Record<string, string> {
+  if (typeof document === "undefined") return {};
+  const token = document.cookie
+    .split("; ")
+    .find((row) => row.startsWith("token="))
+    ?.split("=")[1];
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+function buildRequest(
+  data: CreateSliderPayload | UpdateSliderPayload
+): { body: BodyInit; headers: Record<string, string> } {
+  const baseHeaders = {
+    Accept: apiConfig.headers.Accept,
+    ...getAuthHeader(),
+  };
+
+  if (data.imagem) {
+    const form = new FormData();
+    if (data.sliderName !== undefined) form.append("sliderName", data.sliderName);
+    if (data.link !== undefined) form.append("link", data.link);
+    if (data.orientacao !== undefined) form.append("orientacao", data.orientacao);
+    if (data.status !== undefined) form.append("status", data.status);
+    if (data.ordem !== undefined) form.append("ordem", String(data.ordem));
+    form.append("imagem", data.imagem);
+    if (data.imagemUrl) form.append("imagemUrl", data.imagemUrl);
+    if (data.imagemTitulo) form.append("imagemTitulo", data.imagemTitulo);
+    return { body: form, headers: baseHeaders };
+  }
+
+  const jsonPayload: Record<string, unknown> = {};
+  if (data.sliderName !== undefined) jsonPayload.sliderName = data.sliderName;
+  if (data.link !== undefined) jsonPayload.link = data.link;
+  if (data.orientacao !== undefined) jsonPayload.orientacao = data.orientacao;
+  if (data.status !== undefined) jsonPayload.status = data.status;
+  if (data.ordem !== undefined) jsonPayload.ordem = data.ordem;
+  if (data.imagemUrl !== undefined) jsonPayload.imagemUrl = data.imagemUrl;
+  if (data.imagemTitulo !== undefined) jsonPayload.imagemTitulo = data.imagemTitulo;
+
+  return {
+    body: JSON.stringify(jsonPayload),
+    headers: { "Content-Type": "application/json", ...baseHeaders },
+  };
+}
+
+export async function createSlider(
+  data: CreateSliderPayload
+): Promise<SlideBackendResponse> {
+  const { body, headers } = buildRequest(data);
+  return apiFetch<SlideBackendResponse>(websiteRoutes.slider.create(), {
+    init: { method: "POST", body, headers },
+    cache: "no-cache",
+  });
+}
+
+export async function updateSlider(
+  id: string,
+  data: UpdateSliderPayload
+): Promise<SlideBackendResponse> {
+  const { body, headers } = buildRequest(data);
+  return apiFetch<SlideBackendResponse>(websiteRoutes.slider.update(id), {
+    init: { method: "PUT", body, headers },
+    cache: "no-cache",
+  });
+}
+
+export async function deleteSlider(id: string): Promise<void> {
+  await apiFetch<void>(websiteRoutes.slider.delete(id), {
+    init: {
+      method: "DELETE",
+      headers: { Accept: apiConfig.headers.Accept, ...getAuthHeader() },
+    },
+    cache: "no-cache",
+  });
+}
+
+export async function updateSliderOrder(
+  id: string,
+  ordem: number,
+  orientacao: SliderOrientation
+): Promise<void> {
+  const { body, headers } = buildRequest({ ordem, orientacao });
+  await apiFetch<SlideBackendResponse>(websiteRoutes.slider.update(id), {
+    init: { method: "PUT", body, headers },
+    cache: "no-cache",
+  });
 }

@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { put, del } from "@vercel/blob";
-import { serverEnv } from "@/lib/env";
+import { serverEnv, env } from "@/lib/env";
 
 export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
   try {
+    if (!serverEnv.blobToken) {
+      const msg = "Blob token não configurado";
+      if (env.isDevelopment) console.error("/upload POST:", msg);
+      return NextResponse.json({ error: msg }, { status: 500 });
+    }
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
     if (!file) {
@@ -24,8 +29,10 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({ url: blob.url });
-  } catch {
-    return NextResponse.json({ error: "Upload failed" }, { status: 500 });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Upload failed";
+    if (env.isDevelopment) console.error("/upload POST error:", message, err);
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
@@ -36,12 +43,16 @@ export async function DELETE(req: NextRequest) {
   }
 
   try {
-    await del(url, {
-      token: serverEnv.blobToken,
-    });
+    if (!serverEnv.blobToken) {
+      const msg = "Blob token não configurado";
+      if (env.isDevelopment) console.error("/upload DELETE:", msg);
+      return NextResponse.json({ error: msg }, { status: 500 });
+    }
+    await del(url, { token: serverEnv.blobToken });
     return new Response(null, { status: 204 });
-  } catch {
-    return NextResponse.json({ error: "Delete failed" }, { status: 500 });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Delete failed";
+    if (env.isDevelopment) console.error("/upload DELETE error:", message, err);
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
-

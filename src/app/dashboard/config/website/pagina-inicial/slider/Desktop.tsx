@@ -3,25 +3,17 @@
 import { useEffect, useState, useCallback } from "react";
 import { SliderManager, type Slider } from "@/components/ui/custom";
 import { Skeleton } from "@/components/ui/skeleton";
-import { apiFetch } from "@/api/client";
-import routes from "@/api/routes";
 import { toastCustom } from "@/components/ui/custom/toast";
+import {
+  listSliders,
+  createSlider as apiCreateSlider,
+  updateSlider as apiUpdateSlider,
+  deleteSlider as apiDeleteSlider,
+  updateSliderOrder as apiUpdateSliderOrder,
+} from "@/api/websites/components";
+import type { SlideBackendResponse } from "@/api/websites/components";
 
-type BackendSlider = {
-  id: string;
-  sliderName: string;
-  imagemUrl: string;
-  link: string;
-  orientacao: string;
-  status: string;
-  ordem: number;
-  ordemId?: string;
-  ordemCriadoEm?: string;
-  criadoEm: string;
-  atualizadoEm?: string;
-};
-
-function mapFromBackend(item: BackendSlider): Slider {
+function mapFromBackend(item: SlideBackendResponse): Slider {
   return {
     id: item.id,
     title: item.sliderName,
@@ -35,9 +27,8 @@ function mapFromBackend(item: BackendSlider): Slider {
   };
 }
 
-function statusToBackend(status: boolean): string {
-  return status ? "PUBLICADO" : "INATIVO";
-}
+const statusToBackend = (status: boolean): "PUBLICADO" | "RASCUNHO" =>
+  status ? "PUBLICADO" : "RASCUNHO";
 
 export default function DesktopSliderManager() {
   const [loading, setLoading] = useState(true);
@@ -48,9 +39,7 @@ export default function DesktopSliderManager() {
     (async () => {
       setLoading(true);
       try {
-        const data = await apiFetch<BackendSlider[]>(routes.website.slider.list(), {
-          init: { headers: { Accept: "application/json" } },
-        });
+        const data = await listSliders({ headers: { Accept: "application/json" } });
         const desktop = (data || []).filter((d) => d.orientacao === "DESKTOP");
         const mapped = desktop
           .sort((a, b) => a.ordem - b.ordem)
@@ -69,18 +58,13 @@ export default function DesktopSliderManager() {
 
   const handleCreate = useCallback(
     async (data: Omit<Slider, "id" | "createdAt">): Promise<Slider> => {
-      const form = new FormData();
-      form.append("sliderName", data.title);
-      if (data.image) form.append("imagemUrl", data.image);
-      if (data.url) form.append("link", data.url);
-      form.append("orientacao", "DESKTOP");
-      form.append("status", statusToBackend(data.status));
-      if (typeof data.position === "number") {
-        form.append("ordem", String(data.position));
-      }
-
-      const created = await apiFetch<BackendSlider>(routes.website.slider.create(), {
-        init: { method: "POST", body: form },
+      const created = await apiCreateSlider({
+        sliderName: data.title,
+        imagemUrl: data.image,
+        link: data.url,
+        orientacao: "DESKTOP",
+        status: statusToBackend(data.status),
+        ordem: typeof data.position === "number" ? data.position : undefined,
       });
       return mapFromBackend(created);
     },
@@ -89,18 +73,14 @@ export default function DesktopSliderManager() {
 
   const handleUpdate = useCallback(
     async (id: string, updates: Partial<Slider>): Promise<Slider> => {
-      const form = new FormData();
-      if (updates.title !== undefined) form.append("sliderName", updates.title);
-      if (updates.image !== undefined) form.append("imagemUrl", updates.image);
-      if (updates.url !== undefined) form.append("link", updates.url);
-      if (updates.status !== undefined)
-        form.append("status", statusToBackend(!!updates.status));
-      if (updates.position !== undefined)
-        form.append("ordem", String(updates.position));
-      form.append("orientacao", "DESKTOP");
-
-      const updated = await apiFetch<BackendSlider>(routes.website.slider.update(id), {
-        init: { method: "PUT", body: form },
+      const updated = await apiUpdateSlider(id, {
+        sliderName: updates.title,
+        imagemUrl: updates.image,
+        link: updates.url,
+        status:
+          updates.status === undefined ? undefined : statusToBackend(!!updates.status),
+        ordem: updates.position,
+        orientacao: "DESKTOP",
       });
       return mapFromBackend(updated);
     },
@@ -108,18 +88,11 @@ export default function DesktopSliderManager() {
   );
 
   const handleDelete = useCallback(async (id: string) => {
-    await apiFetch<void>(routes.website.slider.delete(id), {
-      init: { method: "DELETE" },
-    });
+    await apiDeleteSlider(id);
   }, []);
 
   const handleReorder = useCallback(async (id: string, newPos: number) => {
-    const form = new FormData();
-    form.append("ordem", String(newPos));
-    form.append("orientacao", "DESKTOP");
-    await apiFetch<BackendSlider>(routes.website.slider.update(id), {
-      init: { method: "PUT", body: form },
-    });
+    await apiUpdateSliderOrder(id, newPos, "DESKTOP");
   }, []);
 
   if (loading) {
@@ -139,9 +112,7 @@ export default function DesktopSliderManager() {
       onDeleteSlider={handleDelete}
       onReorderSliders={handleReorder}
       onRefreshSliders={async () => {
-        const data = await apiFetch<BackendSlider[]>(routes.website.slider.list(), {
-          init: { headers: { Accept: "application/json" } },
-        });
+        const data = await listSliders({ headers: { Accept: "application/json" } });
         return (data || [])
           .filter((d) => d.orientacao === "DESKTOP")
           .sort((a, b) => a.ordem - b.ordem)
