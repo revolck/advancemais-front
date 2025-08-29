@@ -387,7 +387,7 @@ export default function ConsultoriaForm({ initialData }: ConsultoriaFormProps) {
                     files={files}
                     multiple={false}
                     maxFiles={1}
-                    validation={{ accept: ["image/*"] }}
+                    validation={{ accept: [".jpg", ".png", ".webp"] }}
                     autoUpload={false}
                     deleteOnRemove={false}
                     onFilesChange={handleFilesChange}

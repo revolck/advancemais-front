@@ -197,3 +197,42 @@ export function getReadableFileType(
   const ext = getFileExtension(filename).toUpperCase();
   return ext || "Arquivo";
 }
+
+/**
+ * Formata a lista de tipos aceitos em rótulos legíveis (ex.: JPG, PNG, PDF)
+ */
+export function formatAcceptedTypes(accept: AcceptedFileType[]): string {
+  const labels = new Set<string>();
+
+  accept.forEach((type) => {
+    if (type.startsWith(".")) {
+      // Extensão explícita (ex.: .pdf)
+      labels.add(type.slice(1).toUpperCase());
+      return;
+    }
+
+    // Família com wildcard (ex.: image/*)
+    if (type.endsWith("/*")) {
+      const family = type.split("/")[0];
+      if (family === "image") {
+        IMAGE_EXTENSIONS.forEach((ext) => labels.add(ext.toUpperCase()));
+      } else {
+        // Para famílias desconhecidas, exibe de forma genérica
+        labels.add(`${family.toUpperCase()}/*`);
+      }
+      return;
+    }
+
+    // Tipo MIME específico
+    const mapped = MIME_TYPE_MAP[type];
+    if (mapped) {
+      labels.add(mapped.toUpperCase());
+    } else {
+      const fallback = type.split("/").pop();
+      labels.add((fallback || type).toUpperCase());
+    }
+  });
+
+  const list = Array.from(labels).join(", ");
+  return list || "Vários formatos";
+}

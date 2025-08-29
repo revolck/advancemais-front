@@ -32,6 +32,7 @@ import {
   isImageFile,
   isDocumentFile,
   getReadableFileType,
+  formatAcceptedTypes,
 } from "./config";
 import type {
   FileUploadProps,
@@ -138,10 +139,10 @@ const FileUploadItemComponent: React.FC<FileUploadItemProps> = ({
       XLS: "bg-emerald-100 text-emerald-700",
       XLSX: "bg-emerald-100 text-emerald-700",
       JSON: "bg-purple-100 text-purple-700",
-      JPG: "bg-orange-100 text-orange-700",
-      JPEG: "bg-orange-100 text-orange-700",
-      PNG: "bg-blue-100 text-blue-700",
-      WEBP: "bg-cyan-100 text-cyan-700",
+      JPG: "bg-blue-100 text-blue-700",
+      JPEG: "bg-blue-100 text-blue-700",
+      PNG: "bg-gray-200 text-gray-700",
+      WEBP: "bg-purple-100 text-purple-700",
       SVG: "bg-indigo-100 text-indigo-700",
       GIF: "bg-pink-100 text-pink-700",
     };
@@ -197,7 +198,7 @@ const FileUploadItemComponent: React.FC<FileUploadItemProps> = ({
 
       {/* File Info */}
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-[-15px]">
+        <div className="flex items-center gap-2 mb-[-20px]">
           <p
             className="font-medium text-xs text-foreground truncate max-w-[240px]"
             title={file.name}
@@ -273,7 +274,7 @@ const FileUploadItemComponent: React.FC<FileUploadItemProps> = ({
             onClick={onRemove}
             className={cn(
               fileActionVariants({ variant: "ghost" }),
-              "bg-red-50 hover:bg-red-100 text-red-600 rounded-full w-8 h-8 p-0 flex items-center justify-center"
+              "bg-red-50 hover:bg-red-500 text-red-600 hover:text-white rounded-full w-8 h-8 p-0 flex items-center justify-center"
             )}
             title={DEFAULT_UI_TEXTS.remove}
           >
@@ -397,7 +398,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         errors.push(
           DEFAULT_ERROR_MESSAGES.fileTypeNotAllowed.replace(
             "{allowedTypes}",
-            validationConfig.accept.filter((t) => t.startsWith(".")).join(", ")
+            formatAcceptedTypes(validationConfig.accept)
           )
         );
       }
@@ -825,12 +826,10 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   );
 
   // Generate accepted types string for display
-  const acceptDisplay = useMemo(() => {
-    const extensions = validationConfig.accept
-      .filter((type) => type.startsWith("."))
-      .join(", ");
-    return extensions || "Vários formatos";
-  }, [validationConfig.accept]);
+  const acceptDisplay = useMemo(
+    () => formatAcceptedTypes(validationConfig.accept),
+    [validationConfig.accept]
+  );
 
   // File display logic
   const INITIAL_DISPLAY_COUNT = 3;
