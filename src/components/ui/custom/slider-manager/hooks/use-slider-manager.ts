@@ -297,14 +297,32 @@ export function useSliderManager(props: SliderManagerProps = {}) {
       const slider = state.sliders.find((s) => s.id === id);
       if (!slider) return;
 
+      dispatch({ type: "SET_LOADING", payload: true });
+      dispatch({ type: "SET_ERROR", payload: null });
+
       try {
-        await updateSlider(id, { status: !slider.status });
+        if (onUpdateSlider) {
+          await onUpdateSlider(id, { status: !slider.status });
+        }
+
+        dispatch({
+          type: "UPDATE_SLIDER",
+          payload: { id, updates: { status: !slider.status } },
+        });
         toastCustom.success(SLIDER_MESSAGES.SUCCESS_STATUS_TOGGLE);
       } catch (error) {
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : SLIDER_MESSAGES.ERROR_GENERIC;
+        toastCustom.error(errorMessage);
+        dispatch({ type: "SET_ERROR", payload: errorMessage });
         console.error("Error toggling slider status:", error);
+      } finally {
+        dispatch({ type: "SET_LOADING", payload: false });
       }
     },
-    [state.sliders, updateSlider]
+    [state.sliders, onUpdateSlider]
   );
 
   /**
