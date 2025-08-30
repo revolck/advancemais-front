@@ -148,6 +148,31 @@ export async function updateSlider(
   });
 }
 
+/**
+ * Atualiza apenas o status do slider
+ * Permite enviar boolean ou string ("PUBLICADO" | "RASCUNHO")
+ * Utiliza JSON ao invés de multipart/form-data para atualizações parciais
+ */
+export async function updateSliderStatus(
+  id: string,
+  status: boolean | string
+): Promise<SlideBackendResponse> {
+  const normalizedStatus =
+    typeof status === "string" ? status.toUpperCase() : status;
+  return apiFetch<SlideBackendResponse>(websiteRoutes.slider.update(id), {
+    init: {
+      method: "PUT",
+      headers: {
+        Accept: apiConfig.headers.Accept,
+        "Content-Type": "application/json",
+        ...getAuthHeader(),
+      },
+      body: JSON.stringify({ status: normalizedStatus }),
+    },
+    cache: "no-cache",
+  });
+}
+
 export async function deleteSlider(id: string): Promise<void> {
   await apiFetch<void>(websiteRoutes.slider.delete(id), {
     init: {

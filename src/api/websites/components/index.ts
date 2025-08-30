@@ -50,6 +50,7 @@ export {
   updateSlider,
   deleteSlider,
   updateSliderOrder,
+  updateSliderStatus,
 } from "./slider";
 export { getBannerData, getBannerDataClient } from "./banner";
 export type {
