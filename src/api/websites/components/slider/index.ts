@@ -108,7 +108,15 @@ function buildRequest(
   if (data.sliderName !== undefined) form.append("sliderName", data.sliderName);
   if (data.link !== undefined) form.append("link", String(data.link));
   if (data.orientacao !== undefined) form.append("orientacao", data.orientacao);
-  if (data.status !== undefined) form.append("status", data.status);
+  if (data.status !== undefined) {
+    const statusValue =
+      typeof data.status === "boolean"
+        ? data.status
+          ? "PUBLICADO"
+          : "RASCUNHO"
+        : data.status;
+    form.append("status", statusValue);
+  }
   if (data.ordem !== undefined) form.append("ordem", String(data.ordem));
   if (data.imagem) form.append("imagem", data.imagem);
   if (data.imagemUrl !== undefined && data.imagemUrl)
