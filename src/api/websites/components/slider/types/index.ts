@@ -26,7 +26,7 @@ export interface CreateSliderPayload {
   imagemTitulo?: string;
   link?: string;
   orientacao: SliderOrientation;
-  status: SliderStatus;
+  status: SliderStatus | boolean;
   ordem?: number;
   imagem?: File;
 }
@@ -37,7 +37,7 @@ export interface UpdateSliderPayload {
   imagemTitulo?: string;
   link?: string;
   orientacao?: SliderOrientation;
-  status?: SliderStatus;
+  status?: SliderStatus | boolean;
   ordem?: number;
   imagem?: File;
 }
