@@ -75,12 +75,14 @@ export default function DesktopSliderManager() {
   const handleUpdate = useCallback(
     async (id: string, updates: Partial<Slider>): Promise<Slider> => {
       // Atualização simples de status usa endpoint específico
-      if (updates.status !== undefined &&
-          updates.title === undefined &&
-          updates.image === undefined &&
-          updates.url === undefined &&
-          updates.position === undefined) {
-        const updated = await apiUpdateSliderStatus(id, updates.status);
+      if (
+        updates.status !== undefined &&
+        updates.title === undefined &&
+        updates.image === undefined &&
+        updates.url === undefined &&
+        updates.position === undefined
+      ) {
+        const updated = await apiUpdateSliderStatus(id, updates.status, "DESKTOP");
         return mapFromBackend(updated);
       }
 

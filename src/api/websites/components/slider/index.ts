@@ -12,6 +12,7 @@ import type {
   CreateSliderPayload,
   UpdateSliderPayload,
   SliderOrientation,
+  SliderStatus,
 } from "./types";
 import type { SlideData } from "@/theme/website/components/slider/types";
 
@@ -150,25 +151,26 @@ export async function updateSlider(
 
 /**
  * Atualiza apenas o status do slider
- * Permite enviar boolean ou string ("PUBLICADO" | "RASCUNHO")
- * Utiliza JSON ao invés de multipart/form-data para atualizações parciais
+ * API original aceita boolean ou string ("PUBLICADO" | "RASCUNHO")
+ * Alguns ambientes retornavam erro 500 ao enviar JSON puro, portanto
+ * enviamos os dados via `FormData` como nas demais operações.
  */
 export async function updateSliderStatus(
   id: string,
-  status: boolean | string
+  status: boolean | string,
+  orientacao?: SliderOrientation
 ): Promise<SlideBackendResponse> {
-  const normalizedStatus =
-    typeof status === "string" ? status.toUpperCase() : status;
+  const statusValue: SliderStatus =
+    typeof status === "boolean"
+      ? status
+        ? "PUBLICADO"
+        : "RASCUNHO"
+      : (status.toUpperCase() as SliderStatus);
+
+  const { body, headers } = buildRequest({ status: statusValue, orientacao });
+
   return apiFetch<SlideBackendResponse>(websiteRoutes.slider.update(id), {
-    init: {
-      method: "PUT",
-      headers: {
-        Accept: apiConfig.headers.Accept,
-        "Content-Type": "application/json",
-        ...getAuthHeader(),
-      },
-      body: JSON.stringify({ status: normalizedStatus }),
-    },
+    init: { method: "PUT", body, headers },
     cache: "no-cache",
   });
 }
