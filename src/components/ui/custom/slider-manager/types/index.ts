@@ -34,8 +34,8 @@ export interface SliderFormProps {
 export interface SliderListProps {
   sliders: Slider[];
   onEdit: (slider: Slider) => void;
-  onDelete: (slider: Slider) => void;
-  onToggleStatus: (id: string) => void;
+  onDelete: (slider: Slider) => Promise<void>;
+  onToggleStatus: (id: string) => Promise<void>;
   onReorder: (draggedId: string, targetPosition: number) => void;
   isLoading?: boolean;
   onCreateNew?: () => void;

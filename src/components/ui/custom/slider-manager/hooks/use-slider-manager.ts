@@ -297,7 +297,7 @@ export function useSliderManager(props: SliderManagerProps = {}) {
       const slider = state.sliders.find((s) => s.id === id);
       if (!slider) return;
 
-      dispatch({ type: "SET_LOADING", payload: true });
+      // Não usar loading global aqui para permitir busy por item
       dispatch({ type: "SET_ERROR", payload: null });
 
       try {
@@ -319,7 +319,7 @@ export function useSliderManager(props: SliderManagerProps = {}) {
         dispatch({ type: "SET_ERROR", payload: errorMessage });
         console.error("Error toggling slider status:", error);
       } finally {
-        dispatch({ type: "SET_LOADING", payload: false });
+        // Nada a fazer: loading por item controlado no componente da lista
       }
     },
     [state.sliders, onUpdateSlider]

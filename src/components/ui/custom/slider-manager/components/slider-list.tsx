@@ -73,6 +73,11 @@ export function SliderList({
     [...sliders].sort((a, b) => a.position - b.position)
   );
 
+  // Busy state por item para evitar múltiplos cliques
+  const [busyId, setBusyId] = useState<string | null>(null);
+  // Track item atualmente sendo arrastado
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+
   // Update ordered sliders when props change
   useEffect(() => {
     setOrderedSliders([...sliders].sort((a, b) => a.position - b.position));
@@ -82,32 +87,75 @@ export function SliderList({
    * Handle slider reordering via drag and drop
    */
   const handleReorder = useCallback(
-    (newOrder: Slider[]) => {
-      // Update local state immediately for smooth UX
+    async (newOrder: Slider[]) => {
+      // Mapeia posições originais antes de atualizar o estado
+      const originalPosition = new Map(
+        orderedSliders.map((s) => [s.id, s.position])
+      );
+
+      // Atualiza estado local com novas posições (UI/snappy)
       const updatedSliders = newOrder.map((slider, index) => ({
         ...slider,
         position: index + 1,
       }));
       setOrderedSliders(updatedSliders);
 
-      // Call API for each slider that changed position
-      newOrder.forEach((slider, index) => {
-        const newPosition = index + 1;
-        if (slider.position !== newPosition) {
-          onReorder(slider.id, newPosition);
+      // Determina o item realmente movido
+      let moved: { id: string; newPosition: number } | null = null;
+      if (draggingId) {
+        const idx = newOrder.findIndex((s) => s.id === draggingId);
+        if (idx !== -1) {
+          const prev = originalPosition.get(draggingId);
+          const nextPos = idx + 1;
+          if (prev !== nextPos) moved = { id: draggingId, newPosition: nextPos };
         }
-      });
+      }
+      if (!moved) {
+        const firstChanged = newOrder.findIndex(
+          (s, idx) => originalPosition.get(s.id) !== idx + 1
+        );
+        if (firstChanged !== -1) {
+          moved = { id: newOrder[firstChanged].id, newPosition: firstChanged + 1 };
+        }
+      }
+
+      if (moved) {
+        setBusyId(moved.id);
+        try {
+          await onReorder(moved.id, moved.newPosition);
+        } finally {
+          setBusyId(null);
+        }
+      }
     },
-    [onReorder]
+    [onReorder, orderedSliders, draggingId]
+  );
+
+  const handleToggleClick = useCallback(
+    async (id: string) => {
+      if (isLoading || busyId) return;
+      setBusyId(id);
+      try {
+        await onToggleStatus(id);
+      } finally {
+        setBusyId(null);
+      }
+    },
+    [isLoading, busyId, onToggleStatus]
   );
 
   /**
    * Handle delete slider action
    */
-  const handleDeleteSlider = useCallback(() => {
+  const handleDeleteSlider = useCallback(async () => {
     if (deleteSlider) {
-      onDelete(deleteSlider);
-      setDeleteSlider(null);
+      setBusyId(deleteSlider.id);
+      try {
+        await onDelete(deleteSlider);
+      } finally {
+        setDeleteSlider(null);
+        setBusyId(null);
+      }
     }
   }, [deleteSlider, onDelete]);
 
@@ -182,7 +230,11 @@ export function SliderList({
                       }
                     : undefined
                 }
-                drag={SLIDER_CONFIG.features.enableDragReorder && !isLoading}
+                drag={
+                  SLIDER_CONFIG.features.enableDragReorder && !isLoading && !busyId
+                }
+                onDragStart={() => setDraggingId(slider.id)}
+                onDragEnd={() => setDraggingId(null)}
               >
                 <motion.div
                   layout
@@ -280,16 +332,16 @@ export function SliderList({
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => onToggleStatus(slider.id)}
+                                onClick={() => handleToggleClick(slider.id)}
                                 className="h-10 w-10 p-0 hover:bg-muted/50 rounded-lg cursor-pointer disabled:cursor-not-allowed"
-                                disabled={isLoading}
+                                disabled={isLoading || busyId === slider.id}
                                 aria-label={
                                   slider.status
                                     ? "Desativar slider"
                                     : "Ativar slider"
                                 }
                               >
-                                {isLoading ? (
+                                {busyId === slider.id ? (
                                   <Icon
                                     name="Loader2"
                                     className="h-5 w-5 animate-spin text-muted-foreground"
@@ -322,12 +374,12 @@ export function SliderList({
                                 size="sm"
                                 onClick={() => onEdit(slider)}
                                 className="h-10 w-10 p-0 hover:bg-muted/50 rounded-lg cursor-pointer disabled:cursor-not-allowed"
-                                disabled={isLoading}
+                                disabled={isLoading || busyId === slider.id}
                                 aria-label={
                                   SLIDER_CONFIG.a11y.labels.editButton
                                 }
                               >
-                                {isLoading ? (
+                                {busyId === slider.id ? (
                                   <Icon
                                     name="Loader2"
                                     className="h-5 w-5 animate-spin text-muted-foreground"
@@ -351,12 +403,12 @@ export function SliderList({
                                 size="sm"
                                 onClick={() => setDeleteSlider(slider)}
                                 className="h-10 w-10 p-0 hover:bg-red-50 hover:text-red-600 rounded-lg cursor-pointer disabled:cursor-not-allowed"
-                                disabled={isLoading}
+                                disabled={isLoading || busyId === slider.id}
                                 aria-label={
                                   SLIDER_CONFIG.a11y.labels.deleteButton
                                 }
                               >
-                                {isLoading ? (
+                                {busyId === slider.id ? (
                                   <Icon
                                     name="Loader2"
                                     className="h-5 w-5 animate-spin text-muted-foreground"
@@ -398,16 +450,16 @@ export function SliderList({
               <AlertDialogCancel
                 className="rounded-xl cursor-pointer"
                 onClick={handleCloseDeleteDialog}
-                disabled={isLoading}
+                disabled={isLoading || (deleteSlider ? busyId === deleteSlider.id : false)}
               >
                 Cancelar
               </AlertDialogCancel>
               <AlertDialogAction
                 onClick={handleDeleteSlider}
                 className="bg-destructive hover:bg-destructive/90 !text-destructive-foreground rounded-xl cursor-pointer"
-                disabled={isLoading}
+                disabled={isLoading || (deleteSlider ? busyId === deleteSlider.id : false)}
               >
-                {isLoading ? (
+                {deleteSlider && busyId === deleteSlider.id ? (
                   <span className="inline-flex items-center gap-2">
                     <Icon name="Loader2" className="h-4 w-4 animate-spin" />
                     Excluindo...
