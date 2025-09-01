@@ -191,30 +191,9 @@ export async function updateSliderOrder(
   orientacao: SliderOrientation
 ): Promise<void> {
   const { body, headers } = buildRequest({ ordem, orientacao });
-  try {
-    await apiFetch<SlideBackendResponse>(websiteRoutes.slider.update(id), {
-      init: { method: "PUT", body, headers },
-      cache: "no-cache",
-    });
-    return;
-  } catch (err) {
-    // Fallback: alguns ambientes esperam o ID da ordem (campo `id`) em vez de `sliderId`
-    try {
-      const list = await apiFetch<SlideBackendResponse[]>(websiteRoutes.slider.list(), {
-        init: { headers: apiConfig.headers },
-        cache: "no-cache",
-      });
-      const found = (list || []).find((item) => item.sliderId === id || item.id === id);
-      const orderId = found?.id;
-      if (!orderId || orderId === id) throw err;
-
-      await apiFetch<SlideBackendResponse>(websiteRoutes.slider.update(orderId), {
-        init: { method: "PUT", body, headers },
-        cache: "no-cache",
-      });
-      return;
-    } catch (inner) {
-      throw err;
-    }
-  }
+  // Importante: o backend espera SEMPRE o websiteSliderId (sliderId)
+  await apiFetch<SlideBackendResponse>(websiteRoutes.slider.update(id), {
+    init: { method: "PUT", body, headers },
+    cache: "no-cache",
+  });
 }
