@@ -29,7 +29,7 @@ export interface SliderContainerProps {
   slideCount: number;
   slides?: SlideData[];
   heightClass?: string;
-  height?: number;
+  height?: number | string;
 }
 
 export interface SliderSlideProps {

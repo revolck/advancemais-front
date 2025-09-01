@@ -26,7 +26,7 @@ const SliderBasic: React.FC = () => {
   } = useSlider(SLIDER_CONFIG);
 
   const isMobile = useIsMobile();
-  const MOBILE_HEIGHT = 1080; // 1080x1080 (quadrado estilo Instagram)
+  // Mobile: usa razão 1:1 (quadrado), não altura fixa
 
   // Carrega slides da API conforme orientação (DESKTOP / TABLET_MOBILE)
   useEffect(() => {
@@ -67,7 +67,10 @@ const SliderBasic: React.FC = () => {
 
   // Enquanto carrega, mostra apenas um espaço reservado
   if (isLoading) {
-    const h = isMobile ? MOBILE_HEIGHT : SLIDER_CONFIG.ui.height;
+    if (isMobile) {
+      return <div className="w-full aspect-square bg-[var(--primary-color)]" />;
+    }
+    const h = SLIDER_CONFIG.ui.height;
     return <div className="w-full" style={{ height: h, minHeight: h, maxHeight: h }} />;
   }
 
@@ -97,7 +100,12 @@ const SliderBasic: React.FC = () => {
       currentSlide={currentSlide}
       slideCount={slideCount}
       slides={slides}
-      height={isMobile ? MOBILE_HEIGHT : SLIDER_CONFIG.ui.height}
+      heightClass={
+        isMobile
+          ? "relative w-full overflow-hidden aspect-square bg-[var(--primary-color)]"
+          : undefined
+      }
+      height={isMobile ? undefined : SLIDER_CONFIG.ui.height}
     />
   );
 };

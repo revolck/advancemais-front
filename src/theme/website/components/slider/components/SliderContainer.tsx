@@ -18,12 +18,16 @@ export const SliderContainer: React.FC<SliderContainerProps> = ({
 }) => {
   const isMobile = useIsMobile();
   const slideData = slides ?? (isMobile ? SLIDES.mobile : SLIDES.desktop);
-  const containerHeight = height ?? SLIDER_CONFIG.ui.height;
+  const containerHeight = height;
 
   return (
     <section
       className={heightClass || "relative w-full overflow-hidden"}
-      style={{ height: containerHeight, minHeight: containerHeight, maxHeight: containerHeight }}
+      style={
+        containerHeight !== undefined
+          ? { height: containerHeight as any, minHeight: containerHeight as any, maxHeight: containerHeight as any }
+          : undefined
+      }
     >
       {/* Container do Embla */}
       <div ref={emblaRef} className="overflow-hidden w-full h-full">
@@ -34,7 +38,7 @@ export const SliderContainer: React.FC<SliderContainerProps> = ({
               slide={slide}
               index={index}
               isMobile={isMobile}
-              height={containerHeight}
+              height={typeof containerHeight === "number" ? containerHeight : undefined}
             />
           ))}
         </div>
