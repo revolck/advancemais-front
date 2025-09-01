@@ -76,8 +76,10 @@ export async function getSliderDataClient(orientation: SliderOrientation = "DESK
 // ----- CRUD para Slider (admin) -----
 
 export async function listSliders(init?: RequestInit): Promise<SlideBackendResponse[]> {
+  // Admin views must bypass in-memory cache to avoid stale ordering
   return apiFetch<SlideBackendResponse[]>(websiteRoutes.slider.list(), {
     init: init ?? { headers: apiConfig.headers },
+    cache: "no-cache",
   });
 }
 
