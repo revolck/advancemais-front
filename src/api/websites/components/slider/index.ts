@@ -16,12 +16,29 @@ import type {
 } from "./types";
 import type { SlideData } from "@/theme/website/components/slider/types";
 
+// Helpers para lidar com variações de valores vindos do backend
+function normalizeOrientation(value: string | undefined): "DESKTOP" | "TABLET_MOBILE" | undefined {
+  if (!value) return undefined;
+  const v = String(value).toUpperCase().replace(/\s+/g, "_");
+  if (v.includes("DESKTOP")) return "DESKTOP";
+  if (v.includes("MOBILE") || v.includes("TABLET")) return "TABLET_MOBILE";
+  return undefined;
+}
+
+function isPublished(status: string | boolean | undefined): boolean {
+  if (typeof status === "boolean") return status;
+  if (!status) return false;
+  const s = String(status).toUpperCase();
+  return s === "PUBLICADO" || s === "PUBLISHED" || s === "PUBLIC";
+}
+
 function mapSlideResponse(
   data: SlideBackendResponse[],
   orientation: SliderOrientation = "DESKTOP"
 ): SlideData[] {
+  const target = normalizeOrientation(orientation);
   return data
-    .filter((item) => item.status === "PUBLICADO" && item.orientacao === orientation)
+    .filter((item) => isPublished(item.status) && normalizeOrientation(item.orientacao as string) === target)
     .sort((a, b) => a.ordem - b.ordem)
     .map((item) => ({
       id: item.ordem,

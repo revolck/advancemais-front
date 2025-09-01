@@ -26,6 +26,7 @@ const SliderBasic: React.FC = () => {
   } = useSlider(SLIDER_CONFIG);
 
   const isMobile = useIsMobile();
+  const MOBILE_HEIGHT = 1080; // 1080x1080 (quadrado estilo Instagram)
 
   // Carrega slides da API conforme orientação (DESKTOP / TABLET_MOBILE)
   useEffect(() => {
@@ -33,7 +34,15 @@ const SliderBasic: React.FC = () => {
     (async () => {
       try {
         const orientation = isMobile ? "TABLET_MOBILE" : "DESKTOP";
-        const data = await getSliderDataClient(orientation);
+        let data = await getSliderDataClient(orientation);
+        // Fallback: se não houver slides mobile/tablet, usa os de desktop
+        if (orientation === "TABLET_MOBILE" && (!data || data.length === 0)) {
+          try {
+            data = await getSliderDataClient("DESKTOP");
+          } catch (_) {
+            /* ignore */
+          }
+        }
         if (active) setSlides(data);
       } catch (error) {
         console.error("Erro ao carregar slides:", error);
@@ -58,7 +67,7 @@ const SliderBasic: React.FC = () => {
 
   // Enquanto carrega, mostra apenas um espaço reservado
   if (isLoading) {
-    const h = SLIDER_CONFIG.ui.height;
+    const h = isMobile ? MOBILE_HEIGHT : SLIDER_CONFIG.ui.height;
     return <div className="w-full" style={{ height: h, minHeight: h, maxHeight: h }} />;
   }
 
@@ -88,6 +97,7 @@ const SliderBasic: React.FC = () => {
       currentSlide={currentSlide}
       slideCount={slideCount}
       slides={slides}
+      height={isMobile ? MOBILE_HEIGHT : SLIDER_CONFIG.ui.height}
     />
   );
 };

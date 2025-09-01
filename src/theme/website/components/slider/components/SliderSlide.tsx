@@ -28,6 +28,9 @@ export const SliderSlide: React.FC<SliderSlideProps> = ({
     setHasError(true);
   };
 
+  const imageQuality = isMobile ? 100 : 80;
+  const fitClass = isMobile ? "object-contain" : "object-cover";
+
   const content = (
     <>
       {/* Loading State */}
@@ -57,12 +60,12 @@ export const SliderSlide: React.FC<SliderSlideProps> = ({
           alt={getAltText(slide, index)}
           fill
           className={`
-            object-cover object-center
+            ${fitClass} object-center
             transition-opacity duration-500
             ${isLoading ? "opacity-0" : "opacity-100"}
           `}
           priority={index === 0}
-          quality={80}
+          quality={imageQuality}
           onLoad={handleImageLoad}
           onError={handleImageError}
           sizes={
