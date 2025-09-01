@@ -65,21 +65,40 @@ function sliderManagerReducer(
         error: null,
       };
 
-    case "REORDER_SLIDER":
+    case "REORDER_SLIDER": {
+      // Reorder local array while keeping all positions consistent
+      const sorted = [...state.sliders].sort(
+        (a, b) => a.position - b.position
+      );
+
+      // Find index of the moved slider (can match either id or orderId)
+      const fromIndex = sorted.findIndex(
+        (slider) =>
+          slider.id === action.payload.id ||
+          (slider as any).orderId === action.payload.id
+      );
+
+      if (fromIndex === -1) {
+        return state;
+      }
+
+      // Remove the slider from its current position
+      const [moved] = sorted.splice(fromIndex, 1);
+      // Insert slider into the new position (1-based -> 0-based index)
+      sorted.splice(action.payload.position - 1, 0, moved);
+
+      // Recalculate the position of every slider to avoid duplicates
+      const recalculated = sorted.map((slider, index) => ({
+        ...slider,
+        position: index + 1,
+      }));
+
       return {
         ...state,
-        sliders: state.sliders
-          .map((slider) => {
-            const matches =
-              slider.id === action.payload.id ||
-              (slider as any).orderId === action.payload.id;
-            return matches
-              ? { ...slider, position: action.payload.position }
-              : slider;
-          })
-          .sort((a, b) => a.position - b.position),
+        sliders: recalculated,
         error: null,
       };
+    }
 
     case "SET_LOADING":
       return {
