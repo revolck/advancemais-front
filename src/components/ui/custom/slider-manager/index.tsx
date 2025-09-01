@@ -47,7 +47,6 @@ export function SliderManager({
     cancelEdit,
     setView,
     clearError,
-    refreshSliders,
 
     // Statistics
     activeSliders,
@@ -181,15 +180,12 @@ export function SliderManager({
                 if (slider.image) {
                   await deleteImage(slider.image);
                 }
-                await refreshSliders?.();
               }}
               onToggleStatus={async (id) => {
                 await toggleSliderStatus(id);
-                await refreshSliders?.();
               }}
               onReorder={async (id, pos) => {
                 await reorderSlider(id, pos);
-                await refreshSliders?.();
               }}
               isLoading={isLoading}
             />
@@ -218,9 +214,8 @@ export function SliderManager({
                 showHeader={false}
                 onSubmit={async (formData) => {
                   await handleFormSubmit(formData);
-                  // Close modal and ensure fresh list from API
+                  // Close modal and return to list
                   handleBackToList();
-                  await refreshSliders?.();
                 }}
                 onCancel={handleBackToList}
                 isLoading={isLoading}
