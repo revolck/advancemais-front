@@ -69,11 +69,14 @@ function sliderManagerReducer(
       return {
         ...state,
         sliders: state.sliders
-          .map((slider) =>
-            slider.id === action.payload.id
+          .map((slider) => {
+            const matches =
+              slider.id === action.payload.id ||
+              (slider as any).orderId === action.payload.id;
+            return matches
               ? { ...slider, position: action.payload.position }
-              : slider
-          )
+              : slider;
+          })
           .sort((a, b) => a.position - b.position),
         error: null,
       };
@@ -329,14 +332,14 @@ export function useSliderManager(props: SliderManagerProps = {}) {
    * Reorder slider position
    */
   const reorderSlider = useCallback(
-    async (sliderId: string, newPosition: number) => {
+    async (idOrOrderId: string, newPosition: number) => {
       try {
         if (onReorderSliders) {
-          await onReorderSliders(sliderId, newPosition);
+          await onReorderSliders(idOrOrderId, newPosition);
         }
         dispatch({
           type: "REORDER_SLIDER",
-          payload: { id: sliderId, position: newPosition },
+          payload: { id: idOrOrderId, position: newPosition },
         });
         toastCustom.success(SLIDER_MESSAGES.SUCCESS_REORDER);
       } catch (error) {
