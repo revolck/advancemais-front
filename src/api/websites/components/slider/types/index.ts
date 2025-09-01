@@ -7,6 +7,8 @@ export type SliderStatus = "PUBLICADO" | "RASCUNHO";
 
 export interface SlideBackendResponse {
   id: string;
+  // ID do recurso de slider (utilizado para PUT/DELETE)
+  sliderId: string;
   sliderName: string;
   imagemUrl: string;
   imagemTitulo: string;

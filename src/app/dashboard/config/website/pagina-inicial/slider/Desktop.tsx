@@ -16,7 +16,8 @@ import type { SlideBackendResponse } from "@/api/websites/components";
 
 function mapFromBackend(item: SlideBackendResponse): Slider {
   return {
-    id: item.id,
+    // Importante: usar sliderId para operações de PUT/DELETE/REORDER
+    id: item.sliderId,
     title: item.sliderName,
     image: item.imagemUrl,
     url: item.link || "",
