@@ -8,15 +8,14 @@ import {
   listSliders,
   createSlider as apiCreateSlider,
   updateSlider as apiUpdateSlider,
-  updateSliderStatus as apiUpdateSliderStatus,
   deleteSlider as apiDeleteSlider,
   updateSliderOrder as apiUpdateSliderOrder,
 } from "@/api/websites/components";
+import { updateSliderStatus as apiUpdateSliderStatus } from "@/api/websites/components/slider";
 import type { SlideBackendResponse } from "@/api/websites/components";
 
 function mapFromBackend(item: SlideBackendResponse): Slider {
   return {
-    // Importante: usar sliderId para operações de PUT/DELETE/REORDER
     id: item.sliderId,
     title: item.sliderName,
     image: item.imagemUrl,
@@ -41,7 +40,9 @@ export default function DesktopSliderManager() {
     (async () => {
       setLoading(true);
       try {
-        const data = await listSliders({ headers: { Accept: "application/json" } });
+        const data = await listSliders({
+          headers: { Accept: "application/json" },
+        });
         const desktop = (data || []).filter((d) => d.orientacao === "DESKTOP");
         const mapped = desktop
           .sort((a, b) => a.ordem - b.ordem)
@@ -75,7 +76,6 @@ export default function DesktopSliderManager() {
 
   const handleUpdate = useCallback(
     async (id: string, updates: Partial<Slider>): Promise<Slider> => {
-      // Atualização simples de status usa endpoint específico
       if (
         updates.status !== undefined &&
         updates.title === undefined &&
@@ -83,7 +83,11 @@ export default function DesktopSliderManager() {
         updates.url === undefined &&
         updates.position === undefined
       ) {
-        const updated = await apiUpdateSliderStatus(id, updates.status, "DESKTOP");
+        const updated = await apiUpdateSliderStatus(
+          id,
+          updates.status,
+          "DESKTOP"
+        );
         return mapFromBackend(updated);
       }
 
@@ -92,7 +96,9 @@ export default function DesktopSliderManager() {
         imagemUrl: updates.image,
         link: updates.url,
         status:
-          updates.status === undefined ? undefined : statusToBackend(!!updates.status),
+          updates.status === undefined
+            ? undefined
+            : statusToBackend(!!updates.status),
         ordem: updates.position,
         orientacao: "DESKTOP",
       });
@@ -126,7 +132,9 @@ export default function DesktopSliderManager() {
       onDeleteSlider={handleDelete}
       onReorderSliders={handleReorder}
       onRefreshSliders={async () => {
-        const data = await listSliders({ headers: { Accept: "application/json" } });
+        const data = await listSliders({
+          headers: { Accept: "application/json" },
+        });
         return (data || [])
           .filter((d) => d.orientacao === "DESKTOP")
           .sort((a, b) => a.ordem - b.ordem)

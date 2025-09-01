@@ -106,7 +106,7 @@ export function SliderList({
    */
   const handleDeleteSlider = useCallback(() => {
     if (deleteSlider) {
-      onDelete(deleteSlider.id);
+      onDelete(deleteSlider);
       setDeleteSlider(null);
     }
   }, [deleteSlider, onDelete]);
@@ -144,7 +144,7 @@ export function SliderList({
 
   return (
     <TooltipProvider>
-      <div className="space-y-6">
+      <div className={`space-y-6 ${isLoading ? "opacity-60" : ""}`}>
         {/* Loading Skeleton Block (shown at top when loading) */}
         {isLoading && (
           <div className="space-y-3" aria-hidden>
@@ -182,7 +182,7 @@ export function SliderList({
                       }
                     : undefined
                 }
-                drag={SLIDER_CONFIG.features.enableDragReorder}
+                drag={SLIDER_CONFIG.features.enableDragReorder && !isLoading}
               >
                 <motion.div
                   layout
@@ -379,14 +379,23 @@ export function SliderList({
               <AlertDialogCancel
                 className="rounded-xl cursor-pointer"
                 onClick={handleCloseDeleteDialog}
+                disabled={isLoading}
               >
                 Cancelar
               </AlertDialogCancel>
               <AlertDialogAction
                 onClick={handleDeleteSlider}
                 className="bg-destructive hover:bg-destructive/90 !text-destructive-foreground rounded-xl cursor-pointer"
+                disabled={isLoading}
               >
-                Excluir Slider
+                {isLoading ? (
+                  <span className="inline-flex items-center gap-2">
+                    <Icon name="Loader2" className="h-4 w-4 animate-spin" />
+                    Excluindo...
+                  </span>
+                ) : (
+                  "Excluir Slider"
+                )}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

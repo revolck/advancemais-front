@@ -18,6 +18,7 @@ import { SLIDER_ANIMATIONS } from "./constants";
 import { useSliderManager } from "./hooks/use-slider-manager";
 import { SliderForm, SliderList } from "./components";
 import { cn } from "@/lib/utils";
+import { deleteImage } from "@/services/upload";
 
 export function SliderManager({
   initialSliders = [],
@@ -92,7 +93,11 @@ export function SliderManager({
   }, [cancelEdit]);
 
   return (
-    <div className={cn("w-full max-w-7xl mx-auto", className)}>
+    <div
+      className={cn("w-full max-w-7xl mx-auto relative", className)}
+      aria-busy={isLoading}
+      aria-live="polite"
+    >
       {/* Header */}
       <div className="pb-6">
         <div className="flex items-center justify-between">
@@ -161,8 +166,12 @@ export function SliderManager({
               onEdit={(s) => {
                 editSlider(s);
               }}
-              onDelete={async (id) => {
-                await deleteSlider(id);
+              onDelete={async (slider) => {
+                // Primeiro remove no backend; se ok, remove do Blob
+                await deleteSlider(slider.id);
+                if (slider.image) {
+                  await deleteImage(slider.image);
+                }
                 await refreshSliders?.();
               }}
               onToggleStatus={async (id) => {
@@ -211,6 +220,25 @@ export function SliderManager({
           </ModalContentWrapper>
         </ModalCustom>
       </div>
+
+      {/* Global loading overlay to prevent interactions during API ops */}
+      <AnimatePresence>
+        {isLoading && (
+          <motion.div
+            key="slider-manager-loading"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="absolute inset-0 z-50 bg-background/60 backdrop-blur-sm flex items-center justify-center"
+          >
+            <div className="flex items-center gap-3 bg-muted/60 rounded-xl px-4 py-3 border border-border/50 shadow-sm">
+              <Icon name="Loader2" className="h-5 w-5 animate-spin text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">Processando…</span>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
