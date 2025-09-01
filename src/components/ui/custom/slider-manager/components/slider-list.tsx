@@ -120,9 +120,11 @@ export function SliderList({
       }
 
       if (moved) {
+        const movedItem = newOrder.find((s) => s.id === moved!.id);
+        const sendId = movedItem?.orderId || moved!.id;
         setBusyId(moved.id);
         try {
-          await onReorder(moved.id, moved.newPosition);
+          await onReorder(sendId, moved.newPosition);
         } finally {
           setBusyId(null);
         }
@@ -133,7 +135,7 @@ export function SliderList({
 
   const moveItem = useCallback(
     async (id: string, direction: "up" | "down") => {
-      const idx = orderedSliders.findIndex((s) => s.id === id);
+      const idx = orderedSliders.findIndex((s) => s.id === id || s.orderId === id);
       if (idx === -1) return;
       const targetIdx = direction === "up" ? idx - 1 : idx + 1;
       if (targetIdx < 0 || targetIdx >= orderedSliders.length) return;
@@ -147,9 +149,10 @@ export function SliderList({
 
       setOrderedSliders(recalculated);
 
-      setBusyId(id);
+      const sendId = orderedSliders[idx].orderId || orderedSliders[idx].id;
+      setBusyId(orderedSliders[idx].id);
       try {
-        await onReorder(id, targetIdx + 1);
+        await onReorder(sendId, targetIdx + 1);
       } catch (e) {
         // Reverte em caso de erro
         setOrderedSliders([...sliders].sort((a, b) => a.position - b.position));

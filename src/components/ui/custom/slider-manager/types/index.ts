@@ -5,6 +5,8 @@
 
 export interface Slider {
   id: string;
+  /** ID da ordem no backend (WebsiteSliderOrdem) */
+  orderId?: string;
   title: string;
   image: string;
   url: string;

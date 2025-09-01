@@ -185,14 +185,14 @@ export async function deleteSlider(id: string): Promise<void> {
   });
 }
 
-export async function updateSliderOrder(
-  id: string,
-  ordem: number,
-  orientacao: SliderOrientation
-): Promise<void> {
-  const { body, headers } = buildRequest({ ordem, orientacao });
-  // Importante: o backend espera SEMPRE o websiteSliderId (sliderId)
-  await apiFetch<SlideBackendResponse>(websiteRoutes.slider.update(id), {
+export async function updateSliderOrder(id: string, ordem: number): Promise<void> {
+  const headers = {
+    Accept: apiConfig.headers.Accept,
+    "Content-Type": "application/json",
+    ...getAuthHeader(),
+  };
+  const body = JSON.stringify({ ordem });
+  await apiFetch<SlideBackendResponse>(websiteRoutes.slider.reorder(id), {
     init: { method: "PUT", body, headers },
     cache: "no-cache",
   });

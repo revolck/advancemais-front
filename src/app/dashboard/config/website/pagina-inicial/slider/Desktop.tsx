@@ -17,6 +17,7 @@ import type { SlideBackendResponse } from "@/api/websites/components";
 function mapFromBackend(item: SlideBackendResponse): Slider {
   return {
     id: item.sliderId,
+    orderId: item.id,
     title: item.sliderName,
     image: item.imagemUrl,
     url: item.link || "",
@@ -112,7 +113,8 @@ export default function DesktopSliderManager() {
   }, []);
 
   const handleReorder = useCallback(async (id: string, newPos: number) => {
-    await apiUpdateSliderOrder(id, newPos, "DESKTOP");
+    // Novo endpoint exige o ID da ordem
+    await apiUpdateSliderOrder(id, newPos);
   }, []);
 
   if (loading) {
