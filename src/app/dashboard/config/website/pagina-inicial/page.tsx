@@ -7,6 +7,7 @@ import SobreForm from "./sobre/SobreForm";
 import ConsultoriaForm from "./consultoria/ConsultoriaForm";
 import RecrutamentoForm from "./recrutamento/RecrutamentoForm";
 import DesktopSliderManager from "./slider/Desktop";
+import MobileSliderManager from "./slider/Mobile";
 import {
   listAbout,
   type AboutBackendResponse,
@@ -88,11 +89,7 @@ export default function PaginaInicialPage() {
           icon: "Smartphone",
           content: (
             <div className="space-y-6">
-              <div>
-                <h3 className="text-lg font-semibold mb-2">
-                  Sliders Mobile/Tablet
-                </h3>
-              </div>
+              <MobileSliderManager />
             </div>
           ),
         },
