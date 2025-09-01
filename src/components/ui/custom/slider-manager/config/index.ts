@@ -82,7 +82,7 @@ export const SLIDER_CONFIG = {
 
   // Feature flags
   features: {
-    enableDragReorder: true,
+    enableDragReorder: false,
     enableBulkOperations: false, // Future feature
     enableAdvancedFiltering: false, // Future feature
   },

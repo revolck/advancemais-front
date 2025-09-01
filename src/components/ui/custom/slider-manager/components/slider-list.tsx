@@ -131,6 +131,36 @@ export function SliderList({
     [onReorder, orderedSliders, draggingId]
   );
 
+  const moveItem = useCallback(
+    async (id: string, direction: "up" | "down") => {
+      const idx = orderedSliders.findIndex((s) => s.id === id);
+      if (idx === -1) return;
+      const targetIdx = direction === "up" ? idx - 1 : idx + 1;
+      if (targetIdx < 0 || targetIdx >= orderedSliders.length) return;
+
+      // Optimistic UI: swap items
+      const next = [...orderedSliders];
+      const tmp = next[idx];
+      next[idx] = next[targetIdx];
+      next[targetIdx] = tmp;
+      const recalculated = next.map((s, i) => ({ ...s, position: i + 1 }));
+
+      setOrderedSliders(recalculated);
+
+      setBusyId(id);
+      try {
+        await onReorder(id, targetIdx + 1);
+      } catch (e) {
+        // Reverte em caso de erro
+        setOrderedSliders([...sliders].sort((a, b) => a.position - b.position));
+        throw e;
+      } finally {
+        setBusyId(null);
+      }
+    },
+    [orderedSliders, onReorder, sliders]
+  );
+
   const handleToggleClick = useCallback(
     async (id: string) => {
       if (isLoading || busyId) return;
@@ -257,12 +287,77 @@ export function SliderList({
                           </div>
                         )}
 
-                        {/* Position Number */}
+                        {/* Position Number + Up/Down controls */}
                         <div className="flex-shrink-0">
-                          <div className="w-9 h-9 bg-primary/5 rounded-lg flex items-center justify-center border border-gray-500/10">
-                            <span className="text-base font-semibold text-primary">
-                              {index + 1}
-                            </span>
+                          <div className="flex flex-col items-center gap-1">
+                            {/* Up */}
+                            {index > 0 && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    asChild
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => moveItem(slider.id, "up")}
+                                    className="h-7 w-7 p-0 rounded-md hover:bg-primary/10 hover:ring-1 hover:ring-primary/40 cursor-pointer disabled:cursor-not-allowed"
+                                    disabled={isLoading || busyId === slider.id}
+                                    aria-label="Mover para cima"
+                                  >
+                                    <motion.button
+                                      whileHover={{ y: -2, scale: 1.05 }}
+                                      whileTap={{ scale: 0.92 }}
+                                      transition={{ type: "spring", stiffness: 450, damping: 22 }}
+                                    >
+                                      {busyId === slider.id ? (
+                                        <Icon name="Loader2" className="h-4 w-4 animate-spin text-muted-foreground" />
+                                      ) : (
+                                        <Icon name="ChevronUp" className="h-4 w-4" />
+                                      )}
+                                    </motion.button>
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Mover para cima</TooltipContent>
+                              </Tooltip>
+                            )}
+
+                            {/* Number */}
+                            <div className="relative">
+                              <div className="w-8 h-8 bg-primary/5 rounded-lg flex items-center justify-center border border-gray-500/10 group-hover:ring-1 group-hover:ring-primary/30 transition-all">
+                                <span className="text-sm font-semibold text-primary">
+                                  {index + 1}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Down */}
+                            {index < orderedSliders.length - 1 && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    asChild
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => moveItem(slider.id, "down")}
+                                    className="h-7 w-7 p-0 rounded-md hover:bg-primary/10 hover:ring-1 hover:ring-primary/40 cursor-pointer disabled:cursor-not-allowed"
+                                    disabled={isLoading || busyId === slider.id}
+                                    aria-label="Mover para baixo"
+                                  >
+                                    <motion.button
+                                      whileHover={{ y: 2, scale: 1.05 }}
+                                      whileTap={{ scale: 0.92 }}
+                                      transition={{ type: "spring", stiffness: 450, damping: 22 }}
+                                    >
+                                      {busyId === slider.id ? (
+                                        <Icon name="Loader2" className="h-4 w-4 animate-spin text-muted-foreground" />
+                                      ) : (
+                                        <Icon name="ChevronDown" className="h-4 w-4" />
+                                      )}
+                                    </motion.button>
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Mover para baixo</TooltipContent>
+                              </Tooltip>
+                            )}
                           </div>
                         </div>
 
