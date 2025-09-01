@@ -127,8 +127,17 @@ export function SliderManager({
               disabled={isLoading}
               className="h-11 px-6"
             >
-              <Icon name="Plus" className="h-5 w-5 mr-2" />
-              Novo Slider
+              {isLoading ? (
+                <>
+                  <Icon name="Loader2" className="h-5 w-5 mr-2 animate-spin" />
+                  Processando…
+                </>
+              ) : (
+                <>
+                  <Icon name="Plus" className="h-5 w-5 mr-2" />
+                  Novo Slider
+                </>
+              )}
             </ButtonCustom>
           </div>
         </div>

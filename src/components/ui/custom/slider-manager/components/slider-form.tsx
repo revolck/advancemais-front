@@ -17,7 +17,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { FileUpload } from "@/components/ui/custom/file-upload";
-import { uploadImage } from "@/services/upload";
+import { uploadImage, deleteImage, getImageTitle } from "@/services/upload";
 import { toastCustom } from "@/components/ui/custom/toast";
 import { Icon } from "@/components/ui/custom/Icons";
 import type { FileUploadItem } from "@/components/ui/custom/file-upload";
@@ -61,6 +61,11 @@ export function SliderForm({
     }
     return [];
   });
+
+  // Guarda a URL atual para só remover do Blob após submit
+  const [oldImageUrl, setOldImageUrl] = useState<string | undefined>(
+    slider?.image || undefined,
+  );
 
   // UI state
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -143,16 +148,36 @@ export function SliderForm({
 
       try {
         setIsSubmitting(true);
-        // Garante upload no momento do submit (como no Sobre)
-        let imageUrl = formData.image;
+        // Estratégia igual ao Sobre: só deletar/upload NO SUBMIT
+        let finalImageUrl = formData.image;
+        let uploadResult: { url: string; title: string } | undefined;
         const latest = uploadedFiles[uploadedFiles.length - 1];
-        if ((!imageUrl || imageUrl.length === 0) && latest?.file) {
-          const { url } = await uploadImage(latest.file, "website/slider");
-          imageUrl = url;
-          setFormData((prev) => ({ ...prev, image: url }));
+        const previousUrl = oldImageUrl;
+
+        if (latest?.file) {
+          // Substituição: sobe novo e remove o antigo via uploadService
+          uploadResult = await uploadImage(
+            latest.file,
+            "website/slider",
+            previousUrl,
+          );
+          finalImageUrl = uploadResult.url;
+          setFormData((prev) => ({ ...prev, image: finalImageUrl }));
+          setOldImageUrl(finalImageUrl);
+        } else if (!latest && !finalImageUrl && previousUrl) {
+          // Usuário removeu a imagem e não enviou outra: remove do Blob ao confirmar
+          await deleteImage(previousUrl);
+          setOldImageUrl(undefined);
+        } else if (previousUrl && !finalImageUrl) {
+          // Nenhum arquivo novo e form indica vazio: mantém estado vazio
+          // (sem upload nem alteração de URL)
+        } else if (previousUrl) {
+          // Mantém a imagem existente
+          uploadResult = { url: previousUrl, title: getImageTitle(previousUrl) };
+          finalImageUrl = previousUrl;
         }
 
-        await onSubmit({ ...formData, image: imageUrl || "", content: "" });
+        await onSubmit({ ...formData, image: finalImageUrl || "", content: "" });
 
         setShowSuccess(true);
         setTimeout(
@@ -273,6 +298,7 @@ export function SliderForm({
             showPreview={true}
             showProgress={false}
             autoUpload={false}
+            deleteOnRemove={false}
             onFilesChange={handleFilesChange}
             
           />

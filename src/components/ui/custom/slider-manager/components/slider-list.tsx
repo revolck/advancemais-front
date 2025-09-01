@@ -289,7 +289,12 @@ export function SliderList({
                                     : "Ativar slider"
                                 }
                               >
-                                {slider.status ? (
+                                {isLoading ? (
+                                  <Icon
+                                    name="Loader2"
+                                    className="h-5 w-5 animate-spin text-muted-foreground"
+                                  />
+                                ) : slider.status ? (
                                   <Icon
                                     name="Eye"
                                     className="h-5 w-5 text-emerald-600"
@@ -322,10 +327,17 @@ export function SliderList({
                                   SLIDER_CONFIG.a11y.labels.editButton
                                 }
                               >
-                                <Icon
-                                  name="Edit"
-                                  className="h-5 w-5 text-primary"
-                                />
+                                {isLoading ? (
+                                  <Icon
+                                    name="Loader2"
+                                    className="h-5 w-5 animate-spin text-muted-foreground"
+                                  />
+                                ) : (
+                                  <Icon
+                                    name="Edit"
+                                    className="h-5 w-5 text-primary"
+                                  />
+                                )}
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>Editar slider</TooltipContent>
@@ -344,7 +356,14 @@ export function SliderList({
                                   SLIDER_CONFIG.a11y.labels.deleteButton
                                 }
                               >
-                                <Icon name="Trash2" className="h-5 w-5" />
+                                {isLoading ? (
+                                  <Icon
+                                    name="Loader2"
+                                    className="h-5 w-5 animate-spin text-muted-foreground"
+                                  />
+                                ) : (
+                                  <Icon name="Trash2" className="h-5 w-5" />
+                                )}
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>Excluir slider</TooltipContent>
