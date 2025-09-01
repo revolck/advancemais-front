@@ -196,19 +196,77 @@ export async function updateSliderOrder(id: string, ordem: number): Promise<void
   const payload = { ordem: Number(ordem) };
 
   try {
+    if (env.isDevelopment) {
+      console.log("🔁 Reorder (JSON)", { url, ordem: Number(ordem), orderId: id });
+    }
     await apiFetch<SlideBackendResponse>(url, {
       init: { method: "PUT", body: JSON.stringify(payload), headers: jsonHeaders },
       cache: "no-cache",
     });
     return;
   } catch (e) {
-    // Fallback: alguns ambientes podem não estar com JSON parser nesta rota
-    const form = new FormData();
-    form.append("ordem", String(ordem));
-    const headers = { Accept: apiConfig.headers.Accept, ...getAuthHeader() } as Record<string, string>;
-    await apiFetch<SlideBackendResponse>(url, {
-      init: { method: "PUT", body: form, headers },
-      cache: "no-cache",
-    });
+    if (env.isDevelopment) {
+      console.warn("⚠️ Reorder (JSON) failed", {
+        orderId: id,
+        ordem,
+        error: (e as any)?.message || String(e),
+        status: (e as any)?.status,
+      });
+    }
+    // Fallback 1: alguns ambientes podem não estar com JSON parser nesta rota
+    try {
+      if (env.isDevelopment) {
+        console.log("🔁 Reorder (FormData)", { url, ordem: String(ordem), orderId: id });
+      }
+      const form = new FormData();
+      form.append("ordem", String(ordem));
+      const headers = { Accept: apiConfig.headers.Accept, ...getAuthHeader() } as Record<string, string>;
+      await apiFetch<SlideBackendResponse>(url, {
+        init: { method: "PUT", body: form, headers },
+        cache: "no-cache",
+      });
+      return;
+    } catch (_) {
+      if (env.isDevelopment) {
+        console.warn("⚠️ Reorder (FormData) failed, trying generic update", {
+          orderId: id,
+          ordem,
+        });
+      }
+      // Fallback 2: como último recurso, faz update geral pelo sliderId
+      // 1) Busca lista para mapear orderId -> sliderId e orientacao
+      const list = await apiFetch<SlideBackendResponse[]>(websiteRoutes.slider.list(), {
+        init: { headers: apiConfig.headers },
+        cache: "no-cache",
+      });
+      const found = (list || []).find((item) => item.id === id);
+      const sliderId = found?.sliderId;
+      const orientacao = (found?.orientacao as SliderOrientation) || undefined;
+      if (env.isDevelopment) {
+        console.log("🧭 Reorder mapping", {
+          orderId: id,
+          resolvedSliderId: sliderId,
+          orientacao,
+          found,
+        });
+      }
+      if (!sliderId) throw e;
+
+      // 2) Usa o endpoint de update geral com FormData (mesmo formato do toggle)
+      const { body, headers } = buildRequest({ ordem: Number(ordem), orientacao });
+      if (env.isDevelopment) {
+        console.log("🔁 Reorder via generic update", {
+          endpoint: websiteRoutes.slider.update(sliderId),
+          ordem: Number(ordem),
+          sliderId,
+          orientacao,
+        });
+      }
+      await apiFetch<SlideBackendResponse>(websiteRoutes.slider.update(sliderId), {
+        init: { method: "PUT", body, headers },
+        cache: "no-cache",
+      });
+      return;
+    }
   }
 }
