@@ -186,14 +186,29 @@ export async function deleteSlider(id: string): Promise<void> {
 }
 
 export async function updateSliderOrder(id: string, ordem: number): Promise<void> {
-  const headers = {
+  const jsonHeaders = {
     Accept: apiConfig.headers.Accept,
     "Content-Type": "application/json",
     ...getAuthHeader(),
-  };
-  const body = JSON.stringify({ ordem });
-  await apiFetch<SlideBackendResponse>(websiteRoutes.slider.reorder(id), {
-    init: { method: "PUT", body, headers },
-    cache: "no-cache",
-  });
+  } as Record<string, string>;
+
+  const url = websiteRoutes.slider.reorder(id);
+  const payload = { ordem: Number(ordem) };
+
+  try {
+    await apiFetch<SlideBackendResponse>(url, {
+      init: { method: "PUT", body: JSON.stringify(payload), headers: jsonHeaders },
+      cache: "no-cache",
+    });
+    return;
+  } catch (e) {
+    // Fallback: alguns ambientes podem não estar com JSON parser nesta rota
+    const form = new FormData();
+    form.append("ordem", String(ordem));
+    const headers = { Accept: apiConfig.headers.Accept, ...getAuthHeader() } as Record<string, string>;
+    await apiFetch<SlideBackendResponse>(url, {
+      init: { method: "PUT", body: form, headers },
+      cache: "no-cache",
+    });
+  }
 }
