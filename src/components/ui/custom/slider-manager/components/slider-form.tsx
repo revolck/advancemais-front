@@ -50,7 +50,7 @@ export function SliderForm({
       return [
         {
           id: "existing-image",
-          name: slider.title || "Imagem do slider",
+          name: slider.title || `Imagem do ${entityName}`,
           size: 0,
           type: "image/jpeg",
           status: "completed" as const,
@@ -73,6 +73,14 @@ export function SliderForm({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showSuccess, setShowSuccess] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Accent styling by entity
+  const isBanner = entityName.toLowerCase() === "banner";
+  const accent = {
+    bg: isBanner ? "bg-rose-500/10" : "bg-blue-500/10",
+    border: isBanner ? "border-rose-500/20" : "border-blue-500/20",
+    text: isBanner ? "text-rose-800" : "text-blue-800",
+  } as const;
 
   /**
    * Validate form
@@ -97,7 +105,7 @@ export function SliderForm({
     }
 
     if (!formData.image && uploadedFiles.length === 0) {
-      newErrors.image = SLIDER_MESSAGES.ERROR_IMAGE_REQUIRED;
+      newErrors.image = `Selecione uma imagem para o ${entityName.toLowerCase()}`;
     }
 
     setErrors(newErrors);
@@ -244,8 +252,8 @@ export function SliderForm({
         {/* Slider Settings Header */}
         <div className="flex items-center justify-between p-4 bg-muted/20 rounded-xl border border-gray-400/20">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-500/10 rounded-lg border border-blue-500/20">
-              <ImageIcon className="h-4 w-4 text-blue-800" />
+            <div className={`p-2 rounded-lg border ${accent.bg} ${accent.border}`}>
+              <ImageIcon className={`h-4 w-4 ${accent.text}`} />
             </div>
             <span className="text-md font-medium text-foreground">
               Configurações do {entityName}
@@ -317,7 +325,7 @@ export function SliderForm({
         <div className="space-y-4">
           {/* ✅ CORRIGIDO: Remover showRequiredIndicator e touched */}
           <InputCustom
-            label="Título do Slider"
+            label={`Título do ${entityName}`}
             id="title"
             value={formData.title}
             onChange={(e) => handleInputChange("title", e.target.value)}
@@ -336,6 +344,7 @@ export function SliderForm({
             value={formData.url}
             onChange={(e) => handleInputChange("url", e.target.value)}
             placeholder={SLIDER_MESSAGES.PLACEHOLDER_URL}
+            helperText={`Para onde o usuário será direcionado ao clicar no ${entityName.toLowerCase()}`}
             disabled={isLoading}
             maxLength={500}
             error={errors.url}
@@ -363,7 +372,7 @@ export function SliderForm({
             isLoading={isLoading || isSubmitting}
           >
             {!isLoading && <Icon name="Save" className="h-4 w-4 mr-2" />}
-            {slider ? "Atualizar" : "Criar Slider"}
+            {slider ? "Atualizar" : `Criar ${entityName}`}
           </ButtonCustom>
         </div>
       </form>

@@ -24,7 +24,7 @@ function mapFromBackend(item: BannerBackendResponse): Slider {
     content: "",
     status: (typeof item.status === "string" ? item.status : item.status ? "PUBLICADO" : "RASCUNHO") === "PUBLICADO",
     position: item.ordem,
-    createdAt: item.criadoEm,
+    createdAt: item.criadoEm ?? item.ordemCriadoEm ?? new Date().toISOString(),
     updatedAt: item.atualizadoEm,
   };
 }
@@ -124,6 +124,7 @@ export default function BannersForm() {
       uploadPath="website/banner"
       entityName="Banner"
       entityNamePlural="Banners"
+      maxItems={5}
       onCreateSlider={handleCreate}
       onUpdateSlider={handleUpdate}
       onDeleteSlider={handleDelete}

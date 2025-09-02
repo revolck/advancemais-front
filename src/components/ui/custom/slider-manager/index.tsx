@@ -6,6 +6,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ButtonCustom } from "@/components/ui/custom/button";
 import { Icon } from "@/components/ui/custom/Icons";
+import { toastCustom } from "@/components/ui/custom/toast";
+import { Badge } from "@/components/ui/badge";
 import ModalCustom, {
   ModalContentWrapper,
   ModalHeader,
@@ -30,6 +32,7 @@ export function SliderManager({
   uploadPath = "website/slider",
   entityName = "Slider",
   entityNamePlural = "Sliders",
+  maxItems,
 }: SliderManagerProps) {
   // Use our custom hook for state management
   const {
@@ -86,8 +89,14 @@ export function SliderManager({
    * Handle creating new slider
    */
   const handleCreateNew = useCallback(() => {
+    if (typeof maxItems === "number" && sliders.length >= maxItems) {
+      toastCustom.error(
+        `Limite de ${maxItems} ${entityNamePlural.toLowerCase()} atingido.`
+      );
+      return;
+    }
     setView("form");
-  }, [setView]);
+  }, [setView, maxItems, sliders.length, entityNamePlural]);
 
   /**
    * Handle back to list
@@ -108,9 +117,14 @@ export function SliderManager({
           <div className="flex items-center gap-4">
             {/* Title Section */}
             <div>
-              <motion.h3 {...SLIDER_ANIMATIONS.FADE_IN}>
-                Gerenciador de {entityNamePlural.toLowerCase()}
-              </motion.h3>
+              <motion.div {...SLIDER_ANIMATIONS.FADE_IN} className="flex items-center gap-2">
+                <h3>Gerenciador de {entityNamePlural.toLowerCase()}</h3>
+                {typeof maxItems === "number" && sliders.length >= maxItems && (
+                  <Badge variant="secondary" className="uppercase tracking-wide">
+                    <Icon name="CircleSlash2" /> Limite atingido
+                  </Badge>
+                )}
+              </motion.div>
               <motion.p
                 {...SLIDER_ANIMATIONS.FADE_IN}
                 className="text-muted-foreground mt-[-16] text-lg"
@@ -126,23 +140,25 @@ export function SliderManager({
 
           {/* Header Actions */}
           <div className="flex items-center gap-3">
-            <ButtonCustom
-              onClick={handleCreateNew}
-              disabled={isLoading}
-              className="h-11 px-6"
-            >
-              {isLoading ? (
-                <>
-                  <Icon name="Loader2" className="h-5 w-5 mr-2 animate-spin" />
-                  Processando…
-                </>
-              ) : (
-                <>
-                  <Icon name="Plus" className="h-5 w-5 mr-2" />
-                  Novo {entityName}
-                </>
-              )}
-            </ButtonCustom>
+            {(typeof maxItems !== "number" || sliders.length < maxItems) && (
+              <ButtonCustom
+                onClick={handleCreateNew}
+                disabled={isLoading}
+                className="h-11 px-6"
+              >
+                {isLoading ? (
+                  <>
+                    <Icon name="Loader2" className="h-5 w-5 mr-2 animate-spin" />
+                    Processando…
+                  </>
+                ) : (
+                  <>
+                    <Icon name="Plus" className="h-5 w-5 mr-2" />
+                    Novo {entityName}
+                  </>
+                )}
+              </ButtonCustom>
+            )}
           </div>
         </div>
 

@@ -60,6 +60,7 @@ export interface SliderManagerProps {
   uploadPath?: string;
   entityName?: string;
   entityNamePlural?: string;
+  maxItems?: number;
 }
 
 export interface ValidationError {

@@ -129,6 +129,7 @@ export default function DesktopSliderManager() {
   return (
     <SliderManager
       initialSliders={initialSliders}
+      maxItems={5}
       onCreateSlider={handleCreate}
       onUpdateSlider={handleUpdate}
       onDeleteSlider={handleDelete}

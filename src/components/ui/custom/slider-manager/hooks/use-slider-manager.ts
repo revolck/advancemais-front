@@ -144,6 +144,7 @@ export function useSliderManager(props: SliderManagerProps = {}) {
     onRefreshSliders,
     entityName = "Slider",
     entityNamePlural = "Sliders",
+    maxItems,
   } = props;
 
   const [state, dispatch] = useReducer(sliderManagerReducer, {
@@ -208,6 +209,12 @@ export function useSliderManager(props: SliderManagerProps = {}) {
    */
   const createSlider = useCallback(
     async (sliderData: Omit<Slider, "id" | "createdAt">) => {
+      if (typeof maxItems === "number" && state.sliders.length >= maxItems) {
+        toastCustom.error(
+          `Limite de ${maxItems} ${entityNamePlural.toLowerCase()} atingido.`
+        );
+        throw new Error("MAX_ITEMS_REACHED");
+      }
       dispatch({ type: "SET_LOADING", payload: true });
       dispatch({ type: "SET_ERROR", payload: null });
 
@@ -244,7 +251,7 @@ export function useSliderManager(props: SliderManagerProps = {}) {
         dispatch({ type: "SET_LOADING", payload: false });
       }
     },
-    [generateId, getNextPosition, onCreateSlider]
+    [generateId, getNextPosition, onCreateSlider, maxItems, state.sliders.length, entityNamePlural]
   );
 
   /**
