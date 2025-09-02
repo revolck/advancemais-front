@@ -3,8 +3,9 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import type { SectionData, ProblemSolutionApiResponse } from "../types";
-import { DEFAULT_SECTION_DATA, PROBLEM_SOLUTION_CONFIG } from "../constants";
+import type { SectionData } from "../types";
+import { DEFAULT_SECTION_DATA } from "../constants";
+import { getPlaninhasSectionDataClient } from "@/api/websites/components";
 
 interface UseProblemSolutionDataReturn {
   data: SectionData;
@@ -36,51 +37,20 @@ export function useProblemSolutionData(
     try {
       setIsLoading(true);
       setError(null);
-
-      const controller = new AbortController();
-      const timeoutId = setTimeout(
-        () => controller.abort(),
-        PROBLEM_SOLUTION_CONFIG.api.timeout
-      );
-
-      const response = await fetch(PROBLEM_SOLUTION_CONFIG.api.endpoint, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        signal: controller.signal,
-      });
-
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const result: ProblemSolutionApiResponse = await response.json();
-
-      if (!result.success || !result.data) {
-        throw new Error(result.message || "Dados inválidos recebidos da API");
-      }
-
-      // Filtra apenas problemas ativos e ordena
-      const processedData = {
-        ...result.data,
-        problems: result.data.problems
-          .filter((item) => item.isActive)
+      const result = await getPlaninhasSectionDataClient();
+      const processedData: SectionData = {
+        ...DEFAULT_SECTION_DATA,
+        ...result,
+        problems: (result?.problems || [])
+          .filter((item) => item.isActive !== false)
           .sort((a, b) => a.order - b.order),
       };
-
       setData(processedData);
     } catch (err) {
       console.error("Erro ao buscar dados da seção de problemas:", err);
 
       if (err instanceof Error) {
-        if (err.name === "AbortError") {
-          setError("Tempo limite excedido. Usando dados padrão.");
-        } else {
-          setError(`Erro na API: ${err.message}. Usando dados padrão.`);
-        }
+        setError(`Erro na API: ${err.message}. Usando dados padrão.`);
       } else {
         setError("Erro desconhecido. Usando dados padrão.");
       }

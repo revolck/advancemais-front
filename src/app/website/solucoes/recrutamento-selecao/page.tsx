@@ -89,7 +89,7 @@ export default function RecrutamentoPage() {
           console.warn("Erro ao carregar estatísticas:", error);
         }}
       />
-      <ProblemSolutionSection fetchFromApi={false} />
+      <ProblemSolutionSection fetchFromApi />
 
       <ServiceHighlight
         fetchFromApi={false}

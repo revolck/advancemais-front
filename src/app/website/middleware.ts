@@ -1,4 +1,3 @@
-// src/app/website/middleware.ts
 import { NextRequest, NextResponse } from "next/server";
 
 /**
@@ -29,6 +28,7 @@ const WEBSITE_CONFIG: WebsiteConfig = {
   availablePages: [
     "/",
     "/sobre",
+    "/recrutamento",
     "/contato",
     "/cursos",
     "/solucoes",
@@ -39,7 +39,7 @@ const WEBSITE_CONFIG: WebsiteConfig = {
     "/cookies",
     "/ouvidoria",
     "/faq",
-    "/components", // Página de demonstração de componentes
+    "/components",
   ],
 
   // Redirects permanentes (301)
@@ -64,7 +64,14 @@ const WEBSITE_CONFIG: WebsiteConfig = {
   } as RedirectConfig,
 
   // Páginas que requerem cache especial
-  staticPages: ["/", "/sobre", "/privacidade", "/termos", "/cookies"],
+  staticPages: [
+    "/",
+    "/sobre",
+    "/recrutamento",
+    "/privacidade",
+    "/termos",
+    "/cookies",
+  ],
 
   // Páginas dinâmicas que não devem ser cacheadas
   dynamicPages: ["/contato", "/suporte"],

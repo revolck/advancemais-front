@@ -3,6 +3,7 @@
 import React from "react";
 import { VerticalTabs, type VerticalTabItem } from "@/components/ui/custom";
 import HeaderForm from "./header/HeaderForm";
+import PlaninhasForm from "./planinhas/PlaninhasForm";
 
 export default function RecrutamentoPage() {
   const items: VerticalTabItem[] = [
@@ -13,6 +14,16 @@ export default function RecrutamentoPage() {
       content: (
         <div className="space-y-6">
           <HeaderForm />
+        </div>
+      ),
+    },
+    {
+      value: "planilhas",
+      label: "Planilhas",
+      icon: "FileSpreadsheet",
+      content: (
+        <div className="space-y-6">
+          <PlaninhasForm />
         </div>
       ),
     },
@@ -41,4 +52,3 @@ export default function RecrutamentoPage() {
     </div>
   );
 }
-

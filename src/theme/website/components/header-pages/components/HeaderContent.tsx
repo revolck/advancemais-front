@@ -1,10 +1,7 @@
-// src/theme/website/components/header-pages/components/HeaderContent.tsx
-
 "use client";
 
 import React, { useState } from "react";
 import Image from "next/image";
-// Link não é necessário; abriremos sempre em nova aba com <a>
 import { Button } from "@/components/ui/button";
 import { ImageNotFound } from "@/components/ui/custom/image-not-found";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -38,15 +35,16 @@ export const HeaderContent: React.FC<HeaderContentProps> = ({ data }) => {
           {data.subtitle}
         </h5>
 
-        <h3 className="text-[var(--primary-color)] mb-4">
-          {data.title}
-        </h3>
+        <h3 className="text-[var(--primary-color)] mb-4">{data.title}</h3>
 
-        <p className="text-gray-600 mb-6">
-          {data.description}
-        </p>
+        <p className="text-gray-600 mb-6">{data.description}</p>
 
-        <a href={data.buttonUrl} target="_blank" rel="noopener noreferrer" className="cursor-pointer">
+        <a
+          href={data.buttonUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="cursor-pointer"
+        >
           <Button
             size="lg"
             className="bg-red-600 hover:bg-red-700 text-white py-6 cursor-pointer"
@@ -68,15 +66,16 @@ export const HeaderContent: React.FC<HeaderContentProps> = ({ data }) => {
             {data.subtitle}
           </h6>
 
-          <h2 className="text-[var(--primary-color)] mb-4">
-            {data.title}
-          </h2>
+          <h2 className="text-[var(--primary-color)] mb-4">{data.title}</h2>
 
-          <p className="text-gray-600 mb-6">
-            {data.description}
-          </p>
+          <p className="text-gray-600 mb-6">{data.description}</p>
 
-          <a href={data.buttonUrl} target="_blank" rel="noopener noreferrer" className="cursor-pointer">
+          <a
+            href={data.buttonUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="cursor-pointer"
+          >
             <Button
               size="lg"
               className="bg-red-600 hover:bg-red-700 text-white py-6 cursor-pointer"
@@ -87,10 +86,7 @@ export const HeaderContent: React.FC<HeaderContentProps> = ({ data }) => {
         </div>
 
         {/* Imagem (lado direito) */}
-        <div
-          className="relative"
-          style={{ width: "686px", height: "305px" }}
-        >
+        <div className="relative" style={{ width: "686px", height: "305px" }}>
           {/* Loading State - CORRIGIDO: Tamanho fixo */}
           {isLoading && (
             <div className="w-full h-full rounded-lg bg-gray-200 flex items-center justify-center">
@@ -112,7 +108,7 @@ export const HeaderContent: React.FC<HeaderContentProps> = ({ data }) => {
             </div>
           )}
 
-          {/* Main Image - CORRIGIDO: Tamanho fixo 810x360 */}
+          {/* Main Image */}
           {!hasError && (
             <Image
               src={data.imageUrl}
@@ -120,7 +116,7 @@ export const HeaderContent: React.FC<HeaderContentProps> = ({ data }) => {
               width={HEADER_CONFIG.image.width}
               height={HEADER_CONFIG.image.height}
               className={`
-                transition-opacity duration-500
+                transition-opacity duration-500 rounded-xl
                 ${isLoading ? "opacity-0 absolute" : "opacity-100"}
               `}
               onLoad={handleImageLoad}

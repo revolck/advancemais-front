@@ -66,6 +66,7 @@ const ProblemSolutionSection: React.FC<ProblemSolutionSectionProps> = ({
 
   // Estado de carregamento
   if (isLoading) {
+    const skeletonCards = PROBLEM_SOLUTION_CONFIG.skeleton.cardsCount ?? 3;
     return (
       <section
         className={cn("pxResponsive container mx-auto py-14", className)}
@@ -84,7 +85,7 @@ const ProblemSolutionSection: React.FC<ProblemSolutionSectionProps> = ({
 
           {/* Skeleton dos cards */}
           <div className="lg:w-1/2 flex flex-col gap-6">
-            {Array.from({ length: 3 }).map((_, index) => (
+            {Array.from({ length: skeletonCards }).map((_, index) => (
               <div
                 key={index}
                 className="flex items-start gap-6 p-6 bg-gray-100 rounded-lg animate-pulse"
@@ -126,6 +127,38 @@ const ProblemSolutionSection: React.FC<ProblemSolutionSectionProps> = ({
               Tentar Novamente
             </ButtonCustom>
           )}
+        </div>
+      </section>
+    );
+  }
+
+  // Estado vazio (sem dados após carregamento bem-sucedido)
+  const noTitle = !data?.mainTitle || data.mainTitle.trim().length === 0;
+  const noDescription =
+    !data?.mainDescription || data.mainDescription.trim().length === 0;
+  const noProblems = !data?.problems || data.problems.length === 0;
+
+  if (!isLoading && noTitle && noDescription && noProblems) {
+    const { icon, title, message, buttonLabel } =
+      PROBLEM_SOLUTION_CONFIG.emptyState;
+    return (
+      <section className={cn("pxResponsive container mx-auto py-14", className)}>
+        <div className="flex flex-col items-center justify-center text-center gap-4 py-10">
+          <ImageNotFound
+            size="lg"
+            variant="muted"
+            icon={icon}
+            message={title}
+            className="mx-auto"
+          />
+          {message && (
+            <p className="text-gray-600 max-w-md">{message}</p>
+          )}
+          <div className="mt-2">
+            <ButtonCustom onClick={refetch} variant="default" icon="RefreshCw">
+              {buttonLabel || "Recarregar"}
+            </ButtonCustom>
+          </div>
         </div>
       </section>
     );

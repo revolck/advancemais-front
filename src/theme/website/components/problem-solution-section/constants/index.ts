@@ -75,4 +75,19 @@ export const PROBLEM_SOLUTION_CONFIG = {
     quality: 90,
     sizes: "(max-width: 1024px) 100vw, 50vw",
   },
+  skeleton: {
+    // Quantidade de cards placeholder exibidos durante o loading
+    cardsCount: 3,
+  },
+  emptyState: {
+    // Ícone padrão quando não há dados
+    icon: "FileSpreadsheet",
+    // Título destacado do empty state
+    title: "Sem conteúdos de Planilhas publicados",
+    // Mensagem auxiliar para orientar o usuário
+    message:
+      "Cadastre em Website → Planinhas no painel para aparecer aqui.",
+    // Rótulo do botão de ação
+    buttonLabel: "Recarregar",
+  },
 } as const;

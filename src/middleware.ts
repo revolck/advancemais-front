@@ -1,4 +1,3 @@
-// src/middleware.ts
 import { NextRequest, NextResponse } from "next/server";
 import { UserRole } from "@/config/roles";
 
@@ -31,6 +30,7 @@ const SYSTEM_CONFIG = {
   websiteRoutes: [
     "/",
     "/sobre",
+    "/recrutamento",
     "/fale-conosco",
     "/cursos",
     "/solucoes",

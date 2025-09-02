@@ -42,6 +42,16 @@ export {
 } from "./diferenciais";
 
 export {
+  listPlaninhas,
+  getPlaninhasById,
+  createPlaninhas,
+  updatePlaninhas,
+  deletePlaninhas,
+  getPlaninhasSectionData,
+  getPlaninhasSectionDataClient,
+} from "./planinhas";
+
+export {
   getSliderData,
   getSliderDataClient,
   listSliders,
@@ -113,6 +123,12 @@ export type {
   CreateDiferenciaisPayload,
   UpdateDiferenciaisPayload,
 } from "./diferenciais/types";
+
+export type {
+  PlaninhasBackendResponse,
+  CreatePlaninhasPayload,
+  UpdatePlaninhasPayload,
+} from "./planinhas/types";
 
 export type { BannerBackendResponse, BannerApiResponse } from "./banner/types";
 export {
