@@ -63,6 +63,7 @@ export const websiteRoutes = {
     get: (id: string) => `${prefix}/website/banner/${id}`,
     update: (id: string) => `${prefix}/website/banner/${id}`,
     delete: (id: string) => `${prefix}/website/banner/${id}`,
+    reorder: (id: string) => `${prefix}/website/banner/${id}/reorder`,
   },
 };
 
