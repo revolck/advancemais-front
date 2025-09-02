@@ -14,6 +14,7 @@ export interface TeamBackendResponse {
 export interface CreateTeamPayload {
   nome: string;
   cargo: string;
+  photo?: File | Blob;
   photoUrl?: string;
   ordem?: number;
   status?: boolean | string;
@@ -22,6 +23,7 @@ export interface CreateTeamPayload {
 export interface UpdateTeamPayload {
   nome?: string;
   cargo?: string;
+  photo?: File | Blob;
   photoUrl?: string;
   ordem?: number;
   status?: boolean | string;
