@@ -1,50 +1,18 @@
 "use client";
 
 import React from "react";
-import {
-  VerticalTabs,
-  type VerticalTabItem,
-} from "@/components/ui/custom";
+import { VerticalTabs, type VerticalTabItem } from "@/components/ui/custom";
+import HeaderForm from "./header/HeaderForm";
 
 export default function RecrutamentoPage() {
   const items: VerticalTabItem[] = [
     {
-      value: "banner",
-      label: "Banner",
-      icon: "Image",
+      value: "header",
+      label: "Cabeçalho",
+      icon: "Type",
       content: (
         <div className="space-y-6">
-          <h3 className="text-lg font-semibold mb-2">Banner</h3>
-        </div>
-      ),
-    },
-    {
-      value: "sobre",
-      label: "Sobre",
-      icon: "Info",
-      content: (
-        <div className="space-y-6">
-          <h3 className="text-lg font-semibold mb-2">Sobre</h3>
-        </div>
-      ),
-    },
-    {
-      value: "resultados",
-      label: "Resultados",
-      icon: "BarChart",
-      content: (
-        <div className="space-y-6">
-          <h3 className="text-lg font-semibold mb-2">Resultados</h3>
-        </div>
-      ),
-    },
-    {
-      value: "servicos",
-      label: "Serviços",
-      icon: "Briefcase",
-      content: (
-        <div className="space-y-6">
-          <h3 className="text-lg font-semibold mb-2">Serviços</h3>
+          <HeaderForm />
         </div>
       ),
     },
@@ -55,11 +23,11 @@ export default function RecrutamentoPage() {
       <div className="flex-1 min-h-0">
         <VerticalTabs
           items={items}
-          defaultValue="banner"
+          defaultValue="header"
           variant="spacious"
           size="sm"
-          withAnimation={true}
-          showIndicator={true}
+          withAnimation
+          showIndicator
           tabsWidth="md"
           classNames={{
             root: "h-full",
@@ -73,3 +41,4 @@ export default function RecrutamentoPage() {
     </div>
   );
 }
+
