@@ -142,6 +142,8 @@ export function useSliderManager(props: SliderManagerProps = {}) {
     onDeleteSlider,
     onReorderSliders,
     onRefreshSliders,
+    entityName = "Slider",
+    entityNamePlural = "Sliders",
   } = props;
 
   const [state, dispatch] = useReducer(sliderManagerReducer, {
@@ -220,10 +222,10 @@ export function useSliderManager(props: SliderManagerProps = {}) {
         if (onCreateSlider) {
           const createdSlider = await onCreateSlider(sliderData);
           dispatch({ type: "ADD_SLIDER", payload: createdSlider });
-          toastCustom.success(SLIDER_MESSAGES.SUCCESS_CREATE);
+          toastCustom.success(`${entityName} criado com sucesso!`);
         } else {
           dispatch({ type: "ADD_SLIDER", payload: newSlider });
-          toastCustom.success(SLIDER_MESSAGES.SUCCESS_CREATE);
+          toastCustom.success(`${entityName} criado com sucesso!`);
         }
 
         dispatch({ type: "SET_VIEW", payload: "list" });
@@ -264,7 +266,7 @@ export function useSliderManager(props: SliderManagerProps = {}) {
           dispatch({ type: "UPDATE_SLIDER", payload: { id, updates } });
         }
 
-        toastCustom.success(SLIDER_MESSAGES.SUCCESS_UPDATE);
+        toastCustom.success(`${entityName} atualizado com sucesso!`);
         dispatch({ type: "SET_VIEW", payload: "list" });
         dispatch({ type: "SET_EDITING_SLIDER", payload: null });
       } catch (error) {
@@ -295,7 +297,7 @@ export function useSliderManager(props: SliderManagerProps = {}) {
           await onDeleteSlider(id);
         }
         dispatch({ type: "DELETE_SLIDER", payload: id });
-        toastCustom.success(SLIDER_MESSAGES.SUCCESS_DELETE);
+        toastCustom.success(`${entityName} excluído com sucesso!`);
       } catch (error) {
         const errorMessage =
           error instanceof Error
@@ -331,7 +333,7 @@ export function useSliderManager(props: SliderManagerProps = {}) {
           type: "UPDATE_SLIDER",
           payload: { id, updates: { status: !slider.status } },
         });
-        toastCustom.success(SLIDER_MESSAGES.SUCCESS_STATUS_TOGGLE);
+        toastCustom.success(`Status do ${entityName.toLowerCase()} alterado com sucesso!`);
       } catch (error) {
         const errorMessage =
           error instanceof Error
@@ -360,7 +362,7 @@ export function useSliderManager(props: SliderManagerProps = {}) {
           type: "REORDER_SLIDER",
           payload: { id: idOrOrderId, position: newPosition },
         });
-        toastCustom.success(SLIDER_MESSAGES.SUCCESS_REORDER);
+        toastCustom.success(`Ordem dos ${entityNamePlural.toLowerCase()} atualizada!`);
       } catch (error) {
         const errorMessage =
           error instanceof Error

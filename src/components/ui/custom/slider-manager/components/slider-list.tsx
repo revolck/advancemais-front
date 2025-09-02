@@ -53,6 +53,8 @@ export function SliderList({
   onToggleStatus,
   onReorder,
   isLoading = false,
+  entityName = "Slider",
+  entityNamePlural = "Sliders",
 }: SliderListProps) {
   const formatDateTime = (iso?: string) => {
     if (!iso) return "—";
@@ -213,10 +215,10 @@ export function SliderList({
             <Icon name="ImageIcon" className="h-10 w-10 text-blue-900" />
           </div>
           <h3 className="text-2xl font-semibold text-foreground !mb-1">
-            {SLIDER_MESSAGES.EMPTY_SLIDERS_TITLE}
+            {`Nenhum ${entityName.toLowerCase()} encontrado`}
           </h3>
           <p className="text-muted-foreground leading-relaxed text-base max-w-xl mx-auto mb-6">
-            {SLIDER_MESSAGES.EMPTY_SLIDERS_DESCRIPTION}
+            {`Comece criando seu primeiro ${entityName.toLowerCase()} para dar vida ao seu site!`}
           </p>
         </div>
       </motion.div>

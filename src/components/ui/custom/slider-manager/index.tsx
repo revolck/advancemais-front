@@ -29,6 +29,7 @@ export function SliderManager({
   className,
   uploadPath = "website/slider",
   entityName = "Slider",
+  entityNamePlural = "Sliders",
 }: SliderManagerProps) {
   // Use our custom hook for state management
   const {
@@ -58,6 +59,8 @@ export function SliderManager({
     onUpdateSlider,
     onDeleteSlider,
     onReorderSliders,
+    entityName,
+    entityNamePlural,
   });
 
   /**
@@ -106,7 +109,7 @@ export function SliderManager({
             {/* Title Section */}
             <div>
               <motion.h3 {...SLIDER_ANIMATIONS.FADE_IN}>
-                Gerenciador de sliders
+                Gerenciador de {entityNamePlural.toLowerCase()}
               </motion.h3>
               <motion.p
                 {...SLIDER_ANIMATIONS.FADE_IN}
@@ -114,7 +117,7 @@ export function SliderManager({
               >
                 O sistema está gerenciando{" "}
                 <span className="font-semibold">
-                  {activeSliders} sliders ativos
+                  {activeSliders} {entityNamePlural.toLowerCase()} ativos
                 </span>
                 .
               </motion.p>
@@ -136,7 +139,7 @@ export function SliderManager({
               ) : (
                 <>
                   <Icon name="Plus" className="h-5 w-5 mr-2" />
-                  Novo Slider
+                  Novo {entityName}
                 </>
               )}
             </ButtonCustom>
@@ -173,6 +176,8 @@ export function SliderManager({
           >
             <SliderList
               sliders={sliders}
+              entityName={entityName}
+              entityNamePlural={entityNamePlural}
               onEdit={(s) => {
                 editSlider(s);
               }}
