@@ -24,7 +24,7 @@ function mapFromBackend(item: BannerBackendResponse): Slider {
     content: "",
     status: (typeof item.status === "string" ? item.status : item.status ? "PUBLICADO" : "RASCUNHO") === "PUBLICADO",
     position: item.ordem,
-    createdAt: item.criadoEm,
+    createdAt: item.criadoEm ?? "",
     updatedAt: item.atualizadoEm,
   };
 }
