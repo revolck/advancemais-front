@@ -17,6 +17,8 @@ const AboutAdvantages: React.FC<AboutAdvantagesProps> = ({
   className,
   fetchFromApi = true,
   staticData,
+  showWhyChoose = true,
+  showAboutSection = true,
   onDataLoaded,
   onError,
 }) => {
@@ -123,12 +125,14 @@ const AboutAdvantages: React.FC<AboutAdvantagesProps> = ({
   return (
     <div className={cn(className)}>
       {/* Seção Por que escolher */}
-      {data.whyChoose.isActive && (
+      {showWhyChoose && data.whyChoose.isActive && (
         <WhyChooseSection data={data.whyChoose} cards={data.advantageCards} />
       )}
 
       {/* Seção Sobre */}
-      {data.aboutSection.isActive && <AboutSection data={data.aboutSection} />}
+      {showAboutSection && data.aboutSection.isActive && (
+        <AboutSection data={data.aboutSection} />
+      )}
 
       {/* Indicador de erro sutil */}
       {error && (

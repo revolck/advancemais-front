@@ -5,6 +5,7 @@ import { usePageTitle } from "@/hooks/usePageTitle";
 import HeaderPages from "@/theme/website/components/header-pages";
 import AccordionGroupInformation from "@/theme/website/components/accordion-group-information";
 import TeamShowcase from "@/theme/website/components/team-showcase/TeamShowcase";
+import AboutAdvantages from "@/theme/website/components/about-advantages";
 
 /**
  * Página Sobre Nós
@@ -19,6 +20,7 @@ export default function SobrePage() {
     <div className="min-h-screen">
       <HeaderPages fetchFromApi={true} currentPage="/sobre" />
       <AccordionGroupInformation fetchFromApi={true} />
+      <AboutAdvantages fetchFromApi={true} />
       <TeamShowcase fetchFromApi={true} title="Conheça nossa Equipe" />
     </div>
   );

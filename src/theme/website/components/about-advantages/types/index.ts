@@ -73,6 +73,16 @@ export interface AboutAdvantagesProps {
    */
   staticData?: AboutAdvantagesApiData;
   /**
+   * Controla renderização da seção "Por que escolher"
+   * @default true
+   */
+  showWhyChoose?: boolean;
+  /**
+   * Controla renderização da seção "Sobre"
+   * @default true
+   */
+  showAboutSection?: boolean;
+  /**
    * Callback quando os dados são carregados
    */
   onDataLoaded?: (data: AboutAdvantagesApiData) => void;
