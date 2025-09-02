@@ -1,8 +1,3 @@
-/**
- * Slider List Component
- * Path: src/components/ui/custom/slider-manager/components/slider-list.tsx
- */
-
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -12,7 +7,6 @@ import {
   GripVertical,
   Calendar as CalendarIcon,
 } from "lucide-react";
-// Removido Next/Image aqui para usar background cover na thumbnail
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";

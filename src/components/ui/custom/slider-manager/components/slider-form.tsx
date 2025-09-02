@@ -1,8 +1,3 @@
-/**
- * Slider Form Component
- * Path: src/components/ui/custom/slider-manager/components/slider-form.tsx
- */
-
 "use client";
 
 import type React from "react";
