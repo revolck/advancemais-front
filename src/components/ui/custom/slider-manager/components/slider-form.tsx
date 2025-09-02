@@ -121,7 +121,13 @@ export function SliderForm({
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  }, [formData, uploadedFiles]);
+  }, [
+    formData,
+    uploadedFiles,
+    entityName,
+    secondFieldRequired,
+    validateSecondFieldAsUrl,
+  ]);
 
   /**
    * Handle file upload changes
@@ -212,7 +218,14 @@ export function SliderForm({
         setIsSubmitting(false);
       }
     },
-    [formData, onSubmit, uploadedFiles, validateForm]
+    [
+      formData,
+      onSubmit,
+      uploadedFiles,
+      validateForm,
+      oldImageUrl,
+      uploadPath,
+    ]
   );
 
   /**

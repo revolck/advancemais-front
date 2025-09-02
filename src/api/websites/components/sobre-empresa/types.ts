@@ -26,6 +26,7 @@ export interface AccordionItemData {
 export interface AccordionSectionData {
   id: string;
   title: string;
+  description?: string;
   videoUrl: string;
   videoType: "youtube" | "vimeo" | "mp4" | "url";
   items: AccordionItemData[];

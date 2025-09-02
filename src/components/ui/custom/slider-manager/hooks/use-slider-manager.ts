@@ -251,7 +251,15 @@ export function useSliderManager(props: SliderManagerProps = {}) {
         dispatch({ type: "SET_LOADING", payload: false });
       }
     },
-    [generateId, getNextPosition, onCreateSlider, maxItems, state.sliders.length, entityNamePlural]
+    [
+      generateId,
+      getNextPosition,
+      onCreateSlider,
+      maxItems,
+      state.sliders.length,
+      entityNamePlural,
+      entityName,
+    ]
   );
 
   /**
@@ -288,7 +296,7 @@ export function useSliderManager(props: SliderManagerProps = {}) {
         dispatch({ type: "SET_LOADING", payload: false });
       }
     },
-    [onUpdateSlider]
+    [onUpdateSlider, entityName]
   );
 
   /**
@@ -317,7 +325,7 @@ export function useSliderManager(props: SliderManagerProps = {}) {
         dispatch({ type: "SET_LOADING", payload: false });
       }
     },
-    [onDeleteSlider]
+    [onDeleteSlider, entityName]
   );
 
   /**
@@ -353,7 +361,7 @@ export function useSliderManager(props: SliderManagerProps = {}) {
         // Nada a fazer: loading por item controlado no componente da lista
       }
     },
-    [state.sliders, onUpdateSlider]
+    [state.sliders, onUpdateSlider, entityName]
   );
 
   /**
@@ -380,7 +388,7 @@ export function useSliderManager(props: SliderManagerProps = {}) {
         throw error;
       }
     },
-    [onReorderSliders]
+    [onReorderSliders, entityNamePlural]
   );
 
   /**
