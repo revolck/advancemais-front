@@ -117,6 +117,7 @@ export type {
 export type { BannerBackendResponse, BannerApiResponse } from "./banner/types";
 export {
   listTeam,
+  getTeamById,
   createTeam,
   updateTeam,
   deleteTeam,

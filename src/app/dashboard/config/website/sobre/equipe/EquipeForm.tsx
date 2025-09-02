@@ -15,13 +15,13 @@ import {
 
 function mapFromBackend(item: TeamBackendResponse): Slider {
   return {
-    id: item.id,
+    id: item.teamId,
     orderId: item.id,
     title: item.nome,
     image: item.photoUrl,
     url: item.cargo,
     content: "",
-    status: true,
+    status: item.status === "PUBLICADO",
     position: typeof item.ordem === "number" ? item.ordem : 0,
     createdAt: item.criadoEm || new Date().toISOString(),
     updatedAt: item.atualizadoEm,
@@ -59,6 +59,7 @@ export default function EquipeForm() {
         nome: data.title,
         cargo: data.url,
         photoUrl: data.image,
+        status: data.status,
         ordem: typeof data.position === "number" ? data.position : undefined,
       });
       return mapFromBackend(created);
@@ -72,6 +73,7 @@ export default function EquipeForm() {
         nome: updates.title,
         cargo: updates.url,
         photoUrl: updates.image,
+        status: updates.status,
         ordem: updates.position,
       });
       return mapFromBackend(updated);
@@ -114,4 +116,3 @@ export default function EquipeForm() {
     />
   );
 }
-
