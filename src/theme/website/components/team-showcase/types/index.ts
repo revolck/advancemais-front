@@ -49,6 +49,15 @@ export interface TeamShowcaseProps {
    * Callback quando ocorre erro
    */
   onError?: (error: string) => void;
+  /**
+   * Tema da seção (cores, raio e gap)
+   */
+  theme?: {
+    primaryColor?: string; // cor de destaque (borda/hover)
+    secondaryColor?: string; // cor de apoio (texto/calls)
+    radius?: number | string; // ex: 16 ou "1rem"
+    gap?: number | string; // ex: 20 ou "1.25rem"
+  };
 }
 
 /**

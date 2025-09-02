@@ -305,7 +305,7 @@ export function SliderForm({
               disabled={isLoading}
               aria-label={SLIDER_CONFIG.a11y.labels.toggleButton}
               className={cn(
-                "transition-colors",
+                "transition-colors cursor-pointer disabled:cursor-not-allowed",
                 "data-[state=checked]:bg-emerald-400/60 data-[state=unchecked]:bg-red-300/60",
                 "data-[state=checked]:border-emerald-500/50 data-[state=unchecked]:border-red-400/50"
               )}
@@ -353,7 +353,6 @@ export function SliderForm({
             id="title"
             value={formData.title}
             onChange={(e) => handleInputChange("title", e.target.value)}
-            placeholder={SLIDER_MESSAGES.PLACEHOLDER_TITLE}
             disabled={isLoading}
             maxLength={100}
             required
@@ -367,7 +366,6 @@ export function SliderForm({
             type={validateSecondFieldAsUrl ? "url" : "text"}
             value={formData.url}
             onChange={(e) => handleInputChange("url", e.target.value)}
-            placeholder={secondFieldLabel ? secondFieldLabel : SLIDER_MESSAGES.PLACEHOLDER_URL}
             helperText={validateSecondFieldAsUrl ? `Para onde o usuário será direcionado ao clicar no ${entityName.toLowerCase()}` : undefined}
             disabled={isLoading}
             maxLength={500}

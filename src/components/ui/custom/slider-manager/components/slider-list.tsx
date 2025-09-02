@@ -437,8 +437,8 @@ export function SliderList({
                                 disabled={isLoading || busyId === slider.id}
                                 aria-label={
                                   slider.status
-                                    ? "Desativar slider"
-                                    : "Ativar slider"
+                                    ? `Desativar ${entityName.toLowerCase()}`
+                                    : `Ativar ${entityName.toLowerCase()}`
                                 }
                               >
                                 {busyId === slider.id ? (
@@ -461,8 +461,8 @@ export function SliderList({
                             </TooltipTrigger>
                             <TooltipContent>
                               {slider.status
-                                ? "Desativar slider"
-                                : "Ativar slider"}
+                                ? `Desativar ${entityName.toLowerCase()}`
+                                : `Ativar ${entityName.toLowerCase()}`}
                             </TooltipContent>
                           </Tooltip>
 
@@ -475,9 +475,7 @@ export function SliderList({
                                 onClick={() => onEdit(slider)}
                                 className="h-10 w-10 p-0 hover:bg-muted/50 rounded-lg cursor-pointer disabled:cursor-not-allowed"
                                 disabled={isLoading || busyId === slider.id}
-                                aria-label={
-                                  SLIDER_CONFIG.a11y.labels.editButton
-                                }
+                                aria-label={`Editar ${entityName.toLowerCase()}`}
                               >
                                 {busyId === slider.id ? (
                                   <Icon
@@ -492,7 +490,7 @@ export function SliderList({
                                 )}
                               </Button>
                             </TooltipTrigger>
-                            <TooltipContent>Editar slider</TooltipContent>
+                            <TooltipContent>{`Editar ${entityName.toLowerCase()}`}</TooltipContent>
                           </Tooltip>
 
                           {/* Delete Button */}
@@ -504,9 +502,7 @@ export function SliderList({
                                 onClick={() => setDeleteSlider(slider)}
                                 className="h-10 w-10 p-0 hover:bg-red-50 hover:text-red-600 rounded-lg cursor-pointer disabled:cursor-not-allowed"
                                 disabled={isLoading || busyId === slider.id}
-                                aria-label={
-                                  SLIDER_CONFIG.a11y.labels.deleteButton
-                                }
+                                aria-label={`Excluir ${entityName.toLowerCase()}`}
                               >
                                 {busyId === slider.id ? (
                                   <Icon
@@ -518,7 +514,7 @@ export function SliderList({
                                 )}
                               </Button>
                             </TooltipTrigger>
-                            <TooltipContent>Excluir slider</TooltipContent>
+                            <TooltipContent>{`Excluir ${entityName.toLowerCase()}`}</TooltipContent>
                           </Tooltip>
                         </div>
                       </div>
@@ -541,9 +537,9 @@ export function SliderList({
                 Confirmar Exclusão
               </AlertDialogTitle>
               <AlertDialogDescription className="text-base leading-relaxed text-muted-foreground">
-                Você está prestes a excluir o slider{" "}
-                <strong>"{deleteSlider?.title}"</strong>.{" "}
-                {SLIDER_MESSAGES.CONFIRM_DELETE_DESCRIPTION}
+                {`Você está prestes a excluir o ${entityName.toLowerCase()} `}
+                <strong>"{deleteSlider?.title}"</strong>. {" "}
+                {`Esta ação não pode ser desfeita e o ${entityName.toLowerCase()} será removido permanentemente.`}
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
@@ -565,7 +561,7 @@ export function SliderList({
                     Excluindo...
                   </span>
                 ) : (
-                  "Excluir Slider"
+                  `Excluir ${entityName}`
                 )}
               </AlertDialogAction>
             </AlertDialogFooter>

@@ -18,6 +18,7 @@ const TeamShowcase: React.FC<TeamShowcaseProps> = ({
   staticData,
   onDataLoaded,
   onError,
+  theme,
 }) => {
   const { data, isLoading, error, refetch } = useTeamData(
     fetchFromApi,
@@ -48,17 +49,14 @@ const TeamShowcase: React.FC<TeamShowcaseProps> = ({
           </div>
 
           {/* Grid skeleton */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {Array.from({ length: 8 }).map((_, index) => (
               <div
                 key={index}
-                className="bg-white border border-gray-200 rounded-lg overflow-hidden"
+                className="rounded-2xl overflow-hidden"
               >
                 <div className="aspect-[3/4] bg-gray-200 animate-pulse" />
-                <div className="p-4 space-y-2">
-                  <div className="h-5 bg-gray-200 rounded animate-pulse" />
-                  <div className="h-4 bg-gray-200 rounded w-2/3 mx-auto animate-pulse" />
-                </div>
+                <div className="p-4 space-y-2" />
               </div>
             ))}
           </div>
@@ -96,8 +94,30 @@ const TeamShowcase: React.FC<TeamShowcaseProps> = ({
     return null;
   }
 
+  const primary = theme?.primaryColor ?? "#2563eb"; // default blue-600
+  const secondary = theme?.secondaryColor ?? "#3b82f6"; // default blue-500
+  const radiusValue =
+    theme?.radius !== undefined
+      ? typeof theme.radius === "number"
+        ? `${theme.radius}px`
+        : theme.radius
+      : "1rem";
+  const gapValue =
+    theme?.gap !== undefined
+      ? typeof theme.gap === "number"
+        ? `${theme.gap}px`
+        : theme.gap
+      : "1.25rem"; // 20px
+
+  const themeStyle: React.CSSProperties = {
+    ["--team-primary" as any]: primary,
+    ["--team-secondary" as any]: secondary,
+    ["--team-radius" as any]: radiusValue,
+    ["--team-gap" as any]: gapValue,
+  };
+
   return (
-    <section className={cn("py-1", className)}>
+    <section className={cn("py-12", className)} style={themeStyle}>
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header da seção */}
         <motion.div
@@ -112,8 +132,11 @@ const TeamShowcase: React.FC<TeamShowcaseProps> = ({
           </h2>
         </motion.div>
 
-        {/* Grid de membros - ESPAÇAMENTO COMPACTO */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* Grid de membros - responsivo e 4 por linha em telas amplas */}
+        <div
+          className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
+          style={{ gap: "var(--team-gap, 1.25rem)" }}
+        >
           {data.map((member, index) => (
             <TeamMember key={member.id} data={member} index={index} />
           ))}
