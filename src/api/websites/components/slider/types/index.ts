@@ -3,7 +3,7 @@ import type { SlideData } from "@/theme/website/components/slider/types";
 export type SlideApiResponse = SlideData[];
 
 export type SliderOrientation = "DESKTOP" | "TABLET_MOBILE";
-export type SliderStatus = "PUBLICADO" | "RASCUNHO";
+export type WebsiteStatus = "PUBLICADO" | "RASCUNHO";
 
 export interface SlideBackendResponse {
   id: string;
@@ -14,7 +14,7 @@ export interface SlideBackendResponse {
   imagemTitulo: string;
   link?: string;
   orientacao: SliderOrientation | string;
-  status: SliderStatus | string;
+  status: WebsiteStatus | string;
   ordem: number;
   ordemId?: string;
   ordemCriadoEm?: string;
@@ -28,7 +28,7 @@ export interface CreateSliderPayload {
   imagemTitulo?: string;
   link?: string;
   orientacao: SliderOrientation;
-  status: SliderStatus | boolean;
+  status: WebsiteStatus | boolean;
   ordem?: number;
   imagem?: File;
 }
@@ -39,7 +39,7 @@ export interface UpdateSliderPayload {
   imagemTitulo?: string;
   link?: string;
   orientacao?: SliderOrientation;
-  status?: SliderStatus | boolean;
+  status?: WebsiteStatus | boolean;
   ordem?: number;
   imagem?: File;
 }

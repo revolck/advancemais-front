@@ -8,6 +8,7 @@ import ConsultoriaForm from "./consultoria/ConsultoriaForm";
 import RecrutamentoForm from "./recrutamento/RecrutamentoForm";
 import DesktopSliderManager from "./slider/Desktop";
 import MobileSliderManager from "./slider/Mobile";
+import BannersForm from "./banners/BannersForm";
 import {
   listAbout,
   type AboutBackendResponse,
@@ -111,12 +112,7 @@ export default function PaginaInicialPage() {
       icon: "Image",
       content: (
         <div className="space-y-6">
-          <div>
-            <h3 className="text-lg font-semibold mb-2">Banners Promocionais</h3>
-            <p className="text-muted-foreground mb-4">
-              Gerencie os banners promocionais que aparecem na página inicial.
-            </p>
-          </div>
+          <BannersForm />
         </div>
       ),
     },

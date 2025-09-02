@@ -27,6 +27,8 @@ export function SliderManager({
   onDeleteSlider,
   onReorderSliders,
   className,
+  uploadPath = "website/slider",
+  entityName = "Slider",
 }: SliderManagerProps) {
   // Use our custom hook for state management
   const {
@@ -205,13 +207,15 @@ export function SliderManager({
           <ModalContentWrapper>
             <ModalHeader>
               <ModalTitle className="!text-xl md:text-lg font-semibold">
-                {editingSlider ? "Editar slider" : "Criar novo slider"}
+                {editingSlider ? `Editar ${entityName.toLowerCase()}` : `Criar novo ${entityName.toLowerCase()}`}
               </ModalTitle>
             </ModalHeader>
             <ModalBody>
               <SliderForm
                 slider={editingSlider}
                 showHeader={false}
+                uploadPath={uploadPath}
+                entityName={entityName}
                 onSubmit={async (formData) => {
                   await handleFormSubmit(formData);
                   // Close modal and return to list

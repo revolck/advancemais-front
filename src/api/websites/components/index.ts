@@ -53,6 +53,15 @@ export {
   updateSliderStatus,
 } from "./slider";
 export { getBannerData, getBannerDataClient } from "./banner";
+export {
+  listBanners,
+  getBannerById,
+  createBanner,
+  updateBanner,
+  deleteBanner,
+  updateBannerOrder,
+  updateBannerStatus,
+} from "./banner";
 export type {
   AboutApiResponse,
   AboutImageProps,

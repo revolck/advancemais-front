@@ -32,6 +32,8 @@ export function SliderForm({
   onCancel,
   isLoading = false,
   showHeader = true,
+  uploadPath = "website/slider",
+  entityName = "Slider",
 }: SliderFormProps) {
   // Form state
   const [formData, setFormData] = useState(() => ({
@@ -158,7 +160,7 @@ export function SliderForm({
           // Substituição: sobe novo e remove o antigo via uploadService
           uploadResult = await uploadImage(
             latest.file,
-            "website/slider",
+            uploadPath,
             previousUrl,
           );
           finalImageUrl = uploadResult.url;
@@ -220,7 +222,7 @@ export function SliderForm({
       {showHeader && (
         <div className="mb-6">
           <h2 className="text-2xl font-semibold text-foreground">
-            {slider ? "Editar Slider" : "Criar Novo Slider"}
+            {slider ? `Editar ${entityName}` : `Criar Novo ${entityName}`}
           </h2>
         </div>
       )}
@@ -231,7 +233,7 @@ export function SliderForm({
           <Alert className="border-secondary/30 bg-secondary/10 rounded-xl">
             <CheckCircle2 className="h-5 w-5 text-secondary" />
             <AlertDescription className="text-secondary-foreground text-base">
-              Slider {slider ? "atualizado" : "criado"} com sucesso!
+              {entityName} {slider ? "atualizado" : "criado"} com sucesso!
             </AlertDescription>
           </Alert>
         </motion.div>
@@ -246,7 +248,7 @@ export function SliderForm({
               <ImageIcon className="h-4 w-4 text-blue-800" />
             </div>
             <span className="text-md font-medium text-foreground">
-              Configurações do Slider
+              Configurações do {entityName}
             </span>
           </div>
 
@@ -282,7 +284,7 @@ export function SliderForm({
         {/* Image Upload Section - estilo alinhado ao Sobre */}
         <div className="space-y-3">
           <Label className="text-sm font-medium text-gray-700">
-            Imagem do Slider <span className="text-red-500">*</span>
+            Imagem do {entityName} <span className="text-red-500">*</span>
           </Label>
 
           <FileUpload

@@ -31,6 +31,8 @@ export interface SliderFormProps {
   onCancel: () => void;
   isLoading?: boolean;
   showHeader?: boolean;
+  uploadPath?: string; // destino do upload (ex.: website/slider, website/banner)
+  entityName?: string; // rótulo para cópia (ex.: "Slider", "Banner")
 }
 
 export interface SliderListProps {
@@ -53,6 +55,8 @@ export interface SliderManagerProps {
   onReorderSliders?: (sliderId: string, newPosition: number) => Promise<void>;
   onRefreshSliders?: () => Promise<Slider[]>;
   className?: string;
+  uploadPath?: string;
+  entityName?: string;
 }
 
 export interface ValidationError {

@@ -12,7 +12,7 @@ import type {
   CreateSliderPayload,
   UpdateSliderPayload,
   SliderOrientation,
-  SliderStatus,
+  WebsiteStatus,
 } from "./types";
 import type { SlideData } from "@/theme/website/components/slider/types";
 
@@ -179,12 +179,12 @@ export async function updateSliderStatus(
   status: boolean | string,
   orientacao?: SliderOrientation
 ): Promise<SlideBackendResponse> {
-  const statusValue: SliderStatus =
+  const statusValue: WebsiteStatus =
     typeof status === "boolean"
       ? status
         ? "PUBLICADO"
         : "RASCUNHO"
-      : (status.toUpperCase() as SliderStatus);
+      : (status.toUpperCase() as WebsiteStatus);
 
   const { body, headers } = buildRequest({ status: statusValue, orientacao });
 
