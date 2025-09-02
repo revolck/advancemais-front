@@ -35,7 +35,7 @@ const AccordionGroupInformation: React.FC<AccordionGroupInformationProps> = ({
     }
   }, [error, onError]);
 
-  // Estado de carregamento - SEM DARK MODE
+  // Estado de carregamento com placeholder de vídeo à direita
   if (isLoading) {
     return (
       <div className={cn("py-8", className)}>
@@ -43,21 +43,19 @@ const AccordionGroupInformation: React.FC<AccordionGroupInformationProps> = ({
           <section key={index} className="py-16 lg:py-20 bg-white">
             <div className="container mx-auto px-4 lg:px-8">
               <div className="flex flex-col lg:flex-row items-start gap-12 lg:gap-16 max-w-7xl mx-auto">
-                {/* Skeleton do texto e accordion */}
+                {/* Skeleton do texto e accordion (esquerda) */}
                 <div className="w-full lg:w-1/2 flex flex-col justify-start space-y-6">
-                  <div className="h-10 bg-gray-200 rounded animate-pulse" />
-                  <div className="h-6 bg-gray-200 rounded animate-pulse w-3/4" />
-                  <div className="space-y-4">
+                  <div className="h-10 bg-gray-200 rounded animate-pulse w-3/4" />
+                  <div className="h-4 bg-gray-200 rounded animate-pulse w-full" />
+                  <div className="h-4 bg-gray-200 rounded animate-pulse w-5/6" />
+                  <div className="space-y-4 pt-4">
                     {Array.from({ length: 3 }).map((_, i) => (
-                      <div
-                        key={i}
-                        className="h-16 bg-gray-200 rounded animate-pulse"
-                      />
+                      <div key={i} className="h-16 bg-gray-200 rounded-xl animate-pulse" />
                     ))}
                   </div>
                 </div>
 
-                {/* Skeleton do vídeo */}
+                {/* Skeleton do vídeo (direita) */}
                 <div className="w-full lg:w-1/2">
                   <div className="aspect-video bg-gray-200 rounded-2xl animate-pulse" />
                 </div>
@@ -69,7 +67,7 @@ const AccordionGroupInformation: React.FC<AccordionGroupInformationProps> = ({
     );
   }
 
-  // Estado de erro - SEM DARK MODE
+  // Estado de erro
   if (error && (!data || data.length === 0)) {
     return (
       <div className={cn("py-16", className)}>

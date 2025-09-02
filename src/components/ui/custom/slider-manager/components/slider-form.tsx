@@ -34,6 +34,10 @@ export function SliderForm({
   showHeader = true,
   uploadPath = "website/slider",
   entityName = "Slider",
+  firstFieldLabel,
+  secondFieldLabel,
+  validateSecondFieldAsUrl = true,
+  secondFieldRequired = false,
 }: SliderFormProps) {
   // Form state
   const [formData, setFormData] = useState(() => ({
@@ -96,8 +100,15 @@ export function SliderForm({
       newErrors.title = SLIDER_MESSAGES.ERROR_TITLE_MAX_LENGTH;
     }
 
-    if (formData.url && !formData.url.match(/^https?:\/\/.+/)) {
-      newErrors.url = SLIDER_MESSAGES.ERROR_URL_INVALID;
+    if (validateSecondFieldAsUrl) {
+      if (formData.url && !formData.url.match(/^https?:\/\/.+/)) {
+        newErrors.url = SLIDER_MESSAGES.ERROR_URL_INVALID;
+      }
+    }
+    if (secondFieldRequired) {
+      if (!formData.url || !formData.url.trim()) {
+        newErrors.url = newErrors.url || "Este campo é obrigatório";
+      }
     }
 
     if (formData.url && formData.url.length > 500) {
@@ -325,7 +336,7 @@ export function SliderForm({
         <div className="space-y-4">
           {/* ✅ CORRIGIDO: Remover showRequiredIndicator e touched */}
           <InputCustom
-            label={`Título do ${entityName}`}
+            label={firstFieldLabel || `Título do ${entityName}`}
             id="title"
             value={formData.title}
             onChange={(e) => handleInputChange("title", e.target.value)}
@@ -338,17 +349,18 @@ export function SliderForm({
 
           {/* ✅ CORRIGIDO: Remover touched e usar icon (não leftIcon) */}
           <InputCustom
-            label="URL de Destino"
+            label={secondFieldLabel || "URL de Destino"}
             id="url"
-            type="url"
+            type={validateSecondFieldAsUrl ? "url" : "text"}
             value={formData.url}
             onChange={(e) => handleInputChange("url", e.target.value)}
-            placeholder={SLIDER_MESSAGES.PLACEHOLDER_URL}
-            helperText={`Para onde o usuário será direcionado ao clicar no ${entityName.toLowerCase()}`}
+            placeholder={secondFieldLabel ? secondFieldLabel : SLIDER_MESSAGES.PLACEHOLDER_URL}
+            helperText={validateSecondFieldAsUrl ? `Para onde o usuário será direcionado ao clicar no ${entityName.toLowerCase()}` : undefined}
             disabled={isLoading}
             maxLength={500}
             error={errors.url}
-            icon="Link"
+            icon={validateSecondFieldAsUrl ? "Link" : undefined}
+            required={secondFieldRequired}
           />
         </div>
 

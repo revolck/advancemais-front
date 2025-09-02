@@ -62,6 +62,14 @@ export {
   updateBannerOrder,
   updateBannerStatus,
 } from "./banner";
+export {
+  listHeaderPages,
+  getHeaderPageById,
+  createHeaderPage,
+  updateHeaderPage,
+  deleteHeaderPage,
+  getHeaderForPage,
+} from "./header-pages";
 export type {
   AboutApiResponse,
   AboutImageProps,
@@ -107,3 +115,17 @@ export type {
 } from "./diferenciais/types";
 
 export type { BannerBackendResponse, BannerApiResponse } from "./banner/types";
+export {
+  listTeam,
+  createTeam,
+  updateTeam,
+  deleteTeam,
+  updateTeamOrder,
+} from "./team";
+export type { TeamBackendResponse, CreateTeamPayload, UpdateTeamPayload } from "./team/types";
+export type {
+  HeaderPageBackendResponse,
+  CreateHeaderPagePayload,
+  UpdateHeaderPagePayload,
+  HeaderPage,
+} from "./header-pages/types";

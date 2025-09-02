@@ -25,22 +25,19 @@ export const BannerCard: React.FC<BannerCardProps> = ({
     setIsLoading(false);
     setHasError(true);
   };
+  const hasLink = Boolean(banner.linkUrl && banner.linkUrl !== "#");
 
-  return (
-    <Link
-      href={banner.linkUrl}
-      className={`
-        group relative block w-full
-        aspect-[2/3] rounded-2xl overflow-hidden
-        bg-gradient-to-br from-gray-100 to-gray-200
-        shadow-lg hover:shadow-xl
-        transition-all duration-300 ease-out
-        hover:scale-[1.02] hover:-translate-y-1
-        focus:outline-none focus:ring-4 focus:ring-blue-500/20
-        ${className}
-      `}
-      aria-label={banner.alt}
-    >
+  const baseClasses = `
+    ${hasLink ? "group" : ""} relative block w-full
+    aspect-[2/3] rounded-2xl overflow-hidden
+    bg-gradient-to-br from-gray-100 to-gray-200
+    transition-transform duration-300 ease-out
+    ${hasLink ? "hover:scale-[1.02] hover:-translate-y-1 focus:outline-none focus:ring-4 focus:ring-blue-500/20" : ""}
+    ${className}
+  `;
+
+  const Content = (
+    <>
       {/* Loading State */}
       {isLoading && (
         <div className="absolute inset-0 bg-gray-200 animate-pulse flex items-center justify-center">
@@ -72,7 +69,7 @@ export const BannerCard: React.FC<BannerCardProps> = ({
           className={`
             w-full h-full object-cover
             transition-all duration-500 ease-out
-            group-hover:scale-105
+            ${hasLink ? "group-hover:scale-105" : ""}
             ${isLoading ? "opacity-0" : "opacity-100"}
           `}
           onLoad={handleImageLoad}
@@ -81,41 +78,65 @@ export const BannerCard: React.FC<BannerCardProps> = ({
         />
       )}
 
-      {/* Overlay com efeito hover */}
-      <div
-        className="
-        absolute inset-0 
-        bg-gradient-to-t from-black/20 via-transparent to-transparent
-        opacity-0 group-hover:opacity-100
-        transition-opacity duration-300
-      "
-      />
+      {/* Overlay com efeito hover (apenas quando há link) */}
+      {hasLink && (
+        <div
+          className="
+          absolute inset-0 
+          bg-gradient-to-t from-black/20 via-transparent to-transparent
+          opacity-0 group-hover:opacity-100
+          transition-opacity duration-300
+        "
+        />
+      )}
 
-      {/* Indicador de interação */}
-      <div
-        className="
-        absolute bottom-4 right-4
-        w-8 h-8 bg-white/90 backdrop-blur-sm
-        rounded-full flex items-center justify-center
-        opacity-0 group-hover:opacity-100
-        transform translate-x-2 group-hover:translate-x-0
-        transition-all duration-300
-      "
-      >
-        <svg
-          className="w-4 h-4 text-gray-700"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
+      {/* Indicador de interação (apenas quando há link) */}
+      {hasLink && (
+        <div
+          className="
+          absolute bottom-4 right-4
+          w-8 h-8 bg-white/90 backdrop-blur-sm
+          rounded-full flex items-center justify-center
+          opacity-0 group-hover:opacity-100
+          transform translate-x-2 group-hover:translate-x-0
+          transition-all duration-300
+        "
         >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M9 5l7 7-7 7"
-          />
-        </svg>
-      </div>
-    </Link>
+          <svg
+            className="w-4 h-4 text-gray-700"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M9 5l7 7-7 7"
+            />
+          </svg>
+        </div>
+      )}
+    </>
+  );
+
+  if (hasLink) {
+    return (
+      <Link
+        href={banner.linkUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={baseClasses}
+        aria-label={banner.alt}
+      >
+        {Content}
+      </Link>
+    );
+  }
+
+  return (
+    <div className={baseClasses} aria-label={banner.alt} role="img">
+      {Content}
+    </div>
   );
 };

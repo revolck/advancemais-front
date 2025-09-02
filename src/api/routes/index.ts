@@ -65,6 +65,21 @@ export const websiteRoutes = {
     delete: (id: string) => `${prefix}/website/banner/${id}`,
     reorder: (id: string) => `${prefix}/website/banner/${id}/reorder`,
   },
+  team: {
+    list: () => `${prefix}/website/team`,
+    create: () => `${prefix}/website/team`,
+    get: (id: string) => `${prefix}/website/team/${id}`,
+    update: (id: string) => `${prefix}/website/team/${id}`,
+    delete: (id: string) => `${prefix}/website/team/${id}`,
+    reorder: (id: string) => `${prefix}/website/team/${id}/reorder`,
+  },
+  headerPages: {
+    list: () => `${prefix}/website/header-pages`,
+    create: () => `${prefix}/website/header-pages`,
+    get: (id: string) => `${prefix}/website/header-pages/${id}`,
+    update: (id: string) => `${prefix}/website/header-pages/${id}`,
+    delete: (id: string) => `${prefix}/website/header-pages/${id}`,
+  },
 };
 
 /**

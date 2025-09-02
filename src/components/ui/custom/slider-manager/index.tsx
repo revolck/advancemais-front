@@ -33,6 +33,10 @@ export function SliderManager({
   entityName = "Slider",
   entityNamePlural = "Sliders",
   maxItems,
+  firstFieldLabel,
+  secondFieldLabel,
+  validateSecondFieldAsUrl = true,
+  secondFieldRequired = false,
 }: SliderManagerProps) {
   // Use our custom hook for state management
   const {
@@ -235,6 +239,10 @@ export function SliderManager({
               <SliderForm
                 slider={editingSlider}
                 showHeader={false}
+                firstFieldLabel={firstFieldLabel}
+                secondFieldLabel={secondFieldLabel}
+                validateSecondFieldAsUrl={validateSecondFieldAsUrl}
+                secondFieldRequired={secondFieldRequired}
                 uploadPath={uploadPath}
                 entityName={entityName}
                 onSubmit={async (formData) => {

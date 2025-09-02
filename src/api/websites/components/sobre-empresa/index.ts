@@ -23,6 +23,7 @@ function mapSobreEmpresa(
     {
       id: latest.id,
       title: latest.titulo,
+      description: latest.descricao,
       videoUrl: latest.videoUrl || "",
       videoType: latest.videoUrl?.includes("youtube")
         ? "youtube"
@@ -33,10 +34,10 @@ function mapSobreEmpresa(
         : "url",
       items: [
         {
-          id: `${latest.id}-descricao`,
-          value: "descricao",
-          trigger: latest.titulo,
-          content: latest.descricao,
+          id: `${latest.id}-missao`,
+          value: "missao",
+          trigger: "Missão",
+          content: latest.descricaoMissao,
           order: 1,
           isActive: true,
         },
@@ -49,19 +50,11 @@ function mapSobreEmpresa(
           isActive: true,
         },
         {
-          id: `${latest.id}-missao`,
-          value: "missao",
-          trigger: "Missão",
-          content: latest.descricaoMissao,
-          order: 3,
-          isActive: true,
-        },
-        {
           id: `${latest.id}-valores`,
           value: "valores",
           trigger: "Valores",
           content: latest.descricaoValores,
-          order: 4,
+          order: 3,
           isActive: true,
         },
       ],

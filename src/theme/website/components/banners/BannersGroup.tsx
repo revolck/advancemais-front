@@ -67,11 +67,17 @@ const BannersGroup: React.FC<BannersGroupProps> = ({
           </h2>
         </header>
 
-        {!isLoading && banners.length > 0 && (
-          isMobile ? (
-            <BannerSlider banners={banners} />
+        {!isLoading && (
+          banners.length > 0 ? (
+            isMobile ? (
+              <BannerSlider banners={banners} />
+            ) : (
+              <BannerGrid banners={banners} />
+            )
           ) : (
-            <BannerGrid banners={banners} />
+            <div className="w-full bg-[var(--primary-color)]/90 text-white rounded-xl py-10 flex items-center justify-center">
+              <span className="text-white/90">Nenhum banner disponível</span>
+            </div>
           )
         )}
       </div>

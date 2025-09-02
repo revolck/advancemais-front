@@ -118,17 +118,17 @@ export default function RecrutamentoSection({
   return (
     <section className={className}>
       <div className="container mx-auto py-16 px-4 flex flex-col lg:flex-row items-center gap-10 mt-5 lg:gap-20 md:gap-20">
-        <RecrutamentoImage
-          src={data.src}
-          alt={data.title || "Recrutamento"}
-          width={600}
-          height={400}
-        />
         <RecrutamentoContent
           title={data.title}
           description={data.description}
           buttonUrl={data.buttonUrl}
           buttonLabel={data.buttonLabel}
+        />
+        <RecrutamentoImage
+          src={data.src}
+          alt={data.title || "Recrutamento"}
+          width={600}
+          height={400}
         />
       </div>
     </section>

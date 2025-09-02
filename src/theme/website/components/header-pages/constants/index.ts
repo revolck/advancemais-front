@@ -46,11 +46,11 @@ export const HEADER_CONFIG = {
     retryDelay: 1000,
   },
   image: {
-    width: 810,
-    height: 360,
+    width: 686,
+    height: 305,
     quality: 90,
     priority: true,
-    sizes: "(max-width: 1024px) 100vw, 55vw",
+    sizes: "(max-width: 1024px) 100vw, 50vw",
   },
   breadcrumbs: {
     separator: "/",

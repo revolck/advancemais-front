@@ -33,6 +33,10 @@ export interface SliderFormProps {
   showHeader?: boolean;
   uploadPath?: string;
   entityName?: string;
+  firstFieldLabel?: string;
+  secondFieldLabel?: string;
+  validateSecondFieldAsUrl?: boolean;
+  secondFieldRequired?: boolean;
 }
 
 export interface SliderListProps {
@@ -61,6 +65,10 @@ export interface SliderManagerProps {
   entityName?: string;
   entityNamePlural?: string;
   maxItems?: number;
+  firstFieldLabel?: string;
+  secondFieldLabel?: string;
+  validateSecondFieldAsUrl?: boolean;
+  secondFieldRequired?: boolean;
 }
 
 export interface ValidationError {

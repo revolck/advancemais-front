@@ -91,6 +91,11 @@ const TeamShowcase: React.FC<TeamShowcaseProps> = ({
   }
 
   // Estado normal com dados
+  // Se não houver membros, não renderiza a seção
+  if (!isLoading && (!data || data.length === 0)) {
+    return null;
+  }
+
   return (
     <section className={cn("py-1", className)}>
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">

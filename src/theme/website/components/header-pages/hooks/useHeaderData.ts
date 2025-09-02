@@ -4,8 +4,9 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { usePathname } from "next/navigation";
-import type { HeaderPageData, HeaderApiResponse } from "../types";
-import { DEFAULT_HEADER_DATA, HEADER_CONFIG } from "../constants";
+import type { HeaderPageData } from "../types";
+import { DEFAULT_HEADER_DATA } from "../constants";
+import { getHeaderForPage } from "@/api/websites/components";
 
 interface UseHeaderDataReturn {
   data: HeaderPageData | null;
@@ -48,68 +49,58 @@ export function useHeaderData(
   };
 
   const fetchData = useCallback(async () => {
-    if (!fetchFromApi) {
+    // Fallback helper
+    const setFallback = (message?: string) => {
+      if (message) setError(message);
       const fallbackData = findHeaderForPage(DEFAULT_HEADER_DATA, targetPage);
       setData(fallbackData);
+    };
+
+    if (!fetchFromApi) {
+      setFallback();
       setIsLoading(false);
       return;
     }
+
+    // Map pathname to API page code
+    const mapPathToPageCode = (path: string): string => {
+      const p = path.toLowerCase();
+      if (p.startsWith("/sobre")) return "SOBRE";
+      if (p.startsWith("/consultoria")) return "SERVICOS";
+      if (p.startsWith("/recrutamento")) return "RECRUTAMENTO";
+      return "SOBRE";
+    };
+
+    // Map API response to theme type
+    const mapToTheme = (item: any, path: string): HeaderPageData => ({
+      id: item.id,
+      title: item.titulo,
+      subtitle: item.subtitulo ?? "",
+      description: item.descricao ?? "",
+      buttonText: item.buttonLabel ?? "Saiba mais",
+      buttonUrl: item.buttonLink ?? "#",
+      imageUrl: item.imagemUrl ?? "/images/headers/default-header.webp",
+      imageAlt: item.titulo ?? "header",
+      isActive: true,
+      targetPages: [path],
+    });
 
     try {
       setIsLoading(true);
       setError(null);
 
-      const controller = new AbortController();
-      const timeoutId = setTimeout(
-        () => controller.abort(),
-        HEADER_CONFIG.api.timeout
-      );
-
-      const response = await fetch(
-        `${HEADER_CONFIG.api.endpoint}?page=${encodeURIComponent(targetPage)}`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          signal: controller.signal,
-        }
-      );
-
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      const pageCode = mapPathToPageCode(targetPage);
+      const apiItem = await getHeaderForPage(pageCode);
+      if (!apiItem) {
+        setFallback("Nenhum cabeçalho encontrado. Usando dados padrão.");
+        return;
       }
-
-      const result: HeaderApiResponse = await response.json();
-
-      if (!result.success || !result.data) {
-        throw new Error(result.message || "Dados inválidos recebidos da API");
-      }
-
-      const headerData = findHeaderForPage(result.data, targetPage);
-      setData(headerData);
-
-      if (!headerData) {
-        throw new Error("Nenhum header encontrado para esta página");
-      }
+      const mapped = mapToTheme(apiItem, targetPage);
+      setData(mapped);
     } catch (err) {
       console.error("Erro ao buscar dados do header:", err);
-
-      if (err instanceof Error) {
-        if (err.name === "AbortError") {
-          setError("Tempo limite excedido. Usando dados padrão.");
-        } else {
-          setError(`Erro na API: ${err.message}. Usando dados padrão.`);
-        }
-      } else {
-        setError("Erro desconhecido. Usando dados padrão.");
-      }
-
-      // Fallback para dados padrão
-      const fallbackData = findHeaderForPage(DEFAULT_HEADER_DATA, targetPage);
-      setData(fallbackData);
+      const message = err instanceof Error ? err.message : "Erro desconhecido";
+      setFallback(message);
     } finally {
       setIsLoading(false);
     }

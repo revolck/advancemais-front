@@ -8,26 +8,18 @@ import type { AccordionSectionData } from "../types";
 export const DEFAULT_ACCORDION_DATA: AccordionSectionData[] = [
   {
     id: "sobre-empresa",
-    title: "Transformamos desafios em oportunidades únicas",
+    title: "Sobre a Empresa",
+    description: "Conheça nossa história, missão, visão e valores.",
     videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
     videoType: "youtube",
     items: [
-      {
-        id: "nossa-historia",
-        value: "nossa-historia",
-        trigger: "Nossa História",
-        content:
-          "Fundada em 2014, a Advance+ nasceu com o propósito de transformar a educação e o desenvolvimento empresarial no Brasil. Ao longo dos anos, construímos uma trajetória sólida baseada na inovação, excelência e compromisso com nossos clientes. Nossa jornada é marcada por conquistas significativas e pela constante busca por soluções que realmente fazem a diferença na vida das pessoas e no crescimento das empresas.",
-        order: 1,
-        isActive: true,
-      },
       {
         id: "missao",
         value: "missao",
         trigger: "Missão",
         content:
-          "Nossa missão é democratizar o acesso ao conhecimento e impulsionar o crescimento profissional e empresarial através de soluções educacionais inovadoras e serviços de consultoria especializados. Buscamos formar profissionais capacitados e transformar organizações, contribuindo para um mercado de trabalho mais qualificado e empresas mais competitivas.",
-        order: 2,
+          "Nossa missão é democratizar o acesso ao conhecimento e impulsionar o crescimento profissional e empresarial.",
+        order: 1,
         isActive: true,
       },
       {
@@ -35,7 +27,16 @@ export const DEFAULT_ACCORDION_DATA: AccordionSectionData[] = [
         value: "visao",
         trigger: "Visão",
         content:
-          "Ser a principal referência em educação corporativa e consultoria empresarial no Brasil, reconhecida pela qualidade de nossos serviços, inovação pedagógica e impacto positivo na transformação de carreiras e organizações. Almejamos ser a ponte que conecta talentos às oportunidades e empresas ao sucesso sustentável.",
+          "Ser referência em educação corporativa e consultoria empresarial no Brasil.",
+        order: 2,
+        isActive: true,
+      },
+      {
+        id: "valores",
+        value: "valores",
+        trigger: "Valores",
+        content:
+          "Ética, inovação, excelência, compromisso com resultados e desenvolvimento humano.",
         order: 3,
         isActive: true,
       },

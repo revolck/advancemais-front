@@ -3,8 +3,9 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import type { TeamMemberData, TeamApiResponse } from "../types";
-import { DEFAULT_TEAM_DATA, TEAM_CONFIG } from "../constants";
+import type { TeamMemberData } from "../types";
+import { DEFAULT_TEAM_DATA } from "../constants";
+import { listTeam } from "@/api/websites/components";
 
 interface UseTeamDataReturn {
   data: TeamMemberData[];
@@ -36,39 +37,19 @@ export function useTeamData(
     try {
       setIsLoading(true);
       setError(null);
-
-      const controller = new AbortController();
-      const timeoutId = setTimeout(
-        () => controller.abort(),
-        TEAM_CONFIG.api.timeout
-      );
-
-      const response = await fetch(TEAM_CONFIG.api.endpoint, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        signal: controller.signal,
-      });
-
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const result: TeamApiResponse = await response.json();
-
-      if (!result.success || !result.data) {
-        throw new Error(result.message || "Dados inválidos recebidos da API");
-      }
-
-      // Filtra apenas dados ativos e ordena
-      const activeData = result.data
-        .filter((item) => item.isActive)
-        .sort((a, b) => a.order - b.order);
-
-      setData(activeData);
+      const raw = await listTeam({ headers: { Accept: "application/json" } });
+      const mapped: TeamMemberData[] = (raw || [])
+        .sort((a, b) => (a.ordem || 0) - (b.ordem || 0))
+        .map((m) => ({
+          id: m.id,
+          name: m.nome,
+          position: m.cargo,
+          imageUrl: m.photoUrl,
+          imageAlt: m.nome,
+          order: m.ordem || 0,
+          isActive: true,
+        }));
+      setData(mapped);
     } catch (err) {
       console.error("Erro ao buscar dados da equipe:", err);
 

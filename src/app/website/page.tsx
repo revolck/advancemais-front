@@ -37,6 +37,8 @@ export default function WebsiteHomePage() {
         onError={(error) => handleComponentError("About", error)}
       />
 
+      <BannersGroup />
+
       <ConsultoriaSection
         onDataLoaded={() => handleComponentLoaded("Consultoria")}
         onError={(error) => handleComponentError("Consultoria", error)}
@@ -47,8 +49,7 @@ export default function WebsiteHomePage() {
         onError={(error) => handleComponentError("Recrutamento", error)}
       />
 
-      {/* Banners de Destaque */}
-      <BannersGroup />
+      
     </div>
   );
 }

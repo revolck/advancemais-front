@@ -1,5 +1,3 @@
-// src/theme/website/components/header-pages/HeaderPages.tsx
-
 "use client";
 
 import React, { useEffect } from "react";
@@ -53,16 +51,13 @@ const HeaderPages: React.FC<HeaderPagesProps> = ({
               <div className="h-12 bg-gray-200 rounded animate-pulse w-32" />
             </div>
 
-            {/* Skeleton da imagem - CORRIGIDO: Tamanho fixo 810x360 */}
+            {/* Skeleton da imagem - Tamanho fixo 686x305 */}
             <div className="header-pages-container">
-              <div className="header-pages-breadcrumbs mb-4">
-                <div className="h-4 bg-gray-200 rounded animate-pulse w-48" />
-              </div>
               <div
                 className="bg-gray-200 rounded-lg animate-pulse"
                 style={{
-                  width: "810px",
-                  height: "360px",
+                  width: "686px",
+                  height: "305px",
                 }}
               />
             </div>

@@ -5,6 +5,8 @@ import { VerticalTabs, type VerticalTabItem } from "@/components/ui/custom";
 import { Skeleton } from "@/components/ui/skeleton";
 import SobreEmpresaForm from "./about/SobreEmpresaForm";
 import DiferenciaisForm from "./diferenciais/DiferenciaisForm";
+import HeaderForm from "./header/HeaderForm";
+import EquipeForm from "./equipe/EquipeForm";
 import {
   listSobreEmpresa,
   listDiferenciais,
@@ -58,11 +60,11 @@ export default function SobrePage() {
   const items: VerticalTabItem[] = [
     {
       value: "banner",
-      label: "Banner",
-      icon: "Image",
+      label: "Cabeçalho",
+      icon: "Type",
       content: (
         <div className="space-y-6">
-          <h3 className="text-lg font-semibold mb-2">Banner</h3>
+          <HeaderForm />
         </div>
       ),
     },
@@ -82,7 +84,7 @@ export default function SobrePage() {
       icon: "Users",
       content: (
         <div className="space-y-6">
-          <h3 className="text-lg font-semibold mb-2">Equipe</h3>
+          <EquipeForm />
         </div>
       ),
     },
@@ -93,16 +95,6 @@ export default function SobrePage() {
       content: (
         <div className="space-y-6">
           <DiferenciaisForm initialData={diferenciaisData ?? undefined} />
-        </div>
-      ),
-    },
-    {
-      value: "transformacao",
-      label: "Transformação",
-      icon: "Sparkles",
-      content: (
-        <div className="space-y-6">
-          <h3 className="text-lg font-semibold mb-2">Transformação</h3>
         </div>
       ),
     },
