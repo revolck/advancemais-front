@@ -194,22 +194,13 @@ export function IconSelector({
 
 // Componente para estado vazio
 function EmptyState({ searchTerm }: { searchTerm: string }) {
-  const SearchIcon = LucideIcons.Search;
-
   return (
     <div className="flex flex-col items-center justify-center h-full text-gray-400 py-8 px-4">
-      <SearchIcon className="h-8 w-8 mb-3 opacity-50" />
-      <p className="text-sm font-medium text-gray-600">
-        Nenhum ícone encontrado
-      </p>
       {searchTerm && (
         <p className="text-xs mt-1 text-gray-500 text-center">
           Não encontramos ícones para "{searchTerm}"
         </p>
       )}
-      <p className="text-xs mt-2 text-gray-400 text-center">
-        Tente buscar por outro termo
-      </p>
     </div>
   );
 }
