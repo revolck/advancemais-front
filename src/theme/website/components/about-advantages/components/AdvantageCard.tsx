@@ -1,5 +1,3 @@
-// src/theme/website/components/about-advantages/components/AdvantageCard.tsx
-
 "use client";
 
 import React from "react";
@@ -22,10 +20,10 @@ export const AdvantageCard: React.FC<AdvantageCardProps> = ({
           <Icon name={card.icon as any} size={24} className="text-white" />
         </div>
       </div>
-      <h3 className="text-lg font-bold text-white mb-2 text-center">
+      <h3 className="!text-lg font-bold text-white mb-2 text-center">
         {card.title}
       </h3>
-      <p className="text-neutral-200 text-center text-sm leading-relaxed">
+      <p className="!text-neutral-300 text-center !text-sm leading-relaxed">
         {card.description}
       </p>
     </div>
