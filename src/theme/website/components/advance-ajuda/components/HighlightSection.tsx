@@ -1,12 +1,17 @@
-// src/theme/website/components/service-highlight/components/HighlightSection.tsx
+// src/theme/website/components/advance-ajuda/components/HighlightSection.tsx
 
 "use client";
 
 import React, { useState } from "react";
 import Image from "next/image";
 import { ImageNotFound } from "@/components/ui/custom/image-not-found";
-import { SERVICE_HIGHLIGHT_CONFIG } from "../constants";
 import type { HighlightSectionProps } from "../types";
+
+const CONFIG = {
+  animationStagger: 300,
+  imageQuality: 90,
+  imageSizes: "(max-width: 1024px) 100vw, 600px",
+} as const;
 
 export const HighlightSection: React.FC<HighlightSectionProps> = ({
   data,
@@ -32,9 +37,7 @@ export const HighlightSection: React.FC<HighlightSectionProps> = ({
       className="pxResponsive container mx-auto py-14 grid lg:grid-cols-3 gap-16 items-center"
       style={{
         // Animação de entrada com stagger - aproveitando CSS existente
-        animationDelay: `${
-          index * SERVICE_HIGHLIGHT_CONFIG.animation.staggerDelay
-        }ms`,
+        animationDelay: `${index * CONFIG.animationStagger}ms`,
       }}
     >
       {/* Lado esquerdo: Texto */}
@@ -91,8 +94,8 @@ export const HighlightSection: React.FC<HighlightSectionProps> = ({
               onLoad={handleImageLoad}
               onError={handleImageError}
               priority={index === 0} // Prioriza primeira imagem
-              quality={SERVICE_HIGHLIGHT_CONFIG.image.quality}
-              sizes={SERVICE_HIGHLIGHT_CONFIG.image.sizes}
+              quality={CONFIG.imageQuality}
+              sizes={CONFIG.imageSizes}
             />
           )}
         </div>
@@ -106,10 +109,7 @@ export const HighlightSection: React.FC<HighlightSectionProps> = ({
             className="hover-lift" // Usando classe CSS existente
             style={{
               // Animação escalonada para os benefícios
-              animationDelay: `${
-                index * SERVICE_HIGHLIGHT_CONFIG.animation.staggerDelay +
-                benefitIndex * 100
-              }ms`,
+              animationDelay: `${index * CONFIG.animationStagger + benefitIndex * 100}ms`,
             }}
           >
             <h3 className="text-xl font-semibold text-[var(--primary-color)] mb-2">

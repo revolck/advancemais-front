@@ -1,39 +1,39 @@
-// src/theme/website/components/service-highlight/ServiceHighlight.tsx
+// src/theme/website/components/advance-ajuda/AdvanceAjuda.tsx
 
 "use client";
 
 import React, { useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { HighlightSection } from "./components/HighlightSection";
-import { useServiceHighlightData } from "./hooks/useServiceHighlightData";
+import { useAdvanceAjudaData } from "./hooks/useAdvanceAjudaData";
 import { ImageNotFound } from "@/components/ui/custom/image-not-found";
 import { ButtonCustom } from "@/components/ui/custom/button";
-import type { ServiceHighlightProps } from "./types";
+import type { AdvanceAjudaProps } from "./types";
 
 /**
- * Componente ServiceHighlight
- * Exibe seções de destaque de serviços com imagem central e benefícios
+ * Componente AdvanceAjuda
+ * Exibe seções de destaque do serviço Advance Ajuda com imagem central e benefícios
  *
  * @example
  * ```tsx
  * // Uso básico com dados da API
- * <ServiceHighlight />
+ * <AdvanceAjuda />
  *
  * // Com dados estáticos
- * <ServiceHighlight
+ * <AdvanceAjuda
  *   fetchFromApi={false}
  *   staticData={myServiceData}
  * />
  * ```
  */
-const ServiceHighlight: React.FC<ServiceHighlightProps> = ({
+const AdvanceAjuda: React.FC<AdvanceAjudaProps> = ({
   className,
   fetchFromApi = true,
   staticData,
   onDataLoaded,
   onError,
 }) => {
-  const { data, isLoading, error, refetch } = useServiceHighlightData(
+  const { data, isLoading, error, refetch } = useAdvanceAjudaData(
     fetchFromApi,
     staticData
   );
@@ -100,19 +100,16 @@ const ServiceHighlight: React.FC<ServiceHighlightProps> = ({
           <ImageNotFound
             size="lg"
             variant="error"
-            message="Erro ao carregar destaques de serviço"
+            message="Erro ao carregar dados"
             icon="AlertCircle"
             className="mx-auto mb-6"
           />
           <p className="text-gray-600 mb-4 max-w-md mx-auto">
-            Não foi possível carregar as informações dos serviços.
-            {error.includes("padrão") ? " Exibindo dados de exemplo." : ""}
+            Não foi possível carregar as informações.
           </p>
-          {!error.includes("padrão") && (
-            <ButtonCustom onClick={refetch} variant="default" icon="RefreshCw">
-              Tentar Novamente
-            </ButtonCustom>
-          )}
+          <ButtonCustom onClick={refetch} variant="default" icon="RefreshCw">
+            Tentar Novamente
+          </ButtonCustom>
         </div>
       </div>
     );
@@ -124,15 +121,8 @@ const ServiceHighlight: React.FC<ServiceHighlightProps> = ({
       {data.map((item, index) => (
         <HighlightSection key={item.id} data={item} index={index} />
       ))}
-
-      {/* Indicador de erro sutil se houver fallback */}
-      {error && data.length > 0 && (
-        <div className="text-center mt-8">
-          <span className="text-xs text-gray-500">Dados de exemplo</span>
-        </div>
-      )}
     </div>
   );
 };
 
-export default ServiceHighlight;
+export default AdvanceAjuda;
