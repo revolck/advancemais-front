@@ -1,5 +1,3 @@
-// src/theme/website/components/accordion-group-information/components/AccordionSection.tsx
-
 "use client";
 
 import React from "react";
@@ -23,9 +21,7 @@ export const AccordionSection: React.FC<AccordionSectionProps> = ({
       const url = new URL(raw);
       const host = url.hostname.replace(/^www\./, "");
 
-      // YouTube padrões aceitos: watch?v=, youtu.be/<id>, /shorts/<id>, já embed
       if (host.includes("youtube.com") || host.includes("youtu.be")) {
-        // Já é embed
         if (url.pathname.startsWith("/embed/")) return raw;
 
         // youtu.be/<id>
@@ -34,21 +30,17 @@ export const AccordionSection: React.FC<AccordionSectionProps> = ({
           return id ? `https://www.youtube.com/embed/${id}?rel=0` : raw;
         }
 
-        // /watch?v=<id>
         const v = url.searchParams.get("v");
         if (v) return `https://www.youtube.com/embed/${v}?rel=0`;
 
-        // /shorts/<id>
         if (url.pathname.startsWith("/shorts/")) {
           const id = url.pathname.split("/").filter(Boolean)[1];
           if (id) return `https://www.youtube.com/embed/${id}?rel=0`;
         }
 
-        // Fallback: mantém URL original (pode falhar em iframe)
         return raw;
       }
 
-      // Vimeo: vimeo.com/<id> -> player.vimeo.com/video/<id>
       if (host.includes("vimeo.com")) {
         if (host === "player.vimeo.com") return raw;
         const id = url.pathname.split("/").filter(Boolean)[0];
@@ -134,7 +126,7 @@ export const AccordionSection: React.FC<AccordionSectionProps> = ({
                 <AccordionItem
                   key={item.value}
                   value={item.value}
-                  className="group border border-gray-200 rounded-xl bg-white overflow-hidden transition-transform duration-200 hover:-translate-y-[1px] hover:border-[var(--primary-color)]/40 data-[state=open]:border-[var(--primary-color)]/50"
+                  className="group border last:border-b-1 border-gray-200 rounded-xl bg-white overflow-hidden transition-transform duration-200 hover:-translate-y-[1px] hover:border-[var(--primary-color)]/40 data-[state=open]:border-[var(--primary-color)]/50"
                 >
                   <AccordionTrigger className="text-left text-base sm:text-lg lg:text-xl font-semibold text-gray-800 hover:text-[var(--primary-color)] transition-colors duration-200 px-4 sm:px-6 py-4 hover:no-underline">
                     <span className="flex items-center gap-3 w-full">
@@ -146,7 +138,9 @@ export const AccordionSection: React.FC<AccordionSectionProps> = ({
                   </AccordionTrigger>
                   <AccordionContent className="text-gray-700 leading-relaxed px-4 sm:px-6 pb-5 pt-2">
                     <div className="pl-0 sm:pl-11">
-                      <p className="text-sm sm:text-base lg:text-lg">{item.content}</p>
+                      <p className="text-sm sm:text-base lg:text-lg">
+                        {item.content}
+                      </p>
                     </div>
                   </AccordionContent>
                 </AccordionItem>
@@ -155,7 +149,10 @@ export const AccordionSection: React.FC<AccordionSectionProps> = ({
           </div>
           {/* Vídeo (direita) */}
           {data.videoUrl && (
-            <div className="w-full lg:w-1/2 lg:sticky z-0" style={{ top: `${ACCORDION_CONFIG.stickyOffset}px` }}>
+            <div
+              className="w-full lg:w-1/2 lg:sticky z-0"
+              style={{ top: `${ACCORDION_CONFIG.stickyOffset}px` }}
+            >
               <div className="relative rounded-2xl overflow-hidden bg-gray-100 aspect-video">
                 {renderVideoPlayer()}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-transparent pointer-events-none" />

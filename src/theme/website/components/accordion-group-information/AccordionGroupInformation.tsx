@@ -1,5 +1,3 @@
-// src/theme/website/components/accordion-group-information/AccordionGroupInformation.tsx
-
 "use client";
 
 import React, { useEffect } from "react";
@@ -50,7 +48,10 @@ const AccordionGroupInformation: React.FC<AccordionGroupInformationProps> = ({
                   <div className="h-4 bg-gray-200 rounded animate-pulse w-5/6" />
                   <div className="space-y-4 pt-4">
                     {Array.from({ length: 3 }).map((_, i) => (
-                      <div key={i} className="h-16 bg-gray-200 rounded-xl animate-pulse" />
+                      <div
+                        key={i}
+                        className="h-16 bg-gray-200 rounded-xl animate-pulse"
+                      />
                     ))}
                   </div>
                 </div>
