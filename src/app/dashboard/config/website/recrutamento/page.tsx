@@ -4,6 +4,7 @@ import React from "react";
 import { VerticalTabs, type VerticalTabItem } from "@/components/ui/custom";
 import HeaderForm from "./header/HeaderForm";
 import PlaninhasForm from "./planinhas/PlaninhasForm";
+import AjudaForm from "./ajuda/AjudaForm";
 
 export default function RecrutamentoPage() {
   const items: VerticalTabItem[] = [
@@ -24,6 +25,16 @@ export default function RecrutamentoPage() {
       content: (
         <div className="space-y-6">
           <PlaninhasForm />
+        </div>
+      ),
+    },
+    {
+      value: "ajuda",
+      label: "Ajuda",
+      icon: "HelpCircle",
+      content: (
+        <div className="space-y-6">
+          <AjudaForm />
         </div>
       ),
     },
