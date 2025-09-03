@@ -23,8 +23,6 @@ export interface SectionData {
   mainTitle: string;
   mainDescription: string;
   problems: ProblemSolutionData[];
-  imageUrl?: string;
-  imageAlt?: string;
   isActive: boolean;
 }
 

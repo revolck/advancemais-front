@@ -11,10 +11,9 @@ export { ProblemsList } from "./components/ProblemsList";
 // Hook
 export { useProblemSolutionData } from "./hooks/useProblemSolutionData";
 
-// Tipos e constantes
+// Tipos
 export type {
   ProblemSolutionData,
   SectionData,
   ProblemSolutionSectionProps,
 } from "./types";
-export { DEFAULT_SECTION_DATA, PROBLEM_SOLUTION_CONFIG } from "./constants";

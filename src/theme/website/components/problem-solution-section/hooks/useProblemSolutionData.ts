@@ -4,8 +4,58 @@
 
 import { useState, useEffect, useCallback } from "react";
 import type { SectionData } from "../types";
-import { DEFAULT_SECTION_DATA } from "../constants";
 import { getPlaninhasSectionDataClient } from "@/api/websites/components/planinhas";
+
+// Dados padrão para fallback quando a API falha
+const DEFAULT_SECTION_DATA: SectionData = {
+  id: "recruitment-problems",
+  mainTitle: "Você ainda recruta com emails e planilhas?",
+  mainDescription:
+    "O esforço e a boa vontade do recrutador têm um limite claro e acabam criando problemas e desafios relevantes. Simplifique seus processos e alcance resultados melhores com as ferramentas certas.",
+  problems: [
+    {
+      id: "desorganization",
+      icon: "Activity",
+      iconColor: "text-red-500",
+      title: "Sensação de Desorganização",
+      description:
+        "Se sentir desorganizado com a avalanche de demandas e informações afeta diretamente o desempenho do negócio.",
+      order: 1,
+      isActive: true,
+    },
+    {
+      id: "repetitive-effort",
+      icon: "Target",
+      iconColor: "text-blue-600",
+      title: "Esforço Repetitivo",
+      description:
+        "Tarefas manuais travam o bom uso do seu tempo e não te permite focar no que é essencial.",
+      order: 2,
+      isActive: true,
+    },
+    {
+      id: "poor-results",
+      icon: "Database",
+      iconColor: "text-red-500",
+      title: "Resultados Insatisfatórios",
+      description:
+        "Recrutamento manual gera atrasos que impedem seu negócio de crescer na velocidade que ele poderia.",
+      order: 3,
+      isActive: true,
+    },
+    {
+      id: "lack-control",
+      icon: "AlertTriangle",
+      iconColor: "text-orange-500",
+      title: "Falta de Controle",
+      description:
+        "Sem visibilidade dos processos, fica impossível identificar gargalos e otimizar resultados.",
+      order: 4,
+      isActive: true,
+    },
+  ],
+  isActive: true,
+};
 
 interface UseProblemSolutionDataReturn {
   data: SectionData;
