@@ -156,11 +156,11 @@ const ProblemSolutionSection: React.FC<ProblemSolutionSectionProps> = ({
     >
       {/* Texto no lado esquerdo */}
       <div className="lg:w-1/2 text-center lg:text-left">
-        <h2 className="text-3xl lg:text-4xl xl:text-5xl font-bold text-gray-900 mb-8 leading-tight">
+        <h2 className="text-3xl sm:text-4xl xl:text-5xl font-bold text-[var(--primary-color)] mb-3 sm:mb-4 leading-tight text-center lg:text-left">
           {data.mainTitle}
         </h2>
 
-        <p className="text-lg text-gray-600 leading-relaxed mb-8 text-justify lg:text-left">
+        <p className="text-gray-700 text-base sm:text-lg leading-relaxed mb-6 sm:mb-8 text-center lg:text-left">
           {data.mainDescription}
         </p>
 

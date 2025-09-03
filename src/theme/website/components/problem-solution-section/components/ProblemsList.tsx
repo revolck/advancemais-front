@@ -1,5 +1,3 @@
-// src/theme/website/components/problem-solution-section/components/ProblemsList.tsx
-
 "use client";
 
 import React from "react";
