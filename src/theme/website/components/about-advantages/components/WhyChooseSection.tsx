@@ -37,7 +37,7 @@ export const WhyChooseSection: React.FC<WhyChooseSectionProps> = ({
 
           <Link href={data.buttonUrl}>
             <Button
-              className="mt-2 bg-[var(--secondary-color)] hover:bg-[var(--secondary-color)]/90 text-white"
+              className="mt-2 bg-[var(--secondary-color)] hover:bg-[var(--secondary-color)]/90 text-white cursor-pointer"
               size="lg"
             >
               {data.buttonText}
