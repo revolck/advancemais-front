@@ -66,13 +66,6 @@ export default function DiferenciaisForm({
   });
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(!initialData);
-  const [logs, setLogs] = useState<string[]>([]);
-
-  const addLog = (message: string) =>
-    setLogs((prev) => [
-      ...prev,
-      `[${new Date().toLocaleTimeString()}] ${message}`,
-    ]);
 
   useEffect(() => {
     const applyData = (data: DiferenciaisBackendResponse) => {
@@ -111,7 +104,6 @@ export default function DiferenciaisForm({
           applyData(data[0]);
         }
       } catch (err) {
-        addLog(`Erro ao carregar dados: ${String(err)}`);
         const status = (err as any)?.status;
         switch (status) {
           case 401:
@@ -149,7 +141,6 @@ export default function DiferenciaisForm({
         toastCustom.success("Conteúdo criado com sucesso");
       }
     } catch (err) {
-      addLog(`Erro ao salvar: ${String(err)}`);
       const status = (err as any)?.status;
       switch (status) {
         case 401:
@@ -179,10 +170,8 @@ export default function DiferenciaisForm({
       const payload: Record<string, string> = {};
       payload[`icone${index}`] = iconName;
       await updateDiferenciais(content.id, payload);
-      addLog(`Ícone do card ${index} atualizado para: ${iconName}`);
       toastCustom.success(`Ícone do card ${index} atualizado`);
     } catch (err) {
-      addLog(`Erro ao atualizar ícone ${index}: ${String(err)}`);
       toastCustom.error(`Erro ao atualizar ícone do card ${index}`);
     }
   };
@@ -330,16 +319,6 @@ export default function DiferenciaisForm({
         </div>
       </form>
 
-      {logs.length > 0 && (
-        <div className="mt-4">
-          <Label>Logs</Label>
-          <div className="bg-gray-100 rounded-md p-3 text-xs space-y-1 max-h-40 overflow-y-auto">
-            {logs.map((log, idx) => (
-              <div key={idx}>{log}</div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
