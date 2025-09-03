@@ -5,7 +5,7 @@
 import { useState, useEffect, useCallback } from "react";
 import type { SectionData } from "../types";
 import { DEFAULT_SECTION_DATA } from "../constants";
-import { getPlaninhasSectionDataClient } from "@/api/websites/components";
+import { getPlaninhasSectionDataClient } from "@/api/websites/components/planinhas";
 
 interface UseProblemSolutionDataReturn {
   data: SectionData;
