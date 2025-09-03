@@ -6,7 +6,7 @@ import HeaderPages from "@/theme/website/components/header-pages";
 import type { HeaderPageData } from "@/theme/website/components/header-pages/types";
 import CounterInformationRecruting from "@/theme/website/components/counter-information-recruting";
 import ProblemSolutionSection from "@/theme/website/components/problem-solution-section";
-import ServiceHighlight from "@/theme/website/components/service-highlight";
+import AdvanceAjuda from "@/theme/website/components/advance-ajuda";
 import ServiceBenefits from "@/theme/website/components/service-benefits";
 import ProcessSteps from "@/theme/website/components/process-steps";
 import LogoEnterprises from "@/theme/website/components/logo-enterprises";
@@ -91,13 +91,13 @@ export default function RecrutamentoPage() {
       />
       <ProblemSolutionSection fetchFromApi />
 
-      <ServiceHighlight
+      <AdvanceAjuda
         fetchFromApi={false}
         onDataLoaded={(data) => {
-          console.log("Service highlight carregado:", data);
+          console.log("Advance Ajuda carregado:", data);
         }}
         onError={(error) => {
-          console.warn("Erro ao carregar service highlight:", error);
+          console.warn("Erro ao carregar Advance Ajuda:", error);
         }}
       />
 
