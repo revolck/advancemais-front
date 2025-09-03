@@ -92,8 +92,6 @@ export function useAboutAdvantagesData(
         buttonUrl: item.botaoUrl || "",
         isActive: true,
       },
-      aboutSection:
-        DEFAULT_ABOUT_ADVANTAGES_DATA.aboutSection,
       advantageCards: cards,
     };
   };

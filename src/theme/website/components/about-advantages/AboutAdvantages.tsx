@@ -5,7 +5,6 @@
 import React, { useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { WhyChooseSection } from "./components/WhyChooseSection";
-import { AboutSection } from "./components/AboutSection";
 import { useAboutAdvantagesData } from "./hooks/useAboutAdvantagesData";
 import { ImageNotFound } from "@/components/ui/custom/image-not-found";
 import { ButtonCustom } from "@/components/ui/custom/button";
@@ -18,7 +17,6 @@ const AboutAdvantages: React.FC<AboutAdvantagesProps> = ({
   fetchFromApi = true,
   staticData,
   showWhyChoose = true,
-  showAboutSection = true,
   onDataLoaded,
   onError,
 }) => {
@@ -75,22 +73,6 @@ const AboutAdvantages: React.FC<AboutAdvantagesProps> = ({
           </div>
         </section>
 
-        {/* Loading da seção About */}
-        <section className="aboutAdvantagesPx py-6">
-          <div className="container mx-auto">
-            <div className="flex flex-col lg:flex-row gap-8">
-              <div className="w-full lg:w-1/2 space-y-4">
-                <div className="h-8 bg-gray-200 rounded animate-pulse" />
-                <div className="h-4 bg-gray-200 rounded animate-pulse" />
-                <div className="h-4 bg-gray-200 rounded animate-pulse" />
-                <div className="h-4 bg-gray-200 rounded animate-pulse w-2/3" />
-              </div>
-              <div className="w-full lg:w-1/2">
-                <div className="aspect-[530/360] bg-gray-200 animate-pulse rounded-lg" />
-              </div>
-            </div>
-          </div>
-        </section>
       </div>
     );
   }
@@ -127,11 +109,6 @@ const AboutAdvantages: React.FC<AboutAdvantagesProps> = ({
       {/* Seção Por que escolher */}
       {showWhyChoose && data.whyChoose.isActive && (
         <WhyChooseSection data={data.whyChoose} cards={data.advantageCards} />
-      )}
-
-      {/* Seção Sobre */}
-      {showAboutSection && data.aboutSection.isActive && (
-        <AboutSection data={data.aboutSection} />
       )}
 
       {/* Indicador de erro sutil */}
