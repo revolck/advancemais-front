@@ -82,7 +82,9 @@ export default function AjudaForm() {
     const fetchData = async () => {
       setIsFetching(true);
       try {
-        const data = await listAdvanceAjuda({ headers: { Accept: "application/json" } });
+        const data = await listAdvanceAjuda({
+          headers: { Accept: "application/json" },
+        });
         const first = data?.[0];
         if (first) applyData(first);
       } catch (err) {
@@ -145,7 +147,11 @@ export default function AjudaForm() {
       const previousUrl = oldImageUrl;
       if (fileItem?.file) {
         try {
-          uploadResult = await uploadImage(fileItem.file, "website/ajuda", previousUrl);
+          uploadResult = await uploadImage(
+            fileItem.file,
+            "website/ajuda",
+            previousUrl
+          );
         } catch (err) {
           toastCustom.error("Erro no upload da imagem. Tente novamente");
           return;
@@ -173,7 +179,11 @@ export default function AjudaForm() {
         ? await updateAdvanceAjuda(content.id, payload)
         : await createAdvanceAjuda(payload);
 
-      toastCustom.success(content.id ? "Conteúdo atualizado com sucesso!" : "Conteúdo criado com sucesso!");
+      toastCustom.success(
+        content.id
+          ? "Conteúdo atualizado com sucesso!"
+          : "Conteúdo criado com sucesso!"
+      );
 
       setContent({
         id: saved.id,
@@ -210,7 +220,8 @@ export default function AjudaForm() {
       const status = (err as any)?.status;
       let message = "Não foi possível salvar";
       if (status === 401) message = "Sessão expirada. Faça login novamente";
-      else if (status === 403) message = "Você não tem permissão para esta ação";
+      else if (status === 403)
+        message = "Você não tem permissão para esta ação";
       toastCustom.error(message);
     } finally {
       setIsLoading(false);
@@ -254,12 +265,17 @@ export default function AjudaForm() {
               label="Título"
               id="titulo"
               value={content.titulo}
-              onChange={(e) => setContent((p) => ({ ...p, titulo: e.target.value }))}
+              onChange={(e) =>
+                setContent((p) => ({ ...p, titulo: e.target.value }))
+              }
               maxLength={100}
               required
             />
             <div>
-              <Label htmlFor="descricao" className="text-sm font-medium text-gray-700 required">
+              <Label
+                htmlFor="descricao"
+                className="text-sm font-medium text-gray-700 required"
+              >
                 Descrição
               </Label>
               <div className="mt-1">
@@ -287,16 +303,22 @@ export default function AjudaForm() {
                   id={`titulo${i}`}
                   value={(content as any)[`titulo${i}`]}
                   onChange={(e) =>
-                    setContent((p) => ({ ...p, [`titulo${i}`]: e.target.value } as any))
+                    setContent(
+                      (p) => ({ ...p, [`titulo${i}`]: e.target.value } as any)
+                    )
                   }
                   maxLength={80}
                   required
                 />
                 <SimpleTextarea
+                  label="Descrição ${i}"
                   id={`descricao${i}`}
                   value={(content as any)[`descricao${i}`]}
                   onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-                    setContent((p) => ({ ...p, [`descricao${i}`]: e.target.value } as any))
+                    setContent(
+                      (p) =>
+                        ({ ...p, [`descricao${i}`]: e.target.value } as any)
+                    )
                   }
                   maxLength={300}
                   showCharCount
@@ -312,7 +334,9 @@ export default function AjudaForm() {
               type="submit"
               isLoading={isLoading}
               disabled={
-                isLoading || (!content.imagemUrl && files.length === 0) || files.some((f) => f.status === "uploading")
+                isLoading ||
+                (!content.imagemUrl && files.length === 0) ||
+                files.some((f) => f.status === "uploading")
               }
               size="lg"
               variant="default"
