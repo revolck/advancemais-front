@@ -311,7 +311,7 @@ export default function AjudaForm() {
                   required
                 />
                 <SimpleTextarea
-                  label="Descrição ${i}"
+                  label={`Descrição ${i}`}
                   id={`descricao${i}`}
                   value={(content as any)[`descricao${i}`]}
                   onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
