@@ -1,5 +1,3 @@
-// src/theme/website/components/problem-solution-section/ProblemSolutionSection.tsx
-
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -12,22 +10,6 @@ import { ButtonCustom } from "@/components/ui/custom/button";
 import { PROBLEM_SOLUTION_CONFIG } from "./constants";
 import type { ProblemSolutionSectionProps } from "./types";
 
-/**
- * Componente ProblemSolutionSection
- * Exibe uma seção com título/descrição à esquerda e cards de problemas à direita
- *
- * @example
- * ```tsx
- * // Uso básico com dados da API
- * <ProblemSolutionSection />
- *
- * // Com dados estáticos
- * <ProblemSolutionSection
- *   fetchFromApi={false}
- *   staticData={myData}
- * />
- * ```
- */
 const ProblemSolutionSection: React.FC<ProblemSolutionSectionProps> = ({
   className,
   fetchFromApi = true,
@@ -142,7 +124,9 @@ const ProblemSolutionSection: React.FC<ProblemSolutionSectionProps> = ({
     const { icon, title, message, buttonLabel } =
       PROBLEM_SOLUTION_CONFIG.emptyState;
     return (
-      <section className={cn("pxResponsive container mx-auto py-14", className)}>
+      <section
+        className={cn("pxResponsive container mx-auto py-14", className)}
+      >
         <div className="flex flex-col items-center justify-center text-center gap-4 py-10">
           <ImageNotFound
             size="lg"
@@ -151,9 +135,7 @@ const ProblemSolutionSection: React.FC<ProblemSolutionSectionProps> = ({
             message={title}
             className="mx-auto"
           />
-          {message && (
-            <p className="text-gray-600 max-w-md">{message}</p>
-          )}
+          {message && <p className="text-gray-600 max-w-md">{message}</p>}
           <div className="mt-2">
             <ButtonCustom onClick={refetch} variant="default" icon="RefreshCw">
               {buttonLabel || "Recarregar"}

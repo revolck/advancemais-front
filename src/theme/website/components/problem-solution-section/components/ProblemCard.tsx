@@ -1,5 +1,3 @@
-// src/theme/website/components/problem-solution-section/components/ProblemCard.tsx
-
 "use client";
 
 import React from "react";
@@ -12,10 +10,8 @@ export const ProblemCard: React.FC<ProblemCardProps> = ({ data, index }) => {
     <div
       className="flex items-start gap-6 p-6 bg-white rounded-lg shadow-soft hover:shadow-medium transition-all duration-300 border border-gray-200 hover:border-blue-300 hover-lift"
       style={{
-        // Animação de entrada com stagger
         animationDelay: `${index * 150}ms`,
         animation: `fade-in-up 0.6s ease-out forwards`,
-        opacity: 0, // Inicia invisível para a animação
       }}
     >
       {/* Ícone */}

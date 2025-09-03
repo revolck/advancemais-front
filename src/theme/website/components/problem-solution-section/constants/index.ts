@@ -1,5 +1,3 @@
-// src/theme/website/components/problem-solution-section/constants/index.ts
-
 import type { SectionData } from "../types";
 
 /**
@@ -85,8 +83,7 @@ export const PROBLEM_SOLUTION_CONFIG = {
     // Título destacado do empty state
     title: "Sem conteúdos de Planilhas publicados",
     // Mensagem auxiliar para orientar o usuário
-    message:
-      "Cadastre em Website → Planinhas no painel para aparecer aqui.",
+    message: "Cadastre em Website → Planinhas no painel para aparecer aqui.",
     // Rótulo do botão de ação
     buttonLabel: "Recarregar",
   },
