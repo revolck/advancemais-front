@@ -1,14 +1,19 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import Image from "next/image";
+import React, { useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { ProblemsList } from "./components/ProblemsList";
 import { useProblemSolutionData } from "./hooks/useProblemSolutionData";
 import { ImageNotFound } from "@/components/ui/custom/image-not-found";
 import { ButtonCustom } from "@/components/ui/custom/button";
-import { PROBLEM_SOLUTION_CONFIG } from "./constants";
 import type { ProblemSolutionSectionProps } from "./types";
+
+const EMPTY_STATE = {
+  icon: "FileSpreadsheet",
+  title: "Sem conteúdos de Planilhas publicados",
+  message: "Cadastre em Website → Planinhas no painel para aparecer aqui.",
+  buttonLabel: "Recarregar",
+} as const;
 
 const ProblemSolutionSection: React.FC<ProblemSolutionSectionProps> = ({
   className,
@@ -21,8 +26,6 @@ const ProblemSolutionSection: React.FC<ProblemSolutionSectionProps> = ({
     fetchFromApi,
     staticData
   );
-  const [imageLoading, setImageLoading] = useState(!!data.imageUrl);
-  const [imageError, setImageError] = useState(false);
 
   // Callbacks quando dados são carregados ou há erro
   useEffect(() => {
@@ -37,18 +40,9 @@ const ProblemSolutionSection: React.FC<ProblemSolutionSectionProps> = ({
     }
   }, [error, onError]);
 
-  const handleImageLoad = () => {
-    setImageLoading(false);
-  };
-
-  const handleImageError = () => {
-    setImageLoading(false);
-    setImageError(true);
-  };
-
   // Estado de carregamento
   if (isLoading) {
-    const skeletonCards = PROBLEM_SOLUTION_CONFIG.skeleton.cardsCount ?? 3;
+    const skeletonCards = 3;
     return (
       <section
         className={cn("pxResponsive container mx-auto py-14", className)}
@@ -121,8 +115,7 @@ const ProblemSolutionSection: React.FC<ProblemSolutionSectionProps> = ({
   const noProblems = !data?.problems || data.problems.length === 0;
 
   if (!isLoading && noTitle && noDescription && noProblems) {
-    const { icon, title, message, buttonLabel } =
-      PROBLEM_SOLUTION_CONFIG.emptyState;
+    const { icon, title, message, buttonLabel } = EMPTY_STATE;
     return (
       <section
         className={cn("pxResponsive container mx-auto py-14", className)}
@@ -164,50 +157,6 @@ const ProblemSolutionSection: React.FC<ProblemSolutionSectionProps> = ({
           {data.mainDescription}
         </p>
 
-        {/* Imagem opcional */}
-        {data.imageUrl && (
-          <div className="mt-8 lg:hidden">
-            {/* Loading State */}
-            {imageLoading && (
-              <div className="aspect-video bg-gray-200 animate-pulse rounded-lg flex items-center justify-center">
-                <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-              </div>
-            )}
-
-            {/* Error State */}
-            {imageError && (
-              <ImageNotFound
-                size="full"
-                variant="muted"
-                aspectRatio="video"
-                message="Imagem indisponível"
-                icon="ImageOff"
-                className="aspect-video rounded-lg"
-                showMessage={true}
-              />
-            )}
-
-            {/* Main Image */}
-            {!imageError && (
-              <Image
-                src={data.imageUrl}
-                alt={data.imageAlt || "Imagem ilustrativa"}
-                width={600}
-                height={400}
-                className={`
-                  rounded-lg object-cover w-full
-                  transition-opacity duration-500
-                  ${imageLoading ? "opacity-0 absolute inset-0" : "opacity-100"}
-                `}
-                style={{ aspectRatio: "3/2" }}
-                onLoad={handleImageLoad}
-                onError={handleImageError}
-                quality={PROBLEM_SOLUTION_CONFIG.image.quality}
-                sizes={PROBLEM_SOLUTION_CONFIG.image.sizes}
-              />
-            )}
-          </div>
-        )}
       </div>
 
       {/* Cards no lado direito */}
