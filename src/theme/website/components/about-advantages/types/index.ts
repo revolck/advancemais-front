@@ -25,27 +25,10 @@ export interface WhyChooseData {
 }
 
 /**
- * Interface para dados da seção "Sobre"
- */
-export interface AboutData {
-  id: string;
-  title: string;
-  paragraphs: string[];
-  imageUrl: string;
-  imageAlt: string;
-  overlayTitle: string;
-  overlayDescription: string;
-  overlayButtonText: string;
-  overlayButtonUrl: string;
-  isActive: boolean;
-}
-
-/**
  * Interface para dados completos vindos da API
  */
 export interface AboutAdvantagesApiData {
   whyChoose: WhyChooseData;
-  aboutSection: AboutData;
   advantageCards: AdvantageCard[];
 }
 
@@ -78,11 +61,6 @@ export interface AboutAdvantagesProps {
    */
   showWhyChoose?: boolean;
   /**
-   * Controla renderização da seção "Sobre"
-   * @default true
-   */
-  showAboutSection?: boolean;
-  /**
    * Callback quando os dados são carregados
    */
   onDataLoaded?: (data: AboutAdvantagesApiData) => void;
@@ -103,8 +81,4 @@ export interface AdvantageCardProps {
 export interface WhyChooseSectionProps {
   data: WhyChooseData;
   cards: AdvantageCard[];
-}
-
-export interface AboutSectionProps {
-  data: AboutData;
 }

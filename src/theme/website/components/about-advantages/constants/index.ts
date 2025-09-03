@@ -16,23 +16,6 @@ export const DEFAULT_ABOUT_ADVANTAGES_DATA: AboutAdvantagesApiData = {
     buttonUrl: "/servicos",
     isActive: true,
   },
-  aboutSection: {
-    id: "about-section",
-    title: "Sobre a Advance+",
-    paragraphs: [
-      "A Advance+ é uma empresa especializada em soluções de gestão de pessoas e tecnologia, com foco em resultados que impulsionam o crescimento sustentável dos nossos clientes.",
-      "Com anos de experiência no mercado, desenvolvemos metodologias próprias que combinam inovação tecnológica com expertise em recursos humanos, oferecendo um serviço diferenciado e personalizado.",
-      "Nossa missão é conectar talentos e tecnologia para criar soluções que geram valor real para empresas de todos os portes, sempre com foco na excelência e na satisfação do cliente.",
-    ],
-    imageUrl: "/images/home/about-advantages.webp",
-    imageAlt: "Sobre a Advance+ - Transformando desafios em oportunidades",
-    overlayTitle: "Transformamos desafios em oportunidades reais.",
-    overlayDescription:
-      "Descubra como podemos conectar talentos, transformar desafios em oportunidades e criar soluções que impulsionam resultados.",
-    overlayButtonText: "Solicitar Consultoria",
-    overlayButtonUrl: "/consultoria",
-    isActive: true,
-  },
   advantageCards: [
     {
       id: "expertise",
@@ -86,9 +69,5 @@ export const ABOUT_ADVANTAGES_CONFIG = {
   animation: {
     staggerDelay: 100,
     duration: 600,
-  },
-  image: {
-    quality: 90,
-    sizes: "(max-width: 1024px) 100vw, 50vw",
   },
 } as const;
