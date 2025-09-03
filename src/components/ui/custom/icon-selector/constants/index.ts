@@ -185,6 +185,7 @@ export const POPULAR_ICONS = [
   "XSquare",
   "Zap",
   "ZapOff",
+  "Lightbulb",
 ] as const;
 
 export type IconName = (typeof POPULAR_ICONS)[number];
