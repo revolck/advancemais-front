@@ -11,8 +11,8 @@ export default function RecrutamentoPage() {
   return (
     <div className="min-h-screen">
       <HeaderPages fetchFromApi={true} currentPage="/recrutamento" />
-      <ProblemSolutionSection />
-      <AdvanceAjuda />
+      <ProblemSolutionSection fetchFromApi={true} />
+      <AdvanceAjuda fetchFromApi={true} />
     </div>
   );
 }
