@@ -52,6 +52,14 @@ export {
 } from "./planinhas";
 
 export {
+  listAdvanceAjuda,
+  getAdvanceAjudaById,
+  createAdvanceAjuda,
+  updateAdvanceAjuda,
+  deleteAdvanceAjuda,
+} from "./advance-ajuda";
+
+export {
   getSliderData,
   getSliderDataClient,
   listSliders,
@@ -129,6 +137,12 @@ export type {
   CreatePlaninhasPayload,
   UpdatePlaninhasPayload,
 } from "./planinhas/types";
+
+export type {
+  AdvanceAjudaBackendResponse,
+  CreateAdvanceAjudaPayload,
+  UpdateAdvanceAjudaPayload,
+} from "./advance-ajuda/types";
 
 export type { BannerBackendResponse, BannerApiResponse } from "./banner/types";
 export {
