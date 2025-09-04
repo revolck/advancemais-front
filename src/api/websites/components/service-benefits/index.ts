@@ -7,8 +7,8 @@ import type {
 } from "@/theme/website/components/service-benefits/types";
 
 const serviceEndpoints: Record<ServiceType, () => string> = {
-  recrutamento: websiteRoutes.recrutamento.list,
-  treinamento: websiteRoutes.treinamento.list,
+  recrutamentoSelecao: websiteRoutes.recrutamentoSelecao.list,
+  treinamentoCompany: websiteRoutes.treinamentoCompany.list,
 };
 
 export async function listServiceBenefits(

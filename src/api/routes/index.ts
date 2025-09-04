@@ -63,6 +63,13 @@ export const websiteRoutes = {
     update: (id: string) => `${prefix}/website/recrutamento-selecao/${id}`,
     delete: (id: string) => `${prefix}/website/recrutamento-selecao/${id}`,
   },
+  treinamentoCompany: {
+    list: () => `${prefix}/website/treinamento-company`,
+    create: () => `${prefix}/website/treinamento-company`,
+    get: (id: string) => `${prefix}/website/treinamento-company/${id}`,
+    update: (id: string) => `${prefix}/website/treinamento-company/${id}`,
+    delete: (id: string) => `${prefix}/website/treinamento-company/${id}`,
+  },
   advanceAjuda: {
     list: () => `${prefix}/website/advance-ajuda`,
     create: () => `${prefix}/website/advance-ajuda`,
