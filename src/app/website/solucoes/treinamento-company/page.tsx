@@ -77,7 +77,7 @@ export default function TreinamentoPage() {
       />
       <TrainingResults fetchFromApi={true} />
 
-      <ServiceBenefits fetchFromApi={true} service="treinamento" />
+      <ServiceBenefits fetchFromApi={true} service="treinamentoCompany" />
 
       <CommunicationHighlights fetchFromApi={true} />
 

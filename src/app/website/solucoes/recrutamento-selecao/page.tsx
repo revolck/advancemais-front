@@ -103,7 +103,7 @@ export default function RecrutamentoPage() {
 
       <ServiceBenefits
         fetchFromApi={false}
-        service="recrutamento"
+        service="recrutamentoSelecao"
         onDataLoaded={(data) => {
           console.log("Benefícios dos serviços carregados:", data);
         }}
