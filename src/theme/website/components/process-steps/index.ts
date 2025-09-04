@@ -1,5 +1,3 @@
-// src/theme/website/components/process-steps/index.ts
-
 // Componente principal
 export { default } from "./ProcessSteps";
 export { default as ProcessSteps } from "./ProcessSteps";

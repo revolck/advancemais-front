@@ -4,6 +4,7 @@ import { apiConfig, env } from "@/lib/env";
 import type {
   ServiceBenefitsData,
   ServiceType,
+  ServiceBenefit,
 } from "@/theme/website/components/service-benefits/types";
 import type { RecrutamentoSelecaoBackendResponse } from "../recrutamento-selecao/types";
 
@@ -18,7 +19,9 @@ function mapRecrutamentoSelecao(
     .map((text, idx) => ({
       id: `benefit-${idx + 1}`,
       text: text as string,
-      gradientType: (idx % 2 === 0 ? "secondary" : "primary") as const,
+      gradientType: (idx % 2 === 0
+        ? "secondary"
+        : "primary") as ServiceBenefit["gradientType"],
       order: idx + 1,
       isActive: true,
     }));
