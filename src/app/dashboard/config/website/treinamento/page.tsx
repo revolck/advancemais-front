@@ -5,16 +5,18 @@ import {
   VerticalTabs,
   type VerticalTabItem,
 } from "@/components/ui/custom";
+import HeaderForm from "./header/HeaderForm";
+import TreinamentoForm from "./treinamento/TreinamentoForm";
 
 export default function TreinamentoPage() {
   const items: VerticalTabItem[] = [
     {
-      value: "banner",
-      label: "Banner",
-      icon: "Image",
+      value: "header",
+      label: "Cabeçalho",
+      icon: "Type",
       content: (
         <div className="space-y-6">
-          <h3 className="text-lg font-semibold mb-2">Banner</h3>
+          <HeaderForm />
         </div>
       ),
     },
@@ -24,7 +26,7 @@ export default function TreinamentoPage() {
       icon: "BookOpen",
       content: (
         <div className="space-y-6">
-          <h3 className="text-lg font-semibold mb-2">Treinamento</h3>
+          <TreinamentoForm />
         </div>
       ),
     },
@@ -55,7 +57,7 @@ export default function TreinamentoPage() {
       <div className="flex-1 min-h-0">
         <VerticalTabs
           items={items}
-          defaultValue="banner"
+          defaultValue="header"
           variant="spacious"
           size="sm"
           withAnimation={true}

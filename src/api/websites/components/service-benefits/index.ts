@@ -7,6 +7,7 @@ import type {
   ServiceBenefit,
 } from "@/theme/website/components/service-benefits/types";
 import type { RecrutamentoSelecaoBackendResponse } from "../recrutamento-selecao/types";
+import type { TreinamentoCompanyBackendResponse } from "../treinamento-company/types";
 
 function mapRecrutamentoSelecao(
   items: RecrutamentoSelecaoBackendResponse[],
@@ -48,21 +49,45 @@ async function fetchRecrutamentoSelecao(): Promise<ServiceBenefitsData[]> {
   return mapRecrutamentoSelecao(res);
 }
 
+function mapTreinamentoCompany(
+  items: TreinamentoCompanyBackendResponse[],
+): ServiceBenefitsData[] {
+  const first = items?.[0];
+  if (!first) return [];
+
+  const benefits = [first.titulo1, first.titulo2, first.titulo3, first.titulo4]
+    .filter(Boolean)
+    .map((text, idx) => ({
+      id: `benefit-${idx + 1}`,
+      text: text as string,
+      gradientType: (idx % 2 === 0
+        ? "secondary"
+        : "primary") as ServiceBenefit["gradientType"],
+      order: idx + 1,
+      isActive: true,
+    }));
+
+  const data: ServiceBenefitsData = {
+    id: first.id || "treinamento-company",
+    title: first.titulo,
+    subtitle: undefined,
+    description: first.descricao,
+    imageUrl: first.imagemUrl || "/images/home/banner_site_3.webp",
+    imageAlt:
+      first.imagemTitulo || "Profissionais participando de treinamento in company",
+    benefits,
+    order: 1,
+    isActive: true,
+  };
+  return [data];
+}
+
 async function fetchTreinamentoCompany(): Promise<ServiceBenefitsData[]> {
-  // Caso a API de treinamento-company já entregue no formato final,
-  // apenas retornamos os dados. Se não, faremos um mapeamento similar ao acima
-  // quando o contrato estiver definido.
-  const res = await apiFetch<any[]>(websiteRoutes.treinamentoCompany.list(), {
-    init: { headers: apiConfig.headers },
-  });
-
-  // Se já vier no formato esperado, valide superficialmente
-  if (Array.isArray(res) && res.length > 0 && "benefits" in (res[0] || {})) {
-    return res as ServiceBenefitsData[];
-  }
-
-  // Sem dados ou contrato diferente -> lista vazia (hook fará fallback)
-  return [];
+  const res = await apiFetch<TreinamentoCompanyBackendResponse[]>(
+    websiteRoutes.treinamentoCompany.list(),
+    { init: { headers: apiConfig.headers } },
+  );
+  return mapTreinamentoCompany(res);
 }
 
 export async function listServiceBenefits(

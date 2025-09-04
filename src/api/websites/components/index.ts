@@ -82,6 +82,13 @@ export {
   updateRecrutamentoSelecao,
   deleteRecrutamentoSelecao,
 } from "./recrutamento-selecao";
+export {
+  listTreinamentoCompany,
+  getTreinamentoCompanyById,
+  createTreinamentoCompany,
+  updateTreinamentoCompany,
+  deleteTreinamentoCompany,
+} from "./treinamento-company";
 
 export {
   getSliderData,
@@ -179,6 +186,11 @@ export type {
   CreateRecrutamentoSelecaoPayload,
   UpdateRecrutamentoSelecaoPayload,
 } from "./recrutamento-selecao/types";
+export type {
+  TreinamentoCompanyBackendResponse,
+  CreateTreinamentoCompanyPayload,
+  UpdateTreinamentoCompanyPayload,
+} from "./treinamento-company/types";
 
 export type { BannerBackendResponse, BannerApiResponse } from "./banner/types";
 export {

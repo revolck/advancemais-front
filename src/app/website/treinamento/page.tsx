@@ -2,6 +2,9 @@ import React from "react";
 import HeaderPages from "@/theme/website/components/header-pages";
 import ServiceBenefits from "@/theme/website/components/service-benefits";
 
+/**
+ * Página de Treinamento In Company com cabeçalho e benefícios
+ */
 export const metadata = {
   title: "Treinamento",
 };
