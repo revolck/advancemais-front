@@ -5,6 +5,7 @@ import { VerticalTabs, type VerticalTabItem } from "@/components/ui/custom";
 import HeaderForm from "./header/HeaderForm";
 import PlaninhasForm from "./planinhas/PlaninhasForm";
 import AjudaForm from "./ajuda/AjudaForm";
+import RecrutamentoForm from "./recrutamento/RecrutamentoForm";
 
 export default function RecrutamentoPage() {
   const items: VerticalTabItem[] = [
@@ -18,20 +19,30 @@ export default function RecrutamentoPage() {
         </div>
       ),
     },
-    {
-      value: "planilhas",
-      label: "Planilhas",
-      icon: "FileSpreadsheet",
-      content: (
-        <div className="space-y-6">
-          <PlaninhasForm />
-        </div>
-      ),
-    },
-    {
-      value: "ajuda",
-      label: "Ajuda",
-      icon: "HelpCircle",
+      {
+        value: "planilhas",
+        label: "Planilhas",
+        icon: "FileSpreadsheet",
+        content: (
+          <div className="space-y-6">
+            <PlaninhasForm />
+          </div>
+        ),
+      },
+      {
+        value: "recrutamento",
+        label: "Recrutamento",
+        icon: "Users",
+        content: (
+          <div className="space-y-6">
+            <RecrutamentoForm />
+          </div>
+        ),
+      },
+      {
+        value: "ajuda",
+        label: "Ajuda",
+        icon: "HelpCircle",
       content: (
         <div className="space-y-6">
           <AjudaForm />
