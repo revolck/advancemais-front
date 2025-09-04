@@ -10,7 +10,7 @@ export default function TreinamentoPage() {
   return (
     <div className="min-h-screen">
       <HeaderPages fetchFromApi={true} currentPage="/treinamento" />
-      <ServiceBenefits fetchFromApi={true} service="treinamento" />
+      <ServiceBenefits fetchFromApi={true} service="treinamentoCompany" />
     </div>
   );
 }
