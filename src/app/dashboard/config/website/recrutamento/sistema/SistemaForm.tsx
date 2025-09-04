@@ -218,18 +218,30 @@ export default function SistemaForm() {
               maxLength={80}
               required
             />
-            <SimpleTextarea
-              label={`Etapa ${i} - Descrição`}
-              id={`etapa${i}Descricao`}
-              value={(content as any)[`etapa${i}Descricao`]}
-              onChange={(e) =>
-                setContent((p) => ({ ...p, [`etapa${i}Descricao`]: e.target.value } as any))
-              }
-              maxLength={300}
-              showCharCount
-              className="min-h-[120px]"
-              required
-            />
+            <div>
+              <Label
+                htmlFor={`etapa${i}Descricao`}
+                className="text-sm font-medium text-gray-700 required"
+              >
+                {`Etapa ${i} - Descrição`}
+              </Label>
+              <div className="mt-1">
+                <SimpleTextarea
+                  id={`etapa${i}Descricao`}
+                  value={(content as any)[`etapa${i}Descricao`]}
+                  onChange={(e) =>
+                    setContent((p) => ({
+                      ...p,
+                      [`etapa${i}Descricao`]: e.target.value,
+                    } as any))
+                  }
+                  maxLength={300}
+                  showCharCount
+                  className="min-h-[120px]"
+                  required
+                />
+              </div>
+            </div>
           </div>
         ))}
       </div>
