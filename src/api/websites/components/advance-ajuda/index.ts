@@ -1,11 +1,71 @@
 import { websiteRoutes } from "@/api/routes";
 import { apiFetch } from "@/api/client";
-import { apiConfig } from "@/lib/env";
+import { apiConfig, env } from "@/lib/env";
 import type {
   AdvanceAjudaBackendResponse,
   CreateAdvanceAjudaPayload,
   UpdateAdvanceAjudaPayload,
 } from "./types";
+import type { AdvanceAjudaData } from "@/theme/website/components/advance-ajuda/types";
+
+function mapAdvanceAjudaResponse(
+  data: AdvanceAjudaBackendResponse[],
+): AdvanceAjudaData[] {
+  return (data || []).map((item) => ({
+    id: item.id,
+    title: item.titulo,
+    description: item.descricao,
+    imageUrl: item.imagemUrl || "",
+    imageAlt: item.imagemTitulo || "",
+    benefits: [
+      {
+        id: `${item.id}-1`,
+        title: item.titulo1,
+        description: item.descricao1,
+        order: 1,
+      },
+      {
+        id: `${item.id}-2`,
+        title: item.titulo2,
+        description: item.descricao2,
+        order: 2,
+      },
+      {
+        id: `${item.id}-3`,
+        title: item.titulo3,
+        description: item.descricao3,
+        order: 3,
+      },
+    ],
+  }));
+}
+
+export async function getAdvanceAjudaData(): Promise<AdvanceAjudaData[]> {
+  try {
+    const raw = await listAdvanceAjuda({
+      headers: apiConfig.headers,
+      ...apiConfig.cache.medium,
+    });
+    return mapAdvanceAjudaResponse(raw);
+  } catch (error) {
+    if (env.apiFallback === "mock") {
+      return [];
+    }
+    throw error;
+  }
+}
+
+export async function getAdvanceAjudaDataClient(): Promise<AdvanceAjudaData[]> {
+  try {
+    const raw = await listAdvanceAjuda({ headers: apiConfig.headers });
+    return mapAdvanceAjudaResponse(raw);
+  } catch (error) {
+    if (env.apiFallback === "mock") {
+      return [];
+    }
+    throw error;
+  }
+}
 
 function getAuthHeader(): Record<string, string> {
   if (typeof document === "undefined") return {};

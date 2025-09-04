@@ -1,20 +1,5 @@
 // src/theme/website/components/advance-ajuda/types.ts
 
-/** Dados retornados da API de Advance Ajuda */
-export interface AdvanceAjudaBackendResponse {
-  id: string;
-  titulo: string;
-  descricao: string;
-  imagemUrl?: string;
-  imagemTitulo?: string;
-  titulo1: string;
-  descricao1: string;
-  titulo2: string;
-  descricao2: string;
-  titulo3: string;
-  descricao3: string;
-}
-
 /** Itens de benefício exibidos no componente */
 export interface BenefitItem {
   id: string;
@@ -32,13 +17,6 @@ export interface AdvanceAjudaData {
   imageAlt: string;
   highlightText?: string;
   benefits: BenefitItem[];
-}
-
-/** Resposta da API proxy interna */
-export interface AdvanceAjudaApiResponse {
-  data: AdvanceAjudaBackendResponse[];
-  success: boolean;
-  message?: string;
 }
 
 /** Propriedades do componente principal */
