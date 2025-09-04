@@ -3,11 +3,9 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import type { ServiceBenefitsData, ServiceBenefitsApiResponse } from "../types";
-import {
-  DEFAULT_SERVICE_BENEFITS_DATA,
-  SERVICE_BENEFITS_CONFIG,
-} from "../constants";
+import type { ServiceBenefitsData, ServiceType } from "../types";
+import { DEFAULT_SERVICE_BENEFITS_DATA } from "../constants";
+import { getServiceBenefitsDataClient } from "@/api/websites/components/service-benefits";
 
 interface UseServiceBenefitsReturn {
   data: ServiceBenefitsData[];
@@ -20,11 +18,12 @@ interface UseServiceBenefitsReturn {
  * Hook para buscar dados dos benefícios de serviço da API
  */
 export function useServiceBenefits(
+  service: ServiceType,
   fetchFromApi: boolean = true,
-  staticData?: ServiceBenefitsData[]
+  staticData?: ServiceBenefitsData[],
 ): UseServiceBenefitsReturn {
   const [data, setData] = useState<ServiceBenefitsData[]>(
-    staticData || DEFAULT_SERVICE_BENEFITS_DATA
+    staticData || DEFAULT_SERVICE_BENEFITS_DATA,
   );
   const [isLoading, setIsLoading] = useState(fetchFromApi);
   const [error, setError] = useState<string | null>(null);
@@ -40,57 +39,22 @@ export function useServiceBenefits(
       setIsLoading(true);
       setError(null);
 
-      const controller = new AbortController();
-      const timeoutId = setTimeout(
-        () => controller.abort(),
-        SERVICE_BENEFITS_CONFIG.api.timeout
-      );
-
-      const response = await fetch(SERVICE_BENEFITS_CONFIG.api.endpoint, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        signal: controller.signal,
-      });
-
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const result: ServiceBenefitsApiResponse = await response.json();
-
-      if (!result.success || !result.data) {
-        throw new Error(result.message || "Dados inválidos recebidos da API");
-      }
-
-      // Filtra apenas dados ativos e ordena
-      const activeData = result.data
+      const result = await getServiceBenefitsDataClient(service);
+      const activeData = result
         .filter((item) => item.isActive)
         .sort((a, b) => a.order - b.order);
 
       setData(activeData);
     } catch (err) {
       console.error("Erro ao buscar dados dos benefícios de serviço:", err);
-
-      if (err instanceof Error) {
-        if (err.name === "AbortError") {
-          setError("Tempo limite excedido. Usando dados padrão.");
-        } else {
-          setError(`Erro na API: ${err.message}. Usando dados padrão.`);
-        }
-      } else {
-        setError("Erro desconhecido. Usando dados padrão.");
-      }
-
-      // Fallback para dados padrão
+      setError(
+        err instanceof Error ? `Erro na API: ${err.message}` : "Erro desconhecido.",
+      );
       setData(DEFAULT_SERVICE_BENEFITS_DATA);
     } finally {
       setIsLoading(false);
     }
-  }, [fetchFromApi, staticData]);
+  }, [fetchFromApi, service, staticData]);
 
   useEffect(() => {
     fetchData();

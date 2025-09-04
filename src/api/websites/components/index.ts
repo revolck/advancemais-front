@@ -62,6 +62,12 @@ export {
 } from "./advance-ajuda";
 
 export {
+  getServiceBenefitsData,
+  getServiceBenefitsDataClient,
+  listServiceBenefits,
+} from "./service-benefits";
+
+export {
   listRecrutamentoSelecao,
   getRecrutamentoSelecaoById,
   createRecrutamentoSelecao,

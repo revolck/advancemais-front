@@ -15,6 +15,7 @@ export type {
   ServiceBenefitsData,
   ServiceBenefitsProps,
   ServiceBenefitsItemProps,
+  ServiceType,
 } from "./types";
 export {
   DEFAULT_SERVICE_BENEFITS_DATA,
