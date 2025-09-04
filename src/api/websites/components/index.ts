@@ -62,6 +62,14 @@ export {
 } from "./advance-ajuda";
 
 export {
+  listSistema,
+  getSistemaById,
+  createSistema,
+  updateSistema,
+  deleteSistema,
+} from "./sistema";
+
+export {
   getServiceBenefitsData,
   getServiceBenefitsDataClient,
   listServiceBenefits,
@@ -159,6 +167,12 @@ export type {
   CreateAdvanceAjudaPayload,
   UpdateAdvanceAjudaPayload,
 } from "./advance-ajuda/types";
+
+export type {
+  SistemaBackendResponse,
+  CreateSistemaPayload,
+  UpdateSistemaPayload,
+} from "./sistema/types";
 
 export type {
   RecrutamentoSelecaoBackendResponse,

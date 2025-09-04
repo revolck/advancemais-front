@@ -6,6 +6,7 @@ import HeaderForm from "./header/HeaderForm";
 import PlaninhasForm from "./planinhas/PlaninhasForm";
 import AjudaForm from "./ajuda/AjudaForm";
 import RecrutamentoForm from "./recrutamento/RecrutamentoForm";
+import SistemaForm from "./sistema/SistemaForm";
 
 export default function RecrutamentoPage() {
   const items: VerticalTabItem[] = [
@@ -43,13 +44,23 @@ export default function RecrutamentoPage() {
         value: "ajuda",
         label: "Ajuda",
         icon: "HelpCircle",
-      content: (
-        <div className="space-y-6">
-          <AjudaForm />
-        </div>
-      ),
-    },
-  ];
+        content: (
+          <div className="space-y-6">
+            <AjudaForm />
+          </div>
+        ),
+      },
+      {
+        value: "sistema",
+        label: "Sistema",
+        icon: "Cog",
+        content: (
+          <div className="space-y-6">
+            <SistemaForm />
+          </div>
+        ),
+      },
+    ];
 
   return (
     <div className="bg-white rounded-3xl p-5 h-full min-h-[calc(100vh-8rem)] flex flex-col">
