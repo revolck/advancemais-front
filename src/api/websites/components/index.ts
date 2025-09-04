@@ -60,6 +60,14 @@ export {
 } from "./advance-ajuda";
 
 export {
+  listRecrutamentoSelecao,
+  getRecrutamentoSelecaoById,
+  createRecrutamentoSelecao,
+  updateRecrutamentoSelecao,
+  deleteRecrutamentoSelecao,
+} from "./recrutamento-selecao";
+
+export {
   getSliderData,
   getSliderDataClient,
   listSliders,
@@ -143,6 +151,12 @@ export type {
   CreateAdvanceAjudaPayload,
   UpdateAdvanceAjudaPayload,
 } from "./advance-ajuda/types";
+
+export type {
+  RecrutamentoSelecaoBackendResponse,
+  CreateRecrutamentoSelecaoPayload,
+  UpdateRecrutamentoSelecaoPayload,
+} from "./recrutamento-selecao/types";
 
 export type { BannerBackendResponse, BannerApiResponse } from "./banner/types";
 export {
