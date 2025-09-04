@@ -52,6 +52,8 @@ export {
 } from "./planinhas";
 
 export {
+  getAdvanceAjudaData,
+  getAdvanceAjudaDataClient,
   listAdvanceAjuda,
   getAdvanceAjudaById,
   createAdvanceAjuda,
