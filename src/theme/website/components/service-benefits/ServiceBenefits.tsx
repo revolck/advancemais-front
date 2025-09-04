@@ -17,7 +17,7 @@ import type { ServiceBenefitsProps } from "./types";
  * @example
  * ```tsx
  * // Uso básico com dados da API
- * <ServiceBenefits />
+ * <ServiceBenefits service="recrutamento" />
  *
  * // Com dados estáticos
  * <ServiceBenefits
@@ -28,14 +28,16 @@ import type { ServiceBenefitsProps } from "./types";
  */
 const ServiceBenefits: React.FC<ServiceBenefitsProps> = ({
   className,
+  service,
   fetchFromApi = true,
   staticData,
   onDataLoaded,
   onError,
 }) => {
   const { data, isLoading, error, refetch } = useServiceBenefits(
+    service,
     fetchFromApi,
-    staticData
+    staticData,
   );
 
   // Callbacks quando dados são carregados ou há erro

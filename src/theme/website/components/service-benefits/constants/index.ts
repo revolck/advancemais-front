@@ -92,12 +92,6 @@ export const DEFAULT_SERVICE_BENEFITS_DATA: ServiceBenefitsData[] = [
  * Configurações do componente
  */
 export const SERVICE_BENEFITS_CONFIG = {
-  api: {
-    endpoint: "/api/service-benefits",
-    timeout: 5000,
-    retryAttempts: 3,
-    retryDelay: 1000,
-  },
   animation: {
     staggerDelay: 150, // Delay entre benefícios
     duration: 400,

@@ -12,6 +12,11 @@ export interface ServiceBenefit {
 }
 
 /**
+ * Tipos de serviços suportados pelo componente
+ */
+export type ServiceType = "recrutamento" | "treinamento";
+
+/**
  * Interface para dados da seção de benefícios vindos da API
  */
 export interface ServiceBenefitsData {
@@ -40,6 +45,10 @@ export interface ServiceBenefitsApiResponse {
  */
 export interface ServiceBenefitsProps {
   className?: string;
+  /**
+   * Tipo do serviço para buscar os benefícios correspondentes
+   */
+  service: ServiceType;
   /**
    * Se deve carregar dados da API
    * @default true
