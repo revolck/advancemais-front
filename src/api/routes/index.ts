@@ -77,6 +77,13 @@ export const websiteRoutes = {
     update: (id: string) => `${prefix}/website/advance-ajuda/${id}`,
     delete: (id: string) => `${prefix}/website/advance-ajuda/${id}`,
   },
+  sistema: {
+    list: () => `${prefix}/website/sistema`,
+    create: () => `${prefix}/website/sistema`,
+    get: (id: string) => `${prefix}/website/sistema/${id}`,
+    update: (id: string) => `${prefix}/website/sistema/${id}`,
+    delete: (id: string) => `${prefix}/website/sistema/${id}`,
+  },
   sobreEmpresa: {
     list: () => `${prefix}/website/sobre-empresa`,
     create: () => `${prefix}/website/sobre-empresa`,

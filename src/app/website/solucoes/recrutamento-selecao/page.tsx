@@ -112,7 +112,7 @@ export default function RecrutamentoPage() {
         }}
       />
 
-      <ProcessSteps fetchFromApi={false} />
+      <ProcessSteps />
 
       <PricingPlans
         title="Planos de Recrutamento"
