@@ -1,5 +1,3 @@
-// src/theme/website/components/advance-ajuda/components/HighlightSection.tsx
-
 "use client";
 
 import React, { useState } from "react";
@@ -42,10 +40,10 @@ export const HighlightSection: React.FC<HighlightSectionProps> = ({
     >
       {/* Lado esquerdo: Texto */}
       <div className="lg:col-span-1">
-        <h2 className="text-4xl text-[var(--primary-color)] sm:text-4xl mb-6 font-bold leading-tight text-center lg:text-left">
+        <h2 className="text-[var(--primary-color)] sm:text-4xl font-bold leading-tight text-center lg:text-left">
           {data.title}
         </h2>
-        <p className="text-gray-600 leading-relaxed text-justify text-lg mb-4">
+        <p className="text-gray-600 !leading-normal">
           {data.description}
         </p>
         {data.highlightText && (
@@ -106,16 +104,16 @@ export const HighlightSection: React.FC<HighlightSectionProps> = ({
         {sortedBenefits.map((benefit, benefitIndex) => (
           <div
             key={benefit.id}
-            className="hover-lift" // Usando classe CSS existente
+            className="hover-lift"
             style={{
               // Animação escalonada para os benefícios
               animationDelay: `${index * CONFIG.animationStagger + benefitIndex * 100}ms`,
             }}
           >
-            <h3 className="text-xl font-semibold text-[var(--primary-color)] mb-2">
+            <h3 className="text-[var(--primary-color)] !mb-2">
               {benefit.title}
             </h3>
-            <p className="text-gray-600 leading-relaxed text-justify">
+            <p className="text-gray-600 !leading-normal">
               {benefit.description}
             </p>
           </div>

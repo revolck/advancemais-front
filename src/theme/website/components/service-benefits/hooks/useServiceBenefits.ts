@@ -42,7 +42,15 @@ export function useServiceBenefits(
         .filter((item) => item.isActive)
         .sort((a, b) => a.order - b.order);
 
-      setData(activeData);
+      // Fallback para dados padrão quando a API retorna vazio
+      if (!activeData || activeData.length === 0) {
+        setError(
+          "Nenhum dado disponível no momento. Exibindo conteúdo padrão.",
+        );
+        setData(DEFAULT_SERVICE_BENEFITS_DATA);
+      } else {
+        setData(activeData);
+      }
     } catch (err) {
       console.error("Erro ao buscar dados dos benefícios de serviço:", err);
       setError(
