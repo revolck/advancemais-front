@@ -1,5 +1,3 @@
-// src/theme/website/components/service-benefits/components/ServiceBenefitsItem.tsx
-
 "use client";
 
 import React, { useState } from "react";

@@ -1,5 +1,3 @@
-// src/theme/website/components/service-benefits/ServiceBenefits.tsx
-
 "use client";
 
 import React, { useEffect } from "react";
@@ -10,22 +8,6 @@ import { ImageNotFound } from "@/components/ui/custom/image-not-found";
 import { ButtonCustom } from "@/components/ui/custom/button";
 import type { ServiceBenefitsProps } from "./types";
 
-/**
- * Componente ServiceBenefits
- * Exibe seções de benefícios de serviços com imagem e lista de vantagens
- *
- * @example
- * ```tsx
- * // Uso básico com dados da API
- * <ServiceBenefits service="recrutamento" />
- *
- * // Com dados estáticos
- * <ServiceBenefits
- *   fetchFromApi={false}
- *   staticData={myServiceBenefitsData}
- * />
- * ```
- */
 const ServiceBenefits: React.FC<ServiceBenefitsProps> = ({
   className,
   service,

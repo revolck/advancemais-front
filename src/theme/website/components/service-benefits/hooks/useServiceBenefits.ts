@@ -1,5 +1,3 @@
-// src/theme/website/components/service-benefits/hooks/useServiceBenefits.ts
-
 "use client";
 
 import { useState, useEffect, useCallback } from "react";

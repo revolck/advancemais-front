@@ -1,5 +1,3 @@
-// src/theme/website/components/service-benefits/types/index.ts
-
 /**
  * Interface para um benefício individual
  */
@@ -14,7 +12,7 @@ export interface ServiceBenefit {
 /**
  * Tipos de serviços suportados pelo componente
  */
-export type ServiceType = "recrutamento" | "treinamento";
+export type ServiceType = "recrutamentoSelecao" | "treinamentoCompany";
 
 /**
  * Interface para dados da seção de benefícios vindos da API

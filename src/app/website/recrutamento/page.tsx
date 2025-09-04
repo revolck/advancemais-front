@@ -14,7 +14,7 @@ export default function RecrutamentoPage() {
       <HeaderPages fetchFromApi={true} currentPage="/recrutamento" />
       <ProblemSolutionSection fetchFromApi={true} />
       <AdvanceAjuda fetchFromApi={true} />
-      <ServiceBenefits fetchFromApi={true} service="recrutamento" />
+      <ServiceBenefits fetchFromApi={true} service="recrutamentoSelecao" />
     </div>
   );
 }

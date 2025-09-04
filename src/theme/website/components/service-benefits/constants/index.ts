@@ -1,5 +1,3 @@
-// src/theme/website/components/service-benefits/constants/index.ts
-
 import type { ServiceBenefitsData } from "../types";
 
 /**

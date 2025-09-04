@@ -1,6 +1,3 @@
-// src/theme/website/components/service-benefits/index.ts
-
-// Componente principal
 export { default } from "./ServiceBenefits";
 export { default as ServiceBenefits } from "./ServiceBenefits";
 
