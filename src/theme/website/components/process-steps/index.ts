@@ -16,4 +16,4 @@ export type {
   ProcessStepsProps,
   ProcessStepItemProps,
 } from "./types";
-export { DEFAULT_PROCESS_DATA, PROCESS_CONFIG } from "./constants";
+export { PROCESS_CONFIG } from "./constants";

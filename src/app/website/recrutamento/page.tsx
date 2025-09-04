@@ -2,6 +2,7 @@ import React from "react";
 import HeaderPages from "@/theme/website/components/header-pages";
 import ProblemSolutionSection from "@/theme/website/components/problem-solution-section";
 import AdvanceAjuda from "@/theme/website/components/advance-ajuda";
+import ProcessSteps from "@/theme/website/components/process-steps";
 import ServiceBenefits from "@/theme/website/components/service-benefits";
 
 export const metadata = {
@@ -14,6 +15,7 @@ export default function RecrutamentoPage() {
       <HeaderPages fetchFromApi={true} currentPage="/recrutamento" />
       <ProblemSolutionSection fetchFromApi={true} />
       <AdvanceAjuda fetchFromApi={true} />
+      <ProcessSteps />
       <ServiceBenefits fetchFromApi={true} service="recrutamentoSelecao" />
     </div>
   );

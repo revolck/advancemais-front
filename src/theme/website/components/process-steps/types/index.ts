@@ -27,28 +27,10 @@ export interface ProcessSectionData {
 }
 
 /**
- * Interface para resposta da API
- */
-export interface ProcessApiResponse {
-  data: ProcessSectionData;
-  success: boolean;
-  message?: string;
-}
-
-/**
  * Props do componente principal
  */
 export interface ProcessStepsProps {
   className?: string;
-  /**
-   * Se deve carregar dados da API
-   * @default true
-   */
-  fetchFromApi?: boolean;
-  /**
-   * Dados estáticos (usado quando fetchFromApi é false)
-   */
-  staticData?: ProcessSectionData;
   /**
    * Callback quando os dados são carregados
    */

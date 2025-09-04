@@ -8,36 +8,18 @@ import { ProcessStepItem } from "./components/ProcessStepItem";
 import { useProcessData } from "./hooks/useProcessData";
 import { ImageNotFound } from "@/components/ui/custom/image-not-found";
 import { ButtonCustom } from "@/components/ui/custom/button";
-import { PROCESS_CONFIG } from "./constants";
 import type { ProcessStepsProps } from "./types";
 
 /**
  * Componente ProcessSteps
  * Exibe um processo em etapas numeradas com título e descrição
- *
- * @example
- * ```tsx
- * // Uso básico com dados da API
- * <ProcessSteps />
- *
- * // Com dados estáticos
- * <ProcessSteps
- *   fetchFromApi={false}
- *   staticData={myProcessData}
- * />
- * ```
  */
 const ProcessSteps: React.FC<ProcessStepsProps> = ({
   className,
-  fetchFromApi = true,
-  staticData,
   onDataLoaded,
   onError,
 }) => {
-  const { data, isLoading, error, refetch } = useProcessData(
-    fetchFromApi,
-    staticData
-  );
+  const { data, isLoading, error, refetch } = useProcessData();
 
   // Callbacks quando dados são carregados ou há erro
   useEffect(() => {
@@ -82,7 +64,7 @@ const ProcessSteps: React.FC<ProcessStepsProps> = ({
   }
 
   // Estado de erro
-  if (error && (!data || !data.steps || data.steps.length === 0)) {
+  if (error || !data || data.steps.length === 0) {
     return (
       <section
         className={cn("bg-[var(--primary-color)] py-20 text-white", className)}
@@ -97,18 +79,15 @@ const ProcessSteps: React.FC<ProcessStepsProps> = ({
           />
           <p className="text-white/80 mb-4 max-w-md mx-auto">
             Não foi possível carregar as etapas do processo.
-            {error.includes("padrão") ? " Exibindo dados de exemplo." : ""}
           </p>
-          {!error.includes("padrão") && (
-            <ButtonCustom
-              onClick={refetch}
-              variant="secondary"
-              icon="RefreshCw"
-              className="bg-white/10 hover:bg-white/20 text-white border-white/30"
-            >
-              Tentar Novamente
-            </ButtonCustom>
-          )}
+          <ButtonCustom
+            onClick={refetch}
+            variant="secondary"
+            icon="RefreshCw"
+            className="bg-white/10 hover:bg-white/20 text-white border-white/30"
+          >
+            Tentar Novamente
+          </ButtonCustom>
         </div>
       </section>
     );
@@ -155,13 +134,6 @@ const ProcessSteps: React.FC<ProcessStepsProps> = ({
           ))}
         </div>
       </div>
-
-      {/* Indicador de erro sutil se houver fallback */}
-      {error && data.steps.length > 0 && (
-        <div className="absolute bottom-4 right-4 text-xs text-white/50">
-          Dados de exemplo
-        </div>
-      )}
     </section>
   );
 };
