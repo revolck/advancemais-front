@@ -37,9 +37,9 @@ export const LogoCard: React.FC<LogoCardProps> = ({ logo, onLogoClick }) => {
         flex items-center justify-center
         h-20 w-full
         rounded-xl bg-gray-100 border border-gray-200/60
-        px-4 py-4 shadow-sm
+        px-4 py-4
         transition-all duration-200
-        hover:shadow-md hover:border-gray-300
+      hover:border-red-500/20 cursor-pointer hover:scale-95
       `}
       onClick={logo.website ? handleClick : undefined}
       onKeyDown={logo.website ? handleKeyDown : undefined}
