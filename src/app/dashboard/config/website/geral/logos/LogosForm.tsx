@@ -64,7 +64,7 @@ export default function LogosForm() {
       const created = await apiCreateLogo({
         nome: data.title,
         imagemUrl: data.image,
-        website: data.url || undefined,
+        website: data.url,
         status: statusToBackend(data.status),
         ordem: typeof data.position === "number" ? data.position : undefined,
       });
@@ -114,9 +114,9 @@ export default function LogosForm() {
       entityName="Logo"
       entityNamePlural="Logos"
       firstFieldLabel="Nome da empresa"
-      secondFieldLabel="Website (opcional)"
+      secondFieldLabel="Website"
       validateSecondFieldAsUrl
-      secondFieldRequired={false}
+      secondFieldRequired={true}
       onCreateSlider={handleCreate}
       onUpdateSlider={handleUpdate}
       onDeleteSlider={handleDelete}
