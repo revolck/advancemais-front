@@ -1,5 +1,3 @@
-// src/theme/website/components/logo-enterprises/index.ts
-
 // Componente principal
 export { default } from "./LogoEnterprises";
 export { default as LogoEnterprises } from "./LogoEnterprises";

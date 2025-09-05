@@ -1,5 +1,3 @@
-// src/theme/website/components/logo-enterprises/constants/index.ts
-
 /**
  * Configurações do componente LogoEnterprises
  */
@@ -14,8 +12,7 @@ export const LOGOS_CONFIG = {
   },
   image: {
     quality: 90,
-    sizes:
-      "(max-width: 640px) 100px, (max-width: 1024px) 120px, 140px",
+    sizes: "(max-width: 640px) 100px, (max-width: 1024px) 120px, 140px",
     placeholder: "blur",
     maxWidth: 100,
     maxHeight: 40,
@@ -31,7 +28,4 @@ export const LOGOS_CONFIG = {
  */
 export const DEFAULT_CONTENT = {
   title: "Quem está com a gente nessa jornada",
-  subtitle:
-    "Na Advance RH, acreditamos que cada talento é singular e cada empresa tem um potencial ilimitado. Conectamos histórias para criar um futuro mais inovador, inclusivo e promissor.",
 } as const;
-

@@ -1,5 +1,3 @@
-// src/theme/website/components/logo-enterprises/LogoEnterprises.tsx
-
 "use client";
 
 import React, { useEffect } from "react";
@@ -11,28 +9,6 @@ import { ButtonCustom } from "@/components/ui/custom/button";
 import { DEFAULT_CONTENT } from "./constants";
 import type { LogoEnterprisesProps, LogoData } from "./types";
 
-/**
- * Componente LogoEnterprises
- * Exibe logos das empresas parceiras em grid responsivo
- *
- * @example
- * ```tsx
- * // Uso básico com dados da API
- * <LogoEnterprises />
- *
- * // Com dados estáticos
- * <LogoEnterprises
- *   fetchFromApi={false}
- *   staticData={myLogosData}
- * />
- *
- * // Com conteúdo customizado
- * <LogoEnterprises
- *   title="Nossos Parceiros"
- *   subtitle="Empresas que confiam em nosso trabalho"
- * />
- * ```
- */
 const LogoEnterprises: React.FC<LogoEnterprisesProps> = ({
   className,
   title = DEFAULT_CONTENT.title,

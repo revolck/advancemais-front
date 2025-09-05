@@ -114,9 +114,9 @@ export default function LogosForm() {
       entityName="Logo"
       entityNamePlural="Logos"
       firstFieldLabel="Nome da empresa"
-      secondFieldLabel="Website"
+      secondFieldLabel="URL"
       validateSecondFieldAsUrl
-      secondFieldRequired={true}
+      secondFieldRequired={false}
       onCreateSlider={handleCreate}
       onUpdateSlider={handleUpdate}
       onDeleteSlider={handleDelete}

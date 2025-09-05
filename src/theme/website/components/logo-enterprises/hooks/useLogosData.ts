@@ -1,5 +1,3 @@
-// src/theme/website/components/logo-enterprises/hooks/useLogosData.ts
-
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -38,10 +36,7 @@ export function useLogosData(
       const result = await listLogoEnterprises();
 
       const mapped = result
-        .filter(
-          (item) =>
-            item.status === "PUBLICADO" || item.status === true
-        )
+        .filter((item) => item.status === "PUBLICADO" || item.status === true)
         .sort((a, b) => a.ordem - b.ordem)
         .map<LogoData>((item) => ({
           id: item.id,
@@ -55,9 +50,7 @@ export function useLogosData(
       setData(mapped);
     } catch (err) {
       console.error("Erro ao buscar dados dos logos:", err);
-      setError(
-        err instanceof Error ? err.message : "Erro desconhecido"
-      );
+      setError(err instanceof Error ? err.message : "Erro desconhecido");
       setData([]);
     } finally {
       setIsLoading(false);
@@ -75,4 +68,3 @@ export function useLogosData(
     refetch: fetchData,
   };
 }
-

@@ -1,5 +1,3 @@
-// src/theme/website/components/logo-enterprises/components/LogoCard.tsx
-
 "use client";
 
 import React, { useState } from "react";
@@ -34,7 +32,15 @@ export const LogoCard: React.FC<LogoCardProps> = ({ logo, onLogoClick }) => {
 
   return (
     <div
-      className="logo-enterprise-wrapper mt-2"
+      className={`
+        mt-2 relative group
+        flex items-center justify-center
+        h-20 w-full
+        rounded-xl bg-gray-100 border border-gray-200/60
+        px-4 py-4 shadow-sm
+        transition-all duration-200
+        hover:shadow-md hover:border-gray-300
+      `}
       onClick={logo.website ? handleClick : undefined}
       onKeyDown={logo.website ? handleKeyDown : undefined}
       tabIndex={logo.website ? 0 : undefined}
@@ -71,9 +77,9 @@ export const LogoCard: React.FC<LogoCardProps> = ({ logo, onLogoClick }) => {
           width={LOGOS_CONFIG.image.maxWidth}
           height={LOGOS_CONFIG.image.maxHeight}
           className={`
-            logo-enterprise-image
             transition-opacity duration-500
             ${isLoading ? "opacity-0" : "opacity-100"}
+            object-contain max-h-10 w-auto
           `}
           onLoad={handleImageLoad}
           onError={handleImageError}
