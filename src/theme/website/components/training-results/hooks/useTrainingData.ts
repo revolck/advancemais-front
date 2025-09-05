@@ -3,17 +3,16 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import type { TrainingResultData, TrainingResultsApiResponse } from "../types";
-import {
-  DEFAULT_TRAINING_RESULTS,
-  TRAINING_RESULTS_CONFIG,
-} from "../constants";
+import type { TrainingResultData } from "../types";
+import { TRAINING_RESULTS_CONFIG } from "../constants";
+import { listTreinamentosInCompany } from "@/api/websites/components";
 
 interface UseTrainingDataReturn {
   data: TrainingResultData[];
   isLoading: boolean;
   error: string | null;
   refetch: () => void;
+  sectionTitle: string | null;
 }
 
 /**
@@ -23,15 +22,15 @@ export function useTrainingData(
   fetchFromApi: boolean = true,
   staticData?: TrainingResultData[]
 ): UseTrainingDataReturn {
-  const [data, setData] = useState<TrainingResultData[]>(
-    staticData || DEFAULT_TRAINING_RESULTS
-  );
+  const [data, setData] = useState<TrainingResultData[]>(staticData || []);
   const [isLoading, setIsLoading] = useState(fetchFromApi);
   const [error, setError] = useState<string | null>(null);
+  const [sectionTitle, setSectionTitle] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     if (!fetchFromApi) {
-      setData(staticData || DEFAULT_TRAINING_RESULTS);
+      setData(staticData || []);
+      setSectionTitle(null);
       setIsLoading(false);
       return;
     }
@@ -39,54 +38,51 @@ export function useTrainingData(
     try {
       setIsLoading(true);
       setError(null);
+      // Busca os dados da API do website para Treinamentos In Company
+      // e mapeia para a estrutura do componente
+      const raw = await listTreinamentosInCompany({ headers: { Accept: "application/json" } });
 
-      const controller = new AbortController();
-      const timeoutId = setTimeout(
-        () => controller.abort(),
-        TRAINING_RESULTS_CONFIG.api.timeout
-      );
-
-      const response = await fetch(TRAINING_RESULTS_CONFIG.api.endpoint, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        signal: controller.signal,
-      });
-
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      // Consideramos o primeiro registro como fonte da seção
+      const first = raw?.[0];
+      if (!first) {
+        setData([]);
+        setSectionTitle(null);
+        return;
       }
 
-      const result: TrainingResultsApiResponse = await response.json();
+      const items = [
+        { icon: first.icone1, desc: first.descricao1 },
+        { icon: first.icone2, desc: first.descricao2 },
+        { icon: first.icone3, desc: first.descricao3 },
+        { icon: first.icone4, desc: first.descricao4 },
+        { icon: first.icone5, desc: first.descricao5 },
+      ];
 
-      if (!result.success || !result.data) {
-        throw new Error(result.message || "Dados inválidos recebidos da API");
-      }
+      const mapped: TrainingResultData[] = items
+        .map((it, idx) => ({
+          id: `result-${idx + 1}`,
+          title: it.desc || "",
+          iconName: it.icon || undefined,
+          color: "text-red-600",
+          order: idx + 1,
+          isActive: Boolean(it.desc),
+        }))
+        .filter((m) => m.isActive);
 
-      // Filtra apenas dados ativos e ordena
-      const activeData = result.data
-        .filter((item) => item.isActive)
-        .sort((a, b) => a.order - b.order);
-
-      setData(activeData);
+      // Ordena por ordem (já sequencial) e aplica
+      setData(mapped.sort((a, b) => a.order - b.order));
+      setSectionTitle(first.titulo || null);
     } catch (err) {
       console.error("Erro ao buscar dados dos resultados de treinamento:", err);
 
       if (err instanceof Error) {
-        if (err.name === "AbortError") {
-          setError("Tempo limite excedido. Usando dados padrão.");
-        } else {
-          setError(`Erro na API: ${err.message}. Usando dados padrão.`);
-        }
+        setError(`Erro na API: ${err.message}`);
       } else {
-        setError("Erro desconhecido. Usando dados padrão.");
+        setError("Erro desconhecido ao consultar a API.");
       }
-
-      // Fallback para dados padrão
-      setData(DEFAULT_TRAINING_RESULTS);
+      // Sem fallback mockado: mantém vazio para o componente tratar
+      setData([]);
+      setSectionTitle(null);
     } finally {
       setIsLoading(false);
     }
@@ -102,5 +98,6 @@ export function useTrainingData(
     isLoading,
     error,
     refetch: fetchData,
+    sectionTitle,
   };
 }

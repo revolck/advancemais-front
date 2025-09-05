@@ -16,4 +16,4 @@ export type {
   TrainingResultsProps,
   TrainingResultCardProps,
 } from "./types";
-export { DEFAULT_TRAINING_RESULTS, TRAINING_RESULTS_CONFIG } from "./constants";
+export { TRAINING_RESULTS_CONFIG } from "./constants";

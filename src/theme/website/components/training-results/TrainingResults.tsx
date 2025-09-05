@@ -1,5 +1,3 @@
-// src/theme/website/components/training-results/TrainingResults.tsx
-
 "use client";
 
 import React, { useEffect } from "react";
@@ -10,39 +8,18 @@ import { ImageNotFound } from "@/components/ui/custom/image-not-found";
 import { ButtonCustom } from "@/components/ui/custom/button";
 import { TRAINING_RESULTS_CONFIG } from "./constants";
 import type { TrainingResultsProps } from "./types";
+import { Skeleton } from "@/components/ui/skeleton";
 
-/**
- * Componente TrainingResults
- * Exibe os resultados/benefícios do treinamento in company
- *
- * @example
- * ```tsx
- * // Uso básico com dados da API
- * <TrainingResults />
- *
- * // Com título customizado
- * <TrainingResults
- *   title="NOSSO TREINAMENTO"
- *   highlightedText="PREMIUM"
- * />
- *
- * // Com dados estáticos
- * <TrainingResults
- *   fetchFromApi={false}
- *   staticData={myTrainingData}
- * />
- * ```
- */
 const TrainingResults: React.FC<TrainingResultsProps> = ({
   className,
-  title = TRAINING_RESULTS_CONFIG.defaultTitle,
+  title,
   highlightedText = TRAINING_RESULTS_CONFIG.defaultHighlight,
   fetchFromApi = true,
   staticData,
   onDataLoaded,
   onError,
 }) => {
-  const { data, isLoading, error, refetch } = useTrainingData(
+  const { data, isLoading, error, refetch, sectionTitle } = useTrainingData(
     fetchFromApi,
     staticData
   );
@@ -60,14 +37,17 @@ const TrainingResults: React.FC<TrainingResultsProps> = ({
     }
   }, [error, onError]);
 
+  // Define título efetivo: prop > API > default
+  const effectiveTitle =
+    title ?? sectionTitle ?? TRAINING_RESULTS_CONFIG.defaultTitle;
+
   // Estado de carregamento
   if (isLoading) {
     return (
       <section className={cn("container mx-auto py-16 text-center", className)}>
         {/* Skeleton do título */}
-        <div className="mb-12">
-          <div className="h-8 bg-gray-200 rounded w-96 mx-auto animate-pulse mb-2" />
-          <div className="h-8 bg-gray-200 rounded w-48 mx-auto animate-pulse" />
+        <div className="mb-12 flex flex-col items-center gap-2">
+          <Skeleton className="h-8 w-96" />
         </div>
 
         {/* Skeleton dos cards */}
@@ -84,9 +64,9 @@ const TrainingResults: React.FC<TrainingResultsProps> = ({
               key={index}
               className="flex flex-col items-center justify-center bg-gray-100 rounded-xl p-6 shadow-md min-h-[180px]"
             >
-              <div className="w-10 h-10 bg-gray-200 rounded mb-4 animate-pulse" />
-              <div className="h-4 bg-gray-200 rounded w-full mb-2 animate-pulse" />
-              <div className="h-4 bg-gray-200 rounded w-3/4 animate-pulse" />
+              <Skeleton className="w-10 h-10 mb-4 rounded" />
+              <Skeleton className="h-4 w-full mb-2" />
+              <Skeleton className="h-4 w-3/4" />
             </div>
           ))}
         </div>
@@ -107,13 +87,12 @@ const TrainingResults: React.FC<TrainingResultsProps> = ({
         />
         <p className="text-gray-600 mb-4 max-w-md mx-auto">
           Não foi possível carregar os resultados do treinamento.
-          {error.includes("padrão") ? " Exibindo dados de exemplo." : ""}
         </p>
-        {!error.includes("padrão") && (
+        {
           <ButtonCustom onClick={refetch} variant="default" icon="RefreshCw">
             Tentar Novamente
           </ButtonCustom>
-        )}
+        }
       </section>
     );
   }
@@ -121,10 +100,8 @@ const TrainingResults: React.FC<TrainingResultsProps> = ({
   // Estado normal com dados
   return (
     <section className={cn("container mx-auto py-16 text-center", className)}>
-      {/* Título da seção */}
-      <h2 className="text-4xl font-extrabold text-gray-800 mb-12 leading-tight">
-        {title} <span className="text-red-600">{highlightedText}</span>{" "}
-        {TRAINING_RESULTS_CONFIG.defaultSuffix}
+      <h2 className="!text-4xl font-bold text-[var(--primary-color)] !mb-12 ">
+        {effectiveTitle}
       </h2>
 
       {/* Grid de resultados */}
@@ -141,10 +118,12 @@ const TrainingResults: React.FC<TrainingResultsProps> = ({
         ))}
       </div>
 
-      {/* Indicador de erro sutil se houver fallback */}
+      {/* Erro sutil, sem fallback mockado */}
       {error && data.length > 0 && (
         <div className="mt-8">
-          <span className="text-xs text-gray-500">Dados de exemplo</span>
+          <span className="text-xs text-gray-500">
+            Alguns dados podem estar indisponíveis
+          </span>
         </div>
       )}
     </section>

@@ -6,7 +6,6 @@
 export interface TrainingResultData {
   id: string;
   title: string;
-  description?: string;
   iconName?: string; // Nome do ícone Lucide
   iconUrl?: string; // URL de imagem customizada
   color?: string; // Cor do ícone

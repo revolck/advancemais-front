@@ -54,7 +54,7 @@ export const TrainingResultCard: React.FC<TrainingResultCardProps> = ({
     // Se tem nome de ícone Lucide
     if (data.iconName) {
       return (
-        <div className="mb-4">
+        <div className="mb-3">
           <Icon
             name={data.iconName as any}
             size={40}
@@ -80,9 +80,8 @@ export const TrainingResultCard: React.FC<TrainingResultCardProps> = ({
 
   return (
     <div
-      className="flex flex-col items-center justify-center bg-gray-100 hover:bg-gray-50 rounded-xl p-6 shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105 min-h-[180px]"
+      className="flex flex-col items-center justify-center bg-gray-100 rounded-xl p-6 border-1 border-red-500/10 hover:border-red-500/40 cursor-pointer transition-all duration-300 hover:scale-105 min-h-[180px]"
       style={{
-        // Animação de entrada com stagger
         animationDelay: `${
           index * TRAINING_RESULTS_CONFIG.animation.staggerDelay
         }ms`,
@@ -92,16 +91,9 @@ export const TrainingResultCard: React.FC<TrainingResultCardProps> = ({
       {renderIcon()}
 
       {/* Título */}
-      <p className="text-lg text-center text-gray-700 font-medium leading-snug">
+      <p className="!text-base text-center text-gray-700 !leading-snug">
         {data.title}
       </p>
-
-      {/* Descrição opcional */}
-      {data.description && (
-        <p className="text-sm text-center text-gray-600 mt-2 leading-relaxed">
-          {data.description}
-        </p>
-      )}
     </div>
   );
 };

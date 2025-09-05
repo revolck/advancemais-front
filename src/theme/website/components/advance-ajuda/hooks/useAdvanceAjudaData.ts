@@ -1,5 +1,3 @@
-// src/theme/website/components/advance-ajuda/hooks/useAdvanceAjudaData.ts
-
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -18,7 +16,7 @@ interface UseAdvanceAjudaDataReturn {
  */
 export function useAdvanceAjudaData(
   fetchFromApi: boolean = true,
-  staticData?: AdvanceAjudaData[],
+  staticData?: AdvanceAjudaData[]
 ): UseAdvanceAjudaDataReturn {
   const [data, setData] = useState<AdvanceAjudaData[]>(staticData || []);
   const [isLoading, setIsLoading] = useState(fetchFromApi);
@@ -40,7 +38,9 @@ export function useAdvanceAjudaData(
     } catch (err) {
       console.error("Erro ao buscar dados de Advance Ajuda:", err);
       setError(
-        err instanceof Error ? `Erro na API: ${err.message}` : "Erro desconhecido.",
+        err instanceof Error
+          ? `Erro na API: ${err.message}`
+          : "Erro desconhecido."
       );
       setData([]);
     } finally {
@@ -59,4 +59,3 @@ export function useAdvanceAjudaData(
     refetch: fetchData,
   };
 }
-
