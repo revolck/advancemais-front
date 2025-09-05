@@ -13,4 +13,4 @@ export { useCommunicationData } from "./hooks/useCommunicationData";
 
 // Tipos e constantes
 export type { CommunicationData, CommunicationHighlightsProps } from "./types";
-export { DEFAULT_COMMUNICATION_DATA, COMMUNICATION_CONFIG } from "./constants";
+export { COMMUNICATION_CONFIG } from "./constants";

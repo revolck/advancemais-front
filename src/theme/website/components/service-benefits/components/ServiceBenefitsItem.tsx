@@ -31,7 +31,7 @@ export const ServiceBenefitsItem: React.FC<ServiceBenefitsItemProps> = ({
 
   return (
     <section
-      className={`pxResponsive container mx-auto py-14 flex flex-col ${
+      className={`container mx-auto py-14 flex flex-col ${
         isMobile ? "items-center gap-6" : "lg:flex-row items-center gap-8"
       }`}
     >

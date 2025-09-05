@@ -2,6 +2,7 @@ import React from "react";
 import HeaderPages from "@/theme/website/components/header-pages";
 import ServiceBenefits from "@/theme/website/components/service-benefits";
 import TrainingResults from "@/theme/website/components/training-results";
+import CommunicationHighlights from "@/theme/website/components/communication-highlights";
 
 /**
  * Página de Treinamento In Company com cabeçalho e benefícios
@@ -15,6 +16,7 @@ export default function TreinamentoPage() {
     <div className="min-h-screen">
       <HeaderPages fetchFromApi={true} currentPage="/treinamento" />
       <TrainingResults fetchFromApi={true} />
+      <CommunicationHighlights fetchFromApi={true} />
       <ServiceBenefits fetchFromApi={true} service="treinamentoCompany" />
     </div>
   );

@@ -1,5 +1,3 @@
-// src/theme/website/components/communication-highlights/components/TextContent.tsx
-
 "use client";
 
 import React from "react";
@@ -27,9 +25,7 @@ export const TextContent: React.FC<TextContentProps> = ({ content }) => {
           {highlight}
         </span>
         {citation && (
-          <span className="italic text-gray-600 ml-1">
-            {citation}
-          </span>
+          <span className="italic text-gray-600 ml-1">{citation}</span>
         )}
         {parts[1]}
       </>
@@ -40,7 +36,7 @@ export const TextContent: React.FC<TextContentProps> = ({ content }) => {
     <div className="w-full">
       <div className="text-left mb-10">
         {/* Título Principal */}
-        <h2 className="text-3xl lg:text-4xl font-extrabold mb-6 text-[var(--primary-color)] leading-tight">
+        <h2 className="!text-4xl lg:text-4xl font-extrabold !mb-6 text-[var(--primary-color)] leading-tight">
           {content.title}
         </h2>
 
@@ -49,7 +45,7 @@ export const TextContent: React.FC<TextContentProps> = ({ content }) => {
           {content.paragraphs.map((paragraph, index) => (
             <p
               key={index}
-              className="text-lg text-gray-700 leading-relaxed text-justify lg:text-left"
+              className="text-gray-700 leading-relaxed !text-justify lg:text-left"
             >
               {index === 0
                 ? renderParagraphWithHighlight(

@@ -32,7 +32,7 @@ export const HighlightSection: React.FC<HighlightSectionProps> = ({
 
   return (
     <section
-      className="pxResponsive container mx-auto py-14 grid lg:grid-cols-3 gap-16 items-center"
+      className="container mx-auto py-14 grid lg:grid-cols-3 gap-16 items-center"
       style={{
         // Animação de entrada com stagger - aproveitando CSS existente
         animationDelay: `${index * CONFIG.animationStagger}ms`,

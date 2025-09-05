@@ -58,7 +58,7 @@ const AdvanceAjuda: React.FC<AdvanceAjudaProps> = ({
         {Array.from({ length: 1 }).map((_, index) => (
           <section
             key={index}
-            className="pxResponsive container mx-auto py-14 grid lg:grid-cols-3 gap-16 items-center"
+            className="container mx-auto py-14 grid lg:grid-cols-3 gap-16 items-center"
           >
             {/* Skeleton do texto */}
             <div className="lg:col-span-1 space-y-4">

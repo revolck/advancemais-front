@@ -76,7 +76,7 @@ const PricingPlans: React.FC<PricingPlansProps> = ({
   if (isLoading) {
     return (
       <div
-        className={cn("pxResponsive container w-full mx-auto py-24", className)}
+        className={cn("container w-full mx-auto py-24", className)}
       >
         <div className="text-center animate-fade-in mb-12">
           <div className="h-10 bg-gray-200 rounded w-64 mx-auto mb-4 animate-pulse" />
@@ -115,7 +115,7 @@ const PricingPlans: React.FC<PricingPlansProps> = ({
   if (error && (!data || data.length === 0)) {
     return (
       <div
-        className={cn("pxResponsive container w-full mx-auto py-24", className)}
+        className={cn("container w-full mx-auto py-24", className)}
       >
         <div className="text-center">
           <ImageNotFound
@@ -142,7 +142,7 @@ const PricingPlans: React.FC<PricingPlansProps> = ({
   // Estado normal com dados
   return (
     <div
-      className={cn("pxResponsive container w-full mx-auto py-24", className)}
+      className={cn("container w-full mx-auto py-24", className)}
     >
       {/* Header da seção */}
       <div className="text-center animate-fade-in mb-12">

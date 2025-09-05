@@ -3,8 +3,9 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import type { CommunicationData, CommunicationApiResponse } from "../types";
-import { DEFAULT_COMMUNICATION_DATA, COMMUNICATION_CONFIG } from "../constants";
+import type { CommunicationData } from "../types";
+import { COMMUNICATION_CONFIG } from "../constants";
+import { listConexaoForte } from "@/api/websites/components";
 
 interface UseCommunicationDataReturn {
   data: CommunicationData;
@@ -21,14 +22,14 @@ export function useCommunicationData(
   staticData?: CommunicationData
 ): UseCommunicationDataReturn {
   const [data, setData] = useState<CommunicationData>(
-    staticData || DEFAULT_COMMUNICATION_DATA
+    staticData || { textContent: { id: "", title: "", paragraphs: [], order: 0, isActive: false }, gallery: [] }
   );
   const [isLoading, setIsLoading] = useState(fetchFromApi);
   const [error, setError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     if (!fetchFromApi) {
-      setData(staticData || DEFAULT_COMMUNICATION_DATA);
+      setData(staticData || { textContent: { id: "", title: "", paragraphs: [], order: 0, isActive: false }, gallery: [] });
       setIsLoading(false);
       return;
     }
@@ -37,38 +38,33 @@ export function useCommunicationData(
       setIsLoading(true);
       setError(null);
 
-      const controller = new AbortController();
-      const timeoutId = setTimeout(
-        () => controller.abort(),
-        COMMUNICATION_CONFIG.api.timeout
-      );
-
-      const response = await fetch(COMMUNICATION_CONFIG.api.endpoint, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        signal: controller.signal,
-      });
-
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      // Consulta a API (primeiro item da lista) e mapeia
+      const raw = await listConexaoForte({ headers: { Accept: "application/json" } });
+      const first = raw?.[0];
+      if (!first) {
+        setData({ textContent: { id: "", title: "", paragraphs: [], order: 0, isActive: false }, gallery: [] });
+        return;
       }
 
-      const result: CommunicationApiResponse = await response.json();
+      const gallery = [
+        { url: first.imagemUrl1, alt: first.imagemTitulo1 },
+        { url: first.imagemUrl2, alt: first.imagemTitulo2 },
+        { url: first.imagemUrl3, alt: first.imagemTitulo3 },
+        { url: first.imagemUrl4, alt: first.imagemTitulo4 },
+      ]
+        .map((g, idx) => ({ id: `img-${idx + 1}`, imageUrl: g.url || "", alt: g.alt || "", order: idx + 1, isActive: Boolean(g.url) }))
+        .filter((g) => g.isActive)
+        .sort((a, b) => a.order - b.order);
 
-      if (!result.success || !result.data) {
-        throw new Error(result.message || "Dados inválidos recebidos da API");
-      }
-
-      // Filtra apenas dados ativos e ordena
       const processedData: CommunicationData = {
-        textContent: result.data.textContent,
-        gallery: result.data.gallery
-          .filter((item) => item.isActive)
-          .sort((a, b) => a.order - b.order),
+        textContent: {
+          id: first.id || "conexao-forte",
+          title: first.titulo || "",
+          paragraphs: first.descricao ? [first.descricao] : [],
+          order: 1,
+          isActive: true,
+        },
+        gallery,
       };
 
       setData(processedData);
@@ -76,17 +72,12 @@ export function useCommunicationData(
       console.error("Erro ao buscar dados de comunicação:", err);
 
       if (err instanceof Error) {
-        if (err.name === "AbortError") {
-          setError("Tempo limite excedido. Usando dados padrão.");
-        } else {
-          setError(`Erro na API: ${err.message}. Usando dados padrão.`);
-        }
+        setError(`Erro na API: ${err.message}`);
       } else {
-        setError("Erro desconhecido. Usando dados padrão.");
+        setError("Erro desconhecido ao consultar a API.");
       }
-
-      // Fallback para dados padrão
-      setData(DEFAULT_COMMUNICATION_DATA);
+      // Sem fallback mockado
+      setData({ textContent: { id: "", title: "", paragraphs: [], order: 0, isActive: false }, gallery: [] });
     } finally {
       setIsLoading(false);
     }

@@ -1,5 +1,3 @@
-// src/theme/website/components/communication-highlights/CommunicationHighlights.tsx
-
 "use client";
 
 import React, { useEffect } from "react";
@@ -10,23 +8,8 @@ import { useCommunicationData } from "./hooks/useCommunicationData";
 import { ImageNotFound } from "@/components/ui/custom/image-not-found";
 import { ButtonCustom } from "@/components/ui/custom/button";
 import type { CommunicationHighlightsProps } from "./types";
+import { Skeleton } from "@/components/ui/skeleton";
 
-/**
- * Componente CommunicationHighlights
- * Exibe uma seção sobre comunicação com texto e galeria de imagens
- *
- * @example
- * ```tsx
- * // Uso básico com dados da API
- * <CommunicationHighlights />
- *
- * // Com dados estáticos
- * <CommunicationHighlights
- *   fetchFromApi={false}
- *   staticData={myCommunicationData}
- * />
- * ```
- */
 const CommunicationHighlights: React.FC<CommunicationHighlightsProps> = ({
   className,
   fetchFromApi = true,
@@ -57,36 +40,33 @@ const CommunicationHighlights: React.FC<CommunicationHighlightsProps> = ({
     return (
       <section
         className={cn(
-          "pxResponsive container mx-auto py-16 flex flex-col lg:flex-row items-center gap-8",
+          "container mx-auto py-16 flex flex-col lg:flex-row items-center gap-8",
           className
         )}
       >
         {/* Skeleton do texto */}
         <div className="lg:w-1/2 w-full space-y-6">
-          <div className="h-10 bg-gray-200 rounded animate-pulse mb-6" />
+          <Skeleton className="h-10 w-2/3 mb-6" />
           <div className="space-y-4">
-            <div className="h-4 bg-gray-200 rounded animate-pulse" />
-            <div className="h-4 bg-gray-200 rounded animate-pulse" />
-            <div className="h-4 bg-gray-200 rounded animate-pulse w-3/4" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-3/4" />
           </div>
           <div className="space-y-4">
-            <div className="h-4 bg-gray-200 rounded animate-pulse" />
-            <div className="h-4 bg-gray-200 rounded animate-pulse w-2/3" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-2/3" />
           </div>
           <div className="space-y-4">
-            <div className="h-4 bg-gray-200 rounded animate-pulse" />
-            <div className="h-4 bg-gray-200 rounded animate-pulse" />
-            <div className="h-4 bg-gray-200 rounded animate-pulse w-4/5" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-4/5" />
           </div>
         </div>
 
         {/* Skeleton da galeria */}
         <div className="lg:w-1/2 w-full grid grid-cols-1 md:grid-cols-2 gap-8">
           {Array.from({ length: 4 }).map((_, index) => (
-            <div
-              key={index}
-              className="aspect-[4/3] bg-gray-200 rounded-lg animate-pulse"
-            />
+            <Skeleton key={index} className="aspect-[4/3] w-full rounded-lg" />
           ))}
         </div>
       </section>
@@ -96,9 +76,7 @@ const CommunicationHighlights: React.FC<CommunicationHighlightsProps> = ({
   // Estado de erro (com opção de retry)
   if (error && !data.textContent.title) {
     return (
-      <section
-        className={cn("pxResponsive container mx-auto py-16", className)}
-      >
+      <section className={cn("container mx-auto py-16", className)}>
         <div className="text-center">
           <ImageNotFound
             size="lg"
@@ -109,13 +87,10 @@ const CommunicationHighlights: React.FC<CommunicationHighlightsProps> = ({
           />
           <p className="text-gray-600 mb-4 max-w-md mx-auto">
             Não foi possível carregar as informações de comunicação.
-            {error.includes("padrão") ? " Exibindo dados de exemplo." : ""}
           </p>
-          {!error.includes("padrão") && (
-            <ButtonCustom onClick={refetch} variant="default" icon="RefreshCw">
-              Tentar Novamente
-            </ButtonCustom>
-          )}
+          <ButtonCustom onClick={refetch} variant="default" icon="RefreshCw">
+            Tentar Novamente
+          </ButtonCustom>
         </div>
       </section>
     );
@@ -125,7 +100,7 @@ const CommunicationHighlights: React.FC<CommunicationHighlightsProps> = ({
   return (
     <section
       className={cn(
-        "pxResponsive container mx-auto py-16 flex flex-col lg:flex-row items-center gap-8",
+        "container mx-auto py-16 flex flex-col lg:flex-row items-center gap-8",
         className
       )}
     >
@@ -141,10 +116,10 @@ const CommunicationHighlights: React.FC<CommunicationHighlightsProps> = ({
         <ImageGallery images={data.gallery} />
       </div>
 
-      {/* Indicador de erro sutil se houver fallback */}
+      {/* Mensagem sutil quando houve erro mas conseguimos exibir algo */}
       {error && data.textContent.title && (
         <div className="absolute bottom-4 right-4 text-xs text-gray-500">
-          Dados de exemplo
+          Alguns dados podem estar indisponíveis
         </div>
       )}
     </section>

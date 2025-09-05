@@ -45,7 +45,7 @@ const ProblemSolutionSection: React.FC<ProblemSolutionSectionProps> = ({
     const skeletonCards = 3;
     return (
       <section
-        className={cn("pxResponsive container mx-auto py-14", className)}
+        className={cn("container mx-auto py-14", className)}
       >
         <div className="flex flex-col lg:flex-row items-center gap-16">
           {/* Skeleton do texto */}
@@ -84,7 +84,7 @@ const ProblemSolutionSection: React.FC<ProblemSolutionSectionProps> = ({
   if (error && (!data || !data.problems.length)) {
     return (
       <section
-        className={cn("pxResponsive container mx-auto py-14", className)}
+        className={cn("container mx-auto py-14", className)}
       >
         <div className="text-center">
           <ImageNotFound
@@ -118,7 +118,7 @@ const ProblemSolutionSection: React.FC<ProblemSolutionSectionProps> = ({
     const { icon, title, message, buttonLabel } = EMPTY_STATE;
     return (
       <section
-        className={cn("pxResponsive container mx-auto py-14", className)}
+        className={cn("container mx-auto py-14", className)}
       >
         <div className="flex flex-col items-center justify-center text-center gap-4 py-10">
           <ImageNotFound
@@ -143,7 +143,7 @@ const ProblemSolutionSection: React.FC<ProblemSolutionSectionProps> = ({
   return (
     <section
       className={cn(
-        "pxResponsive container mx-auto py-14 flex flex-col lg:flex-row items-center gap-16",
+        "container mx-auto py-14 flex flex-col lg:flex-row items-center gap-16",
         className
       )}
     >

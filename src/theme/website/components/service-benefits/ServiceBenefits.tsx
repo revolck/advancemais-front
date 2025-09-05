@@ -42,7 +42,7 @@ const ServiceBenefits: React.FC<ServiceBenefitsProps> = ({
         {Array.from({ length: 2 }).map((_, index) => (
           <section
             key={index}
-            className="pxResponsive container mx-auto py-14 flex flex-col lg:flex-row items-center gap-8"
+            className="container mx-auto py-14 flex flex-col lg:flex-row items-center gap-8"
           >
             {/* Skeleton da imagem */}
             <div className="lg:w-1/2 w-full">
