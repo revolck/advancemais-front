@@ -4,29 +4,12 @@
  * Interface para dados de logo de empresa vindos da API
  */
 export interface LogoData {
-  id: number;
+  id: string;
   name: string;
   src: string;
   alt?: string;
   website?: string;
-  category?: string;
-  isActive: boolean;
   order: number;
-}
-
-/**
- * Interface para resposta da API
- */
-export interface LogosApiResponse {
-  data: LogoData[];
-  success: boolean;
-  message?: string;
-  pagination?: {
-    total: number;
-    page: number;
-    limit: number;
-    totalPages: number;
-  };
 }
 
 /**

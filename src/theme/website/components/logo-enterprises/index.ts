@@ -12,4 +12,4 @@ export { useLogosData } from "./hooks/useLogosData";
 
 // Tipos e constantes
 export type { LogoData, LogoEnterprisesProps, LogoCardProps } from "./types";
-export { DEFAULT_LOGOS_DATA, LOGOS_CONFIG, DEFAULT_CONTENT } from "./constants";
+export { LOGOS_CONFIG, DEFAULT_CONTENT } from "./constants";
