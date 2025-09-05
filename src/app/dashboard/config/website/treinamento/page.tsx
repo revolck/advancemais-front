@@ -8,6 +8,7 @@ import {
 import HeaderForm from "./header/HeaderForm";
 import TreinamentoForm from "./treinamento/TreinamentoForm";
 import CompanyForm from "./company/CompanyForm";
+import ConexaoForm from "./conexao/ConexaoForm";
 
 export default function TreinamentoPage() {
   const items: VerticalTabItem[] = [
@@ -38,6 +39,16 @@ export default function TreinamentoPage() {
       content: (
         <div className="space-y-6">
           <CompanyForm />
+        </div>
+      ),
+    },
+    {
+      value: "conexao",
+      label: "Conexão",
+      icon: "Link",
+      content: (
+        <div className="space-y-6">
+          <ConexaoForm />
         </div>
       ),
     },
