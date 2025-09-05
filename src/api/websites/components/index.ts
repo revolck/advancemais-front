@@ -96,6 +96,13 @@ export {
   updateTreinamentoCompany,
   deleteTreinamentoCompany,
 } from "./treinamento-company";
+export {
+  listConexaoForte,
+  getConexaoForteById,
+  createConexaoForte,
+  updateConexaoForte,
+  deleteConexaoForte,
+} from "./conexao-forte";
 
 export {
   getSliderData,
@@ -203,6 +210,11 @@ export type {
   CreateTreinamentoCompanyPayload,
   UpdateTreinamentoCompanyPayload,
 } from "./treinamento-company/types";
+export type {
+  ConexaoForteBackendResponse,
+  CreateConexaoFortePayload,
+  UpdateConexaoFortePayload,
+} from "./conexao-forte/types";
 
 export type { BannerBackendResponse, BannerApiResponse } from "./banner/types";
 export {

@@ -77,6 +77,13 @@ export const websiteRoutes = {
     update: (id: string) => `${prefix}/website/treinamento-company/${id}`,
     delete: (id: string) => `${prefix}/website/treinamento-company/${id}`,
   },
+  conexaoForte: {
+    list: () => `${prefix}/website/conexao-forte`,
+    create: () => `${prefix}/website/conexao-forte`,
+    get: (id: string) => `${prefix}/website/conexao-forte/${id}`,
+    update: (id: string) => `${prefix}/website/conexao-forte/${id}`,
+    delete: (id: string) => `${prefix}/website/conexao-forte/${id}`,
+  },
   advanceAjuda: {
     list: () => `${prefix}/website/advance-ajuda`,
     create: () => `${prefix}/website/advance-ajuda`,
