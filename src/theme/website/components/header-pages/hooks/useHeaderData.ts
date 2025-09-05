@@ -1,5 +1,3 @@
-// src/theme/website/components/header-pages/hooks/useHeaderData.ts
-
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -64,10 +62,23 @@ export function useHeaderData(
 
     // Map pathname to API page code
     const mapPathToPageCode = (path: string): string => {
-      const p = path.toLowerCase();
-      if (p.startsWith("/sobre")) return "SOBRE";
-      if (p.startsWith("/consultoria")) return "SERVICOS";
-      if (p.startsWith("/recrutamento")) return "RECRUTAMENTO";
+      // Normaliza e torna a checagem mais permissiva para subrotas
+      const p = (path || "").toLowerCase();
+
+      // Correspondências específicas primeiro
+      if (p.includes("recrutamento")) return "RECRUTAMENTO";
+
+      // Treinamento (inclui treinamento-company)
+      if (p.includes("treinamento")) return "TREINAMENTO";
+
+      // Consultoria e agrupadores de serviços/soluções
+      if (p.includes("consultoria")) return "SERVICOS";
+      if (p.includes("servicos") || p.includes("solucoes")) return "SERVICOS";
+
+      // Sobre
+      if (p.includes("/sobre")) return "SOBRE";
+
+      // Fallback genérico
       return "SOBRE";
     };
 
@@ -89,8 +100,27 @@ export function useHeaderData(
       setIsLoading(true);
       setError(null);
 
-      const pageCode = mapPathToPageCode(targetPage);
-      const apiItem = await getHeaderForPage(pageCode);
+      const primaryCode = mapPathToPageCode(targetPage);
+
+      // Estratégia de fallback: tenta códigos alternativos quando aplicável
+      const alternativeCodes: string[] = [];
+      const lower = (targetPage || "").toLowerCase();
+      if (primaryCode === "TREINAMENTO") {
+        alternativeCodes.push("SERVICOS");
+      }
+
+      const codesToTry = [primaryCode, ...alternativeCodes];
+
+      let apiItem: any | null = null;
+      for (const code of codesToTry) {
+        // eslint-disable-next-line no-await-in-loop
+        const found = await getHeaderForPage(code as any);
+        if (found) {
+          apiItem = found;
+          break;
+        }
+      }
+
       if (!apiItem) {
         setFallback("Nenhum cabeçalho encontrado. Usando dados padrão.");
         return;

@@ -68,8 +68,11 @@ export const HEADER_CONFIG = {
 export const ROUTE_LABELS: Record<string, string> = {
   consultoria: "Consultoria",
   recrutamento: "Recrutamento",
+  "recrutamento-selecao": "Recrutamento & Seleção",
   treinamento: "Treinamento",
+  "treinamento-company": "Treinamento In Company",
   servicos: "Serviços",
+  solucoes: "Soluções",
   sobre: "Sobre Nós",
   contato: "Contato",
   blog: "Blog",

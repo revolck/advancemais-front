@@ -66,16 +66,13 @@ export default function RecrutamentoPage() {
       {/* HEADER DA PÁGINA - VERSÃO COM DADOS MOCKADOS */}
       {/* ============================================= */}
       <HeaderPages
-        fetchFromApi={false}
-        staticData={headerData}
+        fetchFromApi={true}
+        currentPage="/treinamento"
         onDataLoaded={(data) => {
-          console.log("Header da página 'sobre' carregado (mockado):", data);
+          console.log("Header da página carregado via API:", data);
         }}
         onError={(error) => {
-          console.warn(
-            "Erro ao carregar header (não deveria acontecer com dados mockados):",
-            error
-          );
+          console.warn("Erro ao carregar header da página:", error);
         }}
       />
       <CounterInformationRecruting
