@@ -83,6 +83,13 @@ export {
   deleteRecrutamentoSelecao,
 } from "./recrutamento-selecao";
 export {
+  listTreinamentosInCompany,
+  getTreinamentosInCompanyById,
+  createTreinamentosInCompany,
+  updateTreinamentosInCompany,
+  deleteTreinamentosInCompany,
+} from "./treinamentos-in-company";
+export {
   listTreinamentoCompany,
   getTreinamentoCompanyById,
   createTreinamentoCompany,
@@ -186,6 +193,11 @@ export type {
   CreateRecrutamentoSelecaoPayload,
   UpdateRecrutamentoSelecaoPayload,
 } from "./recrutamento-selecao/types";
+export type {
+  TreinamentosInCompanyBackendResponse,
+  CreateTreinamentosInCompanyPayload,
+  UpdateTreinamentosInCompanyPayload,
+} from "./treinamentos-in-company/types";
 export type {
   TreinamentoCompanyBackendResponse,
   CreateTreinamentoCompanyPayload,

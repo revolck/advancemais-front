@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/custom";
 import HeaderForm from "./header/HeaderForm";
 import TreinamentoForm from "./treinamento/TreinamentoForm";
+import CompanyForm from "./company/CompanyForm";
 
 export default function TreinamentoPage() {
   const items: VerticalTabItem[] = [
@@ -31,22 +32,12 @@ export default function TreinamentoPage() {
       ),
     },
     {
-      value: "resultados",
-      label: "Resultados",
-      icon: "BarChart",
+      value: "company",
+      label: "Company",
+      icon: "Building2",
       content: (
         <div className="space-y-6">
-          <h3 className="text-lg font-semibold mb-2">Resultados</h3>
-        </div>
-      ),
-    },
-    {
-      value: "servicos",
-      label: "Serviços",
-      icon: "Briefcase",
-      content: (
-        <div className="space-y-6">
-          <h3 className="text-lg font-semibold mb-2">Serviços</h3>
+          <CompanyForm />
         </div>
       ),
     },
