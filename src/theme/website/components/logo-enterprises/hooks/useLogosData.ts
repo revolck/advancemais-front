@@ -3,8 +3,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import type { LogoData, LogosApiResponse } from "../types";
-import { DEFAULT_LOGOS_DATA, LOGOS_CONFIG } from "../constants";
+import { listLogoEnterprises } from "@/api/websites/components/logo-enterprises";
+import type { LogoData } from "../types";
 
 interface UseLogosDataReturn {
   data: LogoData[];
@@ -20,15 +20,13 @@ export function useLogosData(
   fetchFromApi: boolean = true,
   staticData?: LogoData[]
 ): UseLogosDataReturn {
-  const [data, setData] = useState<LogoData[]>(
-    staticData || DEFAULT_LOGOS_DATA
-  );
+  const [data, setData] = useState<LogoData[]>(staticData || []);
   const [isLoading, setIsLoading] = useState(fetchFromApi);
   const [error, setError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     if (!fetchFromApi) {
-      setData(staticData || DEFAULT_LOGOS_DATA);
+      setData(staticData || []);
       setIsLoading(false);
       return;
     }
@@ -37,53 +35,30 @@ export function useLogosData(
       setIsLoading(true);
       setError(null);
 
-      const controller = new AbortController();
-      const timeoutId = setTimeout(
-        () => controller.abort(),
-        LOGOS_CONFIG.api.timeout
-      );
+      const result = await listLogoEnterprises();
 
-      const response = await fetch(LOGOS_CONFIG.api.endpoint, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        signal: controller.signal,
-      });
+      const mapped = result
+        .filter(
+          (item) =>
+            item.status === "PUBLICADO" || item.status === true
+        )
+        .sort((a, b) => a.ordem - b.ordem)
+        .map<LogoData>((item) => ({
+          id: item.id,
+          name: item.nome,
+          src: item.imagemUrl,
+          alt: item.imagemAlt,
+          website: item.website,
+          order: item.ordem,
+        }));
 
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const result: LogosApiResponse = await response.json();
-
-      if (!result.success || !result.data) {
-        throw new Error(result.message || "Dados inválidos recebidos da API");
-      }
-
-      // Filtra apenas dados ativos e ordena
-      const activeData = result.data
-        .filter((item) => item.isActive)
-        .sort((a, b) => a.order - b.order);
-
-      setData(activeData);
+      setData(mapped);
     } catch (err) {
       console.error("Erro ao buscar dados dos logos:", err);
-
-      if (err instanceof Error) {
-        if (err.name === "AbortError") {
-          setError("Tempo limite excedido. Usando dados padrão.");
-        } else {
-          setError(`Erro na API: ${err.message}. Usando dados padrão.`);
-        }
-      } else {
-        setError("Erro desconhecido. Usando dados padrão.");
-      }
-
-      // Fallback para dados padrão
-      setData(DEFAULT_LOGOS_DATA);
+      setError(
+        err instanceof Error ? err.message : "Erro desconhecido"
+      );
+      setData([]);
     } finally {
       setIsLoading(false);
     }
@@ -100,3 +75,4 @@ export function useLogosData(
     refetch: fetchData,
   };
 }
+

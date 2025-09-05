@@ -5,6 +5,7 @@ import {
   VerticalTabs,
   type VerticalTabItem,
 } from "@/components/ui/custom";
+import LogosForm from "./logos/LogosForm";
 
 export default function GeralPage() {
   const items: VerticalTabItem[] = [
@@ -57,6 +58,12 @@ export default function GeralPage() {
           <h3 className="text-lg font-semibold mb-2">Depoimentos</h3>
         </div>
       ),
+    },
+    {
+      value: "logos",
+      label: "Logos",
+      icon: "Image",
+      content: <LogosForm />,
     },
   ];
 

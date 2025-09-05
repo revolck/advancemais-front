@@ -7,6 +7,7 @@ import AboutSection from "@/theme/website/components/about";
 import BannersGroup from "@/theme/website/components/banners";
 import ConsultoriaSection from "@/theme/website/components/consultoria-empresarial";
 import RecrutamentoSection from "@/theme/website/components/recrutamento";
+import LogoEnterprises from "@/theme/website/components/logo-enterprises";
 
 /**
  * Página Inicial do Website Institucional
@@ -47,6 +48,11 @@ export default function WebsiteHomePage() {
       <RecrutamentoSection
         onDataLoaded={() => handleComponentLoaded("Recrutamento")}
         onError={(error) => handleComponentError("Recrutamento", error)}
+      />
+
+      <LogoEnterprises
+        onDataLoaded={() => handleComponentLoaded("LogoEnterprises")}
+        onError={(error) => handleComponentError("LogoEnterprises", error)}
       />
 
       

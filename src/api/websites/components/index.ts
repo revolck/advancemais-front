@@ -126,6 +126,14 @@ export {
   updateBannerStatus,
 } from "./banner";
 export {
+  listLogoEnterprises,
+  getLogoEnterpriseById,
+  createLogoEnterprise,
+  updateLogoEnterprise,
+  deleteLogoEnterprise,
+  updateLogoEnterpriseOrder,
+} from "./logo-enterprises";
+export {
   listHeaderPages,
   getHeaderPageById,
   createHeaderPage,
@@ -217,6 +225,11 @@ export type {
 } from "./conexao-forte/types";
 
 export type { BannerBackendResponse, BannerApiResponse } from "./banner/types";
+export type {
+  LogoEnterpriseBackendResponse,
+  CreateLogoEnterprisePayload,
+  UpdateLogoEnterprisePayload,
+} from "./logo-enterprises/types";
 export {
   listTeam,
   getTeamById,

@@ -9,7 +9,7 @@ import { useLogosData } from "./hooks/useLogosData";
 import { ImageNotFound } from "@/components/ui/custom/image-not-found";
 import { ButtonCustom } from "@/components/ui/custom/button";
 import { DEFAULT_CONTENT } from "./constants";
-import type { LogoEnterprisesProps } from "./types";
+import type { LogoEnterprisesProps, LogoData } from "./types";
 
 /**
  * Componente LogoEnterprises
@@ -61,7 +61,7 @@ const LogoEnterprises: React.FC<LogoEnterprisesProps> = ({
   }, [error, onError]);
 
   // Handler para clique no logo
-  const handleLogoClick = (logo: any) => {
+  const handleLogoClick = (logo: LogoData) => {
     if (logo.website) {
       window.open(logo.website, "_blank", "noopener,noreferrer");
     }
@@ -108,13 +108,10 @@ const LogoEnterprises: React.FC<LogoEnterprisesProps> = ({
           />
           <p className="text-gray-600 mb-4 max-w-md mx-auto">
             Não foi possível carregar os logos das empresas parceiras.
-            {error.includes("padrão") ? " Exibindo dados de exemplo." : ""}
           </p>
-          {!error.includes("padrão") && (
-            <ButtonCustom onClick={refetch} variant="default" icon="RefreshCw">
-              Tentar Novamente
-            </ButtonCustom>
-          )}
+          <ButtonCustom onClick={refetch} variant="default" icon="RefreshCw">
+            Tentar Novamente
+          </ButtonCustom>
         </div>
       </section>
     );

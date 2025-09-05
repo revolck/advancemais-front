@@ -121,6 +121,14 @@ export const websiteRoutes = {
     delete: (id: string) => `${prefix}/website/banner/${id}`,
     reorder: (id: string) => `${prefix}/website/banner/${id}/reorder`,
   },
+  logoEnterprises: {
+    list: () => `${prefix}/website/logo-enterprises`,
+    create: () => `${prefix}/website/logo-enterprises`,
+    get: (id: string) => `${prefix}/website/logo-enterprises/${id}`,
+    update: (id: string) => `${prefix}/website/logo-enterprises/${id}`,
+    delete: (id: string) => `${prefix}/website/logo-enterprises/${id}`,
+    reorder: (id: string) => `${prefix}/website/logo-enterprises/${id}/reorder`,
+  },
   team: {
     list: () => `${prefix}/website/team`,
     create: () => `${prefix}/website/team`,

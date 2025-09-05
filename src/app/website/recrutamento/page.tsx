@@ -4,6 +4,7 @@ import ProblemSolutionSection from "@/theme/website/components/problem-solution-
 import AdvanceAjuda from "@/theme/website/components/advance-ajuda";
 import ProcessSteps from "@/theme/website/components/process-steps";
 import ServiceBenefits from "@/theme/website/components/service-benefits";
+import LogoEnterprises from "@/theme/website/components/logo-enterprises";
 
 export const metadata = {
   title: "Recrutamento & Seleção",
@@ -17,6 +18,7 @@ export default function RecrutamentoPage() {
       <AdvanceAjuda fetchFromApi={true} />
       <ProcessSteps />
       <ServiceBenefits fetchFromApi={true} service="recrutamentoSelecao" />
+      <LogoEnterprises fetchFromApi={true} />
     </div>
   );
 }
