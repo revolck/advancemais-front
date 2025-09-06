@@ -120,6 +120,13 @@ export default function SocialsForm() {
           onChange={handleChange("linkedin")}
         />
       </div>
+      {!id && (
+        <p className="text-xs text-muted-foreground/80">
+          Para atualizar redes sociais é necessário já existir um registro base
+          (criado em Endereço/Contato). Selecione os dados e clique em salvar
+          para verificar.
+        </p>
+      )}
       <div className="pt-4 flex justify-end">
         <ButtonCustom
           type="submit"
@@ -128,7 +135,7 @@ export default function SocialsForm() {
           className="w-40"
           withAnimation
           isLoading={isSaving}
-          disabled={isSaving || !state.instagram || !id}
+          disabled={isSaving || !state.instagram}
         >
           Salvar
         </ButtonCustom>

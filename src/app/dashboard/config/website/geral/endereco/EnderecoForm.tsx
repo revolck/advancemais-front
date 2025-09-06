@@ -67,6 +67,9 @@ export default function EnderecoForm() {
   }, []);
 
   useEffect(() => {
+    // Sempre que o estado mudar, garantimos que o select permaneça controlado
+    // limpando a cidade (mantém value="" ao invés de undefined)
+    setCidade("");
     if (estado) {
       fetch(
         `https://servicodados.ibge.gov.br/api/v1/localidades/estados/${estado}/municipios`
@@ -146,7 +149,7 @@ export default function EnderecoForm() {
           mode="single"
           placeholder="Estado"
           options={states.map((s) => ({ value: s.sigla, label: s.nome }))}
-          value={estado || null}
+          value={estado}
           onChange={(v) => setEstado(v || "")}
           required
         />
@@ -155,7 +158,7 @@ export default function EnderecoForm() {
           mode="single"
           placeholder="Cidade"
           options={cities.map((c) => ({ value: c.nome, label: c.nome }))}
-          value={cidade || null}
+          value={cidade}
           onChange={(v) => setCidade(v || "")}
           disabled={!estado}
           required
