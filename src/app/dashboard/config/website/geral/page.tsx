@@ -6,58 +6,15 @@ import {
   type VerticalTabItem,
 } from "@/components/ui/custom";
 import LogosForm from "./logos/LogosForm";
+import DepoimentosForm from "./depoimentos/DepoimentosForm";
 
 export default function GeralPage() {
   const items: VerticalTabItem[] = [
     {
-      value: "telefone",
-      label: "Telefone",
-      icon: "Phone",
-      content: (
-        <div className="space-y-6">
-          <h3 className="text-lg font-semibold mb-2">Telefone</h3>
-        </div>
-      ),
-    },
-    {
-      value: "email",
-      label: "E-mail",
-      icon: "Mail",
-      content: (
-        <div className="space-y-6">
-          <h3 className="text-lg font-semibold mb-2">E-mail</h3>
-        </div>
-      ),
-    },
-    {
-      value: "redes-sociais",
-      label: "Redes Sociais",
-      icon: "Share2",
-      content: (
-        <div className="space-y-6">
-          <h3 className="text-lg font-semibold mb-2">Redes Sociais</h3>
-        </div>
-      ),
-    },
-    {
-      value: "endereco",
-      label: "Endereço",
-      icon: "MapPin",
-      content: (
-        <div className="space-y-6">
-          <h3 className="text-lg font-semibold mb-2">Endereço</h3>
-        </div>
-      ),
-    },
-    {
       value: "depoimentos",
       label: "Depoimentos",
       icon: "MessageSquare",
-      content: (
-        <div className="space-y-6">
-          <h3 className="text-lg font-semibold mb-2">Depoimentos</h3>
-        </div>
-      ),
+      content: <DepoimentosForm />,
     },
     {
       value: "logos",
@@ -72,7 +29,7 @@ export default function GeralPage() {
       <div className="flex-1 min-h-0">
         <VerticalTabs
           items={items}
-          defaultValue="telefone"
+          defaultValue="depoimentos"
           variant="spacious"
           size="sm"
           withAnimation={true}
