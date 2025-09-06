@@ -13,4 +13,4 @@ export type { DashboardHeaderProps } from "./dashboard/header";
 
 // Exportações dos componentes específicos do header (caso necessário usar individualmente)
 export { NotificationButton } from "./dashboard/header/components/NotificationButton";
-export { UserButton } from "./dashboard/header/components/UserButton";
+export { UserButton } from "@/components/ui/custom/user-button";
