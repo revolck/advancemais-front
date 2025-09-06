@@ -92,9 +92,15 @@ export function SelectCustom(props: SelectCustomProps) {
   } = props;
 
   const id = useId();
-  // Always declare hooks at top level to avoid conditional hook order issues
   const [open, setOpen] = useState(false);
   const container = cn("space-y-2", fullWidth && "w-full", className);
+
+  const selectedLabels = useMemo(() => {
+    if (props.mode !== "multiple") return [] as string[];
+    const opts = props.options as SelectOption[];
+    const val = props.value as string[];
+    return opts.filter((o) => val.includes(o.value)).map((o) => o.label);
+  }, [props.mode, props.options, props.value]);
 
   // Single and User modes share the Radix Select base
   if (props.mode !== "multiple") {
@@ -191,11 +197,6 @@ export function SelectCustom(props: SelectCustomProps) {
 
   // Multiple mode using Popover + Command
   const { options, value, onChange, searchable = true } = props;
-
-  const selectedLabels = useMemo(
-    () => options.filter((o) => value.includes(o.value)).map((o) => o.label),
-    [options, value]
-  );
 
   return (
     <div className={container}>
