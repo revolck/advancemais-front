@@ -20,23 +20,95 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
+import { apiFetch } from "@/api/client";
+import { usuarioRoutes } from "@/api/routes";
+import { logoutUser } from "@/lib/auth";
 
-const user = {
-  name: "Toby Belhome",
-  email: "contact@bundui.io",
-  avatar: "https://bundui-images.netlify.app/avatars/01.png",
-};
+interface User {
+  name: string;
+  email: string;
+  avatar?: string;
+}
 
 export default function UserMenuSimple() {
-  const [open, setOpen] = React.useState(true);
+  const [open, setOpen] = React.useState(false);
+  const [user, setUser] = React.useState<User | null>(null);
+  const [isLoading, setIsLoading] = React.useState(true);
+  const [isLoggingOut, setIsLoggingOut] = React.useState(false);
+
+  React.useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const token = document.cookie
+          .split("; ")
+          .find((row) => row.startsWith("token="))
+          ?.split("=")[1];
+
+        if (!token) {
+          setIsLoading(false);
+          return;
+        }
+
+        const profile = await apiFetch<{
+          usuario?: { nomeCompleto?: string; email: string; imagemPerfil?: string };
+        }>(usuarioRoutes.profile.get(), {
+          cache: "no-cache",
+          init: { headers: { Authorization: `Bearer ${token}` } },
+        });
+
+        const data = profile.usuario;
+        if (data) {
+          const fullName = data.nomeCompleto?.trim();
+          const name = fullName && fullName.length > 0 ? fullName : data.email.split("@")[0];
+          setUser({ name, email: data.email, avatar: data.imagemPerfil });
+        }
+      } catch (error) {
+        console.error("Erro ao carregar perfil:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchUser();
+  }, []);
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    try {
+      const token = document.cookie
+        .split("; ")
+        .find((row) => row.startsWith("token="))
+        ?.split("=")[1];
+
+      if (token) {
+        await apiFetch(usuarioRoutes.logout(), {
+          cache: "no-cache",
+          init: { method: "POST", headers: { Authorization: `Bearer ${token}` } },
+        });
+      }
+    } catch (error) {
+      console.error("Erro ao fazer logout:", error);
+    } finally {
+      logoutUser();
+    }
+  };
+
+  if (isLoading || !user) return null;
+
+  const initials = user.name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
 
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
         <Button variant="outline" className="gap-2 px-2">
           <Avatar className="size-6 rounded-lg">
-            <AvatarImage src={user.avatar} alt={user.name} />
-            <AvatarFallback className="rounded-lg">TB</AvatarFallback>
+            {user.avatar && <AvatarImage src={user.avatar} alt={user.name} />}
+            <AvatarFallback className="rounded-lg">{initials}</AvatarFallback>
           </Avatar>
           <div className="truncate">{user.name}</div>
           <ChevronDown />
@@ -49,8 +121,8 @@ export default function UserMenuSimple() {
         <DropdownMenuLabel className="p-0 font-normal">
           <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
             <Avatar className="size-8 rounded-lg">
-              <AvatarImage src={user.avatar} alt={user.name} />
-              <AvatarFallback className="rounded-lg">TB</AvatarFallback>
+              {user.avatar && <AvatarImage src={user.avatar} alt={user.name} />}
+              <AvatarFallback className="rounded-lg">{initials}</AvatarFallback>
             </Avatar>
             <div className="grid flex-1 text-left text-sm leading-tight">
               <span className="truncate font-semibold">{user.name}</span>
@@ -83,11 +155,14 @@ export default function UserMenuSimple() {
           ))}
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem asChild className={MENU_LOGOUT.className}>
-          <Link href={MENU_LOGOUT.href} className="flex items-center gap-2">
+        <DropdownMenuItem
+          onClick={handleLogout}
+          className={MENU_LOGOUT.className}
+        >
+          <div className="flex items-center gap-2">
             <MENU_LOGOUT.icon className={MENU_LOGOUT.iconClassName} />
-            {MENU_LOGOUT.label}
-          </Link>
+            {isLoggingOut ? "Saindo..." : MENU_LOGOUT.label}
+          </div>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
