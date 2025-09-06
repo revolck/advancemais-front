@@ -146,13 +146,12 @@ export default function AtendimentoForm() {
     }));
     try {
       const payload = { horarios } as any;
-      if (!id) {
-        toastCustom.error(
-          "Antes de salvar o horário, crie o cadastro básico em 'Endereço' e 'Contatos'.",
-        );
-        return;
+      if (id) {
+        await updateInformacoesGerais(id, payload);
+      } else {
+        const created = await createInformacoesGerais(payload);
+        setId(created.id);
       }
-      await updateInformacoesGerais(id, payload);
       toastCustom.success("Horário salvo");
     } catch {
       toastCustom.error("Erro ao salvar horário");

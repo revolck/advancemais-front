@@ -69,13 +69,12 @@ export default function SocialsForm() {
       return;
     }
     try {
-      if (!id) {
-        toastCustom.error(
-          "Antes de salvar as redes sociais, crie o cadastro básico em 'Endereço' e 'Contatos'.",
-        );
-        return;
+      if (id) {
+        await updateInformacoesGerais(id, state);
+      } else {
+        const created = await createInformacoesGerais(state);
+        setId(created.id);
       }
-      await updateInformacoesGerais(id, state);
       toastCustom.success("Redes sociais salvas");
     } catch {
       toastCustom.error("Erro ao salvar redes sociais");
