@@ -17,11 +17,8 @@ export interface InformacoesGeraisBackendResponse {
   atualizadoEm?: string;
 }
 
-export type CreateInformacoesGeraisPayload = Omit<
-  InformacoesGeraisBackendResponse,
-  "id" | "criadoEm" | "atualizadoEm"
+export type CreateInformacoesGeraisPayload = Partial<
+  Omit<InformacoesGeraisBackendResponse, "id" | "criadoEm" | "atualizadoEm">
 >;
 
-export type UpdateInformacoesGeraisPayload = Partial<
-  CreateInformacoesGeraisPayload
->;
+export type UpdateInformacoesGeraisPayload = CreateInformacoesGeraisPayload;
