@@ -134,6 +134,15 @@ export {
   updateLogoEnterpriseOrder,
 } from "./logo-enterprises";
 export {
+  listDepoimentos,
+  getDepoimentoById,
+  createDepoimento,
+  updateDepoimento,
+  deleteDepoimento,
+  updateDepoimentoOrder,
+  updateDepoimentoStatus,
+} from "./depoimentos";
+export {
   listHeaderPages,
   getHeaderPageById,
   createHeaderPage,
@@ -230,6 +239,11 @@ export type {
   CreateLogoEnterprisePayload,
   UpdateLogoEnterprisePayload,
 } from "./logo-enterprises/types";
+export type {
+  DepoimentoBackendResponse,
+  CreateDepoimentoPayload,
+  UpdateDepoimentoPayload,
+} from "./depoimentos/types";
 export {
   listTeam,
   getTeamById,

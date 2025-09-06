@@ -129,6 +129,14 @@ export const websiteRoutes = {
     delete: (id: string) => `${prefix}/website/logo-enterprises/${id}`,
     reorder: (id: string) => `${prefix}/website/logo-enterprises/${id}/reorder`,
   },
+  depoimentos: {
+    list: () => `${prefix}/website/depoimentos`,
+    create: () => `${prefix}/website/depoimentos`,
+    get: (id: string) => `${prefix}/website/depoimentos/${id}`,
+    update: (id: string) => `${prefix}/website/depoimentos/${id}`,
+    delete: (id: string) => `${prefix}/website/depoimentos/${id}`,
+    reorder: (id: string) => `${prefix}/website/depoimentos/${id}/reorder`,
+  },
   team: {
     list: () => `${prefix}/website/team`,
     create: () => `${prefix}/website/team`,
