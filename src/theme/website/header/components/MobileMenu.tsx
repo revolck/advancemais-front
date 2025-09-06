@@ -1,4 +1,6 @@
-import React from "react";
+"use client";
+
+import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { NavLink } from "./NavLink";
 import { MOBILE_MENU_VARIANTS } from "../constants/animations";
@@ -10,6 +12,15 @@ interface MobileMenuProps {
 }
 
 export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose }) => {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    const hasToken = document.cookie
+      .split("; ")
+      .some((row) => row.startsWith("token="));
+    setIsAuthenticated(hasToken);
+  }, []);
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -28,9 +39,11 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose }) => {
               </NavLink>
             ))}
             <hr className="w-full border-t border-gray-700/50 my-2" />
-            <NavLink href="https://auth.advancemais.com/login" onClick={onClose}>
-              Entrar
-            </NavLink>
+            {!isAuthenticated && (
+              <NavLink href="https://auth.advancemais.com/login" onClick={onClose}>
+                Entrar
+              </NavLink>
+            )}
           </div>
         </motion.div>
       )}

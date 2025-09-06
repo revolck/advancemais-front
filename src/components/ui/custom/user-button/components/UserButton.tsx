@@ -30,12 +30,9 @@ interface User {
 }
 
 const UserButtonSkeleton = () => (
-  <div className="flex items-center justify-center gap-3 px-0">
+  <div className="flex items-center justify-center gap-2">
     <Skeleton className="h-8 w-8 rounded-full bg-white/20" />
-    <div className="hidden md:block">
-      <Skeleton className="h-4 w-24 bg-white/20" />
-    </div>
-    <Skeleton className="h-3 w-3 rounded bg-white/10" />
+    <Skeleton className="h-3 w-3 rounded bg-white/10 hidden sm:block" />
   </div>
 );
 
@@ -150,7 +147,8 @@ export function UserButton({ className, onNavigate }: UserButtonProps) {
         <Button
           variant="ghost"
           className={cn(
-            "group relative h-10 px-3 rounded-xl hover:bg-white/10 active:scale-95",
+            "group relative h-10 rounded-xl hover:bg-white/10 active:scale-95",
+            "px-2 sm:px-3",
             "transition-all duration-200",
             "focus-visible:outline-none focus-visible:ring-0",
             className
@@ -160,7 +158,13 @@ export function UserButton({ className, onNavigate }: UserButtonProps) {
             <div className="relative">
               <AvatarCustom name={displayName} size="sm" showStatus={false} />
             </div>
-            <div className={cn("transition-transform duration-200", isOpen ? "rotate-180" : "rotate-0")}> 
+            <div
+              className={cn(
+                "transition-transform duration-200",
+                isOpen ? "rotate-180" : "rotate-0",
+                "hidden sm:block"
+              )}
+            >
               <Icon name="ChevronDown" size={14} className="text-white/70" />
             </div>
           </div>
