@@ -52,6 +52,7 @@ export default function AtendimentoForm() {
   const [selectedDays, setSelectedDays] = useState<DayKey[]>([]);
   const [hours, setHours] = useState<Record<DayKey, { from: string; to: string }>>({} as any);
   const [loading, setLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -144,6 +145,7 @@ export default function AtendimentoForm() {
       horarioInicio: hours[d].from,
       horarioFim: hours[d].to,
     }));
+    setIsSaving(true);
     try {
       const payload = { horarios } as any;
       if (id) {
@@ -155,6 +157,8 @@ export default function AtendimentoForm() {
       toastCustom.success("Horário salvo");
     } catch {
       toastCustom.error("Erro ao salvar horário");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -260,7 +264,19 @@ export default function AtendimentoForm() {
       )}
 
       <div className="pt-4 flex justify-end">
-        <ButtonCustom type="submit" size="lg" variant="default" className="w-40" withAnimation>
+        <ButtonCustom
+          type="submit"
+          size="lg"
+          variant="default"
+          className="w-40"
+          withAnimation
+          isLoading={isSaving}
+          disabled={
+            isSaving ||
+            selectedDays.length === 0 ||
+            selectedDays.some((d) => !hours[d]?.from || !hours[d]?.to)
+          }
+        >
           Salvar
         </ButtonCustom>
       </div>

@@ -27,6 +27,7 @@ export default function ContatoForm() {
   });
   const [id, setId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -68,6 +69,7 @@ export default function ContatoForm() {
       toastCustom.error("Preencha os campos obrigatórios");
       return;
     }
+    setIsSaving(true);
     try {
       if (id) {
         await updateInformacoesGerais(id, state);
@@ -78,6 +80,8 @@ export default function ContatoForm() {
       toastCustom.success("Contatos salvos");
     } catch {
       toastCustom.error("Erro ao salvar contatos");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -124,7 +128,15 @@ export default function ContatoForm() {
         />
       </div>
       <div className="pt-4 flex justify-end">
-        <ButtonCustom type="submit" size="lg" variant="default" className="w-40" withAnimation>
+        <ButtonCustom
+          type="submit"
+          size="lg"
+          variant="default"
+          className="w-40"
+          withAnimation
+          isLoading={isSaving}
+          disabled={isSaving || !state.telefone1 || !state.whatsapp || !state.email}
+        >
           Salvar
         </ButtonCustom>
       </div>

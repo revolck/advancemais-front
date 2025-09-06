@@ -26,7 +26,8 @@ export default function SocialsForm() {
     linkedin: "",
   });
   const [id, setId] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); // carregando dados
+  const [isSaving, setIsSaving] = useState(false); // salvando submit
 
   useEffect(() => {
     let mounted = true;
@@ -68,6 +69,7 @@ export default function SocialsForm() {
       toastCustom.error("Instagram é obrigatório");
       return;
     }
+    setIsSaving(true);
     try {
       if (id) {
         await updateInformacoesGerais(id, state);
@@ -78,6 +80,8 @@ export default function SocialsForm() {
       toastCustom.success("Redes sociais salvas");
     } catch {
       toastCustom.error("Erro ao salvar redes sociais");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -118,7 +122,15 @@ export default function SocialsForm() {
         />
       </div>
       <div className="pt-4 flex justify-end">
-        <ButtonCustom type="submit" size="lg" variant="default" className="w-40" withAnimation>
+        <ButtonCustom
+          type="submit"
+          size="lg"
+          variant="default"
+          className="w-40"
+          withAnimation
+          isLoading={isSaving}
+          disabled={isSaving || !state.instagram}
+        >
           Salvar
         </ButtonCustom>
       </div>

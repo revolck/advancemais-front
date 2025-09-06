@@ -32,6 +32,7 @@ export default function EnderecoForm() {
   const [states, setStates] = useState<StateItem[]>([]);
   const [cities, setCities] = useState<CityItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -97,6 +98,7 @@ export default function EnderecoForm() {
       toastCustom.error("Preencha todos os campos");
       return;
     }
+    setIsSaving(true);
     try {
       const payload = { cep, endereco, estado, cidade };
       if (id) {
@@ -108,6 +110,8 @@ export default function EnderecoForm() {
       toastCustom.success("Endereço salvo");
     } catch {
       toastCustom.error("Erro ao salvar endereço");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -165,6 +169,8 @@ export default function EnderecoForm() {
           variant="default"
           className="w-40"
           withAnimation
+          isLoading={isSaving}
+          disabled={isSaving || !cep || !endereco || !estado || !cidade}
         >
           Salvar
         </ButtonCustom>
