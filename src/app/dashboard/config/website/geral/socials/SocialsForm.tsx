@@ -84,7 +84,7 @@ export default function SocialsForm() {
 
   if (loading) {
     return (
-      <div className="space-y-4 max-w-lg">
+      <div className="space-y-4">
         <Skeleton className="h-10 w-full" />
         <Skeleton className="h-10 w-full" />
         <Skeleton className="h-10 w-full" />
@@ -94,7 +94,7 @@ export default function SocialsForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 max-w-2xl">
+    <form onSubmit={handleSubmit} className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <InputCustom
           label="Instagram"
@@ -118,7 +118,11 @@ export default function SocialsForm() {
           onChange={handleChange("linkedin")}
         />
       </div>
-      <ButtonCustom type="submit">Salvar</ButtonCustom>
+      <div className="pt-4 flex justify-end">
+        <ButtonCustom type="submit" size="lg" variant="default" className="w-40" withAnimation>
+          Salvar
+        </ButtonCustom>
+      </div>
     </form>
   );
 }

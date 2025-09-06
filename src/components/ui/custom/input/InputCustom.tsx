@@ -35,7 +35,7 @@ export const InputCustom = React.forwardRef<HTMLInputElement, InputCustomProps>(
       showPasswordToggle = false,
       size = "md",
       fullWidth = true,
-      isFloatingLabel = false, // Mantemos essa prop para compatibilidade, mas ignoramos
+      isFloatingLabel = false,
       helperText,
       maxLength,
       successMessage,

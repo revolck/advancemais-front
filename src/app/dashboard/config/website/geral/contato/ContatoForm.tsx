@@ -83,7 +83,7 @@ export default function ContatoForm() {
 
   if (loading) {
     return (
-      <div className="space-y-4 max-w-lg">
+      <div className="space-y-4">
         <Skeleton className="h-10 w-full" />
         <Skeleton className="h-10 w-full" />
         <Skeleton className="h-10 w-full" />
@@ -93,36 +93,41 @@ export default function ContatoForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 max-w-lg">
-      <InputCustom
-        label="Telefone (1)"
-        mask="phone"
-        value={state.telefone1}
-        onChange={handleChange("telefone1")}
-        required
-      />
-      <InputCustom
-        label="Telefone (2)"
-        mask="phone"
-        value={state.telefone2}
-        onChange={handleChange("telefone2")}
-      />
-      <InputCustom
-        label="WhatsApp"
-        mask="phone"
-        value={state.whatsapp}
-        onChange={handleChange("whatsapp")}
-        required
-      />
-      <InputCustom
-        label="E-mail"
-        type="email"
-        value={state.email}
-        onChange={handleChange("email")}
-        required
-      />
-      <ButtonCustom type="submit">Salvar</ButtonCustom>
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <InputCustom
+          label="Telefone (1)"
+          mask="phone"
+          value={state.telefone1}
+          onChange={handleChange("telefone1")}
+          required
+        />
+        <InputCustom
+          label="Telefone (2)"
+          mask="phone"
+          value={state.telefone2}
+          onChange={handleChange("telefone2")}
+        />
+        <InputCustom
+          label="WhatsApp"
+          mask="phone"
+          value={state.whatsapp}
+          onChange={handleChange("whatsapp")}
+          required
+        />
+        <InputCustom
+          label="E-mail"
+          type="email"
+          value={state.email}
+          onChange={handleChange("email")}
+          required
+        />
+      </div>
+      <div className="pt-4 flex justify-end">
+        <ButtonCustom type="submit" size="lg" variant="default" className="w-40" withAnimation>
+          Salvar
+        </ButtonCustom>
+      </div>
     </form>
   );
 }
-

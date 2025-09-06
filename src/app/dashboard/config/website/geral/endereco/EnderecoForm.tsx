@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  FormEvent,
-  useEffect,
-  useState,
-  ChangeEvent,
-} from "react";
+import { FormEvent, useEffect, useState, ChangeEvent } from "react";
 import { InputCustom, ButtonCustom } from "@/components/ui/custom";
 import { toastCustom } from "@/components/ui/custom/toast";
 import {
@@ -14,13 +9,7 @@ import {
   updateInformacoesGerais,
 } from "@/api/websites/components/informacoes-gerais";
 import type { InformacoesGeraisBackendResponse } from "@/api/websites/components/informacoes-gerais/types";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { SelectCustom } from "@/components/ui/custom/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { fetchCepData } from "@/theme/website/components/contact-form-section/utils";
 
@@ -68,7 +57,7 @@ export default function EnderecoForm() {
     fetch("https://servicodados.ibge.gov.br/api/v1/localidades/estados")
       .then((res) => res.json())
       .then((data: StateItem[]) =>
-        setStates(data.sort((a, b) => a.nome.localeCompare(b.nome))),
+        setStates(data.sort((a, b) => a.nome.localeCompare(b.nome)))
       )
       .catch(() => {});
     return () => {
@@ -79,11 +68,11 @@ export default function EnderecoForm() {
   useEffect(() => {
     if (estado) {
       fetch(
-        `https://servicodados.ibge.gov.br/api/v1/localidades/estados/${estado}/municipios`,
+        `https://servicodados.ibge.gov.br/api/v1/localidades/estados/${estado}/municipios`
       )
         .then((res) => res.json())
         .then((data: CityItem[]) =>
-          setCities(data.sort((a, b) => a.nome.localeCompare(b.nome))),
+          setCities(data.sort((a, b) => a.nome.localeCompare(b.nome)))
         )
         .catch(() => setCities([]));
     }
@@ -124,7 +113,7 @@ export default function EnderecoForm() {
 
   if (loading) {
     return (
-      <div className="space-y-4 max-w-lg">
+      <div className="space-y-4">
         <Skeleton className="h-10 w-full" />
         <Skeleton className="h-10 w-full" />
         <Skeleton className="h-10 w-full" />
@@ -134,46 +123,52 @@ export default function EnderecoForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 max-w-lg">
-      <InputCustom
-        label="CEP"
-        mask="cep"
-        value={cep}
-        onChange={handleCepChange}
-        required
-      />
-      <InputCustom
-        label="Endereço"
-        value={endereco}
-        onChange={(e) => setEndereco(e.target.value)}
-        required
-      />
-      <Select value={estado} onValueChange={setEstado}>
-        <SelectTrigger className="w-full">
-          <SelectValue placeholder="Estado" />
-        </SelectTrigger>
-        <SelectContent>
-          {states.map((s) => (
-            <SelectItem key={s.sigla} value={s.sigla}>
-              {s.nome}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      <Select value={cidade} onValueChange={setCidade}>
-        <SelectTrigger className="w-full">
-          <SelectValue placeholder="Cidade" />
-        </SelectTrigger>
-        <SelectContent>
-          {cities.map((c) => (
-            <SelectItem key={c.id} value={c.nome}>
-              {c.nome}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      <ButtonCustom type="submit">Salvar</ButtonCustom>
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <InputCustom
+          label="CEP"
+          mask="cep"
+          value={cep}
+          onChange={handleCepChange}
+          required
+        />
+        <InputCustom
+          label="Endereço"
+          value={endereco}
+          onChange={(e) => setEndereco(e.target.value)}
+          required
+        />
+        <SelectCustom
+          label="Estado"
+          mode="single"
+          placeholder="Estado"
+          options={states.map((s) => ({ value: s.sigla, label: s.nome }))}
+          value={estado || null}
+          onChange={(v) => setEstado(v || "")}
+          required
+        />
+        <SelectCustom
+          label="Cidade"
+          mode="single"
+          placeholder="Cidade"
+          options={cities.map((c) => ({ value: c.nome, label: c.nome }))}
+          value={cidade || null}
+          onChange={(v) => setCidade(v || "")}
+          disabled={!estado}
+          required
+        />
+      </div>
+      <div className="pt-4 flex justify-end">
+        <ButtonCustom
+          type="submit"
+          size="lg"
+          variant="default"
+          className="w-40"
+          withAnimation
+        >
+          Salvar
+        </ButtonCustom>
+      </div>
     </form>
   );
 }
-

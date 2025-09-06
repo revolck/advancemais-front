@@ -1,3 +1,9 @@
+export interface HorarioItem {
+  diaDaSemana: string; // ex: "segunda", "terca", "quarta" etc.
+  horarioInicio: string; // HH:MM
+  horarioFim: string; // HH:MM
+}
+
 export interface InformacoesGeraisBackendResponse {
   id: string;
   endereco: string;
@@ -7,7 +13,10 @@ export interface InformacoesGeraisBackendResponse {
   telefone1: string;
   telefone2?: string;
   whatsapp: string;
-  horarioDeFuncionamento: string;
+  // Campo antigo (compatibilidade para leituras legadas)
+  horarioDeFuncionamento?: string;
+  // Novo formato de horários por dia
+  horarios?: HorarioItem[];
   linkedin?: string;
   facebook?: string;
   instagram: string;

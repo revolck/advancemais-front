@@ -27,3 +27,9 @@ export * from "./text-area";
 export * from "./icon-selector";
 
 export * from "./slider-manager";
+
+export * from "./select";
+
+export * from "./date-time";
+
+export * from "./tags-selector";
