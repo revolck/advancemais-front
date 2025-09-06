@@ -152,6 +152,13 @@ export const websiteRoutes = {
     update: (id: string) => `${prefix}/website/header-pages/${id}`,
     delete: (id: string) => `${prefix}/website/header-pages/${id}`,
   },
+  informacoesGerais: {
+    list: () => `${prefix}/website/informacoes-gerais`,
+    create: () => `${prefix}/website/informacoes-gerais`,
+    get: (id: string) => `${prefix}/website/informacoes-gerais/${id}`,
+    update: (id: string) => `${prefix}/website/informacoes-gerais/${id}`,
+    delete: (id: string) => `${prefix}/website/informacoes-gerais/${id}`,
+  },
 };
 
 /**

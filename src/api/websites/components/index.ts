@@ -150,6 +150,14 @@ export {
   deleteHeaderPage,
   getHeaderForPage,
 } from "./header-pages";
+export {
+  listInformacoesGerais,
+  getInformacoesGeraisById,
+  createInformacoesGerais,
+  updateInformacoesGerais,
+  deleteInformacoesGerais,
+} from "./informacoes-gerais";
+
 export type {
   AboutApiResponse,
   AboutImageProps,
@@ -259,3 +267,8 @@ export type {
   UpdateHeaderPagePayload,
   HeaderPage,
 } from "./header-pages/types";
+export type {
+  InformacoesGeraisBackendResponse,
+  CreateInformacoesGeraisPayload,
+  UpdateInformacoesGeraisPayload,
+} from "./informacoes-gerais/types";
