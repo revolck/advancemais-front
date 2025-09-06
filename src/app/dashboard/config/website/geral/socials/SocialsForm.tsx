@@ -69,12 +69,13 @@ export default function SocialsForm() {
       return;
     }
     try {
-      if (id) {
-        await updateInformacoesGerais(id, state);
-      } else {
-        const created = await createInformacoesGerais(state);
-        setId(created.id);
+      if (!id) {
+        toastCustom.error(
+          "Antes de salvar as redes sociais, crie o cadastro básico em 'Endereço' e 'Contatos'.",
+        );
+        return;
       }
+      await updateInformacoesGerais(id, state);
       toastCustom.success("Redes sociais salvas");
     } catch {
       toastCustom.error("Erro ao salvar redes sociais");
@@ -93,28 +94,30 @@ export default function SocialsForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 max-w-lg">
-      <InputCustom
-        label="Instagram"
-        value={state.instagram}
-        onChange={handleChange("instagram")}
-        required
-      />
-      <InputCustom
-        label="Facebook"
-        value={state.facebook}
-        onChange={handleChange("facebook")}
-      />
-      <InputCustom
-        label="YouTube"
-        value={state.youtube}
-        onChange={handleChange("youtube")}
-      />
-      <InputCustom
-        label="LinkedIn"
-        value={state.linkedin}
-        onChange={handleChange("linkedin")}
-      />
+    <form onSubmit={handleSubmit} className="space-y-4 max-w-2xl">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <InputCustom
+          label="Instagram"
+          value={state.instagram}
+          onChange={handleChange("instagram")}
+          required
+        />
+        <InputCustom
+          label="Facebook"
+          value={state.facebook}
+          onChange={handleChange("facebook")}
+        />
+        <InputCustom
+          label="YouTube"
+          value={state.youtube}
+          onChange={handleChange("youtube")}
+        />
+        <InputCustom
+          label="LinkedIn"
+          value={state.linkedin}
+          onChange={handleChange("linkedin")}
+        />
+      </div>
       <ButtonCustom type="submit">Salvar</ButtonCustom>
     </form>
   );

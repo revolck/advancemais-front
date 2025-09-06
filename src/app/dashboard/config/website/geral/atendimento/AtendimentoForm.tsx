@@ -65,12 +65,13 @@ export default function AtendimentoForm() {
       : `Seg-Sex ${weekdayFrom} às ${weekdayTo} | Sáb ${saturdayFrom} às ${saturdayTo}`;
     try {
       const payload = { horarioDeFuncionamento: horario };
-      if (id) {
-        await updateInformacoesGerais(id, payload);
-      } else {
-        const created = await createInformacoesGerais(payload);
-        setId(created.id);
+      if (!id) {
+        toastCustom.error(
+          "Antes de salvar o horário, crie o cadastro básico em 'Endereço' e 'Contatos'.",
+        );
+        return;
       }
+      await updateInformacoesGerais(id, payload);
       toastCustom.success("Horário salvo");
     } catch {
       toastCustom.error("Erro ao salvar horário");
@@ -137,4 +138,3 @@ export default function AtendimentoForm() {
     </form>
   );
 }
-
