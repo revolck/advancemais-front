@@ -21,6 +21,7 @@ export function DashboardBreadcrumb({ items }: DashboardBreadcrumbProps) {
       <BreadcrumbList>
         {items.map((item, index) => {
           const isLast = index === items.length - 1;
+          const isFirst = index === 0;
           
           return (
             <div key={`breadcrumb-${index}`} className="flex items-center">
@@ -37,19 +38,23 @@ export function DashboardBreadcrumb({ items }: DashboardBreadcrumbProps) {
                       {item.label}
                     </span>
                   </BreadcrumbPage>
-                ) : (
-                  <BreadcrumbLink 
-                    href={item.href!}
+                ) : isFirst ? (
+                  <BreadcrumbLink
+                    href={item.href || '#'}
                     className="flex items-center gap-2 text-gray-500 hover:text-gray-800 transition-colors"
                   >
                     {item.icon && (
-                      <Icon 
-                        name={item.icon} 
-                        className="size-4" 
-                      />
+                      <Icon name={item.icon} className="size-4" />
                     )}
                     <span>{item.label}</span>
                   </BreadcrumbLink>
+                ) : (
+                  <BreadcrumbPage className="flex items-center gap-2 text-gray-500">
+                    {item.icon && (
+                      <Icon name={item.icon} className="size-4" />
+                    )}
+                    <span>{item.label}</span>
+                  </BreadcrumbPage>
                 )}
               </BreadcrumbItem>
               
