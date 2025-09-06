@@ -172,7 +172,7 @@ export default function EnderecoForm() {
           className="w-40"
           withAnimation
           isLoading={isSaving}
-          disabled={isSaving || !id || !cep || !endereco || !estado || !cidade}
+          disabled={isSaving || !cep || !endereco || !estado || !cidade}
         >
           Salvar
         </ButtonCustom>

@@ -134,7 +134,9 @@ export default function ContatoForm() {
           className="w-40"
           withAnimation
           isLoading={isSaving}
-          disabled={isSaving || !id || !state.telefone1 || !state.whatsapp || !state.email}
+          disabled={
+            isSaving || !state.telefone1 || !state.whatsapp || !state.email
+          }
         >
           Salvar
         </ButtonCustom>
