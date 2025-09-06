@@ -14,7 +14,4 @@ export type {
   AdvantageCard as AdvantageCardType,
   WhyChooseData,
 } from "./types";
-export {
-  DEFAULT_ABOUT_ADVANTAGES_DATA,
-  ABOUT_ADVANTAGES_CONFIG,
-} from "./constants";
+export { ABOUT_ADVANTAGES_CONFIG } from "./constants";

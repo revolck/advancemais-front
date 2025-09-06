@@ -16,4 +16,4 @@ export type {
   AccordionGroupInformationProps,
   AccordionSectionProps,
 } from "./types";
-export { DEFAULT_ACCORDION_DATA, ACCORDION_CONFIG } from "./constants";
+export { ACCORDION_CONFIG } from "./constants";

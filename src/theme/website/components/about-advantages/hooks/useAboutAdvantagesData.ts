@@ -5,7 +5,7 @@
 import { useState, useEffect } from "react";
 import type { AboutAdvantagesApiData } from "../types";
 // Sem fallback de mock; usa apenas API ou dados estáticos
-import { env } from "@/lib/env";
+// import { env } from "@/lib/env";
 import {
   listDiferenciais,
   type DiferenciaisBackendResponse,
@@ -70,11 +70,11 @@ export function useAboutAdvantagesData(
   const mapDiferenciaisToData = (
     item: DiferenciaisBackendResponse,
   ): AboutAdvantagesApiData => {
+    const DEFAULT_ICONS = ["Award", "Lightbulb", "Target", "Users"] as const;
     const cards = [1, 2, 3, 4].map((i) => ({
       id: `card-${i}`,
       icon:
-        (item as any)[`icone${i}`] ||
-        DEFAULT_ABOUT_ADVANTAGES_DATA.advantageCards[i - 1].icon,
+        (item as any)[`icone${i}`] || DEFAULT_ICONS[i - 1],
       title: (item as any)[`titulo${i}`] || "",
       description: (item as any)[`descricao${i}`] || "",
       order: i,

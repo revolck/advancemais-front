@@ -96,7 +96,6 @@ export function useHeaderData(
 
       let apiItem: any | null = null;
       for (const code of codesToTry) {
-        // eslint-disable-next-line no-await-in-loop
         const found = await getHeaderForPage(code as any);
         if (found) {
           apiItem = found;
@@ -114,7 +113,7 @@ export function useHeaderData(
     } finally {
       setIsLoading(false);
     }
-  }, [fetchFromApi, targetPage]);
+  }, [fetchFromApi, targetPage, staticData]);
 
   useEffect(() => {
     fetchData();
