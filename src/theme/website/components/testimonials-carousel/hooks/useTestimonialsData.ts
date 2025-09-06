@@ -1,10 +1,8 @@
-// src/theme/website/components/testimonials-carousel/hooks/useTestimonialsData.ts
-
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import type { TestimonialData, TestimonialsApiResponse } from "../types";
-import { DEFAULT_TESTIMONIALS_DATA, TESTIMONIALS_CONFIG } from "../constants";
+import type { TestimonialData } from "../types";
+import { listDepoimentos } from "@/api/websites/components/depoimentos";
 
 interface UseTestimonialsDataReturn {
   data: TestimonialData[];
@@ -20,15 +18,13 @@ export function useTestimonialsData(
   fetchFromApi: boolean = true,
   staticData?: TestimonialData[]
 ): UseTestimonialsDataReturn {
-  const [data, setData] = useState<TestimonialData[]>(
-    staticData || DEFAULT_TESTIMONIALS_DATA
-  );
+  const [data, setData] = useState<TestimonialData[]>(staticData || []);
   const [isLoading, setIsLoading] = useState(fetchFromApi);
   const [error, setError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     if (!fetchFromApi) {
-      setData(staticData || DEFAULT_TESTIMONIALS_DATA);
+      setData(staticData || []);
       setIsLoading(false);
       return;
     }
@@ -37,53 +33,29 @@ export function useTestimonialsData(
       setIsLoading(true);
       setError(null);
 
-      const controller = new AbortController();
-      const timeoutId = setTimeout(
-        () => controller.abort(),
-        TESTIMONIALS_CONFIG.api.timeout
-      );
+      // Busca depoimentos PUBLICADOS via API compartilhada
+      const backendItems = await listDepoimentos({ headers: { Accept: "application/json" } }, "PUBLICADO");
 
-      const response = await fetch(TESTIMONIALS_CONFIG.api.endpoint, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        signal: controller.signal,
-      });
+      const mapped: TestimonialData[] = (backendItems || [])
+        .sort((a, b) => a.ordem - b.ordem)
+        .map((item) => ({
+          id: item.depoimentoId,
+          name: item.nome,
+          position: item.cargo,
+          company: undefined,
+          testimonial: item.depoimento,
+          imageUrl: item.fotoUrl || "",
+          rating: 5,
+          order: item.ordem,
+          isActive: (typeof item.status === "string" ? item.status : item.status ? "PUBLICADO" : "RASCUNHO") === "PUBLICADO",
+        }))
+        .filter((t) => t.isActive);
 
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const result: TestimonialsApiResponse = await response.json();
-
-      if (!result.success || !result.data) {
-        throw new Error(result.message || "Dados inválidos recebidos da API");
-      }
-
-      // Filtra apenas dados ativos e ordena
-      const activeData = result.data
-        .filter((item) => item.isActive)
-        .sort((a, b) => a.order - b.order);
-
-      setData(activeData);
+      setData(mapped);
     } catch (err) {
       console.error("Erro ao buscar dados dos depoimentos:", err);
-
-      if (err instanceof Error) {
-        if (err.name === "AbortError") {
-          setError("Tempo limite excedido. Usando dados padrão.");
-        } else {
-          setError(`Erro na API: ${err.message}. Usando dados padrão.`);
-        }
-      } else {
-        setError("Erro desconhecido. Usando dados padrão.");
-      }
-
-      // Fallback para dados padrão
-      setData(DEFAULT_TESTIMONIALS_DATA);
+      setError(err instanceof Error ? err.message : "Erro desconhecido");
+      setData([]);
     } finally {
       setIsLoading(false);
     }

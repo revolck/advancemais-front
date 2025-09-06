@@ -132,6 +132,13 @@ export default function DepoimentosForm() {
       entityNamePlural="Depoimentos"
       firstFieldLabel="Depoimento"
       secondFieldLabel="Nome"
+      showContentField
+      contentFieldLabel="Cargo"
+      contentFieldRequired
+      titleAsTextarea
+      fieldsOrder={["url", "content", "title"]}
+      maxItems={8}
+      imageFieldLabel="Foto do perfil"
       validateSecondFieldAsUrl={false}
       secondFieldRequired
       onCreateSlider={handleCreate}

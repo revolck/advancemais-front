@@ -1,5 +1,3 @@
-// src/theme/website/components/testimonials-carousel/types/index.ts
-
 /**
  * Interface para dados de depoimento vindos da API
  */
@@ -13,15 +11,6 @@ export interface TestimonialData {
   rating?: number;
   order: number;
   isActive: boolean;
-}
-
-/**
- * Interface para resposta da API
- */
-export interface TestimonialsApiResponse {
-  data: TestimonialData[];
-  success: boolean;
-  message?: string;
 }
 
 /**

@@ -4,7 +4,6 @@
 
 import { useState, useEffect, useCallback } from "react";
 import type { TeamMemberData } from "../types";
-import { DEFAULT_TEAM_DATA } from "../constants";
 import { listTeam } from "@/api/websites/components";
 
 interface UseTeamDataReturn {
@@ -21,15 +20,13 @@ export function useTeamData(
   fetchFromApi: boolean = true,
   staticData?: TeamMemberData[]
 ): UseTeamDataReturn {
-  const [data, setData] = useState<TeamMemberData[]>(
-    staticData || DEFAULT_TEAM_DATA
-  );
+  const [data, setData] = useState<TeamMemberData[]>(staticData || []);
   const [isLoading, setIsLoading] = useState(fetchFromApi);
   const [error, setError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     if (!fetchFromApi) {
-      setData(staticData || DEFAULT_TEAM_DATA);
+      setData(staticData || []);
       setIsLoading(false);
       return;
     }
@@ -55,16 +52,16 @@ export function useTeamData(
 
       if (err instanceof Error) {
         if (err.name === "AbortError") {
-          setError("Tempo limite excedido. Usando dados padrão.");
+          setError("Tempo limite excedido.");
         } else {
-          setError(`Erro na API: ${err.message}. Usando dados padrão.`);
+          setError(`Erro na API: ${err.message}.`);
         }
       } else {
-        setError("Erro desconhecido. Usando dados padrão.");
+        setError("Erro desconhecido ao consultar a API.");
       }
 
-      // Fallback para dados padrão
-      setData(DEFAULT_TEAM_DATA);
+      // Sem fallback: mantém vazio quando API falhar
+      setData([]);
     } finally {
       setIsLoading(false);
     }

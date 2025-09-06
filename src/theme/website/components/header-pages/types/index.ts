@@ -20,14 +20,7 @@ export interface HeaderPageData {
   targetPages: string[];
 }
 
-/**
- * Interface para resposta da API
- */
-export interface HeaderApiResponse {
-  data: HeaderPageData[];
-  success: boolean;
-  message?: string;
-}
+// API response type removido; integração direta via src/api
 
 /**
  * Props do componente principal

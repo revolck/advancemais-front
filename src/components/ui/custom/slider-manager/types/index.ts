@@ -21,6 +21,8 @@ export interface SliderFormData {
   title: string;
   image: string;
   url: string;
+  /** Free text field mapped to Slider.content */
+  content: string;
   status: boolean;
   position: number;
 }
@@ -37,6 +39,17 @@ export interface SliderFormProps {
   secondFieldLabel?: string;
   validateSecondFieldAsUrl?: boolean;
   secondFieldRequired?: boolean;
+  /** Show and label the optional content field */
+  showContentField?: boolean;
+  contentFieldLabel?: string;
+  /** Render the title field as a textarea (e.g., for depoimentos) */
+  titleAsTextarea?: boolean;
+  /** Custom ordering of fields; keys: 'url' | 'content' | 'title' */
+  fieldsOrder?: Array<"url" | "content" | "title">;
+  /** Mark content field as required when visible */
+  contentFieldRequired?: boolean;
+  /** Override image field label */
+  imageFieldLabel?: string;
 }
 
 export interface SliderListProps {
@@ -69,6 +82,12 @@ export interface SliderManagerProps {
   secondFieldLabel?: string;
   validateSecondFieldAsUrl?: boolean;
   secondFieldRequired?: boolean;
+  showContentField?: boolean;
+  contentFieldLabel?: string;
+  titleAsTextarea?: boolean;
+  fieldsOrder?: Array<"url" | "content" | "title">;
+  contentFieldRequired?: boolean;
+  imageFieldLabel?: string;
 }
 
 export interface ValidationError {

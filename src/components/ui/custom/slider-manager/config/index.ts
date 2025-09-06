@@ -19,6 +19,7 @@ export const SLIDER_CONFIG = {
     title: "",
     image: "",
     url: "",
+    content: "",
     status: SLIDER_CONSTANTS.DEFAULT_STATUS,
     position: SLIDER_CONSTANTS.DEFAULT_POSITION,
   } as SliderFormData,

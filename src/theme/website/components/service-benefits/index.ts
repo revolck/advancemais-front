@@ -14,7 +14,4 @@ export type {
   ServiceBenefitsItemProps,
   ServiceType,
 } from "./types";
-export {
-  DEFAULT_SERVICE_BENEFITS_DATA,
-  SERVICE_BENEFITS_CONFIG,
-} from "./constants";
+export { SERVICE_BENEFITS_CONFIG } from "./constants";

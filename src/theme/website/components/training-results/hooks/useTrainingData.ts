@@ -1,10 +1,7 @@
-// src/theme/website/components/training-results/hooks/useTrainingData.ts
-
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
 import type { TrainingResultData } from "../types";
-import { TRAINING_RESULTS_CONFIG } from "../constants";
 import { listTreinamentosInCompany } from "@/api/websites/components";
 
 interface UseTrainingDataReturn {
@@ -90,7 +87,6 @@ export function useTrainingData(
 
   useEffect(() => {
     fetchData();
-    // fetchData already depends on fetchFromApi and staticData
   }, [fetchData]);
 
   return {

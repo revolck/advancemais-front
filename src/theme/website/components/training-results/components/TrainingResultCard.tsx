@@ -1,5 +1,3 @@
-// src/theme/website/components/training-results/components/TrainingResultCard.tsx
-
 "use client";
 
 import React, { useState } from "react";

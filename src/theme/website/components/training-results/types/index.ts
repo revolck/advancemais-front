@@ -1,5 +1,3 @@
-// src/theme/website/components/training-results/types/index.ts
-
 /**
  * Interface para dados de resultados de treinamento vindos da API
  */

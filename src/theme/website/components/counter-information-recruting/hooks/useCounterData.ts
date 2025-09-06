@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import type { CounterData, CounterApiResponse } from "../types";
-import { DEFAULT_COUNTER_DATA, COUNTER_CONFIG } from "../constants";
+import { COUNTER_CONFIG } from "../constants";
 
 interface UseCounterDataReturn {
   data: CounterData[];
@@ -18,15 +18,13 @@ export function useCounterData(
   fetchFromApi: boolean = true,
   staticData?: CounterData[]
 ): UseCounterDataReturn {
-  const [data, setData] = useState<CounterData[]>(
-    staticData || DEFAULT_COUNTER_DATA
-  );
+  const [data, setData] = useState<CounterData[]>(staticData || []);
   const [isLoading, setIsLoading] = useState(fetchFromApi);
   const [error, setError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     if (!fetchFromApi) {
-      setData(staticData || DEFAULT_COUNTER_DATA);
+      setData(staticData || []);
       setIsLoading(false);
       return;
     }
@@ -72,16 +70,14 @@ export function useCounterData(
 
       if (err instanceof Error) {
         if (err.name === "AbortError") {
-          setError("Tempo limite excedido. Usando dados padrão.");
+          setError("Tempo limite excedido.");
         } else {
-          setError(`Erro na API: ${err.message}. Usando dados padrão.`);
+          setError(`Erro na API: ${err.message}.`);
         }
       } else {
-        setError("Erro desconhecido. Usando dados padrão.");
+        setError("Erro desconhecido.");
       }
-
-      // Fallback para dados padrão
-      setData(DEFAULT_COUNTER_DATA);
+      setData([]);
     } finally {
       setIsLoading(false);
     }

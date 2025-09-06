@@ -15,4 +15,4 @@ export { generateBreadcrumbs, capitalizeFirst, isExternalUrl } from "./utils";
 
 // Tipos e constantes
 export type { HeaderPageData, HeaderPagesProps, BreadcrumbItem } from "./types";
-export { DEFAULT_HEADER_DATA, HEADER_CONFIG, ROUTE_LABELS } from "./constants";
+export { HEADER_CONFIG, ROUTE_LABELS } from "./constants";

@@ -4,7 +4,7 @@
 
 import { useState, useEffect } from "react";
 import type { AboutAdvantagesApiData } from "../types";
-import { DEFAULT_ABOUT_ADVANTAGES_DATA } from "../constants";
+// Sem fallback de mock; usa apenas API ou dados estáticos
 import { env } from "@/lib/env";
 import {
   listDiferenciais,
@@ -23,14 +23,14 @@ export function useAboutAdvantagesData(
   staticData?: AboutAdvantagesApiData
 ): UseAboutAdvantagesDataReturn {
   const [data, setData] = useState<AboutAdvantagesApiData>(
-    staticData || DEFAULT_ABOUT_ADVANTAGES_DATA
+    staticData || ({ whyChoose: { id: "", title: "", description: "", buttonText: "", buttonUrl: "", isActive: false }, advantageCards: [] } as AboutAdvantagesApiData)
   );
   const [isLoading, setIsLoading] = useState(fetchFromApi);
   const [error, setError] = useState<string | null>(null);
 
   const fetchData = async () => {
     if (!fetchFromApi) {
-      setData(staticData || DEFAULT_ABOUT_ADVANTAGES_DATA);
+      setData(staticData || data);
       setIsLoading(false);
       return;
     }
@@ -61,9 +61,7 @@ export function useAboutAdvantagesData(
         setError("Erro desconhecido");
       }
 
-      if (env.apiFallback === "mock") {
-        setData(DEFAULT_ABOUT_ADVANTAGES_DATA);
-      }
+      // Sem fallback de mock
     } finally {
       setIsLoading(false);
     }

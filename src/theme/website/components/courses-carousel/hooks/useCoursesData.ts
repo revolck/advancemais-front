@@ -4,7 +4,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import type { CourseData, CoursesApiResponse } from "../types";
-import { DEFAULT_COURSES_DATA, COURSES_CONFIG } from "../constants";
+import { COURSES_CONFIG } from "../constants";
 
 interface UseCoursesDataReturn {
   data: CourseData[];
@@ -20,15 +20,13 @@ export function useCoursesData(
   fetchFromApi: boolean = true,
   staticData?: CourseData[]
 ): UseCoursesDataReturn {
-  const [data, setData] = useState<CourseData[]>(
-    staticData || DEFAULT_COURSES_DATA
-  );
+  const [data, setData] = useState<CourseData[]>(staticData || []);
   const [isLoading, setIsLoading] = useState(fetchFromApi);
   const [error, setError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     if (!fetchFromApi) {
-      setData(staticData || DEFAULT_COURSES_DATA);
+      setData(staticData || []);
       setIsLoading(false);
       return;
     }
@@ -74,16 +72,14 @@ export function useCoursesData(
 
       if (err instanceof Error) {
         if (err.name === "AbortError") {
-          setError("Tempo limite excedido. Usando dados padrão.");
+          setError("Tempo limite excedido.");
         } else {
-          setError(`Erro na API: ${err.message}. Usando dados padrão.`);
+          setError(`Erro na API: ${err.message}.`);
         }
       } else {
-        setError("Erro desconhecido. Usando dados padrão.");
+        setError("Erro desconhecido.");
       }
-
-      // Fallback para dados padrão
-      setData(DEFAULT_COURSES_DATA);
+      setData([]);
     } finally {
       setIsLoading(false);
     }

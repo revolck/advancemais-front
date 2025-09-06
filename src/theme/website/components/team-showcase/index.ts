@@ -16,4 +16,4 @@ export type {
   TeamShowcaseProps,
   TeamMemberProps,
 } from "./types";
-export { DEFAULT_TEAM_DATA, TEAM_CONFIG } from "./constants";
+export { TEAM_CONFIG } from "./constants";

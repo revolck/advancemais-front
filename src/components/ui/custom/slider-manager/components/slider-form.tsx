@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 
 import { ButtonCustom } from "@/components/ui/custom/button";
 import { InputCustom } from "@/components/ui/custom/input";
+import { SimpleTextarea } from "@/components/ui/custom";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -33,12 +34,19 @@ export function SliderForm({
   secondFieldLabel,
   validateSecondFieldAsUrl = true,
   secondFieldRequired = false,
+  showContentField = false,
+  contentFieldLabel,
+  titleAsTextarea = false,
+  fieldsOrder,
+  contentFieldRequired = false,
+  imageFieldLabel,
 }: SliderFormProps) {
   // Form state
   const [formData, setFormData] = useState(() => ({
     title: slider?.title || SLIDER_CONFIG.defaultFormData.title,
     image: slider?.image || SLIDER_CONFIG.defaultFormData.image,
     url: slider?.url || SLIDER_CONFIG.defaultFormData.url,
+    content: slider?.content ?? SLIDER_CONFIG.defaultFormData.content,
     status: slider?.status ?? SLIDER_CONFIG.defaultFormData.status,
     position: slider?.position || SLIDER_CONFIG.defaultFormData.position,
   }));
@@ -91,8 +99,11 @@ export function SliderForm({
       newErrors.title = SLIDER_MESSAGES.ERROR_TITLE_REQUIRED;
     } else if (formData.title.length < 3) {
       newErrors.title = SLIDER_MESSAGES.ERROR_TITLE_MIN_LENGTH;
-    } else if (formData.title.length > 100) {
-      newErrors.title = SLIDER_MESSAGES.ERROR_TITLE_MAX_LENGTH;
+    } else {
+      const maxLen = titleAsTextarea ? 500 : 100;
+      if (formData.title.length > maxLen) {
+        newErrors.title = `O título deve ter no máximo ${maxLen} caracteres`;
+      }
     }
 
     if (validateSecondFieldAsUrl) {
@@ -110,6 +121,14 @@ export function SliderForm({
       newErrors.url = SLIDER_MESSAGES.ERROR_URL_MAX_LENGTH;
     }
 
+    // Content required handling
+    if (showContentField && contentFieldRequired) {
+      const v = (formData.content || "").trim();
+      if (!v) {
+        newErrors.content = "Este campo é obrigatório";
+      }
+    }
+
     if (!formData.image && uploadedFiles.length === 0) {
       newErrors.image = `Selecione uma imagem para o ${entityName.toLowerCase()}`;
     }
@@ -122,6 +141,9 @@ export function SliderForm({
     entityName,
     secondFieldRequired,
     validateSecondFieldAsUrl,
+    titleAsTextarea,
+    showContentField,
+    contentFieldRequired,
   ]);
 
   /**
@@ -199,7 +221,7 @@ export function SliderForm({
           finalImageUrl = previousUrl;
         }
 
-        await onSubmit({ ...formData, image: finalImageUrl || "", content: "" });
+        await onSubmit({ ...formData, image: finalImageUrl || "", content: formData.content || "" });
 
         setShowSuccess(true);
         setTimeout(
@@ -311,7 +333,7 @@ export function SliderForm({
         {/* Image Upload Section - estilo alinhado ao Sobre */}
         <div className="space-y-3">
           <Label className="text-sm font-medium text-gray-700">
-            Imagem do {entityName} <span className="text-red-500">*</span>
+            {imageFieldLabel || `Imagem do ${entityName}`} <span className="text-red-500">*</span>
           </Label>
 
           <FileUpload
@@ -340,34 +362,101 @@ export function SliderForm({
           )}
         </div>
 
-        {/* Form Fields - Usando InputCustom */}
+        {/* Form Fields - Configurable order and types */}
         <div className="space-y-4">
-          {/* ✅ CORRIGIDO: Remover showRequiredIndicator e touched */}
-          <InputCustom
-            label={firstFieldLabel || `Título do ${entityName}`}
-            id="title"
-            value={formData.title}
-            onChange={(e) => handleInputChange("title", e.target.value)}
-            disabled={isLoading}
-            maxLength={100}
-            required
-            error={errors.title}
-          />
+          {(() => {
+            const order: Array<"url" | "content" | "title"> =
+              fieldsOrder && fieldsOrder.length
+                ? fieldsOrder
+                : ["title", "url"];
 
-          {/* ✅ CORRIGIDO: Remover touched e usar icon (não leftIcon) */}
-          <InputCustom
-            label={secondFieldLabel || "URL de Destino"}
-            id="url"
-            type={validateSecondFieldAsUrl ? "url" : "text"}
-            value={formData.url}
-            onChange={(e) => handleInputChange("url", e.target.value)}
-            helperText={validateSecondFieldAsUrl ? `Para onde o usuário será direcionado ao clicar no ${entityName.toLowerCase()}` : undefined}
-            disabled={isLoading}
-            maxLength={500}
-            error={errors.url}
-            icon={validateSecondFieldAsUrl ? "Link" : undefined}
-            required={secondFieldRequired}
-          />
+            const items = order.map((fieldKey, idx) => {
+              if (fieldKey === "title") {
+                return (
+                  <div key={`field-${fieldKey}-${idx}`}>
+                    {titleAsTextarea ? (
+                      <>
+                        <SimpleTextarea
+                          label={firstFieldLabel || `Título do ${entityName}`}
+                          id="title"
+                          value={formData.title}
+                          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                            handleInputChange("title", e.target.value)
+                          }
+                          maxLength={500}
+                          showCharCount={true}
+                          placeholder={firstFieldLabel || `Digite o ${entityName.toLowerCase()}`}
+                          className="min-h-[180px]"
+                          required
+                        />
+                        {errors.title && (
+                          <p className="text-sm text-destructive flex items-center gap-2 mt-1">
+                            <Icon name="AlertCircle" className="h-4 w-4" />
+                            {errors.title}
+                          </p>
+                        )}
+                      </>
+                    ) : (
+                      <InputCustom
+                        label={firstFieldLabel || `Título do ${entityName}`}
+                        id="title"
+                        value={formData.title}
+                        onChange={(e) => handleInputChange("title", e.target.value)}
+                        disabled={isLoading}
+                        maxLength={100}
+                        required
+                        error={errors.title}
+                      />
+                    )}
+                  </div>
+                );
+              }
+
+              if (fieldKey === "url") {
+                return (
+                  <InputCustom
+                    key={`field-${fieldKey}-${idx}`}
+                    label={secondFieldLabel || "URL de Destino"}
+                    id="url"
+                    type={validateSecondFieldAsUrl ? "url" : "text"}
+                    value={formData.url}
+                    onChange={(e) => handleInputChange("url", e.target.value)}
+                    helperText={
+                      validateSecondFieldAsUrl
+                        ? `Para onde o usuário será direcionado ao clicar no ${entityName.toLowerCase()}`
+                        : undefined
+                    }
+                    disabled={isLoading}
+                    maxLength={500}
+                    error={errors.url}
+                    icon={validateSecondFieldAsUrl ? "Link" : undefined}
+                    required={secondFieldRequired}
+                  />
+                );
+              }
+
+              if (fieldKey === "content" && showContentField) {
+                return (
+                  <InputCustom
+                    key={`field-${fieldKey}-${idx}`}
+                    label={contentFieldLabel || "Conteúdo"}
+                    id="content"
+                    type="text"
+                    value={formData.content || ""}
+                    onChange={(e) => handleInputChange("content", e.target.value)}
+                    disabled={isLoading}
+                    maxLength={200}
+                    required={contentFieldRequired}
+                    error={errors.content}
+                  />
+                );
+              }
+
+              return null;
+            });
+
+            return items;
+          })()}
         </div>
 
         {/* Form Actions - Usando ButtonCustom */}

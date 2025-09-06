@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Info } from "lucide-react";
 import { textareaVariants } from "../variants";
 import type { SimpleTextareaProps } from "../types";
+import { Label } from "@/components/ui/label";
 
 const SimpleTextarea = React.forwardRef<
   HTMLTextAreaElement,
@@ -138,13 +139,22 @@ const SimpleTextarea = React.forwardRef<
       }
     };
 
+    const isRequired = Boolean((props as any)?.required);
+
     return (
-      <div className="w-full space-y-2">
+      <div className={cn("w-full space-y-2")}
+      >
         {label && (
           <div className="flex items-center gap-2">
-            <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+            <Label
+              className={cn(
+                "text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70",
+                // Quando o campo for required, aplica classe 'required' para estilizar via CSS externo
+                isRequired ? "required" : undefined
+              )}
+            >
               {label}
-            </label>
+            </Label>
             {showInfo && (
               <Button
                 variant="ghost"

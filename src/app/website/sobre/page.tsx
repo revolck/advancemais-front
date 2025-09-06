@@ -7,6 +7,7 @@ import AccordionGroupInformation from "@/theme/website/components/accordion-grou
 import TeamShowcase from "@/theme/website/components/team-showcase/TeamShowcase";
 import AboutAdvantages from "@/theme/website/components/about-advantages";
 import LogoEnterprises from "@/theme/website/components/logo-enterprises";
+import TestimonialsCarousel from "@/theme/website/components/testimonials-carousel/TestimonialsCarousel";
 
 /**
  * Página Sobre Nós
@@ -24,6 +25,7 @@ export default function SobrePage() {
       <AboutAdvantages fetchFromApi={true} />
       <TeamShowcase fetchFromApi={true} title="Conheça nossa Equipe" />
       <LogoEnterprises fetchFromApi={true} />
+      <TestimonialsCarousel fetchFromApi={true} />
     </div>
   );
 }

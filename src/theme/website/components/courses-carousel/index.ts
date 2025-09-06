@@ -16,4 +16,4 @@ export type {
   CoursesCarouselProps,
   CourseCardProps,
 } from "./types";
-export { DEFAULT_COURSES_DATA, COURSES_CONFIG, COURSE_TAGS } from "./constants";
+export { COURSES_CONFIG, COURSE_TAGS } from "./constants";

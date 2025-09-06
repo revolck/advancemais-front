@@ -37,6 +37,12 @@ export function SliderManager({
   secondFieldLabel,
   validateSecondFieldAsUrl = true,
   secondFieldRequired = false,
+  showContentField = false,
+  contentFieldLabel,
+  titleAsTextarea = false,
+  fieldsOrder,
+  contentFieldRequired = false,
+  imageFieldLabel,
 }: SliderManagerProps) {
   // Use our custom hook for state management
   const {
@@ -226,8 +232,10 @@ export function SliderManager({
             if (!open) handleBackToList();
           }}
           isDismissable={!isLoading}
+          scrollBehavior="inside"
           size="2xl"
           backdrop="blur"
+          classNames={{ base: "max-h-[85vh]" }}
         >
           <ModalContentWrapper>
             <ModalHeader>
@@ -235,7 +243,7 @@ export function SliderManager({
                 {editingSlider ? `Editar ${entityName.toLowerCase()}` : `Criar novo ${entityName.toLowerCase()}`}
               </ModalTitle>
             </ModalHeader>
-            <ModalBody>
+            <ModalBody className="max-h-[70vh] overflow-y-auto pr-1">
               <SliderForm
                 slider={editingSlider}
                 showHeader={false}
@@ -243,6 +251,12 @@ export function SliderManager({
                 secondFieldLabel={secondFieldLabel}
                 validateSecondFieldAsUrl={validateSecondFieldAsUrl}
                 secondFieldRequired={secondFieldRequired}
+                showContentField={showContentField}
+                contentFieldLabel={contentFieldLabel}
+                titleAsTextarea={titleAsTextarea}
+                fieldsOrder={fieldsOrder}
+                contentFieldRequired={contentFieldRequired}
+                imageFieldLabel={imageFieldLabel}
                 uploadPath={uploadPath}
                 entityName={entityName}
                 onSubmit={async (formData) => {

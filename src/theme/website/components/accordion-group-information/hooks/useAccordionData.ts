@@ -4,7 +4,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import type { AccordionSectionData } from "../types";
-import { DEFAULT_ACCORDION_DATA } from "../constants";
+// Sem fallback de mock; usa apenas dados da API ou estático
 import { getSobreEmpresaDataClient } from "@/api/websites/components";
 
 interface UseAccordionDataReturn {
@@ -21,15 +21,13 @@ export function useAccordionData(
   fetchFromApi: boolean = true,
   staticData?: AccordionSectionData[]
 ): UseAccordionDataReturn {
-  const [data, setData] = useState<AccordionSectionData[]>(
-    staticData || DEFAULT_ACCORDION_DATA
-  );
+  const [data, setData] = useState<AccordionSectionData[]>(staticData || []);
   const [isLoading, setIsLoading] = useState(fetchFromApi);
   const [error, setError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     if (!fetchFromApi) {
-      setData(staticData || DEFAULT_ACCORDION_DATA);
+      setData(staticData || []);
       setIsLoading(false);
       return;
     }
@@ -62,11 +60,10 @@ export function useAccordionData(
           setError(`Erro na API: ${err.message}. Usando dados padrão.`);
         }
       } else {
-        setError("Erro desconhecido. Usando dados padrão.");
+      setError("Erro desconhecido.");
       }
 
-      // Fallback para dados padrão
-      setData(DEFAULT_ACCORDION_DATA);
+      setData([]);
     } finally {
       setIsLoading(false);
     }

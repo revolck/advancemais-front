@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import type { ServiceBenefitsData, ServiceType } from "../types";
-import { DEFAULT_SERVICE_BENEFITS_DATA } from "../constants";
+// Sem fallback de mock; usa apenas dados da API ou estático
 import { getServiceBenefitsDataClient } from "@/api/websites/components/service-benefits";
 
 interface UseServiceBenefitsReturn {
@@ -20,15 +20,13 @@ export function useServiceBenefits(
   fetchFromApi: boolean = true,
   staticData?: ServiceBenefitsData[],
 ): UseServiceBenefitsReturn {
-  const [data, setData] = useState<ServiceBenefitsData[]>(
-    staticData || DEFAULT_SERVICE_BENEFITS_DATA,
-  );
+  const [data, setData] = useState<ServiceBenefitsData[]>(staticData || []);
   const [isLoading, setIsLoading] = useState(fetchFromApi);
   const [error, setError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     if (!fetchFromApi) {
-      setData(staticData || DEFAULT_SERVICE_BENEFITS_DATA);
+      setData(staticData || []);
       setIsLoading(false);
       return;
     }
@@ -42,21 +40,11 @@ export function useServiceBenefits(
         .filter((item) => item.isActive)
         .sort((a, b) => a.order - b.order);
 
-      // Fallback para dados padrão quando a API retorna vazio
-      if (!activeData || activeData.length === 0) {
-        setError(
-          "Nenhum dado disponível no momento. Exibindo conteúdo padrão.",
-        );
-        setData(DEFAULT_SERVICE_BENEFITS_DATA);
-      } else {
-        setData(activeData);
-      }
+      setData(activeData || []);
     } catch (err) {
       console.error("Erro ao buscar dados dos benefícios de serviço:", err);
-      setError(
-        err instanceof Error ? `Erro na API: ${err.message}` : "Erro desconhecido.",
-      );
-      setData(DEFAULT_SERVICE_BENEFITS_DATA);
+      setError(err instanceof Error ? `Erro na API: ${err.message}` : "Erro desconhecido.");
+      setData([]);
     } finally {
       setIsLoading(false);
     }

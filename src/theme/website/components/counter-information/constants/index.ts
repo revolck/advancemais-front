@@ -1,39 +1,4 @@
-import type { CounterData } from "../types";
-
-export const DEFAULT_COUNTER_DATA: CounterData[] = [
-  {
-    id: "students",
-    value: 150000,
-    suffix: "",
-    description: "alunos",
-    order: 1,
-    isActive: true,
-  },
-  {
-    id: "courses",
-    value: 120,
-    suffix: "",
-    description: "cursos",
-    order: 2,
-    isActive: true,
-  },
-  {
-    id: "teachers",
-    value: 60,
-    suffix: "",
-    description: "professores",
-    order: 3,
-    isActive: true,
-  },
-  {
-    id: "certificates",
-    value: 20000,
-    suffix: "",
-    description: "certificados emitidos",
-    order: 4,
-    isActive: true,
-  },
-];
+// Sem mock data nesta camada
 
 export const COUNTER_CONFIG = {
   animation: {

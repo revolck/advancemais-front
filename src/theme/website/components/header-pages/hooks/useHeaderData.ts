@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { usePathname } from "next/navigation";
 import type { HeaderPageData } from "../types";
-import { DEFAULT_HEADER_DATA } from "../constants";
+// Removido fallback local; a fonte de verdade é a API
 import { getHeaderForPage } from "@/api/websites/components";
 
 interface UseHeaderDataReturn {
@@ -28,30 +28,13 @@ export function useHeaderData(
   const [isLoading, setIsLoading] = useState(fetchFromApi);
   const [error, setError] = useState<string | null>(null);
 
-  // Função para encontrar o header correto baseado na página atual
-  const findHeaderForPage = (
-    headers: HeaderPageData[],
-    page: string
-  ): HeaderPageData | null => {
-    // Procura por correspondência exata
-    let header = headers.find(
-      (h) => h.isActive && h.targetPages.includes(page)
-    );
-
-    // Se não encontrar, procura por wildcard
-    if (!header) {
-      header = headers.find((h) => h.isActive && h.targetPages.includes("*"));
-    }
-
-    return header || null;
-  };
+  // Sem fallback local baseado em constantes
 
   const fetchData = useCallback(async () => {
     // Fallback helper
     const setFallback = (message?: string) => {
       if (message) setError(message);
-      const fallbackData = findHeaderForPage(DEFAULT_HEADER_DATA, targetPage);
-      setData(fallbackData);
+      setData(staticData || null);
     };
 
     if (!fetchFromApi) {
@@ -121,10 +104,7 @@ export function useHeaderData(
         }
       }
 
-      if (!apiItem) {
-        setFallback("Nenhum cabeçalho encontrado. Usando dados padrão.");
-        return;
-      }
+      if (!apiItem) return setFallback("Nenhum cabeçalho encontrado.");
       const mapped = mapToTheme(apiItem, targetPage);
       setData(mapped);
     } catch (err) {

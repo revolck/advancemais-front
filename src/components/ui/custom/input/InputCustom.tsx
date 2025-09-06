@@ -150,8 +150,7 @@ export const InputCustom = React.forwardRef<HTMLInputElement, InputCustomProps>(
       }
     );
 
-    // Verifica se deve exibir o asterisco de obrigatório
-    const showRequiredIndicator = required;
+    // Aplica classe 'required' na label quando obrigatório (asterisco vem do CSS externo)
 
     // Determina o ícone a ser exibido (prioridade para o toggle de senha se for campo de senha)
     const displayIcon =
@@ -170,15 +169,16 @@ export const InputCustom = React.forwardRef<HTMLInputElement, InputCustomProps>(
         {label && (
           <Label
             htmlFor={inputId}
-            className={cn("block text-sm font-medium", {
-              "text-destructive": error && touched,
-              "text-emerald-500": successMessage && !error,
-            })}
+            className={cn(
+              "block text-sm font-medium",
+              {
+                "text-destructive": error && touched,
+                "text-emerald-500": successMessage && !error,
+              },
+              required && "required"
+            )}
           >
             {label}
-            {showRequiredIndicator && (
-              <span className="ml-1 text-destructive">*</span>
-            )}
           </Label>
         )}
 

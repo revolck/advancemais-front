@@ -17,4 +17,4 @@ export type {
   CounterInformationProps,
   CounterItemProps,
 } from "./types";
-export { DEFAULT_COUNTER_DATA, COUNTER_CONFIG } from "./constants";
+export { COUNTER_CONFIG } from "./constants";

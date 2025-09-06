@@ -16,11 +16,7 @@ export interface TeamMemberData {
 /**
  * Interface para resposta da API
  */
-export interface TeamApiResponse {
-  data: TeamMemberData[];
-  success: boolean;
-  message?: string;
-}
+// API response type removed; componente consome diretamente a camada src/api
 
 /**
  * Props do componente principal

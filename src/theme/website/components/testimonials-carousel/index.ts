@@ -16,4 +16,4 @@ export type {
   TestimonialsCarouselProps,
   TestimonialItemProps,
 } from "./types";
-export { DEFAULT_TESTIMONIALS_DATA, TESTIMONIALS_CONFIG } from "./constants";
+export { TESTIMONIALS_CONFIG } from "./constants";
