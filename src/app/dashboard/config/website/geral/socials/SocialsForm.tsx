@@ -71,12 +71,11 @@ export default function SocialsForm() {
     }
     setIsSaving(true);
     try {
-      if (id) {
-        await updateInformacoesGerais(id, state);
-      } else {
-        const created = await createInformacoesGerais(state);
-        setId(created.id);
+      if (!id) {
+        toastCustom.error("Nenhum registro base encontrado para atualizar.");
+        return;
       }
+      await updateInformacoesGerais(id, state);
       toastCustom.success("Redes sociais salvas");
     } catch {
       toastCustom.error("Erro ao salvar redes sociais");
@@ -129,7 +128,7 @@ export default function SocialsForm() {
           className="w-40"
           withAnimation
           isLoading={isSaving}
-          disabled={isSaving || !state.instagram}
+          disabled={isSaving || !state.instagram || !id}
         >
           Salvar
         </ButtonCustom>

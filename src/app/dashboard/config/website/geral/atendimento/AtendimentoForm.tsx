@@ -147,13 +147,12 @@ export default function AtendimentoForm() {
     }));
     setIsSaving(true);
     try {
-      const payload = { horarios } as any;
-      if (id) {
-        await updateInformacoesGerais(id, payload);
-      } else {
-        const created = await createInformacoesGerais(payload);
-        setId(created.id);
+      if (!id) {
+        toastCustom.error("Nenhum registro base encontrado para atualizar.");
+        return;
       }
+      const payload = { horarios } as any;
+      await updateInformacoesGerais(id, payload);
       toastCustom.success("Horário salvo");
     } catch {
       toastCustom.error("Erro ao salvar horário");
@@ -273,6 +272,7 @@ export default function AtendimentoForm() {
           isLoading={isSaving}
           disabled={
             isSaving ||
+            !id ||
             selectedDays.length === 0 ||
             selectedDays.some((d) => !hours[d]?.from || !hours[d]?.to)
           }

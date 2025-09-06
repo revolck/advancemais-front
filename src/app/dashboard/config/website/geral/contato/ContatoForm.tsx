@@ -71,12 +71,11 @@ export default function ContatoForm() {
     }
     setIsSaving(true);
     try {
-      if (id) {
-        await updateInformacoesGerais(id, state);
-      } else {
-        const created = await createInformacoesGerais(state);
-        setId(created.id);
+      if (!id) {
+        toastCustom.error("Nenhum registro base encontrado para atualizar.");
+        return;
       }
+      await updateInformacoesGerais(id, state);
       toastCustom.success("Contatos salvos");
     } catch {
       toastCustom.error("Erro ao salvar contatos");
@@ -135,7 +134,7 @@ export default function ContatoForm() {
           className="w-40"
           withAnimation
           isLoading={isSaving}
-          disabled={isSaving || !state.telefone1 || !state.whatsapp || !state.email}
+          disabled={isSaving || !id || !state.telefone1 || !state.whatsapp || !state.email}
         >
           Salvar
         </ButtonCustom>

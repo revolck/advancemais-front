@@ -100,13 +100,12 @@ export default function EnderecoForm() {
     }
     setIsSaving(true);
     try {
-      const payload = { cep, endereco, estado, cidade };
-      if (id) {
-        await updateInformacoesGerais(id, payload);
-      } else {
-        const created = await createInformacoesGerais(payload);
-        setId(created.id);
+      if (!id) {
+        toastCustom.error("Nenhum registro base encontrado para atualizar.");
+        return;
       }
+      const payload = { cep, endereco, estado, cidade };
+      await updateInformacoesGerais(id, payload);
       toastCustom.success("Endereço salvo");
     } catch {
       toastCustom.error("Erro ao salvar endereço");
@@ -170,7 +169,7 @@ export default function EnderecoForm() {
           className="w-40"
           withAnimation
           isLoading={isSaving}
-          disabled={isSaving || !cep || !endereco || !estado || !cidade}
+          disabled={isSaving || !id || !cep || !endereco || !estado || !cidade}
         >
           Salvar
         </ButtonCustom>
