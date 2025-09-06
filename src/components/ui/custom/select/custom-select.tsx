@@ -26,7 +26,7 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { ChevronsUpDownIcon, Info as InfoIcon } from "lucide-react";
-import { CheckboxCustom } from "@/components/ui/custom/checkbox";
+import { Checkbox } from "@/components/ui/radix-checkbox";
 import type { SelectCustomProps, SelectOption, UserOption } from "./types";
 
 const Square = ({
@@ -254,12 +254,9 @@ export function SelectCustom(props: SelectCustomProps) {
                         onChange(next);
                       }}
                     >
-                      <CheckboxCustom
-                        checked={checked}
-                        onCheckedChange={() => {}}
-                        aria-hidden
-                        className="pointer-events-none"
-                      />
+                      <span className="pointer-events-none">
+                        <Checkbox checked={checked} />
+                      </span>
                       <span className="truncate">{opt.label}</span>
                     </CommandItem>
                   );

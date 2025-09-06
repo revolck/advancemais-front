@@ -6,7 +6,7 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Checkbox } from "@/components/ui/radix-checkbox";
 import { Separator } from "@/components/ui/separator";
 import { RotateCcw, Monitor, Zap, MapPin } from "lucide-react";
 import { motion } from "framer-motion";

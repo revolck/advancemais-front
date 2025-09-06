@@ -2,11 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import { Label } from "@/components/ui/label";
-import {
-  InputCustom,
-  ButtonCustom,
-  CheckboxCustom,
-} from "@/components/ui/custom";
+import { InputCustom, ButtonCustom } from "@/components/ui/custom";
+import { Checkbox } from "@/components/ui/radix-checkbox";
 import Image from "next/image";
 
 // --- TYPE DEFINITIONS ---
@@ -140,12 +137,12 @@ export const SignInPage: React.FC<SignInPageProps> = ({
               </div>
 
               <div className="animate-element animate-delay-500 flex items-center justify-between text-sm">
-                <div className="flex items-center gap-3 cursor-pointer">
-                  <CheckboxCustom
+                <div className="flex items-center gap-2">
+                  <Checkbox
                     id="rememberMe"
                     checked={rememberMe}
-                    onCheckedChange={(v) => setRememberMe(!!v)}
-                    size="md"
+                    onCheckedChange={(v) => setRememberMe(v === true)}
+                    className="cursor-pointer bg-gray-200"
                   />
                   <Label
                     htmlFor="rememberMe"

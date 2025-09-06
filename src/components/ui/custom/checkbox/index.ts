@@ -1,4 +1,5 @@
-export { CheckboxCustom } from "./checkboxCustom";
-export { CheckboxCustom as default } from "./checkboxCustom";
-export { checkboxCustomVariants, checkboxLabelVariants } from "./variants";
-export type { CheckboxCustomProps } from "./types";
+// Compatibility shim: re-export Radix checkbox under the old path
+export { Checkbox as CheckboxCustom } from "@/components/ui/radix-checkbox";
+export { Checkbox } from "@/components/ui/radix-checkbox";
+export type { CheckboxProps } from "@/components/ui/radix-checkbox";
+

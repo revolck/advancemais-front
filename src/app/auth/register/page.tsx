@@ -1,9 +1,8 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Checkbox } from "@/components/ui/radix-checkbox";
 import {
   InputCustom,
   ButtonCustom,
@@ -14,6 +13,7 @@ import { GraduationCap, User, Building, ChevronRight } from "lucide-react";
 import { apiFetch } from "@/api/client";
 import { usuarioRoutes } from "@/api/routes";
 import { MaskService } from "@/services";
+import Image from "next/image";
 
 type SelectedType = "student" | "candidate" | "company" | null;
 
@@ -77,7 +77,7 @@ const RegisterPage = () => {
       id: "student",
       title: "Aluno",
       icon: GraduationCap,
-      description: "Acesso a cursos e conteúdos educacionais",
+      description: "Acesso a cursos e conteúdos educacionais.",
       color: "from-emerald-500 to-teal-600",
       bgColor: "bg-emerald-50",
       borderColor: "border-emerald-200",
@@ -87,7 +87,7 @@ const RegisterPage = () => {
       id: "candidate",
       title: "Candidato",
       icon: User,
-      description: "Busca por oportunidades de carreira",
+      description: "Busca por oportunidades de carreira.",
       color: "from-blue-500 to-indigo-600",
       bgColor: "bg-blue-50",
       borderColor: "border-blue-200",
@@ -97,13 +97,19 @@ const RegisterPage = () => {
       id: "company",
       title: "Empresa",
       icon: Building,
-      description: "Publicação de vagas e busca por talentos",
+      description: "Publicação de vagas e busca por talentos.",
       color: "from-red-500 to-rose-600",
       bgColor: "bg-red-50",
       borderColor: "border-red-200",
       hoverBg: "hover:bg-red-100",
     },
   ];
+
+  const typeStyles: Record<string, { ring: string }> = {
+    student: { ring: "focus-visible:ring-blue-500" },
+    candidate: { ring: "focus-visible:ring-blue-500" },
+    company: { ring: "focus-visible:ring-blue-500" },
+  };
 
   const maskService = MaskService.getInstance();
 
@@ -225,44 +231,36 @@ const RegisterPage = () => {
     const isCompany = selectedType === "company";
 
     return (
-      <motion.form
-        onSubmit={handleSignUp}
-        initial={{ opacity: 0, x: 20 }}
-        animate={{ opacity: 1, x: 0 }}
-        exit={{ opacity: 0, x: -20 }}
-        transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
-        className="space-y-4 sm:space-y-6"
-      >
-        <div className="flex items-start justify-between flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
-          <div className="space-y-1">
-            <h1 className="!text-2xl sm:text-xl md:text-2xl font-semibold text-gray-900 leading-tight">
+      <form onSubmit={handleSignUp} className="space-y-5 sm:space-y-6">
+        {/* Cabeçalho centralizado com botão à direita */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 items-center gap-3">
+          <div className="hidden sm:block" />
+          <div className="text-center space-y-1">
+            <h1 className="!text-2xl sm:text-xl md:text-2xl !mb-0 font-semibold text-gray-900 leading-tight">
               Criar conta como{" "}
               {userTypes.find((type) => type.id === selectedType)?.title}
             </h1>
-            <p className="text-xs sm:text-sm text-gray-500">
+            <p className="sm:text-sm text-gray-500">
               {userTypes.find((type) => type.id === selectedType)?.description}
             </p>
           </div>
-          <ButtonCustom
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={resetForm}
-            type="button"
-            variant="ghost"
-            size="sm"
-            icon="ArrowLeft"
-            className="text-xs sm:text-sm text-gray-500 hover:text-gray-700 transition-all duration-200 p-2 rounded-lg hover:bg-gray-100 cursor-pointer self-end sm:self-auto"
-          >
-            Voltar
-          </ButtonCustom>
+          <div className="flex justify-end">
+            <ButtonCustom
+              onClick={resetForm}
+              type="button"
+              variant="ghost"
+              size="sm"
+              icon="ArrowLeft"
+              className="bg-gray-400/10 hover:bg-gray-400/30"
+            >
+              Voltar
+            </ButtonCustom>
+          </div>
         </div>
 
         <div className="space-y-3 sm:space-y-4">
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-          >
+          {/* Nome + Documento na mesma linha */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <InputCustom
               label={isCompany ? "Nome da empresa" : "Nome completo"}
               name="name"
@@ -271,17 +269,10 @@ const RegisterPage = () => {
               placeholder={
                 isCompany ? "Digite o nome da sua empresa" : "Digite seu nome"
               }
-              size="sm"
+              size="md"
               className="text-sm"
               required
             />
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15 }}
-          >
             <InputCustom
               label={isCompany ? "CNPJ" : "CPF"}
               name="document"
@@ -289,18 +280,13 @@ const RegisterPage = () => {
               onChange={(e) => handleInputChange("document", e.target.value)}
               mask={isCompany ? "cnpj" : "cpf"}
               placeholder={isCompany ? "00.000.000/0000-00" : "000.000.000-00"}
-              size="sm"
+              size="md"
               className="text-sm"
               required
             />
-          </motion.div>
+          </div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="space-y-3 sm:space-y-0 sm:grid sm:grid-cols-2 sm:gap-4"
-          >
+          <div className="space-y-3 sm:space-y-0 sm:grid sm:grid-cols-2 sm:gap-4">
             <InputCustom
               label="Telefone"
               name="phone"
@@ -308,7 +294,7 @@ const RegisterPage = () => {
               onChange={(e) => handleInputChange("phone", e.target.value)}
               mask="phone"
               placeholder="(00) 00000-0000"
-              size="sm"
+              size="md"
               className="text-sm"
               required
             />
@@ -321,18 +307,13 @@ const RegisterPage = () => {
               onChange={(e) => handleInputChange("email", e.target.value)}
               mask="email"
               placeholder="seuemail@email.com"
-              size="sm"
+              size="md"
               className="text-sm"
               required
             />
-          </motion.div>
+          </div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.25 }}
-            className="space-y-3 sm:space-y-0 sm:grid sm:grid-cols-2 sm:gap-4"
-          >
+          <div className="space-y-3 sm:space-y-0 sm:grid sm:grid-cols-2 sm:gap-4">
             <InputCustom
               label="Senha"
               name="password"
@@ -341,7 +322,7 @@ const RegisterPage = () => {
               onChange={(e) => handleInputChange("password", e.target.value)}
               placeholder="••••••••"
               showPasswordToggle
-              size="sm"
+              size="md"
               className="text-sm"
               error={passwordError}
               required
@@ -357,20 +338,15 @@ const RegisterPage = () => {
               }
               placeholder="••••••••"
               showPasswordToggle
-              size="sm"
+              size="md"
               className="text-sm"
               error={passwordError}
               required
             />
-          </motion.div>
+          </div>
         </div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="flex items-start space-x-2.5 pt-1"
-        >
+        <div className="flex items-start space-x-2.5 pt-1">
           <Checkbox
             id="terms"
             checked={acceptTerms}
@@ -379,7 +355,7 @@ const RegisterPage = () => {
           />
           <Label
             htmlFor="terms"
-            className="text-xs sm:text-sm text-gray-600 leading-5 cursor-pointer"
+            className="sm:text-sm text-gray-600 leading-5 cursor-pointer"
           >
             Li e aceito os{" "}
             <a
@@ -401,13 +377,9 @@ const RegisterPage = () => {
             </a>{" "}
             e autorizo o uso das minhas informações conforme descrito.
           </Label>
-        </motion.div>
+        </div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.35 }}
-        >
+        <div>
           <ButtonCustom
             type="submit"
             fullWidth
@@ -420,126 +392,170 @@ const RegisterPage = () => {
           >
             Criar conta
           </ButtonCustom>
-        </motion.div>
-      </motion.form>
+        </div>
+      </form>
     );
   };
 
   return (
-    <div className="h-[100dvh] flex flex-col md:flex-row font-geist w-[100dvw] bg-white">
-      <section className="flex-1 flex items-center justify-center p-8">
-        <div className="w-full max-w-md sm:max-w-lg">
-          <AnimatePresence mode="wait">
+    <div className="min-h-[100dvh] w-full bg-white font-geist flex flex-col">
+      {/* Header com logo centralizada */}
+      <header className="w-full border-b border-gray-100">
+        <div className="max-w-5xl mx-auto px-6 py-6 flex justify-center">
+          <Image
+            src="/images/logos/logo_padrao.webp"
+            alt="Logo"
+            width={120}
+            height={40}
+            priority
+            className="object-contain"
+          />
+        </div>
+      </header>
+
+      <main className="flex-1">
+        <section className="flex items-center justify-center px-6 py-24">
+          <div className="w-full max-w-5xl">
             {!selectedType ? (
-              <motion.div
-                key="selection"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
-                className="space-y-3 sm:space-y-6 md:space-y-8"
-              >
+              <div className="space-y-6 md:space-y-8">
                 <div className="space-y-1 sm:space-y-2">
-                  <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">
+                  <h1 className="sm:text-4xl font-semibold text-[var(--primary-color)] text-center !mb-0">
                     Criar conta
                   </h1>
-                  <p className="text-gray-600 text-xs sm:text-sm md:text-base leading-relaxed">
-                    Escolha o tipo de conta que melhor se adequa ao seu perfil
+                  <p className="!text-gray-500 text-sm md:text-base leading-relaxed text-center">
+                    Escolha o tipo de conta que melhor se adequa ao seu perfil.
                   </p>
                 </div>
 
-                <div className="space-y-4 sm:space-y-6 md:space-y-8">
-                  {userTypes.map((type, index) => {
+                {/* Grid 3 colunas no desktop, responsivo */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-5 lg:gap-6 items-stretch">
+                  {userTypes.map((type) => {
                     const Icon = type.icon;
+                    const styles =
+                      typeStyles[type.id as keyof typeof typeStyles];
                     return (
-                      <ButtonCustom
+                      <div
                         key={type.id}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{
-                          delay: index * 0.1,
-                          duration: 0.4,
-                          ease: [0.4, 0, 0.2, 1],
-                        }}
-                        whileHover={{ scale: 1.02, y: -2 }}
-                        whileTap={{ scale: 0.98 }}
+                        className={`group flex flex-col items-center text-center rounded-2xl border border-transparent bg-[var(--primary-color)] text-white p-6 md:p-8 shadow-sm transition-all duration-150 focus-within:ring-2 focus-within:ring-offset-2 ${styles.ring} h-full min-h-[300px] md:min-h-[320px] cursor-pointer hover:shadow-md hover:-translate-y-0.5`}
+                        role="button"
+                        tabIndex={0}
                         onClick={() => setSelectedType(type.id as SelectedType)}
-                        className={`w-full px-5 py-4 sm:px-6 sm:py-5 md:px-7 md:py-6 rounded-xl sm:rounded-2xl border-2 ${type.borderColor} ${type.bgColor} ${type.hoverBg} transition-all duration-300 text-left group shadow-sm hover:shadow-md cursor-pointer flex items-center justify-between`}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            setSelectedType(type.id as SelectedType);
+                          }
+                        }}
                       >
-                        <div className="flex items-center space-x-6 sm:space-x-7 md:space-x-8">
-                          <motion.div
-                            whileHover={{ rotate: 5 }}
-                            className={`p-1.5 sm:p-2.5 md:p-3 rounded-lg sm:rounded-xl bg-gradient-to-r ${type.color} shadow-sm`}
-                          >
-                            <Icon className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-white" />
-                          </motion.div>
-                          <div className="flex-1">
-                            <h3 className="font-semibold text-gray-900 text-sm sm:text-base">
-                              {type.title}
-                            </h3>
-                            <p className="text-xs sm:text-sm text-gray-600 mt-0.5 sm:mt-1 leading-relaxed">
-                              {type.description}
-                            </p>
-                          </div>
+                        <div className="grid place-items-center size-14 rounded-xl bg-[var(--secondary-color)] text-white mb-4">
+                          <Icon className="size-6" />
                         </div>
-                        <motion.div
-                          whileHover={{ x: 3 }}
-                          transition={{ duration: 0.2 }}
+                        <h2
+                          id={`type-${type.id}-title`}
+                          className="md:text-xl font-semibold"
                         >
-                          <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400 group-hover:text-gray-600 transition-colors" />
-                        </motion.div>
-                      </ButtonCustom>
+                          {type.title}
+                        </h2>
+                        <p
+                          id={`type-${type.id}-desc`}
+                          className="mt-2 !text-sm !text-white/70 min-h-[2.75rem] flex-1 !leading-normal"
+                        >
+                          {type.description}
+                        </p>
+                        <div className="w-full flex justify-center">
+                          <ButtonCustom
+                            type="button"
+                            onClick={() =>
+                              setSelectedType(type.id as SelectedType)
+                            }
+                            variant="secondary"
+                            size="md"
+                            className="mt-5 w-full sm:w-auto"
+                            aria-label={`Escolher ${type.title}`}
+                            withAnimation
+                          >
+                            Escolher
+                          </ButtonCustom>
+                        </div>
+                      </div>
                     );
                   })}
                 </div>
 
                 <div className="pt-2 sm:pt-4 text-center">
-                  <p className="text-xs sm:text-sm text-gray-600">
+                  <p className="animate-element animate-delay-700 text-center text-sm text-muted-foreground">
                     Já possui uma conta?{" "}
                     <a
                       href="https://auth.advancemais.com/login"
-                      className="text-blue-600 hover:text-blue-700 font-medium cursor-pointer hover:underline transition-all duration-200"
+                      className="hover:opacity-100 transition-colors text-[var(--primary-color)] cursor-pointer opacity-70 font-semibold"
                     >
                       Fazer login
                     </a>
                   </p>
                 </div>
-              </motion.div>
+              </div>
             ) : (
-              <motion.div
-                key="form"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
-              >
+              <div>
                 {renderForm()}
 
-                <div className="pt-3 sm:pt-6 text-center">
-                  <p className="text-xs sm:text-sm text-gray-600">
+                <div className="!pt-6 sm:pt-4 text-center">
+                  <p className="animate-element animate-delay-700 text-center text-sm text-muted-foreground">
                     Já possui uma conta?{" "}
                     <a
                       href="https://auth.advancemais.com/login"
-                      className="text-blue-600 hover:text-blue-700 font-medium cursor-pointer hover:underline transition-all duration-200"
+                      className="hover:opacity-100 transition-colors text-[var(--primary-color)] cursor-pointer opacity-70 font-semibold"
                     >
                       Fazer login
                     </a>
                   </p>
                 </div>
-              </motion.div>
+              </div>
             )}
-          </AnimatePresence>
+          </div>
+        </section>
+      </main>
+
+      {/* Footer minimalista */}
+      <footer className="bg-[var(--color-blue)] text-white/80 py-8">
+        <div className="max-w-5xl mx-auto px-6 text-center space-y-3">
+          <p className="sm:text-sm tracking-wide !text-white">
+            Todos os direitos reservados © {new Date().getFullYear()}{" "}
+            <span className="font-semibold text-[var(--secondary-color)]">
+              Advance+
+            </span>
+          </p>
+          <div className="flex flex-wrap items-center justify-center text-[12px] sm:text-sm text-white/80">
+            <a
+              href="http://advancemais.com/politica-privacidade"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-white transition-colors px-3"
+            >
+              Política de Privacidade
+            </a>
+            <span
+              className="h-4 w-px bg-blue-800/50 self-center"
+              aria-hidden
+            ></span>
+            <a
+              href="http://advancemais.com/termos-uso"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-white transition-colors px-3"
+            >
+              Termos de Uso
+            </a>
+            <span
+              className="h-4 w-px bg-blue-800/20 self-center"
+              aria-hidden
+            ></span>
+            <a href="#" className="hover:text-white transition-colors px-3">
+              Preferências de Cookies
+            </a>
+          </div>
         </div>
-      </section>
-      <section className="hidden md:block flex-1 relative p-4">
-        <div
-          className="animate-slide-right animate-delay-300 absolute inset-4 rounded-3xl bg-cover bg-center"
-          style={{
-            backgroundImage:
-              "url('https://images.unsplash.com/photo-1642615835477-d303d7dc9ee9?w=2160&q=80')",
-          }}
-        ></div>
-      </section>
+      </footer>
+
       <OfflineModal />
     </div>
   );
