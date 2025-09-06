@@ -1,5 +1,3 @@
-// src/theme/website/components/testimonials-carousel/TestimonialsCarousel.tsx
-
 "use client";
 
 import React, { useEffect, useState } from "react";

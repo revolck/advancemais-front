@@ -1,10 +1,7 @@
-// src/theme/website/components/testimonials-carousel/components/TestimonialItem.tsx
-
 "use client";
 
 import React, { useState } from "react";
 import Image from "next/image";
-import { ImageNotFound } from "@/components/ui/custom/image-not-found";
 import type { TestimonialItemProps } from "../types";
 
 export const TestimonialItem: React.FC<TestimonialItemProps> = ({
@@ -27,33 +24,31 @@ export const TestimonialItem: React.FC<TestimonialItemProps> = ({
     <div className="bg-white rounded-xl border border-gray-200 p-6 h-full flex flex-col hover:border-[var(--primary-color)] hover:shadow-lg transition-all duration-300">
       {/* Texto do depoimento */}
       <div className="flex-1 mb-6">
-        <p className="text-gray-700 italic leading-relaxed text-[15px] line-clamp-4">
+        <p className="text-gray-700 italic !leading-relaxed !text-[15px] line-clamp-4">
           "{data.testimonial}"
         </p>
       </div>
 
       {/* Informações do autor */}
-      <div className="flex items-center gap-4 mt-auto">
-        {/* Avatar */}
-        <div className="relative flex-shrink-0">
-          {isLoading && (
-            <div className="w-14 h-14 bg-gray-200 animate-pulse rounded-full" />
-          )}
+      <div className="flex items-center gap-3 mt-auto">
+        {/* Avatar 50x50 redondo com corte */}
+        <div className="relative flex-shrink-0 w-[50px] h-[50px] rounded-full overflow-hidden bg-gray-200">
+          {isLoading && <div className="w-full h-full bg-gray-200 animate-pulse" />}
 
           {hasError && (
-            <div className="w-14 h-14 bg-gray-100 rounded-full flex items-center justify-center">
-              <span className="text-gray-400 text-xs">👤</span>
+            <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+              <span className="text-[18px] text-gray-400">👤</span>
             </div>
           )}
 
           {!hasError && (
             <Image
               src={data.imageUrl}
-              alt={data.name}
-              width={56}
-              height={56}
+              alt={`Avatar de ${data.name}`}
+              width={50}
+              height={50}
               className={`
-                w-14 h-14 rounded-full object-cover
+                w-[50px] h-[50px] rounded-full object-cover
                 transition-opacity duration-500
                 ${isLoading ? "opacity-0 absolute" : "opacity-100"}
               `}
@@ -72,11 +67,7 @@ export const TestimonialItem: React.FC<TestimonialItemProps> = ({
           <p className="text-gray-500 text-sm leading-tight mt-1">
             {data.position}
           </p>
-          {data.company && (
-            <p className="text-gray-400 text-sm leading-tight">
-              {data.company}
-            </p>
-          )}
+          {/* Empresa removida */}
         </div>
       </div>
     </div>
