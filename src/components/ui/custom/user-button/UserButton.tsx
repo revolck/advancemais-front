@@ -17,8 +17,9 @@ import { apiFetch } from "@/api/client";
 import { usuarioRoutes } from "@/api/routes";
 import { logoutUser } from "@/lib/auth";
 
-interface UserButtonProps {
+export interface UserButtonProps {
   className?: string;
+  onNavigate?: (key: string) => void;
 }
 
 interface User {
@@ -28,7 +29,6 @@ interface User {
   plan: "free" | "pro" | "enterprise";
 }
 
-// Skeleton para o botão do usuário
 const UserButtonSkeleton = () => (
   <div className="flex items-center justify-center gap-3 px-0">
     <Skeleton className="h-8 w-8 rounded-full bg-white/20" />
@@ -39,7 +39,7 @@ const UserButtonSkeleton = () => (
   </div>
 );
 
-export function UserButton({ className }: UserButtonProps) {
+export function UserButton({ className, onNavigate }: UserButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -59,11 +59,7 @@ export function UserButton({ className }: UserButtonProps) {
         }
 
         const profile = await apiFetch<{
-          usuario?: {
-            nomeCompleto?: string;
-            email: string;
-            plano?: string;
-          };
+          usuario?: { nomeCompleto?: string; email: string; plano?: string };
         }>(usuarioRoutes.profile.get(), {
           cache: "no-cache",
           init: { headers: { Authorization: `Bearer ${token}` } },
@@ -99,39 +95,19 @@ export function UserButton({ className }: UserButtonProps) {
   }, []);
 
   const menuItems = [
+    { key: "profile", icon: "User" as const, label: "Perfil" },
+    { key: "community", icon: "Users" as const, label: "Comunidade" },
     {
-      icon: "User" as const,
-      label: "Perfil",
-      action: () => console.log("Navegar para perfil"),
-    },
-    {
-      icon: "Users" as const,
-      label: "Comunidade",
-      action: () => console.log("Navegar para comunidade"),
-    },
-    {
+      key: "billing",
       icon: "Cog" as const,
       label: "Assinatura",
-      action: () => console.log("Navegar para assinatura"),
       badge:
-        user?.plan === "pro"
-          ? "PRO"
-          : user?.plan === "enterprise"
-          ? "ENT"
-          : null,
+        user?.plan === "pro" ? "PRO" : user?.plan === "enterprise" ? "ENT" : null,
       iconBg: "bg-emerald-100 group-hover:bg-emerald-200",
       iconColor: "text-emerald-600 group-hover:text-emerald-700",
     },
-    {
-      icon: "Sliders" as const,
-      label: "Configurações",
-      action: () => console.log("Navegar para configurações"),
-    },
-    {
-      icon: "LifeBuoy" as const,
-      label: "Central de Ajuda",
-      action: () => console.log("Navegar para ajuda"),
-    },
+    { key: "settings", icon: "Sliders" as const, label: "Configurações" },
+    { key: "help", icon: "HelpCircle" as const, label: "Ajuda" },
   ];
 
   const handleLogout = async () => {
@@ -141,14 +117,10 @@ export function UserButton({ className }: UserButtonProps) {
         .split("; ")
         .find((row) => row.startsWith("token="))
         ?.split("=")[1];
-
       if (token) {
         await apiFetch(usuarioRoutes.logout(), {
           cache: "no-cache",
-          init: {
-            method: "POST",
-            headers: { Authorization: `Bearer ${token}` },
-          },
+          init: { method: "POST", headers: { Authorization: `Bearer ${token}` } },
         });
       }
     } catch (error) {
@@ -164,12 +136,7 @@ export function UserButton({ className }: UserButtonProps) {
 
   if (isLoading) {
     return (
-      <div
-        className={cn(
-          "relative h-10 px-3 rounded-lg transition-all duration-200 ease-in-out",
-          className
-        )}
-      >
+      <div className={cn("relative h-10 px-3 rounded-lg transition-all duration-200", className)}>
         <UserButtonSkeleton />
       </div>
     );
@@ -184,25 +151,16 @@ export function UserButton({ className }: UserButtonProps) {
           variant="ghost"
           className={cn(
             "group relative h-10 px-3 rounded-xl hover:bg-white/10 active:scale-95",
-            "transition-all duration-200 ease-in-out",
-            "focus-visible:outline-none focus-visible:ring-0 focus:ring-0 outline-none border-none",
-            "data-[state=open]:bg-white/10",
+            "transition-all duration-200",
+            "focus-visible:outline-none focus-visible:ring-0",
             className
           )}
         >
-        <div className="flex items-center justify-center gap-2">
-          {/* Avatar */}
-          <div className="relative">
-            <AvatarCustom name={displayName} size="sm" showStatus={false} />
-          </div>
-
-            {/* Chevron (gira sem framer-motion) */}
-            <div
-              className={cn(
-                "transition-transform duration-200 ease-in-out",
-                isOpen ? "rotate-180" : "rotate-0"
-              )}
-            >
+          <div className="flex items-center justify-center gap-2">
+            <div className="relative">
+              <AvatarCustom name={displayName} size="sm" showStatus={false} />
+            </div>
+            <div className={cn("transition-transform duration-200", isOpen ? "rotate-180" : "rotate-0")}> 
               <Icon name="ChevronDown" size={14} className="text-white/70" />
             </div>
           </div>
@@ -211,64 +169,40 @@ export function UserButton({ className }: UserButtonProps) {
       </DropdownMenuTrigger>
 
       <DropdownMenuContent align="end" className="w-80 p-0" sideOffset={8}>
-        {/* Cabeçalho do usuário */}
         <div className="p-4 border-b border-gray-100">
           <div className="flex items-center gap-3">
             <div className="relative">
-              <AvatarCustom
-                name={displayName}
-                size="md"
-                showStatus={false}
-                className="ring-2 ring-pink-500"
-              />
+              <AvatarCustom name={displayName} size="md" showStatus={false} className="ring-2 ring-pink-500" />
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-gray-900 text-base truncate">
-                {displayName}
-              </h3>
+              <h3 className="font-semibold text-gray-900 text-base truncate">{displayName}</h3>
               <div className="flex items-center gap-1 mt-0.5">
                 <Icon name="Mail" size={12} className="text-gray-400" />
                 <p className="text-sm text-gray-500 truncate">{user.email}</p>
               </div>
             </div>
-            {user.plan === "pro" && (
+            {user.plan !== "free" && (
               <div className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-2.5 py-1 rounded-full text-xs font-semibold">
-                PRO
+                {user.plan === "pro" ? "PRO" : "ENT"}
               </div>
             )}
           </div>
         </div>
 
-        {/* Itens do menu */}
         <div className="py-1.5">
           {menuItems.map((item) => (
             <DropdownMenuItem
-              key={item.label}
+              key={item.key}
               className="px-3 py-2.5 cursor-pointer focus:bg-gray-50 hover:bg-gray-50 group"
-              onClick={item.action}
+              onClick={() => onNavigate?.(item.key)}
             >
               <div className="flex items-center gap-2.5 w-full">
-                <div
-                  className={cn(
-                    "w-8 h-8 rounded-lg flex items-center justify-center transition-colors duration-150 shrink-0",
-                    item.iconBg || "bg-gray-100 group-hover:bg-gray-200"
-                  )}
-                >
-                  <Icon
-                    name={item.icon}
-                    size={16}
-                    className={cn(
-                      item.iconColor || "text-gray-600 group-hover:text-gray-700"
-                    )}
-                  />
+                <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center transition-colors duration-150 shrink-0", item.iconBg || "bg-gray-100 group-hover:bg-gray-200")}> 
+                  <Icon name={item.icon} size={16} className={cn(item.iconColor || "text-gray-600 group-hover:text-gray-700")} />
                 </div>
-                <p className="font-medium text-gray-900 text-sm flex-1">
-                  {item.label}
-                </p>
+                <p className="font-medium text-gray-900 text-sm flex-1">{item.label}</p>
                 {item.badge && (
-                  <span className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-2 py-0.5 rounded-full text-xs font-semibold">
-                    {item.badge}
-                  </span>
+                  <span className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-2 py-0.5 rounded-full text-xs font-semibold">{item.badge}</span>
                 )}
               </div>
             </DropdownMenuItem>
@@ -277,32 +211,23 @@ export function UserButton({ className }: UserButtonProps) {
 
         <DropdownMenuSeparator />
 
-        {/* Sair */}
         <div className="p-2">
-            <DropdownMenuItem
-              className="px-3 py-2.5 cursor-pointer text-red-600 focus:text-red-700 hover:bg-red-50 focus:bg-red-50 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
-              onClick={handleLogout}
-              disabled={isLoggingOut}
-            >
-              <div className="flex items-center gap-2.5 w-full">
-                <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center transition-colors duration-150 shrink-0">
-                  {isLoggingOut ? (
-                    <Icon
-                      name="Loader2"
-                      size={16}
-                      className="text-red-600 animate-spin"
-                    />
-                  ) : (
-                    <Icon name="LogOut" size={16} className="text-red-600" />
-                  )}
-                </div>
-                <div className="flex-1 text-left">
-                  <p className="font-medium text-red-600 text-sm">
-                    {isLoggingOut ? "Saindo..." : "Sair"}
-                </p>
-                <p className="text-xs text-red-400 mt-0.5">
-                  {isLoggingOut ? "Aguarde..." : "Sair da sua conta"}
-                </p>
+          <DropdownMenuItem
+            className="px-3 py-2.5 cursor-pointer text-red-600 focus:text-red-700 hover:bg-red-50 focus:bg-red-50 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={handleLogout}
+            disabled={isLoggingOut}
+          >
+            <div className="flex items-center gap-2.5 w-full">
+              <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center transition-colors duration-150 shrink-0">
+                {isLoggingOut ? (
+                  <Icon name="Loader2" size={16} className="text-red-600 animate-spin" />
+                ) : (
+                  <Icon name="LogOut" size={16} className="text-red-600" />
+                )}
+              </div>
+              <div className="flex-1 text-left">
+                <p className="font-medium text-red-600 text-sm">{isLoggingOut ? "Saindo..." : "Sair"}</p>
+                <p className="text-xs text-red-400 mt-0.5">{isLoggingOut ? "Aguarde..." : "Sair da sua conta"}</p>
               </div>
             </div>
           </DropdownMenuItem>
@@ -311,3 +236,6 @@ export function UserButton({ className }: UserButtonProps) {
     </DropdownMenu>
   );
 }
+
+export default UserButton;
+

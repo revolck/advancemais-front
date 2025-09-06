@@ -32,3 +32,5 @@ export * from "./select";
 export * from "./date-time";
 
 export * from "./tags-selector";
+
+export * from "./user-button";

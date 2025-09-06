@@ -4,7 +4,7 @@ import React from "react";
 import { motion } from "framer-motion";
 import { Icon } from "@/components/ui/custom/Icons";
 import { NotificationButton } from "./components/NotificationButton";
-import { UserButton } from "./components/UserButton";
+import { UserButton } from "@/components/ui/custom/user-button";
 import { DashboardHeaderProps } from "./types/header.types";
 import { cn } from "@/lib/utils";
 
