@@ -15,6 +15,7 @@ export interface ContactInfo {
   address: string;
   phones: string[];
   hours: string;
+  email?: string;
 }
 
 export interface FooterConfig {

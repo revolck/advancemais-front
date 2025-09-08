@@ -1,9 +1,7 @@
 "use client";
 
 import React from "react";
-import { motion } from "framer-motion";
 import { Clock, Phone } from "lucide-react";
-import { FOOTER_SECTION_VARIANTS } from "../constants/animations";
 import type { ContactInfo as ContactInfoType } from "../types";
 
 interface ContactInfoProps {
@@ -11,12 +9,9 @@ interface ContactInfoProps {
   isMobile?: boolean;
 }
 
-export const ContactInfo: React.FC<ContactInfoProps> = ({
-  contact,
-  isMobile = false,
-}) => {
+export const ContactInfo: React.FC<ContactInfoProps> = ({ contact }) => {
   return (
-    <motion.div variants={FOOTER_SECTION_VARIANTS} className="flex-1">
+    <div className="flex-1">
       {/* Horário de Atendimento */}
       <div className="mb-6">
         <div className="flex items-center gap-2 mb-2">
@@ -25,7 +20,9 @@ export const ContactInfo: React.FC<ContactInfoProps> = ({
             Horário de atendimento:
           </span>
         </div>
-        <p className="text-gray-400 text-sm ml-6">{contact.hours}</p>
+        <p className="text-gray-400 text-sm ml-6">
+          {contact.hours}
+        </p>
       </div>
 
       {/* Contatos */}
@@ -45,8 +42,18 @@ export const ContactInfo: React.FC<ContactInfoProps> = ({
               </a>
             </div>
           ))}
+          {contact.email && (
+            <div>
+              <a
+                href={`mailto:${contact.email}`}
+                className="hover:text-white transition-colors"
+              >
+                {contact.email}
+              </a>
+            </div>
+          )}
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 };

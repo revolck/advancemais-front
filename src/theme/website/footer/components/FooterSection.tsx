@@ -2,7 +2,6 @@
 
 import React from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
 import {
   ExternalLink,
   Users,
@@ -21,7 +20,6 @@ import {
   FileText,
   Cookie,
 } from "lucide-react";
-import { FOOTER_SECTION_VARIANTS } from "../constants/animations";
 import type { FooterSection as FooterSectionType } from "../types";
 
 const getIcon = (iconName?: string) => {
@@ -61,10 +59,16 @@ export const FooterSection: React.FC<FooterSectionProps> = ({
   const SectionIcon = getIcon(section.icon);
 
   return (
-    <motion.div variants={FOOTER_SECTION_VARIANTS} className="flex-1">
+    <div className="flex-1">
       <div className="flex items-center gap-2 mb-4">
-        {SectionIcon && <SectionIcon className="w-4 h-4 text-red-600" />}
-        <h4 className="text-sm font-semibold uppercase text-white">
+        {SectionIcon && (
+          <SectionIcon
+            className="w-5 h-5 text-red-600 shrink-0"
+            aria-hidden="true"
+            focusable="false"
+          />
+        )}
+        <h4 className="text-sm font-semibold uppercase text-white leading-none">
           {section.title}
         </h4>
       </div>
@@ -95,6 +99,6 @@ export const FooterSection: React.FC<FooterSectionProps> = ({
           );
         })}
       </ul>
-    </motion.div>
+    </div>
   );
 };

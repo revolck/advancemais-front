@@ -2,8 +2,6 @@
 
 import React from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
-import { FOOTER_SECTION_VARIANTS } from "../constants/animations";
 import type { FooterLink } from "../types";
 
 interface FooterBottomProps {
@@ -30,10 +28,7 @@ export const FooterBottom: React.FC<FooterBottomProps> = ({
   address,
 }) => {
   return (
-    <motion.div
-      variants={FOOTER_SECTION_VARIANTS}
-      className="mt-8 border-t border-gray-700 pt-6"
-    >
+    <div className="mt-8 border-t border-gray-700 pt-6">
       <div className="text-center space-y-2">
         {/* Endereço */}
         <div className="flex items-start justify-center gap-2">
@@ -61,6 +56,6 @@ export const FooterBottom: React.FC<FooterBottomProps> = ({
           })}
         </nav>
       </div>
-    </motion.div>
+    </div>
   );
 };
