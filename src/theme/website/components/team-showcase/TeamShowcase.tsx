@@ -2,10 +2,11 @@
 
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { TeamMember } from "./components/TeamMember";
+import { TeamSlider } from "./components/TeamSlider";
 import { useTeamData } from "./hooks/useTeamData";
 import { ImageNotFound } from "@/components/ui/custom/image-not-found";
 import { ButtonCustom } from "@/components/ui/custom/button";
@@ -24,6 +25,18 @@ const TeamShowcase: React.FC<TeamShowcaseProps> = ({
     fetchFromApi,
     staticData
   );
+
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
   useEffect(() => {
     if (data && data.length > 0 && !isLoading) {
@@ -49,7 +62,7 @@ const TeamShowcase: React.FC<TeamShowcaseProps> = ({
           </div>
 
           {/* Grid skeleton */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
             {Array.from({ length: 8 }).map((_, index) => (
               <div
                 key={index}
@@ -132,15 +145,19 @@ const TeamShowcase: React.FC<TeamShowcaseProps> = ({
           </h2>
         </motion.div>
 
-        {/* Grid de membros - responsivo e 4 por linha em telas amplas */}
-        <div
-          className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
-          style={{ gap: "var(--team-gap, 1.25rem)" }}
-        >
-          {data.map((member, index) => (
-            <TeamMember key={member.id} data={member} index={index} />
-          ))}
-        </div>
+        {/* Grid/Slider de membros */}
+        {isMobile ? (
+          <TeamSlider members={data} />
+        ) : (
+          <div
+            className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5"
+            style={{ gap: "var(--team-gap, 1.25rem)" }}
+          >
+            {data.map((member, index) => (
+              <TeamMember key={member.id} data={member} index={index} />
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );

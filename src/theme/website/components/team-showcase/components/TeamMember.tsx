@@ -34,7 +34,7 @@ export const TeamMember: React.FC<TeamMemberProps> = ({ data, index }) => {
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-50px" }}
-      transition={{ duration: 0.5, delay: (index % 4) * 0.08, ease: "easeOut" }}
+      transition={{ duration: 0.5, delay: (index % 5) * 0.08, ease: "easeOut" }}
     >
       <Card
         className="group relative overflow-hidden !p-0 rounded-2xl transition-transform duration-500 !border-none"
