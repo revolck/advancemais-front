@@ -1,8 +1,9 @@
 export type IconName = 
   | "Home" 
   | "Settings" 
-  | "Globe" 
-  | "Layout" 
+  | "Globe"
+  | "Layout"
+  | "LayoutDashboard"
   | "ChevronRight"
   | "Save"
   | "User"
