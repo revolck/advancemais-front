@@ -160,20 +160,9 @@ export default function DiferenciaisForm({
     }
   };
 
-  // Atualiza ícone localmente e envia para API (se já existir registro)
-  const handleIconChange = async (index: number, iconName: string) => {
+  // Atualiza ícone apenas localmente; será salvo ao enviar o formulário
+  const handleIconChange = (index: number, iconName: string) => {
     setContent((prev) => ({ ...prev, [`icone${index}`]: iconName } as any));
-
-    if (!content.id) return; // ainda não existe registro para atualizar
-
-    try {
-      const payload: Record<string, string> = {};
-      payload[`icone${index}`] = iconName;
-      await updateDiferenciais(content.id, payload);
-      toastCustom.success(`Ícone do card ${index} atualizado`);
-    } catch (err) {
-      toastCustom.error(`Erro ao atualizar ícone do card ${index}`);
-    }
   };
 
   // Helper para renderizar preview do ícone
