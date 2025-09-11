@@ -7,10 +7,13 @@ import { apiFetch } from "@/api/client";
 import { usuarioRoutes } from "@/api/routes";
 import { toastCustom } from "@/components/ui/custom/toast";
 import { UserRole } from "@/config/roles";
+import { getLoginImageDataClient } from "@/api/websites/components";
 
 const SignInPageDemo = () => {
   const [userName, setUserName] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [heroImageSrc, setHeroImageSrc] = useState<string | undefined>();
+  const [heroImageLink, setHeroImageLink] = useState<string | undefined>();
   const searchParams = useSearchParams();
 
   useEffect(() => {
@@ -28,6 +31,17 @@ const SignInPageDemo = () => {
       );
     }
   }, [searchParams]);
+
+  useEffect(() => {
+    getLoginImageDataClient()
+      .then((data) => {
+        if (data?.imagemUrl) setHeroImageSrc(data.imagemUrl);
+        if (data?.link) setHeroImageLink(data.link || undefined);
+      })
+      .catch((err) => {
+        console.error("Erro ao carregar imagem de login:", err);
+      });
+  }, []);
 
   const handleSignIn = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -127,7 +141,8 @@ const SignInPageDemo = () => {
   return (
     <div className="bg-background text-foreground">
       <SignInPage
-        heroImageSrc="https://images.unsplash.com/photo-1642615835477-d303d7dc9ee9?w=2160&q=80"
+        heroImageSrc={heroImageSrc}
+        heroImageLink={heroImageLink}
         onSignIn={handleSignIn}
         onResetPassword={handleResetPassword}
         onCreateAccount={handleCreateAccount}

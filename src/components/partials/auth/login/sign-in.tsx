@@ -12,6 +12,7 @@ interface SignInPageProps {
   title?: React.ReactNode;
   description?: React.ReactNode;
   heroImageSrc?: string;
+  heroImageLink?: string;
   onSignIn?: (event: React.FormEvent<HTMLFormElement>) => void;
   onResetPassword?: () => void;
   onCreateAccount?: () => void;
@@ -30,6 +31,7 @@ export const SignInPage: React.FC<SignInPageProps> = ({
   ),
   description,
   heroImageSrc,
+  heroImageLink,
   onSignIn,
   onResetPassword,
   onCreateAccount,
@@ -204,10 +206,24 @@ export const SignInPage: React.FC<SignInPageProps> = ({
       {/* Right column: hero image + testimonials */}
       {heroImageSrc && (
         <section className="hidden md:block flex-1 relative p-4">
-          <div
-            className="animate-slide-right animate-delay-300 absolute inset-4 rounded-3xl bg-cover bg-center"
-            style={{ backgroundImage: `url(${heroImageSrc})` }}
-          ></div>
+          {heroImageLink ? (
+            <a
+              href={heroImageLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block w-full h-full"
+            >
+              <div
+                className="animate-slide-right animate-delay-300 absolute inset-4 rounded-3xl bg-cover bg-center"
+                style={{ backgroundImage: `url(${heroImageSrc})` }}
+              ></div>
+            </a>
+          ) : (
+            <div
+              className="animate-slide-right animate-delay-300 absolute inset-4 rounded-3xl bg-cover bg-center"
+              style={{ backgroundImage: `url(${heroImageSrc})` }}
+            ></div>
+          )}
         </section>
       )}
     </div>

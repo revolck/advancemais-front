@@ -237,8 +237,8 @@ const rawMenuSections: MenuSection[] = [
             submenu: [
               {
                 icon: null,
-                label: "Planos empresarial",
-                route: "/admin/dashboard/enterprise-plans",
+                label: "Geral",
+                route: "/config/dashboard/geral",
                 permissions: ADMIN_PERMISSIONS,
               },
             ],
