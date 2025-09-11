@@ -157,6 +157,15 @@ export {
   updateInformacoesGerais,
   deleteInformacoesGerais,
 } from "./informacoes-gerais";
+export {
+  getLoginImageData,
+  getLoginImageDataClient,
+  listLoginImages,
+  getLoginImageById,
+  createLoginImage,
+  updateLoginImage,
+  deleteLoginImage,
+} from "./imagem-login";
 
 export type {
   AboutApiResponse,
@@ -272,3 +281,9 @@ export type {
   CreateInformacoesGeraisPayload,
   UpdateInformacoesGeraisPayload,
 } from "./informacoes-gerais/types";
+export type {
+  LoginImageBackendResponse,
+  LoginImageItem,
+  CreateLoginImagePayload,
+  UpdateLoginImagePayload,
+} from "./imagem-login/types";

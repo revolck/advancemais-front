@@ -152,6 +152,13 @@ export const websiteRoutes = {
     update: (id: string) => `${prefix}/website/header-pages/${id}`,
     delete: (id: string) => `${prefix}/website/header-pages/${id}`,
   },
+  loginImage: {
+    list: () => `${prefix}/website/imagem-login`,
+    create: () => `${prefix}/website/imagem-login`,
+    get: (id: string) => `${prefix}/website/imagem-login/${id}`,
+    update: (id: string) => `${prefix}/website/imagem-login/${id}`,
+    delete: (id: string) => `${prefix}/website/imagem-login/${id}`,
+  },
   informacoesGerais: {
     list: () => `${prefix}/website/informacoes-gerais`,
     create: () => `${prefix}/website/informacoes-gerais`,

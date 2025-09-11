@@ -70,4 +70,13 @@ export const breadcrumbConfig: Record<string, BreadcrumbConfig> = {
       { label: 'Treinamento', icon: 'BookOpen' }
     ]
   },
+  '/config/dashboard/geral': {
+    title: 'Configuração Dashboard',
+    items: [
+      { label: 'Dashboard', href: '/dashboard', icon: 'Home' },
+      { label: 'Configurações', href: '/dashboard/config', icon: 'Settings' },
+      { label: 'Dashboard', href: '/dashboard/config/dashboard', icon: 'LayoutDashboard' },
+      { label: 'Geral', icon: 'Settings' }
+    ]
+  },
 };
