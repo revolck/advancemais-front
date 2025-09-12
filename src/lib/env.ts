@@ -98,8 +98,8 @@ export const env: AppConfig = {
 
 export const serverEnv: ServerEnv = {
   blobToken: getEnvVar(
-    process.env.ADVANCEMAIS_BLOB_READ_WRITE_TOKEN,
-    "ADVANCEMAIS_BLOB_READ_WRITE_TOKEN"
+    process.env.BLOB_READ_WRITE_TOKEN,
+    "BLOB_READ_WRITE_TOKEN"
   ),
 } as const;
 
@@ -116,7 +116,7 @@ export function validateEnv(): void {
     missing.push("NEXT_PUBLIC_BASE_URL");
   }
   if (!serverEnv.blobToken) {
-    missing.push("ADVANCEMAIS_BLOB_READ_WRITE_TOKEN");
+    missing.push("BLOB_READ_WRITE_TOKEN");
   }
 
   if (missing.length > 0 && env.isProduction) {
