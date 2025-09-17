@@ -174,7 +174,16 @@ export const websiteRoutes = {
  * and password recovery helpers in one place.
  */
 export const usuarioRoutes = {
+  /**
+   * Retorna o endpoint raiz do módulo de usuários.
+   * Deve ser usado para recuperar as informações gerais do serviço
+   * (GET /api/v1/usuarios).
+   */
   base: () => `${prefix}/usuarios`,
+  /**
+   * Alias semântico para o endpoint de informações do módulo.
+   */
+  info: () => `${prefix}/usuarios`,
   register: () => `${prefix}/usuarios/registrar`,
   login: () => `${prefix}/usuarios/login`,
   logout: () => `${prefix}/usuarios/logout`,
@@ -186,13 +195,15 @@ export const usuarioRoutes = {
   recovery: {
     request: () => `${prefix}/usuarios/recuperar-senha`,
     validate: (token: string) =>
-      `${prefix}/usuarios/recuperar-senha/validar/${token}`,
+      `${prefix}/usuarios/recuperar-senha/validar/${encodeURIComponent(token)}`,
     reset: () => `${prefix}/usuarios/recuperar-senha/redefinir`,
   },
   verification: {
-    verify: (token: string) => `${prefix}/brevo/verificar-email?token=${token}`,
-    resend: () => `${prefix}/brevo/reenviar-verificacao`,
-    status: (userId: string) => `${prefix}/brevo/status-verificacao/${userId}`,
+    verify: (token: string) =>
+      `${prefix}/usuarios/verificar-email?token=${encodeURIComponent(token)}`,
+    resend: () => `${prefix}/usuarios/reenviar-verificacao`,
+    status: (userId: string) =>
+      `${prefix}/usuarios/status-verificacao/${encodeURIComponent(userId)}`,
   },
 };
 
