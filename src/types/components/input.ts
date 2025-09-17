@@ -10,6 +10,7 @@ import { InputHTMLAttributes } from "react";
 export type MaskType =
   | "cpf"
   | "cnpj"
+  | "cpfCnpj"
   | "phone"
   | "cep"
   | "date"
