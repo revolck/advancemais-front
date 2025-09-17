@@ -51,7 +51,6 @@ export const SignInPage: React.FC<SignInPageProps> = ({
 
   // Determina se é CPF (11 dígitos) ou CNPJ (14 dígitos)
   const documentoDigits = documento.replace(/\D/g, "");
-  const documentoMask = documentoDigits.length <= 11 ? "cpf" : "cnpj";
 
   // Validação do formulário
   const isFormValid =
@@ -106,7 +105,7 @@ export const SignInPage: React.FC<SignInPageProps> = ({
                   name="documento"
                   value={documento}
                   onChange={(e) => setDocumento(e.target.value)}
-                  mask={documentoMask}
+                  mask="cpfCnpj"
                   placeholder="Digite seu CPF ou CNPJ"
                   required
                   size="md"

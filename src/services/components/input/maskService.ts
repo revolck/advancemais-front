@@ -21,6 +21,7 @@ class MaskService {
       mask: "99.999.999/9999-99",
       alwaysShowMask: false,
     },
+    cpfCnpj: null,
     phone: {
       mask: "(99) 99999-9999",
       alwaysShowMask: false,
@@ -174,6 +175,7 @@ class MaskService {
     switch (maskType) {
       case "cpf":
       case "cnpj":
+      case "cpfCnpj":
       case "phone":
       case "cep":
       case "date":
@@ -239,6 +241,12 @@ class MaskService {
       case "cnpj":
         return this.validationPatterns.cnpj.test(value);
 
+      case "cpfCnpj":
+        return (
+          this.validationPatterns.cpf.test(value) ||
+          this.validationPatterns.cnpj.test(value)
+        );
+
       case "cep":
         return this.validationPatterns.cep.test(value);
 
@@ -265,6 +273,12 @@ class MaskService {
 
     if (maskType === "alphanumeric") {
       return value.replace(/[^a-zA-Z0-9]/g, "");
+    }
+
+    if (maskType === "cpfCnpj") {
+      const digits = value.replace(/[^\d]/g, "");
+      const targetMask: MaskType = digits.length > 11 ? "cnpj" : "cpf";
+      return this.applyMask(digits, targetMask);
     }
     const unmaskedValue = this.removeMask(value, maskType);
     return this.applyMask(unmaskedValue, maskType, customConfig);

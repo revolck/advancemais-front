@@ -17,4 +17,14 @@ describe('MaskService applyMask deletion', () => {
     const withoutDigit = service.processInput('12.345.678/0001-', 'cnpj');
     expect(withoutDigit).toBe('12.345.678/0001');
   });
+
+  it('applies CPF format when using cpfCnpj mask with 11 digits', () => {
+    const formatted = service.processInput('12345678901', 'cpfCnpj');
+    expect(formatted).toBe('123.456.789-01');
+  });
+
+  it('switches to CNPJ format when using cpfCnpj mask with more than 11 digits', () => {
+    const formatted = service.processInput('12345678901234', 'cpfCnpj');
+    expect(formatted).toBe('12.345.678/9012-34');
+  });
 });
