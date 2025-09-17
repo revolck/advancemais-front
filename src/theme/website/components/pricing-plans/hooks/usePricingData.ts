@@ -3,8 +3,10 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import type { PricingPlanData, PricingApiResponse } from "../types";
-import { DEFAULT_PRICING_DATA, PRICING_CONFIG } from "../constants";
+import type { PricingPlanData } from "../types";
+import { PRICING_CONFIG } from "../constants";
+import { listPlanosEmpresariais } from "@/api/empresas/planos-empresarial";
+import type { PlanoEmpresarialBackendResponse } from "@/api/empresas/planos-empresarial/types";
 
 interface UsePricingDataReturn {
   data: PricingPlanData[];
@@ -20,15 +22,14 @@ export function usePricingData(
   fetchFromApi: boolean = true,
   staticData?: PricingPlanData[]
 ): UsePricingDataReturn {
-  const [data, setData] = useState<PricingPlanData[]>(
-    staticData || DEFAULT_PRICING_DATA
-  );
+  const [data, setData] = useState<PricingPlanData[]>(staticData || []);
   const [isLoading, setIsLoading] = useState(fetchFromApi);
   const [error, setError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     if (!fetchFromApi) {
-      setData(staticData || DEFAULT_PRICING_DATA);
+      setData(staticData || []);
+      setError(null);
       setIsLoading(false);
       return;
     }
@@ -36,54 +37,26 @@ export function usePricingData(
     try {
       setIsLoading(true);
       setError(null);
+      const response = await listPlanosEmpresariais();
+      const mapped = mapPlanoEmpresarialToPricingData(response);
 
-      const controller = new AbortController();
-      const timeoutId = setTimeout(
-        () => controller.abort(),
-        PRICING_CONFIG.api.timeout
-      );
+      setData(mapped);
 
-      const response = await fetch(PRICING_CONFIG.api.endpoint, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        signal: controller.signal,
-      });
-
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      if (mapped.length === 0) {
+        setError("Nenhum plano empresarial cadastrado no momento.");
       }
-
-      const result: PricingApiResponse = await response.json();
-
-      if (!result.success || !result.data) {
-        throw new Error(result.message || "Dados inválidos recebidos da API");
-      }
-
-      // Filtra apenas dados ativos e ordena
-      const activeData = result.data
-        .filter((item) => item.isActive)
-        .sort((a, b) => a.order - b.order);
-
-      setData(activeData);
     } catch (err) {
       console.error("Erro ao buscar dados dos planos:", err);
 
       if (err instanceof Error) {
         if (err.name === "AbortError") {
-          setError("Tempo limite excedido. Usando dados padrão.");
+          setError("Tempo limite excedido ao carregar os planos empresariais.");
         } else {
-          setError(`Erro na API: ${err.message}. Usando dados padrão.`);
+          setError(`Erro na API: ${err.message}`);
         }
       } else {
-        setError("Erro desconhecido. Usando dados padrão.");
+        setError("Erro desconhecido ao carregar os planos empresariais.");
       }
-
-      // Fallback para dados padrão
-      setData(DEFAULT_PRICING_DATA);
     } finally {
       setIsLoading(false);
     }
@@ -99,4 +72,97 @@ export function usePricingData(
     error,
     refetch: fetchData,
   };
+}
+
+function formatCurrencyValue(value: string): string {
+  if (!value) return "0,00";
+  const trimmed = value.trim();
+  const hasComma = trimmed.includes(",");
+  const hasDot = trimmed.includes(".");
+
+  let normalized = trimmed;
+
+  if (hasComma && hasDot) {
+    normalized = trimmed.replace(/\./g, "").replace(",", ".");
+  } else if (hasComma) {
+    normalized = trimmed.replace(",", ".");
+  }
+
+  const amount = Number.parseFloat(normalized);
+  if (Number.isNaN(amount)) {
+    return trimmed;
+  }
+
+  return amount.toLocaleString("pt-BR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
+function buildFeatureList(
+  plan: PlanoEmpresarialBackendResponse
+): string[] {
+  const features: string[] = [];
+
+  const vagas = Number(plan.quantidadeVagas) || 0;
+  if (vagas > 0) {
+    features.push(
+      `${vagas} vaga${vagas === 1 ? "" : "s"} publicadas simultaneamente`
+    );
+  }
+
+  if (plan.vagaEmDestaque) {
+    const destaque = Number(plan.quantidadeVagasDestaque) || 0;
+    if (destaque > 0) {
+      features.push(
+        `${destaque} vaga${destaque === 1 ? "" : "s"} em destaque incluíd${
+          destaque === 1 ? "a" : "as"
+        }`
+      );
+    } else {
+      features.push("Destaque de vagas incluído no pacote");
+    }
+  } else {
+    features.push("Gestão de vagas com divulgação padrão");
+  }
+
+  if (plan.desconto > 0) {
+    features.push(`Desconto de ${plan.desconto}% em renovações e upgrades`);
+  } else {
+    features.push("Investimento fixo sem descontos adicionais");
+  }
+
+  features.push("Suporte especializado da equipe Advance+");
+
+  return features;
+}
+
+function mapPlanoEmpresarialToPricingData(
+  plans: PlanoEmpresarialBackendResponse[]
+): PricingPlanData[] {
+  if (!plans?.length) {
+    return [];
+  }
+
+  const highestVacancyCount = Math.max(
+    ...plans.map((plan) => Number(plan.quantidadeVagas) || 0)
+  );
+
+  return plans.map((plan, index) => ({
+    id: plan.id,
+    title: plan.nome,
+    iconName: plan.icon || PRICING_CONFIG.icons.fallbackIcon,
+    price: formatCurrencyValue(plan.valor),
+    description: plan.descricao,
+    features: buildFeatureList(plan),
+    isPopular:
+      (Number(plan.quantidadeVagas) || 0) === highestVacancyCount &&
+      highestVacancyCount > 0,
+    isActive: true,
+    order: index,
+    buttonText: PRICING_CONFIG.defaults.buttonText,
+    buttonUrl: PRICING_CONFIG.defaults.buttonUrl,
+    period: PRICING_CONFIG.defaults.period,
+    currency: PRICING_CONFIG.defaults.currency,
+  }));
 }

@@ -4,9 +4,9 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { Icon } from "@/components/ui/custom/Icons";
+import { Icon, Icons, type IconName } from "@/components/ui/custom/Icons";
 import { Check } from "lucide-react";
-import { PRICING_CONFIG, ICON_MAPPING } from "../constants";
+import { PRICING_CONFIG } from "../constants";
 import type { PricingPlanCardProps } from "../types";
 
 export const PricingPlanCard: React.FC<PricingPlanCardProps> = ({
@@ -19,10 +19,9 @@ export const PricingPlanCard: React.FC<PricingPlanCardProps> = ({
   };
 
   // Validação do ícone
-  const iconName =
-    plan.iconName in ICON_MAPPING
-      ? (plan.iconName as keyof typeof ICON_MAPPING)
-      : "Package";
+  const iconName: IconName = Icons.exists(plan.iconName)
+    ? plan.iconName
+    : (PRICING_CONFIG.icons.fallbackIcon as IconName);
 
   return (
     <div

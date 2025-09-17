@@ -169,6 +169,19 @@ export const websiteRoutes = {
 };
 
 /**
+ * Endpoints for empresas-related operations.
+ */
+export const empresasRoutes = {
+  planosEmpresarial: {
+    list: () => `${prefix}/empresas/planos-empresarial`,
+    create: () => `${prefix}/empresas/planos-empresarial`,
+    get: (id: string) => `${prefix}/empresas/planos-empresarial/${id}`,
+    update: (id: string) => `${prefix}/empresas/planos-empresarial/${id}`,
+    delete: (id: string) => `${prefix}/empresas/planos-empresarial/${id}`,
+  },
+};
+
+/**
  * Endpoints for user-related operations (usuarios).
  * Mirrors the backend users module and groups auth, profile
  * and password recovery helpers in one place.
@@ -233,6 +246,7 @@ export const uploadRoutes = {
  */
 export const routes = {
   website: websiteRoutes,
+  empresas: empresasRoutes,
   usuarios: usuarioRoutes,
   mercadopago: mercadoPagoRoutes,
   brevo: brevoRoutes,
