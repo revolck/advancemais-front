@@ -126,6 +126,12 @@ const rawMenuSections: MenuSection[] = [
           },
           {
             icon: null,
+            label: "Empresas",
+            route: "/admin/companies/list",
+            permissions: ADMIN_PERMISSIONS,
+          },
+          {
+            icon: null,
             label: "Vagas",
             route: "/admin/companies/jobs",
             permissions: ADMIN_PERMISSIONS,
