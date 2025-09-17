@@ -200,10 +200,10 @@ export const usuarioRoutes = {
   },
   verification: {
     verify: (token: string) =>
-      `${prefix}/usuarios/verificar-email?token=${encodeURIComponent(token)}`,
-    resend: () => `${prefix}/usuarios/reenviar-verificacao`,
+      `${prefix}/brevo/verificar-email?token=${encodeURIComponent(token)}`,
+    resend: () => `${prefix}/brevo/reenviar-verificacao`,
     status: (userId: string) =>
-      `${prefix}/usuarios/status-verificacao/${encodeURIComponent(userId)}`,
+      `${prefix}/brevo/status-verificacao/${encodeURIComponent(userId)}`,
   },
 };
 
