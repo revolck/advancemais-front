@@ -179,6 +179,12 @@ export const empresasRoutes = {
     update: (id: string) => `${prefix}/empresas/planos-empresarial/${id}`,
     delete: (id: string) => `${prefix}/empresas/planos-empresarial/${id}`,
   },
+  admin: {
+    list: () => `${prefix}/empresas/admin`,
+    create: () => `${prefix}/empresas/admin`,
+    get: (id: string) => `${prefix}/empresas/admin/${id}`,
+    update: (id: string) => `${prefix}/empresas/admin/${id}`,
+  },
 };
 
 /**

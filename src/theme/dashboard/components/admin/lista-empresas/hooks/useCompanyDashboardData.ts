@@ -1,0 +1,180 @@
+"use client";
+
+import { useCallback, useEffect, useRef, useState } from "react";
+import { listAdminCompanies } from "@/api/empresas";
+import { env, apiConfig } from "@/lib/env";
+import {
+  COMPANY_DASHBOARD_CONFIG,
+  DEFAULT_COMPANY_PAGINATION,
+  MOCK_COMPANY_PARTNERSHIPS,
+} from "../constants";
+import type {
+  Partnership,
+  UseCompanyDashboardDataOptions,
+  UseCompanyDashboardDataReturn,
+} from "../types";
+import type { AdminCompanyListItem, ListAdminCompaniesParams } from "@/api/empresas";
+
+function mapAdminCompanyToPartnership(company: AdminCompanyListItem): Partnership {
+  const plan = company.plano;
+
+  return {
+    id: company.id,
+    tipo: plan?.tipo,
+    inicio: plan?.inicio ?? null,
+    fim: plan?.fim ?? null,
+    ativo: company.ativa,
+    empresa: {
+      id: company.id,
+      nome: company.nome,
+      avatarUrl: company.avatarUrl ?? null,
+      cidade: company.cidade ?? null,
+      estado: company.estado ?? null,
+      descricao: company.descricao ?? null,
+      instagram: company.instagram ?? null,
+      linkedin: company.linkedin ?? null,
+      codUsuario: company.codUsuario,
+      cnpj: company.cnpj ?? null,
+      ativo: company.ativa,
+      criadoEm: company.criadoEm ?? null,
+      parceira: company.parceira,
+      diasTesteDisponibilizados: company.diasTesteDisponibilizados ?? null,
+    },
+    plano: {
+      id: plan?.id ?? `${company.id}-plano`,
+      nome: plan?.nome ?? "Plano não informado",
+      valor: plan?.valor ?? null,
+      quantidadeVagas: plan?.quantidadeVagas ?? 0,
+      vagasPublicadas: company.vagas?.publicadas ?? null,
+      tipo: plan?.tipo,
+      inicio: plan?.inicio ?? null,
+      fim: plan?.fim ?? null,
+    },
+    raw: company,
+  };
+}
+
+function buildParams(
+  base: ListAdminCompaniesParams | undefined,
+  pageSize: number,
+  override?: Partial<ListAdminCompaniesParams>,
+): ListAdminCompaniesParams {
+  return {
+    page: override?.page ?? base?.page ?? 1,
+    pageSize: override?.pageSize ?? base?.pageSize ?? pageSize,
+    search: override?.search ?? base?.search,
+  };
+}
+
+export function useCompanyDashboardData(
+  {
+    enabled = true,
+    pageSize = COMPANY_DASHBOARD_CONFIG.api.pageSize,
+    initialData,
+    initialParams,
+    onSuccess,
+    onError,
+  }: UseCompanyDashboardDataOptions = {},
+): UseCompanyDashboardDataReturn {
+  const initialPagination = initialData
+    ? {
+        ...DEFAULT_COMPANY_PAGINATION,
+        pageSize,
+        total: initialData.length,
+        totalPages: Math.ceil(initialData.length / pageSize) || 0,
+      }
+    : null;
+
+  const [partnerships, setPartnerships] = useState<Partnership[]>(initialData ?? []);
+  const [pagination, setPagination] = useState(initialPagination);
+  const [isLoading, setIsLoading] = useState(enabled && !initialData);
+  const [error, setError] = useState<string | null>(null);
+
+  const paramsRef = useRef<ListAdminCompaniesParams>(
+    buildParams(initialParams, pageSize),
+  );
+
+  const fetchData = useCallback(
+    async (override?: Partial<ListAdminCompaniesParams>): Promise<Partnership[]> => {
+      if (!enabled) {
+        return partnerships;
+      }
+
+      const params = buildParams(paramsRef.current, pageSize, override);
+      paramsRef.current = params;
+
+      const controller = new AbortController();
+      const timeoutId = window.setTimeout(
+        () => controller.abort(),
+        COMPANY_DASHBOARD_CONFIG.api.timeout,
+      );
+
+      try {
+        setIsLoading(true);
+        setError(null);
+
+        const response = await listAdminCompanies(params, {
+          signal: controller.signal,
+          headers: { Accept: apiConfig.headers.Accept },
+        });
+
+        const mapped = response.data.map(mapAdminCompanyToPartnership);
+        setPartnerships(mapped);
+        setPagination(response.pagination ?? {
+          ...DEFAULT_COMPANY_PAGINATION,
+          page: params.page ?? 1,
+          pageSize: params.pageSize ?? pageSize,
+          total: mapped.length,
+          totalPages: Math.ceil(mapped.length / (params.pageSize ?? pageSize)) || 0,
+        });
+        onSuccess?.(mapped, response);
+        return mapped;
+      } catch (err) {
+        let message = "Erro ao carregar empresas.";
+
+        if (err instanceof Error) {
+          if (err.name === "AbortError") {
+            message = "Tempo limite excedido ao carregar empresas.";
+          } else {
+            message = err.message;
+          }
+        }
+
+        console.error("Erro ao buscar empresas (admin):", err);
+        setError(message);
+        onError?.(message);
+
+        if (env.apiFallback === "mock") {
+          setPartnerships(MOCK_COMPANY_PARTNERSHIPS);
+          setPagination({
+            ...DEFAULT_COMPANY_PAGINATION,
+            page: 1,
+            pageSize,
+            total: MOCK_COMPANY_PARTNERSHIPS.length,
+            totalPages: Math.ceil(MOCK_COMPANY_PARTNERSHIPS.length / pageSize) || 0,
+          });
+          return MOCK_COMPANY_PARTNERSHIPS;
+        }
+
+        throw err;
+      } finally {
+        window.clearTimeout(timeoutId);
+        setIsLoading(false);
+      }
+    },
+    [enabled, onError, onSuccess, pageSize, partnerships],
+  );
+
+  useEffect(() => {
+    if (!enabled) return;
+    fetchData(initialParams);
+  }, [enabled, fetchData, initialParams]);
+
+  return {
+    partnerships,
+    pagination,
+    isLoading,
+    error,
+    refetch: fetchData,
+  };
+}
