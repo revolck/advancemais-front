@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, FormEvent } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import {
   InputCustom,
   SimpleTextarea,
@@ -9,10 +9,9 @@ import {
   toastCustom,
 } from "@/components/ui/custom";
 import { Label } from "@/components/ui/label";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Checkbox } from "@/components/ui/radix-checkbox";
+import { SelectCustom } from "@/components/ui/custom/select";
+import type { SelectOption } from "@/components/ui/custom/select/types";
 import {
-  listPlanosEmpresariais,
   createPlanoEmpresarial,
   updatePlanoEmpresarial,
   deletePlanoEmpresarial,
@@ -21,17 +20,37 @@ import {
 import * as LucideIcons from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
+interface PlanosEmpresarialFormProps {
+  plan?: PlanoEmpresarialBackendResponse | null;
+  onSuccess: (plan: PlanoEmpresarialBackendResponse) => void;
+  onDelete?: (id: string) => void;
+  onClose: () => void;
+  maxPlansReached?: boolean;
+}
+
+type HighlightChoice = "yes" | "no";
+
 interface PlanoEmpresarialFormState {
-  id?: string;
   icon: string;
   nome: string;
   descricao: string;
   valor: string;
   desconto: string;
   quantidadeVagas: string;
-  vagaEmDestaque: boolean;
+  vagaEmDestaque: HighlightChoice;
   quantidadeVagasDestaque: string;
 }
+
+const HIGHLIGHT_OPTIONS: SelectOption[] = [
+  {
+    value: "yes",
+    label: "Sim, eu quero ativar as vagas em destaque",
+  },
+  {
+    value: "no",
+    label: "Não, eu não desejo ativar",
+  },
+];
 
 const createEmptyFormState = (): PlanoEmpresarialFormState => ({
   icon: "",
@@ -40,7 +59,7 @@ const createEmptyFormState = (): PlanoEmpresarialFormState => ({
   valor: "",
   desconto: "",
   quantidadeVagas: "",
-  vagaEmDestaque: false,
+  vagaEmDestaque: "no",
   quantidadeVagasDestaque: "",
 });
 
@@ -68,97 +87,71 @@ const parsePercentage = (value: string) => {
   return parsed;
 };
 
-export default function PlanosEmpresarialForm() {
-  const [plans, setPlans] = useState<PlanoEmpresarialBackendResponse[]>([]);
+const mapPlanToFormState = (
+  plan?: PlanoEmpresarialBackendResponse | null,
+): PlanoEmpresarialFormState => {
+  if (!plan) return createEmptyFormState();
+
+  return {
+    icon: plan.icon ?? "",
+    nome: plan.nome ?? "",
+    descricao: plan.descricao ?? "",
+    valor: plan.valor ?? "",
+    desconto:
+      plan.desconto === null || plan.desconto === undefined
+        ? ""
+        : String(plan.desconto),
+    quantidadeVagas:
+      plan.quantidadeVagas === null || plan.quantidadeVagas === undefined
+        ? ""
+        : String(plan.quantidadeVagas),
+    vagaEmDestaque: plan.vagaEmDestaque ? "yes" : "no",
+    quantidadeVagasDestaque:
+      plan.vagaEmDestaque &&
+      plan.quantidadeVagasDestaque !== null &&
+      plan.quantidadeVagasDestaque !== undefined
+        ? String(plan.quantidadeVagasDestaque)
+        : "",
+  };
+};
+
+export default function PlanosEmpresarialForm({
+  plan,
+  onSuccess,
+  onDelete,
+  onClose,
+  maxPlansReached = false,
+}: PlanosEmpresarialFormProps) {
   const [formState, setFormState] = useState<PlanoEmpresarialFormState>(
-    createEmptyFormState,
+    () => mapPlanToFormState(plan),
   );
   const [isLoading, setIsLoading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [isFetching, setIsFetching] = useState(true);
-
-  const applyPlanToForm = (plan: PlanoEmpresarialBackendResponse) => {
-    setFormState({
-      id: plan.id,
-      icon: plan.icon ?? "",
-      nome: plan.nome ?? "",
-      descricao: plan.descricao ?? "",
-      valor: plan.valor ?? "",
-      desconto:
-        plan.desconto === null || plan.desconto === undefined
-          ? ""
-          : String(plan.desconto),
-      quantidadeVagas:
-        plan.quantidadeVagas === null || plan.quantidadeVagas === undefined
-          ? ""
-          : String(plan.quantidadeVagas),
-      vagaEmDestaque: Boolean(plan.vagaEmDestaque),
-      quantidadeVagasDestaque:
-        plan.quantidadeVagasDestaque === null ||
-        plan.quantidadeVagasDestaque === undefined
-          ? ""
-          : String(plan.quantidadeVagasDestaque),
-    });
-  };
-
-  const resetForm = () => {
-    setFormState(createEmptyFormState());
-  };
 
   useEffect(() => {
-    const fetchPlans = async () => {
-      setIsFetching(true);
-      try {
-        const data = await listPlanosEmpresariais();
-        setPlans(data);
-        if (data.length > 0) {
-          applyPlanToForm(data[0]);
-        } else {
-          resetForm();
-        }
-      } catch (err) {
-        const status = (err as any)?.status;
-        switch (status) {
-          case 401:
-            toastCustom.error("Sessão expirada. Faça login novamente");
-            break;
-          case 403:
-            toastCustom.error("Você não tem permissão para acessar este conteúdo");
-            break;
-          case 500:
-            toastCustom.error("Erro do servidor ao carregar os planos cadastrados");
-            break;
-          default:
-            toastCustom.error("Erro ao carregar os planos empresariais");
-        }
-      } finally {
-        setIsFetching(false);
-      }
-    };
+    setFormState(mapPlanToFormState(plan));
+  }, [plan]);
 
-    fetchPlans();
-  }, []);
+  const isEditing = Boolean(plan?.id);
+  const isHighlightEnabled = formState.vagaEmDestaque === "yes";
 
-  const renderIconPreview = (iconName: string) => {
-    if (!iconName) return null;
+  const renderIconPreview = useMemo(() => {
+    if (!formState.icon) return null;
     const IconComponent = (
       LucideIcons as Record<string, unknown>
-    )[iconName] as LucideIcon | undefined;
+    )[formState.icon] as LucideIcon | undefined;
     if (!IconComponent) return null;
     return <IconComponent className="h-5 w-5 text-gray-600" />;
-  };
-
-  const handleSelectPlan = (plan: PlanoEmpresarialBackendResponse) => {
-    applyPlanToForm(plan);
-  };
-
-  const handleCreateNew = () => {
-    resetForm();
-  };
+  }, [formState.icon]);
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     if (isLoading) return;
+
+    if (!isEditing && maxPlansReached) {
+      toastCustom.error("Limite máximo de 4 planos atingido");
+      return;
+    }
 
     const icon = formState.icon.trim();
     const nome = formState.nome.trim();
@@ -202,7 +195,7 @@ export default function PlanosEmpresarialForm() {
     }
 
     let quantidadeVagasDestaque = 0;
-    if (formState.vagaEmDestaque) {
+    if (isHighlightEnabled) {
       const parsed = parseNumber(formState.quantidadeVagasDestaque);
       if (!parsed || parsed <= 0) {
         toastCustom.error(
@@ -211,11 +204,6 @@ export default function PlanosEmpresarialForm() {
         return;
       }
       quantidadeVagasDestaque = parsed;
-    }
-
-    if (!formState.id && plans.length >= 4) {
-      toastCustom.error("Limite máximo de 4 planos atingido");
-      return;
     }
 
     setIsLoading(true);
@@ -227,30 +215,21 @@ export default function PlanosEmpresarialForm() {
         valor,
         desconto,
         quantidadeVagas,
-        vagaEmDestaque: formState.vagaEmDestaque,
+        vagaEmDestaque: isHighlightEnabled,
         quantidadeVagasDestaque,
       };
 
-      const saved = formState.id
-        ? await updatePlanoEmpresarial(formState.id, payload)
+      const saved = isEditing && plan?.id
+        ? await updatePlanoEmpresarial(plan.id, payload)
         : await createPlanoEmpresarial(payload);
 
       toastCustom.success(
-        formState.id
-          ? "Plano atualizado com sucesso"
-          : "Plano criado com sucesso",
+        isEditing ? "Plano atualizado com sucesso" : "Plano criado com sucesso",
       );
 
-      setPlans((prev) => {
-        if (formState.id) {
-          return prev.map((plan) =>
-            plan.id === saved.id ? saved : plan,
-          );
-        }
-        return [...prev, saved];
-      });
-
-      applyPlanToForm(saved);
+      setFormState(mapPlanToFormState(saved));
+      onSuccess(saved);
+      onClose();
     } catch (err) {
       const status = (err as any)?.status;
       switch (status) {
@@ -279,7 +258,7 @@ export default function PlanosEmpresarialForm() {
   };
 
   const handleDelete = async () => {
-    if (!formState.id || isDeleting) return;
+    if (!plan?.id || isDeleting) return;
     const confirmed = window.confirm(
       "Tem certeza que deseja remover este plano empresarial?",
     );
@@ -287,17 +266,10 @@ export default function PlanosEmpresarialForm() {
 
     setIsDeleting(true);
     try {
-      await deletePlanoEmpresarial(formState.id);
+      await deletePlanoEmpresarial(plan.id);
       toastCustom.success("Plano removido com sucesso");
-
-      const updatedPlans = plans.filter((plan) => plan.id !== formState.id);
-      setPlans(updatedPlans);
-
-      if (updatedPlans.length > 0) {
-        applyPlanToForm(updatedPlans[0]);
-      } else {
-        resetForm();
-      }
+      onDelete?.(plan.id);
+      onClose();
     } catch (err) {
       const status = (err as any)?.status;
       switch (status) {
@@ -321,226 +293,167 @@ export default function PlanosEmpresarialForm() {
     }
   };
 
-  if (isFetching) {
-    return (
-      <div className="space-y-4">
-        <Skeleton className="h-8 w-1/3" />
-        <Skeleton className="h-4 w-full" />
-        <Skeleton className="h-4 w-full" />
-        <Skeleton className="h-4 w-2/3" />
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-6">
-      <div className="space-y-3">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900">
-              Planos cadastrados
-            </h2>
-            <p className="text-sm text-gray-500">
-              Gerencie até quatro planos empresariais com regras de vagas
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {plans.map((plan) => (
-              <ButtonCustom
-                key={plan.id}
-                type="button"
-                variant={formState.id === plan.id ? "primary" : "outline"}
-                size="sm"
-                onClick={() => handleSelectPlan(plan)}
-              >
-                {plan.nome || "Plano sem título"}
-              </ButtonCustom>
-            ))}
-            <ButtonCustom
-              type="button"
-              variant="ghost"
-              size="sm"
-              icon="Plus"
-              onClick={handleCreateNew}
-            >
-              Novo plano
-            </ButtonCustom>
-          </div>
-        </div>
-        <p className="text-xs text-gray-500">
-          Você pode cadastrar no máximo quatro planos empresariais.
-        </p>
-      </div>
-
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label className="text-sm font-medium text-gray-700">
-                Ícone do plano
-              </Label>
-              <div className="flex items-center gap-2 text-xs text-gray-500">
-                <span>Ícone selecionado:</span>
-                {renderIconPreview(formState.icon)}
-              </div>
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <Label className="text-sm font-medium text-gray-700">
+              Ícone do plano
+            </Label>
+            <div className="flex items-center gap-2 text-xs text-gray-500">
+              <span>Ícone selecionado:</span>
+              {renderIconPreview}
             </div>
-            <IconSelector
-              value={formState.icon}
-              onValueChange={(iconName) =>
-                setFormState((prev) => ({ ...prev, icon: iconName }))
-              }
-              placeholder="Selecionar ícone"
-            />
           </div>
-
-          <InputCustom
-            label="Nome do plano"
-            id="nome"
-            value={formState.nome}
-            onChange={(e) =>
-              setFormState((prev) => ({ ...prev, nome: e.target.value }))
+          <IconSelector
+            value={formState.icon}
+            onValueChange={(iconName) =>
+              setFormState((prev) => ({ ...prev, icon: iconName }))
             }
-            placeholder="Digite o nome do plano"
-            maxLength={80}
-            required
+            placeholder="Selecionar ícone"
           />
         </div>
 
-        <SimpleTextarea
-          id="descricao"
-          value={formState.descricao}
+        <InputCustom
+          label="Nome do plano"
+          id="nome"
+          value={formState.nome}
           onChange={(e) =>
-            setFormState((prev) => ({ ...prev, descricao: e.target.value }))
+            setFormState((prev) => ({ ...prev, nome: e.target.value }))
           }
-          placeholder="Descreva os benefícios do plano empresarial"
-          maxLength={400}
-          showCharCount
+          placeholder="Digite o nome do plano"
+          maxLength={80}
+          required
+        />
+      </div>
+
+      <SimpleTextarea
+        id="descricao"
+        value={formState.descricao}
+        onChange={(e) =>
+          setFormState((prev) => ({ ...prev, descricao: e.target.value }))
+        }
+        placeholder="Descreva os benefícios do plano empresarial"
+        maxLength={400}
+        showCharCount
+        required
+      />
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <InputCustom
+          label="Valor mensal"
+          id="valor"
+          type="number"
+          step="0.01"
+          min="0"
+          value={formState.valor}
+          onChange={(e) =>
+            setFormState((prev) => ({ ...prev, valor: e.target.value }))
+          }
+          placeholder="Ex: 199.90"
           required
         />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <InputCustom
-            label="Valor mensal"
-            id="valor"
-            type="number"
-            step="0.01"
-            min="0"
-            value={formState.valor}
-            onChange={(e) =>
-              setFormState((prev) => ({ ...prev, valor: e.target.value }))
+        <InputCustom
+          label="Desconto (%)"
+          id="desconto"
+          type="number"
+          min="0"
+          max="100"
+          step="1"
+          value={formState.desconto}
+          onChange={(e) =>
+            setFormState((prev) => ({ ...prev, desconto: e.target.value }))
+          }
+          placeholder="Ex: 10"
+        />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <InputCustom
+          label="Quantidade de vagas"
+          id="quantidadeVagas"
+          type="number"
+          min="1"
+          value={formState.quantidadeVagas}
+          onChange={(e) =>
+            setFormState((prev) => ({
+              ...prev,
+              quantidadeVagas: e.target.value,
+            }))
+          }
+          placeholder="Ex: 10"
+          required
+        />
+
+        <div className="space-y-3">
+          <SelectCustom
+            label="Vagas em destaque"
+            options={HIGHLIGHT_OPTIONS}
+            value={formState.vagaEmDestaque}
+            onChange={(value) =>
+              setFormState((prev) => ({
+                ...prev,
+                vagaEmDestaque: (value as HighlightChoice | null) ?? "no",
+                quantidadeVagasDestaque:
+                  value === "yes" ? prev.quantidadeVagasDestaque : "",
+              }))
             }
-            placeholder="Ex: 199.90"
+            placeholder="Selecione uma opção"
             required
           />
-
           <InputCustom
-            label="Desconto (%)"
-            id="desconto"
-            type="number"
-            min="0"
-            max="100"
-            step="1"
-            value={formState.desconto}
-            onChange={(e) =>
-              setFormState((prev) => ({ ...prev, desconto: e.target.value }))
-            }
-            placeholder="Ex: 10"
-          />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <InputCustom
-            label="Quantidade de vagas"
-            id="quantidadeVagas"
+            label="Quantidade de vagas em destaque"
+            id="quantidadeVagasDestaque"
             type="number"
             min="1"
-            value={formState.quantidadeVagas}
+            value={formState.quantidadeVagasDestaque}
             onChange={(e) =>
               setFormState((prev) => ({
                 ...prev,
-                quantidadeVagas: e.target.value,
+                quantidadeVagasDestaque: e.target.value,
               }))
             }
-            placeholder="Ex: 10"
-            required
+            placeholder="Ex: 2"
+            disabled={!isHighlightEnabled}
+            required={isHighlightEnabled}
           />
-
-          <div className="space-y-2">
-            <Label className="text-sm font-medium text-gray-700">
-              Vaga em destaque
-            </Label>
-            <div className="flex items-center gap-2">
-              <Checkbox
-                id="vagaDestaque"
-                checked={formState.vagaEmDestaque}
-                onCheckedChange={(checked) =>
-                  setFormState((prev) => ({
-                    ...prev,
-                    vagaEmDestaque: checked === true,
-                    quantidadeVagasDestaque:
-                      checked === true ? prev.quantidadeVagasDestaque : "",
-                  }))
-                }
-              />
-              <Label htmlFor="vagaDestaque" className="text-sm text-gray-600">
-                Incluir vagas com destaque
-              </Label>
-            </div>
-            <InputCustom
-              label="Quantidade de vagas em destaque"
-              id="quantidadeVagasDestaque"
-              type="number"
-              min="1"
-              value={formState.quantidadeVagasDestaque}
-              onChange={(e) =>
-                setFormState((prev) => ({
-                  ...prev,
-                  quantidadeVagasDestaque: e.target.value,
-                }))
-              }
-              placeholder="Ex: 2"
-              disabled={!formState.vagaEmDestaque}
-              required={formState.vagaEmDestaque}
-            />
-          </div>
         </div>
+      </div>
 
-        <div className="flex flex-wrap justify-between gap-3 pt-4">
-          <div className="flex gap-2">
+      {!isEditing && maxPlansReached && (
+        <p className="text-sm text-destructive">
+          Você já atingiu o limite de quatro planos empresariais.
+        </p>
+      )}
+
+      <div className="flex flex-wrap justify-between gap-3 pt-4">
+        <div className="flex gap-2">
+          {isEditing && (
             <ButtonCustom
               type="button"
-              variant="outline"
-              icon="RotateCcw"
-              onClick={handleCreateNew}
-              disabled={isLoading}
+              variant="danger"
+              icon="Trash2"
+              onClick={handleDelete}
+              isLoading={isDeleting}
+              disabled={isDeleting || isLoading}
             >
-              Limpar formulário
+              Excluir plano
             </ButtonCustom>
-            {formState.id && (
-              <ButtonCustom
-                type="button"
-                variant="danger"
-                icon="Trash2"
-                onClick={handleDelete}
-                isLoading={isDeleting}
-                disabled={isDeleting || isLoading}
-              >
-                Excluir plano
-              </ButtonCustom>
-            )}
-          </div>
-
-          <ButtonCustom
-            type="submit"
-            isLoading={isLoading}
-            disabled={isLoading}
-            size="lg"
-            className="w-full md:w-40"
-          >
-            Salvar plano
-          </ButtonCustom>
+          )}
         </div>
-      </form>
-    </div>
+
+        <ButtonCustom
+          type="submit"
+          isLoading={isLoading}
+          disabled={isLoading}
+          size="lg"
+          className="w-full md:w-40"
+        >
+          {isEditing ? "Salvar alterações" : "Cadastrar plano"}
+        </ButtonCustom>
+      </div>
+    </form>
   );
 }
