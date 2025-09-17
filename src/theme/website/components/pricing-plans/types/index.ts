@@ -1,7 +1,5 @@
 // src/theme/website/components/pricing-plans/types/index.ts
 
-import { LucideIcon } from "lucide-react";
-
 /**
  * Interface para dados de plano vindos da API
  */
@@ -19,15 +17,6 @@ export interface PricingPlanData {
   buttonUrl: string;
   period: string; // ex: "mês", "ano"
   currency: string; // ex: "R$"
-}
-
-/**
- * Interface para resposta da API
- */
-export interface PricingApiResponse {
-  data: PricingPlanData[];
-  success: boolean;
-  message?: string;
 }
 
 /**

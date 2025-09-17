@@ -16,4 +16,4 @@ export type {
   PricingPlansProps,
   PricingPlanCardProps,
 } from "./types";
-export { DEFAULT_PRICING_DATA, PRICING_CONFIG } from "./constants";
+export { PRICING_CONFIG } from "./constants";

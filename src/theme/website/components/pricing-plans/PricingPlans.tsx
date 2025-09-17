@@ -3,12 +3,14 @@
 "use client";
 
 import React, { useEffect } from "react";
+import { ButtonCustom } from "@/components/ui/custom/button";
+import { ImageNotFound } from "@/components/ui/custom/image-not-found";
+import { Loader } from "@/components/ui/custom/loader";
+import { env } from "@/lib/env";
 import { cn } from "@/lib/utils";
 import { PricingPlanCard } from "./components/PricingPlanCard";
-import { usePricingData } from "./hooks/usePricingData";
-import { ImageNotFound } from "@/components/ui/custom/image-not-found";
-import { ButtonCustom } from "@/components/ui/custom/button";
 import { PRICING_CONFIG } from "./constants";
+import { usePricingData } from "./hooks/usePricingData";
 import type { PricingPlansProps } from "./types";
 
 /**
@@ -74,17 +76,23 @@ const PricingPlans: React.FC<PricingPlansProps> = ({
 
   // Estado de carregamento
   if (isLoading) {
+    if (env.apiFallback === "loading") {
+      return (
+        <div className={cn("py-24 flex justify-center", className)}>
+          <Loader />
+        </div>
+      );
+    }
+
     return (
-      <div
-        className={cn("container w-full mx-auto py-24", className)}
-      >
+      <div className={cn("container w-full mx-auto py-24", className)}>
         <div className="text-center animate-fade-in mb-12">
           <div className="h-10 bg-gray-200 rounded w-64 mx-auto mb-4 animate-pulse" />
           <div className="h-6 bg-gray-200 rounded w-96 mx-auto animate-pulse" />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {Array.from({ length: 4 }).map((_, index) => (
+          {Array.from({ length: PRICING_CONFIG.grid.desktop }).map((_, index) => (
             <div
               key={index}
               className="rounded-lg p-6 bg-white shadow-medium border border-gray-200"
@@ -98,10 +106,7 @@ const PricingPlans: React.FC<PricingPlansProps> = ({
               <div className="h-10 bg-gray-200 rounded mb-6 animate-pulse" />
               <div className="space-y-3">
                 {Array.from({ length: 4 }).map((_, i) => (
-                  <div
-                    key={i}
-                    className="h-4 bg-gray-200 rounded animate-pulse"
-                  />
+                  <div key={i} className="h-4 bg-gray-200 rounded animate-pulse" />
                 ))}
               </div>
             </div>
@@ -114,9 +119,7 @@ const PricingPlans: React.FC<PricingPlansProps> = ({
   // Estado de erro (com opção de retry)
   if (error && (!data || data.length === 0)) {
     return (
-      <div
-        className={cn("container w-full mx-auto py-24", className)}
-      >
+      <div className={cn("container w-full mx-auto py-24", className)}>
         <div className="text-center">
           <ImageNotFound
             size="lg"
@@ -126,14 +129,30 @@ const PricingPlans: React.FC<PricingPlansProps> = ({
             className="mx-auto mb-6"
           />
           <p className="text-gray-600 mb-4 max-w-md mx-auto">
-            Não foi possível carregar os planos de preços.
-            {error.includes("padrão") ? " Exibindo dados de exemplo." : ""}
+            {error}
           </p>
-          {!error.includes("padrão") && (
-            <ButtonCustom onClick={refetch} variant="default" icon="RefreshCw">
-              Tentar Novamente
-            </ButtonCustom>
-          )}
+          <ButtonCustom onClick={refetch} variant="default" icon="RefreshCw">
+            Tentar Novamente
+          </ButtonCustom>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isLoading && data.length === 0) {
+    return (
+      <div className={cn("container w-full mx-auto py-24", className)}>
+        <div className="text-center">
+          <ImageNotFound
+            size="md"
+            variant="muted"
+            message="Nenhum plano empresarial disponível no momento"
+            icon="FileQuestion"
+            className="mx-auto mb-6"
+          />
+          <ButtonCustom onClick={refetch} variant="default" icon="RefreshCw">
+            Atualizar
+          </ButtonCustom>
         </div>
       </div>
     );
@@ -166,10 +185,12 @@ const PricingPlans: React.FC<PricingPlansProps> = ({
         ))}
       </div>
 
-      {/* Indicador de erro sutil se houver fallback */}
+      {/* Indicador de erro sutil se houver falha parcial */}
       {error && data.length > 0 && (
         <div className="text-center mt-8">
-          <span className="text-xs text-gray-500">Dados de exemplo</span>
+          <span className="text-xs text-gray-500">
+            Alguns dados podem estar indisponíveis no momento.
+          </span>
         </div>
       )}
     </div>
