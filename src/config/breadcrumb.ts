@@ -38,6 +38,7 @@ export type IconName =
   | "HelpCircle"
   | "Briefcase"
   | "BookOpen"
+  | "Building2"
   | "ExternalLink";
 
 export interface BreadcrumbItem {
