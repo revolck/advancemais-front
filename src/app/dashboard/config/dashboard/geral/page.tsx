@@ -6,7 +6,7 @@ import {
   type VerticalTabItem,
 } from "@/components/ui/custom";
 import LoginForm from "./login/LoginForm";
-import PlanosEmpresarialForm from "../planos-empresarial/PlanosEmpresarialForm";
+import PlanosEmpresariaisSection from "../planos-empresarial/PlanosEmpresariaisSection";
 
 export default function GeralDashboardPage() {
   const items: VerticalTabItem[] = [
@@ -20,7 +20,7 @@ export default function GeralDashboardPage() {
       value: "planos-empresariais",
       label: "Planos Empresariais",
       icon: "Building2",
-      content: <PlanosEmpresarialForm />,
+      content: <PlanosEmpresariaisSection />,
     },
   ];
 
