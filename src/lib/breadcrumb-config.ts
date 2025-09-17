@@ -1,5 +1,14 @@
 import type { BreadcrumbConfig } from '@/config/breadcrumb';
 
+const EMPRESAS_BREADCRUMB: BreadcrumbConfig = {
+  title: 'Empresas',
+  items: [
+    { label: 'Dashboard', href: '/dashboard', icon: 'Home' },
+    { label: 'Admin', href: '/dashboard/admin', icon: 'Settings' },
+    { label: 'Empresas', href: '/dashboard/admin/companies/list', icon: 'Building2' }
+  ]
+};
+
 export const breadcrumbConfig: Record<string, BreadcrumbConfig> = {
   '/dashboard': {
     title: 'Dashboard',
@@ -24,6 +33,10 @@ export const breadcrumbConfig: Record<string, BreadcrumbConfig> = {
       { label: 'Website', href: '/dashboard/admin/website', icon: 'Globe' }
     ]
   },
+
+  '/dashboard/admin/companies/list': EMPRESAS_BREADCRUMB,
+  '/dashboard/empresas/admin/list': EMPRESAS_BREADCRUMB,
+  '/dashboard/empresas/admin/listagem': EMPRESAS_BREADCRUMB,
   
   '/config/website/pagina-inicial': {
     title: 'Configuração Página Inicial',
