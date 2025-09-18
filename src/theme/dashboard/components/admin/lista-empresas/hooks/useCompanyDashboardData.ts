@@ -84,6 +84,7 @@ export function useCompanyDashboardData(
     : null;
 
   const [partnerships, setPartnerships] = useState<Partnership[]>(initialData ?? []);
+  const partnershipsRef = useRef(partnerships);
   const [pagination, setPagination] = useState(initialPagination);
   const [isLoading, setIsLoading] = useState(enabled && !initialData);
   const [error, setError] = useState<string | null>(null);
@@ -92,10 +93,21 @@ export function useCompanyDashboardData(
     buildParams(initialParams, pageSize),
   );
 
+  const onSuccessRef = useRef(onSuccess);
+  const onErrorRef = useRef(onError);
+
+  useEffect(() => {
+    onSuccessRef.current = onSuccess;
+  }, [onSuccess]);
+
+  useEffect(() => {
+    onErrorRef.current = onError;
+  }, [onError]);
+
   const fetchData = useCallback(
     async (override?: Partial<ListAdminCompaniesParams>): Promise<Partnership[]> => {
       if (!enabled) {
-        return partnerships;
+        return partnershipsRef.current;
       }
 
       const params = buildParams(paramsRef.current, pageSize, override);
@@ -117,15 +129,19 @@ export function useCompanyDashboardData(
         });
 
         const mapped = response.data.map(mapAdminCompanyToPartnership);
+        partnershipsRef.current = mapped;
         setPartnerships(mapped);
-        setPagination(response.pagination ?? {
-          ...DEFAULT_COMPANY_PAGINATION,
-          page: params.page ?? 1,
-          pageSize: params.pageSize ?? pageSize,
-          total: mapped.length,
-          totalPages: Math.ceil(mapped.length / (params.pageSize ?? pageSize)) || 0,
-        });
-        onSuccess?.(mapped, response);
+        setPagination(
+          response.pagination ?? {
+            ...DEFAULT_COMPANY_PAGINATION,
+            page: params.page ?? 1,
+            pageSize: params.pageSize ?? pageSize,
+            total: mapped.length,
+            totalPages:
+              Math.ceil(mapped.length / (params.pageSize ?? pageSize)) || 0,
+          },
+        );
+        onSuccessRef.current?.(mapped, response);
         return mapped;
       } catch (err) {
         let message = "Erro ao carregar empresas.";
@@ -140,7 +156,7 @@ export function useCompanyDashboardData(
 
         console.error("Erro ao buscar empresas (admin):", err);
         setError(message);
-        onError?.(message);
+        onErrorRef.current?.(message);
 
         throw err;
       } finally {
@@ -148,13 +164,22 @@ export function useCompanyDashboardData(
         setIsLoading(false);
       }
     },
-    [enabled, onError, onSuccess, pageSize],
+    [enabled, pageSize],
   );
 
   useEffect(() => {
+    partnershipsRef.current = partnerships;
+  }, [partnerships]);
+
+  const initialParamsRef = useRef(initialParams);
+  useEffect(() => {
+    initialParamsRef.current = initialParams;
+  }, [initialParams]);
+
+  useEffect(() => {
     if (!enabled) return;
-    fetchData(initialParams);
-  }, [enabled, fetchData, initialParams]);
+    fetchData(initialParamsRef.current);
+  }, [enabled, fetchData]);
 
   return {
     partnerships,

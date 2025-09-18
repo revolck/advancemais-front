@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ButtonCustom } from "@/components/ui/custom/button";
 import {
@@ -47,11 +47,13 @@ export function CompanyDashboard({
     error,
     refetch,
   } = useCompanyDashboardData({
-    enabled: shouldFetch,
+    enabled: false,
     pageSize: pageSize ?? COMPANY_DASHBOARD_CONFIG.api.pageSize,
     onSuccess: (data, response) => onDataLoaded?.(data, response),
     onError,
   });
+
+  const filtersRef = useRef({ searchTerm: "", selectedPlans: [] as string[] });
 
   useEffect(() => {
     if (partnershipsProp) {
@@ -67,6 +69,7 @@ export function CompanyDashboard({
 
   useEffect(() => {
     setCurrentPage(1);
+    filtersRef.current = { searchTerm, selectedPlans };
   }, [searchTerm, selectedPlans]);
 
   const uniquePlans = useMemo(() => {
@@ -159,6 +162,24 @@ export function CompanyDashboard({
     [selectedPlans]
   );
 
+  const runFetch = useCallback(
+    (pageToLoad = 1) => {
+      if (!shouldFetch) return;
+      const { searchTerm: latestSearch, selectedPlans: latestPlans } = filtersRef.current;
+      refetch({
+        page: pageToLoad,
+        search: latestSearch ? latestSearch.trim() || undefined : undefined,
+        planNames: latestPlans.length ? latestPlans : undefined,
+      }).catch(() => {});
+    },
+    [refetch, shouldFetch],
+  );
+
+  useEffect(() => {
+    if (!shouldFetch) return;
+    runFetch(1);
+  }, [shouldFetch, runFetch]);
+
   return (
     <div className={cn("min-h-full", className)}>
       {/* Top action bar */}
@@ -181,6 +202,8 @@ export function CompanyDashboard({
               setSearchTerm("");
               setSelectedPlans([]);
               setCurrentPage(1);
+              filtersRef.current = { searchTerm: "", selectedPlans: [] };
+              runFetch(1);
             }}
             search={{
               label: "Pesquisar empresa",
@@ -192,17 +215,14 @@ export function CompanyDashboard({
               shouldFetch ? (
                 <ButtonCustom
                   variant="primary"
-                  size="md"
+                  size="sm"
                   onClick={() => {
                     setCurrentPage(1);
-
-                    refetch({
-                      page: 1,
-                      search: searchTerm || undefined,
-                      planNames: selectedPlans.length
-                        ? selectedPlans
-                        : undefined,
-                    });
+                    filtersRef.current = {
+                      searchTerm,
+                      selectedPlans,
+                    };
+                    runFetch(1);
                   }}
                   disabled={isLoadingData}
                 >
@@ -218,7 +238,7 @@ export function CompanyDashboard({
               <Button
                 variant="link"
                 size="sm"
-                onClick={() => refetch()}
+                onClick={() => runFetch(currentPage)}
                 className="p-0 h-auto"
               >
                 Tentar novamente

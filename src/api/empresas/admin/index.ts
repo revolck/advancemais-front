@@ -68,6 +68,8 @@ export async function listAdminCompanies(
       ...init,
       headers,
     },
+    cache: "no-cache",
+    retries: 1,
   });
 }
 

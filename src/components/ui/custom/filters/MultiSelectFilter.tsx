@@ -40,8 +40,7 @@ export function MultiSelectFilter({
 }: MultiSelectFilterProps) {
   const [isOpen, setIsOpen] = React.useState(false);
   const [temp, setTemp] = React.useState<string[]>(selectedValues);
-  const triggerRef = React.useRef<HTMLButtonElement>(null);
-  const [menuWidth, setMenuWidth] = React.useState<number | undefined>(undefined);
+  // Largura fixa via classes para evitar medir e causar loops do Popper
 
   React.useEffect(() => {
     if (!isOpen) return;
@@ -51,11 +50,6 @@ export function MultiSelectFilter({
       const sameAll = sameLen && prev.every((v, i) => v === selectedValues[i]);
       return sameAll ? prev : selectedValues;
     });
-    // Mede a largura do trigger e aplica apenas se mudar
-    const w = triggerRef.current?.offsetWidth;
-    const next = w ? Math.round(w) : undefined;
-    if (next && next !== menuWidth) setMenuWidth(next);
-    // executa apenas na abertura
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
@@ -96,7 +90,6 @@ export function MultiSelectFilter({
       <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
         <DropdownMenuTrigger asChild>
           <Button
-            ref={triggerRef}
             variant="outline"
             role="combobox"
             aria-expanded={isOpen}
@@ -131,13 +124,12 @@ export function MultiSelectFilter({
         </DropdownMenuTrigger>
         <DropdownMenuContent
           className={cn(
-            "p-0",
+            "p-0 w-full md:w-[360px] lg:w-[400px]",
             "bg-popover border-border/60 rounded-[10px] shadow-lg",
             "animate-in fade-in-0 zoom-in-95 duration-200"
           )}
           align="start"
           sideOffset={8}
-          style={{ width: menuWidth }}
         >
           <div className="p-4">
             <div className="text-sm font-semibold text-foreground mb-3 px-1">

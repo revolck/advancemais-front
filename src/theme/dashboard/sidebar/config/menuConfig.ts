@@ -127,7 +127,7 @@ const rawMenuSections: MenuSection[] = [
           {
             icon: null,
             label: "Empresas",
-            route: "/admin/companies/list",
+            route: "/dashboard/empresas",
             permissions: ADMIN_PERMISSIONS,
           },
           {
@@ -508,4 +508,3 @@ const rawMenuSections: MenuSection[] = [
 ];
 
 export const menuSections: ReadonlyArray<MenuSection> = deepFreeze(rawMenuSections);
-
