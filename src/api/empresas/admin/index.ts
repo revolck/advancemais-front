@@ -47,6 +47,12 @@ export async function listAdminCompanies(
   if (params?.search) {
     query.set("search", params.search);
   }
+  if (params?.planNames && params.planNames.length > 0) {
+    for (const name of params.planNames) query.append("planName", name);
+  }
+  if (params?.planTypes && params.planTypes.length > 0) {
+    for (const t of params.planTypes) query.append("planType", String(t));
+  }
 
   const url = query.toString() ? `${endpoint}?${query.toString()}` : endpoint;
 

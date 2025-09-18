@@ -1,21 +1,32 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { Search } from "lucide-react";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { cn } from "@/lib/utils";
+import { ButtonCustom } from "@/components/ui/custom/button";
 import {
-  CompanyRow,
-  CompanyStats,
-  CompanyTableSkeleton,
-  EmptyState,
-} from "./components";
+  Table,
+  TableBody,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+import { cn } from "@/lib/utils";
+import { CompanyRow, CompanyTableSkeleton, EmptyState } from "./components";
 import { COMPANY_DASHBOARD_CONFIG, TRIAL_PARTNERSHIP_TYPES } from "./constants";
 import { useCompanyDashboardData } from "./hooks/useCompanyDashboardData";
-import type { CompanyDashboardProps, PlanFilter } from "./types";
+import type { CompanyDashboardProps } from "./types";
+import { FilterBar } from "@/components/ui/custom";
+import type { FilterField } from "@/components/ui/custom/filters";
+// import type { AdminCompanyPlanType } from "@/api/empresas";
 
 export function CompanyDashboard({
   className,
@@ -26,10 +37,16 @@ export function CompanyDashboard({
   onDataLoaded,
   onError,
 }: CompanyDashboardProps) {
-  const itemsPerPage = itemsPerPageProp ?? COMPANY_DASHBOARD_CONFIG.itemsPerPage;
+  const itemsPerPage =
+    itemsPerPageProp ?? COMPANY_DASHBOARD_CONFIG.itemsPerPage;
   const shouldFetch = fetchFromApi && !partnershipsProp;
 
-  const { partnerships: fetchedPartnerships, isLoading, error, refetch } = useCompanyDashboardData({
+  const {
+    partnerships: fetchedPartnerships,
+    isLoading,
+    error,
+    refetch,
+  } = useCompanyDashboardData({
     enabled: shouldFetch,
     pageSize: pageSize ?? COMPANY_DASHBOARD_CONFIG.api.pageSize,
     onSuccess: (data, response) => onDataLoaded?.(data, response),
@@ -45,13 +62,12 @@ export function CompanyDashboard({
   const partnerships = partnershipsProp ?? fetchedPartnerships;
 
   const [searchTerm, setSearchTerm] = useState("");
-  const [planFilter, setPlanFilter] = useState<PlanFilter>("all");
-  const [partnershipFilter, setPartnershipFilter] = useState<"all" | "partner" | "trial">("all");
+  const [selectedPlans, setSelectedPlans] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, planFilter, partnershipFilter]);
+  }, [searchTerm, selectedPlans]);
 
   const uniquePlans = useMemo(() => {
     const names = partnerships
@@ -74,21 +90,17 @@ export function CompanyDashboard({
         company.codUsuario.toLowerCase().includes(query) ||
         (company.cnpj?.toLowerCase().includes(query) ?? false);
 
-      const matchesPlan = planFilter === "all" || plan.nome === planFilter;
+      const matchesPlan =
+        selectedPlans.length === 0 || selectedPlans.includes(plan.nome);
 
-      const isPartner = partnership.tipo === "parceiro" || company.parceira;
-      const isTrial = partnership.tipo ? TRIAL_PARTNERSHIP_TYPES.includes(partnership.tipo) : false;
-
-      const matchesPartnership =
-        partnershipFilter === "all" ||
-        (partnershipFilter === "partner" && isPartner) ||
-        (partnershipFilter === "trial" && isTrial);
-
-      return matchesSearch && matchesPlan && matchesPartnership;
+      return matchesSearch && matchesPlan;
     });
-  }, [partnershipFilter, partnerships, planFilter, searchTerm]);
+  }, [partnerships, selectedPlans, searchTerm]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredPartnerships.length / itemsPerPage));
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredPartnerships.length / itemsPerPage)
+  );
 
   useEffect(() => {
     if (currentPage > totalPages) {
@@ -102,18 +114,7 @@ export function CompanyDashboard({
     return filteredPartnerships.slice(start, end);
   }, [filteredPartnerships, currentPage, itemsPerPage]);
 
-  const metrics = useMemo(() => {
-    const partners = partnerships.filter(
-      (partnership) => partnership.tipo === "parceiro" || partnership.empresa.parceira,
-    ).length;
-    const trials = partnerships.filter((partnership) =>
-      partnership.tipo ? TRIAL_PARTNERSHIP_TYPES.includes(partnership.tipo) : false,
-    ).length;
-    const active = partnerships.filter((partnership) => partnership.empresa.ativo).length;
-    const inactive = partnerships.filter((partnership) => !partnership.empresa.ativo).length;
-
-    return { partners, trials, active, inactive };
-  }, [partnerships]);
+  // métricas removidas a pedido
 
   const visiblePages = useMemo(() => {
     const pages: number[] = [];
@@ -138,66 +139,88 @@ export function CompanyDashboard({
   const isLoadingData = shouldFetch && isLoading;
   const showEmptyState = !isLoadingData && filteredPartnerships.length === 0;
 
+  const filterFields: FilterField[] = useMemo(
+    () => [
+      {
+        key: "plan",
+        label: "Planos",
+        mode: "multiple",
+        options: uniquePlans.map((p) => ({ value: p, label: p })),
+        placeholder: "Selecione planos",
+      },
+    ],
+    [uniquePlans]
+  );
+
+  const filterValues = useMemo(
+    () => ({
+      plan: selectedPlans,
+    }),
+    [selectedPlans]
+  );
+
   return (
-    <div className={cn("min-h-screen bg-gray-50/50", className)}>
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10 backdrop-blur-xl bg-white/95">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h1 className="text-2xl font-semibold text-gray-900">Empresas</h1>
-              <p className="text-sm text-gray-500 mt-1">
-                {filteredPartnerships.length} de {partnerships.length} empresas
-              </p>
-            </div>
-            <CompanyStats
-              partners={metrics.partners}
-              trials={metrics.trials}
-              active={metrics.active}
-              inactive={metrics.inactive}
-            />
-          </div>
+    <div className={cn("min-h-full", className)}>
+      {/* Top action bar */}
+      <div className="flex items-center justify-end mb-2">
+        <ButtonCustom variant="primary" size="md" icon="Plus">
+          Criar empresa
+        </ButtonCustom>
+      </div>
 
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-3">
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                placeholder="Buscar empresa, código ou CNPJ..."
-                value={searchTerm}
-                onChange={(event) => setSearchTerm(event.target.value)}
-                className="pl-10 bg-white border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
-              />
-            </div>
+      <div className="border-b border-gray-200 sticky top-0 z-10 backdrop-blur-xl">
+        <div className="py-4">
+          <FilterBar
+            fields={filterFields}
+            values={filterValues}
+            onChange={(key, value) => {
+              if (key === "plan") setSelectedPlans((value as string[]) ?? []);
+              setCurrentPage(1);
+            }}
+            onClearAll={() => {
+              setSearchTerm("");
+              setSelectedPlans([]);
+              setCurrentPage(1);
+            }}
+            search={{
+              label: "Pesquisar empresa",
+              value: searchTerm,
+              onChange: setSearchTerm,
+              placeholder: "Buscar empresa, código ou CNPJ...",
+            }}
+            rightActions={
+              shouldFetch ? (
+                <ButtonCustom
+                  variant="primary"
+                  size="md"
+                  onClick={() => {
+                    setCurrentPage(1);
 
-            <Select value={planFilter} onValueChange={setPlanFilter}>
-              <SelectTrigger className="w-full sm:w-[160px] bg-white border-gray-200">
-                <SelectValue placeholder="Plano" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                {uniquePlans.map((plan) => (
-                  <SelectItem key={plan} value={plan}>
-                    {plan}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select value={partnershipFilter} onValueChange={(value) => setPartnershipFilter(value as typeof partnershipFilter)}>
-              <SelectTrigger className="w-full sm:w-[140px] bg-white border-gray-200">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="partner">Parceiros</SelectItem>
-                <SelectItem value="trial">Teste</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+                    refetch({
+                      page: 1,
+                      search: searchTerm || undefined,
+                      planNames: selectedPlans.length
+                        ? selectedPlans
+                        : undefined,
+                    });
+                  }}
+                  disabled={isLoadingData}
+                >
+                  Pesquisar
+                </ButtonCustom>
+              ) : undefined
+            }
+          />
 
           {error && shouldFetch && (
-            <div className="mt-4 text-sm text-red-600 flex items-center gap-2">
+            <div className="mt-3 text-sm text-red-600 flex items-center gap-2 px-1">
               <span>{error}</span>
-              <Button variant="link" size="sm" onClick={() => refetch()} className="p-0 h-auto">
+              <Button
+                variant="link"
+                size="sm"
+                onClick={() => refetch()}
+                className="p-0 h-auto"
+              >
                 Tentar novamente
               </Button>
             </div>
@@ -205,18 +228,32 @@ export function CompanyDashboard({
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 py-6">
+      <div className="py-6">
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow className="border-gray-200 bg-gray-50/50">
-                <TableHead className="font-medium text-gray-700 py-4">Empresa</TableHead>
-                <TableHead className="font-medium text-gray-700">Plano</TableHead>
-                <TableHead className="font-medium text-gray-700">Localização</TableHead>
-                <TableHead className="font-medium text-gray-700">Status Empresa</TableHead>
-                <TableHead className="font-medium text-gray-700">Status Plano</TableHead>
-                <TableHead className="font-medium text-gray-700">Vagas</TableHead>
-                <TableHead className="font-medium text-gray-700">Data Criação</TableHead>
+                <TableHead className="font-medium text-gray-700 py-4">
+                  Empresa
+                </TableHead>
+                <TableHead className="font-medium text-gray-700">
+                  Plano
+                </TableHead>
+                <TableHead className="font-medium text-gray-700">
+                  Localização
+                </TableHead>
+                <TableHead className="font-medium text-gray-700">
+                  Status Empresa
+                </TableHead>
+                <TableHead className="font-medium text-gray-700">
+                  Status Plano
+                </TableHead>
+                <TableHead className="font-medium text-gray-700">
+                  Vagas
+                </TableHead>
+                <TableHead className="font-medium text-gray-700">
+                  Data Criação
+                </TableHead>
                 <TableHead className="w-12" />
               </TableRow>
             </TableHeader>
@@ -232,41 +269,96 @@ export function CompanyDashboard({
           {totalPages > 1 && filteredPartnerships.length > 0 && (
             <div className="flex flex-col gap-4 px-6 py-4 border-t border-gray-200 bg-gray-50/30 sm:flex-row sm:items-center sm:justify-between">
               <div className="text-sm text-gray-600">
-                Mostrando {(currentPage - 1) * itemsPerPage + 1} a {Math.min(currentPage * itemsPerPage, filteredPartnerships.length)} de {filteredPartnerships.length} empresas
+                Mostrando {(currentPage - 1) * itemsPerPage + 1} a{" "}
+                {Math.min(
+                  currentPage * itemsPerPage,
+                  filteredPartnerships.length
+                )}{" "}
+                de {filteredPartnerships.length} empresas
               </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-                  disabled={currentPage === 1}
-                  className="border-gray-200"
-                >
-                  Anterior
-                </Button>
-                <div className="flex items-center gap-1">
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious
+                      href="#"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setCurrentPage((prev) => Math.max(1, prev - 1));
+                      }}
+                      aria-disabled={currentPage === 1}
+                      className={
+                        currentPage === 1
+                          ? "pointer-events-none opacity-50"
+                          : undefined
+                      }
+                    />
+                  </PaginationItem>
+                  {visiblePages[0] > 1 && (
+                    <>
+                      <PaginationItem>
+                        <PaginationLink
+                          href="#"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setCurrentPage(1);
+                          }}
+                        >
+                          1
+                        </PaginationLink>
+                      </PaginationItem>
+                      {visiblePages[0] > 2 && <PaginationEllipsis />}
+                    </>
+                  )}
                   {visiblePages.map((page) => (
-                    <Button
-                      key={page}
-                      variant={currentPage === page ? "default" : "ghost"}
-                      size="sm"
-                      onClick={() => setCurrentPage(page)}
-                      className="w-8 h-8 p-0"
-                    >
-                      {page}
-                    </Button>
+                    <PaginationItem key={page}>
+                      <PaginationLink
+                        href="#"
+                        isActive={currentPage === page}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setCurrentPage(page);
+                        }}
+                      >
+                        {page}
+                      </PaginationLink>
+                    </PaginationItem>
                   ))}
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
-                  disabled={currentPage === totalPages}
-                  className="border-gray-200"
-                >
-                  Próxima
-                </Button>
-              </div>
+                  {visiblePages[visiblePages.length - 1] < totalPages && (
+                    <>
+                      {visiblePages[visiblePages.length - 1] <
+                        totalPages - 1 && <PaginationEllipsis />}
+                      <PaginationItem>
+                        <PaginationLink
+                          href="#"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setCurrentPage(totalPages);
+                          }}
+                        >
+                          {totalPages}
+                        </PaginationLink>
+                      </PaginationItem>
+                    </>
+                  )}
+                  <PaginationItem>
+                    <PaginationNext
+                      href="#"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setCurrentPage((prev) =>
+                          Math.min(totalPages, prev + 1)
+                        );
+                      }}
+                      aria-disabled={currentPage === totalPages}
+                      className={
+                        currentPage === totalPages
+                          ? "pointer-events-none opacity-50"
+                          : undefined
+                      }
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
             </div>
           )}
         </div>

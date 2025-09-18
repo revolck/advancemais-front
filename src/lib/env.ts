@@ -166,5 +166,11 @@ export function buildApiUrl(endpoint: string): string {
     ? env.apiBaseUrl.slice(0, -1)
     : env.apiBaseUrl;
 
+  // Avoid double /api when base already includes "/api" and the endpoint also starts with "api/"
+  // Example: base = https://api.domain.com/api and endpoint = /api/v1/empresas -> https://api.domain.com/api/v1/empresas
+  if (cleanBaseUrl.endsWith("/api") && cleanEndpoint.startsWith("api/")) {
+    return `${cleanBaseUrl}/${cleanEndpoint.slice(4)}`; // remove leading "api/" from endpoint
+  }
+
   return `${cleanBaseUrl}/${cleanEndpoint}`;
 }

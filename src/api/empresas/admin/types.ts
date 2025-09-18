@@ -78,6 +78,9 @@ export interface ListAdminCompaniesParams {
   page?: number;
   pageSize?: number;
   search?: string;
+  // optional filters (backend may ignore unknown params)
+  planNames?: string[]; // by plan.nome
+  planTypes?: AdminCompanyPlanType[]; // e.g., "parceiro", "30_dias", etc.
 }
 
 export interface AdminCompanyPlanPayload {

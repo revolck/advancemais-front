@@ -2,12 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { listAdminCompanies } from "@/api/empresas";
-import { env, apiConfig } from "@/lib/env";
-import {
-  COMPANY_DASHBOARD_CONFIG,
-  DEFAULT_COMPANY_PAGINATION,
-  MOCK_COMPANY_PARTNERSHIPS,
-} from "../constants";
+import { apiConfig } from "@/lib/env";
+import { COMPANY_DASHBOARD_CONFIG, DEFAULT_COMPANY_PAGINATION } from "../constants";
 import type {
   Partnership,
   UseCompanyDashboardDataOptions,
@@ -63,6 +59,8 @@ function buildParams(
     page: override?.page ?? base?.page ?? 1,
     pageSize: override?.pageSize ?? base?.pageSize ?? pageSize,
     search: override?.search ?? base?.search,
+    planNames: override?.planNames ?? base?.planNames,
+    planTypes: override?.planTypes ?? base?.planTypes,
   };
 }
 
@@ -144,25 +142,13 @@ export function useCompanyDashboardData(
         setError(message);
         onError?.(message);
 
-        if (env.apiFallback === "mock") {
-          setPartnerships(MOCK_COMPANY_PARTNERSHIPS);
-          setPagination({
-            ...DEFAULT_COMPANY_PAGINATION,
-            page: 1,
-            pageSize,
-            total: MOCK_COMPANY_PARTNERSHIPS.length,
-            totalPages: Math.ceil(MOCK_COMPANY_PARTNERSHIPS.length / pageSize) || 0,
-          });
-          return MOCK_COMPANY_PARTNERSHIPS;
-        }
-
         throw err;
       } finally {
         window.clearTimeout(timeoutId);
         setIsLoading(false);
       }
     },
-    [enabled, onError, onSuccess, pageSize, partnerships],
+    [enabled, onError, onSuccess, pageSize],
   );
 
   useEffect(() => {

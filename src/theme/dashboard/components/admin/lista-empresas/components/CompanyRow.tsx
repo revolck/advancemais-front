@@ -10,7 +10,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { TableRow, TableCell } from "@/components/ui/table";
+import { Progress } from "@/components/ui/progress";
 import type { Partnership } from "../types";
+import { TRIAL_PARTNERSHIP_TYPES } from "../constants";
 
 interface CompanyRowProps {
   partnership: Partnership;
@@ -49,14 +51,22 @@ function getPartnershipBadge(partnership: Partnership) {
   if (partnership.tipo === "parceiro" || partnership.empresa.parceira) {
     return (
       <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200">
-        Plano parceiro
+        Parceira
+      </Badge>
+    );
+  }
+
+  if (partnership.tipo && TRIAL_PARTNERSHIP_TYPES.includes(partnership.tipo)) {
+    return (
+      <Badge className="bg-amber-100 text-amber-800 border-amber-200">
+        Teste
       </Badge>
     );
   }
 
   return (
     <Badge variant="secondary" className="text-xs">
-      Plano mensal
+      Mensal
     </Badge>
   );
 }
@@ -64,6 +74,7 @@ function getPartnershipBadge(partnership: Partnership) {
 export const CompanyRow: React.FC<CompanyRowProps> = ({ partnership }) => {
   const vagasTotal = partnership.plano.quantidadeVagas ?? 0;
   const vagasPublicadas = partnership.plano.vagasPublicadas ?? partnership.raw?.vagas?.publicadas ?? 0;
+  const percent = vagasTotal > 0 ? Math.min(100, Math.round((vagasPublicadas / vagasTotal) * 100)) : 0;
 
   return (
     <TableRow className="border-gray-100 hover:bg-gray-50/50 transition-colors">
@@ -126,9 +137,13 @@ export const CompanyRow: React.FC<CompanyRowProps> = ({ partnership }) => {
       </TableCell>
       <TableCell>{getPartnershipBadge(partnership)}</TableCell>
       <TableCell>
-        <span className="text-sm text-gray-600">
-          {vagasPublicadas}/{vagasTotal}
-        </span>
+        <div className="min-w-[120px]">
+          <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
+            <span>{vagasPublicadas}/{vagasTotal}</span>
+            <span>{percent}%</span>
+          </div>
+          <Progress value={percent} />
+        </div>
       </TableCell>
       <TableCell>
         <span className="text-sm text-gray-600">
