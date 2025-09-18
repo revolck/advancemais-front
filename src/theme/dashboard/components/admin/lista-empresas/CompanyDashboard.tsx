@@ -19,41 +19,71 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { CompanyRow, CompanyTableSkeleton, EmptyState } from "./components";
-import { COMPANY_DASHBOARD_CONFIG, TRIAL_PARTNERSHIP_TYPES } from "./constants";
+import { COMPANY_DASHBOARD_CONFIG } from "./constants";
 import { useCompanyDashboardData } from "./hooks/useCompanyDashboardData";
 import type { CompanyDashboardProps } from "./types";
 import { FilterBar } from "@/components/ui/custom";
 import type { FilterField } from "@/components/ui/custom/filters";
-// import type { AdminCompanyPlanType } from "@/api/empresas";
 
 export function CompanyDashboard({
   className,
   partnerships: partnershipsProp,
   fetchFromApi = true,
   itemsPerPage: itemsPerPageProp,
-  pageSize,
+  pageSize: pageSizeProp,
   onDataLoaded,
   onError,
 }: CompanyDashboardProps) {
-  const itemsPerPage =
-    itemsPerPageProp ?? COMPANY_DASHBOARD_CONFIG.itemsPerPage;
+  const defaultPageSize =
+    pageSizeProp ??
+    itemsPerPageProp ??
+    COMPANY_DASHBOARD_CONFIG.defaultPageSize;
   const shouldFetch = fetchFromApi && !partnershipsProp;
+
+  const [pageSize, setPageSize] = useState(defaultPageSize);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedPlans, setSelectedPlans] = useState<string[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const searchTermRef = useRef(searchTerm);
+  const selectedPlansRef = useRef<string[]>(selectedPlans);
+  const pageSizeRef = useRef(pageSize);
+  const hasFetchedRef = useRef(false);
+
+  useEffect(() => {
+    searchTermRef.current = searchTerm;
+  }, [searchTerm]);
+
+  useEffect(() => {
+    selectedPlansRef.current = selectedPlans;
+  }, [selectedPlans]);
+
+  useEffect(() => {
+    pageSizeRef.current = pageSize;
+  }, [pageSize]);
 
   const {
     partnerships: fetchedPartnerships,
+    pagination,
     isLoading,
     error,
     refetch,
   } = useCompanyDashboardData({
-    enabled: false,
-    pageSize: pageSize ?? COMPANY_DASHBOARD_CONFIG.api.pageSize,
+    enabled: shouldFetch,
+    pageSize,
+    autoFetch: false,
     onSuccess: (data, response) => onDataLoaded?.(data, response),
     onError,
   });
-
-  const filtersRef = useRef({ searchTerm: "", selectedPlans: [] as string[] });
 
   useEffect(() => {
     if (partnershipsProp) {
@@ -61,16 +91,35 @@ export function CompanyDashboard({
     }
   }, [onDataLoaded, partnershipsProp]);
 
-  const partnerships = partnershipsProp ?? fetchedPartnerships;
-
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedPlans, setSelectedPlans] = useState<string[]>([]);
-  const [currentPage, setCurrentPage] = useState(1);
+  useEffect(() => {
+    if (!shouldFetch) {
+      setCurrentPage(1);
+    }
+  }, [searchTerm, selectedPlans, shouldFetch]);
 
   useEffect(() => {
-    setCurrentPage(1);
-    filtersRef.current = { searchTerm, selectedPlans };
-  }, [searchTerm, selectedPlans]);
+    if (!shouldFetch) {
+      hasFetchedRef.current = false;
+    }
+  }, [shouldFetch]);
+
+  useEffect(() => {
+    if (shouldFetch && pagination?.page) {
+      setCurrentPage(pagination.page);
+    }
+  }, [pagination?.page, shouldFetch]);
+
+  useEffect(() => {
+    if (
+      shouldFetch &&
+      pagination?.pageSize &&
+      pagination.pageSize !== pageSize
+    ) {
+      setPageSize(pagination.pageSize);
+    }
+  }, [pagination?.pageSize, shouldFetch, pageSize]);
+
+  const partnerships = partnershipsProp ?? fetchedPartnerships;
 
   const uniquePlans = useMemo(() => {
     const names = partnerships
@@ -81,6 +130,10 @@ export function CompanyDashboard({
   }, [partnerships]);
 
   const filteredPartnerships = useMemo(() => {
+    if (shouldFetch) {
+      return partnerships;
+    }
+
     const query = searchTerm.trim().toLowerCase();
 
     return partnerships.filter((partnership) => {
@@ -98,26 +151,139 @@ export function CompanyDashboard({
 
       return matchesSearch && matchesPlan;
     });
-  }, [partnerships, selectedPlans, searchTerm]);
+  }, [partnerships, searchTerm, selectedPlans, shouldFetch]);
 
-  const totalPages = Math.max(
-    1,
-    Math.ceil(filteredPartnerships.length / itemsPerPage)
+  const displayedPartnerships = useMemo(() => {
+    if (shouldFetch) {
+      return filteredPartnerships;
+    }
+
+    const start = (currentPage - 1) * pageSize;
+    const end = start + pageSize;
+    return filteredPartnerships.slice(start, end);
+  }, [filteredPartnerships, currentPage, pageSize, shouldFetch]);
+
+  const totalItems = shouldFetch
+    ? pagination?.total ?? 0
+    : filteredPartnerships.length;
+
+  const totalPages = shouldFetch
+    ? Math.max(1, pagination?.totalPages ?? 1)
+    : Math.max(1, Math.ceil(totalItems / pageSize));
+
+  useEffect(() => {
+    if (!shouldFetch && currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages, shouldFetch]);
+
+  const isLoadingData = shouldFetch && isLoading;
+
+  const remainingItems = shouldFetch
+    ? Math.max(totalItems - (currentPage - 1) * pageSizeRef.current, 0)
+    : 0;
+
+  const visibleCount = shouldFetch
+    ? totalItems === 0
+      ? 0
+      : isLoadingData
+        ? Math.min(pageSizeRef.current, remainingItems || pageSizeRef.current)
+        : partnerships.length
+    : displayedPartnerships.length;
+
+  const infoLabel = useMemo(() => {
+    if (isLoadingData && totalItems === 0) {
+      return "Carregando empresas...";
+    }
+    if (totalItems > 0) {
+      return `Mostrando ${visibleCount} de ${totalItems} empresas`;
+    }
+    return "Nenhuma empresa encontrada";
+  }, [isLoadingData, totalItems, visibleCount]);
+
+  const filterFields: FilterField[] = useMemo(
+    () => [
+      {
+        key: "plan",
+        label: "Planos",
+        mode: "multiple",
+        options: uniquePlans.map((p) => ({ value: p, label: p })),
+        placeholder: "Selecione planos",
+      },
+    ],
+    [uniquePlans],
+  );
+
+  const filterValues = useMemo(
+    () => ({
+      plan: selectedPlans,
+    }),
+    [selectedPlans],
+  );
+
+  const runFetch = useCallback(
+    (pageToLoad = 1, sizeOverride?: number) => {
+      if (!shouldFetch) return;
+      hasFetchedRef.current = true;
+      const effectiveSize = sizeOverride ?? pageSizeRef.current;
+      setCurrentPage(pageToLoad);
+      refetch({
+        page: pageToLoad,
+        pageSize: effectiveSize,
+        search:
+          searchTermRef.current.trim().length > 0
+            ? searchTermRef.current.trim()
+            : undefined,
+        planNames:
+          selectedPlansRef.current.length > 0
+            ? selectedPlansRef.current
+            : undefined,
+      }).catch(() => {});
+    },
+    [refetch, shouldFetch],
   );
 
   useEffect(() => {
-    if (currentPage > totalPages) {
-      setCurrentPage(totalPages);
-    }
-  }, [currentPage, totalPages]);
+    if (!shouldFetch || hasFetchedRef.current) return;
+    runFetch(1);
+  }, [shouldFetch, runFetch]);
 
-  const paginatedPartnerships = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage;
-    const end = start + itemsPerPage;
-    return filteredPartnerships.slice(start, end);
-  }, [filteredPartnerships, currentPage, itemsPerPage]);
+  const handlePageSizeChange = useCallback(
+    (value: string) => {
+      const numericValue = Number(value);
+      if (!Number.isFinite(numericValue) || numericValue <= 0) {
+        return;
+      }
 
-  // métricas removidas a pedido
+      if (numericValue === pageSizeRef.current) return;
+
+      setPageSize(numericValue);
+      if (shouldFetch) {
+        searchTermRef.current = searchTerm;
+        selectedPlansRef.current = selectedPlans;
+        runFetch(1, numericValue);
+      } else {
+        setCurrentPage(1);
+      }
+    },
+    [runFetch, searchTerm, selectedPlans, shouldFetch],
+  );
+
+  const handlePageChange = useCallback(
+    (page: number) => {
+      if (page < 1 || page > totalPages) return;
+      if (shouldFetch) {
+        runFetch(page);
+      } else {
+        setCurrentPage(page);
+      }
+    },
+    [runFetch, shouldFetch, totalPages],
+  );
+
+  const handleRetry = useCallback(() => {
+    runFetch(currentPage);
+  }, [runFetch, currentPage]);
 
   const visiblePages = useMemo(() => {
     const pages: number[] = [];
@@ -139,46 +305,10 @@ export function CompanyDashboard({
     return pages;
   }, [currentPage, totalPages]);
 
-  const isLoadingData = shouldFetch && isLoading;
-  const showEmptyState = !isLoadingData && filteredPartnerships.length === 0;
+  const showEmptyState =
+    !isLoadingData && totalItems === 0 && displayedPartnerships.length === 0;
 
-  const filterFields: FilterField[] = useMemo(
-    () => [
-      {
-        key: "plan",
-        label: "Planos",
-        mode: "multiple",
-        options: uniquePlans.map((p) => ({ value: p, label: p })),
-        placeholder: "Selecione planos",
-      },
-    ],
-    [uniquePlans]
-  );
-
-  const filterValues = useMemo(
-    () => ({
-      plan: selectedPlans,
-    }),
-    [selectedPlans]
-  );
-
-  const runFetch = useCallback(
-    (pageToLoad = 1) => {
-      if (!shouldFetch) return;
-      const { searchTerm: latestSearch, selectedPlans: latestPlans } = filtersRef.current;
-      refetch({
-        page: pageToLoad,
-        search: latestSearch ? latestSearch.trim() || undefined : undefined,
-        planNames: latestPlans.length ? latestPlans : undefined,
-      }).catch(() => {});
-    },
-    [refetch, shouldFetch],
-  );
-
-  useEffect(() => {
-    if (!shouldFetch) return;
-    runFetch(1);
-  }, [shouldFetch, runFetch]);
+  const pageSizeOptions = COMPANY_DASHBOARD_CONFIG.pageSizeOptions;
 
   return (
     <div className={cn("min-h-full", className)}>
@@ -195,15 +325,25 @@ export function CompanyDashboard({
             fields={filterFields}
             values={filterValues}
             onChange={(key, value) => {
-              if (key === "plan") setSelectedPlans((value as string[]) ?? []);
-              setCurrentPage(1);
+              if (key === "plan") {
+                const values = (value as string[]) ?? [];
+                setSelectedPlans(values);
+                selectedPlansRef.current = values;
+                setCurrentPage(1);
+                if (shouldFetch) {
+                  runFetch(1);
+                }
+              }
             }}
             onClearAll={() => {
               setSearchTerm("");
               setSelectedPlans([]);
               setCurrentPage(1);
-              filtersRef.current = { searchTerm: "", selectedPlans: [] };
-              runFetch(1);
+              if (shouldFetch) {
+                searchTermRef.current = "";
+                selectedPlansRef.current = [];
+                runFetch(1);
+              }
             }}
             search={{
               label: "Pesquisar empresa",
@@ -218,10 +358,8 @@ export function CompanyDashboard({
                   size="sm"
                   onClick={() => {
                     setCurrentPage(1);
-                    filtersRef.current = {
-                      searchTerm,
-                      selectedPlans,
-                    };
+                    searchTermRef.current = searchTerm;
+                    selectedPlansRef.current = selectedPlans;
                     runFetch(1);
                   }}
                   disabled={isLoadingData}
@@ -238,7 +376,7 @@ export function CompanyDashboard({
               <Button
                 variant="link"
                 size="sm"
-                onClick={() => runFetch(currentPage)}
+                onClick={handleRetry}
                 className="p-0 h-auto"
               >
                 Tentar novamente
@@ -278,107 +416,123 @@ export function CompanyDashboard({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoadingData && <CompanyTableSkeleton rows={5} />}
+              {isLoadingData && <CompanyTableSkeleton rows={pageSize} />}
               {!isLoadingData &&
-                paginatedPartnerships.map((partnership) => (
+                displayedPartnerships.map((partnership) => (
                   <CompanyRow key={partnership.id} partnership={partnership} />
                 ))}
             </TableBody>
           </Table>
 
-          {totalPages > 1 && filteredPartnerships.length > 0 && (
+          {(totalItems > 0 || isLoadingData) && (
             <div className="flex flex-col gap-4 px-6 py-4 border-t border-gray-200 bg-gray-50/30 sm:flex-row sm:items-center sm:justify-between">
-              <div className="text-sm text-gray-600">
-                Mostrando {(currentPage - 1) * itemsPerPage + 1} a{" "}
-                {Math.min(
-                  currentPage * itemsPerPage,
-                  filteredPartnerships.length
-                )}{" "}
-                de {filteredPartnerships.length} empresas
+              <div className="flex flex-col gap-2 text-sm text-gray-600 sm:flex-row sm:items-center sm:gap-4">
+                <div className="flex items-center gap-2">
+                  <span>Mostrar</span>
+                  <Select
+                    value={String(pageSize)}
+                    onValueChange={handlePageSizeChange}
+                    disabled={isLoadingData}
+                  >
+                    <SelectTrigger className="w-20">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {pageSizeOptions.map((option) => (
+                        <SelectItem key={option} value={String(option)}>
+                          {option}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <span>por página</span>
+                </div>
+                <div>{infoLabel}</div>
               </div>
-              <Pagination>
-                <PaginationContent>
-                  <PaginationItem>
-                    <PaginationPrevious
-                      href="#"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        setCurrentPage((prev) => Math.max(1, prev - 1));
-                      }}
-                      aria-disabled={currentPage === 1}
-                      className={
-                        currentPage === 1
-                          ? "pointer-events-none opacity-50"
-                          : undefined
-                      }
-                    />
-                  </PaginationItem>
-                  {visiblePages[0] > 1 && (
-                    <>
-                      <PaginationItem>
-                        <PaginationLink
-                          href="#"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            setCurrentPage(1);
-                          }}
-                        >
-                          1
-                        </PaginationLink>
-                      </PaginationItem>
-                      {visiblePages[0] > 2 && <PaginationEllipsis />}
-                    </>
-                  )}
-                  {visiblePages.map((page) => (
-                    <PaginationItem key={page}>
-                      <PaginationLink
+
+              {totalPages > 1 && (
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious
                         href="#"
-                        isActive={currentPage === page}
                         onClick={(e) => {
                           e.preventDefault();
-                          setCurrentPage(page);
+                          handlePageChange(currentPage - 1);
                         }}
-                      >
-                        {page}
-                      </PaginationLink>
+                        aria-disabled={currentPage === 1}
+                        className={
+                          currentPage === 1
+                            ? "pointer-events-none opacity-50"
+                            : undefined
+                        }
+                      />
                     </PaginationItem>
-                  ))}
-                  {visiblePages[visiblePages.length - 1] < totalPages && (
-                    <>
-                      {visiblePages[visiblePages.length - 1] <
-                        totalPages - 1 && <PaginationEllipsis />}
-                      <PaginationItem>
+                    {visiblePages[0] > 1 && (
+                      <>
+                        <PaginationItem>
+                          <PaginationLink
+                            href="#"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              handlePageChange(1);
+                            }}
+                          >
+                            1
+                          </PaginationLink>
+                        </PaginationItem>
+                        {visiblePages[0] > 2 && <PaginationEllipsis />}
+                      </>
+                    )}
+                    {visiblePages.map((page) => (
+                      <PaginationItem key={page}>
                         <PaginationLink
                           href="#"
+                          isActive={currentPage === page}
                           onClick={(e) => {
                             e.preventDefault();
-                            setCurrentPage(totalPages);
+                            handlePageChange(page);
                           }}
                         >
-                          {totalPages}
+                          {page}
                         </PaginationLink>
                       </PaginationItem>
-                    </>
-                  )}
-                  <PaginationItem>
-                    <PaginationNext
-                      href="#"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        setCurrentPage((prev) =>
-                          Math.min(totalPages, prev + 1)
-                        );
-                      }}
-                      aria-disabled={currentPage === totalPages}
-                      className={
-                        currentPage === totalPages
-                          ? "pointer-events-none opacity-50"
-                          : undefined
-                      }
-                    />
-                  </PaginationItem>
-                </PaginationContent>
-              </Pagination>
+                    ))}
+                    {visiblePages[visiblePages.length - 1] < totalPages && (
+                      <>
+                        {visiblePages[visiblePages.length - 1] <
+                          totalPages - 1 && <PaginationEllipsis />}
+                        <PaginationItem>
+                          <PaginationLink
+                            href="#"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              handlePageChange(totalPages);
+                            }}
+                          >
+                            {totalPages}
+                          </PaginationLink>
+                        </PaginationItem>
+                      </>
+                    )}
+                    <PaginationItem>
+                      <PaginationNext
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handlePageChange(currentPage + 1);
+                        }}
+                        aria-disabled={currentPage === totalPages}
+                        className={
+                          currentPage === totalPages
+                            ? "pointer-events-none opacity-50"
+                            : undefined
+                        }
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              )}
             </div>
           )}
         </div>

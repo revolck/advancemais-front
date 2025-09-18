@@ -80,6 +80,7 @@ export interface UseCompanyDashboardDataOptions {
   initialParams?: ListAdminCompaniesParams;
   onSuccess?: (data: Partnership[], response: ListAdminCompaniesResponse) => void;
   onError?: (message: string) => void;
+  autoFetch?: boolean;
 }
 
 export interface UseCompanyDashboardDataReturn {
