@@ -24,7 +24,7 @@ interface MultiSelectFilterProps {
   selectedValues: string[];
   onSelectionChange: (values: string[]) => void;
   showApplyButton?: boolean;
-  onApply?: () => void;
+  onApply?: () => Promise<void> | void;
   className?: string;
 }
 
@@ -40,7 +40,8 @@ export function MultiSelectFilter({
 }: MultiSelectFilterProps) {
   const [isOpen, setIsOpen] = React.useState(false);
   const [temp, setTemp] = React.useState<string[]>(selectedValues);
-  // Largura fixa via classes para evitar medir e causar loops do Popper
+  const [isApplying, setIsApplying] = React.useState(false);
+  // Mantém a largura do conteúdo alinhada ao trigger sem medições manuais
 
   React.useEffect(() => {
     if (!isOpen) return;
@@ -52,6 +53,12 @@ export function MultiSelectFilter({
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
+
+  React.useEffect(() => {
+    if (isOpen) return;
+    setTemp(selectedValues);
+    setIsApplying(false);
+  }, [isOpen, selectedValues]);
 
   const toggle = (value: string) => {
     if (!showApplyButton) {
@@ -76,17 +83,37 @@ export function MultiSelectFilter({
     return `${selectedValues.length} selecionados`;
   }, [options, placeholder, selectedValues]);
 
-  const apply = () => {
-    if (showApplyButton) onSelectionChange(temp);
-    onApply?.();
-    setIsOpen(false);
+  const apply = async () => {
+    if (!showApplyButton || temp.length === 0) return;
+
+    setIsApplying(true);
+    try {
+      onSelectionChange(temp);
+      await Promise.resolve(onApply?.());
+      setIsOpen(false);
+    } finally {
+      setIsApplying(false);
+    }
   };
+
+  const handleClear = () => {
+    if (showApplyButton) {
+      if (temp.length === 0 && selectedValues.length === 0) return;
+      setTemp([]);
+      onSelectionChange([]);
+    } else {
+      if (selectedValues.length === 0) return;
+      onSelectionChange([]);
+    }
+  };
+
+  const checkedCount = showApplyButton ? temp.length : selectedValues.length;
 
   const checkboxId = (v: string) =>
     `${title.replace(/\s+/g, "-").toLowerCase()}-${v}`;
 
   return (
-    <div className={cn("w-full md:max-w-xs", className)}>
+    <div className={cn("w-full", className)}>
       <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
         <DropdownMenuTrigger asChild>
           <Button
@@ -124,16 +151,34 @@ export function MultiSelectFilter({
         </DropdownMenuTrigger>
         <DropdownMenuContent
           className={cn(
-            "p-0 w-full md:w-[360px] lg:w-[400px]",
+            "p-0",
             "bg-popover border-border/60 rounded-[10px] shadow-lg",
             "animate-in fade-in-0 zoom-in-95 duration-200"
           )}
+          style={{
+            width: "var(--radix-dropdown-menu-trigger-width)",
+            minWidth: "var(--radix-dropdown-menu-trigger-width)",
+          }}
           align="start"
           sideOffset={8}
         >
           <div className="p-4">
-            <div className="text-sm font-semibold text-foreground mb-3 px-1">
-              {title}
+            <div className="mb-3 flex items-center justify-between gap-3 px-1">
+              <span className="text-sm font-semibold text-foreground">
+                {title}
+              </span>
+              <button
+                type="button"
+                onClick={handleClear}
+                disabled={checkedCount === 0}
+                className={cn(
+                  "text-sm font-medium transition-colors",
+                  "text-blue-600 hover:text-blue-500",
+                  "disabled:text-muted-foreground disabled:cursor-not-allowed"
+                )}
+              >
+                Limpar
+              </button>
             </div>
 
             <div className="h-48 overflow-y-auto overflow-x-hidden space-y-0.5">
@@ -179,6 +224,9 @@ export function MultiSelectFilter({
                   variant="primary"
                   size="md"
                   className="w-full h-10 rounded-[10px]"
+                  disabled={temp.length === 0 || isApplying}
+                  isLoading={isApplying}
+                  loadingText="Aplicando..."
                 >
                   Aplicar
                 </ButtonCustom>

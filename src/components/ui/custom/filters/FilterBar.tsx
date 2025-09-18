@@ -97,7 +97,7 @@ export function FilterBar({
                   selectedValues={(values[field.key] as string[]) || []}
                   onSelectionChange={(val) => onChange(field.key, val)}
                   showApplyButton
-                  className="w-full md:w-[360px] lg:w-[400px]"
+                  className="w-full"
                 />
               </div>
             );
