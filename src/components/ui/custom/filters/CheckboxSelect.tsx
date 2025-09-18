@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { ChevronsUpDownIcon } from "lucide-react";
 import { Label } from "@/components/ui/label";
@@ -33,11 +33,30 @@ export function CheckboxSelect({
   const triggerRef = useRef<HTMLButtonElement>(null);
   const [contentW, setContentW] = useState<number | undefined>(undefined);
 
+  const updateContentWidth = useCallback(() => {
+    if (triggerRef.current) {
+      setContentW(triggerRef.current.offsetWidth);
+    }
+  }, []);
+
   useEffect(() => {
     if (!open) return;
     setTemp(value);
-    if (triggerRef.current) setContentW(triggerRef.current.offsetWidth);
   }, [open, value]);
+
+  useLayoutEffect(() => {
+    if (!open) return;
+    updateContentWidth();
+    const triggerEl = triggerRef.current;
+    if (!triggerEl || typeof ResizeObserver === "undefined") return;
+
+    const observer = new ResizeObserver(updateContentWidth);
+    observer.observe(triggerEl);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [open, updateContentWidth]);
 
   const selectedLabels = useMemo(() => {
     const map = new Map(options.map((o) => [o.value, o.label] as const));
@@ -82,7 +101,10 @@ export function CheckboxSelect({
             <ChevronsUpDownIcon className="size-4 opacity-50" />
           </button>
         </PopoverTrigger>
-        <PopoverContent className="p-0 w-[--radix-popover-trigger-width] border-gray-500/20 rounded-md shadow-lg" style={{ width: contentW }}>
+        <PopoverContent
+          className="p-0 w-[var(--radix-popover-trigger-width)] border-gray-500/20 rounded-md shadow-lg"
+          style={{ width: contentW ? `${contentW}px` : undefined }}
+        >
           <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground sticky top-0 z-10 bg-popover/80 backdrop-blur supports-[backdrop-filter]:bg-popover/60 border-b">
             {label ? `Filtrar por ${label.toLowerCase()}` : "Filtros"}
           </div>
@@ -111,7 +133,7 @@ export function CheckboxSelect({
             <Button type="button" variant="ghost" size="sm" onClick={clear} className="text-muted-foreground">
               Limpar
             </Button>
-            <Button type="button" size="sm" onClick={apply} className="ml-auto">
+            <Button type="button" size="sm" onClick={apply} className="ml-auto" disabled={temp.length === 0}>
               Aplicar
             </Button>
           </div>
