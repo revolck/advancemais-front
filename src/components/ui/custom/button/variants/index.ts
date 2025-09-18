@@ -15,9 +15,12 @@ export const buttonCustomVariants = cva(
           "!bg-[var(--primary-color)] hover:bg-[var(--primary-color)] text-white !rounded-md relative pr-12 pl-4 font-semibold",
         secondary:
           "!bg-[var(--secondary-color)] !hover:bg-[var(--secondary-color-hover)] text-white !rounded-md relative pr-12 pl-4 font-semibold",
+        success:
+          "!bg-[var(--global-success)] !hover:bg-[var(--global-success-hover)] text-white !rounded-md relative pr-12 pl-4 font-semibold",
         outline:
           "border border-gray-500/30 hover:border-gray-300 text-gray-700 bg-background hover:bg-gray-200 hover:text-accent-foreground rounded-md",
-        ghost: "hover:bg-accent hover:text-accent-foreground rounded-md",
+        ghost:
+          "hover:bg-gray-200 bg-gray-100/70 hover:text-accent-foreground !rounded-md",
         link: "text-primary underline-offset-4 hover:underline",
         danger: "bg-[var(--global-cor-vermelho-terra)] text-white rounded-md",
       },

@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Button } from "@/components/ui/button";
 import { ButtonCustom } from "@/components/ui/custom/button";
 import {
@@ -194,8 +200,8 @@ export function CompanyDashboard({
     ? totalItems === 0
       ? 0
       : isLoadingData
-        ? Math.min(pageSizeRef.current, remainingItems || pageSizeRef.current)
-        : partnerships.length
+      ? Math.min(pageSizeRef.current, remainingItems || pageSizeRef.current)
+      : partnerships.length
     : displayedPartnerships.length;
 
   const infoLabel = useMemo(() => {
@@ -218,14 +224,14 @@ export function CompanyDashboard({
         placeholder: "Selecione planos",
       },
     ],
-    [uniquePlans],
+    [uniquePlans]
   );
 
   const filterValues = useMemo(
     () => ({
       plan: selectedPlans,
     }),
-    [selectedPlans],
+    [selectedPlans]
   );
 
   const runFetch = useCallback(
@@ -247,7 +253,7 @@ export function CompanyDashboard({
             : undefined,
       }).catch(() => {});
     },
-    [refetch, shouldFetch],
+    [refetch, shouldFetch]
   );
 
   useEffect(() => {
@@ -273,7 +279,7 @@ export function CompanyDashboard({
         setCurrentPage(1);
       }
     },
-    [runFetch, searchTerm, selectedPlans, shouldFetch],
+    [runFetch, searchTerm, selectedPlans, shouldFetch]
   );
 
   const handlePageChange = useCallback(
@@ -285,7 +291,7 @@ export function CompanyDashboard({
         setCurrentPage(page);
       }
     },
-    [runFetch, shouldFetch, totalPages],
+    [runFetch, shouldFetch, totalPages]
   );
 
   const handleRetry = useCallback(() => {
@@ -361,8 +367,8 @@ export function CompanyDashboard({
             rightActions={
               shouldFetch ? (
                 <ButtonCustom
-                  variant="primary"
-                  size="sm"
+                  variant="ghost"
+                  size="lg"
                   onClick={() => {
                     setCurrentPage(1);
                     searchTermRef.current = searchTerm;

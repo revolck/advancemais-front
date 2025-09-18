@@ -41,17 +41,14 @@ export function MultiSelectFilter({
   const [isOpen, setIsOpen] = React.useState(false);
   const [temp, setTemp] = React.useState<string[]>(selectedValues);
   const [isApplying, setIsApplying] = React.useState(false);
-  // Mantém a largura do conteúdo alinhada ao trigger sem medições manuais
 
   React.useEffect(() => {
     if (!isOpen) return;
-    // Sincroniza seleção TEMPORÁRIA apenas quando o menu abre
     setTemp((prev) => {
       const sameLen = prev.length === selectedValues.length;
       const sameAll = sameLen && prev.every((v, i) => v === selectedValues[i]);
       return sameAll ? prev : selectedValues;
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
   React.useEffect(() => {
@@ -173,7 +170,9 @@ export function MultiSelectFilter({
                 disabled={checkedCount === 0}
                 className={cn(
                   "text-sm font-medium transition-colors",
-                  "text-blue-600 hover:text-blue-500",
+                  checkedCount > 0
+                    ? "text-[var(--secondary-color)] hover:text-[var(--secondary-color)]/90 cursor-pointer"
+                    : "text-muted-foreground",
                   "disabled:text-muted-foreground disabled:cursor-not-allowed"
                 )}
               >

@@ -27,7 +27,6 @@ export function FilterBar({
   fields,
   values,
   onChange,
-  onClearAll,
   search,
   rightActions,
 }: FilterBarProps) {

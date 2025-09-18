@@ -56,12 +56,13 @@
   --text-color: #333;
   --global-title: #2c434e;
   --global-background: #f5f8fa;
-
+  --global-success: #69bb7b;
+  --global-success-hover: #5ca56c;
   --color-blue: #00257d;
 
   /* Typography */
-  --font-family: "Nunito", ui-sans-serif, system-ui, -apple-system,
-    "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji",
+  --font-family: "Nunito", ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+    Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji",
     "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
 }
 
