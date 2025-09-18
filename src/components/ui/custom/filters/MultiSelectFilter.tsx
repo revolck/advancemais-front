@@ -147,12 +147,12 @@ export function MultiSelectFilter({
                     className={cn(
                       "flex items-center space-x-2.5 p-2 -mx-1",
                       "hover:bg-accent/50 rounded-lg transition-all duration-200",
-                      "cursor-pointer group",
+                      "group",
                       checked && "bg-blue-50/50"
                     )}
-                    onClick={() => toggle(opt.value)}
                   >
                     <CheckboxCustom
+                      id={checkboxId(opt.value)}
                       checked={checked}
                       onCheckedChange={() => toggle(opt.value)}
                       className="size-4 rounded-[6px]"

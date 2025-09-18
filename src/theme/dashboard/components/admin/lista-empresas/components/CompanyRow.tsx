@@ -18,6 +18,26 @@ interface CompanyRowProps {
   partnership: Partnership;
 }
 
+function formatCnpj(value?: string | null): string | null {
+  if (!value) return null;
+
+  const digits = value.replace(/\D/g, "").slice(0, 14);
+  if (digits.length === 0) return null;
+
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 5) {
+    return `${digits.slice(0, 2)}.${digits.slice(2)}`;
+  }
+  if (digits.length <= 8) {
+    return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5)}`;
+  }
+  if (digits.length <= 12) {
+    return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8)}`;
+  }
+
+  return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8, 12)}-${digits.slice(12)}`;
+}
+
 function formatCurrency(value?: string | null): string {
   if (!value) return "—";
 
@@ -75,6 +95,7 @@ export const CompanyRow: React.FC<CompanyRowProps> = ({ partnership }) => {
   const vagasTotal = partnership.plano.quantidadeVagas ?? 0;
   const vagasPublicadas = partnership.plano.vagasPublicadas ?? partnership.raw?.vagas?.publicadas ?? 0;
   const percent = vagasTotal > 0 ? Math.min(100, Math.round((vagasPublicadas / vagasTotal) * 100)) : 0;
+  const formattedCnpj = formatCnpj(partnership.empresa.cnpj);
 
   return (
     <TableRow className="border-gray-100 hover:bg-gray-50/50 transition-colors">
@@ -98,9 +119,9 @@ export const CompanyRow: React.FC<CompanyRowProps> = ({ partnership }) => {
                 {partnership.empresa.codUsuario}
               </code>
             </div>
-            {partnership.empresa.cnpj && (
+            {formattedCnpj && (
               <div className="text-xs text-gray-500 font-mono">
-                {partnership.empresa.cnpj}
+                {formattedCnpj}
               </div>
             )}
           </div>
