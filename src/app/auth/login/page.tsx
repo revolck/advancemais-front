@@ -45,8 +45,10 @@ const SignInPageDemo = () => {
 
   const handleSignIn = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    const formElement = event.currentTarget;
+
     startTransition(async () => {
-      const formData = new FormData(event.currentTarget);
+      const formData = new FormData(formElement);
       const { documento, senha, rememberMe } = Object.fromEntries(
         formData.entries()
       ) as {
@@ -68,6 +70,7 @@ const SignInPageDemo = () => {
               body: JSON.stringify({ documento: documentoLimpo, senha }),
             },
             retries: 1,
+            skipLogoutOn401: true,
           }
         );
         let userRole: UserRole | undefined;
@@ -123,9 +126,18 @@ const SignInPageDemo = () => {
         }, 1000);
       } catch (error) {
         console.error("Erro ao fazer login:", error);
-        toastCustom.error(
-          "Não foi possível realizar o login. Verifique suas credenciais."
-        );
+        const status = (error as any)?.status as number | undefined;
+        let message = "Não foi possível realizar o login. Verifique suas credenciais.";
+
+        if (status === 404) {
+          message = "Usuário não encontrado. Verifique suas credenciais.";
+        } else if (status === 401) {
+          message = "Credenciais inválidas. Verifique e tente novamente.";
+        } else if (error instanceof Error && error.message) {
+          message = error.message;
+        }
+
+        toastCustom.error(message);
       }
     });
   };

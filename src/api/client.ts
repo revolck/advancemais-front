@@ -8,6 +8,11 @@ interface FetchOptions<T> {
   cache?: "no-cache" | "short" | "medium" | "long";
   retries?: number;
   timeout?: number;
+  /**
+   * Evita executar o fluxo de logout automático quando a API retorna 401.
+   * Útil para rotas públicas como login, onde o redirect quebra a UX.
+   */
+  skipLogoutOn401?: boolean;
 }
 
 // Cache em memória simples
@@ -35,6 +40,7 @@ export async function apiFetch<T = unknown>(
     cache = "short",
     retries = 3,
     timeout = 15000,
+    skipLogoutOn401 = false,
   }: FetchOptions<T> = {}
 ): Promise<T> {
   const url = endpoint.startsWith("http") ? endpoint : buildApiUrl(endpoint);
@@ -90,7 +96,7 @@ export async function apiFetch<T = unknown>(
 
         const errorObj = new Error(errorMessage);
         (errorObj as any).status = res.status;
-        if (res.status === 401) {
+        if (res.status === 401 && !skipLogoutOn401) {
           logoutUser();
         }
         throw errorObj;
