@@ -32,10 +32,16 @@ function formatCnpj(value?: string | null): string | null {
     return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5)}`;
   }
   if (digits.length <= 12) {
-    return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8)}`;
+    return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(
+      5,
+      8
+    )}/${digits.slice(8)}`;
   }
 
-  return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8, 12)}-${digits.slice(12)}`;
+  return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(
+    5,
+    8
+  )}/${digits.slice(8, 12)}-${digits.slice(12)}`;
 }
 
 function formatCurrency(value?: string | null): string {
@@ -93,8 +99,14 @@ function getPartnershipBadge(partnership: Partnership) {
 
 export const CompanyRow: React.FC<CompanyRowProps> = ({ partnership }) => {
   const vagasTotal = partnership.plano.quantidadeVagas ?? 0;
-  const vagasPublicadas = partnership.plano.vagasPublicadas ?? partnership.raw?.vagas?.publicadas ?? 0;
-  const percent = vagasTotal > 0 ? Math.min(100, Math.round((vagasPublicadas / vagasTotal) * 100)) : 0;
+  const vagasPublicadas =
+    partnership.plano.vagasPublicadas ??
+    partnership.raw?.vagas?.publicadas ??
+    0;
+  const percent =
+    vagasTotal > 0
+      ? Math.min(100, Math.round((vagasPublicadas / vagasTotal) * 100))
+      : 0;
   const formattedCnpj = formatCnpj(partnership.empresa.cnpj);
 
   return (
@@ -112,7 +124,7 @@ export const CompanyRow: React.FC<CompanyRowProps> = ({ partnership }) => {
           </Avatar>
           <div className="min-w-0">
             <div className="flex items-center gap-2 mb-1">
-              <div className="font-medium text-gray-900 truncate">
+              <div className="font-bold text-gray-900 truncate">
                 {partnership.empresa.nome}
               </div>
               <code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded font-mono text-gray-500">
@@ -141,7 +153,8 @@ export const CompanyRow: React.FC<CompanyRowProps> = ({ partnership }) => {
         <div className="flex items-center gap-1 text-sm text-gray-600">
           <MapPin className="h-3 w-3" />
           <span>
-            {partnership.empresa.cidade || "—"}/{partnership.empresa.estado || "—"}
+            {partnership.empresa.cidade || "—"}/
+            {partnership.empresa.estado || "—"}
           </span>
         </div>
       </TableCell>
@@ -160,7 +173,9 @@ export const CompanyRow: React.FC<CompanyRowProps> = ({ partnership }) => {
       <TableCell>
         <div className="min-w-[120px]">
           <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
-            <span>{vagasPublicadas}/{vagasTotal}</span>
+            <span>
+              {vagasPublicadas}/{vagasTotal}
+            </span>
             <span>{percent}%</span>
           </div>
           <Progress value={percent} />
@@ -174,7 +189,12 @@ export const CompanyRow: React.FC<CompanyRowProps> = ({ partnership }) => {
       <TableCell>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="h-8 w-8 p-0" aria-label="Ações da empresa">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 p-0"
+              aria-label="Ações da empresa"
+            >
               <MoreHorizontal className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
