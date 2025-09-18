@@ -67,11 +67,12 @@ function buildParams(
 export function useCompanyDashboardData(
   {
     enabled = true,
-    pageSize = COMPANY_DASHBOARD_CONFIG.api.pageSize,
+    pageSize = COMPANY_DASHBOARD_CONFIG.api.defaultPageSize,
     initialData,
     initialParams,
     onSuccess,
     onError,
+    autoFetch = true,
   }: UseCompanyDashboardDataOptions = {},
 ): UseCompanyDashboardDataReturn {
   const initialPagination = initialData
@@ -177,9 +178,9 @@ export function useCompanyDashboardData(
   }, [initialParams]);
 
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled || !autoFetch) return;
     fetchData(initialParamsRef.current);
-  }, [enabled, fetchData]);
+  }, [enabled, autoFetch, fetchData]);
 
   return {
     partnerships,
