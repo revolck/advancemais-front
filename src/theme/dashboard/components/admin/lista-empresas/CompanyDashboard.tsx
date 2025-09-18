@@ -34,6 +34,9 @@ import type { CompanyDashboardProps } from "./types";
 import { FilterBar } from "@/components/ui/custom";
 import type { FilterField } from "@/components/ui/custom/filters";
 
+const normalizeCnpj = (value?: string | null): string =>
+  value?.replace(/\D/g, "") ?? "";
+
 export function CompanyDashboard({
   className,
   partnerships: partnershipsProp,
@@ -135,16 +138,20 @@ export function CompanyDashboard({
     }
 
     const query = searchTerm.trim().toLowerCase();
+    const numericQuery = query.replace(/\D/g, "");
 
     return partnerships.filter((partnership) => {
       const company = partnership.empresa;
       const plan = partnership.plano;
+      const companyCnpj = company.cnpj ?? "";
+      const normalizedCnpj = normalizeCnpj(companyCnpj);
 
       const matchesSearch =
         query.length === 0 ||
         company.nome.toLowerCase().includes(query) ||
         company.codUsuario.toLowerCase().includes(query) ||
-        (company.cnpj?.toLowerCase().includes(query) ?? false);
+        companyCnpj.toLowerCase().includes(query) ||
+        (numericQuery.length > 0 && normalizedCnpj.includes(numericQuery));
 
       const matchesPlan =
         selectedPlans.length === 0 || selectedPlans.includes(plan.nome);
