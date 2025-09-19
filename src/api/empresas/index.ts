@@ -34,6 +34,8 @@ export type {
   AdminCompanyPlanSummary,
   AdminCompanyPlanType,
   AdminCompanyStatus,
+  AdminCompanyPaymentInfo,
+  AdminCompanyBanInfo,
   CreateAdminCompanyPayload,
   ListAdminCompaniesParams,
   ListAdminCompaniesResponse,

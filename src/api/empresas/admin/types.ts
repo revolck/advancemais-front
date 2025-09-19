@@ -68,6 +68,7 @@ export interface AdminCompanyListItem {
   estado?: string | null;
   criadoEm?: string | null;
   ativa: boolean;
+  status?: AdminCompanyStatus;
   parceira: boolean;
   diasTesteDisponibilizados?: number | null;
   plano?: AdminCompanyPlanSummary | null;
