@@ -17,12 +17,17 @@ describe('buildApiUrl', () => {
 describe('validateEnv', () => {
   it('throws in production when required variables are missing', async () => {
     const originalEnv = process.env.NODE_ENV
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     ;(process as any).env.NODE_ENV = 'production'
     delete process.env.NEXT_PUBLIC_API_BASE_URL
     delete process.env.NEXT_PUBLIC_BASE_URL
     vi.resetModules()
     const { validateEnv } = await import('./env')
-    expect(() => validateEnv()).toThrow(/Missing required environment variables/)
-    ;(process as any).env.NODE_ENV = originalEnv
+    try {
+      expect(() => validateEnv()).toThrow(/Missing required environment variables/)
+    } finally {
+      ;(process as any).env.NODE_ENV = originalEnv
+      warnSpy.mockRestore()
+    }
   })
 })
