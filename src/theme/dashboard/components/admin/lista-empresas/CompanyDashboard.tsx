@@ -554,7 +554,8 @@ export function CompanyDashboard({
             tone="muted"
             fullHeight
             maxContentWidth="sm"
-            illustration="userProfiles"
+            illustration="fileNotFound"
+            illustrationAlt="Ilustração de arquivo não encontrado"
             title="Nenhuma empresa encontrada"
             description="Revise os filtros aplicados ou cadastre uma nova empresa para começar a acompanhar os resultados."
             actions={

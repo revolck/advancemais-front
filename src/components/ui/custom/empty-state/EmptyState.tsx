@@ -73,17 +73,21 @@ const EmptyState = React.forwardRef<HTMLDivElement, EmptyStateProps>(
         {illustrationSrc && (
           <div
             className={cn(
-              "relative flex items-center justify-center self-center rounded-3xl bg-gradient-to-br from-gray-50 via-white to-gray-100 shadow-sm ring-1 ring-black/5 dark:from-zinc-900 dark:via-zinc-900/90 dark:to-zinc-900 dark:ring-white/10",
+              "relative flex items-center justify-center overflow-hidden rounded-[28px] bg-white/90 shadow-[0_25px_65px_-40px_rgba(15,23,42,0.45)] ring-1 ring-black/5 backdrop-blur-sm dark:bg-zinc-900/70 dark:ring-white/10",
               illustrationWrapperPadding[resolvedImageSize],
-              align === "start" ? "self-start" : ""
+              align === "start" ? "self-start" : "self-center"
             )}
           >
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(79,70,229,0.12),_transparent_70%)] opacity-80 dark:bg-[radial-gradient(circle_at_top,_rgba(129,140,248,0.18),_transparent_70%)]"
+            />
             <Image
               src={illustrationSrc}
               alt={illustrationAlt ?? DEFAULT_ILLUSTRATION_ALT}
               width={illustrationSizeMap[resolvedImageSize]}
               height={illustrationSizeMap[resolvedImageSize]}
-              className="h-auto w-full max-w-[220px] object-contain"
+              className="relative h-auto w-full max-w-[220px] object-contain"
               sizes="(min-width: 1024px) 220px, (min-width: 640px) 180px, 160px"
               priority={false}
             />
@@ -98,7 +102,7 @@ const EmptyState = React.forwardRef<HTMLDivElement, EmptyStateProps>(
           )}
         >
           {eyebrow && (
-            <span className="text-xs font-semibold uppercase tracking-[0.25em] text-gray-400 dark:text-zinc-500">
+            <span className="text-xs font-medium uppercase tracking-[0.25em] text-gray-400 dark:text-zinc-500">
               {eyebrow}
             </span>
           )}
@@ -117,7 +121,7 @@ const EmptyState = React.forwardRef<HTMLDivElement, EmptyStateProps>(
         {(actions || children) && (
           <div
             className={cn(
-              "flex w-full flex-wrap items-center gap-3",
+              "flex w-full flex-wrap items-center gap-3 pt-1",
               align === "start" ? "justify-start" : "justify-center",
               maxWidthClass
             )}
