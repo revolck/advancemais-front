@@ -34,7 +34,6 @@ const EmptyState = React.forwardRef<HTMLDivElement, EmptyStateProps>(
       className,
       align = "center",
       size = "md",
-      tone = "neutral",
       fullHeight = false,
       title,
       eyebrow,
@@ -53,18 +52,20 @@ const EmptyState = React.forwardRef<HTMLDivElement, EmptyStateProps>(
   ) => {
     const fallbackSize = size ?? "md";
     const resolvedVariantSize = fallbackSize as EmptyStateSize;
-    const resolvedImageSize = (imageSize ?? resolvedVariantSize) as EmptyStateSize;
+    const resolvedImageSize = (imageSize ??
+      resolvedVariantSize) as EmptyStateSize;
     const illustrationSrc = illustration
       ? emptyStateIllustrations[illustration]
       : undefined;
 
-    const maxWidthClass = contentWidthMap[maxContentWidth] ?? contentWidthMap.md;
+    const maxWidthClass =
+      contentWidthMap[maxContentWidth] ?? contentWidthMap.md;
 
     return (
       <section
         ref={ref}
         className={cn(
-          emptyStateVariants({ align, size, tone, fullHeight }),
+          emptyStateVariants({ align, size, fullHeight }),
           className
         )}
         aria-live="polite"
@@ -73,21 +74,21 @@ const EmptyState = React.forwardRef<HTMLDivElement, EmptyStateProps>(
         {illustrationSrc && (
           <div
             className={cn(
-              "relative flex items-center justify-center overflow-hidden rounded-[28px] bg-white/90 shadow-[0_25px_65px_-40px_rgba(15,23,42,0.45)] ring-1 ring-black/5 backdrop-blur-sm dark:bg-zinc-900/70 dark:ring-white/10",
+              "relative flex items-center justify-center overflow-hidden",
               illustrationWrapperPadding[resolvedImageSize],
               align === "start" ? "self-start" : "self-center"
             )}
           >
             <span
               aria-hidden="true"
-              className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(79,70,229,0.12),_transparent_70%)] opacity-80 dark:bg-[radial-gradient(circle_at_top,_rgba(129,140,248,0.18),_transparent_70%)]"
+              className="pointer-events-none absolute inset-0"
             />
             <Image
               src={illustrationSrc}
               alt={illustrationAlt ?? DEFAULT_ILLUSTRATION_ALT}
               width={illustrationSizeMap[resolvedImageSize]}
               height={illustrationSizeMap[resolvedImageSize]}
-              className="relative h-auto w-full max-w-[220px] object-contain"
+              className="relative h-auto w-50 max-w-[220px] object-contain"
               sizes="(min-width: 1024px) 220px, (min-width: 640px) 180px, 160px"
               priority={false}
             />
@@ -96,23 +97,25 @@ const EmptyState = React.forwardRef<HTMLDivElement, EmptyStateProps>(
 
         <div
           className={cn(
-            "flex w-full flex-col gap-3 text-gray-600 dark:text-zinc-400",
-            align === "start" ? "items-start text-left" : "items-center text-center",
+            "flex w-full flex-col gap-3 text-gray-600",
+            align === "start"
+              ? "items-start text-left"
+              : "items-center text-center",
             maxWidthClass
           )}
         >
           {eyebrow && (
-            <span className="text-xs font-medium uppercase tracking-[0.25em] text-gray-400 dark:text-zinc-500">
+            <span className="text-xs font-medium uppercase tracking-[0.25em] text-gray-400">
               {eyebrow}
             </span>
           )}
 
-          <TitleTag className="text-2xl font-semibold leading-tight text-gray-900 dark:text-white">
+          <TitleTag className="text-2xl font-semibold leading-tight text-[var(--primary-color)]">
             {title}
           </TitleTag>
 
           {description && (
-            <DescriptionTag className="text-base leading-relaxed text-gray-600 dark:text-zinc-400">
+            <DescriptionTag className="!leading-tight">
               {description}
             </DescriptionTag>
           )}

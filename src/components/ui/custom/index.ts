@@ -12,6 +12,7 @@ export * from "./toast";
 export * from "./offline";
 
 export * from "./vertical-tabs";
+export * from "./horizontal-tabs";
 
 export * from "./empty-state";
 

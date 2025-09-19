@@ -12,6 +12,7 @@ export const emptyStateIllustrations = {
   pass: "/empty-state/pass.svg",
   terms: "/empty-state/termos.svg",
   userProfiles: "/empty-state/perfis_users.svg",
+  companyDetails: "/empty-state/empresa_descricao.svg",
 } as const;
 
 export type EmptyStateIllustration = keyof typeof emptyStateIllustrations;

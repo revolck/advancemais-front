@@ -207,6 +207,32 @@ export interface AdminCompanyVacancyListItem {
   modalidade?: string | null;
   regimeDeTrabalho?: string | null;
   paraPcd?: boolean | null;
+  codigo?: string | null;
+  titulo?: string | null;
+  nome?: string | null;
+  descricao?: string | null;
+  descricaoExibicao?: string | null;
+  atividades?: string | null;
+  beneficios?: string | null;
+  observacoes?: string | null;
+  requisitos?: string | null;
+  cargaHoraria?: string | null;
+  nomeExibicao?: string | null;
+  logoExibicao?: string | null;
+  mensagemAnonimato?: string | null;
+  empresa?: {
+    id: string;
+    nome?: string | null;
+    avatarUrl?: string | null;
+    cidade?: string | null;
+    estado?: string | null;
+    codUsuario?: string | null;
+  } | null;
+  candidatos?: number | null;
+  totalCandidatos?: number | null;
+  inscritos?: number | null;
+  inscricoes?: number | null;
+  totalInscricoes?: number | null;
 }
 
 export interface AdminCompanyVacancyListResponse {

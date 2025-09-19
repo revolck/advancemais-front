@@ -1,16 +1,12 @@
 import React from "react";
-import { MapPin, MoreHorizontal, ShieldAlert } from "lucide-react";
+import { MapPin, ChevronRight, ShieldAlert } from "lucide-react";
+import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { TableRow, TableCell } from "@/components/ui/table";
-import { Progress } from "@/components/ui/progress";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 import type { Partnership } from "../types";
 import { TRIAL_PARTNERSHIP_TYPES } from "../constants";
 
@@ -109,16 +105,22 @@ function getPaymentStatusBadge(status?: string | null) {
   if (!status) return null;
 
   const normalized = status.toUpperCase();
-  const className = PAYMENT_STATUS_CLASSES[normalized] ?? "bg-gray-100 text-gray-700 border-gray-200";
+  const className =
+    PAYMENT_STATUS_CLASSES[normalized] ??
+    "bg-gray-100 text-gray-700 border-gray-200";
 
   return (
-    <Badge className={`${className} uppercase tracking-wide text-[10px]`}>{normalized}</Badge>
+    <Badge className={`${className} uppercase tracking-wide text-[10px]`}>
+      {normalized}
+    </Badge>
   );
 }
 
 function getCompanyStatusBadges(partnership: Partnership) {
   const badges: React.ReactNode[] = [];
-  const status = partnership.empresa.status ?? (partnership.empresa.ativo ? "ATIVO" : "INATIVO");
+  const status =
+    partnership.empresa.status ??
+    (partnership.empresa.ativo ? "ATIVO" : "INATIVO");
 
   badges.push(
     <Badge
@@ -130,7 +132,7 @@ function getCompanyStatusBadges(partnership: Partnership) {
       }
     >
       {status}
-    </Badge>,
+    </Badge>
   );
 
   if (partnership.empresa.banida || partnership.empresa.banimentoAtivo) {
@@ -140,7 +142,7 @@ function getCompanyStatusBadges(partnership: Partnership) {
         className="bg-rose-100 text-rose-800 border-rose-200 uppercase tracking-wide text-[10px] flex items-center gap-1"
       >
         <ShieldAlert className="h-3 w-3" aria-hidden="true" /> Banida
-      </Badge>,
+      </Badge>
     );
   }
 
@@ -148,26 +150,65 @@ function getCompanyStatusBadges(partnership: Partnership) {
 }
 
 export const CompanyRow: React.FC<CompanyRowProps> = ({ partnership }) => {
-  const vagasTotal =
-    partnership.plano.quantidadeVagas ?? partnership.raw?.limiteVagasPlano ?? 0;
-  const vagasPublicadas =
+  const rawVagasTotal =
+    partnership.plano.quantidadeVagas ?? partnership.raw?.limiteVagasPlano;
+  const vagasTotal = rawVagasTotal ?? 0;
+  const rawVagasPublicadas =
     partnership.plano.vagasPublicadas ??
     partnership.raw?.vagas?.publicadas ??
-    partnership.raw?.vagasPublicadas ??
-    0;
+    partnership.raw?.vagasPublicadas;
+  const vagasPublicadas = rawVagasPublicadas ?? 0;
   const percent =
     vagasTotal > 0
       ? Math.min(100, Math.round((vagasPublicadas / vagasTotal) * 100))
       : 0;
   const formattedCnpj = formatCnpj(partnership.empresa.cnpj);
-  const paymentStatus = partnership.pagamento?.status ?? partnership.plano.statusPagamento ?? null;
-  const paymentMethod = partnership.pagamento?.metodo ?? partnership.plano.metodoPagamento ?? null;
-  const paymentModel = partnership.pagamento?.modelo ?? partnership.plano.modeloPagamento ?? null;
-  const planBadges = [getPlanTypeBadge(partnership)];
-  const paymentBadge = getPaymentStatusBadge(paymentStatus);
-  if (paymentBadge) {
-    planBadges.push(paymentBadge);
-  }
+  const planName = partnership.plano?.nome?.trim() ?? "";
+  const hasPlanInfo = planName.length > 0;
+  const hasPlanPrice =
+    partnership.plano?.valor != null && partnership.plano.valor !== "";
+  const formattedPlanPrice = hasPlanPrice
+    ? formatCurrency(partnership.plano.valor ?? undefined)
+    : null;
+  const city = partnership.empresa.cidade?.trim() ?? "";
+  const state = partnership.empresa.estado?.trim() ?? "";
+  const locationParts = [city, state].filter(Boolean);
+  const hasLocation = locationParts.length > 0;
+  const locationDisplay = hasLocation ? locationParts.join("/") : "—";
+  const paymentStatus =
+    partnership.pagamento?.status ?? partnership.plano.statusPagamento ?? null;
+  const paymentMethod =
+    partnership.pagamento?.metodo ?? partnership.plano.metodoPagamento ?? null;
+  const paymentModel =
+    partnership.pagamento?.modelo ?? partnership.plano.modeloPagamento ?? null;
+  const paymentStatusBadge = getPaymentStatusBadge(paymentStatus);
+  const paymentDetailsParts = [paymentModel, paymentMethod]
+    .map((value) => value?.trim())
+    .filter((value): value is string => Boolean(value));
+  const paymentDetails = paymentDetailsParts.join(" · ");
+  const hasPaymentInfo = Boolean(paymentStatusBadge || paymentDetails);
+  const hasVacancyInfo = rawVagasTotal != null || rawVagasPublicadas != null;
+  const remainingVagas = Math.max(vagasTotal - vagasPublicadas, 0);
+  const usageTone =
+    percent >= 80 ? "success" : percent >= 40 ? "warning" : "danger";
+  const toneStyles: Record<
+    "success" | "warning" | "danger",
+    { bar: string; chip: string }
+  > = {
+    success: {
+      bar: "from-emerald-400 to-emerald-500",
+      chip: "bg-emerald-100 text-emerald-700",
+    },
+    warning: {
+      bar: "from-amber-300 to-amber-500",
+      chip: "bg-amber-100 text-amber-700",
+    },
+    danger: {
+      bar: "from-rose-300 to-rose-500",
+      chip: "bg-rose-100 text-rose-600",
+    },
+  };
+  const tone = toneStyles[usageTone];
   const companyBadges = getCompanyStatusBadges(partnership);
 
   return (
@@ -201,24 +242,70 @@ export const CompanyRow: React.FC<CompanyRowProps> = ({ partnership }) => {
         </div>
       </TableCell>
       <TableCell>
-        <div>
-          <div className="font-medium text-sm text-gray-900">
-            {partnership.plano.nome}
+        {hasPlanInfo ? (
+          <div>
+            <div className="font-medium text-sm text-gray-900">{planName}</div>
+            {formattedPlanPrice && (
+              <div className="text-xs text-gray-500">{formattedPlanPrice}</div>
+            )}
+            {/* removed plan type badge (Mensal/Teste/Parceira) by request */}
           </div>
-          <div className="text-xs text-gray-500">
-            {formatCurrency(partnership.plano.valor)}
-          </div>
-        </div>
+        ) : (
+          <span className="text-sm text-gray-500">—</span>
+        )}
       </TableCell>
       <TableCell>
-        <div className="flex items-center gap-1 text-sm text-gray-600">
-          <MapPin className="h-3 w-3" />
-          <span>
-            {partnership.empresa.cidade || "—"}/
-            {partnership.empresa.estado || "—"}
-          </span>
-        </div>
+        {hasLocation ? (
+          <div className="flex items-center gap-1 text-sm text-gray-600">
+            <MapPin className="h-3 w-3" />
+            <span>{locationDisplay}</span>
+          </div>
+        ) : (
+          <span className="text-sm text-gray-500">—</span>
+        )}
       </TableCell>
+      <TableCell>
+        {hasVacancyInfo ? (
+          <div className="min-w-[160px] rounded-xl border border-gray-100 bg-slate-50/80 px-3 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
+            <div className="flex items-center justify-between text-xs font-medium text-gray-600">
+              <span>
+                <span className="font-semibold text-gray-900">Publicadas:</span>{" "}
+                {vagasPublicadas}
+              </span>
+              {rawVagasTotal != null && (
+                <span>
+                  <span className="font-semibold text-gray-900">
+                    Restantes:
+                  </span>{" "}
+                  {remainingVagas}
+                </span>
+              )}
+            </div>
+            <div className="mt-3 flex items-center gap-2">
+              <div className="h-2 flex-1 overflow-hidden rounded-full bg-gray-200/90">
+                <div
+                  className={cn(
+                    "h-full rounded-full bg-gradient-to-r transition-all duration-300",
+                    tone.bar
+                  )}
+                  style={{ width: `${percent}%` }}
+                />
+              </div>
+              <span
+                className={cn(
+                  "rounded-full px-2 py-0.5 text-[11px] font-semibold",
+                  tone.chip
+                )}
+              >
+                {percent}%
+              </span>
+            </div>
+          </div>
+        ) : (
+          <span className="text-sm text-gray-500">—</span>
+        )}
+      </TableCell>
+      {/* removed "Status Plano" column by request */}
       <TableCell>
         <div className="flex flex-wrap gap-1">{companyBadges}</div>
         {partnership.empresa.banimentoAtivo && (
@@ -228,49 +315,36 @@ export const CompanyRow: React.FC<CompanyRowProps> = ({ partnership }) => {
         )}
       </TableCell>
       <TableCell>
-        <div className="flex flex-wrap gap-1">{planBadges}</div>
-        <div className="mt-1 text-[11px] text-gray-500">
-          {paymentModel ?? "Modelo não informado"}
-          {paymentMethod ? ` · ${paymentMethod}` : ""}
-        </div>
-      </TableCell>
-      <TableCell>
-        <div className="min-w-[120px]">
-          <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
-            <span>
-              {vagasPublicadas}/{vagasTotal}
-            </span>
-            <span>{percent}%</span>
-          </div>
-          <Progress value={percent} />
+        <div className="text-sm text-gray-600 flex flex-col">
+          <span>{formatDate(partnership.empresa.criadoEm ?? undefined)}</span>
         </div>
       </TableCell>
       <TableCell>
         <div className="text-sm text-gray-600 flex flex-col">
-          <span>{formatDate(partnership.empresa.criadoEm ?? undefined)}</span>
-          {partnership.plano.diasRestantes != null && (
-            <span className="text-[11px] text-gray-500">{partnership.plano.diasRestantes} dias restantes</span>
+          {partnership.plano.diasRestantes != null ? (
+            <span>{partnership.plano.diasRestantes} dias restantes</span>
+          ) : (
+            <span className="text-gray-500">—</span>
           )}
         </div>
       </TableCell>
-      <TableCell>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
+      <TableCell className="text-right">
+        <Tooltip>
+          <TooltipTrigger asChild>
             <Button
+              asChild
               variant="ghost"
-              size="sm"
-              className="h-8 w-8 p-0"
-              aria-label="Ações da empresa"
+              size="icon"
+              className="h-8 w-8 rounded-full text-gray-500 hover:text-white hover:bg-[var(--primary-color)]"
+              aria-label="Visualizar empresa"
             >
-              <MoreHorizontal className="h-4 w-4" />
+              <Link href={`/dashboard/empresas/${partnership.empresa.id}`}>
+                <ChevronRight className="h-4 w-4" />
+              </Link>
             </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem>Ver detalhes</DropdownMenuItem>
-            <DropdownMenuItem>Editar</DropdownMenuItem>
-            <DropdownMenuItem>Histórico</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+          </TooltipTrigger>
+          <TooltipContent sideOffset={8}>Visualizar empresa</TooltipContent>
+        </Tooltip>
       </TableCell>
     </TableRow>
   );
