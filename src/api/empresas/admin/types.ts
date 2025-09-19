@@ -9,6 +9,13 @@ export type AdminCompanyPlanType =
   | "120_dias"
   | "parceiro";
 
+export type AdminCompanyVacancyStatus =
+  | "RASCUNHO"
+  | "EM_ANALISE"
+  | "PUBLICADO"
+  | "EXPIRADO"
+  | string;
+
 export interface AdminCompanyPlanSummary {
   id: string;
   nome: string;
@@ -20,6 +27,9 @@ export interface AdminCompanyPlanSummary {
   statusPagamento?: string | null;
   quantidadeVagas: number;
   valor?: string | null;
+  duracaoEmDias?: number | null;
+  diasRestantes?: number | null;
+  vagasPublicadas?: number | null;
 }
 
 export interface AdminCompanyVacancyInfo {
@@ -32,6 +42,15 @@ export interface AdminCompanyPaymentInfo {
   metodo?: string | null;
   status?: string | null;
   ultimoPagamentoEm?: string | null;
+}
+
+export interface AdminCompanyBanInfo {
+  id: string;
+  motivo: string;
+  dias: number;
+  inicio: string;
+  fim: string;
+  criadoEm: string;
 }
 
 export interface AdminCompanyListItem {
@@ -54,6 +73,10 @@ export interface AdminCompanyListItem {
   plano?: AdminCompanyPlanSummary | null;
   vagas?: AdminCompanyVacancyInfo | null;
   pagamento?: AdminCompanyPaymentInfo | null;
+  banida?: boolean;
+  banimentoAtivo?: AdminCompanyBanInfo | null;
+  vagasPublicadas?: number | null;
+  limiteVagasPlano?: number | null;
 }
 
 export type AdminCompanyDetail = AdminCompanyListItem;
@@ -88,6 +111,7 @@ export interface AdminCompanyPlanPayload {
   tipo: AdminCompanyPlanType;
   iniciarEm?: string;
   observacao?: string;
+  resetPeriodo?: boolean;
 }
 
 export interface CreateAdminCompanyPayload {
@@ -121,4 +145,74 @@ export interface UpdateAdminCompanyPayload {
   avatarUrl?: string;
   status?: AdminCompanyStatus;
   plano?: AdminCompanyPlanPayload;
+}
+
+export interface ListAdminCompanyPaymentsParams {
+  page?: number;
+  pageSize?: number;
+}
+
+export interface ListAdminCompanyBansParams {
+  page?: number;
+  pageSize?: number;
+}
+
+export interface CreateAdminCompanyBanPayload {
+  dias: number;
+  motivo: string;
+}
+
+export interface AdminCompanyPaymentLog {
+  id: string;
+  tipo: string;
+  status: string;
+  mensagem?: string | null;
+  externalRef?: string | null;
+  mpResourceId?: string | null;
+  criadoEm?: string | null;
+  plano?: {
+    id: string;
+    nome?: string | null;
+  } | null;
+}
+
+export interface AdminCompanyPaymentHistoryResponse {
+  data: AdminCompanyPaymentLog[];
+  pagination: AdminCompanyPagination;
+}
+
+export interface AdminCompanyBanHistoryResponse {
+  data: AdminCompanyBanInfo[];
+  pagination: AdminCompanyPagination;
+}
+
+export interface AdminCompanyBanDetailResponse {
+  banimento: AdminCompanyBanInfo;
+}
+
+export interface ListAdminCompanyVacanciesParams {
+  page?: number;
+  pageSize?: number;
+  status?: AdminCompanyVacancyStatus[] | AdminCompanyVacancyStatus | string;
+}
+
+export interface AdminCompanyVacancyListItem {
+  id: string;
+  status: AdminCompanyVacancyStatus;
+  inseridaEm?: string | null;
+  atualizadoEm?: string | null;
+  inscricoesAte?: string | null;
+  modoAnonimo?: boolean | null;
+  modalidade?: string | null;
+  regimeDeTrabalho?: string | null;
+  paraPcd?: boolean | null;
+}
+
+export interface AdminCompanyVacancyListResponse {
+  data: AdminCompanyVacancyListItem[];
+  pagination: AdminCompanyPagination;
+}
+
+export interface AdminCompanyVacancyDetailResponse {
+  vaga: AdminCompanyVacancyListItem;
 }

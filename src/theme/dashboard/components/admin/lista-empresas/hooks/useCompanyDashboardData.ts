@@ -13,6 +13,14 @@ import type { AdminCompanyListItem, ListAdminCompaniesParams } from "@/api/empre
 
 function mapAdminCompanyToPartnership(company: AdminCompanyListItem): Partnership {
   const plan = company.plano;
+  const payment = company.pagamento;
+  const vagasPublicadas =
+    plan?.vagasPublicadas ??
+    company.vagas?.publicadas ??
+    company.vagasPublicadas ??
+    null;
+  const limiteVagas =
+    company.vagas?.limitePlano ?? company.limiteVagasPlano ?? plan?.quantidadeVagas ?? 0;
 
   return {
     id: company.id,
@@ -32,21 +40,30 @@ function mapAdminCompanyToPartnership(company: AdminCompanyListItem): Partnershi
       codUsuario: company.codUsuario,
       cnpj: company.cnpj ?? null,
       ativo: company.ativa,
+      status: company.status,
       criadoEm: company.criadoEm ?? null,
       parceira: company.parceira,
       diasTesteDisponibilizados: company.diasTesteDisponibilizados ?? null,
+      banida: company.banida,
+      banimentoAtivo: company.banimentoAtivo ?? null,
     },
     plano: {
       id: plan?.id ?? `${company.id}-plano`,
       nome: plan?.nome ?? "Plano não informado",
       valor: plan?.valor ?? null,
-      quantidadeVagas: plan?.quantidadeVagas ?? 0,
-      vagasPublicadas: company.vagas?.publicadas ?? null,
+      quantidadeVagas: plan?.quantidadeVagas ?? limiteVagas,
+      vagasPublicadas,
       tipo: plan?.tipo,
       inicio: plan?.inicio ?? null,
       fim: plan?.fim ?? null,
+      metodoPagamento: plan?.metodoPagamento ?? payment?.metodo ?? null,
+      modeloPagamento: plan?.modeloPagamento ?? payment?.modelo ?? null,
+      statusPagamento: plan?.statusPagamento ?? payment?.status ?? null,
+      duracaoEmDias: plan?.duracaoEmDias ?? null,
+      diasRestantes: plan?.diasRestantes ?? null,
     },
     raw: company,
+    pagamento: payment ?? null,
   };
 }
 

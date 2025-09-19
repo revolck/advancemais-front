@@ -17,6 +17,12 @@ export {
   getAdminCompanyById,
   createAdminCompany,
   updateAdminCompany,
+  listAdminCompanyPayments,
+  listAdminCompanyBans,
+  createAdminCompanyBan,
+  listAdminCompanyVacancies,
+  listAdminCompanyVacanciesInReview,
+  approveAdminCompanyVacancy,
 } from "./admin";
 
 export type {
@@ -32,4 +38,16 @@ export type {
   ListAdminCompaniesParams,
   ListAdminCompaniesResponse,
   UpdateAdminCompanyPayload,
+  ListAdminCompanyPaymentsParams,
+  ListAdminCompanyBansParams,
+  CreateAdminCompanyBanPayload,
+  AdminCompanyPaymentHistoryResponse,
+  AdminCompanyBanHistoryResponse,
+  AdminCompanyBanDetailResponse,
+  AdminCompanyPaymentLog,
+  ListAdminCompanyVacanciesParams,
+  AdminCompanyVacancyListItem,
+  AdminCompanyVacancyListResponse,
+  AdminCompanyVacancyDetailResponse,
+  AdminCompanyVacancyStatus,
 } from "./admin/types";
