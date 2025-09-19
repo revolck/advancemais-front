@@ -51,8 +51,9 @@ const EmptyState = React.forwardRef<HTMLDivElement, EmptyStateProps>(
     },
     ref
   ) => {
-    const resolvedVariantSize: EmptyStateSize = size ?? "md";
-    const resolvedImageSize: EmptyStateSize = imageSize ?? resolvedVariantSize;
+    const fallbackSize = size ?? "md";
+    const resolvedVariantSize = fallbackSize as EmptyStateSize;
+    const resolvedImageSize = (imageSize ?? resolvedVariantSize) as EmptyStateSize;
     const illustrationSrc = illustration
       ? emptyStateIllustrations[illustration]
       : undefined;
