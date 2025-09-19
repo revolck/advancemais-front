@@ -35,7 +35,7 @@ export async function listAdminCompanies(
   params?: ListAdminCompaniesParams,
   init?: RequestInit,
 ): Promise<ListAdminCompaniesResponse> {
-  const endpoint = empresasRoutes.admin.list();
+  const endpoint = empresasRoutes.adminEmpresas.list();
   const query = new URLSearchParams();
 
   if (params?.page) {
@@ -74,7 +74,7 @@ export async function listAdminCompanies(
 }
 
 export async function getAdminCompanyById(id: string, init?: RequestInit): Promise<AdminCompanyDetailResponse> {
-  const endpoint = empresasRoutes.admin.get(id);
+  const endpoint = empresasRoutes.adminEmpresas.get(id);
 
   const headers = {
     ...apiConfig.headers,
@@ -95,7 +95,7 @@ export async function createAdminCompany(
   data: CreateAdminCompanyPayload,
   init?: RequestInit,
 ): Promise<AdminCompanyDetailResponse> {
-  const endpoint = empresasRoutes.admin.create();
+  const endpoint = empresasRoutes.adminEmpresas.create();
 
   const headers = {
     "Content-Type": "application/json",
@@ -120,7 +120,7 @@ export async function updateAdminCompany(
   data: UpdateAdminCompanyPayload,
   init?: RequestInit,
 ): Promise<AdminCompanyDetailResponse> {
-  const endpoint = empresasRoutes.admin.update(id);
+  const endpoint = empresasRoutes.adminEmpresas.update(id);
 
   const headers = {
     "Content-Type": "application/json",
