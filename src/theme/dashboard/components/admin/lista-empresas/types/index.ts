@@ -2,6 +2,9 @@ import type {
   AdminCompanyListItem,
   AdminCompanyPagination,
   AdminCompanyPlanType,
+  AdminCompanyPaymentInfo,
+  AdminCompanyBanInfo,
+  AdminCompanyStatus,
   ListAdminCompaniesParams,
   ListAdminCompaniesResponse,
 } from "@/api/empresas";
@@ -22,9 +25,12 @@ export interface Company {
   codUsuario: string;
   cnpj?: string | null;
   ativo: boolean;
+  status?: AdminCompanyStatus;
   criadoEm?: string | null;
   parceira?: boolean;
   diasTesteDisponibilizados?: number | null;
+  banida?: boolean;
+  banimentoAtivo?: AdminCompanyBanInfo | null;
 }
 
 export interface Plan {
@@ -43,6 +49,11 @@ export interface Plan {
   tipo?: PartnershipType;
   inicio?: string | null;
   fim?: string | null;
+  modeloPagamento?: string | null;
+  metodoPagamento?: string | null;
+  statusPagamento?: string | null;
+  duracaoEmDias?: number | null;
+  diasRestantes?: number | null;
 }
 
 export interface Partnership {
@@ -54,6 +65,7 @@ export interface Partnership {
   empresa: Company;
   plano: Plan;
   raw?: AdminCompanyListItem;
+  pagamento?: AdminCompanyPaymentInfo | null;
 }
 
 export interface CompanyDashboardProps {

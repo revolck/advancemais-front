@@ -1,5 +1,5 @@
 import React from "react";
-import { MapPin, MoreHorizontal } from "lucide-react";
+import { MapPin, MoreHorizontal, ShieldAlert } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,14 @@ import { TableRow, TableCell } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
 import type { Partnership } from "../types";
 import { TRIAL_PARTNERSHIP_TYPES } from "../constants";
+
+const PAYMENT_STATUS_CLASSES: Record<string, string> = {
+  APROVADO: "bg-emerald-100 text-emerald-800 border-emerald-200",
+  PENDENTE: "bg-amber-100 text-amber-800 border-amber-200",
+  EM_ANALISE: "bg-sky-100 text-sky-800 border-sky-200",
+  CANCELADO: "bg-rose-100 text-rose-800 border-rose-200",
+  RECUSADO: "bg-rose-100 text-rose-800 border-rose-200",
+};
 
 interface CompanyRowProps {
   partnership: Partnership;
@@ -73,10 +81,10 @@ function formatDate(value?: string | null): string {
   }).format(date);
 }
 
-function getPartnershipBadge(partnership: Partnership) {
+function getPlanTypeBadge(partnership: Partnership) {
   if (partnership.tipo === "parceiro" || partnership.empresa.parceira) {
     return (
-      <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200">
+      <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 uppercase tracking-wide text-[10px]">
         Parceira
       </Badge>
     );
@@ -84,30 +92,83 @@ function getPartnershipBadge(partnership: Partnership) {
 
   if (partnership.tipo && TRIAL_PARTNERSHIP_TYPES.includes(partnership.tipo)) {
     return (
-      <Badge className="bg-amber-100 text-amber-800 border-amber-200">
+      <Badge className="bg-amber-100 text-amber-800 border-amber-200 uppercase tracking-wide text-[10px]">
         Teste
       </Badge>
     );
   }
 
   return (
-    <Badge variant="secondary" className="text-xs">
+    <Badge variant="secondary" className="text-[10px] uppercase tracking-wide">
       Mensal
     </Badge>
   );
 }
 
+function getPaymentStatusBadge(status?: string | null) {
+  if (!status) return null;
+
+  const normalized = status.toUpperCase();
+  const className = PAYMENT_STATUS_CLASSES[normalized] ?? "bg-gray-100 text-gray-700 border-gray-200";
+
+  return (
+    <Badge className={`${className} uppercase tracking-wide text-[10px]`}>{normalized}</Badge>
+  );
+}
+
+function getCompanyStatusBadges(partnership: Partnership) {
+  const badges: React.ReactNode[] = [];
+  const status = partnership.empresa.status ?? (partnership.empresa.ativo ? "ATIVO" : "INATIVO");
+
+  badges.push(
+    <Badge
+      key="company-status"
+      className={
+        status === "ATIVO"
+          ? "bg-green-100 text-green-800 border-green-200 uppercase tracking-wide text-[10px]"
+          : "bg-red-100 text-red-800 border-red-200 uppercase tracking-wide text-[10px]"
+      }
+    >
+      {status}
+    </Badge>,
+  );
+
+  if (partnership.empresa.banida || partnership.empresa.banimentoAtivo) {
+    badges.push(
+      <Badge
+        key="company-ban"
+        className="bg-rose-100 text-rose-800 border-rose-200 uppercase tracking-wide text-[10px] flex items-center gap-1"
+      >
+        <ShieldAlert className="h-3 w-3" aria-hidden="true" /> Banida
+      </Badge>,
+    );
+  }
+
+  return badges;
+}
+
 export const CompanyRow: React.FC<CompanyRowProps> = ({ partnership }) => {
-  const vagasTotal = partnership.plano.quantidadeVagas ?? 0;
+  const vagasTotal =
+    partnership.plano.quantidadeVagas ?? partnership.raw?.limiteVagasPlano ?? 0;
   const vagasPublicadas =
     partnership.plano.vagasPublicadas ??
     partnership.raw?.vagas?.publicadas ??
+    partnership.raw?.vagasPublicadas ??
     0;
   const percent =
     vagasTotal > 0
       ? Math.min(100, Math.round((vagasPublicadas / vagasTotal) * 100))
       : 0;
   const formattedCnpj = formatCnpj(partnership.empresa.cnpj);
+  const paymentStatus = partnership.pagamento?.status ?? partnership.plano.statusPagamento ?? null;
+  const paymentMethod = partnership.pagamento?.metodo ?? partnership.plano.metodoPagamento ?? null;
+  const paymentModel = partnership.pagamento?.modelo ?? partnership.plano.modeloPagamento ?? null;
+  const planBadges = [getPlanTypeBadge(partnership)];
+  const paymentBadge = getPaymentStatusBadge(paymentStatus);
+  if (paymentBadge) {
+    planBadges.push(paymentBadge);
+  }
+  const companyBadges = getCompanyStatusBadges(partnership);
 
   return (
     <TableRow className="border-gray-100 hover:bg-gray-50/50 transition-colors">
@@ -159,17 +220,20 @@ export const CompanyRow: React.FC<CompanyRowProps> = ({ partnership }) => {
         </div>
       </TableCell>
       <TableCell>
-        <Badge
-          className={
-            partnership.empresa.ativo
-              ? "bg-green-100 text-green-800 border-green-200"
-              : "bg-red-100 text-red-800 border-red-200"
-          }
-        >
-          {partnership.empresa.ativo ? "Ativa" : "Inativa"}
-        </Badge>
+        <div className="flex flex-wrap gap-1">{companyBadges}</div>
+        {partnership.empresa.banimentoAtivo && (
+          <p className="mt-1 text-[11px] text-rose-600">
+            Banida até {formatDate(partnership.empresa.banimentoAtivo.fim)}
+          </p>
+        )}
       </TableCell>
-      <TableCell>{getPartnershipBadge(partnership)}</TableCell>
+      <TableCell>
+        <div className="flex flex-wrap gap-1">{planBadges}</div>
+        <div className="mt-1 text-[11px] text-gray-500">
+          {paymentModel ?? "Modelo não informado"}
+          {paymentMethod ? ` · ${paymentMethod}` : ""}
+        </div>
+      </TableCell>
       <TableCell>
         <div className="min-w-[120px]">
           <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
@@ -182,9 +246,12 @@ export const CompanyRow: React.FC<CompanyRowProps> = ({ partnership }) => {
         </div>
       </TableCell>
       <TableCell>
-        <span className="text-sm text-gray-600">
-          {formatDate(partnership.empresa.criadoEm ?? undefined)}
-        </span>
+        <div className="text-sm text-gray-600 flex flex-col">
+          <span>{formatDate(partnership.empresa.criadoEm ?? undefined)}</span>
+          {partnership.plano.diasRestantes != null && (
+            <span className="text-[11px] text-gray-500">{partnership.plano.diasRestantes} dias restantes</span>
+          )}
+        </div>
       </TableCell>
       <TableCell>
         <DropdownMenu>

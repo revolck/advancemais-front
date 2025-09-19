@@ -184,6 +184,19 @@ export const empresasRoutes = {
     create: () => `${prefix}/empresas/admin`,
     get: (id: string) => `${prefix}/empresas/admin/${id}`,
     update: (id: string) => `${prefix}/empresas/admin/${id}`,
+    pagamentos: {
+      list: (id: string) => `${prefix}/empresas/admin/${id}/pagamentos`,
+    },
+    banimentos: {
+      list: (id: string) => `${prefix}/empresas/admin/${id}/banimentos`,
+      create: (id: string) => `${prefix}/empresas/admin/${id}/banimentos`,
+    },
+    vagas: {
+      list: (id: string) => `${prefix}/empresas/admin/${id}/vagas`,
+      emAnalise: (id: string) => `${prefix}/empresas/admin/${id}/vagas/em-analise`,
+      aprovar: (id: string, vagaId: string) =>
+        `${prefix}/empresas/admin/${id}/vagas/${vagaId}/aprovar`,
+    },
   },
 };
 
