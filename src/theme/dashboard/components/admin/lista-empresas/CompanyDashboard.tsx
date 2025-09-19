@@ -8,7 +8,7 @@ import React, {
   useState,
 } from "react";
 import { Button } from "@/components/ui/button";
-import { ButtonCustom } from "@/components/ui/custom/button";
+import { ButtonCustom, EmptyState, FilterBar } from "@/components/ui/custom";
 import {
   Table,
   TableBody,
@@ -33,11 +33,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { CompanyRow, CompanyTableSkeleton, EmptyState } from "./components";
+import { CompanyRow, CompanyTableSkeleton } from "./components";
 import { COMPANY_DASHBOARD_CONFIG } from "./constants";
 import { useCompanyDashboardData } from "./hooks/useCompanyDashboardData";
 import type { CompanyDashboardProps } from "./types";
-import { FilterBar } from "@/components/ui/custom";
 import type { FilterField } from "@/components/ui/custom/filters";
 
 const normalizeCnpj = (value?: string | null): string =>
@@ -552,8 +551,17 @@ export function CompanyDashboard({
 
         {showEmptyState && (
           <EmptyState
+            tone="muted"
+            fullHeight
+            maxContentWidth="sm"
+            illustration="userProfiles"
             title="Nenhuma empresa encontrada"
-            description="Tente ajustar os filtros ou termo de busca"
+            description="Revise os filtros aplicados ou cadastre uma nova empresa para começar a acompanhar os resultados."
+            actions={
+              <ButtonCustom variant="primary" size="md" icon="Plus">
+                Criar empresa
+              </ButtonCustom>
+            }
           />
         )}
       </div>

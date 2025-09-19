@@ -13,6 +13,8 @@ export * from "./offline";
 
 export * from "./vertical-tabs";
 
+export * from "./empty-state";
+
 // Export everything from modules (modules avoid name collisions internally)
 export * from "./file-upload";
 export * from "./avatar";
