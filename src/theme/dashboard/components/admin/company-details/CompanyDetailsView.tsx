@@ -29,6 +29,14 @@ import {
   MoreVertical,
   UserCog,
   KeyRound,
+  Tag,
+  CalendarDays,
+  Phone,
+  Mail,
+  Instagram,
+  Linkedin,
+  MapPin,
+  type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { VacancyTable } from "./components";
@@ -262,13 +270,41 @@ export function CompanyDetailsView({
   }
 
   const aboutDescription = companyData.descricao?.trim();
-  const aboutSidebar = [
-    { label: "Código da empresa", value: companyData.codUsuario ?? "—" },
-    { label: "Criada em", value: formatDate(companyData.criadoEm) },
-    { label: "Telefone", value: companyData.telefone ?? "—" },
-    { label: "E-mail", value: companyData.email ?? "—" },
-    { label: "Instagram", value: formatSocialLink(companyData.instagram) },
-    { label: "LinkedIn", value: formatSocialLink(companyData.linkedin) },
+  const aboutSidebar: Array<{
+    label: string;
+    value: ReactNode;
+    icon: LucideIcon;
+  }> = [
+    {
+      label: "Código da empresa",
+      value: companyData.codUsuario ?? "—",
+      icon: Tag,
+    },
+    {
+      label: "Criada em",
+      value: formatDate(companyData.criadoEm),
+      icon: CalendarDays,
+    },
+    {
+      label: "Telefone",
+      value: companyData.telefone ?? "—",
+      icon: Phone,
+    },
+    {
+      label: "E-mail",
+      value: companyData.email ?? "—",
+      icon: Mail,
+    },
+    {
+      label: "Instagram",
+      value: formatSocialLink(companyData.instagram),
+      icon: Instagram,
+    },
+    {
+      label: "LinkedIn",
+      value: formatSocialLink(companyData.linkedin),
+      icon: Linkedin,
+    },
     {
       label: "Localização",
       value:
@@ -277,6 +313,7 @@ export function CompanyDetailsView({
               companyData.cidade && companyData.estado ? ", " : ""
             }${companyData.estado ?? ""}`
           : "—",
+      icon: MapPin,
     },
   ];
 
@@ -304,11 +341,16 @@ export function CompanyDetailsView({
           <h3>Informações gerais</h3>
           <dl className="mt-4 space-y-4 text-sm">
             {aboutSidebar.map((info) => (
-              <div key={info.label} className="flex flex-col">
-                <dt className="text-xs font-medium uppercase text-gray-600">
-                  {info.label}
-                </dt>
-                <dd className="text-xs text-gray-500">{info.value ?? "—"}</dd>
+              <div key={info.label} className="flex items-start gap-3">
+                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-600">
+                  <info.icon className="size-4" aria-hidden="true" />
+                </span>
+                <div className="flex flex-1 flex-col">
+                  <dt className="text-xs font-medium uppercase text-gray-600">
+                    {info.label}
+                  </dt>
+                  <dd className="text-xs text-gray-500">{info.value ?? "—"}</dd>
+                </div>
               </div>
             ))}
           </dl>
