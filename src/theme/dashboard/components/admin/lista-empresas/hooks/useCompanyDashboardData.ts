@@ -78,6 +78,7 @@ function buildParams(
     search: override?.search ?? base?.search,
     planNames: override?.planNames ?? base?.planNames,
     planTypes: override?.planTypes ?? base?.planTypes,
+    statuses: override?.statuses ?? base?.statuses,
   };
 }
 

@@ -31,6 +31,11 @@ export interface Company {
   diasTesteDisponibilizados?: number | null;
   banida?: boolean;
   banimentoAtivo?: AdminCompanyBanInfo | null;
+  cep?: string | null;
+  bairro?: string | null;
+  logradouro?: string | null;
+  complemento?: string | null;
+  numero?: string | null;
 }
 
 export interface Plan {

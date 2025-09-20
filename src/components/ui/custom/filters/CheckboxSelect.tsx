@@ -1,12 +1,23 @@
 "use client";
 
-import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { cn } from "@/lib/utils";
 import { ChevronsUpDownIcon } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/radix-checkbox";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import type { SelectOption } from "@/components/ui/custom/select";
 
 export interface CheckboxSelectProps {
@@ -73,7 +84,9 @@ export function CheckboxSelect({
   const clear = () => setTemp([]);
 
   const toggle = (v: string) =>
-    setTemp((prev) => (prev.includes(v) ? prev.filter((x) => x !== v) : [...prev, v]));
+    setTemp((prev) =>
+      prev.includes(v) ? prev.filter((x) => x !== v) : [...prev, v]
+    );
 
   return (
     <div className={cn("space-y-2", className)}>
@@ -84,8 +97,7 @@ export function CheckboxSelect({
             ref={triggerRef}
             type="button"
             className={cn(
-              // mirror SelectTrigger visuals
-              "border-input data-[placeholder]:text-muted-foreground [&_svg:not([class*='text-'])]:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 aria-invalid:border-destructive flex w-full items-center justify-between gap-2 rounded-md border bg-transparent px-3 py-2 text-sm whitespace-nowrap shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 data-[size=default]:h-9 data-[size=sm]:h-8",
+              "border-input data-[placeholder]:text-muted-foreground [&_svg:not([class*='text-'])]:text-muted-foreground aria-invalid:ring-destructive/20 aria-invalid:border-destructive flex w-full items-center justify-between gap-2 rounded-md border bg-transparent px-3 py-2 text-sm whitespace-nowrap shadow-xs transition-[color,box-shadow] outline-none focus-visible:border-ring/20 focus-visible:ring-ring/50 focus-visible:ring-[1px] disabled:cursor-not-allowed disabled:opacity-50 data-[size=default]:h-9 data-[size=sm]:h-8"
             )}
             data-size={sizeAttr}
           >
@@ -118,11 +130,14 @@ export function CheckboxSelect({
                   onClick={() => toggle(opt.value)}
                   className={cn(
                     "focus:bg-accent focus:text-accent-foreground hover:bg-muted/50 relative flex w-full cursor-default items-center gap-2 rounded-md py-2 pr-3 pl-3 text-sm outline-hidden select-none mb-1 last:mb-2",
-                    checked && "bg-accent/40",
+                    checked && "bg-accent/40"
                   )}
                 >
                   <span className="pointer-events-none">
-                    <Checkbox checked={checked} className="size-4 rounded-[6px]" />
+                    <Checkbox
+                      checked={checked}
+                      className="size-4 rounded-[6px]"
+                    />
                   </span>
                   <span className="text-sm text-foreground">{opt.label}</span>
                 </button>
@@ -130,10 +145,22 @@ export function CheckboxSelect({
             })}
           </div>
           <div className="flex items-center gap-2 border-t bg-white px-3 py-2">
-            <Button type="button" variant="ghost" size="sm" onClick={clear} className="text-muted-foreground">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={clear}
+              className="text-muted-foreground"
+            >
               Limpar
             </Button>
-            <Button type="button" size="sm" onClick={apply} className="ml-auto" disabled={temp.length === 0}>
+            <Button
+              type="button"
+              size="sm"
+              onClick={apply}
+              className="ml-auto"
+              disabled={temp.length === 0}
+            >
               Aplicar
             </Button>
           </div>

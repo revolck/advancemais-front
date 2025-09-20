@@ -26,7 +26,11 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import { ArrowUpDown, ChevronUp, ChevronDown } from "lucide-react";
-import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from "@/components/ui/tooltip";
 import {
   Select,
   SelectContent,
@@ -40,9 +44,15 @@ import { COMPANY_DASHBOARD_CONFIG } from "./constants";
 import { useCompanyDashboardData } from "./hooks/useCompanyDashboardData";
 import type { CompanyDashboardProps } from "./types";
 import type { FilterField } from "@/components/ui/custom/filters";
+import type { AdminCompanyStatus } from "@/api/empresas";
 
 const normalizeCnpj = (value?: string | null): string =>
   value?.replace(/\D/g, "") ?? "";
+
+const STATUS_FILTER_OPTIONS: { value: AdminCompanyStatus; label: string }[] = [
+  { value: "ATIVO", label: "Ativo" },
+  { value: "INATIVO", label: "Desativado" },
+];
 
 export function CompanyDashboard({
   className,
@@ -62,10 +72,12 @@ export function CompanyDashboard({
   const [pageSize, setPageSize] = useState(defaultPageSize);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedPlans, setSelectedPlans] = useState<string[]>([]);
+  const [selectedStatuses, setSelectedStatuses] = useState<AdminCompanyStatus[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
 
   const searchTermRef = useRef(searchTerm);
   const selectedPlansRef = useRef<string[]>(selectedPlans);
+  const selectedStatusesRef = useRef<AdminCompanyStatus[]>(selectedStatuses);
   const pageSizeRef = useRef(pageSize);
   const hasFetchedRef = useRef(false);
 
@@ -76,6 +88,10 @@ export function CompanyDashboard({
   useEffect(() => {
     selectedPlansRef.current = selectedPlans;
   }, [selectedPlans]);
+
+  useEffect(() => {
+    selectedStatusesRef.current = selectedStatuses;
+  }, [selectedStatuses]);
 
   useEffect(() => {
     pageSizeRef.current = pageSize;
@@ -105,7 +121,7 @@ export function CompanyDashboard({
     if (!shouldFetch) {
       setCurrentPage(1);
     }
-  }, [searchTerm, selectedPlans, shouldFetch]);
+  }, [searchTerm, selectedPlans, selectedStatuses, shouldFetch]);
 
   useEffect(() => {
     if (!shouldFetch) {
@@ -180,19 +196,25 @@ export function CompanyDashboard({
     } catch {}
   }, [sortField, sortDirection]);
 
-  const sortList = <T extends typeof partnerships[number]>(list: T[]) => {
+  const sortList = <T extends (typeof partnerships)[number]>(list: T[]) => {
     if (!sortField) return list;
     const arr = [...list];
     arr.sort((a, b) => {
       if (sortField === "name") {
         const aName = a.empresa.nome?.toLocaleLowerCase?.() ?? "";
         const bName = b.empresa.nome?.toLocaleLowerCase?.() ?? "";
-        const cmp = aName.localeCompare(bName, "pt-BR", { sensitivity: "base" });
+        const cmp = aName.localeCompare(bName, "pt-BR", {
+          sensitivity: "base",
+        });
         return sortDirection === "asc" ? cmp : -cmp;
       }
       // createdAt
-      const aTime = a.empresa.criadoEm ? new Date(a.empresa.criadoEm).getTime() : 0;
-      const bTime = b.empresa.criadoEm ? new Date(b.empresa.criadoEm).getTime() : 0;
+      const aTime = a.empresa.criadoEm
+        ? new Date(a.empresa.criadoEm).getTime()
+        : 0;
+      const bTime = b.empresa.criadoEm
+        ? new Date(b.empresa.criadoEm).getTime()
+        : 0;
       const cmp = aTime - bTime; // asc: mais antigo → mais novo
       return sortDirection === "asc" ? cmp : -cmp;
     });
@@ -231,9 +253,22 @@ export function CompanyDashboard({
       const matchesPlan =
         selectedPlans.length === 0 || selectedPlans.includes(plan.nome);
 
-      return matchesSearch && matchesPlan;
+      const companyStatus: AdminCompanyStatus =
+        company.status ?? (company.ativo ? "ATIVO" : "INATIVO");
+
+      const matchesStatus =
+        selectedStatuses.length === 0 ||
+        selectedStatuses.includes(companyStatus);
+
+      return matchesSearch && matchesPlan && matchesStatus;
     });
-  }, [partnerships, searchTerm, selectedPlans, shouldFetch]);
+  }, [
+    partnerships,
+    searchTerm,
+    selectedPlans,
+    selectedStatuses,
+    shouldFetch,
+  ]);
 
   const displayedPartnerships = useMemo(() => {
     if (shouldFetch) {
@@ -243,7 +278,14 @@ export function CompanyDashboard({
     const start = (currentPage - 1) * pageSize;
     const end = start + pageSize;
     return sortList(filteredPartnerships).slice(start, end);
-  }, [filteredPartnerships, currentPage, pageSize, shouldFetch, sortField, sortDirection]);
+  }, [
+    filteredPartnerships,
+    currentPage,
+    pageSize,
+    shouldFetch,
+    sortField,
+    sortDirection,
+  ]);
 
   const totalItems = shouldFetch
     ? pagination?.total ?? 0
@@ -282,6 +324,13 @@ export function CompanyDashboard({
         options: uniquePlans.map((p) => ({ value: p, label: p })),
         placeholder: "Selecione planos",
       },
+      {
+        key: "status",
+        label: "Status",
+        mode: "multiple",
+        options: STATUS_FILTER_OPTIONS,
+        placeholder: "Selecione status",
+      },
     ],
     [uniquePlans]
   );
@@ -289,8 +338,9 @@ export function CompanyDashboard({
   const filterValues = useMemo(
     () => ({
       plan: selectedPlans,
+      status: selectedStatuses,
     }),
-    [selectedPlans]
+    [selectedPlans, selectedStatuses]
   );
 
   const runFetch = useCallback(
@@ -309,6 +359,10 @@ export function CompanyDashboard({
         planNames:
           selectedPlansRef.current.length > 0
             ? selectedPlansRef.current
+            : undefined,
+        statuses:
+          selectedStatusesRef.current.length > 0
+            ? selectedStatusesRef.current
             : undefined,
       }).catch(() => {});
     },
@@ -333,12 +387,13 @@ export function CompanyDashboard({
       if (shouldFetch) {
         searchTermRef.current = searchTerm;
         selectedPlansRef.current = selectedPlans;
+        selectedStatusesRef.current = selectedStatuses;
         runFetch(1, numericValue);
       } else {
         setCurrentPage(1);
       }
     },
-    [runFetch, searchTerm, selectedPlans, shouldFetch]
+    [runFetch, searchTerm, selectedPlans, selectedStatuses, shouldFetch]
   );
 
   const handlePageChange = useCallback(
@@ -391,7 +446,7 @@ export function CompanyDashboard({
         </ButtonCustom>
       </div>
 
-      <div className="border-b border-gray-200 top-0 z-10 backdrop-blur-xl">
+      <div className="border-b border-gray-200 top-0 z-10">
         <div className="py-4">
           <FilterBar
             fields={filterFields}
@@ -405,15 +460,27 @@ export function CompanyDashboard({
                 if (shouldFetch) {
                   runFetch(1);
                 }
+              } else if (key === "status") {
+                const values = Array.isArray(value)
+                  ? (value as AdminCompanyStatus[])
+                  : [];
+                setSelectedStatuses(values);
+                selectedStatusesRef.current = values;
+                setCurrentPage(1);
+                if (shouldFetch) {
+                  runFetch(1);
+                }
               }
             }}
             onClearAll={() => {
               setSearchTerm("");
               setSelectedPlans([]);
+              setSelectedStatuses([]);
               setCurrentPage(1);
               if (shouldFetch) {
                 searchTermRef.current = "";
                 selectedPlansRef.current = [];
+                selectedStatusesRef.current = [];
                 runFetch(1);
               }
             }}
@@ -432,6 +499,7 @@ export function CompanyDashboard({
                     setCurrentPage(1);
                     searchTermRef.current = searchTerm;
                     selectedPlansRef.current = selectedPlans;
+                    selectedStatusesRef.current = selectedStatuses;
                     runFetch(1);
                   }}
                   disabled={isLoadingData}
@@ -465,7 +533,13 @@ export function CompanyDashboard({
               <TableRow className="border-gray-200 bg-gray-50/50">
                 <TableHead
                   className="font-medium text-gray-700 py-4"
-                  aria-sort={sortField === "name" ? (sortDirection === "asc" ? "ascending" : "descending") : "none"}
+                  aria-sort={
+                    sortField === "name"
+                      ? sortDirection === "asc"
+                        ? "ascending"
+                        : "descending"
+                      : "none"
+                  }
                 >
                   <div className="inline-flex items-center gap-1">
                     <Tooltip>
@@ -492,20 +566,22 @@ export function CompanyDashboard({
 
                     <div className="ml-1 flex flex-col -space-y-1.5 items-center leading-none">
                       <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button
-                          type="button"
-                          className="rounded p-0.5 cursor-pointer bg-transparent hover:bg-transparent"
-                          aria-label="Ordenar A → Z"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSort("name", "asc");
-                          }}
-                        >
+                        <TooltipTrigger asChild>
+                          <button
+                            type="button"
+                            className="rounded p-0.5 cursor-pointer bg-transparent hover:bg-transparent"
+                            aria-label="Ordenar A → Z"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSort("name", "asc");
+                            }}
+                          >
                             <ChevronUp
                               className={cn(
                                 "h-3 w-3 text-gray-400",
-                                sortField === "name" && sortDirection === "asc" && "text-[var(--primary-color)]"
+                                sortField === "name" &&
+                                  sortDirection === "asc" &&
+                                  "text-[var(--primary-color)]"
                               )}
                             />
                           </button>
@@ -513,20 +589,22 @@ export function CompanyDashboard({
                         <TooltipContent sideOffset={6}>A → Z</TooltipContent>
                       </Tooltip>
                       <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button
-                          type="button"
-                          className="rounded p-0.5 cursor-pointer bg-transparent hover:bg-transparent"
-                          aria-label="Ordenar Z → A"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSort("name", "desc");
-                          }}
-                        >
+                        <TooltipTrigger asChild>
+                          <button
+                            type="button"
+                            className="rounded p-0.5 cursor-pointer bg-transparent hover:bg-transparent"
+                            aria-label="Ordenar Z → A"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSort("name", "desc");
+                            }}
+                          >
                             <ChevronDown
                               className={cn(
                                 "h-3 w-3 text-gray-400 -mt-0.5",
-                                sortField === "name" && sortDirection === "desc" && "text-[var(--primary-color)]"
+                                sortField === "name" &&
+                                  sortDirection === "desc" &&
+                                  "text-[var(--primary-color)]"
                               )}
                             />
                           </button>
@@ -550,7 +628,13 @@ export function CompanyDashboard({
                 </TableHead>
                 <TableHead
                   className="font-medium text-gray-700"
-                  aria-sort={sortField === "createdAt" ? (sortDirection === "asc" ? "ascending" : "descending") : "none"}
+                  aria-sort={
+                    sortField === "createdAt"
+                      ? sortDirection === "asc"
+                        ? "ascending"
+                        : "descending"
+                      : "none"
+                  }
                 >
                   <div className="inline-flex items-center gap-1">
                     <Tooltip>
@@ -577,48 +661,56 @@ export function CompanyDashboard({
 
                     <div className="ml-1 flex flex-col -space-y-1.5 items-center leading-none">
                       <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button
-                          type="button"
-                          className="rounded p-0.5 cursor-pointer bg-transparent hover:bg-transparent"
-                          aria-label="Mais nova → mais antiga"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            // Up = atual → antigo (desc)
-                            setSort("createdAt", "desc");
-                          }}
-                        >
+                        <TooltipTrigger asChild>
+                          <button
+                            type="button"
+                            className="rounded p-0.5 cursor-pointer bg-transparent hover:bg-transparent"
+                            aria-label="Mais nova → mais antiga"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              // Up = atual → antigo (desc)
+                              setSort("createdAt", "desc");
+                            }}
+                          >
                             <ChevronUp
                               className={cn(
                                 "h-3 w-3 text-gray-400",
-                                sortField === "createdAt" && sortDirection === "desc" && "text-[var(--primary-color)]"
+                                sortField === "createdAt" &&
+                                  sortDirection === "desc" &&
+                                  "text-[var(--primary-color)]"
                               )}
                             />
                           </button>
                         </TooltipTrigger>
-                        <TooltipContent sideOffset={6}>Mais nova → mais antiga</TooltipContent>
+                        <TooltipContent sideOffset={6}>
+                          Mais nova → mais antiga
+                        </TooltipContent>
                       </Tooltip>
                       <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button
-                          type="button"
-                          className="rounded p-0.5 cursor-pointer bg-transparent hover:bg-transparent"
-                          aria-label="Mais antiga → mais nova"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            // Down = antigo → atual (asc)
-                            setSort("createdAt", "asc");
-                          }}
-                        >
+                        <TooltipTrigger asChild>
+                          <button
+                            type="button"
+                            className="rounded p-0.5 cursor-pointer bg-transparent hover:bg-transparent"
+                            aria-label="Mais antiga → mais nova"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              // Down = antigo → atual (asc)
+                              setSort("createdAt", "asc");
+                            }}
+                          >
                             <ChevronDown
                               className={cn(
                                 "h-3 w-3 text-gray-400 -mt-0.5",
-                                sortField === "createdAt" && sortDirection === "asc" && "text-[var(--primary-color)]"
+                                sortField === "createdAt" &&
+                                  sortDirection === "asc" &&
+                                  "text-[var(--primary-color)]"
                               )}
                             />
                           </button>
                         </TooltipTrigger>
-                        <TooltipContent sideOffset={6}>Mais antiga → mais nova</TooltipContent>
+                        <TooltipContent sideOffset={6}>
+                          Mais antiga → mais nova
+                        </TooltipContent>
                       </Tooltip>
                     </div>
                   </div>

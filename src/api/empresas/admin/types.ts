@@ -61,11 +61,16 @@ export interface AdminCompanyListItem {
   cnpj?: string | null;
   email?: string | null;
   telefone?: string | null;
+  cep?: string | null;
+  cidade?: string | null;
+  estado?: string | null;
+  bairro?: string | null;
+  logradouro?: string | null;
+  complemento?: string | null;
+  numero?: string | null;
   descricao?: string | null;
   instagram?: string | null;
   linkedin?: string | null;
-  cidade?: string | null;
-  estado?: string | null;
   criadoEm?: string | null;
   ativa: boolean;
   status?: AdminCompanyStatus;
@@ -105,6 +110,7 @@ export interface ListAdminCompaniesParams {
   // optional filters (backend may ignore unknown params)
   planNames?: string[]; // by plan.nome
   planTypes?: AdminCompanyPlanType[]; // e.g., "parceiro", "30_dias", etc.
+  statuses?: AdminCompanyStatus[]; // company status (ATIVO | INATIVO)
 }
 
 export interface AdminCompanyPlanPayload {
@@ -113,6 +119,9 @@ export interface AdminCompanyPlanPayload {
   iniciarEm?: string;
   observacao?: string;
   resetPeriodo?: boolean;
+  modeloPagamento?: string | null;
+  metodoPagamento?: string | null;
+  statusPagamento?: string | null;
 }
 
 export interface CreateAdminCompanyPayload {
@@ -135,15 +144,20 @@ export interface CreateAdminCompanyPayload {
 
 export interface UpdateAdminCompanyPayload {
   nome?: string;
-  email?: string;
-  telefone?: string;
-  cnpj?: string;
-  cidade?: string;
-  estado?: string;
-  descricao?: string;
-  instagram?: string;
-  linkedin?: string;
-  avatarUrl?: string;
+  email?: string | null;
+  telefone?: string | null;
+  cnpj?: string | null;
+  cep?: string | null;
+  cidade?: string | null;
+  estado?: string | null;
+  bairro?: string | null;
+  logradouro?: string | null;
+  complemento?: string | null;
+  numero?: string | null;
+  descricao?: string | null;
+  instagram?: string | null;
+  linkedin?: string | null;
+  avatarUrl?: string | null;
   status?: AdminCompanyStatus;
   plano?: AdminCompanyPlanPayload;
 }

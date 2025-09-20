@@ -62,6 +62,9 @@ export async function listAdminCompanies(
   if (params?.planTypes && params.planTypes.length > 0) {
     for (const t of params.planTypes) query.append("planType", String(t));
   }
+  if (params?.statuses && params.statuses.length > 0) {
+    for (const status of params.statuses) query.append("status", status);
+  }
 
   const url = query.toString() ? `${endpoint}?${query.toString()}` : endpoint;
 

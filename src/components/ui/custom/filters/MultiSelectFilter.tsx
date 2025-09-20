@@ -120,11 +120,10 @@ export function MultiSelectFilter({
             className={cn(
               "w-full justify-between h-12 px-4 py-2.5",
               "file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground border-input",
-              "bg-transparent rounded-md border",
-              "text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm aria-invalid:ring-destructive/20 aria-invalid:border-destructive w-full text-foreground focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] h-12 focus:border-blue-400 focus:ring-1 focus:ring-blue-300",
+              "bg-transparent hover:bg-gray-300/10 rounded-md border",
+              "text-base transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm aria-invalid:ring-destructive/20 aria-invalid:border-destructive w-full text-foreground focus-visible:border-ring/20 focus-visible:ring-ring/50 focus-visible:ring-[1px] h-12",
               "text-foreground font-medium text-sm",
-              "shadow-none hover:shadow-sm",
-              selectedValues.length > 0 && "border-blue-600/30"
+              "shadow-none cursor-pointer"
             )}
           >
             <span
@@ -190,9 +189,8 @@ export function MultiSelectFilter({
                     key={opt.value}
                     className={cn(
                       "flex items-center space-x-2.5 p-2 -mx-1",
-                      "hover:bg-accent/50 rounded-lg transition-all duration-200",
-                      "group",
-                      checked && "bg-blue-50/50"
+                      "hover:bg-gray-200/10 rounded-lg transition-all duration-200",
+                      "group"
                     )}
                   >
                     <CheckboxCustom
