@@ -440,8 +440,14 @@ export function CompanyDashboard({
   return (
     <div className={cn("min-h-full", className)}>
       {/* Top action bar */}
-      <div className="flex items-center justify-end mb-2">
-        <ButtonCustom variant="primary" size="md" icon="Plus">
+      <div className="mb-4 flex flex-col items-stretch gap-3 sm:mb-2 sm:flex-row sm:items-center sm:justify-end">
+        <ButtonCustom
+          variant="primary"
+          size="md"
+          icon="Plus"
+          fullWidth
+          className="sm:w-auto"
+        >
           Criar empresa
         </ButtonCustom>
       </div>
@@ -503,6 +509,8 @@ export function CompanyDashboard({
                     runFetch(1);
                   }}
                   disabled={isLoadingData}
+                  fullWidth
+                  className="md:w-full xl:w-auto"
                 >
                   Pesquisar
                 </ButtonCustom>
