@@ -51,11 +51,13 @@ export function FilterBar({
   return (
     <div
       className={cn(
-        "rounded-xl border border-gray-200 bg-white p-4 md:p-5 space-y-3",
+        "rounded-xl border border-gray-200 bg-white p-4 md:p-5 space-y-4",
         className
       )}
     >
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-[minmax(0,3fr)_minmax(0,1fr)_minmax(0,1fr)_auto] md:gap-3 md:items-end">
+      <div
+        className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4 xl:grid-cols-[minmax(0,3fr)_minmax(0,1.2fr)_minmax(0,1.2fr)_auto] xl:items-end xl:gap-5"
+      >
         {search && (
           <div className="min-w-0">
             <div className="relative">
@@ -117,13 +119,17 @@ export function FilterBar({
             </div>
           );
         })}
-        <div className="flex items-center gap-3 justify-end">
-          {rightActions}
-        </div>
+        {rightActions && (
+          <div
+            className="flex w-full flex-col items-stretch gap-3 md:col-span-2 md:flex-row md:justify-start xl:col-span-1 xl:flex-col xl:items-end xl:justify-end"
+          >
+            {rightActions}
+          </div>
+        )}
       </div>
 
       {activeChips.length > 0 && (
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-wrap items-center gap-2">
             {activeChips.map((chip) => (
               <span
