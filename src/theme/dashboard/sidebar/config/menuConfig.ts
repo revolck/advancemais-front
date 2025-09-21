@@ -127,7 +127,7 @@ const rawMenuSections: MenuSection[] = [
           {
             icon: null,
             label: "Empresas",
-            route: "/dashboard/empresas",
+            route: "/empresas",
             permissions: ADMIN_PERMISSIONS,
           },
           {

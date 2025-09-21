@@ -121,7 +121,7 @@ const SignInPageDemo = () => {
         toastCustom.success("Login realizado com sucesso!");
         setTimeout(() => {
           window.location.href = isLocalhost
-            ? "/dashboard"
+            ? "/"
             : `${protocol}//app.${baseDomain}${port}/`;
         }, 1000);
       } catch (error) {

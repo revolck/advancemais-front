@@ -38,9 +38,9 @@ export function DashboardBreadcrumb({ items }: DashboardBreadcrumbProps) {
                       {item.label}
                     </span>
                   </BreadcrumbPage>
-                ) : isFirst ? (
+                ) : item.href ? (
                   <BreadcrumbLink
-                    href={item.href || '#'}
+                    href={item.href}
                     className="flex items-center gap-2 text-gray-500 hover:text-gray-800 transition-colors"
                   >
                     {item.icon && (

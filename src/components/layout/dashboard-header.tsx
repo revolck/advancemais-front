@@ -1,6 +1,6 @@
 'use client';
 
-import { useBreadcrumb } from '@/hooks/use-breadcrumb';
+import { useBreadcrumb } from '@/config/breadcrumb';
 import { DashboardBreadcrumb } from './dashboard-breadcrumb';
 import { cn } from '@/lib/utils';
 
@@ -8,12 +8,14 @@ interface DashboardHeaderProps {
   title?: string;
   className?: string;
   children?: React.ReactNode;
+  showBreadcrumb?: boolean; // permite ocultar o breadcrumb
 }
 
 export function DashboardHeader({ 
   title: customTitle, 
   className,
-  children 
+  children,
+  showBreadcrumb = true,
 }: DashboardHeaderProps) {
   const { title, items } = useBreadcrumb();
   const displayTitle = customTitle || title;
@@ -33,7 +35,7 @@ export function DashboardHeader({
       {/* Lado direito - Breadcrumb e conteúdo customizável */}
       <div className="flex items-center gap-6">
         {/* Breadcrumb */}
-        <DashboardBreadcrumb items={items} />
+        {showBreadcrumb && <DashboardBreadcrumb items={items} />}
         
         {/* Conteúdo customizável */}
         {children && (

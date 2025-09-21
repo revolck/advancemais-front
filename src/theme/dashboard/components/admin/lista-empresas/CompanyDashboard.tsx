@@ -72,7 +72,9 @@ export function CompanyDashboard({
   const [pageSize, setPageSize] = useState(defaultPageSize);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedPlans, setSelectedPlans] = useState<string[]>([]);
-  const [selectedStatuses, setSelectedStatuses] = useState<AdminCompanyStatus[]>([]);
+  const [selectedStatuses, setSelectedStatuses] = useState<
+    AdminCompanyStatus[]
+  >([]);
   const [currentPage, setCurrentPage] = useState(1);
 
   const searchTermRef = useRef(searchTerm);
@@ -215,7 +217,7 @@ export function CompanyDashboard({
       const bTime = b.empresa.criadoEm
         ? new Date(b.empresa.criadoEm).getTime()
         : 0;
-      const cmp = aTime - bTime; // asc: mais antigo → mais novo
+      const cmp = aTime - bTime;
       return sortDirection === "asc" ? cmp : -cmp;
     });
     return arr;
@@ -262,13 +264,7 @@ export function CompanyDashboard({
 
       return matchesSearch && matchesPlan && matchesStatus;
     });
-  }, [
-    partnerships,
-    searchTerm,
-    selectedPlans,
-    selectedStatuses,
-    shouldFetch,
-  ]);
+  }, [partnerships, searchTerm, selectedPlans, selectedStatuses, shouldFetch]);
 
   const displayedPartnerships = useMemo(() => {
     if (shouldFetch) {
@@ -628,9 +624,7 @@ export function CompanyDashboard({
                 <TableHead className="font-medium text-gray-700">
                   Localização
                 </TableHead>
-                <TableHead className="font-medium text-gray-700">
-                  Vagas
-                </TableHead>
+                {/* Coluna de Vagas removida */}
                 <TableHead className="font-medium text-gray-700">
                   Status
                 </TableHead>

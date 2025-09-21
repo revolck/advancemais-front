@@ -5,8 +5,11 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { TableRow, TableCell } from "@/components/ui/table";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { cn } from "@/lib/utils";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import type { Partnership } from "../types";
 import { TRIAL_PARTNERSHIP_TYPES } from "../constants";
 
@@ -150,18 +153,6 @@ function getCompanyStatusBadges(partnership: Partnership) {
 }
 
 export const CompanyRow: React.FC<CompanyRowProps> = ({ partnership }) => {
-  const rawVagasTotal =
-    partnership.plano.quantidadeVagas ?? partnership.raw?.limiteVagasPlano;
-  const vagasTotal = rawVagasTotal ?? 0;
-  const rawVagasPublicadas =
-    partnership.plano.vagasPublicadas ??
-    partnership.raw?.vagas?.publicadas ??
-    partnership.raw?.vagasPublicadas;
-  const vagasPublicadas = rawVagasPublicadas ?? 0;
-  const percent =
-    vagasTotal > 0
-      ? Math.min(100, Math.round((vagasPublicadas / vagasTotal) * 100))
-      : 0;
   const formattedCnpj = formatCnpj(partnership.empresa.cnpj);
   const planName = partnership.plano?.nome?.trim() ?? "";
   const hasPlanInfo = planName.length > 0;
@@ -175,40 +166,6 @@ export const CompanyRow: React.FC<CompanyRowProps> = ({ partnership }) => {
   const locationParts = [city, state].filter(Boolean);
   const hasLocation = locationParts.length > 0;
   const locationDisplay = hasLocation ? locationParts.join("/") : "—";
-  const paymentStatus =
-    partnership.pagamento?.status ?? partnership.plano.statusPagamento ?? null;
-  const paymentMethod =
-    partnership.pagamento?.metodo ?? partnership.plano.metodoPagamento ?? null;
-  const paymentModel =
-    partnership.pagamento?.modelo ?? partnership.plano.modeloPagamento ?? null;
-  const paymentStatusBadge = getPaymentStatusBadge(paymentStatus);
-  const paymentDetailsParts = [paymentModel, paymentMethod]
-    .map((value) => value?.trim())
-    .filter((value): value is string => Boolean(value));
-  const paymentDetails = paymentDetailsParts.join(" · ");
-  const hasPaymentInfo = Boolean(paymentStatusBadge || paymentDetails);
-  const hasVacancyInfo = rawVagasTotal != null || rawVagasPublicadas != null;
-  const remainingVagas = Math.max(vagasTotal - vagasPublicadas, 0);
-  const usageTone =
-    percent >= 80 ? "success" : percent >= 40 ? "warning" : "danger";
-  const toneStyles: Record<
-    "success" | "warning" | "danger",
-    { bar: string; chip: string }
-  > = {
-    success: {
-      bar: "from-emerald-400 to-emerald-500",
-      chip: "bg-emerald-100 text-emerald-700",
-    },
-    warning: {
-      bar: "from-amber-300 to-amber-500",
-      chip: "bg-amber-100 text-amber-700",
-    },
-    danger: {
-      bar: "from-rose-300 to-rose-500",
-      chip: "bg-rose-100 text-rose-600",
-    },
-  };
-  const tone = toneStyles[usageTone];
   const companyBadges = getCompanyStatusBadges(partnership);
 
   return (
@@ -264,47 +221,7 @@ export const CompanyRow: React.FC<CompanyRowProps> = ({ partnership }) => {
           <span className="text-sm text-gray-500">—</span>
         )}
       </TableCell>
-      <TableCell>
-        {hasVacancyInfo ? (
-          <div className="min-w-[160px] rounded-xl border border-gray-100 bg-slate-50/80 px-3 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
-            <div className="flex items-center justify-between text-xs font-medium text-gray-600">
-              <span>
-                <span className="font-semibold text-gray-900">Publicadas:</span>{" "}
-                {vagasPublicadas}
-              </span>
-              {rawVagasTotal != null && (
-                <span>
-                  <span className="font-semibold text-gray-900">
-                    Restantes:
-                  </span>{" "}
-                  {remainingVagas}
-                </span>
-              )}
-            </div>
-            <div className="mt-3 flex items-center gap-2">
-              <div className="h-2 flex-1 overflow-hidden rounded-full bg-gray-200/90">
-                <div
-                  className={cn(
-                    "h-full rounded-full bg-gradient-to-r transition-all duration-300",
-                    tone.bar
-                  )}
-                  style={{ width: `${percent}%` }}
-                />
-              </div>
-              <span
-                className={cn(
-                  "rounded-full px-2 py-0.5 text-[11px] font-semibold",
-                  tone.chip
-                )}
-              >
-                {percent}%
-              </span>
-            </div>
-          </div>
-        ) : (
-          <span className="text-sm text-gray-500">—</span>
-        )}
-      </TableCell>
+      {/* Coluna de Vagas removida */}
       {/* removed "Status Plano" column by request */}
       <TableCell>
         <div className="flex flex-wrap gap-1">{companyBadges}</div>
@@ -338,7 +255,7 @@ export const CompanyRow: React.FC<CompanyRowProps> = ({ partnership }) => {
               className="h-8 w-8 rounded-full text-gray-500 hover:text-white hover:bg-[var(--primary-color)]"
               aria-label="Visualizar empresa"
             >
-              <Link href={`/dashboard/empresas/${partnership.empresa.id}`}>
+              <Link href={`/empresas/${partnership.empresa.id}`}>
                 <ChevronRight className="h-4 w-4" />
               </Link>
             </Button>

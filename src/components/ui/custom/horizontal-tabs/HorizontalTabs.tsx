@@ -154,7 +154,7 @@ export function HorizontalTabs({
                   animate="animate"
                   exit="exit"
                   className={cn(
-                    "rounded-3xl border border-slate-200/80 bg-white p-6 shadow-[0_18px_45px_-35px_rgba(15,23,42,0.35)] sm:p-7",
+                    "rounded-3xl border border-slate-200/80 bg-white p-6 sm:p-7",
                     contentClassName
                   )}
                 >

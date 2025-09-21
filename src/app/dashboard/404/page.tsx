@@ -14,7 +14,7 @@ export default function NotFoundPage() {
         O módulo ou recurso que você está tentando acessar não existe ou foi
         movido.
       </p>
-      <Link href="/dashboard/home">
+      <Link href="/">
         <Button size="lg">Voltar ao Dashboard</Button>
       </Link>
     </div>

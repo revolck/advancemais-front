@@ -5,7 +5,7 @@ import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { DashboardSidebar, DashboardHeader } from "@/theme";
 import { toastCustom, ToasterCustom } from "@/components/ui/custom/toast";
-import { DashboardHeader as Breadcrumb } from '@/components/layout';
+import { DashboardHeader as Breadcrumb } from "@/components/layout";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -94,12 +94,15 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         {/* Container principal de conteúdo */}
         <div className="flex flex-1 flex-col bg-white transition-all duration-300 ease-in-out">
           {/* Header do Dashboard */}
-          <DashboardHeader toggleSidebar={toggleSidebar} isCollapsed={isCollapsed} />
+          <DashboardHeader
+            toggleSidebar={toggleSidebar}
+            isCollapsed={isCollapsed}
+          />
 
           {/* Conteúdo principal */}
           <main className="flex-1 overflow-auto bg-gray-100 p-10">
             <div className="min-h-full">
-              <Breadcrumb/>
+              <Breadcrumb showBreadcrumb={pathname !== "/empresas"} />
               {children}
             </div>
           </main>
