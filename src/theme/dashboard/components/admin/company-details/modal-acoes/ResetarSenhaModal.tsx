@@ -73,8 +73,6 @@ export function ResetarSenhaModal({
     email,
     handleClose,
     isSubmitting,
-    requestUserPasswordReset,
-    toastCustom,
   ]);
 
   return (

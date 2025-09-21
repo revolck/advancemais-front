@@ -222,7 +222,7 @@ export function SelectCustom(props: SelectCustomProps) {
               size === "lg" && "h-14",
               error && "border-destructive"
             )}
-            aria-invalid={!!error}
+            data-invalid={error ? "true" : undefined}
           >
             <span className="truncate text-left">
               {selectedLabels.length === 0 ? (
