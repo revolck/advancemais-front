@@ -186,7 +186,6 @@ export function CompanyDashboard({
         if (parsed.dir) setSortDirection(parsed.dir);
       }
     } catch {}
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   React.useEffect(() => {
@@ -198,30 +197,33 @@ export function CompanyDashboard({
     } catch {}
   }, [sortField, sortDirection]);
 
-  const sortList = <T extends (typeof partnerships)[number]>(list: T[]) => {
-    if (!sortField) return list;
-    const arr = [...list];
-    arr.sort((a, b) => {
-      if (sortField === "name") {
-        const aName = a.empresa.nome?.toLocaleLowerCase?.() ?? "";
-        const bName = b.empresa.nome?.toLocaleLowerCase?.() ?? "";
-        const cmp = aName.localeCompare(bName, "pt-BR", {
-          sensitivity: "base",
-        });
+  const sortList = useCallback(
+    <T extends (typeof partnerships)[number]>(list: T[]) => {
+      if (!sortField) return list;
+      const arr = [...list];
+      arr.sort((a, b) => {
+        if (sortField === "name") {
+          const aName = a.empresa.nome?.toLocaleLowerCase?.() ?? "";
+          const bName = b.empresa.nome?.toLocaleLowerCase?.() ?? "";
+          const cmp = aName.localeCompare(bName, "pt-BR", {
+            sensitivity: "base",
+          });
+          return sortDirection === "asc" ? cmp : -cmp;
+        }
+        // createdAt
+        const aTime = a.empresa.criadoEm
+          ? new Date(a.empresa.criadoEm).getTime()
+          : 0;
+        const bTime = b.empresa.criadoEm
+          ? new Date(b.empresa.criadoEm).getTime()
+          : 0;
+        const cmp = aTime - bTime;
         return sortDirection === "asc" ? cmp : -cmp;
-      }
-      // createdAt
-      const aTime = a.empresa.criadoEm
-        ? new Date(a.empresa.criadoEm).getTime()
-        : 0;
-      const bTime = b.empresa.criadoEm
-        ? new Date(b.empresa.criadoEm).getTime()
-        : 0;
-      const cmp = aTime - bTime;
-      return sortDirection === "asc" ? cmp : -cmp;
-    });
-    return arr;
-  };
+      });
+      return arr;
+    },
+    [sortDirection, sortField],
+  );
 
   const uniquePlans = useMemo(() => {
     const names = partnerships
@@ -279,8 +281,7 @@ export function CompanyDashboard({
     currentPage,
     pageSize,
     shouldFetch,
-    sortField,
-    sortDirection,
+    sortList,
   ]);
 
   const totalItems = shouldFetch

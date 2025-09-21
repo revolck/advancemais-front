@@ -118,8 +118,6 @@ export function BanirEmpresaModal({
     onBanApplied,
     state.dias,
     state.motivo,
-    toastCustom,
-    createAdminCompanyBan,
   ]);
 
   return (

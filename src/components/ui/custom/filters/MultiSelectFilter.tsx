@@ -49,7 +49,7 @@ export function MultiSelectFilter({
       const sameAll = sameLen && prev.every((v, i) => v === selectedValues[i]);
       return sameAll ? prev : selectedValues;
     });
-  }, [isOpen]);
+  }, [isOpen, selectedValues]);
 
   React.useEffect(() => {
     if (isOpen) return;

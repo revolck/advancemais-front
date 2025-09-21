@@ -108,7 +108,7 @@ export function EditarAssinaturaModal({
           .finally(() => setIsLoadingPlans(false));
       }
     }
-  }, [initialState, isOpen, planOptions.length, toastCustom, listPlanosEmpresariais]);
+  }, [initialState, isOpen, planOptions.length]);
 
   const handleClose = useCallback(() => {
     onOpenChange(false);
@@ -227,8 +227,6 @@ export function EditarAssinaturaModal({
     isSaving,
     onSubscriptionUpdated,
     planOptions,
-    toastCustom,
-    updateAdminCompany,
   ]);
 
   return (

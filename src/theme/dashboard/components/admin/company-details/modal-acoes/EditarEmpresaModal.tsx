@@ -134,7 +134,7 @@ export function EditarEmpresaModal({
         setIsCepLoading(false);
       }
     },
-    [isCepLoading, lookupCep, toastCustom]
+    [isCepLoading]
   );
 
   const handleClose = useCallback(() => {
@@ -212,17 +212,7 @@ export function EditarEmpresaModal({
     } finally {
       setIsSaving(false);
     }
-  }, [
-    company.id,
-    formState,
-    handleClose,
-    isSaving,
-    onCompanyUpdated,
-    normalizeCep,
-    isValidCep,
-    updateAdminCompany,
-    toastCustom,
-  ]);
+  }, [company.id, formState, handleClose, isSaving, onCompanyUpdated]);
 
   return (
     <ModalCustom
