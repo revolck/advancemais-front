@@ -20,8 +20,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { apiFetch } from "@/api/client";
-import { usuarioRoutes } from "@/api/routes";
+import { getUserProfile, logoutUserSession } from "@/api/usuarios";
 import { logoutUser } from "@/lib/auth";
 
 interface User {
@@ -49,19 +48,19 @@ export default function UserMenuSimple() {
           return;
         }
 
-        const profile = await apiFetch<{
-          usuario?: { nomeCompleto?: string; email: string; imagemPerfil?: string };
-        }>(usuarioRoutes.profile.get(), {
-          cache: "no-cache",
-          init: { headers: { Authorization: `Bearer ${token}` } },
-        });
-
-        const data = profile.usuario;
-        if (data) {
-          const fullName = data.nomeCompleto?.trim();
-          const name = fullName && fullName.length > 0 ? fullName : data.email.split("@")[0];
-          setUser({ name, email: data.email, avatar: data.imagemPerfil });
+        const profile = await getUserProfile(token);
+        if (!profile?.email) {
+          setIsLoading(false);
+          return;
         }
+
+        const fullName = profile.nomeCompleto?.trim();
+        const name = fullName && fullName.length > 0 ? fullName : profile.email.split("@")[0];
+        setUser({
+          name,
+          email: profile.email,
+          avatar: profile.imagemPerfil ?? undefined,
+        });
       } catch (error) {
         console.error("Erro ao carregar perfil:", error);
       } finally {
@@ -81,10 +80,7 @@ export default function UserMenuSimple() {
         ?.split("=")[1];
 
       if (token) {
-        await apiFetch(usuarioRoutes.logout(), {
-          cache: "no-cache",
-          init: { method: "POST", headers: { Authorization: `Bearer ${token}` } },
-        });
+        await logoutUserSession(token);
       }
     } catch (error) {
       console.error("Erro ao fazer logout:", error);

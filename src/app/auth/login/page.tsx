@@ -3,17 +3,18 @@
 import { useTransition, useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { SignInPage } from "@/components/partials/auth/login/sign-in";
-import { apiFetch } from "@/api/client";
-import { usuarioRoutes } from "@/api/routes";
+import { PasswordRecoveryModal } from "@/components/partials/auth/login/password-recovery-modal";
 import { toastCustom } from "@/components/ui/custom/toast";
-import { UserRole } from "@/config/roles";
+import { ALL_ROLES, UserRole } from "@/config/roles";
 import { getLoginImageDataClient } from "@/api/websites/components";
+import { getUserProfile, loginUser } from "@/api/usuarios";
 
 const SignInPageDemo = () => {
   const [userName, setUserName] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [heroImageSrc, setHeroImageSrc] = useState<string | undefined>();
   const [heroImageLink, setHeroImageLink] = useState<string | undefined>();
+  const [isRecoveryOpen, setIsRecoveryOpen] = useState(false);
   const searchParams = useSearchParams();
 
   useEffect(() => {
@@ -60,42 +61,28 @@ const SignInPageDemo = () => {
       const remember = rememberMe === "true";
 
       try {
-        const res = await apiFetch<{ token: string; refreshToken: string }>(
-          usuarioRoutes.login(),
-          {
-            cache: "no-cache",
-            init: {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ documento: documentoLimpo, senha }),
-            },
-            retries: 1,
-            skipLogoutOn401: true,
-          }
-        );
+        const res = await loginUser({
+          documento: documentoLimpo,
+          senha,
+          rememberMe: remember,
+        });
         let userRole: UserRole | undefined;
         // Busca nome e role do usuário para saudar em futuros logins
         try {
-          const profile = await apiFetch<{
-            usuario?: {
-              nomeCompleto?: string;
-              role?: UserRole;
-              roles?: UserRole[];
-            };
-          }>(usuarioRoutes.profile.get(), {
-            cache: "no-cache",
-            init: {
-              headers: { Authorization: `Bearer ${res.token}` },
-            },
-            retries: 1,
-          });
+          const profile = await getUserProfile(res.token);
 
-          const fullName = profile.usuario?.nomeCompleto;
+          const fullName = profile.nomeCompleto;
           if (fullName) {
             const [firstName] = fullName.split(" ");
             localStorage.setItem("userName", firstName);
           }
-          userRole = profile.usuario?.role || profile.usuario?.roles?.[0];
+          const candidateRoles = [
+            profile.role,
+            ...(Array.isArray(profile.roles) ? profile.roles : []),
+          ].filter(Boolean) as string[];
+          userRole = candidateRoles.find((roleCandidate) =>
+            ALL_ROLES.includes(roleCandidate as UserRole),
+          ) as UserRole | undefined;
         } catch (profileError) {
           console.error("Erro ao buscar perfil:", profileError);
         }
@@ -108,7 +95,8 @@ const SignInPageDemo = () => {
           .replace(/^auth\./, "");
         const domain = isLocalhost ? host : `.${baseDomain}`;
 
-        const maxAge = remember ? "; max-age=2592000" : "";
+        const rememberPreference = res.rememberMe ?? remember;
+        const maxAge = rememberPreference ? "; max-age=2592000" : "";
         document.cookie = `token=${res.token}; path=/; domain=${domain}${maxAge};`;
         document.cookie = `refresh_token=${res.refreshToken}; path=/; domain=${domain}${maxAge};`;
         if (userRole) {
@@ -143,7 +131,7 @@ const SignInPageDemo = () => {
   };
 
   const handleResetPassword = () => {
-    alert("Reset Password clicked");
+    setIsRecoveryOpen(true);
   };
 
   const handleCreateAccount = () => {
@@ -164,6 +152,10 @@ const SignInPageDemo = () => {
             ? `Olá ${userName}, bem vindo de volta!`
             : "Entre no seu perfil"
         }
+      />
+      <PasswordRecoveryModal
+        open={isRecoveryOpen}
+        onOpenChange={setIsRecoveryOpen}
       />
     </div>
   );

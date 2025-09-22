@@ -9,28 +9,39 @@ import {
   toastCustom,
   OfflineModal,
 } from "@/components/ui/custom";
-import { GraduationCap, User, Building, ChevronRight } from "lucide-react";
-import { apiFetch } from "@/api/client";
-import { usuarioRoutes } from "@/api/routes";
+import { GraduationCap, User, Building } from "lucide-react";
+import { registerUser } from "@/api/usuarios";
+import type { UsuarioRegisterPayload } from "@/api/usuarios";
 import { MaskService } from "@/services";
 import Image from "next/image";
 
 type SelectedType = "student" | "candidate" | "company" | null;
 
-const RegisterPage = () => {
-  const initialFormData = {
-    name: "",
-    document: "",
-    phone: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
-  };
+type RegisterFormData = {
+  name: string;
+  document: string;
+  phone: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+};
 
+const createInitialFormData = (): RegisterFormData => ({
+  name: "",
+  document: "",
+  phone: "",
+  email: "",
+  password: "",
+  confirmPassword: "",
+});
+
+const RegisterPage = () => {
   const [selectedType, setSelectedType] = useState<SelectedType>(null);
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [isPending, startTransition] = useTransition();
-  const [formData, setFormData] = useState(initialFormData);
+  const [formData, setFormData] = useState<RegisterFormData>(
+    () => createInitialFormData(),
+  );
   const [passwordError, setPasswordError] = useState("");
 
   useEffect(() => {
@@ -39,7 +50,19 @@ const RegisterPage = () => {
       "registerSelectedType"
     ) as SelectedType;
     if (savedForm) {
-      setFormData(JSON.parse(savedForm));
+      try {
+        const parsed = JSON.parse(savedForm) as Partial<RegisterFormData>;
+        const allowedKeys = Object.keys(createInitialFormData());
+        const sanitized = Object.fromEntries(
+          Object.entries(parsed).filter(([key]) =>
+            allowedKeys.includes(key),
+          ),
+        ) as Partial<RegisterFormData>;
+        setFormData((prev) => ({ ...prev, ...sanitized }));
+      } catch (error) {
+        console.warn("Não foi possível restaurar o formulário de cadastro:", error);
+        localStorage.removeItem("registerFormData");
+      }
     }
     if (savedType) {
       setSelectedType(savedType);
@@ -47,6 +70,11 @@ const RegisterPage = () => {
   }, []);
 
   useEffect(() => {
+    const isEmptyForm = Object.values(formData).every((value) => value === "");
+    if (isEmptyForm) {
+      localStorage.removeItem("registerFormData");
+      return;
+    }
     localStorage.setItem("registerFormData", JSON.stringify(formData));
   }, [formData]);
 
@@ -119,21 +147,22 @@ const RegisterPage = () => {
 
   const resetForm = () => {
     setSelectedType(null);
-    setFormData(initialFormData);
+    setFormData(createInitialFormData());
+    setAcceptTerms(false);
     localStorage.removeItem("registerFormData");
     localStorage.removeItem("registerSelectedType");
   };
 
   const isDocumentValid = () => {
-    const clean = formData.document.replace(/\D/g, "");
-    return selectedType === "company"
-      ? clean.length === 14
-      : clean.length === 11;
+    if (!selectedType) {
+      return false;
+    }
+    const maskType = selectedType === "company" ? "cnpj" : "cpf";
+    return maskService.validate(formData.document, maskType);
   };
 
   const isPhoneValid = () => {
-    const clean = formData.phone.replace(/\D/g, "");
-    return clean.length >= 10 && clean.length <= 11;
+    return maskService.validate(formData.phone, "phone");
   };
 
   const isPasswordValid = (password: string) => {
@@ -168,39 +197,35 @@ const RegisterPage = () => {
 
   const handleSignUp = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!selectedType) {
+      toastCustom.error("Selecione o tipo de conta para continuar.");
+      return;
+    }
     startTransition(async () => {
-      const documentoLimpo = formData.document.replace(/\D/g, "");
-      const telefoneLimpo = formData.phone.replace(/\D/g, "");
-      const tipoUsuario =
+      const documentoLimpo = maskService.removeMask(
+        formData.document,
+        "cpfCnpj",
+      );
+      const telefoneLimpo = maskService.removeMask(formData.phone, "phone");
+      const tipoUsuario: UsuarioRegisterPayload["tipoUsuario"] =
         selectedType === "company" ? "PESSOA_JURIDICA" : "PESSOA_FISICA";
-      const payload: any = {
-        nomeCompleto: formData.name,
+      const payload: UsuarioRegisterPayload = {
+        nomeCompleto: formData.name.trim(),
+        documento: documentoLimpo,
         telefone: telefoneLimpo,
-        email: formData.email,
+        email: formData.email.trim().toLowerCase(),
         senha: formData.password,
         confirmarSenha: formData.confirmPassword,
         aceitarTermos: acceptTerms,
         supabaseId: crypto.randomUUID(),
         tipoUsuario,
       };
-      if (tipoUsuario === "PESSOA_FISICA") {
-        payload.cpf = documentoLimpo;
-      } else {
-        payload.cnpj = documentoLimpo;
-      }
       try {
-        await apiFetch(usuarioRoutes.register(), {
-          cache: "no-cache",
-          init: {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
-          },
-          retries: 1,
-        });
+        await registerUser(payload);
         toastCustom.success(
           "Cadastro realizado com sucesso! Verifique seu email para confirmar."
         );
+        resetForm();
         setTimeout(() => {
           window.location.href = "https://auth.advancemais.com/login";
         }, 1000);

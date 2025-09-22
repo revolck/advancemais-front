@@ -201,25 +201,77 @@ export const empresasRoutes = {
 };
 
 /**
+ * Endpoints for Brevo email verification flows.
+ * Centraliza aliases e variações utilizadas no front.
+ */
+export const brevoRoutes = {
+  base: () => `${prefix}/brevo`,
+  verification: {
+    /**
+     * GET /api/v1/brevo/verificar-email?token=...
+     */
+    verifyEmail: (token: string) =>
+      `${prefix}/brevo/verificar-email?token=${encodeURIComponent(token)}`,
+    /**
+     * POST /api/v1/brevo/reenviar-verificacao
+     */
+    resendVerification: () => `${prefix}/brevo/reenviar-verificacao`,
+    /**
+     * GET /api/v1/brevo/status-verificacao/{userId}
+     */
+    statusByUserId: (userId: string) =>
+      `${prefix}/brevo/status-verificacao/${encodeURIComponent(userId)}`,
+    /**
+     * GET /api/v1/brevo/status/{email}
+     */
+    statusByEmail: (email: string) =>
+      `${prefix}/brevo/status/${encodeURIComponent(email)}`,
+    alias: {
+      /**
+       * GET /api/v1/brevo/verificar?token=...
+       */
+      verifyEmail: (token: string) =>
+        `${prefix}/brevo/verificar?token=${encodeURIComponent(token)}`,
+      /**
+       * POST /api/v1/brevo/reenviar
+       */
+      resendVerification: () => `${prefix}/brevo/reenviar`,
+    },
+  },
+};
+
+/**
  * Endpoints for user-related operations (usuarios).
  * Mirrors the backend users module and groups auth, profile
  * and password recovery helpers in one place.
  */
+const usuarioBase = () => `${prefix}/usuarios`;
+const usuarioRegister = () => `${prefix}/usuarios/registrar`;
+const usuarioLogin = () => `${prefix}/usuarios/login`;
+const usuarioLogout = () => `${prefix}/usuarios/logout`;
+const usuarioRefresh = () => `${prefix}/usuarios/refresh`;
+
 export const usuarioRoutes = {
   /**
    * Retorna o endpoint raiz do módulo de usuários.
    * Deve ser usado para recuperar as informações gerais do serviço
    * (GET /api/v1/usuarios).
    */
-  base: () => `${prefix}/usuarios`,
+  base: usuarioBase,
   /**
    * Alias semântico para o endpoint de informações do módulo.
    */
-  info: () => `${prefix}/usuarios`,
-  register: () => `${prefix}/usuarios/registrar`,
-  login: () => `${prefix}/usuarios/login`,
-  logout: () => `${prefix}/usuarios/logout`,
-  refresh: () => `${prefix}/usuarios/refresh`,
+  info: usuarioBase,
+  register: usuarioRegister,
+  login: usuarioLogin,
+  logout: usuarioLogout,
+  refresh: usuarioRefresh,
+  auth: {
+    register: usuarioRegister,
+    login: usuarioLogin,
+    logout: usuarioLogout,
+    refresh: usuarioRefresh,
+  },
   profile: {
     get: () => `${prefix}/usuarios/perfil`,
     update: () => `${prefix}/usuarios/perfil`,
@@ -231,11 +283,10 @@ export const usuarioRoutes = {
     reset: () => `${prefix}/usuarios/recuperar-senha/redefinir`,
   },
   verification: {
-    verify: (token: string) =>
-      `${prefix}/brevo/verificar-email?token=${encodeURIComponent(token)}`,
-    resend: () => `${prefix}/brevo/reenviar-verificacao`,
-    status: (userId: string) =>
-      `${prefix}/brevo/status-verificacao/${encodeURIComponent(userId)}`,
+    verify: brevoRoutes.verification.verifyEmail,
+    resend: brevoRoutes.verification.resendVerification,
+    status: brevoRoutes.verification.statusByUserId,
+    alias: brevoRoutes.verification.alias,
   },
 };
 
@@ -245,10 +296,6 @@ export const usuarioRoutes = {
  */
 export const mercadoPagoRoutes = {
   base: () => `${prefix}/mercadopago`,
-};
-
-export const brevoRoutes = {
-  base: () => `${prefix}/brevo`,
 };
 
 /**
