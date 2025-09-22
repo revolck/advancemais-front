@@ -13,8 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { AvatarCustom } from "@/components/ui/custom/avatar";
 import { Icon } from "@/components/ui/custom/Icons";
 import { cn } from "@/lib/utils";
-import { apiFetch } from "@/api/client";
-import { usuarioRoutes } from "@/api/routes";
+import { getUserProfile, logoutUserSession } from "@/api/usuarios";
 import { logoutUser } from "@/lib/auth";
 
 export interface UserButtonProps {
@@ -58,32 +57,28 @@ export function UserButton({ className, onNavigate }: UserButtonProps) {
           return;
         }
 
-        const profile = await apiFetch<{
-          usuario?: { nomeCompleto?: string; email: string; plano?: string };
-        }>(usuarioRoutes.profile.get(), {
-          cache: "no-cache",
-          init: { headers: { Authorization: `Bearer ${token}` } },
-        });
-
-        const userData = profile.usuario;
-        if (userData) {
-          const full = userData.nomeCompleto?.trim();
-          const parts = full ? full.split(" ") : [];
-          const firstName = parts[0] || userData.email.split("@")[0];
-          const lastName = parts.slice(1).join(" ") || undefined;
-
-          setUser({
-            firstName,
-            lastName,
-            email: userData.email,
-            plan:
-              userData.plano === "pro"
-                ? "pro"
-                : userData.plano === "enterprise"
-                ? "enterprise"
-                : "free",
-          });
+        const profile = await getUserProfile(token);
+        if (!profile?.email) {
+          setIsLoading(false);
+          return;
         }
+
+        const full = profile.nomeCompleto?.trim();
+        const parts = full ? full.split(" ") : [];
+        const firstName = parts[0] || profile.email.split("@")[0];
+        const lastName = parts.slice(1).join(" ") || undefined;
+
+        setUser({
+          firstName,
+          lastName,
+          email: profile.email,
+          plan:
+            profile.plano === "pro"
+              ? "pro"
+              : profile.plano === "enterprise"
+              ? "enterprise"
+              : "free",
+        });
       } catch (error) {
         console.error("Erro ao carregar perfil:", error);
       } finally {
@@ -118,10 +113,7 @@ export function UserButton({ className, onNavigate }: UserButtonProps) {
         .find((row) => row.startsWith("token="))
         ?.split("=")[1];
       if (token) {
-        await apiFetch(usuarioRoutes.logout(), {
-          cache: "no-cache",
-          init: { method: "POST", headers: { Authorization: `Bearer ${token}` } },
-        });
+        await logoutUserSession(token);
       }
     } catch (error) {
       console.error("Erro ao fazer logout:", error);

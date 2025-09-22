@@ -13,7 +13,7 @@ import {
 import { InputCustom } from "@/components/ui/custom/input";
 import { ButtonCustom } from "@/components/ui/custom/button";
 import { toastCustom } from "@/components/ui/custom/toast";
-import { requestUserPasswordReset } from "@/api/usuarios";
+import { requestPasswordRecovery } from "@/api/usuarios";
 
 interface ResetarSenhaModalProps {
   isOpen: boolean;
@@ -52,7 +52,7 @@ export function ResetarSenhaModal({
     setIsSubmitting(true);
 
     try {
-      await requestUserPasswordReset(email);
+      await requestPasswordRecovery({ email });
 
       toastCustom.success({
         title: "Solicitação enviada",
