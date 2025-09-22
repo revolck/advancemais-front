@@ -15,6 +15,7 @@ import {
   ModalTitle,
   toastCustom,
 } from "@/components/ui/custom";
+import { Icon } from "@/components/ui/custom/Icons";
 import { requestPasswordRecovery } from "@/api/usuarios";
 import type { UsuarioPasswordRecoveryRequestPayload } from "@/api/usuarios";
 import { MaskService } from "@/services";
@@ -134,71 +135,81 @@ export function PasswordRecoveryModal({ open, onOpenChange }: PasswordRecoveryMo
   };
 
   const description = isEmailMode
-    ? "Informe seu e-mail cadastrado para receber o link de redefinição."
-    : "Informe o CPF ou CNPJ associado à conta para receber suporte por e-mail.";
+    ? "Digite o e-mail cadastrado e enviaremos um link seguro para criar uma nova senha."
+    : "Informe o CPF ou CNPJ vinculado à conta. Vamos localizar seu cadastro e orientar o próximo passo por e-mail.";
 
   return (
     <ModalCustom isOpen={open} onOpenChange={onOpenChange}>
-      <ModalContentWrapper className="sm:max-w-md" placement="center">
-        <form onSubmit={handleSubmit} noValidate>
-          <ModalHeader>
-            <ModalTitle>Recuperar acesso</ModalTitle>
-            <ModalDescription>{description}</ModalDescription>
+      <ModalContentWrapper className="sm:max-w-md p-6 sm:p-8" placement="center">
+        <form onSubmit={handleSubmit} noValidate className="space-y-6">
+          <ModalHeader className="items-center gap-4 text-center">
+            <span className="flex size-14 items-center justify-center rounded-full bg-[var(--primary-color)]/10 text-[var(--primary-color)]">
+              <Icon name={isEmailMode ? "MailCheck" : "IdCard"} className="size-6" aria-hidden="true" />
+            </span>
+            <div className="space-y-2">
+              <ModalTitle className="text-2xl font-semibold text-foreground">
+                Recuperar acesso
+              </ModalTitle>
+              <ModalDescription className="text-sm leading-relaxed text-muted-foreground">
+                {description}
+              </ModalDescription>
+            </div>
           </ModalHeader>
 
-          <ModalBody className="space-y-4">
-            <AnimatePresence mode="wait">
-              {isEmailMode ? (
-                <motion.div
-                  key="email"
-                  {...animationVariants}
-                  transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
-                >
-                  <InputCustom
-                    label="E-mail"
-                    type="email"
-                    mask="email"
-                    placeholder="seuemail@email.com"
-                    value={identifier}
-                    onChange={(event) => setIdentifier(event.target.value)}
-                    required
-                    autoFocus
-                  />
-                  <p className="mt-2 text-xs text-muted-foreground">
-                    Enviaremos instruções para o endereço informado.
-                  </p>
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="document"
-                  {...animationVariants}
-                  transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
-                >
-                  <InputCustom
-                    label="CPF ou CNPJ"
-                    mask="cpfCnpj"
-                    placeholder="000.000.000-00"
-                    value={identifier}
-                    onChange={(event) => setIdentifier(event.target.value)}
-                    required
-                    autoFocus
-                  />
-                  <p className="mt-2 text-xs text-muted-foreground">
-                    Usaremos o documento para localizar sua conta.
-                  </p>
-                </motion.div>
-              )}
-            </AnimatePresence>
+          <ModalBody className="space-y-6">
+            <div className="rounded-2xl border border-border/60 bg-muted/40 p-4 sm:p-5">
+              <AnimatePresence mode="wait">
+                {isEmailMode ? (
+                  <motion.div
+                    key="email"
+                    {...animationVariants}
+                    transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+                  >
+                    <InputCustom
+                      label="E-mail"
+                      type="email"
+                      mask="email"
+                      placeholder="seuemail@email.com"
+                      value={identifier}
+                      onChange={(event) => setIdentifier(event.target.value)}
+                      size="lg"
+                      helperText="Enviaremos as instruções para o endereço informado."
+                      required
+                      autoFocus
+                    />
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="document"
+                    {...animationVariants}
+                    transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+                  >
+                    <InputCustom
+                      label="CPF ou CNPJ"
+                      mask="cpfCnpj"
+                      placeholder="000.000.000-00"
+                      value={identifier}
+                      onChange={(event) => setIdentifier(event.target.value)}
+                      size="lg"
+                      helperText="Usaremos o documento para localizar sua conta e enviar as orientações."
+                      required
+                      autoFocus
+                    />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
 
-            <button
+            <ButtonCustom
               type="button"
+              variant="link"
+              className="justify-start px-0 text-sm font-semibold text-[var(--primary-color)]"
               onClick={handleModeToggle}
-              className="text-left text-sm font-medium text-[var(--primary-color)] hover:underline focus:outline-hidden focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--primary-color)]"
             >
               {isEmailMode
-                ? "Esqueci meu e-mail. Tentar por CPF ou CNPJ"
-                : "Voltar e tentar com meu e-mail"}
-            </button>
+                ? "Não tenho acesso ao e-mail. Usar CPF ou CNPJ"
+                : "Prefiro tentar com meu e-mail"}
+            </ButtonCustom>
 
             {error && (
               <p className="text-sm text-destructive" role="alert" aria-live="assertive">
@@ -207,12 +218,13 @@ export function PasswordRecoveryModal({ open, onOpenChange }: PasswordRecoveryMo
             )}
           </ModalBody>
 
-          <ModalFooter>
+          <ModalFooter className="gap-3 sm:flex-row sm:items-center">
             <ButtonCustom
               type="button"
               variant="ghost"
               onClick={() => onOpenChange(false)}
-              className="sm:w-auto"
+              className="font-medium"
+              fullWidth
             >
               Cancelar
             </ButtonCustom>
@@ -221,7 +233,8 @@ export function PasswordRecoveryModal({ open, onOpenChange }: PasswordRecoveryMo
               variant="primary"
               isLoading={isSubmitting}
               disabled={isSubmitting || !identifier.trim()}
-              className="sm:w-auto"
+              size="lg"
+              fullWidth
             >
               Enviar instruções
             </ButtonCustom>
