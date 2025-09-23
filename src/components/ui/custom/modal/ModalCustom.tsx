@@ -246,7 +246,11 @@ export function ModalOverlay({
       <motion.div
         data-slot="modal-overlay"
         data-backdrop={backdrop}
-        className={cn("fixed inset-0 z-[100]", backdropClasses[backdrop], className)}
+        className={cn(
+          "fixed inset-0 z-[100]",
+          backdropClasses[backdrop],
+          className
+        )}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -421,7 +425,8 @@ export function ModalContentWrapper({
           data-slot="modal-content"
           aria-describedby={undefined}
           onEscapeKeyDown={(e) => {
-            if ((props as any)?.onEscapeKeyDown) (props as any).onEscapeKeyDown(e);
+            if ((props as any)?.onEscapeKeyDown)
+              (props as any).onEscapeKeyDown(e);
             if (isKeyboardDismissDisabled) e.preventDefault();
           }}
           onPointerDownOutside={(e) => {
@@ -430,7 +435,8 @@ export function ModalContentWrapper({
             if (isDismissable === false) e.preventDefault();
           }}
           onInteractOutside={(e) => {
-            if ((props as any)?.onInteractOutside) (props as any).onInteractOutside(e);
+            if ((props as any)?.onInteractOutside)
+              (props as any).onInteractOutside(e);
             if (isDismissable === false) e.preventDefault();
           }}
           className={cn(
@@ -449,7 +455,9 @@ export function ModalContentWrapper({
           <motion.div {...combinedMotionProps} style={{ width: "100%" }}>
             {!hideCloseButton && (
               <ModalClose className="absolute right-4 top-4 rounded-md opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 p-1">
-                {closeButton || <XIcon className="h-4 w-4" aria-hidden="true" />}
+                {closeButton || (
+                  <XIcon className="h-4 w-4" aria-hidden="true" />
+                )}
                 <span className="sr-only">Fechar</span>
               </ModalClose>
             )}
