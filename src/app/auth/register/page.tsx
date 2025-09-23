@@ -245,7 +245,7 @@ const RegisterPage = () => {
       const telefoneFormatado = formatPhoneForApi(formData.phone);
       const tipoUsuario: UsuarioRegisterPayload["tipoUsuario"] =
         selectedType === "company" ? "PESSOA_JURIDICA" : "PESSOA_FISICA";
-      const payload: UsuarioRegisterPayload = {
+      const payloadForApi: UsuarioRegisterPayload = {
         nomeCompleto: formData.name.trim(),
         documento: documentoLimpo,
         telefone: telefoneFormatado,
@@ -255,20 +255,23 @@ const RegisterPage = () => {
         aceitarTermos: acceptTerms,
         tipoUsuario,
       };
-      const sanitizedPayload = {
-        ...payload,
+      const maskedPayloadForLog = {
+        ...payloadForApi,
         documento: maskSensitiveValue(documentoLimpo),
         telefone: maskSensitiveValue(telefoneFormatado),
-        email: maskEmail(payload.email),
-        senha: `***(${payload.senha.length} chars)`,
-        confirmarSenha: `***(${payload.confirmarSenha.length} chars)`,
+        email: maskEmail(payloadForApi.email),
+        senha: `***(${payloadForApi.senha.length} chars)`,
+        confirmarSenha: `***(${payloadForApi.confirmarSenha.length} chars)`,
       };
       console.groupCollapsed("🧪 Registro | Payload sanitizado");
       console.log("Endpoint:", "POST /api/v1/usuarios/registrar");
-      console.table(sanitizedPayload);
+      console.table(maskedPayloadForLog);
+      console.info(
+        "ℹ️ Payload enviado sem máscara: os valores acima estão mascarados apenas para log.",
+      );
       console.groupEnd();
       try {
-        await registerUser(payload);
+        await registerUser(payloadForApi);
         toastCustom.success(
           "Cadastro realizado com sucesso! Verifique seu email para confirmar."
         );
