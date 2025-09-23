@@ -254,7 +254,7 @@ export default function PasswordResetPage() {
             }
           />
 
-          <div className="rounded-2xl border border-[var(--primary-color)]/15 bg-[var(--primary-color)]/5 p-4">
+          <div className="rounded-2xl border border-gray-200 bg-gray-100/30 p-4">
             <p className="!mb-0">Sua senha deve conter:</p>
             <ul className="mt-2 space-y-2 text-left">
               {satisfiedRequirements.map((requirement) => (
@@ -309,7 +309,7 @@ export default function PasswordResetPage() {
             Redefinir senha
           </ButtonCustom>
 
-          <ButtonCustom asChild variant="ghost" size="sm" className="w-full">
+          <ButtonCustom asChild variant="ghost" size="lg" className="w-full">
             <Link href="/login">Voltar para o login</Link>
           </ButtonCustom>
         </div>
@@ -332,11 +332,9 @@ export default function PasswordResetPage() {
         </div>
       </header>
 
-      <main className="flex w-full flex-1 items-center justify-center bg-[var(--background-color)] px-6 py-16 sm:py-24">
+      <main className="flex w-full flex-1 items-center justify-center px-6 py-10 sm:py-10">
         <div className="w-full max-w-lg">
-          <div className="rounded-[32px] border border-gray-200/60 bg-white/95 backdrop-blur-sm">
-            <div className="p-6 sm:p-10">{renderContent()}</div>
-          </div>
+          <div className="p-6 sm:p-10">{renderContent()}</div>
         </div>
       </main>
 
