@@ -414,7 +414,10 @@ export function ModalContent({
           markAsDirty();
         }
       } else if (target instanceof HTMLSelectElement) {
-        if (target.value !== target.defaultValue) {
+        const hasSelectionChanged = Array.from(target.options).some(
+          (option) => option.selected !== option.defaultSelected
+        );
+        if (hasSelectionChanged) {
           markAsDirty();
         }
       }
