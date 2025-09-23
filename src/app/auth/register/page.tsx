@@ -145,26 +145,6 @@ const RegisterPage = () => {
 
   const maskService = MaskService.getInstance();
 
-  const maskSensitiveValue = (value: string, visibleChars = 4) => {
-    const trimmed = value?.trim() ?? "";
-    if (!trimmed) return "";
-    if (trimmed.length <= visibleChars) {
-      return "*".repeat(Math.max(trimmed.length - 1, 0)) +
-        trimmed.slice(-1);
-    }
-    const maskedLength = Math.max(trimmed.length - visibleChars, 0);
-    return `${"*".repeat(maskedLength)}${trimmed.slice(-visibleChars)}`;
-  };
-
-  const maskEmail = (email: string) => {
-    const [userPart, domainPart] = email.split("@");
-    if (!domainPart) return maskSensitiveValue(email);
-    const maskedUser = userPart
-      ? `${userPart[0]}${"*".repeat(Math.max(userPart.length - 1, 0))}`
-      : "";
-    return `${maskedUser}@${domainPart}`;
-  };
-
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
@@ -255,18 +235,6 @@ const RegisterPage = () => {
         aceitarTermos: acceptTerms,
         tipoUsuario,
       };
-      const sanitizedPayload = {
-        ...payload,
-        documento: maskSensitiveValue(documentoLimpo),
-        telefone: maskSensitiveValue(telefoneFormatado),
-        email: maskEmail(payload.email),
-        senha: `***(${payload.senha.length} chars)`,
-        confirmarSenha: `***(${payload.confirmarSenha.length} chars)`,
-      };
-      console.groupCollapsed("🧪 Registro | Payload sanitizado");
-      console.log("Endpoint:", "POST /api/v1/usuarios/registrar");
-      console.table(sanitizedPayload);
-      console.groupEnd();
       try {
         await registerUser(payload);
         toastCustom.success(
