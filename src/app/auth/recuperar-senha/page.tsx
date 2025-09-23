@@ -4,14 +4,13 @@ import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { CheckCircle2, Loader2, Lock, TriangleAlert } from "lucide-react";
+import { CheckCircle2, Loader2, TriangleAlert } from "lucide-react";
 
+import { ButtonCustom, InputCustom, toastCustom } from "@/components/ui/custom";
 import {
-  ButtonCustom,
-  InputCustom,
-  toastCustom,
-} from "@/components/ui/custom";
-import { validatePasswordRecoveryToken, resetPasswordWithToken } from "@/api/usuarios";
+  validatePasswordRecoveryToken,
+  resetPasswordWithToken,
+} from "@/api/usuarios";
 
 const PASSWORD_REQUIREMENTS = [
   {
@@ -35,8 +34,10 @@ type PageState = "loading" | "ready" | "invalid" | "success";
 
 type Requirement = (typeof PASSWORD_REQUIREMENTS)[number];
 
-const isPasswordStrong = (value: string, requirements: Requirement[]): boolean =>
-  requirements.every((rule) => rule.validate(value));
+const isPasswordStrong = (
+  value: string,
+  requirements: Requirement[]
+): boolean => requirements.every((rule) => rule.validate(value));
 
 export default function PasswordResetPage() {
   const router = useRouter();
@@ -119,7 +120,9 @@ export default function PasswordResetPage() {
     }
 
     if (!isPasswordStrong(password, PASSWORD_REQUIREMENTS)) {
-      setFormError("A senha precisa atender a todos os requisitos de segurança.");
+      setFormError(
+        "A senha precisa atender a todos os requisitos de segurança."
+      );
       return;
     }
 
@@ -131,7 +134,9 @@ export default function PasswordResetPage() {
         novaSenha: password,
       });
       setPageState("success");
-      toastCustom.success("Senha redefinida com sucesso! Faça login novamente.");
+      toastCustom.success(
+        "Senha redefinida com sucesso! Faça login novamente."
+      );
       setTimeout(() => {
         router.push("/login");
       }, 2000);
@@ -149,8 +154,11 @@ export default function PasswordResetPage() {
     if (pageState === "loading") {
       return (
         <div className="flex flex-col items-center justify-center gap-4 py-10 text-center">
-          <Loader2 className="h-8 w-8 animate-spin text-[var(--primary-color)]" aria-hidden />
-          <p className="text-base font-medium text-muted-foreground">
+          <Loader2
+            className="h-8 w-8 animate-spin text-[var(--primary-color)]"
+            aria-hidden
+          />
+          <p className="!font-medium">
             Validando seu link seguro. Aguarde alguns instantes...
           </p>
         </div>
@@ -159,22 +167,16 @@ export default function PasswordResetPage() {
 
     if (pageState === "invalid") {
       return (
-        <div className="flex flex-col items-center gap-6 py-10 text-center">
+        <div className="flex flex-col items-center gap-4 py-10 text-center">
           <TriangleAlert className="h-12 w-12 text-destructive" aria-hidden />
           <div className="space-y-2">
-            <h1 className="text-2xl font-semibold text-foreground">
-              Link inválido ou expirado
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              Solicite um novo e-mail de recuperação para garantir sua segurança. O link pode ter sido usado ou expirou.
+            <h2>Link inválido ou expirado</h2>
+            <p className="!leading-normal">
+              Solicite um novo e-mail de recuperação para garantir sua
+              segurança. O link pode ter sido usado ou expirou.
             </p>
           </div>
-          <ButtonCustom
-            asChild
-            variant="secondary"
-            size="md"
-            className="px-6"
-          >
+          <ButtonCustom asChild variant="secondary" size="md" className="px-6">
             <Link href="/login">Voltar para o login</Link>
           </ButtonCustom>
         </div>
@@ -190,19 +192,13 @@ export default function PasswordResetPage() {
         >
           <CheckCircle2 className="h-12 w-12 text-emerald-500" aria-hidden />
           <div className="space-y-2">
-            <h1 className="text-2xl font-semibold text-foreground">
-              Senha redefinida!
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              Estamos redirecionando você para a página de login. Caso não aconteça automaticamente, clique no botão abaixo.
+            <h1 className="!mb-0">Senha redefinida!</h1>
+            <p className="!leading-normal">
+              Estamos redirecionando você para a página de login. Caso não
+              aconteça automaticamente, clique no botão abaixo.
             </p>
           </div>
-          <ButtonCustom
-            asChild
-            variant="primary"
-            size="md"
-            className="px-6"
-          >
+          <ButtonCustom asChild variant="primary" size="md" className="px-6">
             <Link href="/login">Ir para o login</Link>
           </ButtonCustom>
         </div>
@@ -216,12 +212,9 @@ export default function PasswordResetPage() {
         noValidate
       >
         <div className="flex flex-col items-center gap-3 text-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--primary-color)]/10 text-[var(--primary-color)]">
-            <Lock className="h-6 w-6" aria-hidden />
-          </div>
           <div className="space-y-2">
-            <h1 className="text-2xl font-semibold text-foreground">Defina uma nova senha</h1>
-            <p className="text-sm text-muted-foreground">
+            <h2 className="!mb-0">Defina uma nova senha</h2>
+            <p className="!leading-normal">
               {decodedEmail
                 ? `Para continuar, escolha uma nova senha para ${decodedEmail}.`
                 : "Para continuar, escolha uma nova senha segura."}
@@ -253,17 +246,30 @@ export default function PasswordResetPage() {
           />
 
           <div className="rounded-2xl border border-[var(--primary-color)]/15 bg-[var(--primary-color)]/5 p-4">
-            <p className="text-sm font-medium text-foreground">Sua senha deve conter:</p>
-            <ul className="mt-3 space-y-2 text-left">
+            <p className="!mb-0">Sua senha deve conter:</p>
+            <ul className="mt-2 space-y-2 text-left">
               {satisfiedRequirements.map((requirement) => (
-                <li key={requirement.id} className="flex items-center gap-3 text-sm">
+                <li
+                  key={requirement.id}
+                  className="flex items-center gap-2 text-sm"
+                >
                   <span
-                    className={`flex h-6 w-6 items-center justify-center rounded-full border text-[11px] font-semibold transition ${requirement.satisfied ? "border-emerald-500 bg-emerald-500 text-white shadow-sm" : "border-[var(--primary-color)]/40 bg-white text-[var(--primary-color)]/70"}`}
+                    className={`flex h-4 w-4 items-center justify-center rounded-full border text-[11px] font-semibold transition ${
+                      requirement.satisfied
+                        ? "border-emerald-500 bg-emerald-500 text-white"
+                        : "border-[var(--primary-color)]/40 bg-white text-[var(--primary-color)]/70"
+                    }`}
                     aria-hidden
                   >
                     {requirement.satisfied ? "✓" : ""}
                   </span>
-                  <span className={requirement.satisfied ? "text-foreground" : "text-muted-foreground"}>
+                  <span
+                    className={
+                      requirement.satisfied
+                        ? "text-foreground"
+                        : "text-muted-foreground"
+                    }
+                  >
                     {requirement.label}
                   </span>
                 </li>
@@ -272,30 +278,14 @@ export default function PasswordResetPage() {
           </div>
 
           {formError && (
-            <p className="text-sm font-medium text-destructive" role="alert" aria-live="assertive">
+            <p
+              className="text-sm font-medium text-destructive"
+              role="alert"
+              aria-live="assertive"
+            >
               {formError}
             </p>
           )}
-
-          <div className="rounded-2xl border border-border/60 bg-muted/40 p-4 text-left">
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Boas práticas de segurança
-            </p>
-            <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
-              <li className="flex items-start gap-3">
-                <CheckCircle2 className="mt-0.5 h-4 w-4 text-[var(--primary-color)]" aria-hidden />
-                <span>Use combinações únicas de letras, números e símbolos.</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <CheckCircle2 className="mt-0.5 h-4 w-4 text-[var(--primary-color)]" aria-hidden />
-                <span>Evite reutilizar senhas utilizadas em outros serviços.</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <CheckCircle2 className="mt-0.5 h-4 w-4 text-[var(--primary-color)]" aria-hidden />
-                <span>Monitore sua conta e atualize seus dados se notar atividade suspeita.</span>
-              </li>
-            </ul>
-          </div>
         </div>
 
         <div className="flex flex-col gap-3">
@@ -335,7 +325,7 @@ export default function PasswordResetPage() {
 
       <main className="flex min-h-[70dvh] items-center justify-center bg-[var(--background-color)] px-6 py-16 sm:py-24">
         <div className="w-full max-w-lg">
-          <div className="rounded-[32px] border border-gray-100/80 bg-white/95 shadow-xl backdrop-blur-sm">
+          <div className="rounded-[32px] border border-gray-200/60 bg-white/95 backdrop-blur-sm">
             <div className="p-6 sm:p-10">{renderContent()}</div>
           </div>
         </div>
@@ -344,8 +334,10 @@ export default function PasswordResetPage() {
       <footer className="bg-[var(--color-blue)] py-8 text-white/80">
         <div className="mx-auto max-w-5xl px-6 text-center">
           <p className="text-sm tracking-wide !text-white">
-            Todos os direitos reservados © {new Date().getFullYear()} {" "}
-            <span className="font-semibold text-[var(--secondary-color)]">Advance+</span>
+            Todos os direitos reservados © {new Date().getFullYear()}{" "}
+            <span className="font-semibold text-[var(--secondary-color)]">
+              Advance+
+            </span>
           </p>
           <div className="mt-3 flex flex-wrap items-center justify-center text-xs text-white/80 sm:text-sm">
             <a
