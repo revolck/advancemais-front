@@ -166,6 +166,13 @@ export const websiteRoutes = {
     update: (id: string) => `${prefix}/website/informacoes-gerais/${id}`,
     delete: (id: string) => `${prefix}/website/informacoes-gerais/${id}`,
   },
+  scripts: {
+    list: () => `${prefix}/website/scripts`,
+    create: () => `${prefix}/website/scripts`,
+    get: (id: string) => `${prefix}/website/scripts/${id}`,
+    update: (id: string) => `${prefix}/website/scripts/${id}`,
+    delete: (id: string) => `${prefix}/website/scripts/${id}`,
+  },
 };
 
 /**
@@ -197,6 +204,16 @@ export const empresasRoutes = {
       aprovar: (id: string, vagaId: string) =>
         `${prefix}/empresas/admin/${id}/vagas/${vagaId}/aprovar`,
     },
+  },
+};
+
+export const dashboardRoutes = {
+  scripts: {
+    list: () => `${prefix}/dashboard/scripts`,
+    create: () => `${prefix}/dashboard/scripts`,
+    get: (id: string) => `${prefix}/dashboard/scripts/${id}`,
+    update: (id: string) => `${prefix}/dashboard/scripts/${id}`,
+    delete: (id: string) => `${prefix}/dashboard/scripts/${id}`,
   },
 };
 

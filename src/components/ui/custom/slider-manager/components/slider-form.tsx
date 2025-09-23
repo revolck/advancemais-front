@@ -17,6 +17,7 @@ import { uploadImage, deleteImage, getImageTitle } from "@/services/upload";
 import { toastCustom } from "@/components/ui/custom/toast";
 import { Icon } from "@/components/ui/custom/Icons";
 import type { FileUploadItem } from "@/components/ui/custom/file-upload";
+import { SelectCustom } from "@/components/ui/custom/select";
 
 import type { SliderFormProps } from "../types";
 import { SLIDER_MESSAGES, SLIDER_ANIMATIONS } from "../constants";
@@ -40,6 +41,11 @@ export function SliderForm({
   fieldsOrder,
   contentFieldRequired = false,
   imageFieldLabel,
+  showImageField = true,
+  secondFieldType = "text",
+  secondFieldOptions,
+  contentFieldType = "text",
+  contentFieldOptions,
 }: SliderFormProps) {
   // Form state
   const [formData, setFormData] = useState(() => ({
@@ -106,30 +112,39 @@ export function SliderForm({
       }
     }
 
-    if (validateSecondFieldAsUrl) {
-      if (formData.url && !formData.url.match(/^https?:\/\/.+/)) {
-        newErrors.url = SLIDER_MESSAGES.ERROR_URL_INVALID;
+    const normalizedUrl = (formData.url || "").trim();
+    if (secondFieldType === "select") {
+      if (secondFieldRequired && !normalizedUrl) {
+        newErrors.url = "Este campo é obrigatório";
       }
-    }
-    if (secondFieldRequired) {
-      if (!formData.url || !formData.url.trim()) {
+    } else {
+      if (validateSecondFieldAsUrl) {
+        if (normalizedUrl && !normalizedUrl.match(/^https?:\/\/.+/)) {
+          newErrors.url = SLIDER_MESSAGES.ERROR_URL_INVALID;
+        }
+      }
+      if (secondFieldRequired && !normalizedUrl) {
         newErrors.url = newErrors.url || "Este campo é obrigatório";
       }
-    }
 
-    if (formData.url && formData.url.length > 500) {
-      newErrors.url = SLIDER_MESSAGES.ERROR_URL_MAX_LENGTH;
+      const maxUrlLength = secondFieldType === "textarea" ? 5000 : 500;
+      if (normalizedUrl && normalizedUrl.length > maxUrlLength) {
+        newErrors.url =
+          secondFieldType === "textarea"
+            ? `O conteúdo deve ter no máximo ${maxUrlLength} caracteres`
+            : SLIDER_MESSAGES.ERROR_URL_MAX_LENGTH;
+      }
     }
 
     // Content required handling
     if (showContentField && contentFieldRequired) {
-      const v = (formData.content || "").trim();
-      if (!v) {
+      const value = (formData.content || "").trim();
+      if (!value) {
         newErrors.content = "Este campo é obrigatório";
       }
     }
 
-    if (!formData.image && uploadedFiles.length === 0) {
+    if (showImageField && !formData.image && uploadedFiles.length === 0) {
       newErrors.image = `Selecione uma imagem para o ${entityName.toLowerCase()}`;
     }
 
@@ -144,6 +159,8 @@ export function SliderForm({
     titleAsTextarea,
     showContentField,
     contentFieldRequired,
+    secondFieldType,
+    showImageField,
   ]);
 
   /**
@@ -261,9 +278,17 @@ export function SliderForm({
   // Enable submit only when required fields are ready
   const canSubmit = useMemo(() => {
     const hasTitle = formData.title.trim().length >= 3;
-    const hasImageSelected = Boolean(formData.image) || uploadedFiles.length > 0;
+    const hasImageSelected =
+      !showImageField || Boolean(formData.image) || uploadedFiles.length > 0;
     return hasTitle && hasImageSelected && !isLoading && !isSubmitting;
-  }, [formData.title, formData.image, uploadedFiles.length, isLoading, isSubmitting]);
+  }, [
+    formData.title,
+    formData.image,
+    uploadedFiles.length,
+    isLoading,
+    isSubmitting,
+    showImageField,
+  ]);
 
   return (
     <div className="p-3">
@@ -331,36 +356,37 @@ export function SliderForm({
         </div>
 
         {/* Image Upload Section - estilo alinhado ao Sobre */}
-        <div className="space-y-3">
-          <Label className="text-sm font-medium text-gray-700">
-            {imageFieldLabel || `Imagem do ${entityName}`} <span className="text-red-500">*</span>
-          </Label>
+        {showImageField && (
+          <div className="space-y-3">
+            <Label className="text-sm font-medium text-gray-700">
+              {imageFieldLabel || `Imagem do ${entityName}`} <span className="text-red-500">*</span>
+            </Label>
 
-          <FileUpload
-            files={uploadedFiles}
-            validation={{
-              maxSize: 5 * 1024 * 1024, // 5MB
-              accept: [".jpg", ".png", ".webp"],
-              maxFiles: 1,
-            }}
-            maxFiles={1}
-            multiple={false}
-            disabled={isLoading || isSubmitting}
-            showPreview={true}
-            showProgress={false}
-            autoUpload={false}
-            deleteOnRemove={false}
-            onFilesChange={handleFilesChange}
-            
-          />
+            <FileUpload
+              files={uploadedFiles}
+              validation={{
+                maxSize: 5 * 1024 * 1024, // 5MB
+                accept: [".jpg", ".png", ".webp"],
+                maxFiles: 1,
+              }}
+              maxFiles={1}
+              multiple={false}
+              disabled={isLoading || isSubmitting}
+              showPreview={true}
+              showProgress={false}
+              autoUpload={false}
+              deleteOnRemove={false}
+              onFilesChange={handleFilesChange}
+            />
 
-          {errors.image && (
-            <p className="text-sm text-destructive flex items-center gap-2">
-              <Icon name="AlertCircle" className="h-4 w-4" />
-              {errors.image}
-            </p>
-          )}
-        </div>
+            {errors.image && (
+              <p className="text-sm text-destructive flex items-center gap-2">
+                <Icon name="AlertCircle" className="h-4 w-4" />
+                {errors.image}
+              </p>
+            )}
+          </div>
+        )}
 
         {/* Form Fields - Configurable order and types */}
         <div className="space-y-4">
@@ -413,6 +439,40 @@ export function SliderForm({
               }
 
               if (fieldKey === "url") {
+                if (secondFieldType === "textarea") {
+                  return (
+                    <SimpleTextarea
+                      key={`field-${fieldKey}-${idx}`}
+                      label={secondFieldLabel || "Conteúdo"}
+                      id="url"
+                      value={formData.url}
+                      onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                        handleInputChange("url", e.target.value)
+                      }
+                      maxLength={5000}
+                      showCharCount
+                      placeholder={secondFieldLabel || `Digite o ${entityName.toLowerCase()}`}
+                      className="min-h-[180px]"
+                      required={secondFieldRequired}
+                    />
+                  );
+                }
+
+                if (secondFieldType === "select" && secondFieldOptions?.length) {
+                  return (
+                    <SelectCustom
+                      key={`field-${fieldKey}-${idx}`}
+                      label={secondFieldLabel || "Selecione uma opção"}
+                      options={secondFieldOptions}
+                      value={formData.url || null}
+                      onChange={(value) => handleInputChange("url", value ?? "")}
+                      disabled={isLoading}
+                      required={secondFieldRequired}
+                      error={errors.url}
+                    />
+                  );
+                }
+
                 return (
                   <InputCustom
                     key={`field-${fieldKey}-${idx}`}
@@ -436,6 +496,40 @@ export function SliderForm({
               }
 
               if (fieldKey === "content" && showContentField) {
+                if (contentFieldType === "textarea") {
+                  return (
+                    <SimpleTextarea
+                      key={`field-${fieldKey}-${idx}`}
+                      label={contentFieldLabel || "Conteúdo"}
+                      id="content"
+                      value={formData.content || ""}
+                      onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                        handleInputChange("content", e.target.value)
+                      }
+                      maxLength={5000}
+                      showCharCount
+                      placeholder={contentFieldLabel || "Digite o conteúdo"}
+                      className="min-h-[140px]"
+                      required={contentFieldRequired}
+                    />
+                  );
+                }
+
+                if (contentFieldType === "select" && contentFieldOptions?.length) {
+                  return (
+                    <SelectCustom
+                      key={`field-${fieldKey}-${idx}`}
+                      label={contentFieldLabel || "Selecione uma opção"}
+                      options={contentFieldOptions}
+                      value={formData.content || null}
+                      onChange={(value) => handleInputChange("content", value ?? "")}
+                      disabled={isLoading}
+                      required={contentFieldRequired}
+                      error={errors.content}
+                    />
+                  );
+                }
+
                 return (
                   <InputCustom
                     key={`field-${fieldKey}-${idx}`}

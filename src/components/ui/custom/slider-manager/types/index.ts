@@ -15,6 +15,8 @@ export interface Slider {
   position: number;
   createdAt: string;
   updatedAt?: string;
+  /** Informações adicionais opcionais para entidades customizadas */
+  meta?: Record<string, unknown>;
 }
 
 export interface SliderFormData {
@@ -25,6 +27,12 @@ export interface SliderFormData {
   content: string;
   status: boolean;
   position: number;
+}
+
+export interface SliderFieldOption {
+  label: string;
+  value: string;
+  disabled?: boolean;
 }
 
 export interface SliderFormProps {
@@ -50,6 +58,16 @@ export interface SliderFormProps {
   contentFieldRequired?: boolean;
   /** Override image field label */
   imageFieldLabel?: string;
+  /** Controla a renderização do campo de imagem */
+  showImageField?: boolean;
+  /** Define o tipo do segundo campo (url) */
+  secondFieldType?: "text" | "textarea" | "select";
+  /** Opções para o segundo campo quando for select */
+  secondFieldOptions?: SliderFieldOption[];
+  /** Define o tipo do campo de conteúdo */
+  contentFieldType?: "text" | "textarea" | "select";
+  /** Opções para o campo de conteúdo quando for select */
+  contentFieldOptions?: SliderFieldOption[];
 }
 
 export interface SliderListProps {
@@ -57,11 +75,15 @@ export interface SliderListProps {
   onEdit: (slider: Slider) => void;
   onDelete: (slider: Slider) => Promise<void>;
   onToggleStatus: (id: string) => Promise<void>;
-  onReorder: (draggedId: string, targetPosition: number) => void;
+  onReorder?: (draggedId: string, targetPosition: number) => void;
   isLoading?: boolean;
   onCreateNew?: () => void;
   entityName?: string;
   entityNamePlural?: string;
+  enableReorder?: boolean;
+  showImageColumn?: boolean;
+  renderAdditionalInfo?: (slider: Slider) => React.ReactNode;
+  showUrlPreview?: boolean;
 }
 
 export interface SliderManagerProps {
@@ -88,6 +110,15 @@ export interface SliderManagerProps {
   fieldsOrder?: Array<"url" | "content" | "title">;
   contentFieldRequired?: boolean;
   imageFieldLabel?: string;
+  showImageField?: boolean;
+  enableReorder?: boolean;
+  showImageColumn?: boolean;
+  secondFieldType?: "text" | "textarea" | "select";
+  secondFieldOptions?: SliderFieldOption[];
+  contentFieldType?: "text" | "textarea" | "select";
+  contentFieldOptions?: SliderFieldOption[];
+  renderListItemDetails?: (slider: Slider) => React.ReactNode;
+  showUrlPreview?: boolean;
 }
 
 export interface ValidationError {

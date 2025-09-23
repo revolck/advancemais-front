@@ -11,6 +11,7 @@ import SocialsForm from "./socials/SocialsForm";
 import EnderecoForm from "./endereco/EnderecoForm";
 import ContatoForm from "./contato/ContatoForm";
 import AtendimentoForm from "./atendimento/AtendimentoForm";
+import ScriptsForm from "./scripts/ScriptsForm";
 
 export default function GeralPage() {
   const items: VerticalTabItem[] = [
@@ -49,6 +50,12 @@ export default function GeralPage() {
       label: "Logos",
       icon: "Image",
       content: <LogosForm />,
+    },
+    {
+      value: "scripts",
+      label: "Scripts",
+      icon: "Code2",
+      content: <ScriptsForm />,
     },
   ];
 

@@ -1,5 +1,9 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import { listWebsiteScripts } from "@/api/websites/components/scripts";
+import { ScriptInjector } from "@/components/scripts/script-injector";
+import { loadPublishedScripts } from "@/lib/scripts/load-published-scripts";
+
 import { LoadingProvider } from "./loading-context";
 import LayoutClient from "./layout-client";
 
@@ -54,13 +58,20 @@ export const metadata: Metadata = {
  * - Sem complexidade desnecessária
  * - Funciona de verdade
  */
-export default function WebsiteLayout({
+async function fetchWebsiteScripts() {
+  return loadPublishedScripts(listWebsiteScripts, "WEBSITE");
+}
+
+export default async function WebsiteLayout({
   children,
 }: Readonly<{
   children: ReactNode;
 }>) {
+  const scripts = await fetchWebsiteScripts();
+
   return (
     <LoadingProvider>
+      <ScriptInjector scripts={scripts} />
       <LayoutClient>{children}</LayoutClient>
     </LoadingProvider>
   );

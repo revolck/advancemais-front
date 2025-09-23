@@ -166,6 +166,13 @@ export {
   updateLoginImage,
   deleteLoginImage,
 } from "./imagem-login";
+export {
+  listWebsiteScripts,
+  getWebsiteScriptById,
+  createWebsiteScript,
+  updateWebsiteScript,
+  deleteWebsiteScript,
+} from "./scripts";
 
 export type {
   AboutApiResponse,

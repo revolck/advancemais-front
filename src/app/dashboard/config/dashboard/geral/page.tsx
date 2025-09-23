@@ -3,6 +3,7 @@
 import React from "react";
 import { VerticalTabs, type VerticalTabItem } from "@/components/ui/custom";
 import LoginForm from "./login/LoginForm";
+import DashboardScriptsForm from "./scripts/ScriptsForm";
 
 export default function GeralDashboardPage() {
   const items: VerticalTabItem[] = [
@@ -11,6 +12,12 @@ export default function GeralDashboardPage() {
       label: "Login",
       icon: "LogIn",
       content: <LoginForm />,
+    },
+    {
+      value: "scripts",
+      label: "Scripts",
+      icon: "Code2",
+      content: <DashboardScriptsForm />,
     },
   ];
 
