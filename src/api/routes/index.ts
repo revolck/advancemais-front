@@ -172,12 +172,12 @@ export const websiteRoutes = {
  * Endpoints for empresas-related operations.
  */
 export const empresasRoutes = {
-  planosEmpresarial: {
-    list: () => `${prefix}/empresas/planos-empresarial`,
-    create: () => `${prefix}/empresas/planos-empresarial`,
-    get: (id: string) => `${prefix}/empresas/planos-empresarial/${id}`,
-    update: (id: string) => `${prefix}/empresas/planos-empresarial/${id}`,
-    delete: (id: string) => `${prefix}/empresas/planos-empresarial/${id}`,
+  planosEmpresariais: {
+    list: () => `${prefix}/empresas/planos-empresariais`,
+    create: () => `${prefix}/empresas/planos-empresariais`,
+    get: (id: string) => `${prefix}/empresas/planos-empresariais/${id}`,
+    update: (id: string) => `${prefix}/empresas/planos-empresariais/${id}`,
+    delete: (id: string) => `${prefix}/empresas/planos-empresariais/${id}`,
   },
   adminEmpresas: {
     list: () => `${prefix}/empresas/admin`,

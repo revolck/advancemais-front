@@ -4,13 +4,13 @@ export {
   createPlanoEmpresarial,
   updatePlanoEmpresarial,
   deletePlanoEmpresarial,
-} from "./planos-empresarial";
+} from "./planos-empresariais";
 
 export type {
   PlanoEmpresarialBackendResponse,
   CreatePlanoEmpresarialPayload,
   UpdatePlanoEmpresarialPayload,
-} from "./planos-empresarial/types";
+} from "./planos-empresariais/types";
 
 export {
   listAdminCompanies,
