@@ -9,6 +9,8 @@ import {
   toastCustom,
   OfflineModal,
 } from "@/components/ui/custom";
+import TermsOfUseModal from "@/components/partials/auth/register/terms-of-use-modal";
+import PrivacyPolicyModal from "@/components/partials/auth/register/privacy-policy-modal";
 import { GraduationCap, User, Building } from "lucide-react";
 import { registerUser } from "@/api/usuarios";
 import type { UsuarioRegisterPayload } from "@/api/usuarios";
@@ -43,6 +45,8 @@ const RegisterPage = () => {
     () => createInitialFormData(),
   );
   const [passwordError, setPasswordError] = useState("");
+  const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
+  const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
 
   useEffect(() => {
     const savedForm = localStorage.getItem("registerFormData");
@@ -383,23 +387,29 @@ const RegisterPage = () => {
             className="sm:text-sm text-gray-600 leading-5 cursor-pointer"
           >
             Li e aceito os{" "}
-            <a
-              href="http://advancemais.com/termos-uso"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-600 hover:underline font-medium cursor-pointer"
+            <button
+              type="button"
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                setIsTermsModalOpen(true);
+              }}
+              className="text-blue-600 hover:underline font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white rounded"
             >
               Termos de Uso
-            </a>
+            </button>
             , a{" "}
-            <a
-              href="http://advancemais.com/politica-privacidade"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-600 hover:underline font-medium cursor-pointer"
+            <button
+              type="button"
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                setIsPrivacyModalOpen(true);
+              }}
+              className="text-blue-600 hover:underline font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white rounded"
             >
               Política de Privacidade
-            </a>{" "}
+            </button>{" "}
             e autorizo o uso das minhas informações conforme descrito.
           </Label>
         </div>
@@ -581,6 +591,14 @@ const RegisterPage = () => {
         </div>
       </footer>
 
+      <TermsOfUseModal
+        isOpen={isTermsModalOpen}
+        onOpenChange={setIsTermsModalOpen}
+      />
+      <PrivacyPolicyModal
+        isOpen={isPrivacyModalOpen}
+        onOpenChange={setIsPrivacyModalOpen}
+      />
       <OfflineModal />
     </div>
   );
