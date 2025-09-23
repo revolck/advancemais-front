@@ -153,7 +153,11 @@ export function SelectCustom(props: SelectCustomProps) {
           </SelectTrigger>
           <SelectContent
             className={cn(
-              "z-[120] w-[--radix-select-trigger-width] max-h-80 rounded-md shadow-lg [&_[data-slot=select-scroll-up-button]]:hidden [&_[data-slot=select-scroll-down-button]]:hidden"
+              "z-[120] w-[--radix-select-trigger-width] max-h-80 rounded-lg border border-gray-200 bg-white shadow-xl",
+              "[&_[data-slot=select-scroll-up-button]]:hidden [&_[data-slot=select-scroll-down-button]]:hidden",
+              "[&_[data-slot=select-item]]:cursor-pointer [&_[data-slot=select-item]]:px-3 [&_[data-slot=select-item]]:py-2",
+              "[&_[data-slot=select-item][data-state=checked]]:bg-primary/10 [&_[data-slot=select-item][data-state=checked]]:font-semibold [&_[data-slot=select-item][data-state=checked]]:text-foreground",
+              "[&_[data-slot=select-item][data-state=checked]_svg]:size-3 [&_[data-slot=select-item][data-state=checked]_svg]:text-[var(--primary-color)]"
             )}
           >
             {props.mode === "user" ? (
@@ -164,6 +168,7 @@ export function SelectCustom(props: SelectCustomProps) {
                     key={opt.value}
                     value={opt.value}
                     disabled={opt.disabled}
+                    className="cursor-pointer"
                   >
                     <Square className={cn(opt.colorClass)}>
                       {initialsOf(opt.label)}
@@ -179,6 +184,7 @@ export function SelectCustom(props: SelectCustomProps) {
                     key={opt.value}
                     value={opt.value}
                     disabled={opt.disabled}
+                    className="cursor-pointer"
                   >
                     {opt.label}
                   </SelectItem>
@@ -242,10 +248,12 @@ export function SelectCustom(props: SelectCustomProps) {
         </PopoverTrigger>
         <PopoverContent
           className={cn(
-            "z-[120] w-[--radix-popover-trigger-width] border-gray-500/20 p-0"
+            "z-[120] w-[--radix-popover-trigger-width] rounded-lg border border-gray-200 bg-white p-0 shadow-xl"
           )}
         >
-          <Command>
+          <Command
+            className="bg-white text-foreground [&_[cmdk-group]]:gap-1 [&_[cmdk-item]]:rounded-md"
+          >
             {searchable && <CommandInput placeholder="Buscar..." />}
             <CommandEmpty>Nenhuma opção encontrada</CommandEmpty>
             <CommandList className="max-h-80 overflow-y-auto pr-2 pb-3 scrollbar-thin scrollbar-thumb-gray-400/60 hover:scrollbar-thumb-gray-400/80 scrollbar-track-transparent">
@@ -262,9 +270,17 @@ export function SelectCustom(props: SelectCustomProps) {
                           : [...value, opt.value];
                         onChange(next);
                       }}
+                      className={cn(
+                        "cursor-pointer px-3 py-2 text-sm transition-colors",
+                        "data-[selected=true]:bg-primary/10 data-[selected=true]:text-foreground",
+                        checked && "bg-primary/5 font-medium text-foreground"
+                      )}
                     >
                       <span className="pointer-events-none">
-                        <Checkbox checked={checked} />
+                        <Checkbox
+                          checked={checked}
+                          className="size-4 data-[state=checked]:bg-[var(--primary-color)]"
+                        />
                       </span>
                       <span className="truncate">{opt.label}</span>
                     </CommandItem>
