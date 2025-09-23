@@ -43,6 +43,15 @@ export function SliderManager({
   fieldsOrder,
   contentFieldRequired = false,
   imageFieldLabel,
+  showImageField = true,
+  enableReorder = true,
+  showImageColumn = true,
+  secondFieldType = "text",
+  secondFieldOptions,
+  contentFieldType = "text",
+  contentFieldOptions,
+  renderListItemDetails,
+  showUrlPreview = true,
 }: SliderManagerProps) {
   // Use our custom hook for state management
   const {
@@ -217,10 +226,18 @@ export function SliderManager({
               onToggleStatus={async (id) => {
                 await toggleSliderStatus(id);
               }}
-              onReorder={async (id, pos) => {
-                await reorderSlider(id, pos);
-              }}
+              onReorder={
+                enableReorder
+                  ? async (id, pos) => {
+                      await reorderSlider(id, pos);
+                    }
+                  : undefined
+              }
               isLoading={isLoading}
+              enableReorder={enableReorder}
+              showImageColumn={showImageColumn}
+              renderAdditionalInfo={renderListItemDetails}
+              showUrlPreview={showUrlPreview}
             />
           </motion.div>
         </AnimatePresence>
@@ -258,6 +275,11 @@ export function SliderManager({
                 contentFieldRequired={contentFieldRequired}
                 imageFieldLabel={imageFieldLabel}
                 uploadPath={uploadPath}
+                showImageField={showImageField}
+                secondFieldType={secondFieldType}
+                secondFieldOptions={secondFieldOptions}
+                contentFieldType={contentFieldType}
+                contentFieldOptions={contentFieldOptions}
                 entityName={entityName}
                 onSubmit={async (formData) => {
                   await handleFormSubmit(formData);

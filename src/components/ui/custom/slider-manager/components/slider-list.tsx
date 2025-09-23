@@ -49,6 +49,10 @@ export function SliderList({
   isLoading = false,
   entityName = "Slider",
   entityNamePlural = "Sliders",
+  enableReorder = true,
+  showImageColumn = true,
+  renderAdditionalInfo,
+  showUrlPreview = true,
 }: SliderListProps) {
   const formatDateTime = (iso?: string) => {
     if (!iso) return "—";
@@ -79,6 +83,8 @@ export function SliderList({
     setOrderedSliders([...sliders].sort((a, b) => a.position - b.position));
   }, [sliders]);
 
+  const allowDrag = enableReorder && SLIDER_CONFIG.features.enableDragReorder;
+
   /**
    * Handle slider reordering via drag and drop
    */
@@ -95,6 +101,10 @@ export function SliderList({
         position: index + 1,
       }));
       setOrderedSliders(updatedSliders);
+
+      if (!enableReorder || !onReorder) {
+        return;
+      }
 
       // Determina o item realmente movido
       let moved: { id: string; newPosition: number } | null = null;
@@ -126,11 +136,12 @@ export function SliderList({
         }
       }
     },
-    [onReorder, orderedSliders, draggingId]
+    [enableReorder, onReorder, orderedSliders, draggingId]
   );
 
   const moveItem = useCallback(
     async (id: string, direction: "up" | "down") => {
+      if (!enableReorder || !onReorder) return;
       const idx = orderedSliders.findIndex((s) => s.id === id || s.orderId === id);
       if (idx === -1) return;
       const targetIdx = direction === "up" ? idx - 1 : idx + 1;
@@ -157,7 +168,7 @@ export function SliderList({
         setBusyId(null);
       }
     },
-    [orderedSliders, onReorder, sliders]
+    [enableReorder, orderedSliders, onReorder, sliders]
   );
 
   const handleToggleClick = useCallback(
@@ -247,23 +258,21 @@ export function SliderList({
                 key={slider.id}
                 value={slider}
                 className={
-                  SLIDER_CONFIG.features.enableDragReorder
+                  allowDrag
                     ? "cursor-grab active:cursor-grabbing"
                     : ""
                 }
                 whileDrag={
-                  SLIDER_CONFIG.features.enableDragReorder
+                  allowDrag
                     ? {
                         scale: SLIDER_DRAG_CONFIG.DRAG_SCALE,
                         rotate: SLIDER_DRAG_CONFIG.DRAG_ROTATE,
                       }
                     : undefined
                 }
-                drag={
-                  SLIDER_CONFIG.features.enableDragReorder && !isLoading && !busyId
-                }
-                onDragStart={() => setDraggingId(slider.id)}
-                onDragEnd={() => setDraggingId(null)}
+                drag={allowDrag && !isLoading && !busyId}
+                onDragStart={() => allowDrag && setDraggingId(slider.id)}
+                onDragEnd={() => allowDrag && setDraggingId(null)}
               >
                 <motion.div
                   layout
@@ -275,9 +284,9 @@ export function SliderList({
                 >
                   <Card className={SLIDER_STYLES.CARD}>
                     <CardContent className="p-6">
-                      <div className="flex items-center gap-6">
+                      <div className="flex items-start md:items-center gap-6">
                         {/* Drag Handle */}
-                        {SLIDER_CONFIG.features.enableDragReorder && (
+                        {allowDrag && (
                           <div
                             className="flex-shrink-0 opacity-30 group-hover:opacity-100 transition-opacity duration-200"
                             aria-label={SLIDER_CONFIG.a11y.labels.dragHandle}
@@ -287,98 +296,102 @@ export function SliderList({
                         )}
 
                         {/* Position Number + Up/Down controls */}
-                        <div className="flex-shrink-0">
-                          <div className="flex flex-col items-center gap-1">
-                            {/* Up */}
-                            {index > 0 && (
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    asChild
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => moveItem(slider.id, "up")}
-                                    className="h-7 w-7 p-0 rounded-md hover:bg-primary/10 hover:ring-1 hover:ring-primary/40 cursor-pointer disabled:cursor-not-allowed"
-                                    disabled={isLoading || busyId === slider.id}
-                                    aria-label="Mover para cima"
-                                  >
-                                    <motion.button
-                                      whileHover={{ y: -2, scale: 1.05 }}
-                                      whileTap={{ scale: 0.92 }}
-                                      transition={{ type: "spring", stiffness: 450, damping: 22 }}
+                        {enableReorder && (
+                          <div className="flex-shrink-0">
+                            <div className="flex flex-col items-center gap-1">
+                              {/* Up */}
+                              {index > 0 && (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      asChild
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => moveItem(slider.id, "up")}
+                                      className="h-7 w-7 p-0 rounded-md hover:bg-primary/10 hover:ring-1 hover:ring-primary/40 cursor-pointer disabled:cursor-not-allowed"
+                                      disabled={isLoading || busyId === slider.id}
+                                      aria-label="Mover para cima"
                                     >
-                                      {busyId === slider.id ? (
-                                        <Icon name="Loader2" className="h-4 w-4 animate-spin text-muted-foreground" />
-                                      ) : (
-                                        <Icon name="ChevronUp" className="h-4 w-4" />
-                                      )}
-                                    </motion.button>
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>Mover para cima</TooltipContent>
-                              </Tooltip>
-                            )}
+                                      <motion.button
+                                        whileHover={{ y: -2, scale: 1.05 }}
+                                        whileTap={{ scale: 0.92 }}
+                                        transition={{ type: "spring", stiffness: 450, damping: 22 }}
+                                      >
+                                        {busyId === slider.id ? (
+                                          <Icon name="Loader2" className="h-4 w-4 animate-spin text-muted-foreground" />
+                                        ) : (
+                                          <Icon name="ChevronUp" className="h-4 w-4" />
+                                        )}
+                                      </motion.button>
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>Mover para cima</TooltipContent>
+                                </Tooltip>
+                              )}
 
-                            {/* Number */}
-                            <div className="relative">
-                              <div className="w-8 h-8 bg-primary/5 rounded-lg flex items-center justify-center border border-gray-500/10 group-hover:ring-1 group-hover:ring-primary/30 transition-all">
-                                <span className="text-sm font-semibold text-primary">
-                                  {index + 1}
-                                </span>
+                              {/* Number */}
+                              <div className="relative">
+                                <div className="w-8 h-8 bg-primary/5 rounded-lg flex items-center justify-center border border-gray-500/10 group-hover:ring-1 group-hover:ring-primary/30 transition-all">
+                                  <span className="text-sm font-semibold text-primary">
+                                    {index + 1}
+                                  </span>
+                                </div>
                               </div>
+
+                              {/* Down */}
+                              {index < orderedSliders.length - 1 && (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      asChild
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => moveItem(slider.id, "down")}
+                                      className="h-7 w-7 p-0 rounded-md hover:bg-primary/10 hover:ring-1 hover:ring-primary/40 cursor-pointer disabled:cursor-not-allowed"
+                                      disabled={isLoading || busyId === slider.id}
+                                      aria-label="Mover para baixo"
+                                    >
+                                      <motion.button
+                                        whileHover={{ y: 2, scale: 1.05 }}
+                                        whileTap={{ scale: 0.92 }}
+                                        transition={{ type: "spring", stiffness: 450, damping: 22 }}
+                                      >
+                                        {busyId === slider.id ? (
+                                          <Icon name="Loader2" className="h-4 w-4 animate-spin text-muted-foreground" />
+                                        ) : (
+                                          <Icon name="ChevronDown" className="h-4 w-4" />
+                                        )}
+                                      </motion.button>
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>Mover para baixo</TooltipContent>
+                                </Tooltip>
+                              )}
                             </div>
-
-                            {/* Down */}
-                            {index < orderedSliders.length - 1 && (
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    asChild
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => moveItem(slider.id, "down")}
-                                    className="h-7 w-7 p-0 rounded-md hover:bg-primary/10 hover:ring-1 hover:ring-primary/40 cursor-pointer disabled:cursor-not-allowed"
-                                    disabled={isLoading || busyId === slider.id}
-                                    aria-label="Mover para baixo"
-                                  >
-                                    <motion.button
-                                      whileHover={{ y: 2, scale: 1.05 }}
-                                      whileTap={{ scale: 0.92 }}
-                                      transition={{ type: "spring", stiffness: 450, damping: 22 }}
-                                    >
-                                      {busyId === slider.id ? (
-                                        <Icon name="Loader2" className="h-4 w-4 animate-spin text-muted-foreground" />
-                                      ) : (
-                                        <Icon name="ChevronDown" className="h-4 w-4" />
-                                      )}
-                                    </motion.button>
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>Mover para baixo</TooltipContent>
-                              </Tooltip>
-                            )}
                           </div>
-                        </div>
+                        )}
 
-                        <div className="flex-shrink-0">
-                          <div className="relative w-24 h-16 rounded-xl overflow-hidden border border-border/30 bg-muted/20">
-                            {slider.image ? (
-                              <SliderImageWithFallback
-                                src={slider.image}
-                                alt={slider.title}
-                                width={SLIDER_CONFIG.ui.thumbnail.width}
-                                height={SLIDER_CONFIG.ui.thumbnail.height}
-                              />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center">
-                                <Icon
-                                  name="ImageIcon"
-                                  className="h-6 w-6 text-muted-foreground"
+                        {showImageColumn && (
+                          <div className="flex-shrink-0">
+                            <div className="relative w-24 h-16 rounded-xl overflow-hidden border border-border/30 bg-muted/20">
+                              {slider.image ? (
+                                <SliderImageWithFallback
+                                  src={slider.image}
+                                  alt={slider.title}
+                                  width={SLIDER_CONFIG.ui.thumbnail.width}
+                                  height={SLIDER_CONFIG.ui.thumbnail.height}
                                 />
-                              </div>
-                            )}
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center">
+                                  <Icon
+                                    name="ImageIcon"
+                                    className="h-6 w-6 text-muted-foreground"
+                                  />
+                                </div>
+                              )}
+                            </div>
                           </div>
-                        </div>
+                        )}
 
                         {/* Slider Info */}
                         <div className="flex-1 min-w-0 space-y-3">
@@ -408,12 +421,18 @@ export function SliderList({
                             </span>
                           </div>
 
-                          {slider.url && (
+                          {showUrlPreview && slider.url && (
                             <div className="flex items-center gap-2 text-sm text-muted-foreground">
                               <ExternalLink className="h-4 w-4 flex-shrink-0" />
                               <span className="truncate" title={slider.url}>
                                 {slider.url}
                               </span>
+                            </div>
+                          )}
+
+                          {renderAdditionalInfo && (
+                            <div className="text-sm text-muted-foreground space-y-1">
+                              {renderAdditionalInfo(slider)}
                             </div>
                           )}
                         </div>
