@@ -96,9 +96,13 @@ export default function PasswordResetPage() {
     satisfied: item.validate(password),
   }));
 
+  const passwordMismatch =
+    confirmPassword.length > 0 && password !== confirmPassword;
+
   const canSubmit =
     password.length > 0 &&
-    password === confirmPassword &&
+    confirmPassword.length > 0 &&
+    !passwordMismatch &&
     isPasswordStrong(password, PASSWORD_REQUIREMENTS);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -243,6 +247,11 @@ export default function PasswordResetPage() {
             required
             showPasswordToggle
             autoComplete="new-password"
+            error={
+              passwordMismatch
+                ? "As senhas não são iguais. Confira os campos."
+                : undefined
+            }
           />
 
           <div className="rounded-2xl border border-[var(--primary-color)]/15 bg-[var(--primary-color)]/5 p-4">
@@ -309,7 +318,7 @@ export default function PasswordResetPage() {
   };
 
   return (
-    <div className="min-h-[100dvh] w-full bg-white font-geist text-foreground">
+    <div className="flex min-h-[100dvh] w-full flex-col bg-white font-geist text-foreground">
       <header className="w-full border-b border-gray-100">
         <div className="mx-auto flex max-w-5xl justify-center px-6 py-6">
           <Image
@@ -323,7 +332,7 @@ export default function PasswordResetPage() {
         </div>
       </header>
 
-      <main className="flex min-h-[70dvh] items-center justify-center bg-[var(--background-color)] px-6 py-16 sm:py-24">
+      <main className="flex w-full flex-1 items-center justify-center bg-[var(--background-color)] px-6 py-16 sm:py-24">
         <div className="w-full max-w-lg">
           <div className="rounded-[32px] border border-gray-200/60 bg-white/95 backdrop-blur-sm">
             <div className="p-6 sm:p-10">{renderContent()}</div>
