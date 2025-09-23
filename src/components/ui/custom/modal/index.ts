@@ -19,4 +19,8 @@ export type {
   ModalSize,
   ModalBackdrop,
   ModalPlacement,
+  ModalRadius,
+  ModalShadow,
+  ModalScrollBehavior,
+  ModalClassNames,
 } from "./types";

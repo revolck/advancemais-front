@@ -9,10 +9,14 @@ import { XIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import type {
-  ModalProps,
-  ModalSize,
   ModalBackdrop,
+  ModalClassNames,
   ModalPlacement,
+  ModalProps,
+  ModalRadius,
+  ModalScrollBehavior,
+  ModalShadow,
+  ModalSize,
 } from "./types";
 
 // Mapeamento de tamanhos para classes
@@ -30,7 +34,7 @@ const sizeClasses: Record<ModalSize, string> = {
 };
 
 // Mapeamento de raios para classes
-const radiusClasses: Record<string, string> = {
+const radiusClasses: Record<ModalRadius, string> = {
   none: "rounded-none",
   sm: "rounded-sm",
   md: "rounded-md",
@@ -38,7 +42,7 @@ const radiusClasses: Record<string, string> = {
 };
 
 // Mapeamento de sombras para classes
-const shadowClasses: Record<string, string> = {
+const shadowClasses: Record<ModalShadow, string> = {
   none: "shadow-none",
   sm: "shadow-sm",
   md: "shadow-md",
@@ -46,7 +50,7 @@ const shadowClasses: Record<string, string> = {
 };
 
 // Mapeamento de comportamentos de scroll para classes
-const scrollBehaviorClasses: Record<string, string> = {
+const scrollBehaviorClasses: Record<ModalScrollBehavior, string> = {
   normal: "overflow-auto",
   inside: "overflow-y-auto",
   outside: "overflow-y-visible",
@@ -71,9 +75,18 @@ type ModalContextProps = {
   isOpen: boolean;
   onClose: () => void;
   size: ModalSize;
-  radius: string;
-  scrollBehavior: string;
-  classNames: Required<ModalProps>["classNames"];
+  radius: ModalRadius;
+  scrollBehavior: ModalScrollBehavior;
+  shadow: ModalShadow;
+  placement: ModalPlacement;
+  backdrop: ModalBackdrop;
+  isDismissable: boolean;
+  isKeyboardDismissDisabled: boolean;
+  preventCloseOnOutsideWhenDirty: boolean;
+  isDirty: boolean;
+  markAsDirty: () => void;
+  resetDirty: () => void;
+  classNames: Required<ModalClassNames>;
 };
 
 const ModalContext = React.createContext<ModalContextProps | null>(null);
@@ -115,13 +128,30 @@ export function ModalCustom({
   portalContainer,
   disableAnimation = false,
   classNames = {},
+  preventCloseOnOutsideWhenDirty = true,
+  onDirtyChange,
   ...props
 }: ModalProps) {
+  const [isDirty, setIsDirty] = React.useState(false);
+
+  const markAsDirty = React.useCallback(() => {
+    setIsDirty((previous) => (previous ? previous : true));
+  }, []);
+
+  const resetDirty = React.useCallback(() => {
+    setIsDirty(false);
+  }, []);
+
+  React.useEffect(() => {
+    onDirtyChange?.(isDirty);
+  }, [isDirty, onDirtyChange]);
+
   // Função para fechar a modal
   const handleClose = React.useCallback(() => {
+    resetDirty();
     onClose?.();
     onOpenChange?.(false);
-  }, [onClose, onOpenChange]);
+  }, [onClose, onOpenChange, resetDirty]);
 
   // Efeito para bloquear o scroll quando a modal está aberta (sem jitter)
   React.useEffect(() => {
@@ -137,6 +167,25 @@ export function ModalCustom({
     };
   }, [isOpen, shouldBlockScroll]);
 
+  React.useEffect(() => {
+    if (!isOpen) {
+      resetDirty();
+    }
+  }, [isOpen, resetDirty]);
+
+  const normalizedClassNames = React.useMemo<Required<ModalClassNames>>(
+    () => ({
+      wrapper: classNames?.wrapper ?? "",
+      base: classNames?.base ?? "",
+      backdrop: classNames?.backdrop ?? "",
+      header: classNames?.header ?? "",
+      body: classNames?.body ?? "",
+      footer: classNames?.footer ?? "",
+      closeButton: classNames?.closeButton ?? "",
+    }),
+    [classNames]
+  );
+
   // Contexto para ser passado para os componentes filhos
   const modalContext = React.useMemo(() => {
     return {
@@ -145,9 +194,34 @@ export function ModalCustom({
       size,
       radius,
       scrollBehavior,
-      classNames: classNames as Required<ModalProps>["classNames"],
-    };
-  }, [isOpen, handleClose, size, radius, scrollBehavior, classNames]);
+      shadow,
+      placement,
+      backdrop,
+      isDismissable,
+      isKeyboardDismissDisabled,
+      preventCloseOnOutsideWhenDirty,
+      isDirty,
+      markAsDirty,
+      resetDirty,
+      classNames: normalizedClassNames,
+    } satisfies ModalContextProps;
+  }, [
+    isOpen,
+    handleClose,
+    size,
+    radius,
+    scrollBehavior,
+    shadow,
+    placement,
+    backdrop,
+    isDismissable,
+    isKeyboardDismissDisabled,
+    preventCloseOnOutsideWhenDirty,
+    isDirty,
+    markAsDirty,
+    resetDirty,
+    normalizedClassNames,
+  ]);
 
   return (
     <ModalContext.Provider value={modalContext}>
@@ -157,7 +231,10 @@ export function ModalCustom({
         onOpenChange={(open) => {
           if (isDismissable || !open) {
             onOpenChange?.(open);
-            if (!open) onClose?.();
+            if (!open) {
+              onClose?.();
+              resetDirty();
+            }
           }
         }}
         {...props}
@@ -235,20 +312,23 @@ export function ModalClose({
  */
 export function ModalOverlay({
   className,
-  backdrop = "opaque",
+  backdrop,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Overlay> & {
   backdrop?: ModalBackdrop;
 }) {
+  const { backdrop: contextBackdrop, classNames } = useModalContext();
+  const resolvedBackdrop = backdrop ?? contextBackdrop;
   // Usa asChild para evitar loops de ref entre Radix e Framer Motion
   return (
     <DialogPrimitive.Overlay asChild {...props}>
       <motion.div
         data-slot="modal-overlay"
-        data-backdrop={backdrop}
+        data-backdrop={resolvedBackdrop}
         className={cn(
           "fixed inset-0 z-[100]",
-          backdropClasses[backdrop],
+          backdropClasses[resolvedBackdrop],
+          classNames.backdrop,
           className
         )}
         initial={{ opacity: 0 }}
@@ -267,7 +347,7 @@ interface ModalContentProps
   isDismissable?: boolean;
   hideCloseButton?: boolean;
   closeButton?: React.ReactNode;
-  shadow?: "none" | "sm" | "md" | "lg";
+  shadow?: ModalShadow;
   placement?: ModalPlacement;
 }
 
@@ -284,28 +364,81 @@ export function ModalContent({
   isDismissable,
   hideCloseButton,
   closeButton,
-  shadow = "lg",
-  placement = "center",
+  shadow,
+  placement,
   ...props
 }: ModalContentProps) {
   const {
-    onClose,
-    size = "md",
-    radius = "lg",
-    scrollBehavior = "normal",
-    classNames = {},
+    size,
+    radius,
+    scrollBehavior,
+    classNames,
+    shadow: contextShadow,
+    placement: contextPlacement,
+    isDismissable: contextDismissable,
+    isKeyboardDismissDisabled: contextKeyboardDismiss,
+    preventCloseOnOutsideWhenDirty,
+    isDirty,
+    markAsDirty,
+    resetDirty,
   } = useModalContext();
 
-  // Renderização do conteúdo da modal
+  const resolvedShadow = shadow ?? contextShadow;
+  const resolvedPlacement = placement ?? contextPlacement;
+  const resolvedDismissable =
+    typeof isDismissable === "boolean" ? isDismissable : contextDismissable;
+  const resolvedKeyboardDismiss =
+    typeof isKeyboardDismissDisabled === "boolean"
+      ? isKeyboardDismissDisabled
+      : contextKeyboardDismiss;
+
+  const shouldPreventDismiss =
+    !resolvedDismissable || (preventCloseOnOutsideWhenDirty && isDirty);
+
+  const handlePotentialDirty = React.useCallback(
+    (event: React.SyntheticEvent<EventTarget>) => {
+      if (!preventCloseOnOutsideWhenDirty || isDirty) return;
+      const target = event.target as HTMLElement | null;
+      if (!target) return;
+
+      if (target instanceof HTMLInputElement) {
+        if (target.type === "checkbox" || target.type === "radio") {
+          if (target.checked !== target.defaultChecked) {
+            markAsDirty();
+          }
+        } else if (target.value !== target.defaultValue) {
+          markAsDirty();
+        }
+      } else if (target instanceof HTMLTextAreaElement) {
+        if (target.value !== target.defaultValue) {
+          markAsDirty();
+        }
+      } else if (target instanceof HTMLSelectElement) {
+        if (target.value !== target.defaultValue) {
+          markAsDirty();
+        }
+      }
+    },
+    [isDirty, markAsDirty, preventCloseOnOutsideWhenDirty]
+  );
+
+  const handleResetCapture = React.useCallback(() => {
+    if (preventCloseOnOutsideWhenDirty) {
+      resetDirty();
+    }
+  }, [preventCloseOnOutsideWhenDirty, resetDirty]);
+
   return (
     <DialogPrimitive.Content
       data-slot="modal-content"
+      onInputCapture={handlePotentialDirty}
+      onChangeCapture={handlePotentialDirty}
+      onResetCapture={handleResetCapture}
       onEscapeKeyDown={(e) => {
         if (onEscapeKeyDown) {
           onEscapeKeyDown(e);
         }
-        // Não propaga evento se isKeyboardDismissDisabled for true
-        if (isKeyboardDismissDisabled) {
+        if (resolvedKeyboardDismiss) {
           e.preventDefault();
         }
       }}
@@ -313,8 +446,7 @@ export function ModalContent({
         if (onPointerDownOutside) {
           onPointerDownOutside(e);
         }
-        // Não propaga evento se isDismissable for false
-        if (isDismissable === false) {
+        if (shouldPreventDismiss) {
           e.preventDefault();
         }
       }}
@@ -322,8 +454,7 @@ export function ModalContent({
         if (onInteractOutside) {
           onInteractOutside(e);
         }
-        // Não propaga evento se isDismissable for false
-        if (isDismissable === false) {
+        if (shouldPreventDismiss) {
           e.preventDefault();
         }
       }}
@@ -331,17 +462,16 @@ export function ModalContent({
         "fixed z-[101] grid w-full gap-4 border p-6 bg-background",
         sizeClasses[size],
         radiusClasses[radius],
-        shadowClasses[shadow],
-        placementClasses[placement],
+        shadowClasses[resolvedShadow],
+        placementClasses[resolvedPlacement],
         scrollBehaviorClasses[scrollBehavior],
-        classNames?.base,
+        classNames.base,
         className
       )}
       {...props}
     >
       {children}
 
-      {/* Botão de fechar (pode ser personalizado ou escondido) */}
       {!hideCloseButton &&
         (closeButton || (
           <ModalClose
@@ -349,7 +479,7 @@ export function ModalContent({
               "absolute top-4 right-4 rounded-sm opacity-70 ring-offset-background transition-opacity cursor-pointer",
               "hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden",
               "disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
-              classNames?.closeButton
+              classNames.closeButton
             )}
           >
             <XIcon />
@@ -374,20 +504,81 @@ interface ModalContentWrapperProps extends ModalContentProps {
 export function ModalContentWrapper({
   children,
   className,
-  backdrop = "opaque",
+  backdrop,
   container,
   isDismissable,
   isKeyboardDismissDisabled,
   hideCloseButton,
   closeButton,
-  shadow = "lg",
-  placement = "center",
+  shadow,
+  placement,
   motionProps,
   disableAnimation = false,
   ...props
 }: ModalContentWrapperProps) {
-  const ctx = useModalContext();
-  // Definições de animações padrão
+  const {
+    backdrop: contextBackdrop,
+    shadow: contextShadow,
+    placement: contextPlacement,
+    isDismissable: contextDismissable,
+    isKeyboardDismissDisabled: contextKeyboardDismiss,
+    preventCloseOnOutsideWhenDirty,
+    isDirty,
+    markAsDirty,
+    resetDirty,
+    scrollBehavior,
+    classNames,
+    size,
+    radius,
+  } = useModalContext();
+
+  const resolvedBackdrop = backdrop ?? contextBackdrop;
+  const resolvedShadow = shadow ?? contextShadow;
+  const resolvedPlacement = placement ?? contextPlacement;
+  const resolvedDismissable =
+    typeof isDismissable === "boolean" ? isDismissable : contextDismissable;
+  const resolvedKeyboardDismiss =
+    typeof isKeyboardDismissDisabled === "boolean"
+      ? isKeyboardDismissDisabled
+      : contextKeyboardDismiss;
+
+  const shouldPreventDismiss =
+    !resolvedDismissable ||
+    (preventCloseOnOutsideWhenDirty && isDirty);
+
+  const handlePotentialDirty = React.useCallback(
+    (event: React.SyntheticEvent<EventTarget>) => {
+      if (!preventCloseOnOutsideWhenDirty || isDirty) return;
+      const target = event.target as HTMLElement | null;
+      if (!target) return;
+
+      if (target instanceof HTMLInputElement) {
+        if (target.type === "checkbox" || target.type === "radio") {
+          if (target.checked !== target.defaultChecked) {
+            markAsDirty();
+          }
+        } else if (target.value !== target.defaultValue) {
+          markAsDirty();
+        }
+      } else if (target instanceof HTMLTextAreaElement) {
+        if (target.value !== target.defaultValue) {
+          markAsDirty();
+        }
+      } else if (target instanceof HTMLSelectElement) {
+        if (target.value !== target.defaultValue) {
+          markAsDirty();
+        }
+      }
+    },
+    [isDirty, markAsDirty, preventCloseOnOutsideWhenDirty]
+  );
+
+  const handleResetCapture = React.useCallback(() => {
+    if (preventCloseOnOutsideWhenDirty) {
+      resetDirty();
+    }
+  }, [preventCloseOnOutsideWhenDirty, resetDirty]);
+
   const defaultMotionProps = {
     initial: { opacity: 0, scale: 0.96, y: 8 },
     animate: { opacity: 1, scale: 1, y: 0 },
@@ -398,7 +589,6 @@ export function ModalContentWrapper({
     },
   } as const;
 
-  // Combina props padrão com personalizadas
   const combinedMotionProps = {
     ...defaultMotionProps,
     ...motionProps,
@@ -406,16 +596,16 @@ export function ModalContentWrapper({
 
   return (
     <ModalPortal container={container}>
-      <ModalOverlay backdrop={backdrop} />
+      <ModalOverlay backdrop={resolvedBackdrop} />
       {disableAnimation ? (
         <ModalContent
           className={className}
-          isDismissable={isDismissable}
-          isKeyboardDismissDisabled={isKeyboardDismissDisabled}
+          isDismissable={resolvedDismissable}
+          isKeyboardDismissDisabled={resolvedKeyboardDismiss}
           hideCloseButton={hideCloseButton}
           closeButton={closeButton}
-          shadow={shadow}
-          placement={placement}
+          shadow={resolvedShadow}
+          placement={resolvedPlacement}
           {...props}
         >
           {children}
@@ -424,29 +614,32 @@ export function ModalContentWrapper({
         <DialogPrimitive.Content
           data-slot="modal-content"
           aria-describedby={undefined}
+          onInputCapture={handlePotentialDirty}
+          onChangeCapture={handlePotentialDirty}
+          onResetCapture={handleResetCapture}
           onEscapeKeyDown={(e) => {
             if ((props as any)?.onEscapeKeyDown)
               (props as any).onEscapeKeyDown(e);
-            if (isKeyboardDismissDisabled) e.preventDefault();
+            if (resolvedKeyboardDismiss) e.preventDefault();
           }}
           onPointerDownOutside={(e) => {
             if ((props as any)?.onPointerDownOutside)
               (props as any).onPointerDownOutside(e);
-            if (isDismissable === false) e.preventDefault();
+            if (shouldPreventDismiss) e.preventDefault();
           }}
           onInteractOutside={(e) => {
             if ((props as any)?.onInteractOutside)
               (props as any).onInteractOutside(e);
-            if (isDismissable === false) e.preventDefault();
+            if (shouldPreventDismiss) e.preventDefault();
           }}
           className={cn(
             "fixed z-[101] grid w-full gap-4 border p-6 bg-background transform-gpu will-change-transform",
-            sizeClasses[ctx.size],
-            radiusClasses[ctx.radius],
-            shadowClasses[shadow],
-            placementClasses[placement],
-            scrollBehaviorClasses[ctx.scrollBehavior || "normal"],
-            ctx.classNames?.base,
+            sizeClasses[size],
+            radiusClasses[radius],
+            shadowClasses[resolvedShadow],
+            placementClasses[resolvedPlacement],
+            scrollBehaviorClasses[scrollBehavior],
+            classNames.base,
             className
           )}
           asChild
@@ -454,7 +647,12 @@ export function ModalContentWrapper({
         >
           <motion.div {...combinedMotionProps} style={{ width: "100%" }}>
             {!hideCloseButton && (
-              <ModalClose className="absolute right-4 top-4 rounded-md opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 p-1">
+              <ModalClose
+                className={cn(
+                  "absolute right-4 top-4 rounded-md opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 p-1",
+                  classNames.closeButton
+                )}
+              >
                 {closeButton || (
                   <XIcon className="h-4 w-4" aria-hidden="true" />
                 )}
@@ -476,14 +674,14 @@ export function ModalHeader({
   className,
   ...props
 }: React.ComponentProps<"div">) {
-  const { classNames = {} } = useModalContext();
+  const { classNames } = useModalContext();
 
   return (
     <div
       data-slot="modal-header"
       className={cn(
         "flex flex-col gap-2 text-center sm:text-left",
-        classNames?.header,
+        classNames.header,
         className
       )}
       {...props}
@@ -498,14 +696,14 @@ export function ModalFooter({
   className,
   ...props
 }: React.ComponentProps<"div">) {
-  const { classNames = {} } = useModalContext();
+  const { classNames } = useModalContext();
 
   return (
     <div
       data-slot="modal-footer"
       className={cn(
         "flex flex-col-reverse gap-2 sm:flex-row sm:justify-end",
-        classNames?.footer,
+        classNames.footer,
         className
       )}
       {...props}
@@ -552,7 +750,7 @@ export function ModalBody({
   className,
   ...props
 }: React.ComponentProps<"div">) {
-  const { scrollBehavior = "normal", classNames } = useModalContext();
+  const { scrollBehavior, classNames } = useModalContext();
 
   return (
     <div
@@ -560,7 +758,7 @@ export function ModalBody({
       className={cn(
         scrollBehaviorClasses[scrollBehavior],
         "py-2",
-        classNames?.body,
+        classNames.body,
         className
       )}
       {...props}
