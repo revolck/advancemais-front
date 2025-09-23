@@ -210,132 +210,111 @@ export default function PasswordResetPage() {
     }
 
     return (
-      <div className="grid gap-8 md:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
-        <aside className="hidden rounded-2xl border border-[var(--primary-color)]/15 bg-gradient-to-br from-[var(--primary-color)] via-[var(--primary-color)]/90 to-[var(--secondary-color)]/90 p-6 text-white shadow-inner md:flex md:flex-col md:justify-between">
-          <div className="space-y-4">
-            <div className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-medium uppercase tracking-wide">
-              <Lock className="h-3.5 w-3.5" aria-hidden />
-              <span>Recuperar acesso</span>
-            </div>
-            <div className="space-y-3">
-              <h2 className="text-2xl font-semibold leading-snug text-white">
-                Sua segurança em primeiro lugar
-              </h2>
-              <p className="text-sm leading-relaxed text-white/80">
-                {decodedEmail
-                  ? `Estamos quase lá! Defina uma senha forte para ${decodedEmail} e mantenha sua conta protegida.`
-                  : "Estamos quase lá! Defina uma senha forte e mantenha sua conta protegida."}
-              </p>
-            </div>
+      <form
+        className="mx-auto flex w-full max-w-md flex-col gap-6"
+        onSubmit={handleSubmit}
+        noValidate
+      >
+        <div className="flex flex-col items-center gap-3 text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--primary-color)]/10 text-[var(--primary-color)]">
+            <Lock className="h-6 w-6" aria-hidden />
           </div>
-          <ul className="space-y-3 text-sm text-white/80">
-            <li className="flex items-start gap-2">
-              <CheckCircle2 className="mt-0.5 h-4 w-4 text-white" aria-hidden />
-              <span>Use combinações únicas de letras, números e símbolos.</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <CheckCircle2 className="mt-0.5 h-4 w-4 text-white" aria-hidden />
-              <span>Evite reutilizar senhas utilizadas em outros serviços.</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <CheckCircle2 className="mt-0.5 h-4 w-4 text-white" aria-hidden />
-              <span>Atualize seus dados sempre que notar qualquer atividade suspeita.</span>
-            </li>
-          </ul>
-        </aside>
-
-        <form
-          className="flex flex-col gap-6 rounded-2xl border border-border/70 bg-white/80 p-6 backdrop-blur-sm sm:p-8"
-          onSubmit={handleSubmit}
-          noValidate
-        >
-          <div className="flex flex-col gap-3 text-center md:text-left">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[var(--primary-color)]/10 text-[var(--primary-color)] md:mx-0">
-              <Lock className="h-6 w-6" aria-hidden />
-            </div>
-            <div className="space-y-2">
-              <h1 className="text-2xl font-semibold text-foreground">
-                Defina uma nova senha
-              </h1>
-              <p className="text-sm text-muted-foreground">
-                {decodedEmail
-                  ? `Para continuar, escolha uma nova senha para ${decodedEmail}.`
-                  : "Para continuar, escolha uma nova senha segura."}
-              </p>
-            </div>
+          <div className="space-y-2">
+            <h1 className="text-2xl font-semibold text-foreground">Defina uma nova senha</h1>
+            <p className="text-sm text-muted-foreground">
+              {decodedEmail
+                ? `Para continuar, escolha uma nova senha para ${decodedEmail}.`
+                : "Para continuar, escolha uma nova senha segura."}
+            </p>
           </div>
+        </div>
 
-          <div className="space-y-4">
-            <InputCustom
-              label="Nova senha"
-              type="password"
-              name="password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              required
-              showPasswordToggle
-              autoComplete="new-password"
-            />
+        <div className="space-y-4">
+          <InputCustom
+            label="Nova senha"
+            type="password"
+            name="password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            required
+            showPasswordToggle
+            autoComplete="new-password"
+          />
 
-            <InputCustom
-              label="Confirmar senha"
-              type="password"
-              name="confirmPassword"
-              value={confirmPassword}
-              onChange={(event) => setConfirmPassword(event.target.value)}
-              required
-              showPasswordToggle
-              autoComplete="new-password"
-            />
+          <InputCustom
+            label="Confirmar senha"
+            type="password"
+            name="confirmPassword"
+            value={confirmPassword}
+            onChange={(event) => setConfirmPassword(event.target.value)}
+            required
+            showPasswordToggle
+            autoComplete="new-password"
+          />
 
-            <div className="rounded-2xl border border-[var(--primary-color)]/15 bg-[var(--primary-color)]/5 p-4 text-left">
-              <p className="text-sm font-medium text-foreground">Sua senha deve conter:</p>
-              <ul className="mt-3 space-y-2">
-                {satisfiedRequirements.map((requirement) => (
-                  <li key={requirement.id} className="flex items-center gap-3 text-sm">
-                    <span
-                      className={`flex h-6 w-6 items-center justify-center rounded-full border text-[11px] font-semibold transition ${requirement.satisfied ? "border-emerald-500 bg-emerald-500 text-white shadow-sm" : "border-[var(--primary-color)]/40 bg-white text-[var(--primary-color)]/70"}`}
-                      aria-hidden
-                    >
-                      {requirement.satisfied ? "✓" : ""}
-                    </span>
-                    <span className={requirement.satisfied ? "text-foreground" : "text-muted-foreground"}>
-                      {requirement.label}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {formError && (
-              <p
-                className="text-sm font-medium text-destructive"
-                role="alert"
-                aria-live="assertive"
-              >
-                {formError}
-              </p>
-            )}
+          <div className="rounded-2xl border border-[var(--primary-color)]/15 bg-[var(--primary-color)]/5 p-4">
+            <p className="text-sm font-medium text-foreground">Sua senha deve conter:</p>
+            <ul className="mt-3 space-y-2 text-left">
+              {satisfiedRequirements.map((requirement) => (
+                <li key={requirement.id} className="flex items-center gap-3 text-sm">
+                  <span
+                    className={`flex h-6 w-6 items-center justify-center rounded-full border text-[11px] font-semibold transition ${requirement.satisfied ? "border-emerald-500 bg-emerald-500 text-white shadow-sm" : "border-[var(--primary-color)]/40 bg-white text-[var(--primary-color)]/70"}`}
+                    aria-hidden
+                  >
+                    {requirement.satisfied ? "✓" : ""}
+                  </span>
+                  <span className={requirement.satisfied ? "text-foreground" : "text-muted-foreground"}>
+                    {requirement.label}
+                  </span>
+                </li>
+              ))}
+            </ul>
           </div>
 
-          <div className="flex flex-col gap-3">
-            <ButtonCustom
-              type="submit"
-              variant="primary"
-              size="lg"
-              className="w-full"
-              isLoading={isSubmitting}
-              disabled={isSubmitting || !canSubmit}
-            >
-              Redefinir senha
-            </ButtonCustom>
+          {formError && (
+            <p className="text-sm font-medium text-destructive" role="alert" aria-live="assertive">
+              {formError}
+            </p>
+          )}
 
-            <ButtonCustom asChild variant="ghost" size="sm" className="w-full">
-              <Link href="/login">Voltar para o login</Link>
-            </ButtonCustom>
+          <div className="rounded-2xl border border-border/60 bg-muted/40 p-4 text-left">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Boas práticas de segurança
+            </p>
+            <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
+              <li className="flex items-start gap-3">
+                <CheckCircle2 className="mt-0.5 h-4 w-4 text-[var(--primary-color)]" aria-hidden />
+                <span>Use combinações únicas de letras, números e símbolos.</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <CheckCircle2 className="mt-0.5 h-4 w-4 text-[var(--primary-color)]" aria-hidden />
+                <span>Evite reutilizar senhas utilizadas em outros serviços.</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <CheckCircle2 className="mt-0.5 h-4 w-4 text-[var(--primary-color)]" aria-hidden />
+                <span>Monitore sua conta e atualize seus dados se notar atividade suspeita.</span>
+              </li>
+            </ul>
           </div>
-        </form>
-      </div>
+        </div>
+
+        <div className="flex flex-col gap-3">
+          <ButtonCustom
+            type="submit"
+            variant="primary"
+            size="lg"
+            className="w-full"
+            isLoading={isSubmitting}
+            disabled={isSubmitting || !canSubmit}
+          >
+            Redefinir senha
+          </ButtonCustom>
+
+          <ButtonCustom asChild variant="ghost" size="sm" className="w-full">
+            <Link href="/login">Voltar para o login</Link>
+          </ButtonCustom>
+        </div>
+      </form>
     );
   };
 
@@ -355,8 +334,8 @@ export default function PasswordResetPage() {
       </header>
 
       <main className="flex min-h-[70dvh] items-center justify-center bg-[var(--background-color)] px-6 py-16 sm:py-24">
-        <div className="w-full max-w-5xl">
-          <div className="rounded-[32px] border border-gray-100/80 bg-white/90 shadow-xl backdrop-blur-sm">
+        <div className="w-full max-w-lg">
+          <div className="rounded-[32px] border border-gray-100/80 bg-white/95 shadow-xl backdrop-blur-sm">
             <div className="p-6 sm:p-10">{renderContent()}</div>
           </div>
         </div>
