@@ -1,20 +1,11 @@
-import { websiteRoutes } from "@/api/routes";
 import { apiFetch } from "@/api/client";
-import { apiConfig } from "@/lib/env";
+import { websiteRoutes } from "@/api/routes";
+import { authHeaders, authJsonHeaders, publicHeaders } from "@/api/shared";
 import type {
   DepoimentoBackendResponse,
   CreateDepoimentoPayload,
   UpdateDepoimentoPayload,
 } from "./types";
-
-function getAuthHeader(): Record<string, string> {
-  if (typeof document === "undefined") return {};
-  const token = document.cookie
-    .split("; ")
-    .find((row) => row.startsWith("token="))
-    ?.split("=")[1];
-  return token ? { Authorization: `Bearer ${token}` } : {};
-}
 
 export async function listDepoimentos(
   init?: RequestInit,
@@ -24,14 +15,14 @@ export async function listDepoimentos(
     ? `${websiteRoutes.depoimentos.list()}?status=${encodeURIComponent(status)}`
     : websiteRoutes.depoimentos.list();
   return apiFetch<DepoimentoBackendResponse[]>(url, {
-    init: init ?? { headers: apiConfig.headers },
+    init: init ?? { headers: publicHeaders() },
     cache: "no-cache",
   });
 }
 
 export async function getDepoimentoById(id: string): Promise<DepoimentoBackendResponse> {
   return apiFetch<DepoimentoBackendResponse>(websiteRoutes.depoimentos.get(id), {
-    init: { headers: apiConfig.headers },
+    init: { headers: publicHeaders() },
     cache: "no-cache",
   });
 }
@@ -50,11 +41,7 @@ export async function createDepoimento(
   return apiFetch<DepoimentoBackendResponse>(websiteRoutes.depoimentos.create(), {
     init: {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: apiConfig.headers.Accept,
-        ...getAuthHeader(),
-      },
+      headers: authJsonHeaders(),
       body: JSON.stringify(payload),
     },
     cache: "no-cache",
@@ -76,11 +63,7 @@ export async function updateDepoimento(
   return apiFetch<DepoimentoBackendResponse>(websiteRoutes.depoimentos.update(id), {
     init: {
       method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: apiConfig.headers.Accept,
-        ...getAuthHeader(),
-      },
+      headers: authJsonHeaders(),
       body: JSON.stringify(payload),
     },
     cache: "no-cache",
@@ -91,7 +74,7 @@ export async function deleteDepoimento(id: string): Promise<void> {
   await apiFetch<void>(websiteRoutes.depoimentos.delete(id), {
     init: {
       method: "DELETE",
-      headers: { Accept: apiConfig.headers.Accept, ...getAuthHeader() },
+      headers: authHeaders(),
     },
     cache: "no-cache",
   });
@@ -104,11 +87,7 @@ export async function updateDepoimentoOrder(
   await apiFetch<DepoimentoBackendResponse>(websiteRoutes.depoimentos.reorder(id), {
     init: {
       method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: apiConfig.headers.Accept,
-        ...getAuthHeader(),
-      },
+      headers: authJsonHeaders(),
       body: JSON.stringify({ ordem: Number(ordem) }),
     },
     cache: "no-cache",
@@ -123,11 +102,7 @@ export async function updateDepoimentoStatus(
   return apiFetch<DepoimentoBackendResponse>(websiteRoutes.depoimentos.update(id), {
     init: {
       method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: apiConfig.headers.Accept,
-        ...getAuthHeader(),
-      },
+      headers: authJsonHeaders(),
       body: JSON.stringify(payload),
     },
     cache: "no-cache",

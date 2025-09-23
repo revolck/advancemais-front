@@ -1,6 +1,6 @@
 import { apiFetch } from "@/api/client";
 import { brevoRoutes } from "@/api/routes";
-import { apiConfig } from "@/lib/env";
+import { acceptHeaders, publicHeaders } from "@/api/shared";
 
 import type {
   BrevoResendVerificationPayload,
@@ -8,12 +8,6 @@ import type {
   BrevoStatusResponse,
   BrevoVerificationResponse,
 } from "./types";
-
-const ACCEPT_HEADER = { Accept: apiConfig.headers.Accept } as const;
-const JSON_HEADERS = {
-  ...ACCEPT_HEADER,
-  "Content-Type": apiConfig.headers["Content-Type"],
-} as const;
 
 export async function verifyEmail(
   token: string,
@@ -23,7 +17,7 @@ export async function verifyEmail(
     {
       init: {
         method: "GET",
-        headers: ACCEPT_HEADER,
+        headers: acceptHeaders(),
       },
       cache: "no-cache",
       skipLogoutOn401: true,
@@ -39,7 +33,7 @@ export async function verifyEmailAlias(
     {
       init: {
         method: "GET",
-        headers: ACCEPT_HEADER,
+        headers: acceptHeaders(),
       },
       cache: "no-cache",
       skipLogoutOn401: true,
@@ -55,7 +49,7 @@ export async function resendVerificationEmail(
     {
       init: {
         method: "POST",
-        headers: JSON_HEADERS,
+        headers: publicHeaders(),
         body: JSON.stringify(payload),
       },
       cache: "no-cache",
@@ -72,7 +66,7 @@ export async function resendVerificationEmailAlias(
     {
       init: {
         method: "POST",
-        headers: JSON_HEADERS,
+        headers: publicHeaders(),
         body: JSON.stringify(payload),
       },
       cache: "no-cache",
@@ -89,7 +83,7 @@ export async function getVerificationStatusByUserId(
     {
       init: {
         method: "GET",
-        headers: ACCEPT_HEADER,
+        headers: acceptHeaders(),
       },
       cache: "no-cache",
     },
@@ -104,7 +98,7 @@ export async function getVerificationStatusByEmail(
     {
       init: {
         method: "GET",
-        headers: ACCEPT_HEADER,
+        headers: acceptHeaders(),
       },
       cache: "no-cache",
     },

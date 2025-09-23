@@ -1,7 +1,68 @@
-export interface UsuarioResponseBase {
+export interface ApiMessageResponse {
   success?: boolean;
   message?: string;
   code?: string;
+  correlationId?: string;
+  duration?: string;
+  timestamp?: string;
+}
+
+export interface UsuarioSummary {
+  id: string;
+  email: string;
+  nomeCompleto: string;
+  tipoUsuario?: string;
+  role?: string;
+  roles?: string[];
+  status?: string;
+  criadoEm?: string;
+  codUsuario?: string;
+  supabaseId?: string;
+  emailVerificado?: boolean;
+  emailVerificadoEm?: string | null;
+  ultimoLogin?: string | null;
+  socialLinks?: Record<string, unknown>;
+  enderecos?: unknown[];
+  imagemPerfil?: string | null;
+  plano?: string | null;
+}
+
+export interface UsuarioModuleFeatures {
+  emailVerification: boolean;
+  registration: boolean;
+  authentication: boolean;
+  profileManagement: boolean;
+  passwordRecovery: boolean;
+}
+
+export interface UsuarioModuleInfoResponse {
+  module: string;
+  version: string;
+  timestamp: string;
+  environment: string;
+  features: UsuarioModuleFeatures;
+  endpoints: {
+    auth: {
+      register: string;
+      login: string;
+      logout: string;
+      refresh: string;
+    };
+    profile: {
+      get: string;
+      update: string;
+    };
+    recovery: {
+      request: string;
+      validate: string;
+      reset: string;
+    };
+    verification: {
+      verify: string;
+      resend: string;
+      status: string;
+    };
+  };
 }
 
 export interface UsuarioPasswordRecoveryRequestPayload {
@@ -11,9 +72,15 @@ export interface UsuarioPasswordRecoveryRequestPayload {
   cnpj?: string;
 }
 
-export type UsuarioPasswordRecoveryResponse = UsuarioResponseBase;
+export interface UsuarioPasswordRecoveryResponse extends ApiMessageResponse {
+  errors?: Array<{ path?: string; message: string }>;
+  retryAfter?: number;
+}
 
-export type UsuarioPasswordRecoveryValidationResponse = UsuarioResponseBase;
+export interface UsuarioPasswordRecoveryValidationResponse
+  extends ApiMessageResponse {
+  usuario?: Pick<UsuarioSummary, "email" | "nomeCompleto">;
+}
 
 export interface UsuarioPasswordResetPayload {
   token: string;
@@ -21,11 +88,12 @@ export interface UsuarioPasswordResetPayload {
   confirmarSenha: string;
 }
 
-export type UsuarioPasswordResetResponse = UsuarioResponseBase;
+export interface UsuarioPasswordResetResponse extends ApiMessageResponse {
+  detalhes?: string[];
+}
 
 export interface UsuarioRegisterPayload {
   nomeCompleto: string;
-  documento: string;
   telefone: string;
   email: string;
   senha: string;
@@ -40,12 +108,8 @@ export interface UsuarioRegisterPayload {
   role?: string;
 }
 
-export interface UsuarioRegisterResponse extends UsuarioResponseBase {
-  usuario?: {
-    id: string;
-    email: string;
-    nomeCompleto: string;
-  };
+export interface UsuarioRegisterResponse extends ApiMessageResponse {
+  usuario?: UsuarioSummary;
 }
 
 export interface UsuarioLoginPayload {
@@ -61,7 +125,8 @@ export interface UsuarioSessionInfo {
   expiresAt: string;
 }
 
-export interface UsuarioLoginResponse extends UsuarioResponseBase {
+export interface UsuarioLoginResponse extends ApiMessageResponse {
+  usuario?: UsuarioSummary;
   token: string;
   refreshToken: string;
   tokenType?: string;
@@ -70,49 +135,39 @@ export interface UsuarioLoginResponse extends UsuarioResponseBase {
   refreshTokenExpiresIn?: string;
   refreshTokenExpiresAt?: string;
   session?: UsuarioSessionInfo;
-  correlationId?: string;
-  timestamp?: string;
 }
 
 export interface UsuarioRefreshPayload {
   refreshToken?: string;
 }
 
-export interface UsuarioRefreshResponse extends UsuarioResponseBase {
+export interface UsuarioRefreshResponse extends ApiMessageResponse {
+  usuario?: UsuarioSummary;
   token: string;
   refreshToken: string;
   rememberMe?: boolean;
   refreshTokenExpiresAt?: string;
   session?: UsuarioSessionInfo;
-  correlationId?: string;
-  timestamp?: string;
 }
 
-export interface UsuarioLogoutResponse extends UsuarioResponseBase {
-  correlationId?: string;
-  timestamp?: string;
-}
+export type UsuarioLogoutResponse = ApiMessageResponse;
 
 export interface UsuarioEmailVerificationState {
   verified: boolean;
   verifiedAt: string | null;
   tokenExpiration: string | null;
-  attempts: number;
-  lastAttemptAt: string | null;
 }
 
-export interface UsuarioProfileResponse {
-  id: string;
-  email: string;
-  nomeCompleto: string;
-  role?: string;
-  roles?: string[];
-  tipoUsuario?: string;
-  supabaseId?: string;
-  emailVerificado?: boolean;
-  emailVerificadoEm?: string | null;
-  emailVerification?: UsuarioEmailVerificationState;
-  ultimoLogin?: string | null;
-  imagemPerfil?: string | null;
-  plano?: string | null;
+export interface UsuarioProfileStats {
+  accountAge: number;
+  hasCompletedProfile: boolean;
+  hasAddress: boolean;
+  totalOrders: number;
+  totalSubscriptions: number;
+  emailVerificationStatus: UsuarioEmailVerificationState;
+}
+
+export interface UsuarioProfileResponse extends ApiMessageResponse {
+  usuario: UsuarioSummary;
+  stats?: UsuarioProfileStats;
 }
