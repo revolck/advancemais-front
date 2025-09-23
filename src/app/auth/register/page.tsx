@@ -16,6 +16,7 @@ import { registerUser } from "@/api/usuarios";
 import type { UsuarioRegisterPayload } from "@/api/usuarios";
 import { MaskService } from "@/services";
 import Image from "next/image";
+import { UserRole } from "@/config/roles";
 
 type SelectedType = "student" | "candidate" | "company" | null;
 
@@ -243,8 +244,10 @@ const RegisterPage = () => {
         "cpfCnpj",
       );
       const telefoneFormatado = formatPhoneForApi(formData.phone);
+      const isCompanyAccount = selectedType === "company";
       const tipoUsuario: UsuarioRegisterPayload["tipoUsuario"] =
-        selectedType === "company" ? "PESSOA_JURIDICA" : "PESSOA_FISICA";
+        isCompanyAccount ? "PESSOA_JURIDICA" : "PESSOA_FISICA";
+
       const payloadForApi: UsuarioRegisterPayload = {
         nomeCompleto: formData.name.trim(),
         documento: documentoLimpo,
@@ -255,7 +258,16 @@ const RegisterPage = () => {
         aceitarTermos: acceptTerms,
         tipoUsuario,
       };
-      const maskedPayloadForLog = {
+
+      if (isCompanyAccount) {
+        payloadForApi.cnpj = documentoLimpo;
+        payloadForApi.role = UserRole.EMPRESA;
+      } else {
+        payloadForApi.cpf = documentoLimpo;
+        payloadForApi.role = UserRole.ALUNO_CANDIDATO;
+      }
+
+      const maskedPayloadForLog: Record<string, unknown> = {
         ...payloadForApi,
         documento: maskSensitiveValue(documentoLimpo),
         telefone: maskSensitiveValue(telefoneFormatado),
@@ -263,6 +275,14 @@ const RegisterPage = () => {
         senha: `***(${payloadForApi.senha.length} chars)`,
         confirmarSenha: `***(${payloadForApi.confirmarSenha.length} chars)`,
       };
+
+      if (payloadForApi.cpf) {
+        maskedPayloadForLog.cpf = maskSensitiveValue(payloadForApi.cpf);
+      }
+
+      if (payloadForApi.cnpj) {
+        maskedPayloadForLog.cnpj = maskSensitiveValue(payloadForApi.cnpj);
+      }
       console.groupCollapsed("🧪 Registro | Payload sanitizado");
       console.log("Endpoint:", "POST /api/v1/usuarios/registrar");
       console.table(maskedPayloadForLog);

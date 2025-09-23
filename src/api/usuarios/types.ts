@@ -33,6 +33,11 @@ export interface UsuarioRegisterPayload {
   aceitarTermos: boolean;
   supabaseId?: string;
   tipoUsuario: "PESSOA_FISICA" | "PESSOA_JURIDICA" | string;
+  cpf?: string;
+  cnpj?: string;
+  dataNasc?: string;
+  genero?: string;
+  role?: string;
 }
 
 export interface UsuarioRegisterResponse extends UsuarioResponseBase {
