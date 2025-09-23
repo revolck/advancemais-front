@@ -151,7 +151,11 @@ export function SelectCustom(props: SelectCustomProps) {
               <SelectValue placeholder={placeholder} />
             )}
           </SelectTrigger>
-          <SelectContent className="w-[--radix-select-trigger-width] max-h-80 rounded-md shadow-lg [&_[data-slot=select-scroll-up-button]]:hidden [&_[data-slot=select-scroll-down-button]]:hidden">
+          <SelectContent
+            className={cn(
+              "z-[120] w-[--radix-select-trigger-width] max-h-80 rounded-md shadow-lg [&_[data-slot=select-scroll-up-button]]:hidden [&_[data-slot=select-scroll-down-button]]:hidden"
+            )}
+          >
             {props.mode === "user" ? (
               <SelectGroup>
                 <SelectLabel className="ps-2">Usuários</SelectLabel>
@@ -236,7 +240,11 @@ export function SelectCustom(props: SelectCustomProps) {
             <ChevronsUpDownIcon className="size-4 opacity-50" />
           </button>
         </PopoverTrigger>
-        <PopoverContent className="p-0 w-[--radix-popover-trigger-width] border-gray-500/20">
+        <PopoverContent
+          className={cn(
+            "z-[120] w-[--radix-popover-trigger-width] border-gray-500/20 p-0"
+          )}
+        >
           <Command>
             {searchable && <CommandInput placeholder="Buscar..." />}
             <CommandEmpty>Nenhuma opção encontrada</CommandEmpty>
