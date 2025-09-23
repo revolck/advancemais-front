@@ -206,32 +206,9 @@ const RegisterPage = () => {
       return "";
     }
 
-    if (trimmed.startsWith("+")) {
-      return trimmed;
-    }
-
     const digits = maskService.removeMask(trimmed, "phone");
 
-    if (!digits) {
-      return "";
-    }
-
-    const brazilCountryCode = "55";
-    const hasCountryCode = digits.startsWith(brazilCountryCode);
-    const normalizedDigits = hasCountryCode ? digits.slice(2) : digits;
-
-    const areaCode = normalizedDigits.slice(0, 2);
-    const subscriberNumber = normalizedDigits.slice(2);
-
-    if (!areaCode || subscriberNumber.length < 8) {
-      return `+${brazilCountryCode} ${digits}`;
-    }
-
-    const firstPartLength = subscriberNumber.length === 9 ? 5 : 4;
-    const firstPart = subscriberNumber.slice(0, firstPartLength);
-    const secondPart = subscriberNumber.slice(firstPartLength);
-
-    return `+${brazilCountryCode} ${areaCode} ${firstPart}-${secondPart}`;
+    return digits;
   };
 
   const handleSignUp = (event: React.FormEvent<HTMLFormElement>) => {
