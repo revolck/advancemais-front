@@ -1,6 +1,6 @@
 import { empresasRoutes } from "@/api/routes";
 import { apiFetch } from "@/api/client";
-import { apiConfig } from "@/lib/env";
+import { authHeaders, authJsonHeaders, publicHeaders } from "@/api/shared";
 import type {
   PlanoEmpresarialBackendResponse,
   CreatePlanoEmpresarialPayload,
@@ -12,7 +12,7 @@ export async function listPlanosEmpresariais(
 ): Promise<PlanoEmpresarialBackendResponse[]> {
   return apiFetch<PlanoEmpresarialBackendResponse[]>(
     empresasRoutes.planosEmpresariais.list(),
-    { init: init ?? { headers: apiConfig.headers } },
+    { init: init ?? { headers: publicHeaders() } },
   );
 }
 
@@ -21,17 +21,8 @@ export async function getPlanoEmpresarialById(
 ): Promise<PlanoEmpresarialBackendResponse> {
   return apiFetch<PlanoEmpresarialBackendResponse>(
     empresasRoutes.planosEmpresariais.get(id),
-    { init: { headers: apiConfig.headers } },
+    { init: { headers: publicHeaders() } },
   );
-}
-
-function getAuthHeader(): Record<string, string> {
-  if (typeof document === "undefined") return {};
-  const token = document.cookie
-    .split("; ")
-    .find((row) => row.startsWith("token="))
-    ?.split("=")[1];
-  return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
 export async function createPlanoEmpresarial(
@@ -42,11 +33,7 @@ export async function createPlanoEmpresarial(
     {
       init: {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: apiConfig.headers.Accept,
-          ...getAuthHeader(),
-        },
+        headers: authJsonHeaders(),
         body: JSON.stringify(data),
       },
       cache: "no-cache",
@@ -63,11 +50,7 @@ export async function updatePlanoEmpresarial(
     {
       init: {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: apiConfig.headers.Accept,
-          ...getAuthHeader(),
-        },
+        headers: authJsonHeaders(),
         body: JSON.stringify(data),
       },
       cache: "no-cache",
@@ -79,10 +62,7 @@ export async function deletePlanoEmpresarial(id: string): Promise<void> {
   await apiFetch<void>(empresasRoutes.planosEmpresariais.delete(id), {
     init: {
       method: "DELETE",
-      headers: {
-        Accept: apiConfig.headers.Accept,
-        ...getAuthHeader(),
-      },
+      headers: authHeaders(),
     },
     cache: "no-cache",
   });

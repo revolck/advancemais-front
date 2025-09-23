@@ -3,8 +3,9 @@
  * Busca dados do componente recrutamento do website
  */
 
-import { websiteRoutes } from "@/api/routes";
 import { apiFetch } from "@/api/client";
+import { websiteRoutes } from "@/api/routes";
+import { authHeaders, authJsonHeaders, publicHeaders } from "@/api/shared";
 import { apiConfig, env } from "@/lib/env";
 import { recrutamentoMockData } from "./mock";
 import {
@@ -30,7 +31,7 @@ function mapRecrutamentoResponse(
 export async function getRecrutamentoData(): Promise<RecrutamentoApiResponse> {
   try {
     const raw = await listRecrutamento({
-      headers: apiConfig.headers,
+      headers: publicHeaders(),
       ...apiConfig.cache.medium,
     });
     const data = mapRecrutamentoResponse(raw);
@@ -45,7 +46,7 @@ export async function getRecrutamentoData(): Promise<RecrutamentoApiResponse> {
 
 export async function getRecrutamentoDataClient(): Promise<RecrutamentoApiResponse> {
   try {
-    const raw = await listRecrutamento({ headers: apiConfig.headers });
+    const raw = await listRecrutamento({ headers: publicHeaders() });
     const data = mapRecrutamentoResponse(raw);
     return data;
   } catch (error) {
@@ -58,25 +59,20 @@ export async function getRecrutamentoDataClient(): Promise<RecrutamentoApiRespon
 
 export async function listRecrutamento(init?: RequestInit): Promise<RecrutamentoBackendResponse[]> {
   return apiFetch<RecrutamentoBackendResponse[]>(websiteRoutes.recrutamento.list(), {
-    init: init ?? { headers: apiConfig.headers },
+    init: init ?? { headers: publicHeaders() },
   });
 }
 
 export async function getRecrutamentoById(id: string): Promise<RecrutamentoBackendResponse> {
   return apiFetch<RecrutamentoBackendResponse>(
     websiteRoutes.recrutamento.get(id),
-    { init: { headers: apiConfig.headers } },
+    { init: { headers: publicHeaders() } },
   );
 }
 
 function buildRequest(
   data: CreateRecrutamentoPayload | UpdateRecrutamentoPayload,
 ): { body: BodyInit; headers: Record<string, string> } {
-  const baseHeaders = {
-    Accept: apiConfig.headers.Accept,
-    ...getAuthHeader(),
-  };
-
   if (data.imagem) {
     const form = new FormData();
     if (data.titulo !== undefined) form.append("titulo", data.titulo);
@@ -87,7 +83,7 @@ function buildRequest(
     form.append("imagem", data.imagem);
     if (data.imagemUrl) form.append("imagemUrl", data.imagemUrl);
     if (data.imagemTitulo) form.append("imagemTitulo", data.imagemTitulo);
-    return { body: form, headers: baseHeaders };
+    return { body: form, headers: authHeaders() };
   }
 
   const jsonPayload: Record<string, unknown> = {};
@@ -102,17 +98,8 @@ function buildRequest(
 
   return {
     body: JSON.stringify(jsonPayload),
-    headers: { "Content-Type": "application/json", ...baseHeaders },
+    headers: authJsonHeaders(),
   };
-}
-
-function getAuthHeader(): Record<string, string> {
-  if (typeof document === "undefined") return {};
-  const token = document.cookie
-    .split("; ")
-    .find((row) => row.startsWith("token="))
-    ?.split("=")[1];
-  return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
 export async function createRecrutamento(
@@ -154,7 +141,7 @@ export async function deleteRecrutamento(id: string): Promise<void> {
   await apiFetch<void>(websiteRoutes.recrutamento.delete(id), {
     init: {
       method: "DELETE",
-      headers: { Accept: apiConfig.headers.Accept, ...getAuthHeader() },
+      headers: authHeaders(),
     },
     cache: "no-cache",
   });

@@ -3,8 +3,9 @@
  * Busca dados do componente Banners do website
  */
 
-import routes, { websiteRoutes } from "@/api/routes";
 import { apiFetch } from "@/api/client";
+import routes, { websiteRoutes } from "@/api/routes";
+import { authHeaders, authJsonHeaders, publicHeaders } from "@/api/shared";
 import { apiConfig, env } from "@/lib/env";
 import { bannerMockData } from "./mock";
 import type { BannerBackendResponse, CreateBannerPayload, UpdateBannerPayload, BannerStatus } from "./types";
@@ -28,7 +29,7 @@ export async function getBannerData(): Promise<BannerItem[]> {
     const raw = await apiFetch<BannerBackendResponse[]>(
       routes.website.banner.list(),
       {
-        init: { headers: apiConfig.headers, ...apiConfig.cache.medium },
+        init: { headers: publicHeaders(), ...apiConfig.cache.medium },
       }
     );
 
@@ -49,7 +50,7 @@ export async function getBannerDataClient(): Promise<BannerItem[]> {
 
   try {
     const raw = await apiFetch<BannerBackendResponse[]>(endpoint, {
-      init: { headers: apiConfig.headers },
+      init: { headers: publicHeaders() },
       cache: "short",
     });
 
@@ -71,7 +72,7 @@ export async function getBannerDataClient(): Promise<BannerItem[]> {
 
 export async function listBanners(init?: RequestInit): Promise<BannerBackendResponse[]> {
   return apiFetch<BannerBackendResponse[]>(websiteRoutes.banner.list(), {
-    init: init ?? { headers: apiConfig.headers },
+    init: init ?? { headers: publicHeaders() },
     cache: "no-cache",
   });
 }
@@ -79,27 +80,13 @@ export async function listBanners(init?: RequestInit): Promise<BannerBackendResp
 export async function getBannerById(orderId: string): Promise<BannerBackendResponse> {
   // API de consulta usa ID da ordem
   return apiFetch<BannerBackendResponse>(websiteRoutes.banner.get(orderId), {
-    init: { headers: apiConfig.headers },
+    init: { headers: publicHeaders() },
   });
-}
-
-function getAuthHeader(): Record<string, string> {
-  if (typeof document === "undefined") return {};
-  const token = document.cookie
-    .split("; ")
-    .find((row) => row.startsWith("token="))
-    ?.split("=")[1];
-  return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
 function buildRequest(
   data: CreateBannerPayload | UpdateBannerPayload
 ): { body: BodyInit; headers: Record<string, string> } {
-  const baseHeaders = {
-    Accept: apiConfig.headers.Accept,
-    ...getAuthHeader(),
-  };
-
   const form = new FormData();
   if (data.link !== undefined) form.append("link", String(data.link));
   if (data.status !== undefined) {
@@ -116,7 +103,7 @@ function buildRequest(
   if (data.imagemUrl) form.append("imagemUrl", data.imagemUrl);
   if (data.imagemTitulo) form.append("imagemTitulo", data.imagemTitulo);
 
-  return { body: form, headers: baseHeaders };
+  return { body: form, headers: authHeaders() };
 }
 
 export async function createBanner(data: CreateBannerPayload): Promise<BannerBackendResponse> {
@@ -149,17 +136,13 @@ export async function updateBannerStatus(id: string, status: boolean | string): 
 export async function deleteBanner(id: string): Promise<void> {
   // API de deletar usa ID do banner (bannerId)
   await apiFetch<void>(websiteRoutes.banner.delete(id), {
-    init: { method: "DELETE", headers: { Accept: apiConfig.headers.Accept, ...getAuthHeader() } },
+    init: { method: "DELETE", headers: authHeaders() },
     cache: "no-cache",
   });
 }
 
 export async function updateBannerOrder(orderId: string, ordem: number): Promise<void> {
-  const jsonHeaders = {
-    Accept: apiConfig.headers.Accept,
-    "Content-Type": "application/json",
-    ...getAuthHeader(),
-  } as Record<string, string>;
+  const jsonHeaders = authJsonHeaders();
 
   const url = websiteRoutes.banner.reorder(orderId);
   const payload = { ordem: Number(ordem) };
@@ -188,7 +171,7 @@ export async function updateBannerOrder(orderId: string, ordem: number): Promise
       }
       const form = new FormData();
       form.append("ordem", String(ordem));
-      const headers = { Accept: apiConfig.headers.Accept, ...getAuthHeader() } as Record<string, string>;
+      const headers = authHeaders();
       await apiFetch<BannerBackendResponse>(url, {
         init: { method: "PUT", body: form, headers },
         cache: "no-cache",
@@ -197,7 +180,7 @@ export async function updateBannerOrder(orderId: string, ordem: number): Promise
     } catch (_) {
       // Fallback 2: via update geral requerendo bannerId — mapeia a partir da lista
       const list = await apiFetch<BannerBackendResponse[]>(websiteRoutes.banner.list(), {
-        init: { headers: apiConfig.headers },
+        init: { headers: publicHeaders() },
         cache: "no-cache",
       });
       const found = (list || []).find((item) => item.id === orderId);

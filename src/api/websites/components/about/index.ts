@@ -3,8 +3,9 @@
  * Busca dados do componente About do website
  */
 
-import { websiteRoutes } from "@/api/routes";
 import { apiFetch } from "@/api/client";
+import { websiteRoutes } from "@/api/routes";
+import { authHeaders, authJsonHeaders, publicHeaders } from "@/api/shared";
 import { apiConfig, env } from "@/lib/env";
 import { aboutMockData } from "./mock";
 import {
@@ -30,7 +31,7 @@ function mapAboutResponse(data: AboutBackendResponse[]): AboutApiResponse {
 export async function getAboutData(): Promise<AboutApiResponse> {
   try {
     const raw = await listAbout({
-      headers: apiConfig.headers,
+      headers: publicHeaders(),
       ...apiConfig.cache.medium,
     });
 
@@ -52,7 +53,7 @@ export async function getAboutData(): Promise<AboutApiResponse> {
  */
 export async function getAboutDataClient(): Promise<AboutApiResponse> {
   try {
-    const raw = await listAbout({ headers: apiConfig.headers });
+    const raw = await listAbout({ headers: publicHeaders() });
 
     const data = mapAboutResponse(raw);
     console.log("✅ About data loaded (client):", data);
@@ -72,7 +73,7 @@ export async function listAbout(
   init?: RequestInit,
 ): Promise<AboutBackendResponse[]> {
   return apiFetch<AboutBackendResponse[]>(websiteRoutes.about.list(), {
-    init: init ?? { headers: apiConfig.headers },
+    init: init ?? { headers: publicHeaders() },
   });
 }
 
@@ -81,18 +82,13 @@ export async function getAboutById(
 ): Promise<AboutBackendResponse> {
   return apiFetch<AboutBackendResponse>(
     websiteRoutes.about.get(id),
-    { init: { headers: apiConfig.headers } },
+    { init: { headers: publicHeaders() } },
   );
 }
 
 function buildRequest(
   data: CreateAboutPayload | UpdateAboutPayload,
 ): { body: BodyInit; headers: Record<string, string> } {
-  const baseHeaders = {
-    Accept: apiConfig.headers.Accept,
-    ...getAuthHeader(),
-  };
-
   if (data.imagem) {
     const form = new FormData();
     if (data.titulo !== undefined) form.append("titulo", data.titulo);
@@ -100,7 +96,7 @@ function buildRequest(
     form.append("imagem", data.imagem);
     if (data.imagemUrl) form.append("imagemUrl", data.imagemUrl);
     if (data.imagemTitulo) form.append("imagemTitulo", data.imagemTitulo);
-    return { body: form, headers: baseHeaders };
+    return { body: form, headers: authHeaders() };
   }
 
   const jsonPayload: Record<string, unknown> = {};
@@ -112,18 +108,8 @@ function buildRequest(
 
   return {
     body: JSON.stringify(jsonPayload),
-    headers: { "Content-Type": "application/json", ...baseHeaders },
+    headers: authJsonHeaders(),
   };
-}
-
-function getAuthHeader(): Record<string, string> {
-  if (typeof document === "undefined") return {};
-  const token = document.cookie
-    .split("; ")
-    .find((row) => row.startsWith("token="))
-    ?.split("=")[1];
-
-  return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
 export async function createAbout(
@@ -159,7 +145,7 @@ export async function deleteAbout(id: string): Promise<void> {
   await apiFetch<void>(websiteRoutes.about.delete(id), {
     init: {
       method: "DELETE",
-      headers: { Accept: apiConfig.headers.Accept, ...getAuthHeader() },
+      headers: authHeaders(),
     },
     cache: "no-cache",
   });

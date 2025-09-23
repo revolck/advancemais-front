@@ -3,8 +3,9 @@
  * Busca dados da imagem exibida na página de login
  */
 
-import { websiteRoutes } from "@/api/routes";
 import { apiFetch } from "@/api/client";
+import { websiteRoutes } from "@/api/routes";
+import { authHeaders, publicHeaders } from "@/api/shared";
 import { apiConfig, env } from "@/lib/env";
 import { loginImageMockData } from "./mock";
 import type {
@@ -30,7 +31,7 @@ function mapLoginImageResponse(
 export async function getLoginImageData(): Promise<LoginImageItem | null> {
   try {
     const raw = await listLoginImages({
-      headers: apiConfig.headers,
+      headers: publicHeaders(),
       ...apiConfig.cache.medium,
     });
     return mapLoginImageResponse(raw);
@@ -47,7 +48,7 @@ export async function getLoginImageDataClient(): Promise<
   LoginImageItem | null
 > {
   try {
-    const raw = await listLoginImages({ headers: apiConfig.headers });
+    const raw = await listLoginImages({ headers: publicHeaders() });
     return mapLoginImageResponse(raw);
   } catch (error) {
     console.error("❌ Erro ao buscar imagem de login (client):", error);
@@ -63,7 +64,7 @@ export async function listLoginImages(
 ): Promise<LoginImageBackendResponse[]> {
   return apiFetch<LoginImageBackendResponse[]>(
     websiteRoutes.loginImage.list(),
-    { init: init ?? { headers: apiConfig.headers }, cache: "no-cache" },
+    { init: init ?? { headers: publicHeaders() }, cache: "no-cache" },
   );
 }
 
@@ -72,23 +73,14 @@ export async function getLoginImageById(
 ): Promise<LoginImageBackendResponse> {
   return apiFetch<LoginImageBackendResponse>(
     websiteRoutes.loginImage.get(id),
-    { init: { headers: apiConfig.headers }, cache: "no-cache" },
+    { init: { headers: publicHeaders() }, cache: "no-cache" },
   );
-}
-
-function getAuthHeader(): Record<string, string> {
-  if (typeof document === "undefined") return {};
-  const token = document.cookie
-    .split("; ")
-    .find((row) => row.startsWith("token="))
-    ?.split("=")[1];
-  return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
 function buildRequest(
   data: CreateLoginImagePayload | UpdateLoginImagePayload,
 ): { body: BodyInit; headers: Record<string, string> } {
-  const headers = { Accept: apiConfig.headers.Accept, ...getAuthHeader() };
+  const headers = authHeaders();
   const form = new FormData();
   if (data.imagem) form.append("imagem", data.imagem);
   if (data.imagemUrl) form.append("imagemUrl", data.imagemUrl);
@@ -122,7 +114,7 @@ export async function deleteLoginImage(id: string): Promise<void> {
   await apiFetch<void>(websiteRoutes.loginImage.delete(id), {
     init: {
       method: "DELETE",
-      headers: { Accept: apiConfig.headers.Accept, ...getAuthHeader() },
+      headers: authHeaders(),
     },
     cache: "no-cache",
   });

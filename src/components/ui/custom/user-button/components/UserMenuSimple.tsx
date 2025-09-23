@@ -49,17 +49,21 @@ export default function UserMenuSimple() {
         }
 
         const profile = await getUserProfile(token);
-        if (!profile?.email) {
+        const userData = profile?.usuario;
+        if (!userData?.email) {
           setIsLoading(false);
           return;
         }
 
-        const fullName = profile.nomeCompleto?.trim();
-        const name = fullName && fullName.length > 0 ? fullName : profile.email.split("@")[0];
+        const fullName = userData.nomeCompleto?.trim();
+        const name =
+          fullName && fullName.length > 0
+            ? fullName
+            : userData.email.split("@")[0];
         setUser({
           name,
-          email: profile.email,
-          avatar: profile.imagemPerfil ?? undefined,
+          email: userData.email,
+          avatar: userData.imagemPerfil ?? undefined,
         });
       } catch (error) {
         console.error("Erro ao carregar perfil:", error);
