@@ -2,15 +2,14 @@
 
 import React from "react";
 import { VerticalTabs, type VerticalTabItem } from "@/components/ui/custom";
-import LoginForm from "./login/LoginForm";
 
-export default function GeralDashboardPage() {
+export default function PlanosDashboardPage() {
   const items: VerticalTabItem[] = [
     {
-      value: "login",
-      label: "Login",
-      icon: "LogIn",
-      content: <LoginForm />,
+      value: "Planos",
+      label: "Planos",
+      icon: "BadgeDollarSign",
+      content: "Hello world",
     },
   ];
 
@@ -19,7 +18,7 @@ export default function GeralDashboardPage() {
       <div className="flex-1 min-h-0">
         <VerticalTabs
           items={items}
-          defaultValue="login"
+          defaultValue="Planos"
           variant="spacious"
           size="sm"
           withAnimation
