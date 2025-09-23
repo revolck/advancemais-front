@@ -2,7 +2,6 @@
 
 import { DialogProps } from "@radix-ui/react-dialog";
 
-// Tipos para as propriedades do modal
 export type ModalSize =
   | "xs"
   | "sm"
@@ -15,10 +14,25 @@ export type ModalSize =
   | "5xl"
   | "full";
 
-// Aqui está o tipo para os backdrops da modal
+export type ModalRadius = "none" | "sm" | "md" | "lg";
+
+export type ModalShadow = "none" | "sm" | "md" | "lg";
+
 export type ModalBackdrop = "transparent" | "opaque" | "blur";
 
+export type ModalScrollBehavior = "normal" | "inside" | "outside";
+
 export type ModalPlacement = "auto" | "top" | "center" | "bottom";
+
+export type ModalClassNames = {
+  wrapper?: string;
+  base?: string;
+  backdrop?: string;
+  header?: string;
+  body?: string;
+  footer?: string;
+  closeButton?: string;
+};
 
 export interface ModalProps extends Omit<DialogProps, "modal"> {
   /**
@@ -31,13 +45,13 @@ export interface ModalProps extends Omit<DialogProps, "modal"> {
    * Radio das bordas
    * @default "lg"
    */
-  radius?: "none" | "sm" | "md" | "lg";
+  radius?: ModalRadius;
 
   /**
    * Sombra do modal
    * @default "lg"
    */
-  shadow?: "none" | "sm" | "md" | "lg";
+  shadow?: ModalShadow;
 
   /**
    * Tipo de backdrop
@@ -49,7 +63,7 @@ export interface ModalProps extends Omit<DialogProps, "modal"> {
    * Comportamento de scroll
    * @default "normal"
    */
-  scrollBehavior?: "normal" | "inside" | "outside";
+  scrollBehavior?: ModalScrollBehavior;
 
   /**
    * Posição do modal na tela
@@ -67,6 +81,12 @@ export interface ModalProps extends Omit<DialogProps, "modal"> {
    * @default true
    */
   isDismissable?: boolean;
+
+  /**
+   * Bloqueia o fechamento ao clicar fora quando houver dados não salvos
+   * @default true
+   */
+  preventCloseOnOutsideWhenDirty?: boolean;
 
   /**
    * Se o modal pode ser fechado pressionando ESC
@@ -110,15 +130,7 @@ export interface ModalProps extends Omit<DialogProps, "modal"> {
   /**
    * Classes personalizadas
    */
-  classNames?: {
-    wrapper?: string;
-    base?: string;
-    backdrop?: string;
-    header?: string;
-    body?: string;
-    footer?: string;
-    closeButton?: string;
-  };
+  classNames?: ModalClassNames;
 
   /**
    * Função chamada quando o estado de abertura muda
@@ -129,4 +141,9 @@ export interface ModalProps extends Omit<DialogProps, "modal"> {
    * Função chamada quando o modal é fechado
    */
   onClose?: () => void;
+
+  /**
+   * Função chamada quando o estado de "dados não salvos" mudar
+   */
+  onDirtyChange?: (isDirty: boolean) => void;
 }
