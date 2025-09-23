@@ -11,7 +11,7 @@ export async function listPlanosEmpresariais(
   init?: RequestInit,
 ): Promise<PlanoEmpresarialBackendResponse[]> {
   return apiFetch<PlanoEmpresarialBackendResponse[]>(
-    empresasRoutes.planosEmpresarial.list(),
+    empresasRoutes.planosEmpresariais.list(),
     { init: init ?? { headers: apiConfig.headers } },
   );
 }
@@ -20,7 +20,7 @@ export async function getPlanoEmpresarialById(
   id: string,
 ): Promise<PlanoEmpresarialBackendResponse> {
   return apiFetch<PlanoEmpresarialBackendResponse>(
-    empresasRoutes.planosEmpresarial.get(id),
+    empresasRoutes.planosEmpresariais.get(id),
     { init: { headers: apiConfig.headers } },
   );
 }
@@ -38,7 +38,7 @@ export async function createPlanoEmpresarial(
   data: CreatePlanoEmpresarialPayload,
 ): Promise<PlanoEmpresarialBackendResponse> {
   return apiFetch<PlanoEmpresarialBackendResponse>(
-    empresasRoutes.planosEmpresarial.create(),
+    empresasRoutes.planosEmpresariais.create(),
     {
       init: {
         method: "POST",
@@ -59,7 +59,7 @@ export async function updatePlanoEmpresarial(
   data: UpdatePlanoEmpresarialPayload,
 ): Promise<PlanoEmpresarialBackendResponse> {
   return apiFetch<PlanoEmpresarialBackendResponse>(
-    empresasRoutes.planosEmpresarial.update(id),
+    empresasRoutes.planosEmpresariais.update(id),
     {
       init: {
         method: "PUT",
@@ -76,7 +76,7 @@ export async function updatePlanoEmpresarial(
 }
 
 export async function deletePlanoEmpresarial(id: string): Promise<void> {
-  await apiFetch<void>(empresasRoutes.planosEmpresarial.delete(id), {
+  await apiFetch<void>(empresasRoutes.planosEmpresariais.delete(id), {
     init: {
       method: "DELETE",
       headers: {

@@ -5,8 +5,8 @@
 import { useState, useEffect, useCallback } from "react";
 import type { PricingPlanData } from "../types";
 import { PRICING_CONFIG } from "../constants";
-import { listPlanosEmpresariais } from "@/api/empresas/planos-empresarial";
-import type { PlanoEmpresarialBackendResponse } from "@/api/empresas/planos-empresarial/types";
+import { listPlanosEmpresariais } from "@/api/empresas/planos-empresariais";
+import type { PlanoEmpresarialBackendResponse } from "@/api/empresas/planos-empresariais/types";
 
 interface UsePricingDataReturn {
   data: PricingPlanData[];

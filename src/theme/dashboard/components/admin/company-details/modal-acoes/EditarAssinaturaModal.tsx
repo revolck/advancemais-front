@@ -34,7 +34,7 @@ import type {
   AdminCompanyPaymentInfo,
   UpdateAdminCompanyPayload,
 } from "@/api/empresas/admin/types";
-import type { PlanoEmpresarialBackendResponse } from "@/api/empresas/planos-empresarial/types";
+import type { PlanoEmpresarialBackendResponse } from "@/api/empresas/planos-empresariais/types";
 
 const PLAN_TYPE_OPTIONS: { value: AdminCompanyPlanType; label: string }[] = [
   { value: "parceiro", label: "Parceiro" },
