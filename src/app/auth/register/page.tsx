@@ -199,6 +199,41 @@ const RegisterPage = () => {
     );
   };
 
+  const formatPhoneForApi = (phone: string): string => {
+    const trimmed = phone.trim();
+
+    if (!trimmed) {
+      return "";
+    }
+
+    if (trimmed.startsWith("+")) {
+      return trimmed;
+    }
+
+    const digits = maskService.removeMask(trimmed, "phone");
+
+    if (!digits) {
+      return "";
+    }
+
+    const brazilCountryCode = "55";
+    const hasCountryCode = digits.startsWith(brazilCountryCode);
+    const normalizedDigits = hasCountryCode ? digits.slice(2) : digits;
+
+    const areaCode = normalizedDigits.slice(0, 2);
+    const subscriberNumber = normalizedDigits.slice(2);
+
+    if (!areaCode || subscriberNumber.length < 8) {
+      return `+${brazilCountryCode} ${digits}`;
+    }
+
+    const firstPartLength = subscriberNumber.length === 9 ? 5 : 4;
+    const firstPart = subscriberNumber.slice(0, firstPartLength);
+    const secondPart = subscriberNumber.slice(firstPartLength);
+
+    return `+${brazilCountryCode} ${areaCode} ${firstPart}-${secondPart}`;
+  };
+
   const handleSignUp = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!selectedType) {
@@ -210,18 +245,17 @@ const RegisterPage = () => {
         formData.document,
         "cpfCnpj",
       );
-      const telefoneLimpo = maskService.removeMask(formData.phone, "phone");
+      const telefoneFormatado = formatPhoneForApi(formData.phone);
       const tipoUsuario: UsuarioRegisterPayload["tipoUsuario"] =
         selectedType === "company" ? "PESSOA_JURIDICA" : "PESSOA_FISICA";
       const payload: UsuarioRegisterPayload = {
         nomeCompleto: formData.name.trim(),
         documento: documentoLimpo,
-        telefone: telefoneLimpo,
+        telefone: telefoneFormatado,
         email: formData.email.trim().toLowerCase(),
         senha: formData.password,
         confirmarSenha: formData.confirmPassword,
         aceitarTermos: acceptTerms,
-        supabaseId: crypto.randomUUID(),
         tipoUsuario,
       };
       try {
