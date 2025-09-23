@@ -97,29 +97,28 @@ const sections: Array<{
     title: "7. Direitos do titular",
     content: [
       "Você pode solicitar, a qualquer momento: confirmação do tratamento, acesso, correção, anonimização, portabilidade, informação sobre compartilhamentos, revogação de consentimento e eliminação nos termos da LGPD.",
-      (
-        <>
-          Para exercer seus direitos, contate o Encarregado (DPO) no e-mail
-          indicado abaixo ou utilize as páginas de{" "}
-          <a
-            href="https://advancemais.com/ouvidoria"
-            target="_blank"
-            rel="noreferrer"
-            className="text-primary underline-offset-4 hover:underline"
-          >
-            Ouvidoria
-          </a>{" "}e{" "}
-          <a
-            href="https://advancemais.com/faq"
-            target="_blank"
-            rel="noreferrer"
-            className="text-primary underline-offset-4 hover:underline"
-          >
-            FAQ
-          </a>
-          .
-        </>
-      ),
+      <>
+        Para exercer seus direitos, contate o Encarregado (DPO) no e-mail
+        indicado abaixo ou utilize as páginas de{" "}
+        <a
+          href="https://advancemais.com/ouvidoria"
+          target="_blank"
+          rel="noreferrer"
+          className="text-primary underline-offset-4 hover:underline"
+        >
+          Ouvidoria
+        </a>{" "}
+        e{" "}
+        <a
+          href="https://advancemais.com/faq"
+          target="_blank"
+          rel="noreferrer"
+          className="text-primary underline-offset-4 hover:underline"
+        >
+          FAQ
+        </a>
+        .
+      </>,
       "Planalto",
     ],
   },
@@ -147,27 +146,26 @@ const sections: Array<{
     content: [
       "Encarregado (DPO): [Nome do DPO]",
       "E-mail do DPO: [email@advancemais.com]",
-      (
-        <>
-          Ouvidoria/FAQ:{" "}
-          <a
-            href="https://advancemais.com/ouvidoria"
-            target="_blank"
-            rel="noreferrer"
-            className="text-primary underline-offset-4 hover:underline"
-          >
-            advancemais.com/ouvidoria
-          </a>{" "}·{" "}
-          <a
-            href="https://advancemais.com/faq"
-            target="_blank"
-            rel="noreferrer"
-            className="text-primary underline-offset-4 hover:underline"
-          >
-            advancemais.com/faq
-          </a>
-        </>
-      ),
+      <>
+        Ouvidoria/FAQ:{" "}
+        <a
+          href="https://advancemais.com/ouvidoria"
+          target="_blank"
+          rel="noreferrer"
+          className="text-primary underline-offset-4 hover:underline"
+        >
+          advancemais.com/ouvidoria
+        </a>{" "}
+        ·{" "}
+        <a
+          href="https://advancemais.com/faq"
+          target="_blank"
+          rel="noreferrer"
+          className="text-primary underline-offset-4 hover:underline"
+        >
+          advancemais.com/faq
+        </a>
+      </>,
       "Telefones: (82) 3234-1397 | (82) 98882-5559",
       "Endereço: Av. Juca Sampaio, 2247 – sala 30, Condomínio Shopping Miramar, Feitosa, CEP 57.042-530, Maceió/AL.",
       "Advance+",
@@ -189,7 +187,7 @@ const PrivacyPolicyModal = ({
     <ModalCustom
       isOpen={isOpen}
       onOpenChange={onOpenChange}
-      size="lg"
+      size="4xl"
       backdrop="blur"
       scrollBehavior="inside"
     >

@@ -68,7 +68,7 @@ const placementClasses: Record<ModalPlacement, string> = {
 const backdropClasses: Record<ModalBackdrop, string> = {
   transparent: "bg-transparent",
   opaque: "bg-black/75",
-  blur: "backdrop-blur-md bg-black/30",
+  blur: "backdrop-blur-xs bg-black/50",
 };
 
 type ModalContextProps = {
@@ -546,8 +546,7 @@ export function ModalContentWrapper({
       : contextKeyboardDismiss;
 
   const shouldPreventDismiss =
-    !resolvedDismissable ||
-    (preventCloseOnOutsideWhenDirty && isDirty);
+    !resolvedDismissable || (preventCloseOnOutsideWhenDirty && isDirty);
 
   const handlePotentialDirty = React.useCallback(
     (event: React.SyntheticEvent<EventTarget>) => {
@@ -640,7 +639,7 @@ export function ModalContentWrapper({
             if (shouldPreventDismiss) e.preventDefault();
           }}
           className={cn(
-            "fixed z-[101] grid w-full gap-4 border p-6 bg-background transform-gpu will-change-transform",
+            "fixed z-[101] grid w-full gap-4 p-6 bg-background transform-gpu will-change-transform",
             sizeClasses[size],
             radiusClasses[radius],
             shadowClasses[resolvedShadow],

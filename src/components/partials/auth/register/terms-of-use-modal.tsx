@@ -177,7 +177,7 @@ const TermsOfUseModal = ({ isOpen, onOpenChange }: TermsOfUseModalProps) => {
     <ModalCustom
       isOpen={isOpen}
       onOpenChange={onOpenChange}
-      size="lg"
+      size="4xl"
       backdrop="blur"
       scrollBehavior="inside"
     >
@@ -192,15 +192,19 @@ const TermsOfUseModal = ({ isOpen, onOpenChange }: TermsOfUseModalProps) => {
         <ModalBody className="space-y-6 overflow-y-auto pr-2 text-sm leading-relaxed text-muted-foreground">
           <div className="space-y-2">
             <p>
-              Controladora/Operadora: ADVANCE+ CURSOS E TREINAMENTOS LTDA – ME, CNPJ 25.089.257/0001-92, com sede em Av. Juca Sampaio, 2247 – sala 30, Condomínio Shopping
-              Miramar, Feitosa, CEP 57.042-530, Maceió/AL.
+              Controladora/Operadora: ADVANCE+ CURSOS E TREINAMENTOS LTDA – ME,
+              CNPJ 25.089.257/0001-92, com sede em Av. Juca Sampaio, 2247 – sala
+              30, Condomínio Shopping Miramar, Feitosa, CEP 57.042-530,
+              Maceió/AL.
             </p>
             <p>
-              Canais de atendimento: (82) 3234-1397 | (82) 98882-5559 | Horário comercial: seg–sex 08h–20h, sáb 09h–13h.
+              Canais de atendimento: (82) 3234-1397 | (82) 98882-5559 | Horário
+              comercial: seg–sex 08h–20h, sáb 09h–13h.
             </p>
             <p>E-mail de suporte: contato@advancemais.com</p>
             <p>
-              Canal de Ouvidoria/FAQ: via páginas “Ouvidoria” e “FAQ” na Plataforma. Veja em{" "}
+              Canal de Ouvidoria/FAQ: via páginas “Ouvidoria” e “FAQ” na
+              Plataforma. Veja em{" "}
               <a
                 href="https://advancemais.com/ouvidoria"
                 target="_blank"
@@ -221,8 +225,10 @@ const TermsOfUseModal = ({ isOpen, onOpenChange }: TermsOfUseModalProps) => {
               .
             </p>
             <p>
-              Ao acessar ou usar a Plataforma, você concorda com estes Termos e com a nossa Política de Privacidade (LGPD). Se não concordar, não utilize a Plataforma.
-              Poderemos atualizar este documento; a versão vigente estará sempre nesta página.
+              Ao acessar ou usar a Plataforma, você concorda com estes Termos e
+              com a nossa Política de Privacidade (LGPD). Se não concordar, não
+              utilize a Plataforma. Poderemos atualizar este documento; a versão
+              vigente estará sempre nesta página.
             </p>
           </div>
 
@@ -244,8 +250,10 @@ const TermsOfUseModal = ({ isOpen, onOpenChange }: TermsOfUseModalProps) => {
           <section className="space-y-2">
             <h3 className="text-base font-semibold text-foreground">Aviso</h3>
             <p>
-              Este documento reflete legislação brasileira vigente e boas práticas, mas não substitui assessoria jurídica. Recomenda-se revisão por advogado(a) para adequação às
-              particularidades do seu negócio.
+              Este documento reflete legislação brasileira vigente e boas
+              práticas, mas não substitui assessoria jurídica. Recomenda-se
+              revisão por advogado(a) para adequação às particularidades do seu
+              negócio.
             </p>
           </section>
         </ModalBody>
