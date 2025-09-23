@@ -568,7 +568,11 @@ export function ModalContentWrapper({
           markAsDirty();
         }
       } else if (target instanceof HTMLSelectElement) {
-        if (target.value !== target.defaultValue) {
+        const defaultOption = Array.from(target.options).find(
+          (option) => option.defaultSelected
+        );
+        const defaultValue = defaultOption?.value ?? target.options[0]?.value;
+        if (defaultValue !== undefined && target.value !== defaultValue) {
           markAsDirty();
         }
       }
