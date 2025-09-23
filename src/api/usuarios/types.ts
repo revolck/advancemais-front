@@ -18,6 +18,7 @@ export type UsuarioPasswordRecoveryValidationResponse = UsuarioResponseBase;
 export interface UsuarioPasswordResetPayload {
   token: string;
   novaSenha: string;
+  confirmarSenha: string;
 }
 
 export type UsuarioPasswordResetResponse = UsuarioResponseBase;

@@ -136,6 +136,7 @@ export default function PasswordResetPage() {
       await resetPasswordWithToken({
         token: tokenParam,
         novaSenha: password,
+        confirmarSenha: confirmPassword,
       });
       setPageState("success");
       toastCustom.success(
