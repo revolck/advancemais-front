@@ -1,12 +1,11 @@
 import { apiFetch } from "@/api/client";
 import { usuarioRoutes } from "@/api/routes";
-import { acceptHeaders, authHeaders, publicHeaders } from "@/api/shared";
+import { apiConfig } from "@/lib/env";
 
 import type {
   UsuarioLoginPayload,
   UsuarioLoginResponse,
   UsuarioLogoutResponse,
-  UsuarioModuleInfoResponse,
   UsuarioPasswordRecoveryRequestPayload,
   UsuarioPasswordRecoveryResponse,
   UsuarioPasswordRecoveryValidationResponse,
@@ -19,15 +18,32 @@ import type {
   UsuarioRegisterResponse,
 } from "./types";
 
-export async function getUsersModuleInfo(): Promise<UsuarioModuleInfoResponse> {
-  return apiFetch<UsuarioModuleInfoResponse>(usuarioRoutes.info(), {
-    init: {
-      method: "GET",
-      headers: acceptHeaders(),
-    },
-    cache: "short",
-    skipLogoutOn401: true,
-  });
+const ACCEPT_HEADER = { Accept: apiConfig.headers.Accept } as const;
+const JSON_HEADERS = {
+  ...ACCEPT_HEADER,
+  "Content-Type": apiConfig.headers["Content-Type"],
+} as const;
+
+function readBrowserToken(): string | undefined {
+  if (typeof document === "undefined") return undefined;
+
+  return document.cookie
+    .split("; ")
+    .find((row) => row.startsWith("token="))
+    ?.split("=")[1];
+}
+
+function buildAuthHeaders(token?: string): Record<string, string> {
+  const resolvedToken = token ?? readBrowserToken();
+
+  if (!resolvedToken) {
+    return { ...ACCEPT_HEADER };
+  }
+
+  return {
+    ...ACCEPT_HEADER,
+    Authorization: `Bearer ${resolvedToken}`,
+  };
 }
 
 export async function requestPasswordRecovery(
@@ -38,7 +54,7 @@ export async function requestPasswordRecovery(
     {
       init: {
         method: "POST",
-        headers: publicHeaders(),
+        headers: JSON_HEADERS,
         body: JSON.stringify(payload),
       },
       cache: "no-cache",
@@ -55,7 +71,7 @@ export async function validatePasswordRecoveryToken(
     {
       init: {
         method: "GET",
-        headers: acceptHeaders(),
+        headers: ACCEPT_HEADER,
       },
       cache: "no-cache",
       skipLogoutOn401: true,
@@ -71,7 +87,7 @@ export async function resetPasswordWithToken(
     {
       init: {
         method: "POST",
-        headers: publicHeaders(),
+        headers: JSON_HEADERS,
         body: JSON.stringify(payload),
       },
       cache: "no-cache",
@@ -86,7 +102,7 @@ export async function registerUser(
   return apiFetch<UsuarioRegisterResponse>(usuarioRoutes.register(), {
     init: {
       method: "POST",
-      headers: publicHeaders(),
+      headers: JSON_HEADERS,
       body: JSON.stringify(payload),
     },
     cache: "no-cache",
@@ -100,7 +116,7 @@ export async function loginUser(
   return apiFetch<UsuarioLoginResponse>(usuarioRoutes.login(), {
     init: {
       method: "POST",
-      headers: publicHeaders(),
+      headers: JSON_HEADERS,
       body: JSON.stringify(payload),
     },
     cache: "no-cache",
@@ -115,7 +131,7 @@ export async function refreshUserToken(
   return apiFetch<UsuarioRefreshResponse>(usuarioRoutes.refresh(), {
     init: {
       method: "POST",
-      headers: publicHeaders(),
+      headers: JSON_HEADERS,
       body: JSON.stringify(payload),
     },
     cache: "no-cache",
@@ -128,7 +144,7 @@ export async function logoutUserSession(
   return apiFetch<UsuarioLogoutResponse>(usuarioRoutes.logout(), {
     init: {
       method: "POST",
-      headers: authHeaders(token),
+      headers: buildAuthHeaders(token),
     },
     cache: "no-cache",
   });
@@ -140,7 +156,7 @@ export async function getUserProfile(
   return apiFetch<UsuarioProfileResponse>(usuarioRoutes.profile.get(), {
     init: {
       method: "GET",
-      headers: authHeaders(token),
+      headers: buildAuthHeaders(token),
     },
     cache: "no-cache",
   });

@@ -1,6 +1,6 @@
-import { apiFetch } from "@/api/client";
 import { empresasRoutes } from "@/api/routes";
-import { authHeaders, authJsonHeaders, mergeHeaders } from "@/api/shared";
+import { apiFetch } from "@/api/client";
+import { apiConfig } from "@/lib/env";
 import type {
   AdminCompanyDetailResponse,
   AdminCompanyVacancyDetailResponse,
@@ -18,6 +18,28 @@ import type {
   CreateAdminCompanyBanPayload,
 } from "./types";
 
+function normalizeHeaders(headers?: HeadersInit): Record<string, string> {
+  if (!headers) return {};
+  if (headers instanceof Headers) {
+    return Object.fromEntries(headers.entries());
+  }
+  if (Array.isArray(headers)) {
+    return Object.fromEntries(headers);
+  }
+  return headers as Record<string, string>;
+}
+
+function getAuthHeader(): Record<string, string> {
+  if (typeof document === "undefined") return {};
+
+  const token = document.cookie
+    .split("; ")
+    .find((row) => row.startsWith("token="))
+    ?.split("=")[1];
+
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 export async function listAdminCompanies(
   params?: ListAdminCompaniesParams,
   init?: RequestInit,
@@ -34,19 +56,23 @@ export async function listAdminCompanies(
   if (params?.search) {
     query.set("search", params.search);
   }
-  if (params?.planNames?.length) {
-    params.planNames.forEach((name) => query.append("planName", name));
+  if (params?.planNames && params.planNames.length > 0) {
+    for (const name of params.planNames) query.append("planName", name);
   }
-  if (params?.planTypes?.length) {
-    params.planTypes.forEach((type) => query.append("planType", String(type)));
+  if (params?.planTypes && params.planTypes.length > 0) {
+    for (const t of params.planTypes) query.append("planType", String(t));
   }
-  if (params?.statuses?.length) {
-    params.statuses.forEach((status) => query.append("status", status));
+  if (params?.statuses && params.statuses.length > 0) {
+    for (const status of params.statuses) query.append("status", status);
   }
 
   const url = query.toString() ? `${endpoint}?${query.toString()}` : endpoint;
 
-  const headers = mergeHeaders(authHeaders(), init?.headers);
+  const headers = {
+    ...apiConfig.headers,
+    ...getAuthHeader(),
+    ...normalizeHeaders(init?.headers),
+  };
 
   return apiFetch<ListAdminCompaniesResponse>(url, {
     init: {
@@ -62,7 +88,11 @@ export async function listAdminCompanies(
 export async function getAdminCompanyById(id: string, init?: RequestInit): Promise<AdminCompanyDetailResponse> {
   const endpoint = empresasRoutes.adminEmpresas.get(id);
 
-  const headers = mergeHeaders(authHeaders(), init?.headers);
+  const headers = {
+    ...apiConfig.headers,
+    ...getAuthHeader(),
+    ...normalizeHeaders(init?.headers),
+  };
 
   return apiFetch<AdminCompanyDetailResponse>(endpoint, {
     init: {
@@ -79,7 +109,12 @@ export async function createAdminCompany(
 ): Promise<AdminCompanyDetailResponse> {
   const endpoint = empresasRoutes.adminEmpresas.create();
 
-  const headers = mergeHeaders(authJsonHeaders(), init?.headers);
+  const headers = {
+    "Content-Type": "application/json",
+    Accept: apiConfig.headers.Accept,
+    ...getAuthHeader(),
+    ...normalizeHeaders(init?.headers),
+  };
 
   return apiFetch<AdminCompanyDetailResponse>(endpoint, {
     init: {
@@ -99,7 +134,12 @@ export async function updateAdminCompany(
 ): Promise<AdminCompanyDetailResponse> {
   const endpoint = empresasRoutes.adminEmpresas.update(id);
 
-  const headers = mergeHeaders(authJsonHeaders(), init?.headers);
+  const headers = {
+    "Content-Type": "application/json",
+    Accept: apiConfig.headers.Accept,
+    ...getAuthHeader(),
+    ...normalizeHeaders(init?.headers),
+  };
 
   return apiFetch<AdminCompanyDetailResponse>(endpoint, {
     init: {
@@ -136,7 +176,11 @@ export async function listAdminCompanyPayments(
 
   const url = query.toString() ? `${endpoint}?${query}` : endpoint;
 
-  const headers = mergeHeaders(authHeaders(), init?.headers);
+  const headers = {
+    ...apiConfig.headers,
+    ...getAuthHeader(),
+    ...normalizeHeaders(init?.headers),
+  };
 
   return apiFetch<AdminCompanyPaymentHistoryResponse>(url, {
     init: {
@@ -159,7 +203,11 @@ export async function listAdminCompanyBans(
 
   const url = query.toString() ? `${endpoint}?${query}` : endpoint;
 
-  const headers = mergeHeaders(authHeaders(), init?.headers);
+  const headers = {
+    ...apiConfig.headers,
+    ...getAuthHeader(),
+    ...normalizeHeaders(init?.headers),
+  };
 
   return apiFetch<AdminCompanyBanHistoryResponse>(url, {
     init: {
@@ -178,7 +226,12 @@ export async function createAdminCompanyBan(
 ): Promise<AdminCompanyBanDetailResponse> {
   const endpoint = empresasRoutes.adminEmpresas.banimentos.create(id);
 
-  const headers = mergeHeaders(authJsonHeaders(), init?.headers);
+  const headers = {
+    "Content-Type": "application/json",
+    Accept: apiConfig.headers.Accept,
+    ...getAuthHeader(),
+    ...normalizeHeaders(init?.headers),
+  };
 
   return apiFetch<AdminCompanyBanDetailResponse>(endpoint, {
     init: {
@@ -217,7 +270,11 @@ export async function listAdminCompanyVacancies(
 
   const url = query.toString() ? `${endpoint}?${query}` : endpoint;
 
-  const headers = mergeHeaders(authHeaders(), init?.headers);
+  const headers = {
+    ...apiConfig.headers,
+    ...getAuthHeader(),
+    ...normalizeHeaders(init?.headers),
+  };
 
   return apiFetch<AdminCompanyVacancyListResponse>(url, {
     init: {
@@ -240,7 +297,11 @@ export async function listAdminCompanyVacanciesInReview(
 
   const url = query.toString() ? `${endpoint}?${query}` : endpoint;
 
-  const headers = mergeHeaders(authHeaders(), init?.headers);
+  const headers = {
+    ...apiConfig.headers,
+    ...getAuthHeader(),
+    ...normalizeHeaders(init?.headers),
+  };
 
   return apiFetch<AdminCompanyVacancyListResponse>(url, {
     init: {
@@ -259,7 +320,12 @@ export async function approveAdminCompanyVacancy(
 ): Promise<AdminCompanyVacancyDetailResponse> {
   const endpoint = empresasRoutes.adminEmpresas.vagas.aprovar(id, vacancyId);
 
-  const headers = mergeHeaders(authJsonHeaders(), init?.headers);
+  const headers = {
+    "Content-Type": "application/json",
+    Accept: apiConfig.headers.Accept,
+    ...getAuthHeader(),
+    ...normalizeHeaders(init?.headers),
+  };
 
   return apiFetch<AdminCompanyVacancyDetailResponse>(endpoint, {
     init: {

@@ -70,17 +70,15 @@ const SignInPageDemo = () => {
         // Busca nome e role do usuário para saudar em futuros logins
         try {
           const profile = await getUserProfile(res.token);
-          const userData = profile?.usuario;
 
-          const fullName = userData?.nomeCompleto;
+          const fullName = profile.nomeCompleto;
           if (fullName) {
             const [firstName] = fullName.split(" ");
             localStorage.setItem("userName", firstName);
           }
-
           const candidateRoles = [
-            userData?.role,
-            ...(Array.isArray(userData?.roles) ? userData.roles : []),
+            profile.role,
+            ...(Array.isArray(profile.roles) ? profile.roles : []),
           ].filter(Boolean) as string[];
           userRole = candidateRoles.find((roleCandidate) =>
             ALL_ROLES.includes(roleCandidate as UserRole),
