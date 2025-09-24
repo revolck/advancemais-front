@@ -66,23 +66,31 @@ const SignInPageDemo = () => {
           senha,
           rememberMe: remember,
         });
+
+        // Verificar se o login foi bem-sucedido
+        if (!res.success || !("token" in res)) {
+          throw new Error(res.message || "Login falhou");
+        }
+
         let userRole: UserRole | undefined;
         // Busca nome e role do usuário para saudar em futuros logins
         try {
           const profile = await getUserProfile(res.token);
 
-          const fullName = profile.nomeCompleto;
-          if (fullName) {
-            const [firstName] = fullName.split(" ");
-            localStorage.setItem("userName", firstName);
+          // Verificar se o perfil foi obtido com sucesso
+          if (profile.success && "usuario" in profile) {
+            const fullName = profile.usuario.nomeCompleto;
+            if (fullName) {
+              const [firstName] = fullName.split(" ");
+              localStorage.setItem("userName", firstName);
+            }
+            const candidateRoles = [profile.usuario.role].filter(
+              Boolean
+            ) as string[];
+            userRole = candidateRoles.find((roleCandidate) =>
+              ALL_ROLES.includes(roleCandidate as UserRole)
+            ) as UserRole | undefined;
           }
-          const candidateRoles = [
-            profile.role,
-            ...(Array.isArray(profile.roles) ? profile.roles : []),
-          ].filter(Boolean) as string[];
-          userRole = candidateRoles.find((roleCandidate) =>
-            ALL_ROLES.includes(roleCandidate as UserRole),
-          ) as UserRole | undefined;
         } catch (profileError) {
           console.error("Erro ao buscar perfil:", profileError);
         }
@@ -90,9 +98,7 @@ const SignInPageDemo = () => {
         // Define cookies para compartilhamento entre subdomínios
         const host = window.location.hostname;
         const isLocalhost = host === "localhost" || host === "127.0.0.1";
-        const baseDomain = host
-          .replace(/^app\./, "")
-          .replace(/^auth\./, "");
+        const baseDomain = host.replace(/^app\./, "").replace(/^auth\./, "");
         const domain = isLocalhost ? host : `.${baseDomain}`;
 
         const rememberPreference = res.rememberMe ?? remember;
@@ -115,7 +121,8 @@ const SignInPageDemo = () => {
       } catch (error) {
         console.error("Erro ao fazer login:", error);
         const status = (error as any)?.status as number | undefined;
-        let message = "Não foi possível realizar o login. Verifique suas credenciais.";
+        let message =
+          "Não foi possível realizar o login. Verifique suas credenciais.";
 
         if (status === 404) {
           message = "Usuário não encontrado. Verifique suas credenciais.";

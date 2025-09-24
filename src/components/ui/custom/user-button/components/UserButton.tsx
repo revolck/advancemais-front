@@ -58,26 +58,25 @@ export function UserButton({ className, onNavigate }: UserButtonProps) {
         }
 
         const profile = await getUserProfile(token);
-        if (!profile?.email) {
+        if (
+          !profile?.success ||
+          !("usuario" in profile) ||
+          !profile.usuario?.email
+        ) {
           setIsLoading(false);
           return;
         }
 
-        const full = profile.nomeCompleto?.trim();
+        const full = profile.usuario.nomeCompleto?.trim();
         const parts = full ? full.split(" ") : [];
-        const firstName = parts[0] || profile.email.split("@")[0];
+        const firstName = parts[0] || profile.usuario.email.split("@")[0];
         const lastName = parts.slice(1).join(" ") || undefined;
 
         setUser({
           firstName,
           lastName,
-          email: profile.email,
-          plan:
-            profile.plano === "pro"
-              ? "pro"
-              : profile.plano === "enterprise"
-              ? "enterprise"
-              : "free",
+          email: profile.usuario.email,
+          plan: "free", // Plano padrão - propriedade plano não está disponível no tipo atual
         });
       } catch (error) {
         console.error("Erro ao carregar perfil:", error);
@@ -97,7 +96,11 @@ export function UserButton({ className, onNavigate }: UserButtonProps) {
       icon: "Cog" as const,
       label: "Assinatura",
       badge:
-        user?.plan === "pro" ? "PRO" : user?.plan === "enterprise" ? "ENT" : null,
+        user?.plan === "pro"
+          ? "PRO"
+          : user?.plan === "enterprise"
+          ? "ENT"
+          : null,
       iconBg: "bg-emerald-100 group-hover:bg-emerald-200",
       iconColor: "text-emerald-600 group-hover:text-emerald-700",
     },
@@ -128,7 +131,12 @@ export function UserButton({ className, onNavigate }: UserButtonProps) {
 
   if (isLoading) {
     return (
-      <div className={cn("relative h-10 px-3 rounded-lg transition-all duration-200", className)}>
+      <div
+        className={cn(
+          "relative h-10 px-3 rounded-lg transition-all duration-200",
+          className
+        )}
+      >
         <UserButtonSkeleton />
       </div>
     );
@@ -152,7 +160,12 @@ export function UserButton({ className, onNavigate }: UserButtonProps) {
             <div className="relative">
               <AvatarCustom name={displayName} size="sm" showStatus={false} />
             </div>
-            <div className={cn("transition-transform duration-200", isOpen ? "rotate-180" : "rotate-0")}> 
+            <div
+              className={cn(
+                "transition-transform duration-200",
+                isOpen ? "rotate-180" : "rotate-0"
+              )}
+            >
               <Icon name="ChevronDown" size={14} className="text-white/70" />
             </div>
           </div>
@@ -164,10 +177,17 @@ export function UserButton({ className, onNavigate }: UserButtonProps) {
         <div className="p-4 border-b border-gray-100">
           <div className="flex items-center gap-3">
             <div className="relative">
-              <AvatarCustom name={displayName} size="md" showStatus={false} className="ring-2 ring-pink-500" />
+              <AvatarCustom
+                name={displayName}
+                size="md"
+                showStatus={false}
+                className="ring-2 ring-pink-500"
+              />
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-gray-900 text-base truncate">{displayName}</h3>
+              <h3 className="font-semibold text-gray-900 text-base truncate">
+                {displayName}
+              </h3>
               <div className="flex items-center gap-1 mt-0.5">
                 <Icon name="Mail" size={12} className="text-gray-400" />
                 <p className="text-sm text-gray-500 truncate">{user.email}</p>
@@ -189,12 +209,28 @@ export function UserButton({ className, onNavigate }: UserButtonProps) {
               onClick={() => onNavigate?.(item.key)}
             >
               <div className="flex items-center gap-2.5 w-full">
-                <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center transition-colors duration-150 shrink-0", item.iconBg || "bg-gray-100 group-hover:bg-gray-200")}> 
-                  <Icon name={item.icon} size={16} className={cn(item.iconColor || "text-gray-600 group-hover:text-gray-700")} />
+                <div
+                  className={cn(
+                    "w-8 h-8 rounded-lg flex items-center justify-center transition-colors duration-150 shrink-0",
+                    item.iconBg || "bg-gray-100 group-hover:bg-gray-200"
+                  )}
+                >
+                  <Icon
+                    name={item.icon}
+                    size={16}
+                    className={cn(
+                      item.iconColor ||
+                        "text-gray-600 group-hover:text-gray-700"
+                    )}
+                  />
                 </div>
-                <p className="font-medium text-gray-900 text-sm flex-1">{item.label}</p>
+                <p className="font-medium text-gray-900 text-sm flex-1">
+                  {item.label}
+                </p>
                 {item.badge && (
-                  <span className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-2 py-0.5 rounded-full text-xs font-semibold">{item.badge}</span>
+                  <span className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-2 py-0.5 rounded-full text-xs font-semibold">
+                    {item.badge}
+                  </span>
                 )}
               </div>
             </DropdownMenuItem>
@@ -212,14 +248,22 @@ export function UserButton({ className, onNavigate }: UserButtonProps) {
             <div className="flex items-center gap-2.5 w-full">
               <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center transition-colors duration-150 shrink-0">
                 {isLoggingOut ? (
-                  <Icon name="Loader2" size={16} className="text-red-600 animate-spin" />
+                  <Icon
+                    name="Loader2"
+                    size={16}
+                    className="text-red-600 animate-spin"
+                  />
                 ) : (
                   <Icon name="LogOut" size={16} className="text-red-600" />
                 )}
               </div>
               <div className="flex-1 text-left">
-                <p className="font-medium text-red-600 text-sm">{isLoggingOut ? "Saindo..." : "Sair"}</p>
-                <p className="text-xs text-red-400 mt-0.5">{isLoggingOut ? "Aguarde..." : "Sair da sua conta"}</p>
+                <p className="font-medium text-red-600 text-sm">
+                  {isLoggingOut ? "Saindo..." : "Sair"}
+                </p>
+                <p className="text-xs text-red-400 mt-0.5">
+                  {isLoggingOut ? "Aguarde..." : "Sair da sua conta"}
+                </p>
               </div>
             </div>
           </DropdownMenuItem>
@@ -230,4 +274,3 @@ export function UserButton({ className, onNavigate }: UserButtonProps) {
 }
 
 export default UserButton;
-

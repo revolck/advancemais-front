@@ -293,7 +293,6 @@ const RegisterPage = () => {
         confirmarSenha: formData.confirmPassword,
         aceitarTermos: acceptTerms,
         tipoUsuario,
-        // SupabaseId é obrigatório - gerar um UUID temporário
         supabaseId: `temp-${Date.now()}-${Math.random()
           .toString(36)
           .substr(2, 9)}-${Math.random().toString(36).substr(2, 9)}`,
@@ -302,11 +301,11 @@ const RegisterPage = () => {
       // Adicionar campos específicos baseados no tipo
       if (isCompanyAccount) {
         payloadForApi.cnpj = documentoLimpo;
-        payloadForApi.cpf = undefined; // CNPJ é obrigatório, CPF deve ser undefined
+        payloadForApi.cpf = undefined;
         payloadForApi.role = "EMPRESA";
       } else {
         payloadForApi.cpf = documentoLimpo;
-        payloadForApi.cnpj = undefined; // CPF é obrigatório, CNPJ deve ser undefined
+        payloadForApi.cnpj = undefined;
         payloadForApi.role = "ALUNO_CANDIDATO";
       }
 
@@ -326,16 +325,6 @@ const RegisterPage = () => {
           : undefined,
       };
 
-      console.groupCollapsed("🧪 Registro | Payload sanitizado");
-      console.log("Endpoint:", "POST /api/v1/usuarios/registrar");
-      console.log("Tipo de conta:", selectedType);
-      console.log("É empresa:", isCompanyAccount);
-      console.table(maskedPayloadForLog);
-      console.info(
-        "ℹ️ Payload enviado sem máscara: os valores acima estão mascarados apenas para log."
-      );
-      console.log("Payload real (sem máscara):", payloadForApi);
-      console.groupEnd();
       try {
         const response = await registerUser(payloadForApi);
 
@@ -405,17 +394,6 @@ const RegisterPage = () => {
           <div className="hidden sm:block" />
           <div className="text-center space-y-1">
             <div className="flex items-center justify-center gap-2 mb-2">
-              {(() => {
-                const selectedUserType = userTypes.find(
-                  (type) => type.id === selectedType
-                );
-                const Icon = selectedUserType?.icon;
-                return Icon ? (
-                  <div className="p-2 rounded-lg bg-blue-50">
-                    <Icon className="w-5 h-5 text-blue-600" />
-                  </div>
-                ) : null;
-              })()}
               <h1 className="!text-2xl sm:text-xl md:text-2xl !mb-0 font-semibold text-gray-900 leading-tight">
                 Criar conta como{" "}
                 {userTypes.find((type) => type.id === selectedType)?.title}

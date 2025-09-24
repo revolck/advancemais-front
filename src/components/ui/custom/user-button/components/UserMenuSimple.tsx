@@ -3,11 +3,7 @@
 import React from "react";
 import { ChevronDown } from "lucide-react";
 import Link from "next/link";
-import {
-  MENU_ACCOUNT,
-  MENU_LOGOUT,
-  MENU_UPGRADE,
-} from "../constants";
+import { MENU_ACCOUNT, MENU_LOGOUT, MENU_UPGRADE } from "../constants";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -49,17 +45,24 @@ export default function UserMenuSimple() {
         }
 
         const profile = await getUserProfile(token);
-        if (!profile?.email) {
+        if (
+          !profile?.success ||
+          !("usuario" in profile) ||
+          !profile.usuario?.email
+        ) {
           setIsLoading(false);
           return;
         }
 
-        const fullName = profile.nomeCompleto?.trim();
-        const name = fullName && fullName.length > 0 ? fullName : profile.email.split("@")[0];
+        const fullName = profile.usuario.nomeCompleto?.trim();
+        const name =
+          fullName && fullName.length > 0
+            ? fullName
+            : profile.usuario.email.split("@")[0];
         setUser({
           name,
-          email: profile.email,
-          avatar: profile.imagemPerfil ?? undefined,
+          email: profile.usuario.email,
+          avatar: undefined, // imagemPerfil não está disponível no tipo atual
         });
       } catch (error) {
         console.error("Erro ao carregar perfil:", error);
