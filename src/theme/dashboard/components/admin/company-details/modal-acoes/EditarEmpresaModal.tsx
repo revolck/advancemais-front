@@ -14,17 +14,17 @@ import {
   ModalBody,
   ModalFooter,
   ModalTitle,
-  ModalDescription,
 } from "@/components/ui/custom/modal";
 import { InputCustom } from "@/components/ui/custom/input";
+import { SimpleTextarea } from "@/components/ui/custom/text-area";
 import { ButtonCustom } from "@/components/ui/custom/button";
 import { toastCustom } from "@/components/ui/custom/toast";
-import { lookupCep, normalizeCep, isValidCep } from "@/lib/cep";
 import { updateAdminCompany } from "@/api/empresas";
 import type {
   AdminCompanyDetail,
   UpdateAdminCompanyPayload,
 } from "@/api/empresas/admin/types";
+import MaskService from "@/services/components/input/maskService";
 
 interface EditarEmpresaModalProps {
   isOpen: boolean;
@@ -38,13 +38,7 @@ type CompanyFormState = {
   email: string;
   instagram: string;
   linkedin: string;
-  cep: string;
-  cidade: string;
-  estado: string;
-  bairro: string;
-  logradouro: string;
-  complemento: string;
-  numero: string;
+  descricao: string;
 };
 
 export function EditarEmpresaModal({
@@ -53,32 +47,29 @@ export function EditarEmpresaModal({
   company,
   onCompanyUpdated,
 }: EditarEmpresaModalProps) {
-  const initialValues = useMemo<CompanyFormState>(
-    () => ({
-      telefone: company.telefone ?? "",
+  const initialValues = useMemo<CompanyFormState>(() => {
+    const maskService = MaskService.getInstance();
+    const telefoneRaw = company.telefone ?? "";
+    const telefoneMasked = telefoneRaw
+      ? maskService.applyMask(telefoneRaw, "phone")
+      : "";
+
+    return {
+      telefone: telefoneMasked,
       email: company.email ?? "",
-      instagram: company.instagram ?? "",
-      linkedin: company.linkedin ?? "",
-      cep: company.cep ? normalizeCep(company.cep) : "",
-      cidade: company.cidade ?? "",
-      estado: company.estado ?? "",
-      bairro: company.bairro ?? "",
-      logradouro: company.logradouro ?? "",
-      complemento: company.complemento ?? "",
-      numero: company.numero ?? "",
-    }),
-    [company]
-  );
+      instagram: company.socialLinks?.instagram ?? "",
+      linkedin: company.socialLinks?.linkedin ?? "",
+      descricao: company.informacoes?.descricao ?? "",
+    };
+  }, [company]);
 
   const [formState, setFormState] = useState<CompanyFormState>(initialValues);
   const [isSaving, setIsSaving] = useState(false);
-  const [isCepLoading, setIsCepLoading] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
       setFormState(initialValues);
       setIsSaving(false);
-      setIsCepLoading(false);
     }
   }, [initialValues, isOpen]);
 
@@ -93,48 +84,15 @@ export function EditarEmpresaModal({
     []
   );
 
-  const handleCepChange = useCallback(
-    async (event: ChangeEvent<HTMLInputElement>) => {
-      const rawValue = event.target.value;
-      const normalized = normalizeCep(rawValue);
-
+  const handleTextareaChange = useCallback(
+    (event: ChangeEvent<HTMLTextAreaElement>) => {
+      const value = event.target.value.slice(0, 500);
       setFormState((prev) => ({
         ...prev,
-        cep: normalized,
+        descricao: value,
       }));
-
-      const digits = normalized.replace(/\D/g, "");
-      if (digits.length !== 8 || isCepLoading) {
-        return;
-      }
-
-      setIsCepLoading(true);
-
-      try {
-        const result = await lookupCep(normalized);
-
-        if ("error" in result) {
-          toastCustom.error({
-            title: "Não foi possível buscar o CEP",
-            description: result.error,
-          });
-          return;
-        }
-
-        setFormState((prev) => ({
-          ...prev,
-          cep: result.cep,
-          logradouro: result.street || prev.logradouro,
-          bairro: result.neighborhood || prev.bairro,
-          cidade: result.city || prev.cidade,
-          estado: result.state || prev.estado,
-          complemento: result.complement || prev.complemento,
-        }));
-      } finally {
-        setIsCepLoading(false);
-      }
     },
-    [isCepLoading]
+    []
   );
 
   const handleClose = useCallback(() => {
@@ -144,35 +102,14 @@ export function EditarEmpresaModal({
   const handleSave = useCallback(async () => {
     if (isSaving) return;
 
-    if (formState.cep && !isValidCep(formState.cep)) {
-      toastCustom.error({
-        title: "CEP inválido",
-        description: "Informe um CEP válido no formato 00000-000 para continuar.",
-      });
-      return;
-    }
-
     const sanitize = (value: string): string | null => {
       const trimmed = value.trim();
       return trimmed.length > 0 ? trimmed : null;
     };
 
-    const sanitizedCep = formState.cep
-      ? formState.cep.replace(/\D/g, "") || null
-      : null;
-
     const payload: UpdateAdminCompanyPayload = {
-      telefone: sanitize(formState.telefone),
-      email: sanitize(formState.email),
-      instagram: sanitize(formState.instagram),
-      linkedin: sanitize(formState.linkedin),
-      cep: sanitizedCep,
-      cidade: sanitize(formState.cidade),
-      estado: sanitize(formState.estado),
-      bairro: sanitize(formState.bairro),
-      logradouro: sanitize(formState.logradouro),
-      complemento: sanitize(formState.complemento),
-      numero: sanitize(formState.numero),
+      telefone: sanitize(formState.telefone) ?? undefined,
+      descricao: sanitize(formState.descricao) ?? undefined,
     };
 
     setIsSaving(true);
@@ -180,20 +117,17 @@ export function EditarEmpresaModal({
     try {
       await updateAdminCompany(company.id, payload);
 
-      const formattedCep = payload.cep ? normalizeCep(payload.cep) : null;
-
       onCompanyUpdated({
-        telefone: payload.telefone ?? null,
-        email: payload.email ?? null,
-        instagram: payload.instagram ?? null,
-        linkedin: payload.linkedin ?? null,
-        cep: formattedCep,
-        cidade: payload.cidade ?? null,
-        estado: payload.estado ?? null,
-        bairro: payload.bairro ?? null,
-        logradouro: payload.logradouro ?? null,
-        complemento: payload.complemento ?? null,
-        numero: payload.numero ?? null,
+        telefone: payload.telefone ?? undefined,
+        email: formState.email,
+        informacoes: {
+          ...company.informacoes,
+          descricao: payload.descricao ?? "",
+        },
+        socialLinks: {
+          instagram: formState.instagram || undefined,
+          linkedin: formState.linkedin || undefined,
+        },
       });
 
       toastCustom.success({
@@ -221,21 +155,18 @@ export function EditarEmpresaModal({
       scrollBehavior="inside"
       size="2xl"
       backdrop="blur"
-      classNames={{ base: "max-h-[85vh]" }}
     >
       <ModalContentWrapper>
         <ModalHeader>
           <ModalTitle>Editar empresa</ModalTitle>
-          <ModalDescription>
-            Atualize as informações de contato e endereço da empresa. Após salvar, os campos ficarão bloqueados até a conclusão da operação.
-          </ModalDescription>
         </ModalHeader>
 
-        <ModalBody className="max-h-[70vh] overflow-y-auto pr-1">
+        <ModalBody className="max-h-[70vh] overflow-y-auto pr-1 p-1">
           <div className="space-y-6">
             <div className="grid gap-4 sm:grid-cols-2">
               <InputCustom
-                label="Telefone"
+                label="Telefone/Whatsapp"
+                size="sm"
                 value={formState.telefone}
                 onChange={handleInputChange("telefone")}
                 disabled={isSaving}
@@ -244,6 +175,7 @@ export function EditarEmpresaModal({
               <InputCustom
                 label="E-mail"
                 type="email"
+                size="sm"
                 value={formState.email}
                 onChange={handleInputChange("email")}
                 disabled={isSaving}
@@ -253,13 +185,15 @@ export function EditarEmpresaModal({
             <div className="grid gap-4 sm:grid-cols-2">
               <InputCustom
                 label="Instagram"
+                size="sm"
                 value={formState.instagram}
                 onChange={handleInputChange("instagram")}
                 disabled={isSaving}
-                placeholder="@empresa"
+                placeholder="instagram.com/empresa/"
               />
               <InputCustom
                 label="LinkedIn"
+                size="sm"
                 value={formState.linkedin}
                 onChange={handleInputChange("linkedin")}
                 disabled={isSaving}
@@ -267,65 +201,16 @@ export function EditarEmpresaModal({
               />
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <InputCustom
-                label="CEP"
-                value={formState.cep}
-                onChange={handleCepChange}
-                disabled={isSaving || isCepLoading}
-                maxLength={9}
-                helperText={
-                  isCepLoading
-                    ? "Consultando CEP..."
-                    : "Buscaremos automaticamente o endereço ao informar o CEP completo"
-                }
-                rightIcon={isCepLoading ? "Loader2" : undefined}
-              />
-              <InputCustom
-                label="Número"
-                value={formState.numero}
-                onChange={handleInputChange("numero")}
-                disabled={isSaving || isCepLoading}
-              />
-            </div>
-
-            <InputCustom
-              label="Logradouro"
-              value={formState.logradouro}
-              onChange={handleInputChange("logradouro")}
-              disabled={isSaving || isCepLoading}
+            <SimpleTextarea
+              label="Descrição da empresa"
+              value={formState.descricao}
+              onChange={handleTextareaChange}
+              disabled={isSaving}
+              placeholder="Descreva brevemente a empresa."
+              maxLength={500}
+              showCharCount
+              className="min-h-[100px]"
             />
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <InputCustom
-                label="Bairro"
-                value={formState.bairro}
-                onChange={handleInputChange("bairro")}
-                disabled={isSaving || isCepLoading}
-              />
-              <InputCustom
-                label="Complemento"
-                value={formState.complemento}
-                onChange={handleInputChange("complemento")}
-                disabled={isSaving || isCepLoading}
-              />
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <InputCustom
-                label="Cidade"
-                value={formState.cidade}
-                onChange={handleInputChange("cidade")}
-                disabled={isSaving || isCepLoading}
-              />
-              <InputCustom
-                label="Estado"
-                value={formState.estado}
-                onChange={handleInputChange("estado")}
-                disabled={isSaving || isCepLoading}
-                maxLength={2}
-              />
-            </div>
           </div>
         </ModalBody>
 
@@ -333,6 +218,7 @@ export function EditarEmpresaModal({
           <ButtonCustom
             variant="ghost"
             onClick={handleClose}
+            size="md"
             disabled={isSaving}
           >
             Cancelar
@@ -340,6 +226,7 @@ export function EditarEmpresaModal({
           <ButtonCustom
             variant="primary"
             onClick={handleSave}
+            size="md"
             isLoading={isSaving}
             loadingText="Salvando..."
           >

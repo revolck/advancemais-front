@@ -4,29 +4,49 @@ import { cn } from "@/lib/utils";
 import { EmptyState } from "@/components/ui/custom";
 import type { PlanTabProps } from "../types";
 import { CreditCard } from "lucide-react";
-import { formatCurrency, formatDate, formatDateTime, formatPaymentStatus, getPaymentStatusBadgeClasses } from "../utils";
+import {
+  formatCurrency,
+  formatDate,
+  formatDateTime,
+  formatPaymentStatus,
+  getPaymentStatusBadgeClasses,
+} from "../utils";
 import { paymentStatusBadgeBaseClasses } from "../utils/formatters";
 
-export function PlanTab({ isCompanyActive, plan, payment, payments }: PlanTabProps) {
+export function PlanTab({
+  isCompanyActive,
+  plan,
+  payment,
+  payments,
+}: PlanTabProps) {
   const planExists = Boolean(
-    plan && (plan.nome || plan.valor || plan.tipo || plan.modeloPagamento || plan.metodoPagamento || plan.inicio || plan.fim)
+    plan && (plan.nome || plan.valor || plan.modo || plan.inicio || plan.fim)
   );
 
-  const planTypeLabel = plan?.tipo ? (plan.tipo === "parceiro" ? "Parceiro" : plan.tipo) : null;
+  const planTypeLabel = plan?.modo
+    ? plan.modo === "parceiro"
+      ? "Parceiro"
+      : plan.modo
+    : null;
   const nextChargeLabel = formatDate(plan?.fim);
-  const paymentMethodLabel = payment?.metodo ?? plan?.metodoPagamento ?? null;
+  const paymentMethodLabel = payment?.metodo ?? null;
   const planStartLabel = formatDate(plan?.inicio);
   const planCardTypeLabel = planTypeLabel || "Assinatura";
   const planCardStatusLabel = isCompanyActive ? "Ativo" : "Inativo";
-  const planCardStatusClasses = isCompanyActive ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-rose-200 bg-rose-50 text-rose-700";
+  const planCardStatusClasses = isCompanyActive
+    ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+    : "border-rose-200 bg-rose-50 text-rose-700";
   const planCardDetails: { label: string; value: string }[] = [
     { label: "Início do plano", value: planStartLabel },
     { label: "Próxima cobrança", value: nextChargeLabel },
-    { label: "Dias restantes", value: plan?.diasRestantes != null ? `${plan.diasRestantes} dias` : "—" },
+    {
+      label: "Dias restantes",
+      value: plan?.diasRestantes != null ? `${plan.diasRestantes} dias` : "—",
+    },
     { label: "Método de pagamento", value: paymentMethodLabel ?? "—" },
   ];
 
-  const recentPayments = payments.slice(0, 3);
+  const recentPayments = payments.slice(0, 4);
 
   const planMainSection = planExists ? (
     <section className="space-y-6">
@@ -38,12 +58,23 @@ export function PlanTab({ isCompanyActive, plan, payment, payments }: PlanTabPro
             <div className="relative flex flex-col gap-6">
               <div className="flex items-start justify-between gap-4">
                 <div className="space-y-3">
-                  <p className="!text-[10px] font-semibold uppercase tracking-[0.15em] text-gray-400 !mb-1">{planCardTypeLabel}</p>
+                  <p className="!text-[10px] font-semibold uppercase tracking-[0.15em] text-gray-400 !mb-1">
+                    {planCardTypeLabel}
+                  </p>
                   <div className="space-y-2">
-                    <h4 className="!mb-0">{plan?.nome ?? "Plano não informado"}</h4>
-                    <h4 className="!text-[1.75rem] !font-bold !leading-none !text-green-900">{plan?.valor ? formatCurrency(plan.valor) : "R$ —"}</h4>
+                    <h4 className="!mb-0">
+                      {plan?.nome ?? "Plano não informado"}
+                    </h4>
+                    <h4 className="!text-[1.75rem] !font-bold !leading-none !text-green-900">
+                      {plan?.valor ? formatCurrency(plan.valor) : "R$ —"}
+                    </h4>
                   </div>
-                  <span className={cn("inline-flex w-fit items-center gap-2 rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-wide", planCardStatusClasses)}>
+                  <span
+                    className={cn(
+                      "inline-flex w-fit items-center gap-2 rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-wide",
+                      planCardStatusClasses
+                    )}
+                  >
                     {planCardStatusLabel}
                   </span>
                 </div>
@@ -54,8 +85,13 @@ export function PlanTab({ isCompanyActive, plan, payment, payments }: PlanTabPro
 
               <dl className="space-y-2 text-sm">
                 {planCardDetails.map((item) => (
-                  <div key={item.label} className="flex items-center justify-between rounded-2xl border border-slate-200/60 bg-slate-50/60 px-4 py-3">
-                    <dt className="text-xs font-bold uppercase tracking-wide text-gray-600">{item.label}</dt>
+                  <div
+                    key={item.label}
+                    className="flex items-center justify-between rounded-2xl border border-slate-200/60 bg-slate-50/60 px-4 py-3"
+                  >
+                    <dt className="text-xs font-bold uppercase tracking-wide text-gray-600">
+                      {item.label}
+                    </dt>
                     <dd className="text-sm text-gray-600">{item.value}</dd>
                   </div>
                 ))}
@@ -83,27 +119,38 @@ export function PlanTab({ isCompanyActive, plan, payment, payments }: PlanTabPro
         {recentPayments.length > 0 ? (
           <ol className="mt-4 space-y-3">
             {recentPayments.map((log) => (
-              <li key={log.id} className="rounded-2xl border border-gray-200/70 bg-gray-50/80 p-4">
+              <li
+                key={log.id}
+                className="rounded-2xl border border-gray-200/70 bg-gray-50/80 p-4"
+              >
                 <div className="flex items-center justify-between text-sm">
-                  <span className="font-semibold text-gray-900">{formatDateTime(log.criadoEm)}</span>
-                  <span className={cn(paymentStatusBadgeBaseClasses, getPaymentStatusBadgeClasses(log.status))}>
+                  <span className="font-semibold text-gray-900">
+                    {formatDateTime(log.criadoEm)}
+                  </span>
+                  <span
+                    className={cn(
+                      paymentStatusBadgeBaseClasses,
+                      getPaymentStatusBadgeClasses(log.status)
+                    )}
+                  >
                     {formatPaymentStatus(log.status)}
                   </span>
                 </div>
                 <div className="mt-2 space-y-1 text-xs text-gray-500">
-                  {log.plano?.nome && (
-                    <div>
-                      Plano: <span className="font-medium text-gray-600">{log.plano.nome}</span>
-                    </div>
-                  )}
                   {log.tipo && (
                     <div>
-                      Método: <span className="font-medium text-gray-600">{log.tipo}</span>
+                      Método:{" "}
+                      <span className="font-medium text-gray-600">
+                        {log.tipo}
+                      </span>
                     </div>
                   )}
                   {log.mensagem && (
                     <div>
-                      Detalhe: <span className="font-medium text-gray-600">{log.mensagem}</span>
+                      Detalhe:{" "}
+                      <span className="font-medium text-gray-600">
+                        {log.mensagem}
+                      </span>
                     </div>
                   )}
                 </div>
@@ -111,7 +158,9 @@ export function PlanTab({ isCompanyActive, plan, payment, payments }: PlanTabPro
             ))}
           </ol>
         ) : (
-          <p className="mt-4 text-sm text-gray-600">Nenhum pagamento registrado.</p>
+          <p className="mt-4 text-sm text-gray-600">
+            Nenhum pagamento registrado.
+          </p>
         )}
       </div>
     </aside>

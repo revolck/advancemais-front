@@ -227,7 +227,8 @@ export const CompanyRow: React.FC<CompanyRowProps> = ({ partnership }) => {
         <div className="flex flex-wrap gap-1">{companyBadges}</div>
         {partnership.empresa.banimentoAtivo && (
           <p className="mt-1 text-[11px] text-rose-600">
-            Banida até {formatDate(partnership.empresa.banimentoAtivo.fim)}
+            Banida até{" "}
+            {formatDate(partnership.empresa.banimentoAtivo.banimento.fim)}
           </p>
         )}
       </TableCell>

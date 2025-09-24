@@ -1,16 +1,16 @@
 import type {
   AdminCompanyDetail,
   AdminCompanyPaymentLog,
-  AdminCompanyVacancyListItem,
-  AdminCompanyPlanSummary,
-  AdminCompanyPaymentInfo,
+  AdminCompanyVagaItem,
+  AdminCompanyPlano,
+  AdminCompanyPagamento,
 } from "@/api/empresas/admin/types";
 
 export interface CompanyDetailsViewProps {
   company: AdminCompanyDetail;
   payments?: AdminCompanyPaymentLog[];
   bans?: any[]; // not directly used in view props; modals handle payloads
-  vacancies?: AdminCompanyVacancyListItem[];
+  vacancies?: AdminCompanyVagaItem[];
 }
 
 export interface AboutTabProps {
@@ -18,17 +18,16 @@ export interface AboutTabProps {
 }
 
 export interface VacancyTabProps {
-  vacancies: AdminCompanyVacancyListItem[];
+  vacancies: AdminCompanyVagaItem[];
   publishedVacancies: number;
   totalVacancies: number;
-  onViewVacancy: (vacancy: AdminCompanyVacancyListItem) => void;
-  onEditVacancy: (vacancy: AdminCompanyVacancyListItem) => void;
+  onViewVacancy: (vacancy: AdminCompanyVagaItem) => void;
+  onEditVacancy: (vacancy: AdminCompanyVagaItem) => void;
 }
 
 export interface PlanTabProps {
   isCompanyActive: boolean;
-  plan: AdminCompanyPlanSummary | null | undefined;
-  payment: AdminCompanyPaymentInfo | null | undefined;
+  plan: AdminCompanyPlano | null | undefined;
+  payment: AdminCompanyPagamento | null | undefined;
   payments: AdminCompanyPaymentLog[];
 }
-

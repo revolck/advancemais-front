@@ -3,12 +3,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TableRow, TableCell } from "@/components/ui/table";
 import { AvatarCircles } from "@/components/ui/avatar-circles";
-import type { AdminCompanyVacancyListItem } from "@/api/empresas/admin/types";
+import type { AdminCompanyVagaItem } from "@/api/empresas/admin/types";
 
 interface VacancyRowProps {
-  vacancy: AdminCompanyVacancyListItem;
-  onView: (vacancy: AdminCompanyVacancyListItem) => void;
-  onEdit: (vacancy: AdminCompanyVacancyListItem) => void;
+  vacancy: AdminCompanyVagaItem;
+  onView: (vacancy: AdminCompanyVagaItem) => void;
+  onEdit: (vacancy: AdminCompanyVagaItem) => void;
   candidateAvatars?: string[];
 }
 
@@ -41,21 +41,28 @@ function getStatusBadge(status?: string | null) {
     EXPIRADO: "Expirado",
   };
   const label = labelMap[s] ?? status;
-  return <Badge className={`${classes} uppercase tracking-wide text-[10px]`}>{label}</Badge>;
+  return (
+    <Badge className={`${classes} uppercase tracking-wide text-[10px]`}>
+      {label}
+    </Badge>
+  );
 }
 
-export function VacancyRow({ vacancy, onView, onEdit, candidateAvatars = [] }: VacancyRowProps) {
+export function VacancyRow({
+  vacancy,
+  onView,
+  onEdit,
+  candidateAvatars = [],
+}: VacancyRowProps) {
   const code = vacancy.codigo ?? vacancy.id;
   const shortCode = (code ?? "").replace(/^#/, "").slice(0, 8);
-  const title = vacancy.titulo ?? vacancy.nome ?? `Vaga ${shortCode}`;
-  const regime = vacancy.regimeDeTrabalho ?? "—";
-  const modalidade = vacancy.modalidade ?? "—";
-  const candidatos =
-    vacancy.totalCandidatos ?? vacancy.candidatos ?? vacancy.inscritos ?? 0;
-  const inscricoes =
-    vacancy.totalInscricoes ?? vacancy.inscricoes ?? vacancy.inscritos ?? 0;
+  const title = vacancy.titulo ?? `Vaga ${shortCode}`;
+  const regime = "—";
+  const modalidade = "—";
+  const candidatos = 0;
+  const inscricoes = 0;
   const publicadoEm = formatDate(vacancy.inseridaEm);
-  const inscricoesAte = formatDate(vacancy.inscricoesAte);
+  const inscricoesAte = "—";
   const statusBadge = getStatusBadge(vacancy.status);
 
   const hasCandidates = typeof candidatos === "number" && candidatos > 0;
@@ -65,32 +72,45 @@ export function VacancyRow({ vacancy, onView, onEdit, candidateAvatars = [] }: V
       <TableCell className="py-4 align-top">
         <div className="flex flex-col">
           <span className="font-medium text-gray-900">{title}</span>
-          <span className="text-xs text-gray-500">#{(code ?? "").slice(0, 12)}</span>
+          <span className="text-xs text-gray-500">
+            #{(code ?? "").slice(0, 12)}
+          </span>
         </div>
       </TableCell>
       <TableCell className="align-top text-sm text-gray-700">
         <div className="flex flex-col">
           <span>Regime: {regime}</span>
-          <span className="text-xs text-gray-500">Modalidade: {modalidade}</span>
+          <span className="text-xs text-gray-500">
+            Modalidade: {modalidade}
+          </span>
         </div>
       </TableCell>
       <TableCell className="align-top text-sm text-gray-700">
         {hasCandidates ? (
           <div className="flex flex-col gap-1">
-            <AvatarCircles avatarUrls={candidateAvatars} numPeople={candidatos} />
+            <AvatarCircles
+              avatarUrls={candidateAvatars}
+              numPeople={candidatos}
+            />
             <span className="text-xs text-gray-500">
               Candidatos: {candidatos}
-              {typeof inscricoes === "number" ? ` · Inscrições: ${inscricoes}` : ""}
+              {typeof inscricoes === "number"
+                ? ` · Inscrições: ${inscricoes}`
+                : ""}
             </span>
           </div>
         ) : (
-          <span className="text-xs text-gray-500">Nenhum candidato aplicado.</span>
+          <span className="text-xs text-gray-500">
+            Nenhum candidato aplicado.
+          </span>
         )}
       </TableCell>
       <TableCell className="align-top text-sm text-gray-700">
         <div className="flex flex-col">
           <span>Publicado: {publicadoEm}</span>
-          <span className="text-xs text-gray-500">Inscrições até: {inscricoesAte}</span>
+          <span className="text-xs text-gray-500">
+            Inscrições até: {inscricoesAte}
+          </span>
         </div>
       </TableCell>
       <TableCell className="align-top">{statusBadge}</TableCell>

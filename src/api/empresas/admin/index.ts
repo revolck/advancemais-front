@@ -1,23 +1,36 @@
-import { empresasRoutes } from "@/api/routes";
 import { apiFetch } from "@/api/client";
+import { empresasRoutes } from "@/api/routes";
 import { apiConfig } from "@/lib/env";
 import type {
-  AdminCompanyDetailResponse,
-  AdminCompanyVacancyDetailResponse,
-  AdminCompanyVacancyListResponse,
+  AdminCompanyDashboardApiResponse,
+  AdminCompanyListApiResponse,
+  AdminCompanyDetailApiResponse,
+  AdminCompanyCreateApiResponse,
+  AdminCompanyUpdateApiResponse,
+  AdminCompanyPaymentHistoryApiResponse,
+  AdminCompanyBanHistoryApiResponse,
+  AdminCompanyBanCreateApiResponse,
+  AdminCompanyBanRevokeApiResponse,
+  AdminCompanyVagaListApiResponse,
+  AdminCompanyVagaApproveApiResponse,
+  AdminCompanyDashboardParams,
+  AdminCompanyListParams,
+  AdminCompanyPaymentParams,
+  AdminCompanyBanParams,
+  AdminCompanyVagaParams,
   CreateAdminCompanyPayload,
-  AdminCompanyBanDetailResponse,
-  AdminCompanyBanHistoryResponse,
-  AdminCompanyPaymentHistoryResponse,
-  ListAdminCompaniesParams,
-  ListAdminCompaniesResponse,
-  ListAdminCompanyBansParams,
-  ListAdminCompanyPaymentsParams,
-  ListAdminCompanyVacanciesParams,
   UpdateAdminCompanyPayload,
   CreateAdminCompanyBanPayload,
+  RevokeAdminCompanyBanPayload,
 } from "./types";
 
+// ============================================================================
+// FUNÇÕES AUXILIARES
+// ============================================================================
+
+/**
+ * Normaliza headers para garantir compatibilidade
+ */
 function normalizeHeaders(headers?: HeadersInit): Record<string, string> {
   if (!headers) return {};
   if (headers instanceof Headers) {
@@ -29,6 +42,9 @@ function normalizeHeaders(headers?: HeadersInit): Record<string, string> {
   return headers as Record<string, string>;
 }
 
+/**
+ * Obtém header de autorização do token armazenado nos cookies
+ */
 function getAuthHeader(): Record<string, string> {
   if (typeof document === "undefined") return {};
 
@@ -40,298 +56,452 @@ function getAuthHeader(): Record<string, string> {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
-export async function listAdminCompanies(
-  params?: ListAdminCompaniesParams,
-  init?: RequestInit,
-): Promise<ListAdminCompaniesResponse> {
-  const endpoint = empresasRoutes.adminEmpresas.list();
+/**
+ * Constrói headers padrão para requisições autenticadas
+ */
+function buildAuthHeaders(
+  additionalHeaders?: HeadersInit
+): Record<string, string> {
+  return {
+    ...apiConfig.headers,
+    ...getAuthHeader(),
+    ...normalizeHeaders(additionalHeaders),
+  };
+}
+
+/**
+ * Constrói query string a partir de parâmetros
+ */
+function buildQueryString(params: Record<string, any>): string {
   const query = new URLSearchParams();
 
-  if (params?.page) {
-    query.set("page", String(params.page));
-  }
-  if (params?.pageSize) {
-    query.set("pageSize", String(params.pageSize));
-  }
-  if (params?.search) {
-    query.set("search", params.search);
-  }
-  if (params?.planNames && params.planNames.length > 0) {
-    for (const name of params.planNames) query.append("planName", name);
-  }
-  if (params?.planTypes && params.planTypes.length > 0) {
-    for (const t of params.planTypes) query.append("planType", String(t));
-  }
-  if (params?.statuses && params.statuses.length > 0) {
-    for (const status of params.statuses) query.append("status", status);
-  }
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null) {
+      if (Array.isArray(value)) {
+        value.forEach((item) => query.append(key, String(item)));
+      } else {
+        query.set(key, String(value));
+      }
+    }
+  });
 
-  const url = query.toString() ? `${endpoint}?${query.toString()}` : endpoint;
+  return query.toString();
+}
 
-  const headers = {
-    ...apiConfig.headers,
-    ...getAuthHeader(),
-    ...normalizeHeaders(init?.headers),
-  };
+// ============================================================================
+// DASHBOARD
+// ============================================================================
 
-  return apiFetch<ListAdminCompaniesResponse>(url, {
+/**
+ * Lista empresas para dashboard administrativo
+ *
+ * Retorna uma listagem paginada otimizada com até 10 empresas por página
+ * para exibição em dashboards administrativos.
+ *
+ * @param params - Parâmetros de paginação e busca
+ * @param init - Configurações adicionais da requisição
+ * @returns Lista paginada de empresas para dashboard
+ */
+export async function getAdminCompanyDashboard(
+  params?: AdminCompanyDashboardParams,
+  init?: RequestInit
+): Promise<AdminCompanyDashboardApiResponse> {
+  const endpoint = empresasRoutes.adminEmpresas.dashboard();
+  const queryParams: Record<string, any> = {};
+
+  if (params?.page) queryParams.page = params.page;
+  if (params?.search) queryParams.search = params.search;
+
+  const queryString = buildQueryString(queryParams);
+  const url = queryString ? `${endpoint}?${queryString}` : endpoint;
+
+  return apiFetch<AdminCompanyDashboardApiResponse>(url, {
     init: {
-      method: init?.method ?? "GET",
+      method: "GET",
       ...init,
-      headers,
+      headers: buildAuthHeaders(init?.headers),
     },
     cache: "no-cache",
-    retries: 1,
   });
 }
 
-export async function getAdminCompanyById(id: string, init?: RequestInit): Promise<AdminCompanyDetailResponse> {
-  const endpoint = empresasRoutes.adminEmpresas.get(id);
+// ============================================================================
+// CRUD DE EMPRESAS
+// ============================================================================
 
-  const headers = {
-    ...apiConfig.headers,
-    ...getAuthHeader(),
-    ...normalizeHeaders(init?.headers),
-  };
+/**
+ * Lista empresas com dados resumidos do plano ativo
+ *
+ * Retorna empresas (Pessoa Jurídica) com dados resumidos do plano ativo.
+ * Endpoint restrito aos perfis ADMIN e MODERADOR.
+ *
+ * @param params - Parâmetros de paginação e busca
+ * @param init - Configurações adicionais da requisição
+ * @returns Lista paginada de empresas
+ */
+export async function listAdminCompanies(
+  params?: AdminCompanyListParams,
+  init?: RequestInit
+): Promise<AdminCompanyListApiResponse> {
+  const endpoint = empresasRoutes.adminEmpresas.list();
+  const queryParams: Record<string, any> = {};
 
-  return apiFetch<AdminCompanyDetailResponse>(endpoint, {
+  if (params?.page) queryParams.page = params.page;
+  if (params?.pageSize) queryParams.pageSize = params.pageSize;
+  if (params?.search) queryParams.search = params.search;
+
+  const queryString = buildQueryString(queryParams);
+  const url = queryString ? `${endpoint}?${queryString}` : endpoint;
+
+  return apiFetch<AdminCompanyListApiResponse>(url, {
     init: {
-      method: init?.method ?? "GET",
+      method: "GET",
       ...init,
-      headers,
+      headers: buildAuthHeaders(init?.headers),
     },
+    cache: "no-cache",
   });
 }
 
+/**
+ * Cria uma nova empresa
+ *
+ * Cria uma nova empresa (Pessoa Jurídica) e permite opcionalmente vincular
+ * um plano ativo no momento da criação. Endpoint restrito aos perfis ADMIN e MODERADOR.
+ *
+ * @param data - Dados da empresa a ser criada
+ * @param init - Configurações adicionais da requisição
+ * @returns Empresa criada com sucesso
+ */
 export async function createAdminCompany(
   data: CreateAdminCompanyPayload,
-  init?: RequestInit,
-): Promise<AdminCompanyDetailResponse> {
+  init?: RequestInit
+): Promise<AdminCompanyCreateApiResponse> {
   const endpoint = empresasRoutes.adminEmpresas.create();
 
-  const headers = {
-    "Content-Type": "application/json",
-    Accept: apiConfig.headers.Accept,
-    ...getAuthHeader(),
-    ...normalizeHeaders(init?.headers),
-  };
-
-  return apiFetch<AdminCompanyDetailResponse>(endpoint, {
+  return apiFetch<AdminCompanyCreateApiResponse>(endpoint, {
     init: {
       method: "POST",
       ...init,
-      headers,
+      headers: {
+        "Content-Type": "application/json",
+        Accept: apiConfig.headers.Accept,
+        ...getAuthHeader(),
+        ...normalizeHeaders(init?.headers),
+      },
       body: init?.body ?? JSON.stringify(data),
     },
     cache: "no-cache",
   });
 }
 
+/**
+ * Atualiza dados cadastrais da empresa
+ *
+ * Atualiza dados cadastrais da empresa e permite gerenciar o plano vinculado.
+ * Endpoint restrito aos perfis ADMIN e MODERADOR.
+ *
+ * @param id - ID da empresa
+ * @param data - Dados a serem atualizados
+ * @param init - Configurações adicionais da requisição
+ * @returns Empresa atualizada com sucesso
+ */
 export async function updateAdminCompany(
   id: string,
   data: UpdateAdminCompanyPayload,
-  init?: RequestInit,
-): Promise<AdminCompanyDetailResponse> {
+  init?: RequestInit
+): Promise<AdminCompanyUpdateApiResponse> {
   const endpoint = empresasRoutes.adminEmpresas.update(id);
 
-  const headers = {
-    "Content-Type": "application/json",
-    Accept: apiConfig.headers.Accept,
-    ...getAuthHeader(),
-    ...normalizeHeaders(init?.headers),
-  };
-
-  return apiFetch<AdminCompanyDetailResponse>(endpoint, {
+  return apiFetch<AdminCompanyUpdateApiResponse>(endpoint, {
     init: {
       method: "PUT",
       ...init,
-      headers,
+      headers: {
+        "Content-Type": "application/json",
+        Accept: apiConfig.headers.Accept,
+        ...getAuthHeader(),
+        ...normalizeHeaders(init?.headers),
+      },
       body: init?.body ?? JSON.stringify(data),
     },
     cache: "no-cache",
   });
 }
 
-function appendPaginationParams(
-  query: URLSearchParams,
-  params?: { page?: number; pageSize?: number },
-): void {
-  if (!params) return;
-  if (params.page) {
-    query.set("page", String(params.page));
-  }
-  if (params.pageSize) {
-    query.set("pageSize", String(params.pageSize));
-  }
+/**
+ * Obtém detalhes completos da empresa
+ *
+ * Retorna informações completas da empresa incluindo plano ativo, pagamentos e métricas.
+ * Endpoint restrito aos perfis ADMIN e MODERADOR.
+ *
+ * @param id - ID da empresa
+ * @param init - Configurações adicionais da requisição
+ * @returns Detalhes completos da empresa
+ */
+export async function getAdminCompanyById(
+  id: string,
+  init?: RequestInit
+): Promise<AdminCompanyDetailApiResponse> {
+  const endpoint = empresasRoutes.adminEmpresas.get(id);
+
+  return apiFetch<AdminCompanyDetailApiResponse>(endpoint, {
+    init: {
+      method: "GET",
+      ...init,
+      headers: buildAuthHeaders(init?.headers),
+    },
+    cache: "no-cache",
+  });
 }
 
+// ============================================================================
+// PAGAMENTOS
+// ============================================================================
+
+/**
+ * Lista histórico de pagamentos da empresa
+ *
+ * Lista eventos de pagamento relacionados à empresa sem expor dados sensíveis
+ * de cartão. Apenas perfis ADMIN e MODERADOR podem acessar.
+ *
+ * @param id - ID da empresa
+ * @param params - Parâmetros de paginação
+ * @param init - Configurações adicionais da requisição
+ * @returns Histórico de pagamentos da empresa
+ */
 export async function listAdminCompanyPayments(
   id: string,
-  params?: ListAdminCompanyPaymentsParams,
-  init?: RequestInit,
-): Promise<AdminCompanyPaymentHistoryResponse> {
+  params?: AdminCompanyPaymentParams,
+  init?: RequestInit
+): Promise<AdminCompanyPaymentHistoryApiResponse> {
   const endpoint = empresasRoutes.adminEmpresas.pagamentos.list(id);
-  const query = new URLSearchParams();
-  appendPaginationParams(query, params);
+  const queryParams: Record<string, any> = {};
 
-  const url = query.toString() ? `${endpoint}?${query}` : endpoint;
+  if (params?.page) queryParams.page = params.page;
+  if (params?.pageSize) queryParams.pageSize = params.pageSize;
 
-  const headers = {
-    ...apiConfig.headers,
-    ...getAuthHeader(),
-    ...normalizeHeaders(init?.headers),
-  };
+  const queryString = buildQueryString(queryParams);
+  const url = queryString ? `${endpoint}?${queryString}` : endpoint;
 
-  return apiFetch<AdminCompanyPaymentHistoryResponse>(url, {
+  return apiFetch<AdminCompanyPaymentHistoryApiResponse>(url, {
     init: {
-      method: init?.method ?? "GET",
+      method: "GET",
       ...init,
-      headers,
+      headers: buildAuthHeaders(init?.headers),
     },
     cache: "no-cache",
   });
 }
 
+// ============================================================================
+// BANIMENTOS
+// ============================================================================
+
+/**
+ * Lista banimentos aplicados à empresa
+ *
+ * Retorna o histórico de banimentos aplicados ao usuário da empresa,
+ * detalhando vigência, status e responsável.
+ *
+ * @param id - ID da empresa
+ * @param params - Parâmetros de paginação
+ * @param init - Configurações adicionais da requisição
+ * @returns Histórico de banimentos da empresa
+ */
 export async function listAdminCompanyBans(
   id: string,
-  params?: ListAdminCompanyBansParams,
-  init?: RequestInit,
-): Promise<AdminCompanyBanHistoryResponse> {
+  params?: AdminCompanyBanParams,
+  init?: RequestInit
+): Promise<AdminCompanyBanHistoryApiResponse> {
   const endpoint = empresasRoutes.adminEmpresas.banimentos.list(id);
-  const query = new URLSearchParams();
-  appendPaginationParams(query, params);
+  const queryParams: Record<string, any> = {};
 
-  const url = query.toString() ? `${endpoint}?${query}` : endpoint;
+  if (params?.page) queryParams.page = params.page;
+  if (params?.pageSize) queryParams.pageSize = params.pageSize;
 
-  const headers = {
-    ...apiConfig.headers,
-    ...getAuthHeader(),
-    ...normalizeHeaders(init?.headers),
-  };
+  const queryString = buildQueryString(queryParams);
+  const url = queryString ? `${endpoint}?${queryString}` : endpoint;
 
-  return apiFetch<AdminCompanyBanHistoryResponse>(url, {
+  return apiFetch<AdminCompanyBanHistoryApiResponse>(url, {
     init: {
-      method: init?.method ?? "GET",
+      method: "GET",
       ...init,
-      headers,
+      headers: buildAuthHeaders(init?.headers),
     },
     cache: "no-cache",
   });
 }
 
+/**
+ * Aplica banimento à empresa
+ *
+ * Centraliza o banimento do usuário da empresa, permitindo banimentos
+ * temporários ou permanentes com registro de auditoria.
+ *
+ * @param id - ID da empresa
+ * @param data - Dados do banimento
+ * @param init - Configurações adicionais da requisição
+ * @returns Banimento aplicado com sucesso
+ */
 export async function createAdminCompanyBan(
   id: string,
   data: CreateAdminCompanyBanPayload,
-  init?: RequestInit,
-): Promise<AdminCompanyBanDetailResponse> {
+  init?: RequestInit
+): Promise<AdminCompanyBanCreateApiResponse> {
   const endpoint = empresasRoutes.adminEmpresas.banimentos.create(id);
 
-  const headers = {
-    "Content-Type": "application/json",
-    Accept: apiConfig.headers.Accept,
-    ...getAuthHeader(),
-    ...normalizeHeaders(init?.headers),
-  };
-
-  return apiFetch<AdminCompanyBanDetailResponse>(endpoint, {
+  return apiFetch<AdminCompanyBanCreateApiResponse>(endpoint, {
     init: {
       method: "POST",
       ...init,
-      headers,
+      headers: {
+        "Content-Type": "application/json",
+        Accept: apiConfig.headers.Accept,
+        ...getAuthHeader(),
+        ...normalizeHeaders(init?.headers),
+      },
       body: init?.body ?? JSON.stringify(data),
     },
     cache: "no-cache",
   });
 }
 
-function normalizeStatusParam(
-  status?: ListAdminCompanyVacanciesParams["status"],
-): string | undefined {
-  if (!status) return undefined;
-  if (Array.isArray(status)) {
-    return status.filter(Boolean).join(",");
-  }
-  return typeof status === "string" ? status : String(status);
-}
-
-export async function listAdminCompanyVacancies(
+/**
+ * Revoga banimento ativo da empresa
+ *
+ * Revoga o banimento ativo da empresa, restaura o status do usuário
+ * e registra auditoria da ação.
+ *
+ * @param id - ID da empresa
+ * @param data - Dados da revogação
+ * @param init - Configurações adicionais da requisição
+ * @returns Revogação realizada com sucesso
+ */
+export async function revokeAdminCompanyBan(
   id: string,
-  params?: ListAdminCompanyVacanciesParams,
-  init?: RequestInit,
-): Promise<AdminCompanyVacancyListResponse> {
-  const endpoint = empresasRoutes.adminEmpresas.vagas.list(id);
-  const query = new URLSearchParams();
-  appendPaginationParams(query, params);
+  data?: RevokeAdminCompanyBanPayload,
+  init?: RequestInit
+): Promise<AdminCompanyBanRevokeApiResponse> {
+  const endpoint = empresasRoutes.adminEmpresas.banimentos.revogar(id);
 
-  const normalizedStatus = normalizeStatusParam(params?.status);
-  if (normalizedStatus) {
-    query.set("status", normalizedStatus);
-  }
-
-  const url = query.toString() ? `${endpoint}?${query}` : endpoint;
-
-  const headers = {
-    ...apiConfig.headers,
-    ...getAuthHeader(),
-    ...normalizeHeaders(init?.headers),
-  };
-
-  return apiFetch<AdminCompanyVacancyListResponse>(url, {
-    init: {
-      method: init?.method ?? "GET",
-      ...init,
-      headers,
-    },
-    cache: "no-cache",
-  });
-}
-
-export async function listAdminCompanyVacanciesInReview(
-  id: string,
-  params?: Omit<ListAdminCompanyVacanciesParams, "status">,
-  init?: RequestInit,
-): Promise<AdminCompanyVacancyListResponse> {
-  const endpoint = empresasRoutes.adminEmpresas.vagas.emAnalise(id);
-  const query = new URLSearchParams();
-  appendPaginationParams(query, params);
-
-  const url = query.toString() ? `${endpoint}?${query}` : endpoint;
-
-  const headers = {
-    ...apiConfig.headers,
-    ...getAuthHeader(),
-    ...normalizeHeaders(init?.headers),
-  };
-
-  return apiFetch<AdminCompanyVacancyListResponse>(url, {
-    init: {
-      method: init?.method ?? "GET",
-      ...init,
-      headers,
-    },
-    cache: "no-cache",
-  });
-}
-
-export async function approveAdminCompanyVacancy(
-  id: string,
-  vacancyId: string,
-  init?: RequestInit,
-): Promise<AdminCompanyVacancyDetailResponse> {
-  const endpoint = empresasRoutes.adminEmpresas.vagas.aprovar(id, vacancyId);
-
-  const headers = {
-    "Content-Type": "application/json",
-    Accept: apiConfig.headers.Accept,
-    ...getAuthHeader(),
-    ...normalizeHeaders(init?.headers),
-  };
-
-  return apiFetch<AdminCompanyVacancyDetailResponse>(endpoint, {
+  return apiFetch<AdminCompanyBanRevokeApiResponse>(endpoint, {
     init: {
       method: "POST",
       ...init,
-      headers,
+      headers: {
+        "Content-Type": "application/json",
+        Accept: apiConfig.headers.Accept,
+        ...getAuthHeader(),
+        ...normalizeHeaders(init?.headers),
+      },
+      body: data ? init?.body ?? JSON.stringify(data) : undefined,
+    },
+    cache: "no-cache",
+  });
+}
+
+// ============================================================================
+// VAGAS
+// ============================================================================
+
+/**
+ * Lista histórico de vagas da empresa
+ *
+ * Lista vagas criadas pela empresa com opção de filtrar por status,
+ * incluindo o código curto gerado automaticamente para cada vaga.
+ *
+ * @param id - ID da empresa
+ * @param params - Parâmetros de filtro e paginação
+ * @param init - Configurações adicionais da requisição
+ * @returns Histórico de vagas da empresa
+ */
+export async function listAdminCompanyVacancies(
+  id: string,
+  params?: AdminCompanyVagaParams,
+  init?: RequestInit
+): Promise<AdminCompanyVagaListApiResponse> {
+  const endpoint = empresasRoutes.adminEmpresas.vagas.list(id);
+  const queryParams: Record<string, any> = {};
+
+  if (params?.page) queryParams.page = params.page;
+  if (params?.pageSize) queryParams.pageSize = params.pageSize;
+  if (params?.status) queryParams.status = params.status;
+
+  const queryString = buildQueryString(queryParams);
+  const url = queryString ? `${endpoint}?${queryString}` : endpoint;
+
+  return apiFetch<AdminCompanyVagaListApiResponse>(url, {
+    init: {
+      method: "GET",
+      ...init,
+      headers: buildAuthHeaders(init?.headers),
+    },
+    cache: "no-cache",
+  });
+}
+
+/**
+ * Lista vagas em análise da empresa
+ *
+ * Retorna vagas da empresa com status EM_ANALISE aguardando aprovação.
+ *
+ * @param id - ID da empresa
+ * @param params - Parâmetros de paginação
+ * @param init - Configurações adicionais da requisição
+ * @returns Vagas em análise da empresa
+ */
+export async function listAdminCompanyVacanciesInReview(
+  id: string,
+  params?: Omit<AdminCompanyVagaParams, "status">,
+  init?: RequestInit
+): Promise<AdminCompanyVagaListApiResponse> {
+  const endpoint = empresasRoutes.adminEmpresas.vagas.emAnalise(id);
+  const queryParams: Record<string, any> = {};
+
+  if (params?.page) queryParams.page = params.page;
+  if (params?.pageSize) queryParams.pageSize = params.pageSize;
+
+  const queryString = buildQueryString(queryParams);
+  const url = queryString ? `${endpoint}?${queryString}` : endpoint;
+
+  return apiFetch<AdminCompanyVagaListApiResponse>(url, {
+    init: {
+      method: "GET",
+      ...init,
+      headers: buildAuthHeaders(init?.headers),
+    },
+    cache: "no-cache",
+  });
+}
+
+/**
+ * Aprova vaga em análise
+ *
+ * Altera o status da vaga para PUBLICADO caso esteja em análise.
+ *
+ * @param id - ID da empresa
+ * @param vagaId - ID da vaga
+ * @param init - Configurações adicionais da requisição
+ * @returns Vaga aprovada com sucesso
+ */
+export async function approveAdminCompanyVacancy(
+  id: string,
+  vagaId: string,
+  init?: RequestInit
+): Promise<AdminCompanyVagaApproveApiResponse> {
+  const endpoint = empresasRoutes.adminEmpresas.vagas.aprovar(id, vagaId);
+
+  return apiFetch<AdminCompanyVagaApproveApiResponse>(endpoint, {
+    init: {
+      method: "POST",
+      ...init,
+      headers: {
+        "Content-Type": "application/json",
+        Accept: apiConfig.headers.Accept,
+        ...getAuthHeader(),
+        ...normalizeHeaders(init?.headers),
+      },
       body: init?.body ?? null,
     },
     cache: "no-cache",

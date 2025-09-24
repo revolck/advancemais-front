@@ -11,12 +11,9 @@ export const COMPANY_DASHBOARD_CONFIG = {
 };
 
 export const TRIAL_PARTNERSHIP_TYPES: PartnershipType[] = [
-  "7_dias",
-  "15_dias",
-  "30_dias",
-  "60_dias",
-  "90_dias",
-  "120_dias",
+  "teste",
+  "parceiro",
+  "ASSINATURA",
 ];
 
 export const DEFAULT_COMPANY_PAGINATION: AdminCompanyPagination = {

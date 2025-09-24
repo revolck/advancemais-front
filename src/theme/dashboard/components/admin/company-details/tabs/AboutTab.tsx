@@ -21,7 +21,7 @@ import {
 } from "../utils/formatters";
 
 export function AboutTab({ company }: AboutTabProps) {
-  const aboutDescription = company.descricao?.trim();
+  const aboutDescription = company.informacoes?.descricao?.trim();
   const aboutSidebar: Array<{
     label: string;
     value: React.ReactNode | null;
@@ -41,21 +41,21 @@ export function AboutTab({ company }: AboutTabProps) {
     { label: "E-mail", value: formatEmailLink(company.email), icon: Mail },
     {
       label: "Instagram",
-      value: formatSocialLink(company.instagram),
+      value: formatSocialLink(company.socialLinks?.instagram),
       icon: Instagram,
     },
     {
       label: "LinkedIn",
-      value: formatSocialLink(company.linkedin),
+      value: formatSocialLink(company.socialLinks?.linkedin),
       icon: Linkedin,
     },
     {
       label: "Localização",
       value: (() => {
-        const street = company.logradouro?.trim();
-        const city = company.cidade?.trim();
-        const state = company.estado?.trim();
-        const cep = company.cep?.trim();
+        const street = company.enderecos?.[0]?.logradouro?.trim();
+        const city = company.enderecos?.[0]?.cidade?.trim();
+        const state = company.enderecos?.[0]?.estado?.trim();
+        const cep = company.enderecos?.[0]?.cep?.trim();
         const cepDisplay = cep ? `CEP ${normalizeCep(cep)}` : null;
         const cityState = [city, state].filter(Boolean).join("/");
         const parts = [cepDisplay, cityState].filter(Boolean).join(" ");
@@ -71,7 +71,6 @@ export function AboutTab({ company }: AboutTabProps) {
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,_7fr)_minmax(0,_3fr)]">
       <section className="rounded-2xl border border-gray-200/60 bg-white p-6">
-        <h3>Sobre a empresa</h3>
         {aboutDescription ? (
           <p className="mt-4 whitespace-pre-line !leading-relaxed text-muted-foreground">
             {aboutDescription}
@@ -80,8 +79,8 @@ export function AboutTab({ company }: AboutTabProps) {
           <EmptyState
             illustration="companyDetails"
             illustrationAlt="Ilustração de descrição vazia da empresa"
-            title="Sem informações sobre a empresa"
-            description="Ainda não registramos um texto descritivo para esta empresa. Atualize os dados para contar a história dela por aqui."
+            title="Descrição não adicionada."
+            description="Até o momento, esta empresa não disponibilizou informações institucionais em seu perfil."
             maxContentWidth="md"
           />
         )}
@@ -89,7 +88,6 @@ export function AboutTab({ company }: AboutTabProps) {
 
       <aside className="space-y-4">
         <div className="rounded-2xl border border-gray-200/60 bg-white p-6">
-          <h3>Informações gerais</h3>
           <dl className="mt-4 space-y-4 text-sm">
             {aboutSidebar
               .filter((info) => info.value !== null)

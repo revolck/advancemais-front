@@ -639,7 +639,7 @@ export function ModalContentWrapper({
             if (shouldPreventDismiss) e.preventDefault();
           }}
           className={cn(
-            "fixed z-[101] grid w-full gap-4 p-6 bg-background transform-gpu will-change-transform",
+            "fixed z-[101] grid w-full gap-4 p-6 bg-white transform-gpu will-change-transform",
             sizeClasses[size],
             radiusClasses[radius],
             shadowClasses[resolvedShadow],
@@ -727,7 +727,7 @@ export function ModalTitle({
   return (
     <DialogPrimitive.Title
       data-slot="modal-title"
-      className={cn("text-lg leading-none font-semibold", className)}
+      className={cn("!text-2xl leading-none font-normal", className)}
       {...props}
     />
   );

@@ -13,14 +13,14 @@ import { ButtonCustom } from "@/components/ui/custom/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import type { AdminCompanyVacancyListItem } from "@/api/empresas/admin/types";
+import type { AdminCompanyVagaItem } from "@/api/empresas/admin/types";
 import { toDateInputValue } from "../utils";
 
 interface EditVacancyModalProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  vacancy: AdminCompanyVacancyListItem | null;
-  onSave?: (vacancy: AdminCompanyVacancyListItem) => void;
+  vacancy: AdminCompanyVagaItem | null;
+  onSave?: (vacancy: AdminCompanyVagaItem) => void;
 }
 
 export function EditVacancyModal({
@@ -29,11 +29,9 @@ export function EditVacancyModal({
   vacancy,
   onSave,
 }: EditVacancyModalProps) {
-  const editVacancyTitle = vacancy
-    ? vacancy.titulo ?? vacancy.nome ?? ""
-    : "";
+  const editVacancyTitle = vacancy ? vacancy.titulo ?? "" : "";
   const editVacancyCode = vacancy ? vacancy.codigo ?? vacancy.id : "";
-  const editVacancyInscricoes = toDateInputValue(vacancy?.inscricoesAte);
+  const editVacancyInscricoes = "";
 
   const handleClose = () => {
     onOpenChange(false);
@@ -63,99 +61,125 @@ export function EditVacancyModal({
               </ModalDescription>
             </ModalHeader>
             <ModalBody className="max-h-[65vh] pr-1">
-              <form className="space-y-6" onSubmit={(event) => event.preventDefault()}>
+              <form
+                className="space-y-6"
+                onSubmit={(event) => event.preventDefault()}
+              >
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-1.5">
-                    <Label htmlFor={`vacancy-title-${vacancy.id}`}>Nome da vaga</Label>
-                    <Input id={`vacancy-title-${vacancy.id}`} defaultValue={editVacancyTitle} />
+                    <Label htmlFor={`vacancy-title-${vacancy.id}`}>
+                      Nome da vaga
+                    </Label>
+                    <Input
+                      id={`vacancy-title-${vacancy.id}`}
+                      defaultValue={editVacancyTitle}
+                    />
                   </div>
                   <div className="space-y-1.5">
                     <Label htmlFor={`vacancy-code-${vacancy.id}`}>Código</Label>
-                    <Input id={`vacancy-code-${vacancy.id}`} defaultValue={editVacancyCode} />
+                    <Input
+                      id={`vacancy-code-${vacancy.id}`}
+                      defaultValue={editVacancyCode}
+                    />
                   </div>
                   <div className="space-y-1.5">
-                    <Label htmlFor={`vacancy-modalidade-${vacancy.id}`}>Modalidade</Label>
+                    <Label htmlFor={`vacancy-modalidade-${vacancy.id}`}>
+                      Modalidade
+                    </Label>
                     <Input
                       id={`vacancy-modalidade-${vacancy.id}`}
-                      defaultValue={vacancy.modalidade ?? ""}
+                      defaultValue=""
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label htmlFor={`vacancy-regime-${vacancy.id}`}>Regime de trabalho</Label>
+                    <Label htmlFor={`vacancy-regime-${vacancy.id}`}>
+                      Regime de trabalho
+                    </Label>
                     <Input
                       id={`vacancy-regime-${vacancy.id}`}
-                      defaultValue={vacancy.regimeDeTrabalho ?? ""}
+                      defaultValue=""
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label htmlFor={`vacancy-carga-${vacancy.id}`}>Carga horária</Label>
-                    <Input
-                      id={`vacancy-carga-${vacancy.id}`}
-                      defaultValue={vacancy.cargaHoraria ?? ""}
-                    />
+                    <Label htmlFor={`vacancy-carga-${vacancy.id}`}>
+                      Carga horária
+                    </Label>
+                    <Input id={`vacancy-carga-${vacancy.id}`} defaultValue="" />
                   </div>
                   <div className="space-y-1.5">
-                    <Label htmlFor={`vacancy-inscricoes-${vacancy.id}`}>Inscrições até</Label>
+                    <Label htmlFor={`vacancy-inscricoes-${vacancy.id}`}>
+                      Inscrições até
+                    </Label>
                     <Input
                       id={`vacancy-inscricoes-${vacancy.id}`}
                       type="date"
-                      defaultValue={editVacancyInscricoes}
+                      defaultValue=""
                     />
                   </div>
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label htmlFor={`vacancy-descricao-${vacancy.id}`}>Descrição</Label>
+                  <Label htmlFor={`vacancy-descricao-${vacancy.id}`}>
+                    Descrição
+                  </Label>
                   <Textarea
                     id={`vacancy-descricao-${vacancy.id}`}
                     className="min-h-[120px] resize-y"
-                    defaultValue={vacancy.descricao ?? vacancy.descricaoExibicao ?? ""}
+                    defaultValue=""
                   />
                 </div>
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-1.5">
-                    <Label htmlFor={`vacancy-atividades-${vacancy.id}`}>Atividades</Label>
+                    <Label htmlFor={`vacancy-atividades-${vacancy.id}`}>
+                      Atividades
+                    </Label>
                     <Textarea
                       id={`vacancy-atividades-${vacancy.id}`}
                       className="min-h-[100px] resize-y"
-                      defaultValue={vacancy.atividades ?? ""}
+                      defaultValue=""
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label htmlFor={`vacancy-requisitos-${vacancy.id}`}>Requisitos</Label>
+                    <Label htmlFor={`vacancy-requisitos-${vacancy.id}`}>
+                      Requisitos
+                    </Label>
                     <Textarea
                       id={`vacancy-requisitos-${vacancy.id}`}
                       className="min-h-[100px] resize-y"
-                      defaultValue={vacancy.requisitos ?? ""}
+                      defaultValue=""
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label htmlFor={`vacancy-beneficios-${vacancy.id}`}>Benefícios</Label>
+                    <Label htmlFor={`vacancy-beneficios-${vacancy.id}`}>
+                      Benefícios
+                    </Label>
                     <Textarea
                       id={`vacancy-beneficios-${vacancy.id}`}
                       className="min-h-[100px] resize-y"
-                      defaultValue={vacancy.beneficios ?? ""}
+                      defaultValue=""
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label htmlFor={`vacancy-observacoes-${vacancy.id}`}>Observações</Label>
+                    <Label htmlFor={`vacancy-observacoes-${vacancy.id}`}>
+                      Observações
+                    </Label>
                     <Textarea
                       id={`vacancy-observacoes-${vacancy.id}`}
                       className="min-h-[100px] resize-y"
-                      defaultValue={vacancy.observacoes ?? ""}
+                      defaultValue=""
                     />
                   </div>
                 </div>
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-1.5">
-                    <Label htmlFor={`vacancy-empresa-${vacancy.id}`}>Empresa (exibição)</Label>
+                    <Label htmlFor={`vacancy-empresa-${vacancy.id}`}>
+                      Empresa (exibição)
+                    </Label>
                     <Input
                       id={`vacancy-empresa-${vacancy.id}`}
-                      defaultValue={
-                        vacancy.nomeExibicao ?? vacancy.empresa?.nome ?? ""
-                      }
+                      defaultValue=""
                     />
                   </div>
                   <div className="space-y-1.5">
@@ -164,7 +188,7 @@ export function EditVacancyModal({
                     </Label>
                     <Input
                       id={`vacancy-modo-${vacancy.id}`}
-                      defaultValue={vacancy.modoAnonimo ? "Anônima" : "Pública"}
+                      defaultValue="Pública"
                     />
                   </div>
                 </div>
@@ -174,7 +198,9 @@ export function EditVacancyModal({
               <ButtonCustom variant="ghost" onClick={handleClose}>
                 Cancelar
               </ButtonCustom>
-              <ButtonCustom onClick={handleSave}>Salvar alterações</ButtonCustom>
+              <ButtonCustom onClick={handleSave}>
+                Salvar alterações
+              </ButtonCustom>
             </ModalFooter>
           </>
         ) : (

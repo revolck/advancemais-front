@@ -222,7 +222,7 @@ export function CompanyDashboard({
       });
       return arr;
     },
-    [sortDirection, sortField],
+    [sortDirection, sortField]
   );
 
   const uniquePlans = useMemo(() => {
@@ -276,13 +276,7 @@ export function CompanyDashboard({
     const start = (currentPage - 1) * pageSize;
     const end = start + pageSize;
     return sortList(filteredPartnerships).slice(start, end);
-  }, [
-    filteredPartnerships,
-    currentPage,
-    pageSize,
-    shouldFetch,
-    sortList,
-  ]);
+  }, [filteredPartnerships, currentPage, pageSize, shouldFetch, sortList]);
 
   const totalItems = shouldFetch
     ? pagination?.total ?? 0
@@ -352,14 +346,6 @@ export function CompanyDashboard({
         search:
           searchTermRef.current.trim().length > 0
             ? searchTermRef.current.trim()
-            : undefined,
-        planNames:
-          selectedPlansRef.current.length > 0
-            ? selectedPlansRef.current
-            : undefined,
-        statuses:
-          selectedStatusesRef.current.length > 0
-            ? selectedStatusesRef.current
             : undefined,
       }).catch(() => {});
     },

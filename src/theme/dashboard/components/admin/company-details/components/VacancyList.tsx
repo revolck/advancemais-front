@@ -1,12 +1,20 @@
 import { Button } from "@/components/ui/button";
-import type { AdminCompanyVacancyListItem } from "@/api/empresas/admin/types";
-import { CalendarDays, Clock3, Eye, Pencil, Briefcase, Globe2, BadgeCheck } from "lucide-react";
+import type { AdminCompanyVagaItem } from "@/api/empresas/admin/types";
+import {
+  CalendarDays,
+  Clock3,
+  Eye,
+  Pencil,
+  Briefcase,
+  Globe2,
+  BadgeCheck,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface VacancyListProps {
-  vacancies: AdminCompanyVacancyListItem[];
-  onView: (vacancy: AdminCompanyVacancyListItem) => void;
-  onEdit: (vacancy: AdminCompanyVacancyListItem) => void;
+  vacancies: AdminCompanyVagaItem[];
+  onView: (vacancy: AdminCompanyVagaItem) => void;
+  onEdit: (vacancy: AdminCompanyVagaItem) => void;
   formatDate: (value?: string | null) => string;
   formatRelativeTime: (value?: string | null) => string;
   formatStatus: (status?: string | null) => string;
@@ -53,28 +61,15 @@ export function VacancyList({
         {vacancies.map((vacancy) => {
           const statusLabel = formatStatus(vacancy.status);
           const statusClasses = getStatusClasses(vacancy.status);
-          const heading =
-            vacancy.titulo ?? vacancy.nome ?? `Vaga ${vacancy.id.slice(0, 8)}`;
+          const heading = vacancy.titulo ?? `Vaga ${vacancy.id.slice(0, 8)}`;
           const code = vacancy.codigo ?? vacancy.id;
           const createdRelative = formatRelativeTime(vacancy.inseridaEm);
           const updatedRelative = formatRelativeTime(vacancy.atualizadoEm);
-          const closesRelative = formatRelativeTime(vacancy.inscricoesAte);
-          const companyName =
-            vacancy.empresa?.nome ??
-            vacancy.nomeExibicao ??
-            companyFallback?.nome ??
-            "—";
-          const companyLocation = [
-            vacancy.empresa?.cidade ?? companyFallback?.cidade ?? null,
-            vacancy.empresa?.estado ?? companyFallback?.estado ?? null,
-          ]
-            .filter(Boolean)
-            .join(" - ");
+          const companyName = "Empresa";
+          const companyLocation = "";
 
-          const candidatesCount =
-            vacancy.totalCandidatos ?? vacancy.candidatos ?? vacancy.inscritos;
-          const applicationsCount =
-            vacancy.totalInscricoes ?? vacancy.inscricoes ?? vacancy.candidatos;
+          const candidatesCount = 0;
+          const applicationsCount = 0;
 
           return (
             <article
@@ -111,12 +106,6 @@ export function VacancyList({
               </div>
 
               <div className="flex flex-wrap gap-3 text-xs text-slate-500">
-                {vacancy.inscricoesAte && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 font-semibold text-slate-600">
-                    <CalendarDays className="h-3 w-3" />
-                    Inscrições {closesRelative || formatDate(vacancy.inscricoesAte)}
-                  </span>
-                )}
                 {vacancy.inseridaEm && (
                   <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 font-semibold text-slate-600">
                     <CalendarDays className="h-3 w-3" />
@@ -133,20 +122,18 @@ export function VacancyList({
 
               <div className="flex flex-wrap gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                 <span className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-2.5 py-1">
-                  <Briefcase className="h-3 w-3 text-slate-400" />
-                  {vacancy.modalidade ?? "—"}
+                  <Briefcase className="h-3 w-3 text-slate-400" />—
                 </span>
                 <span className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-2.5 py-1">
-                  <Clock3 className="h-3 w-3 text-slate-400" />
-                  {vacancy.regimeDeTrabalho ?? "—"}
+                  <Clock3 className="h-3 w-3 text-slate-400" />—
                 </span>
                 <span className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-2.5 py-1">
                   <BadgeCheck className="h-3 w-3 text-slate-400" />
-                  {vacancy.paraPcd ? "Vaga para PCD" : "Vaga geral"}
+                  Vaga geral
                 </span>
                 <span className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-2.5 py-1">
                   <Globe2 className="h-3 w-3 text-slate-400" />
-                  {vacancy.modoAnonimo ? "Anônima" : "Pública"}
+                  Pública
                 </span>
               </div>
 
@@ -163,8 +150,11 @@ export function VacancyList({
                   </span>
                 </div>
                 <div className="text-[11px] text-slate-400">
-                  {typeof candidatesCount === "number" || typeof applicationsCount === "number"
-                    ? `Candidatos ${candidatesCount ?? 0} · Inscrições ${applicationsCount ?? 0}`
+                  {typeof candidatesCount === "number" ||
+                  typeof applicationsCount === "number"
+                    ? `Candidatos ${candidatesCount ?? 0} · Inscrições ${
+                        applicationsCount ?? 0
+                      }`
                     : "Candidatos e inscrições não informados"}
                 </div>
               </div>

@@ -35,8 +35,6 @@ export function VacancyTab({
         onEdit={onEditVacancy}
         getCandidateAvatars={(v) => {
           const urls: string[] = [];
-          if (v.logoExibicao) urls.push(v.logoExibicao);
-          if (v.empresa?.avatarUrl) urls.push(v.empresa.avatarUrl);
           return urls;
         }}
       />
@@ -79,4 +77,3 @@ export function VacancyTab({
     </div>
   );
 }
-

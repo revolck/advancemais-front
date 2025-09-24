@@ -1,95 +1,157 @@
+// ============================================================================
+// TIPOS BASE
+// ============================================================================
+
 export type AdminCompanyStatus = "ATIVO" | "INATIVO";
 
-export type AdminCompanyPlanType =
-  | "7_dias"
-  | "15_dias"
-  | "30_dias"
-  | "60_dias"
-  | "90_dias"
-  | "120_dias"
-  | "parceiro";
+export type AdminCompanyPlanMode = "teste" | "parceiro" | "ASSINATURA";
+
+export type AdminCompanyPaymentModel = "ASSINATURA";
+
+export type AdminCompanyPaymentMethod =
+  | "PIX"
+  | "CARTAO_CREDITO"
+  | "CARTAO_DEBITO"
+  | "BOLETO";
+
+export type AdminCompanyPaymentStatus =
+  | "APROVADO"
+  | "PENDENTE"
+  | "REJEITADO"
+  | "CANCELADO";
 
 export type AdminCompanyVacancyStatus =
   | "RASCUNHO"
   | "EM_ANALISE"
   | "PUBLICADO"
-  | "EXPIRADO"
-  | string;
+  | "DESPUBLICADA"
+  | "PAUSADA"
+  | "ENCERRADA"
+  | "EXPIRADO";
 
-export interface AdminCompanyPlanSummary {
+export type BanType = "TEMPORARIO" | "PERMANENTE" | "RESTRICAO_DE_RECURSO";
+
+export type BanReason =
+  | "SPAM"
+  | "VIOLACAO_POLITICAS"
+  | "FRAUDE"
+  | "ABUSO_DE_RECURSOS"
+  | "OUTROS";
+
+export type BanStatus = "ATIVO" | "REVOGADO" | "EXPIRADO";
+
+// ============================================================================
+// TIPOS DE ENDEREÇO
+// ============================================================================
+
+export interface AdminCompanyEndereco {
+  id: string;
+  logradouro: string;
+  numero: string;
+  bairro: string;
+  cidade: string;
+  estado: string;
+  cep: string;
+}
+
+// ============================================================================
+// TIPOS DE PLANO
+// ============================================================================
+
+export interface AdminCompanyPlano {
   id: string;
   nome: string;
-  tipo: AdminCompanyPlanType;
-  inicio?: string | null;
-  fim?: string | null;
-  modeloPagamento?: string | null;
-  metodoPagamento?: string | null;
-  statusPagamento?: string | null;
+  modo: AdminCompanyPlanMode;
+  status: AdminCompanyStatus;
+  inicio: string;
+  fim: string | null;
+  modeloPagamento: AdminCompanyPaymentModel;
+  metodoPagamento: AdminCompanyPaymentMethod;
+  statusPagamento: AdminCompanyPaymentStatus;
+  valor: string;
   quantidadeVagas: number;
-  valor?: string | null;
-  duracaoEmDias?: number | null;
-  diasRestantes?: number | null;
-  vagasPublicadas?: number | null;
+  duracaoEmDias: number | null;
+  diasRestantes: number;
 }
 
-export interface AdminCompanyVacancyInfo {
-  publicadas?: number | null;
-  limitePlano?: number | null;
+// ============================================================================
+// TIPOS DE INFORMAÇÕES
+// ============================================================================
+
+export interface AdminCompanyInformacoes {
+  telefone: string;
+  descricao: string;
+  avatarUrl: string;
+  aceitarTermos: boolean;
 }
 
-export interface AdminCompanyPaymentInfo {
-  modelo?: string | null;
-  metodo?: string | null;
-  status?: string | null;
-  ultimoPagamentoEm?: string | null;
+export interface AdminCompanySocialLinks {
+  linkedin?: string;
+  instagram?: string;
 }
 
-export interface AdminCompanyBanInfo {
-  id: string;
-  motivo: string;
-  dias: number;
+// ============================================================================
+// TIPOS DE VAGAS
+// ============================================================================
+
+export interface AdminCompanyVagas {
+  publicadas: number;
+  limitePlano: number;
+}
+
+// ============================================================================
+// TIPOS DE PAGAMENTO
+// ============================================================================
+
+export interface AdminCompanyPagamento {
+  modelo: AdminCompanyPaymentModel;
+  metodo: AdminCompanyPaymentMethod;
+  status: AdminCompanyPaymentStatus;
+  ultimoPagamentoEm: string;
+}
+
+// ============================================================================
+// TIPOS DE BANIMENTO
+// ============================================================================
+
+export interface AdminCompanyBanimento {
+  tipo: BanType;
+  motivo: BanReason;
+  status: BanStatus;
   inicio: string;
   fim: string;
-  criadoEm: string;
+  observacoes: string;
 }
 
-export interface AdminCompanyListItem {
+export interface AdminCompanyBanAlvo {
+  tipo: "EMPRESA";
   id: string;
-  codUsuario: string;
   nome: string;
-  avatarUrl?: string | null;
-  cnpj?: string | null;
-  email?: string | null;
-  telefone?: string | null;
-  cep?: string | null;
-  cidade?: string | null;
-  estado?: string | null;
-  bairro?: string | null;
-  logradouro?: string | null;
-  complemento?: string | null;
-  numero?: string | null;
-  descricao?: string | null;
-  instagram?: string | null;
-  linkedin?: string | null;
-  criadoEm?: string | null;
-  ativa: boolean;
-  status?: AdminCompanyStatus;
-  parceira: boolean;
-  diasTesteDisponibilizados?: number | null;
-  plano?: AdminCompanyPlanSummary | null;
-  vagas?: AdminCompanyVacancyInfo | null;
-  pagamento?: AdminCompanyPaymentInfo | null;
-  banida?: boolean;
-  banimentoAtivo?: AdminCompanyBanInfo | null;
-  vagasPublicadas?: number | null;
-  limiteVagasPlano?: number | null;
+  role: "EMPRESA";
 }
 
-export type AdminCompanyDetail = AdminCompanyListItem;
-
-export interface AdminCompanyDetailResponse {
-  empresa: AdminCompanyDetail;
+export interface AdminCompanyBanAplicadoPor {
+  id: string;
+  nome: string;
+  role: "ADMIN" | "MODERADOR";
 }
+
+export interface AdminCompanyBanAuditoria {
+  criadoEm: string;
+  atualizadoEm: string;
+}
+
+export interface AdminCompanyBanItem {
+  id: string;
+  alvo: AdminCompanyBanAlvo;
+  banimento: AdminCompanyBanimento;
+  aplicadoPor: AdminCompanyBanAplicadoPor;
+  auditoria: AdminCompanyBanAuditoria;
+}
+
+// ============================================================================
+// TIPOS DE PAGINAÇÃO
+// ============================================================================
 
 export interface AdminCompanyPagination {
   page: number;
@@ -98,30 +160,181 @@ export interface AdminCompanyPagination {
   totalPages: number;
 }
 
-export interface ListAdminCompaniesResponse {
+// ============================================================================
+// TIPOS DE EMPRESA
+// ============================================================================
+
+export interface AdminCompanyDashboardItem {
+  id: string;
+  codUsuario: string;
+  nome: string;
+  email: string;
+  telefone: string;
+  avatarUrl: string;
+  cnpj: string;
+  status: AdminCompanyStatus;
+  criadoEm: string;
+  vagasPublicadas: number;
+  limiteVagasPlano: number;
+  plano: AdminCompanyPlano;
+}
+
+export interface AdminCompanyListItem {
+  id: string;
+  codUsuario: string;
+  nome: string;
+  email: string;
+  telefone: string;
+  avatarUrl: string;
+  cnpj: string;
+  cidade: string;
+  estado: string;
+  enderecos: AdminCompanyEndereco[];
+  criadoEm: string;
+  informacoes: AdminCompanyInformacoes;
+  ativa: boolean;
+  parceira: boolean;
+  diasTesteDisponibilizados: number;
+  plano: AdminCompanyPlano;
+  vagasPublicadas: number;
+  limiteVagasPlano: number;
+  banida: boolean;
+  banimentoAtivo: AdminCompanyBanItem | null;
+}
+
+export interface AdminCompanyDetail {
+  id: string;
+  codUsuario: string;
+  nome: string;
+  email: string;
+  telefone: string;
+  avatarUrl: string;
+  cnpj: string;
+  descricao: string;
+  socialLinks: AdminCompanySocialLinks;
+  cidade: string;
+  estado: string;
+  enderecos: AdminCompanyEndereco[];
+  criadoEm: string;
+  status: AdminCompanyStatus;
+  ultimoLogin: string;
+  ativa: boolean;
+  parceira: boolean;
+  diasTesteDisponibilizados: number;
+  plano: AdminCompanyPlano;
+  vagas: AdminCompanyVagas;
+  pagamento: AdminCompanyPagamento;
+  banida: boolean;
+  banimentoAtivo: AdminCompanyBanItem | null;
+  informacoes: AdminCompanyInformacoes;
+}
+
+// ============================================================================
+// TIPOS DE VAGA
+// ============================================================================
+
+export interface AdminCompanyVagaItem {
+  id: string;
+  codigo: string;
+  titulo: string;
+  status: AdminCompanyVacancyStatus;
+  inseridaEm: string;
+  atualizadoEm: string;
+}
+
+// ============================================================================
+// TIPOS DE PAGAMENTO
+// ============================================================================
+
+export interface AdminCompanyPaymentLog {
+  id: string;
+  tipo: string;
+  status: string;
+  mensagem: string;
+  criadoEm: string;
+}
+
+// ============================================================================
+// TIPOS DE RESPOSTA
+// ============================================================================
+
+export interface AdminCompanyDashboardResponse {
+  data: AdminCompanyDashboardItem[];
+  pagination: AdminCompanyPagination;
+}
+
+export interface AdminCompanyListResponse {
   data: AdminCompanyListItem[];
   pagination: AdminCompanyPagination;
 }
 
-export interface ListAdminCompaniesParams {
+export interface AdminCompanyDetailResponse {
+  empresa: AdminCompanyDetail;
+}
+
+export interface AdminCompanyPaymentHistoryResponse {
+  data: AdminCompanyPaymentLog[];
+  pagination: AdminCompanyPagination;
+}
+
+export interface AdminCompanyBanHistoryResponse {
+  data: AdminCompanyBanItem[];
+  pagination: AdminCompanyPagination;
+}
+
+export interface AdminCompanyBanDetailResponse {
+  banimento: AdminCompanyBanItem;
+}
+
+export interface AdminCompanyVagaListResponse {
+  data: AdminCompanyVagaItem[];
+  pagination: AdminCompanyPagination;
+}
+
+export interface AdminCompanyVagaDetailResponse {
+  vaga: AdminCompanyVagaItem;
+}
+
+// ============================================================================
+// TIPOS DE PARÂMETROS
+// ============================================================================
+
+export interface AdminCompanyDashboardParams {
+  page?: number;
+  search?: string;
+}
+
+export interface AdminCompanyListParams {
   page?: number;
   pageSize?: number;
   search?: string;
-  // optional filters (backend may ignore unknown params)
-  planNames?: string[]; // by plan.nome
-  planTypes?: AdminCompanyPlanType[]; // e.g., "parceiro", "30_dias", etc.
-  statuses?: AdminCompanyStatus[]; // company status (ATIVO | INATIVO)
 }
 
-export interface AdminCompanyPlanPayload {
-  planoEmpresarialId: string;
-  tipo: AdminCompanyPlanType;
-  iniciarEm?: string;
-  observacao?: string;
+export interface AdminCompanyPaymentParams {
+  page?: number;
+  pageSize?: number;
+}
+
+export interface AdminCompanyBanParams {
+  page?: number;
+  pageSize?: number;
+}
+
+export interface AdminCompanyVagaParams {
+  status?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+// ============================================================================
+// TIPOS DE PAYLOAD
+// ============================================================================
+
+export interface AdminCompanyPlanoPayload {
+  planosEmpresariaisId: string;
+  modo: AdminCompanyPlanMode;
+  diasTeste?: number;
   resetPeriodo?: boolean;
-  modeloPagamento?: string | null;
-  metodoPagamento?: string | null;
-  statusPagamento?: string | null;
 }
 
 export interface CreateAdminCompanyPayload {
@@ -134,126 +347,111 @@ export interface CreateAdminCompanyPayload {
   cidade: string;
   estado: string;
   descricao?: string;
-  instagram?: string;
-  linkedin?: string;
-  avatarUrl?: string;
   aceitarTermos: boolean;
-  status: AdminCompanyStatus;
-  plano?: AdminCompanyPlanPayload;
+  plano?: AdminCompanyPlanoPayload;
 }
 
 export interface UpdateAdminCompanyPayload {
-  nome?: string;
-  email?: string | null;
-  telefone?: string | null;
-  cnpj?: string | null;
-  cep?: string | null;
-  cidade?: string | null;
-  estado?: string | null;
-  bairro?: string | null;
-  logradouro?: string | null;
-  complemento?: string | null;
-  numero?: string | null;
-  descricao?: string | null;
-  instagram?: string | null;
-  linkedin?: string | null;
-  avatarUrl?: string | null;
+  telefone?: string;
+  descricao?: string;
   status?: AdminCompanyStatus;
-  plano?: AdminCompanyPlanPayload;
-}
-
-export interface ListAdminCompanyPaymentsParams {
-  page?: number;
-  pageSize?: number;
-}
-
-export interface ListAdminCompanyBansParams {
-  page?: number;
-  pageSize?: number;
+  plano?: AdminCompanyPlanoPayload;
+  enderecos?: AdminCompanyEndereco[];
+  cidade?: string;
+  estado?: string;
 }
 
 export interface CreateAdminCompanyBanPayload {
-  dias: number;
-  motivo: string;
+  tipo: BanType;
+  motivo: BanReason;
+  dias?: number;
+  observacoes: string;
 }
 
-export interface AdminCompanyPaymentLog {
-  id: string;
-  tipo: string;
-  status: string;
-  mensagem?: string | null;
-  externalRef?: string | null;
-  mpResourceId?: string | null;
-  criadoEm?: string | null;
-  plano?: {
-    id: string;
-    nome?: string | null;
-  } | null;
+export interface RevokeAdminCompanyBanPayload {
+  observacoes?: string;
 }
 
-export interface AdminCompanyPaymentHistoryResponse {
-  data: AdminCompanyPaymentLog[];
-  pagination: AdminCompanyPagination;
+// ============================================================================
+// TIPOS DE ERRO
+// ============================================================================
+
+export interface AdminCompanyErrorResponse {
+  success: false;
+  code: string;
+  message: string;
+  issues?: Record<string, string[]>;
+  error?: string;
 }
 
-export interface AdminCompanyBanHistoryResponse {
-  data: AdminCompanyBanInfo[];
-  pagination: AdminCompanyPagination;
+export interface AdminCompanyValidationError extends AdminCompanyErrorResponse {
+  code: "VALIDATION_ERROR";
 }
 
-export interface AdminCompanyBanDetailResponse {
-  banimento: AdminCompanyBanInfo;
+export interface AdminCompanyNotFoundError extends AdminCompanyErrorResponse {
+  code: "NOT_FOUND";
 }
 
-export interface ListAdminCompanyVacanciesParams {
-  page?: number;
-  pageSize?: number;
-  status?: AdminCompanyVacancyStatus[] | AdminCompanyVacancyStatus | string;
+export interface AdminCompanyDuplicateError extends AdminCompanyErrorResponse {
+  code: "DUPLICATE_ERROR";
 }
 
-export interface AdminCompanyVacancyListItem {
-  id: string;
-  status: AdminCompanyVacancyStatus;
-  inseridaEm?: string | null;
-  atualizadoEm?: string | null;
-  inscricoesAte?: string | null;
-  modoAnonimo?: boolean | null;
-  modalidade?: string | null;
-  regimeDeTrabalho?: string | null;
-  paraPcd?: boolean | null;
-  codigo?: string | null;
-  titulo?: string | null;
-  nome?: string | null;
-  descricao?: string | null;
-  descricaoExibicao?: string | null;
-  atividades?: string | null;
-  beneficios?: string | null;
-  observacoes?: string | null;
-  requisitos?: string | null;
-  cargaHoraria?: string | null;
-  nomeExibicao?: string | null;
-  logoExibicao?: string | null;
-  mensagemAnonimato?: string | null;
-  empresa?: {
-    id: string;
-    nome?: string | null;
-    avatarUrl?: string | null;
-    cidade?: string | null;
-    estado?: string | null;
-    codUsuario?: string | null;
-  } | null;
-  candidatos?: number | null;
-  totalCandidatos?: number | null;
-  inscritos?: number | null;
-  inscricoes?: number | null;
-  totalInscricoes?: number | null;
+export interface AdminCompanyBanNotFoundError
+  extends AdminCompanyErrorResponse {
+  code: "BANIMENTO_NOT_FOUND";
 }
 
-export interface AdminCompanyVacancyListResponse {
-  data: AdminCompanyVacancyListItem[];
-  pagination: AdminCompanyPagination;
-}
+// ============================================================================
+// TIPOS DE RESPOSTA DA API
+// ============================================================================
 
-export interface AdminCompanyVacancyDetailResponse {
-  vaga: AdminCompanyVacancyListItem;
-}
+export type AdminCompanyDashboardApiResponse =
+  | AdminCompanyDashboardResponse
+  | AdminCompanyErrorResponse;
+
+export type AdminCompanyListApiResponse =
+  | AdminCompanyListResponse
+  | AdminCompanyErrorResponse;
+
+export type AdminCompanyDetailApiResponse =
+  | AdminCompanyDetailResponse
+  | AdminCompanyErrorResponse;
+
+export type AdminCompanyCreateApiResponse =
+  | AdminCompanyDetailResponse
+  | AdminCompanyValidationError
+  | AdminCompanyDuplicateError;
+
+export type AdminCompanyUpdateApiResponse =
+  | AdminCompanyDetailResponse
+  | AdminCompanyValidationError
+  | AdminCompanyNotFoundError
+  | AdminCompanyDuplicateError;
+
+export type AdminCompanyPaymentHistoryApiResponse =
+  | AdminCompanyPaymentHistoryResponse
+  | AdminCompanyErrorResponse;
+
+export type AdminCompanyBanHistoryApiResponse =
+  | AdminCompanyBanHistoryResponse
+  | AdminCompanyErrorResponse;
+
+export type AdminCompanyBanCreateApiResponse =
+  | AdminCompanyBanDetailResponse
+  | AdminCompanyValidationError
+  | AdminCompanyNotFoundError;
+
+export type AdminCompanyBanRevokeApiResponse =
+  | void
+  | AdminCompanyValidationError
+  | AdminCompanyNotFoundError
+  | AdminCompanyBanNotFoundError;
+
+export type AdminCompanyVagaListApiResponse =
+  | AdminCompanyVagaListResponse
+  | AdminCompanyErrorResponse;
+
+export type AdminCompanyVagaApproveApiResponse =
+  | AdminCompanyVagaDetailResponse
+  | AdminCompanyValidationError
+  | AdminCompanyNotFoundError;

@@ -447,7 +447,7 @@ const RegisterPage = () => {
 
           <div className="space-y-3 sm:space-y-0 sm:grid sm:grid-cols-2 sm:gap-4">
             <InputCustom
-              label="Telefone"
+              label="Telefone/Whatsapp"
               name="phone"
               value={formData.phone}
               onChange={(e) => handleInputChange("phone", e.target.value)}

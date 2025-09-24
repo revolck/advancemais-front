@@ -187,6 +187,7 @@ export const empresasRoutes = {
     delete: (id: string) => `${prefix}/empresas/planos-empresariais/${id}`,
   },
   adminEmpresas: {
+    dashboard: () => `${prefix}/empresas/admin/dashboard`,
     list: () => `${prefix}/empresas/admin`,
     create: () => `${prefix}/empresas/admin`,
     get: (id: string) => `${prefix}/empresas/admin/${id}`,
@@ -197,10 +198,13 @@ export const empresasRoutes = {
     banimentos: {
       list: (id: string) => `${prefix}/empresas/admin/${id}/banimentos`,
       create: (id: string) => `${prefix}/empresas/admin/${id}/banimentos`,
+      revogar: (id: string) =>
+        `${prefix}/empresas/admin/${id}/banimentos/revogar`,
     },
     vagas: {
       list: (id: string) => `${prefix}/empresas/admin/${id}/vagas`,
-      emAnalise: (id: string) => `${prefix}/empresas/admin/${id}/vagas/em-analise`,
+      emAnalise: (id: string) =>
+        `${prefix}/empresas/admin/${id}/vagas/em-analise`,
       aprovar: (id: string, vagaId: string) =>
         `${prefix}/empresas/admin/${id}/vagas/${vagaId}/aprovar`,
     },
@@ -209,11 +213,11 @@ export const empresasRoutes = {
 
 export const dashboardRoutes = {
   scripts: {
-    list: () => `${prefix}/dashboard/scripts`,
-    create: () => `${prefix}/dashboard/scripts`,
-    get: (id: string) => `${prefix}/dashboard/scripts/${id}`,
-    update: (id: string) => `${prefix}/dashboard/scripts/${id}`,
-    delete: (id: string) => `${prefix}/dashboard/scripts/${id}`,
+    list: () => `${prefix}/website/scripts`,
+    create: () => `${prefix}/website/scripts`,
+    get: (id: string) => `${prefix}/website/scripts/${id}`,
+    update: (id: string) => `${prefix}/website/scripts/${id}`,
+    delete: (id: string) => `${prefix}/website/scripts/${id}`,
   },
 };
 

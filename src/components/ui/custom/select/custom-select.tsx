@@ -116,7 +116,7 @@ export function SelectCustom(props: SelectCustomProps) {
             className={cn(
               "text-sm font-medium",
               error && "text-destructive",
-              props.required && "required",
+              props.required && "required"
             )}
           >
             {label}
@@ -124,7 +124,7 @@ export function SelectCustom(props: SelectCustomProps) {
         )}
         <Select
           value={value ?? undefined}
-          onValueChange={(v) => onChange(v || null)}
+          onValueChange={(v) => onChange(v === "empty" ? null : v || null)}
           disabled={disabled}
         >
           <SelectTrigger
@@ -153,7 +153,7 @@ export function SelectCustom(props: SelectCustomProps) {
           </SelectTrigger>
           <SelectContent
             className={cn(
-              "z-[120] w-[--radix-select-trigger-width] max-h-80 rounded-lg border border-gray-200 bg-white shadow-xl",
+              "z-[120] w-[--radix-select-trigger-width] max-h-80 rounded-lg border border-gray-200 bg-white",
               "[&_[data-slot=select-scroll-up-button]]:hidden [&_[data-slot=select-scroll-down-button]]:hidden",
               "[&_[data-slot=select-item]]:cursor-pointer [&_[data-slot=select-item]]:px-3 [&_[data-slot=select-item]]:py-2",
               "[&_[data-slot=select-item][data-state=checked]]:bg-primary/10 [&_[data-slot=select-item][data-state=checked]]:font-semibold [&_[data-slot=select-item][data-state=checked]]:text-foreground",
@@ -182,7 +182,7 @@ export function SelectCustom(props: SelectCustomProps) {
                 {(options as SelectOption[]).map((opt) => (
                   <SelectItem
                     key={opt.value}
-                    value={opt.value}
+                    value={opt.value || "empty"}
                     disabled={opt.disabled}
                     className="cursor-pointer"
                   >
@@ -215,7 +215,7 @@ export function SelectCustom(props: SelectCustomProps) {
           className={cn(
             "text-sm font-medium",
             error && "text-destructive",
-            props.required && "required",
+            props.required && "required"
           )}
         >
           {label}
@@ -251,9 +251,7 @@ export function SelectCustom(props: SelectCustomProps) {
             "z-[120] w-[--radix-popover-trigger-width] rounded-lg border border-gray-200 bg-white p-0 shadow-xl"
           )}
         >
-          <Command
-            className="bg-white text-foreground [&_[cmdk-group]]:gap-1 [&_[cmdk-item]]:rounded-md"
-          >
+          <Command className="bg-white text-foreground [&_[cmdk-group]]:gap-1 [&_[cmdk-item]]:rounded-md">
             {searchable && <CommandInput placeholder="Buscar..." />}
             <CommandEmpty>Nenhuma opção encontrada</CommandEmpty>
             <CommandList className="max-h-80 overflow-y-auto pr-2 pb-3 scrollbar-thin scrollbar-thumb-gray-400/60 hover:scrollbar-thumb-gray-400/80 scrollbar-track-transparent">

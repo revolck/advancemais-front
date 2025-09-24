@@ -1,15 +1,15 @@
 import type {
   AdminCompanyListItem,
   AdminCompanyPagination,
-  AdminCompanyPlanType,
-  AdminCompanyPaymentInfo,
-  AdminCompanyBanInfo,
+  AdminCompanyPlanMode,
+  AdminCompanyPagamento,
+  AdminCompanyBanItem,
   AdminCompanyStatus,
-  ListAdminCompaniesParams,
-  ListAdminCompaniesResponse,
+  AdminCompanyListParams,
+  AdminCompanyListResponse,
 } from "@/api/empresas";
 
-export type PartnershipType = AdminCompanyPlanType;
+export type PartnershipType = AdminCompanyPlanMode;
 
 export type PlanFilter = "all" | string;
 
@@ -30,7 +30,7 @@ export interface Company {
   parceira?: boolean;
   diasTesteDisponibilizados?: number | null;
   banida?: boolean;
-  banimentoAtivo?: AdminCompanyBanInfo | null;
+  banimentoAtivo?: AdminCompanyBanItem | null;
   cep?: string | null;
   bairro?: string | null;
   logradouro?: string | null;
@@ -70,7 +70,7 @@ export interface Partnership {
   empresa: Company;
   plano: Plan;
   raw?: AdminCompanyListItem;
-  pagamento?: AdminCompanyPaymentInfo | null;
+  pagamento?: AdminCompanyPagamento | null;
 }
 
 export interface CompanyDashboardProps {
@@ -79,7 +79,10 @@ export interface CompanyDashboardProps {
   fetchFromApi?: boolean;
   itemsPerPage?: number;
   pageSize?: number;
-  onDataLoaded?: (data: Partnership[], response?: ListAdminCompaniesResponse | null) => void;
+  onDataLoaded?: (
+    data: Partnership[],
+    response?: AdminCompanyListResponse | null
+  ) => void;
   onError?: (message: string) => void;
 }
 
@@ -94,8 +97,8 @@ export interface UseCompanyDashboardDataOptions {
   enabled?: boolean;
   pageSize?: number;
   initialData?: Partnership[];
-  initialParams?: ListAdminCompaniesParams;
-  onSuccess?: (data: Partnership[], response: ListAdminCompaniesResponse) => void;
+  initialParams?: AdminCompanyListParams;
+  onSuccess?: (data: Partnership[], response: AdminCompanyListResponse) => void;
   onError?: (message: string) => void;
   autoFetch?: boolean;
 }
@@ -105,5 +108,5 @@ export interface UseCompanyDashboardDataReturn {
   pagination: AdminCompanyPagination | null;
   isLoading: boolean;
   error: string | null;
-  refetch: (params?: Partial<ListAdminCompaniesParams>) => Promise<Partnership[]>;
+  refetch: (params?: Partial<AdminCompanyListParams>) => Promise<Partnership[]>;
 }

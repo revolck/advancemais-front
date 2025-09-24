@@ -3,28 +3,31 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { listAdminCompanies } from "@/api/empresas";
 import { apiConfig } from "@/lib/env";
-import { COMPANY_DASHBOARD_CONFIG, DEFAULT_COMPANY_PAGINATION } from "../constants";
+import {
+  COMPANY_DASHBOARD_CONFIG,
+  DEFAULT_COMPANY_PAGINATION,
+} from "../constants";
 import type {
   Partnership,
   UseCompanyDashboardDataOptions,
   UseCompanyDashboardDataReturn,
 } from "../types";
-import type { AdminCompanyListItem, ListAdminCompaniesParams } from "@/api/empresas";
+import type {
+  AdminCompanyListItem,
+  AdminCompanyListParams,
+} from "@/api/empresas";
 
-function mapAdminCompanyToPartnership(company: AdminCompanyListItem): Partnership {
+function mapAdminCompanyToPartnership(
+  company: AdminCompanyListItem
+): Partnership {
   const plan = company.plano;
-  const payment = company.pagamento;
-  const vagasPublicadas =
-    plan?.vagasPublicadas ??
-    company.vagas?.publicadas ??
-    company.vagasPublicadas ??
-    null;
-  const limiteVagas =
-    company.vagas?.limitePlano ?? company.limiteVagasPlano ?? plan?.quantidadeVagas ?? 0;
+  const payment = null;
+  const vagasPublicadas = company.vagasPublicadas ?? 0;
+  const limiteVagas = company.limiteVagasPlano ?? plan?.quantidadeVagas ?? 0;
 
   return {
     id: company.id,
-    tipo: plan?.tipo,
+    tipo: plan?.modo,
     inicio: plan?.inicio ?? null,
     fim: plan?.fim ?? null,
     ativo: company.ativa,
@@ -34,13 +37,13 @@ function mapAdminCompanyToPartnership(company: AdminCompanyListItem): Partnershi
       avatarUrl: company.avatarUrl ?? null,
       cidade: company.cidade ?? null,
       estado: company.estado ?? null,
-      descricao: company.descricao ?? null,
-      instagram: company.instagram ?? null,
-      linkedin: company.linkedin ?? null,
+      descricao: company.informacoes?.descricao ?? null,
+      instagram: null,
+      linkedin: null,
       codUsuario: company.codUsuario,
       cnpj: company.cnpj ?? null,
       ativo: company.ativa,
-      status: company.status,
+      status: company.ativa ? "ATIVO" : "INATIVO",
       criadoEm: company.criadoEm ?? null,
       parceira: company.parceira,
       diasTesteDisponibilizados: company.diasTesteDisponibilizados ?? null,
@@ -53,12 +56,12 @@ function mapAdminCompanyToPartnership(company: AdminCompanyListItem): Partnershi
       valor: plan?.valor ?? null,
       quantidadeVagas: plan?.quantidadeVagas ?? limiteVagas,
       vagasPublicadas,
-      tipo: plan?.tipo,
+      tipo: plan?.modo,
       inicio: plan?.inicio ?? null,
       fim: plan?.fim ?? null,
-      metodoPagamento: plan?.metodoPagamento ?? payment?.metodo ?? null,
-      modeloPagamento: plan?.modeloPagamento ?? payment?.modelo ?? null,
-      statusPagamento: plan?.statusPagamento ?? payment?.status ?? null,
+      metodoPagamento: null,
+      modeloPagamento: null,
+      statusPagamento: null,
       duracaoEmDias: plan?.duracaoEmDias ?? null,
       diasRestantes: plan?.diasRestantes ?? null,
     },
@@ -68,31 +71,26 @@ function mapAdminCompanyToPartnership(company: AdminCompanyListItem): Partnershi
 }
 
 function buildParams(
-  base: ListAdminCompaniesParams | undefined,
+  base: AdminCompanyListParams | undefined,
   pageSize: number,
-  override?: Partial<ListAdminCompaniesParams>,
-): ListAdminCompaniesParams {
+  override?: Partial<AdminCompanyListParams>
+): AdminCompanyListParams {
   return {
     page: override?.page ?? base?.page ?? 1,
     pageSize: override?.pageSize ?? base?.pageSize ?? pageSize,
     search: override?.search ?? base?.search,
-    planNames: override?.planNames ?? base?.planNames,
-    planTypes: override?.planTypes ?? base?.planTypes,
-    statuses: override?.statuses ?? base?.statuses,
   };
 }
 
-export function useCompanyDashboardData(
-  {
-    enabled = true,
-    pageSize = COMPANY_DASHBOARD_CONFIG.api.defaultPageSize,
-    initialData,
-    initialParams,
-    onSuccess,
-    onError,
-    autoFetch = true,
-  }: UseCompanyDashboardDataOptions = {},
-): UseCompanyDashboardDataReturn {
+export function useCompanyDashboardData({
+  enabled = true,
+  pageSize = COMPANY_DASHBOARD_CONFIG.api.defaultPageSize,
+  initialData,
+  initialParams,
+  onSuccess,
+  onError,
+  autoFetch = true,
+}: UseCompanyDashboardDataOptions = {}): UseCompanyDashboardDataReturn {
   const initialPagination = initialData
     ? {
         ...DEFAULT_COMPANY_PAGINATION,
@@ -102,14 +100,16 @@ export function useCompanyDashboardData(
       }
     : null;
 
-  const [partnerships, setPartnerships] = useState<Partnership[]>(initialData ?? []);
+  const [partnerships, setPartnerships] = useState<Partnership[]>(
+    initialData ?? []
+  );
   const partnershipsRef = useRef(partnerships);
   const [pagination, setPagination] = useState(initialPagination);
   const [isLoading, setIsLoading] = useState(enabled && !initialData);
   const [error, setError] = useState<string | null>(null);
 
-  const paramsRef = useRef<ListAdminCompaniesParams>(
-    buildParams(initialParams, pageSize),
+  const paramsRef = useRef<AdminCompanyListParams>(
+    buildParams(initialParams, pageSize)
   );
 
   const onSuccessRef = useRef(onSuccess);
@@ -124,7 +124,9 @@ export function useCompanyDashboardData(
   }, [onError]);
 
   const fetchData = useCallback(
-    async (override?: Partial<ListAdminCompaniesParams>): Promise<Partnership[]> => {
+    async (
+      override?: Partial<AdminCompanyListParams>
+    ): Promise<Partnership[]> => {
       if (!enabled) {
         return partnershipsRef.current;
       }
@@ -135,7 +137,7 @@ export function useCompanyDashboardData(
       const controller = new AbortController();
       const timeoutId = window.setTimeout(
         () => controller.abort(),
-        COMPANY_DASHBOARD_CONFIG.api.timeout,
+        COMPANY_DASHBOARD_CONFIG.api.timeout
       );
 
       try {
@@ -147,6 +149,9 @@ export function useCompanyDashboardData(
           headers: { Accept: apiConfig.headers.Accept },
         });
 
+        if (!("data" in response)) {
+          throw new Error("Resposta inválida da API");
+        }
         const mapped = response.data.map(mapAdminCompanyToPartnership);
         partnershipsRef.current = mapped;
         setPartnerships(mapped);
@@ -158,7 +163,7 @@ export function useCompanyDashboardData(
             total: mapped.length,
             totalPages:
               Math.ceil(mapped.length / (params.pageSize ?? pageSize)) || 0,
-          },
+          }
         );
         onSuccessRef.current?.(mapped, response);
         return mapped;
@@ -183,7 +188,7 @@ export function useCompanyDashboardData(
         setIsLoading(false);
       }
     },
-    [enabled, pageSize],
+    [enabled, pageSize]
   );
 
   useEffect(() => {

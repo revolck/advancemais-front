@@ -22,7 +22,8 @@ export const buttonCustomVariants = cva(
         ghost:
           "hover:bg-gray-200 bg-gray-100/70 hover:text-accent-foreground !rounded-md",
         link: "text-primary underline-offset-4 hover:underline",
-        danger: "bg-[var(--global-cor-vermelho-terra)] text-white rounded-md",
+        danger:
+          "bg-[var(--secondary-color)] text-white !rounded-md relative pr-12 pl-4 font-semibold",
       },
       size: {
         xs: "h-7 px-2.5 text-xs",

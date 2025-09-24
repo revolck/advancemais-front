@@ -12,16 +12,16 @@ import {
 import { ButtonCustom } from "@/components/ui/custom/button";
 import type {
   AdminCompanyDetail,
-  AdminCompanyVacancyListItem,
+  AdminCompanyVagaItem,
 } from "@/api/empresas/admin/types";
 import { formatDate, formatVacancyStatus } from "../utils";
 
 interface ViewVacancyModalProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  vacancy: AdminCompanyVacancyListItem | null;
+  vacancy: AdminCompanyVagaItem | null;
   company: AdminCompanyDetail;
-  onEditVacancy?: (vacancy: AdminCompanyVacancyListItem) => void;
+  onEditVacancy?: (vacancy: AdminCompanyVagaItem) => void;
 }
 
 export function ViewVacancyModal({
@@ -56,10 +56,9 @@ export function ViewVacancyModal({
     );
   }
 
-  const vacancyTitle =
-    vacancy.titulo ?? vacancy.nome ?? `Vaga ${vacancy.id.slice(0, 8)}`;
+  const vacancyTitle = vacancy.titulo ?? `Vaga ${vacancy.id.slice(0, 8)}`;
   const vacancyCode = vacancy.codigo ?? vacancy.id;
-  const vacancyCompany = vacancy.empresa;
+  const vacancyCompany = company.nome;
 
   const detailFields = [
     {
@@ -72,19 +71,19 @@ export function ViewVacancyModal({
     },
     {
       label: "Modalidade",
-      value: vacancy.modalidade ?? "—",
+      value: "—",
     },
     {
       label: "Regime",
-      value: vacancy.regimeDeTrabalho ?? "—",
+      value: "—",
     },
     {
       label: "Acesso",
-      value: vacancy.modoAnonimo ? "Anônima" : "Pública",
+      value: "Pública",
     },
     {
       label: "Para PCD",
-      value: vacancy.paraPcd ? "Sim" : "Não",
+      value: "Não",
     },
     {
       label: "Criada em",
@@ -96,46 +95,42 @@ export function ViewVacancyModal({
     },
     {
       label: "Inscrições até",
-      value: formatDate(vacancy.inscricoesAte),
+      value: "—",
     },
     {
       label: "Carga horária",
-      value: vacancy.cargaHoraria ?? "—",
+      value: "—",
     },
     {
       label: "Empresa",
-      value:
-        vacancyCompany?.nome ??
-        company.nome ??
-        vacancy.nomeExibicao ??
-        "—",
+      value: company.nome ?? "—",
     },
     {
       label: "Código do usuário",
-      value: vacancyCompany?.codUsuario ?? "—",
+      value: "—",
     },
   ];
 
   const detailSections = [
     {
       label: "Descrição",
-      content: vacancy.descricao ?? vacancy.descricaoExibicao ?? "",
+      content: "",
     },
     {
       label: "Atividades",
-      content: vacancy.atividades ?? "",
+      content: "",
     },
     {
       label: "Requisitos",
-      content: vacancy.requisitos ?? "",
+      content: "",
     },
     {
       label: "Benefícios",
-      content: vacancy.beneficios ?? "",
+      content: "",
     },
     {
       label: "Observações",
-      content: vacancy.observacoes ?? "",
+      content: "",
     },
   ].filter((section) => section.content && section.content.trim().length > 0);
 

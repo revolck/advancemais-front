@@ -1,3 +1,8 @@
-export { EditarEmpresaModal, BanirEmpresaModal, EditarAssinaturaModal, ResetarSenhaModal } from "../modal-acoes";
+export {
+  EditarEmpresaModal,
+  EditarEmpresaEnderecoModal,
+  BloquearEmpresaModal,
+  EditarAssinaturaModal,
+  ResetarSenhaModal,
+} from "../modal-acoes";
 export { ViewVacancyModal, EditVacancyModal } from "../modal-vagas";
-

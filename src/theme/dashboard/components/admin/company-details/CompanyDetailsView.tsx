@@ -5,14 +5,15 @@ import { HorizontalTabs } from "@/components/ui/custom";
 import type { HorizontalTabItem } from "@/components/ui/custom";
 import type {
   AdminCompanyDetail,
-  AdminCompanyBanInfo,
-  AdminCompanyVacancyListItem,
-  AdminCompanyPlanSummary,
-  AdminCompanyPaymentInfo,
+  AdminCompanyBanItem,
+  AdminCompanyVagaItem,
+  AdminCompanyPlano,
+  AdminCompanyPagamento,
 } from "@/api/empresas/admin/types";
 import {
   EditarEmpresaModal,
-  BanirEmpresaModal,
+  EditarEmpresaEnderecoModal,
+  BloquearEmpresaModal,
   EditarAssinaturaModal,
   ResetarSenhaModal,
   ViewVacancyModal,
@@ -38,27 +39,23 @@ export function CompanyDetailsView({
   const plan = companyData.plano;
   const payment = companyData.pagamento;
 
-  const publishedVacancies =
-    plan?.vagasPublicadas ??
-    companyData.vagas?.publicadas ??
-    companyData.vagasPublicadas ??
-    0;
+  const publishedVacancies = companyData.vagas?.publicadas ?? 0;
 
   const totalVacancies =
-    plan?.quantidadeVagas ??
-    companyData.vagas?.limitePlano ??
-    companyData.limiteVagasPlano ??
-    0;
+    plan?.quantidadeVagas ?? companyData.vagas?.limitePlano ?? 0;
 
   const isCompanyActive = companyData.status === "ATIVO" || companyData.ativa;
 
-  const [viewVacancy, setViewVacancy] =
-    useState<AdminCompanyVacancyListItem | null>(null);
+  const [viewVacancy, setViewVacancy] = useState<AdminCompanyVagaItem | null>(
+    null
+  );
   const [isViewVacancyOpen, setIsViewVacancyOpen] = useState(false);
-  const [editVacancy, setEditVacancy] =
-    useState<AdminCompanyVacancyListItem | null>(null);
+  const [editVacancy, setEditVacancy] = useState<AdminCompanyVagaItem | null>(
+    null
+  );
   const [isEditVacancyOpen, setIsEditVacancyOpen] = useState(false);
   const [isEditCompanyOpen, setIsEditCompanyOpen] = useState(false);
+  const [isEditAddressOpen, setIsEditAddressOpen] = useState(false);
   const [isBanCompanyOpen, setIsBanCompanyOpen] = useState(false);
   const [isEditSubscriptionOpen, setIsEditSubscriptionOpen] = useState(false);
   const [isResetPasswordOpen, setIsResetPasswordOpen] = useState(false);
@@ -73,7 +70,7 @@ export function CompanyDetailsView({
     []
   );
 
-  const handleBanApplied = useCallback((ban: AdminCompanyBanInfo) => {
+  const handleBanApplied = useCallback((ban: AdminCompanyBanItem) => {
     setCompanyData((prev) => ({
       ...prev,
       banimentoAtivo: ban,
@@ -84,7 +81,7 @@ export function CompanyDetailsView({
   }, []);
 
   const handleSubscriptionUpdated = useCallback(
-    (plan: AdminCompanyPlanSummary, payment: AdminCompanyPaymentInfo) => {
+    (plan: AdminCompanyPlano, payment: AdminCompanyPagamento) => {
       setCompanyData((prev) => ({
         ...prev,
         plano: plan,
@@ -162,6 +159,7 @@ export function CompanyDetailsView({
       <HeaderInfo
         company={companyData}
         onEditCompany={() => setIsEditCompanyOpen(true)}
+        onEditAddress={() => setIsEditAddressOpen(true)}
         onBanCompany={() => setIsBanCompanyOpen(true)}
         onEditSubscription={() => setIsEditSubscriptionOpen(true)}
         onResetPassword={() => setIsResetPasswordOpen(true)}
@@ -176,7 +174,14 @@ export function CompanyDetailsView({
         onCompanyUpdated={handleCompanyUpdated}
       />
 
-      <BanirEmpresaModal
+      <EditarEmpresaEnderecoModal
+        isOpen={isEditAddressOpen}
+        onOpenChange={setIsEditAddressOpen}
+        company={companyData}
+        onCompanyUpdated={handleCompanyUpdated}
+      />
+
+      <BloquearEmpresaModal
         isOpen={isBanCompanyOpen}
         onOpenChange={setIsBanCompanyOpen}
         companyId={companyData.id}

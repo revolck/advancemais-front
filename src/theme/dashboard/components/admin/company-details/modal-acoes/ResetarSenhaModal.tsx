@@ -44,7 +44,8 @@ export function ResetarSenhaModal({
     if (!email) {
       toastCustom.error({
         title: "E-mail indisponível",
-        description: "Não encontramos um e-mail associado para solicitar o reset.",
+        description:
+          "Não encontramos um e-mail associado para solicitar o reset.",
       });
       return;
     }
@@ -56,7 +57,8 @@ export function ResetarSenhaModal({
 
       toastCustom.success({
         title: "Solicitação enviada",
-        description: "O usuário receberá um e-mail com as instruções para redefinir a senha.",
+        description:
+          "O usuário receberá um e-mail com as instruções para redefinir a senha.",
       });
 
       handleClose();
@@ -64,37 +66,32 @@ export function ResetarSenhaModal({
       console.error("Erro ao solicitar reset de senha", error);
       toastCustom.error({
         title: "Erro ao resetar senha",
-        description: "Não foi possível solicitar a redefinição agora. Tente novamente.",
+        description:
+          "Não foi possível solicitar a redefinição agora. Tente novamente.",
       });
     } finally {
       setIsSubmitting(false);
     }
-  }, [
-    email,
-    handleClose,
-    isSubmitting,
-  ]);
+  }, [email, handleClose, isSubmitting]);
 
   return (
     <ModalCustom
       isOpen={isOpen}
       onOpenChange={onOpenChange}
-      size="sm"
+      size="lg"
       backdrop="blur"
     >
       <ModalContentWrapper>
         <ModalHeader>
-          <ModalTitle>Resetar senha</ModalTitle>
-          <ModalDescription>
-            Enviaremos um e-mail com instruções para que a empresa redefina a senha de acesso.
-          </ModalDescription>
+          <ModalTitle className="!mb-0">Resetar senha</ModalTitle>
         </ModalHeader>
 
         <ModalBody className="space-y-4">
-          <InputCustom label="E-mail" value={email ?? ""} disabled />
-          <p className="text-sm text-muted-foreground">
-            Confirme a solicitação. A redefinição só será concluída quando o usuário acessar o link enviado para o e-mail cadastrado.
+          <p className="!text-sm !leading-normal !text-muted-foreground">
+            Enviaremos um e-mail com instruções para que a empresa redefina a
+            senha de acesso.
           </p>
+          <InputCustom label="E-mail" value={email ?? ""} disabled />
         </ModalBody>
 
         <ModalFooter className="pt-4">
@@ -111,6 +108,7 @@ export function ResetarSenhaModal({
             isLoading={isSubmitting}
             loadingText="Enviando..."
             disabled={!email}
+            size="md"
           >
             Enviar instruções
           </ButtonCustom>
