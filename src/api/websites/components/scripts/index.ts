@@ -1,6 +1,6 @@
 import { apiFetch } from "@/api/client";
 import { websiteRoutes } from "@/api/routes";
-import { authHeaders, authJsonHeaders, buildQueryString, publicHeaders } from "@/api/shared";
+import { apiConfig } from "@/lib/env";
 import type {
   ScriptResponse,
   CreateScriptPayload,
@@ -8,24 +8,39 @@ import type {
   ScriptListParams,
 } from "@/api/scripts/types";
 
+function getAuthHeader(): Record<string, string> {
+  if (typeof document === "undefined") return {};
+  const token = document.cookie
+    .split("; ")
+    .find((row) => row.startsWith("token="))
+    ?.split("=")[1];
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+function buildQuery(params?: ScriptListParams): string {
+  if (!params) return "";
+  const query = new URLSearchParams();
+  if (params.aplicacao) query.set("aplicacao", params.aplicacao);
+  if (params.orientacao) query.set("orientacao", params.orientacao);
+  if (params.status) query.set("status", params.status);
+  const str = query.toString();
+  return str ? `?${str}` : "";
+}
+
 export async function listWebsiteScripts(
   params?: ScriptListParams,
   init?: RequestInit,
 ): Promise<ScriptResponse[]> {
-  const query = buildQueryString({
-    aplicacao: params?.aplicacao,
-    orientacao: params?.orientacao,
-    status: params?.status,
-  });
+  const query = buildQuery(params);
   return apiFetch<ScriptResponse[]>(`${websiteRoutes.scripts.list()}${query}`, {
-    init: init ?? { headers: publicHeaders() },
+    init: init ?? { headers: apiConfig.headers },
     cache: "no-cache",
   });
 }
 
 export async function getWebsiteScriptById(id: string): Promise<ScriptResponse> {
   return apiFetch<ScriptResponse>(websiteRoutes.scripts.get(id), {
-    init: { headers: publicHeaders() },
+    init: { headers: apiConfig.headers },
     cache: "no-cache",
   });
 }
@@ -36,7 +51,11 @@ export async function createWebsiteScript(
   return apiFetch<ScriptResponse>(websiteRoutes.scripts.create(), {
     init: {
       method: "POST",
-      headers: authJsonHeaders(),
+      headers: {
+        "Content-Type": "application/json",
+        Accept: apiConfig.headers.Accept,
+        ...getAuthHeader(),
+      },
       body: JSON.stringify(payload),
     },
     cache: "no-cache",
@@ -50,7 +69,11 @@ export async function updateWebsiteScript(
   return apiFetch<ScriptResponse>(websiteRoutes.scripts.update(id), {
     init: {
       method: "PUT",
-      headers: authJsonHeaders(),
+      headers: {
+        "Content-Type": "application/json",
+        Accept: apiConfig.headers.Accept,
+        ...getAuthHeader(),
+      },
       body: JSON.stringify(payload),
     },
     cache: "no-cache",
@@ -61,7 +84,10 @@ export async function deleteWebsiteScript(id: string): Promise<void> {
   await apiFetch<void>(websiteRoutes.scripts.delete(id), {
     init: {
       method: "DELETE",
-      headers: authHeaders(),
+      headers: {
+        Accept: apiConfig.headers.Accept,
+        ...getAuthHeader(),
+      },
     },
     cache: "no-cache",
   });

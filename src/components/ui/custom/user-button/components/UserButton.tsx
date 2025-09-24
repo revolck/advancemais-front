@@ -58,25 +58,24 @@ export function UserButton({ className, onNavigate }: UserButtonProps) {
         }
 
         const profile = await getUserProfile(token);
-        const userData = profile?.usuario;
-        if (!userData?.email) {
+        if (!profile?.email) {
           setIsLoading(false);
           return;
         }
 
-        const full = userData.nomeCompleto?.trim();
+        const full = profile.nomeCompleto?.trim();
         const parts = full ? full.split(" ") : [];
-        const firstName = parts[0] || userData.email.split("@")[0];
+        const firstName = parts[0] || profile.email.split("@")[0];
         const lastName = parts.slice(1).join(" ") || undefined;
 
         setUser({
           firstName,
           lastName,
-          email: userData.email,
+          email: profile.email,
           plan:
-            userData.plano === "pro"
+            profile.plano === "pro"
               ? "pro"
-              : userData.plano === "enterprise"
+              : profile.plano === "enterprise"
               ? "enterprise"
               : "free",
         });

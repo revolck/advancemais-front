@@ -1,469 +1,347 @@
 "use client";
 
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
-import { Controller, useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { Building, GraduationCap, User } from "lucide-react";
-
-import { registerUser } from "@/api/usuarios";
-import type { UsuarioRegisterPayload } from "@/api/usuarios";
-import { UserRole } from "@/config/roles";
-import { MaskService } from "@/services";
-
+import { useEffect, useState, useTransition } from "react";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/radix-checkbox";
 import {
-  ButtonCustom,
   InputCustom,
-  OfflineModal,
+  ButtonCustom,
   toastCustom,
+  OfflineModal,
 } from "@/components/ui/custom";
-import PrivacyPolicyModal from "@/components/partials/auth/register/privacy-policy-modal";
 import TermsOfUseModal from "@/components/partials/auth/register/terms-of-use-modal";
+import PrivacyPolicyModal from "@/components/partials/auth/register/privacy-policy-modal";
+import { GraduationCap, User, Building } from "lucide-react";
+import { registerUser } from "@/api/usuarios";
+import type { UsuarioRegisterPayload } from "@/api/usuarios";
+import { MaskService } from "@/services";
+import Image from "next/image";
+import { UserRole } from "@/config/roles";
 
-const AUTH_LOGIN_URL = "https://auth.advancemais.com/login" as const;
+type SelectedType = "student" | "candidate" | "company" | null;
 
-const STORAGE_KEYS = {
-  draft: "auth.register.formDraft",
-  legacyForm: "registerFormData",
-  legacyType: "registerSelectedType",
-} as const;
-
-const PASSWORD_VALIDATIONS = [
-  { test: (value: string) => value.length >= 8, message: "A senha deve conter pelo menos 8 caracteres." },
-  { test: (value: string) => /[A-Z]/.test(value), message: "Inclua ao menos uma letra maiúscula." },
-  { test: (value: string) => /[a-z]/.test(value), message: "Inclua ao menos uma letra minúscula." },
-  { test: (value: string) => /\d/.test(value), message: "Inclua ao menos um número." },
-  {
-    test: (value: string) => /[^A-Za-z0-9]/.test(value),
-    message: "Inclua ao menos um caractere especial.",
-  },
-] as const;
-
-const ACCOUNT_OPTIONS = [
-  {
-    id: "student" as const,
-    title: "Aluno",
-    description: "Acesso a cursos e conteúdos educacionais.",
-    icon: GraduationCap,
-  },
-  {
-    id: "candidate" as const,
-    title: "Candidato",
-    description: "Busca por oportunidades de carreira.",
-    icon: User,
-  },
-  {
-    id: "company" as const,
-    title: "Empresa",
-    description: "Publicação de vagas e busca por talentos.",
-    icon: Building,
-  },
-] as const;
-
-type RegisterAccountType = (typeof ACCOUNT_OPTIONS)[number]["id"];
-
-type RegisterFormValues = {
-  accountType?: RegisterAccountType;
+type RegisterFormData = {
   name: string;
   document: string;
   phone: string;
   email: string;
   password: string;
   confirmPassword: string;
-  acceptTerms: boolean;
 };
 
-type PersistedRegisterDraft = Pick<
-  RegisterFormValues,
-  "accountType" | "name" | "document" | "phone" | "email"
->;
-
-type MaskServiceInstance = ReturnType<typeof MaskService.getInstance>;
-
-const defaultValues: RegisterFormValues = {
-  accountType: undefined,
+const createInitialFormData = (): RegisterFormData => ({
   name: "",
   document: "",
   phone: "",
   email: "",
   password: "",
   confirmPassword: "",
-  acceptTerms: false,
-};
-
-function createRegisterSchema(maskService: MaskServiceInstance) {
-  return z
-    .object({
-      accountType: z
-        .enum(["student", "candidate", "company"], {
-          errorMap: () => ({ message: "Selecione o tipo de conta." }),
-        })
-        .optional(),
-      name: z
-        .string({ required_error: "Informe o nome." })
-        .trim()
-        .min(3, "Informe seu nome completo."),
-      document: z
-        .string({ required_error: "Informe o documento." })
-        .trim()
-        .min(1, "Informe o documento."),
-      phone: z
-        .string({ required_error: "Informe o telefone." })
-        .trim()
-        .min(1, "Informe o telefone."),
-      email: z
-        .string({ required_error: "Informe o e-mail." })
-        .trim()
-        .min(1, "Informe o e-mail.")
-        .email("Informe um e-mail válido."),
-      password: z
-        .string({ required_error: "Informe a senha." })
-        .min(8, PASSWORD_VALIDATIONS[0].message)
-        .superRefine((value, ctx) => {
-          PASSWORD_VALIDATIONS.slice(1).forEach(({ test, message }) => {
-            if (!test(value)) {
-              ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                message,
-              });
-            }
-          });
-        }),
-      confirmPassword: z
-        .string({ required_error: "Confirme a senha." })
-        .min(1, "Confirme a senha."),
-      acceptTerms: z
-        .boolean()
-        .refine((value) => value, {
-          message: "É necessário aceitar os termos para prosseguir.",
-        }),
-    })
-    .superRefine((data, ctx) => {
-      if (!data.accountType) {
-        ctx.addIssue({
-          path: ["accountType"],
-          code: z.ZodIssueCode.custom,
-          message: "Selecione o tipo de conta.",
-        });
-        return;
-      }
-
-      const documentMask = data.accountType === "company" ? "cnpj" : "cpf";
-
-      if (!maskService.validate(data.document, documentMask)) {
-        ctx.addIssue({
-          path: ["document"],
-          code: z.ZodIssueCode.custom,
-          message:
-            documentMask === "cnpj"
-              ? "Informe um CNPJ válido."
-              : "Informe um CPF válido.",
-        });
-      }
-
-      if (!maskService.validate(data.phone, "phone")) {
-        ctx.addIssue({
-          path: ["phone"],
-          code: z.ZodIssueCode.custom,
-          message: "Informe um telefone válido.",
-        });
-      }
-
-      if (data.password !== data.confirmPassword) {
-        ctx.addIssue({
-          path: ["confirmPassword"],
-          code: z.ZodIssueCode.custom,
-          message: "As senhas não coincidem.",
-        });
-      }
-    });
-}
-
-function resolveRegisterError(error: unknown): string {
-  const defaultMessage = "Não foi possível realizar o cadastro.";
-
-  if (!error || typeof error !== "object") {
-    return defaultMessage;
-  }
-
-  const status = (error as { status?: number }).status;
-  if (status === 409) {
-    return "Usuário já cadastrado, por favor faça login.";
-  }
-
-  const rawMessage =
-    typeof (error as { message?: unknown }).message === "string"
-      ? ((error as { message?: unknown }).message as string)
-      : undefined;
-
-  if (rawMessage) {
-    const normalized = rawMessage.toLowerCase();
-    if (normalized.includes("cpf")) return "CPF já cadastrado.";
-    if (normalized.includes("cnpj")) return "CNPJ já cadastrado.";
-    if (normalized.includes("email")) return "Email já cadastrado.";
-    if (normalized.includes("usuário") || normalized.includes("usuario")) {
-      return "Usuário já cadastrado, por favor faça login.";
-    }
-  }
-
-  if (error instanceof Error) {
-    const normalized = error.message.toLowerCase();
-    if (normalized.includes("cpf")) return "CPF já cadastrado.";
-    if (normalized.includes("cnpj")) return "CNPJ já cadastrado.";
-    if (normalized.includes("email")) return "Email já cadastrado.";
-  }
-
-  return defaultMessage;
-}
-
-function maskEmailForLog(email: string): string {
-  const [userPart, domainPart] = email.split("@");
-  if (!domainPart) return "***";
-  const maskedUser = userPart
-    ? `${userPart.slice(0, 1)}${"*".repeat(Math.max(userPart.length - 1, 0))}`
-    : "";
-  return `${maskedUser}@${domainPart}`;
-}
-
-function maskValue(value: string): string {
-  if (!value) return "";
-  const trimmed = value.trim();
-  if (trimmed.length <= 4) {
-    return `${"*".repeat(Math.max(trimmed.length - 1, 0))}${trimmed.slice(-1)}`;
-  }
-  return `${"*".repeat(trimmed.length - 4)}${trimmed.slice(-4)}`;
-}
-
-function logRegisterPayload(payload: UsuarioRegisterPayload): void {
-  if (process.env.NODE_ENV === "production") return;
-
-  const sanitized: Record<string, unknown> = {
-    ...payload,
-    telefone: maskValue(payload.telefone),
-    email: maskEmailForLog(payload.email),
-    senha: `***(${payload.senha.length} chars)`,
-    confirmarSenha: `***(${payload.confirmarSenha.length} chars)`,
-  };
-
-  if (payload.cpf) sanitized.cpf = maskValue(payload.cpf);
-  if (payload.cnpj) sanitized.cnpj = maskValue(payload.cnpj);
-
-  console.groupCollapsed("🧪 Registro | Payload sanitizado");
-  console.log("Endpoint:", "POST /api/v1/usuarios/registrar");
-  console.table(sanitized);
-  console.groupEnd();
-}
+});
 
 const RegisterPage = () => {
-  const maskService = useMemo(() => MaskService.getInstance(), []);
+  const [selectedType, setSelectedType] = useState<SelectedType>(null);
+  const [acceptTerms, setAcceptTerms] = useState(false);
+  const [isPending, startTransition] = useTransition();
+  const [formData, setFormData] = useState<RegisterFormData>(
+    () => createInitialFormData(),
+  );
+  const [passwordError, setPasswordError] = useState("");
   const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
   const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
 
-  const registerSchema = useMemo(
-    () => createRegisterSchema(maskService),
-    [maskService],
-  );
-
-  const {
-    control,
-    handleSubmit,
-    reset,
-    setValue,
-    watch,
-    formState: { errors, isSubmitting, isValid },
-  } = useForm<RegisterFormValues>({
-    resolver: zodResolver(registerSchema),
-    defaultValues,
-    mode: "onChange",
-    reValidateMode: "onChange",
-  });
-
-  const accountType = watch("accountType");
-  const nameValue = watch("name");
-  const documentValue = watch("document");
-  const phoneValue = watch("phone");
-  const emailValue = watch("email");
-
   useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    try {
-      const stored = window.localStorage.getItem(STORAGE_KEYS.draft);
-      if (stored) {
-        const parsed = JSON.parse(stored) as PersistedRegisterDraft;
-        reset({
-          ...defaultValues,
-          ...parsed,
-          accountType: parsed.accountType ?? undefined,
-        });
-        return;
+    const savedForm = localStorage.getItem("registerFormData");
+    const savedType = localStorage.getItem(
+      "registerSelectedType"
+    ) as SelectedType;
+    if (savedForm) {
+      try {
+        const parsed = JSON.parse(savedForm) as Partial<RegisterFormData>;
+        const allowedKeys = Object.keys(createInitialFormData());
+        const sanitized = Object.fromEntries(
+          Object.entries(parsed).filter(([key]) =>
+            allowedKeys.includes(key),
+          ),
+        ) as Partial<RegisterFormData>;
+        setFormData((prev) => ({ ...prev, ...sanitized }));
+      } catch (error) {
+        console.warn("Não foi possível restaurar o formulário de cadastro:", error);
+        localStorage.removeItem("registerFormData");
       }
-
-      const legacyForm = window.localStorage.getItem(STORAGE_KEYS.legacyForm);
-      const legacyType = window.localStorage.getItem(
-        STORAGE_KEYS.legacyType,
-      ) as RegisterAccountType | undefined | null;
-
-      if (legacyForm) {
-        const parsedLegacy = JSON.parse(legacyForm) as PersistedRegisterDraft;
-        reset({
-          ...defaultValues,
-          ...parsedLegacy,
-          accountType: legacyType ?? undefined,
-        });
-      }
-    } catch (error) {
-      console.warn("Não foi possível restaurar o formulário de cadastro:", error);
-    } finally {
-      window.localStorage.removeItem(STORAGE_KEYS.legacyForm);
-      window.localStorage.removeItem(STORAGE_KEYS.legacyType);
     }
-  }, [reset]);
+    if (savedType) {
+      setSelectedType(savedType);
+    }
+  }, []);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const draft: PersistedRegisterDraft = {
-      accountType: accountType ?? undefined,
-      name: nameValue ?? "",
-      document: documentValue ?? "",
-      phone: phoneValue ?? "",
-      email: emailValue ?? "",
-    };
-
-    const hasData = Boolean(
-      draft.accountType ||
-        draft.name.trim() ||
-        draft.document.trim() ||
-        draft.phone.trim() ||
-        draft.email.trim(),
-    );
-
-    if (!hasData) {
-      window.localStorage.removeItem(STORAGE_KEYS.draft);
+    const isEmptyForm = Object.values(formData).every((value) => value === "");
+    if (isEmptyForm) {
+      localStorage.removeItem("registerFormData");
       return;
     }
+    localStorage.setItem("registerFormData", JSON.stringify(formData));
+  }, [formData]);
 
-    window.localStorage.setItem(STORAGE_KEYS.draft, JSON.stringify(draft));
-  }, [accountType, nameValue, documentValue, phoneValue, emailValue]);
-
-  const selectedOption = useMemo(
-    () => ACCOUNT_OPTIONS.find((option) => option.id === accountType) ?? null,
-    [accountType],
-  );
-
-  const documentLabel = accountType === "company" ? "CNPJ" : "CPF";
-  const documentPlaceholder = accountType === "company"
-    ? "00.000.000/0000-00"
-    : "000.000.000-00";
-
-  const handleSelectType = useCallback(
-    (type: RegisterAccountType) => {
-      setValue("accountType", type, {
-        shouldDirty: true,
-        shouldTouch: true,
-        shouldValidate: true,
-      });
-    },
-    [setValue],
-  );
-
-  const handleReset = useCallback(() => {
-    reset(defaultValues);
-    if (typeof window !== "undefined") {
-      window.localStorage.removeItem(STORAGE_KEYS.draft);
+  useEffect(() => {
+    if (selectedType) {
+      localStorage.setItem("registerSelectedType", selectedType);
     }
-  }, [reset]);
+  }, [selectedType]);
 
-  const onSubmit = useCallback(
-    async (values: RegisterFormValues) => {
-      if (!values.accountType) {
-        toastCustom.error("Selecione o tipo de conta para continuar.");
-        return;
-      }
+  useEffect(() => {
+    if (
+      formData.password &&
+      formData.confirmPassword &&
+      formData.password !== formData.confirmPassword
+    ) {
+      setPasswordError("As senhas não coincidem");
+    } else if (formData.password && !isPasswordValid(formData.password)) {
+      setPasswordError(
+        "A senha deve conter letras maiúsculas, minúsculas e caracteres especiais"
+      );
+    } else {
+      setPasswordError("");
+    }
+  }, [formData.password, formData.confirmPassword]);
 
+  const userTypes = [
+    {
+      id: "student",
+      title: "Aluno",
+      icon: GraduationCap,
+      description: "Acesso a cursos e conteúdos educacionais.",
+      color: "from-emerald-500 to-teal-600",
+      bgColor: "bg-emerald-50",
+      borderColor: "border-emerald-200",
+      hoverBg: "hover:bg-emerald-100",
+    },
+    {
+      id: "candidate",
+      title: "Candidato",
+      icon: User,
+      description: "Busca por oportunidades de carreira.",
+      color: "from-blue-500 to-indigo-600",
+      bgColor: "bg-blue-50",
+      borderColor: "border-blue-200",
+      hoverBg: "hover:bg-blue-100",
+    },
+    {
+      id: "company",
+      title: "Empresa",
+      icon: Building,
+      description: "Publicação de vagas e busca por talentos.",
+      color: "from-red-500 to-rose-600",
+      bgColor: "bg-red-50",
+      borderColor: "border-red-200",
+      hoverBg: "hover:bg-red-100",
+    },
+  ];
+
+  const typeStyles: Record<string, { ring: string }> = {
+    student: { ring: "focus-visible:ring-blue-500" },
+    candidate: { ring: "focus-visible:ring-blue-500" },
+    company: { ring: "focus-visible:ring-blue-500" },
+  };
+
+  const maskService = MaskService.getInstance();
+
+  const maskSensitiveValue = (value: string, visibleChars = 4) => {
+    const trimmed = value?.trim() ?? "";
+    if (!trimmed) return "";
+    if (trimmed.length <= visibleChars) {
+      return "*".repeat(Math.max(trimmed.length - 1, 0)) +
+        trimmed.slice(-1);
+    }
+    const maskedLength = Math.max(trimmed.length - visibleChars, 0);
+    return `${"*".repeat(maskedLength)}${trimmed.slice(-visibleChars)}`;
+  };
+
+  const maskEmail = (email: string) => {
+    const [userPart, domainPart] = email.split("@");
+    if (!domainPart) return maskSensitiveValue(email);
+    const maskedUser = userPart
+      ? `${userPart[0]}${"*".repeat(Math.max(userPart.length - 1, 0))}`
+      : "";
+    return `${maskedUser}@${domainPart}`;
+  };
+
+  const handleInputChange = (field: string, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const resetForm = () => {
+    setSelectedType(null);
+    setFormData(createInitialFormData());
+    setAcceptTerms(false);
+    localStorage.removeItem("registerFormData");
+    localStorage.removeItem("registerSelectedType");
+  };
+
+  const isDocumentValid = () => {
+    if (!selectedType) {
+      return false;
+    }
+    const maskType = selectedType === "company" ? "cnpj" : "cpf";
+    return maskService.validate(formData.document, maskType);
+  };
+
+  const isPhoneValid = () => {
+    return maskService.validate(formData.phone, "phone");
+  };
+
+  const isPasswordValid = (password: string) => {
+    const hasUpper = /[A-Z]/.test(password);
+    const hasLower = /[a-z]/.test(password);
+    const hasSpecial = /[^A-Za-z0-9]/.test(password);
+    return hasUpper && hasLower && hasSpecial;
+  };
+
+  const isFormValid = () => {
+    const { name, document, phone, email, password, confirmPassword } =
+      formData;
+    const fieldsFilled = [
+      name,
+      document,
+      phone,
+      email,
+      password,
+      confirmPassword,
+    ].every((value) => value.trim() !== "");
+
+    return (
+      fieldsFilled &&
+      maskService.validate(email, "email") &&
+      isPhoneValid() &&
+      isDocumentValid() &&
+      password === confirmPassword &&
+      isPasswordValid(password) &&
+      acceptTerms
+    );
+  };
+
+  const formatPhoneForApi = (phone: string): string => {
+    const trimmed = phone.trim();
+
+    if (!trimmed) {
+      return "";
+    }
+
+    const digits = maskService.removeMask(trimmed, "phone");
+
+    return digits;
+  };
+
+  const handleSignUp = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!selectedType) {
+      toastCustom.error("Selecione o tipo de conta para continuar.");
+      return;
+    }
+    startTransition(async () => {
+      const documentoLimpo = maskService.removeMask(
+        formData.document,
+        "cpfCnpj",
+      );
+      const telefoneFormatado = formatPhoneForApi(formData.phone);
+      const isCompanyAccount = selectedType === "company";
       const tipoUsuario: UsuarioRegisterPayload["tipoUsuario"] =
-        values.accountType === "company"
-          ? "PESSOA_JURIDICA"
-          : "PESSOA_FISICA";
+        isCompanyAccount ? "PESSOA_JURIDICA" : "PESSOA_FISICA";
 
-      const cleanDocument = maskService
-        .removeMask(values.document, "cpfCnpj")
-        .trim();
-      const cleanPhone = maskService.removeMask(values.phone, "phone").trim();
-
-      const payload: UsuarioRegisterPayload = {
-        nomeCompleto: values.name.trim(),
-        telefone: cleanPhone,
-        email: values.email.trim().toLowerCase(),
-        senha: values.password,
-        confirmarSenha: values.confirmPassword,
-        aceitarTermos: values.acceptTerms,
+      const payloadForApi: UsuarioRegisterPayload = {
+        nomeCompleto: formData.name.trim(),
+        documento: documentoLimpo,
+        telefone: telefoneFormatado,
+        email: formData.email.trim().toLowerCase(),
+        senha: formData.password,
+        confirmarSenha: formData.confirmPassword,
+        aceitarTermos: acceptTerms,
         tipoUsuario,
-        role:
-          values.accountType === "company"
-            ? UserRole.EMPRESA
-            : UserRole.ALUNO_CANDIDATO,
       };
 
-      if (values.accountType === "company") {
-        payload.cnpj = cleanDocument;
+      if (isCompanyAccount) {
+        payloadForApi.cnpj = documentoLimpo;
+        payloadForApi.role = UserRole.EMPRESA;
       } else {
-        payload.cpf = cleanDocument;
+        payloadForApi.cpf = documentoLimpo;
+        payloadForApi.role = UserRole.ALUNO_CANDIDATO;
       }
 
-      logRegisterPayload(payload);
+      const maskedPayloadForLog: Record<string, unknown> = {
+        ...payloadForApi,
+        documento: maskSensitiveValue(documentoLimpo),
+        telefone: maskSensitiveValue(telefoneFormatado),
+        email: maskEmail(payloadForApi.email),
+        senha: `***(${payloadForApi.senha.length} chars)`,
+        confirmarSenha: `***(${payloadForApi.confirmarSenha.length} chars)`,
+      };
 
+      if (payloadForApi.cpf) {
+        maskedPayloadForLog.cpf = maskSensitiveValue(payloadForApi.cpf);
+      }
+
+      if (payloadForApi.cnpj) {
+        maskedPayloadForLog.cnpj = maskSensitiveValue(payloadForApi.cnpj);
+      }
+      console.groupCollapsed("🧪 Registro | Payload sanitizado");
+      console.log("Endpoint:", "POST /api/v1/usuarios/registrar");
+      console.table(maskedPayloadForLog);
+      console.info(
+        "ℹ️ Payload enviado sem máscara: os valores acima estão mascarados apenas para log.",
+      );
+      console.groupEnd();
       try {
-        await registerUser(payload);
+        await registerUser(payloadForApi);
         toastCustom.success(
-          "Cadastro realizado com sucesso! Verifique seu email para confirmar.",
+          "Cadastro realizado com sucesso! Verifique seu email para confirmar."
         );
-        handleReset();
+        resetForm();
         setTimeout(() => {
-          if (typeof window !== "undefined") {
-            window.location.href = AUTH_LOGIN_URL;
-          }
+          window.location.href = "https://auth.advancemais.com/login";
         }, 1000);
       } catch (error) {
         console.error("Erro ao cadastrar:", error);
-        toastCustom.error(resolveRegisterError(error));
+        let message = "Não foi possível realizar o cadastro.";
+        if (error instanceof Error) {
+          const msg = error.message.toLowerCase();
+          if (msg.includes("cpf")) {
+            message = "CPF já cadastrado.";
+          } else if (msg.includes("cnpj")) {
+            message = "CNPJ já cadastrado.";
+          } else if (msg.includes("email")) {
+            message = "Email já cadastrado.";
+          } else if (msg.includes("usuario") || msg.includes("usuário")) {
+            message = "Usuário já cadastrado, por favor faça login.";
+          } else if ((error as any).status === 409) {
+            message = "Usuário já cadastrado, por favor faça login.";
+          }
+        }
+        toastCustom.error(message);
       }
-    },
-    [handleReset, maskService],
-  );
+    });
+  };
 
   const renderForm = () => {
-    if (!accountType) return null;
-    const isCompany = accountType === "company";
-    const mask = isCompany ? "cnpj" : "cpf";
+    if (!selectedType) return null;
+    const isCompany = selectedType === "company";
 
     return (
-      <form
-        onSubmit={handleSubmit(onSubmit)}
-        className="space-y-5 sm:space-y-6"
-        noValidate
-      >
+      <form onSubmit={handleSignUp} className="space-y-5 sm:space-y-6">
+        {/* Cabeçalho centralizado com botão à direita */}
         <div className="grid grid-cols-1 sm:grid-cols-3 items-center gap-3">
           <div className="hidden sm:block" />
           <div className="text-center space-y-1">
             <h1 className="!text-2xl sm:text-xl md:text-2xl !mb-0 font-semibold text-gray-900 leading-tight">
-              Criar conta como {selectedOption?.title}
+              Criar conta como{" "}
+              {userTypes.find((type) => type.id === selectedType)?.title}
             </h1>
             <p className="sm:text-sm text-gray-500">
-              {selectedOption?.description}
+              {userTypes.find((type) => type.id === selectedType)?.description}
             </p>
           </div>
           <div className="flex justify-end">
             <ButtonCustom
-              onClick={handleReset}
+              onClick={resetForm}
               type="button"
               variant="ghost"
               size="sm"
@@ -476,138 +354,99 @@ const RegisterPage = () => {
         </div>
 
         <div className="space-y-3 sm:space-y-4">
+          {/* Nome + Documento na mesma linha */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Controller
-              control={control}
+            <InputCustom
+              label={isCompany ? "Nome da empresa" : "Nome completo"}
               name="name"
-              render={({ field }) => (
-                <InputCustom
-                  {...field}
-                  value={field.value ?? ""}
-                  label={isCompany ? "Nome da empresa" : "Nome completo"}
-                  placeholder={
-                    isCompany
-                      ? "Digite o nome da sua empresa"
-                      : "Digite seu nome"
-                  }
-                  size="md"
-                  className="text-sm"
-                  required
-                  error={errors.name?.message}
-                />
-              )}
+              value={formData.name}
+              onChange={(e) => handleInputChange("name", e.target.value)}
+              placeholder={
+                isCompany ? "Digite o nome da sua empresa" : "Digite seu nome"
+              }
+              size="md"
+              className="text-sm"
+              required
             />
-            <Controller
-              control={control}
+            <InputCustom
+              label={isCompany ? "CNPJ" : "CPF"}
               name="document"
-              render={({ field }) => (
-                <InputCustom
-                  {...field}
-                  value={field.value ?? ""}
-                  label={documentLabel}
-                  placeholder={documentPlaceholder}
-                  size="md"
-                  className="text-sm"
-                  required
-                  mask={mask}
-                  error={errors.document?.message}
-                />
-              )}
+              value={formData.document}
+              onChange={(e) => handleInputChange("document", e.target.value)}
+              mask={isCompany ? "cnpj" : "cpf"}
+              placeholder={isCompany ? "00.000.000/0000-00" : "000.000.000-00"}
+              size="md"
+              className="text-sm"
+              required
             />
           </div>
 
           <div className="space-y-3 sm:space-y-0 sm:grid sm:grid-cols-2 sm:gap-4">
-            <Controller
-              control={control}
+            <InputCustom
+              label="Telefone"
               name="phone"
-              render={({ field }) => (
-                <InputCustom
-                  {...field}
-                  value={field.value ?? ""}
-                  label="Telefone"
-                  placeholder="(00) 00000-0000"
-                  size="md"
-                  className="text-sm"
-                  required
-                  mask="phone"
-                  error={errors.phone?.message}
-                />
-              )}
+              value={formData.phone}
+              onChange={(e) => handleInputChange("phone", e.target.value)}
+              mask="phone"
+              placeholder="(00) 00000-0000"
+              size="md"
+              className="text-sm"
+              required
             />
 
-            <Controller
-              control={control}
+            <InputCustom
+              label="Email"
               name="email"
-              render={({ field }) => (
-                <InputCustom
-                  {...field}
-                  value={field.value ?? ""}
-                  label="Email"
-                  type="email"
-                  placeholder="seuemail@email.com"
-                  size="md"
-                  className="text-sm"
-                  required
-                  mask="email"
-                  error={errors.email?.message}
-                />
-              )}
+              type="email"
+              value={formData.email}
+              onChange={(e) => handleInputChange("email", e.target.value)}
+              mask="email"
+              placeholder="seuemail@email.com"
+              size="md"
+              className="text-sm"
+              required
             />
           </div>
 
           <div className="space-y-3 sm:space-y-0 sm:grid sm:grid-cols-2 sm:gap-4">
-            <Controller
-              control={control}
+            <InputCustom
+              label="Senha"
               name="password"
-              render={({ field }) => (
-                <InputCustom
-                  {...field}
-                  value={field.value ?? ""}
-                  label="Senha"
-                  type="password"
-                  placeholder="••••••••"
-                  showPasswordToggle
-                  size="md"
-                  className="text-sm"
-                  required
-                  error={errors.password?.message}
-                />
-              )}
+              type="password"
+              value={formData.password}
+              onChange={(e) => handleInputChange("password", e.target.value)}
+              placeholder="••••••••"
+              showPasswordToggle
+              size="md"
+              className="text-sm"
+              error={passwordError}
+              required
             />
 
-            <Controller
-              control={control}
+            <InputCustom
+              label="Confirmar senha"
               name="confirmPassword"
-              render={({ field }) => (
-                <InputCustom
-                  {...field}
-                  value={field.value ?? ""}
-                  label="Confirmar senha"
-                  type="password"
-                  placeholder="••••••••"
-                  showPasswordToggle
-                  size="md"
-                  className="text-sm"
-                  required
-                  error={errors.confirmPassword?.message}
-                />
-              )}
+              type="password"
+              value={formData.confirmPassword}
+              onChange={(e) =>
+                handleInputChange("confirmPassword", e.target.value)
+              }
+              placeholder="••••••••"
+              showPasswordToggle
+              size="md"
+              className="text-sm"
+              error={passwordError}
+              required
             />
           </div>
         </div>
 
         <div className="flex items-start space-x-2.5 pt-1">
-          <Controller
-            control={control}
-            name="acceptTerms"
-            render={({ field }) => (
-              <Checkbox
-                id="terms"
-                checked={field.value}
-                onCheckedChange={(checked) => field.onChange(Boolean(checked))}
-                required
-              />
-            )}
+          <Checkbox
+            id="terms"
+            checked={acceptTerms}
+            onCheckedChange={(v) => setAcceptTerms(!!v)}
+            required
           />
           <Label
             htmlFor="terms"
@@ -638,11 +477,6 @@ const RegisterPage = () => {
               Política de Privacidade
             </button>{" "}
             e autorizo o uso das minhas informações conforme descrito.
-            {errors.acceptTerms?.message && (
-              <span className="block text-xs text-destructive mt-1">
-                {errors.acceptTerms.message}
-              </span>
-            )}
           </Label>
         </div>
 
@@ -653,8 +487,8 @@ const RegisterPage = () => {
             size="md"
             variant="primary"
             className="h-10 sm:h-11 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer text-sm"
-            disabled={!isValid || isSubmitting}
-            isLoading={isSubmitting}
+            disabled={!isFormValid() || isPending}
+            isLoading={isPending}
             loadingText="Criando..."
           >
             Criar conta
@@ -665,150 +499,128 @@ const RegisterPage = () => {
   };
 
   return (
-    <div className="relative min-h-screen flex flex-col bg-slate-50">
+    <div className="min-h-[100dvh] w-full bg-white font-geist flex flex-col">
+      {/* Header com logo centralizada */}
+      <header className="w-full border-b border-gray-100">
+        <div className="max-w-5xl mx-auto px-6 py-6 flex justify-center">
+          <Image
+            src="/images/logos/logo_padrao.webp"
+            alt="Logo"
+            width={120}
+            height={40}
+            priority
+            className="object-contain"
+          />
+        </div>
+      </header>
+
       <main className="flex-1">
-        <section className="relative overflow-hidden">
-          <div className="absolute inset-0 bg-[var(--primary-color)]" />
-          <div className="absolute inset-0 bg-gradient-to-br from-[var(--primary-color)] via-[var(--primary-color)]/95 to-[var(--secondary-color)]" />
-          <div className="relative max-w-6xl mx-auto px-6 py-12 sm:py-16 lg:py-24 grid lg:grid-cols-[1.1fr_0.9fr] gap-10 lg:gap-16 items-center">
-            <div className="space-y-8 text-white">
-              <div className="space-y-4">
-                <span className="inline-flex items-center px-3 py-1 rounded-full bg-white/10 text-sm">
-                  Plataforma completa para sua jornada profissional
-                </span>
-                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight">
-                  Conquiste novas oportunidades com a Advance+
-                </h1>
-                <p className="text-base sm:text-lg text-white/80 leading-relaxed">
-                  Faça parte do ecossistema que conecta alunos, candidatos e empresas. Cadastre-se gratuitamente e tenha acesso a recursos exclusivos para impulsionar sua carreira.
-                </p>
-              </div>
-
-              <div className="grid sm:grid-cols-2 gap-4">
-                {["Gestão completa de cursos", "Conexão com recrutadores", "Suporte especializado", "Tecnologia intuitiva"].map((feature) => (
-                  <div
-                    key={feature}
-                    className="flex items-center gap-3 bg-white/10 backdrop-blur-sm rounded-xl px-4 py-3"
-                  >
-                    <div className="size-8 rounded-full bg-white/20 grid place-items-center">
-                      <span className="text-lg">•</span>
-                    </div>
-                    <p className="text-sm font-medium text-white/90 leading-tight">
-                      {feature}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="relative bg-white rounded-3xl shadow-xl p-6 sm:p-8 md:p-10 lg:p-8 xl:p-10">
-              <div className="absolute -top-12 -right-8 hidden lg:block">
-                <div className="size-24 rounded-full bg-white/10 backdrop-blur" />
-              </div>
-              <div className="absolute -bottom-10 -left-10 hidden lg:block">
-                <div className="size-20 rounded-full bg-white/10 backdrop-blur" />
-              </div>
-
-              <div className="relative space-y-6">
-                <div className="text-center space-y-2">
-                  <h2 className="text-2xl font-semibold text-gray-900">
-                    Crie sua conta na Advance+
-                  </h2>
-                  <p className="text-sm text-gray-500">
-                    Selecione o perfil que melhor representa você para personalizarmos sua experiência.
+        <section className="flex items-center justify-center px-6 py-24">
+          <div className="w-full max-w-5xl">
+            {!selectedType ? (
+              <div className="space-y-6 md:space-y-8">
+                <div className="space-y-1 sm:space-y-2">
+                  <h1 className="sm:text-4xl font-semibold text-[var(--primary-color)] text-center !mb-0">
+                    Criar conta
+                  </h1>
+                  <p className="!text-gray-500 text-sm md:text-base leading-relaxed text-center">
+                    Escolha o tipo de conta que melhor se adequa ao seu perfil.
                   </p>
                 </div>
 
-                {!accountType ? (
-                  <div className="space-y-5">
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      {ACCOUNT_OPTIONS.map((option) => {
-                        const Icon = option.icon;
-                        const isSelected = option.id === accountType;
-                        return (
-                          <div
-                            key={option.id}
-                            className={`relative rounded-2xl border transition-all duration-300 bg-[var(--primary-color)]/5 hover:bg-[var(--primary-color)]/10 p-5 sm:p-6 cursor-pointer group ${
-                              isSelected
-                                ? "border-[var(--secondary-color)] shadow-[0_15px_35px_rgba(37,99,235,0.1)]"
-                                : "border-transparent"
-                            }`}
-                            role="button"
-                            tabIndex={0}
-                            onClick={() => handleSelectType(option.id)}
-                            onKeyDown={(event) => {
-                              if (event.key === "Enter" || event.key === " ") {
-                                event.preventDefault();
-                                handleSelectType(option.id);
-                              }
-                            }}
+                {/* Grid 3 colunas no desktop, responsivo */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-5 lg:gap-6 items-stretch">
+                  {userTypes.map((type) => {
+                    const Icon = type.icon;
+                    const styles =
+                      typeStyles[type.id as keyof typeof typeStyles];
+                    return (
+                      <div
+                        key={type.id}
+                        className={`group flex flex-col items-center text-center rounded-2xl border border-transparent bg-[var(--primary-color)] text-white p-6 md:p-8 shadow-sm transition-all duration-150 focus-within:ring-2 focus-within:ring-offset-2 ${styles.ring} h-full min-h-[300px] md:min-h-[320px] cursor-pointer hover:shadow-md hover:-translate-y-0.5`}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => setSelectedType(type.id as SelectedType)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            setSelectedType(type.id as SelectedType);
+                          }
+                        }}
+                      >
+                        <div className="grid place-items-center size-14 rounded-xl bg-[var(--secondary-color)] text-white mb-4">
+                          <Icon className="size-6" />
+                        </div>
+                        <h2
+                          id={`type-${type.id}-title`}
+                          className="md:text-xl font-semibold"
+                        >
+                          {type.title}
+                        </h2>
+                        <p
+                          id={`type-${type.id}-desc`}
+                          className="mt-2 !text-sm !text-white/70 min-h-[2.75rem] flex-1 !leading-normal"
+                        >
+                          {type.description}
+                        </p>
+                        <div className="w-full flex justify-center">
+                          <ButtonCustom
+                            type="button"
+                            onClick={() =>
+                              setSelectedType(type.id as SelectedType)
+                            }
+                            variant="secondary"
+                            size="md"
+                            className="mt-5 w-full sm:w-auto"
+                            aria-label={`Escolher ${type.title}`}
+                            withAnimation
                           >
-                            <div className="grid place-items-center size-14 rounded-xl bg-[var(--secondary-color)] text-white mb-4">
-                              <Icon className="size-6" />
-                            </div>
-                            <h2 className="md:text-xl font-semibold text-gray-900">
-                              {option.title}
-                            </h2>
-                            <p className="mt-2 text-sm text-gray-500 min-h-[2.75rem] flex-1 leading-normal">
-                              {option.description}
-                            </p>
-                            <div className="w-full flex justify-center">
-                              <ButtonCustom
-                                type="button"
-                                onClick={() => handleSelectType(option.id)}
-                                variant="secondary"
-                                size="md"
-                                className="mt-5 w-full sm:w-auto"
-                                aria-label={`Escolher ${option.title}`}
-                                withAnimation
-                              >
-                                Escolher
-                              </ButtonCustom>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
+                            Escolher
+                          </ButtonCustom>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
 
-                    <div className="pt-2 sm:pt-4 text-center">
-                      <p className="animate-element animate-delay-700 text-center text-sm text-muted-foreground">
-                        Já possui uma conta?{" "}
-                        <a
-                          href={AUTH_LOGIN_URL}
-                          className="hover:opacity-100 transition-colors text-[var(--primary-color)] cursor-pointer opacity-70 font-semibold"
-                        >
-                          Fazer login
-                        </a>
-                      </p>
-                    </div>
-                  </div>
-                ) : (
-                  <div>
-                    {renderForm()}
-
-                    <div className="!pt-6 sm:pt-4 text-center">
-                      <p className="animate-element animate-delay-700 text-center text-sm text-muted-foreground">
-                        Já possui uma conta?{" "}
-                        <a
-                          href={AUTH_LOGIN_URL}
-                          className="hover:opacity-100 transition-colors text-[var(--primary-color)] cursor-pointer opacity-70 font-semibold"
-                        >
-                          Fazer login
-                        </a>
-                      </p>
-                    </div>
-                  </div>
-                )}
+                <div className="pt-2 sm:pt-4 text-center">
+                  <p className="animate-element animate-delay-700 text-center text-sm text-muted-foreground">
+                    Já possui uma conta?{" "}
+                    <a
+                      href="https://auth.advancemais.com/login"
+                      className="hover:opacity-100 transition-colors text-[var(--primary-color)] cursor-pointer opacity-70 font-semibold"
+                    >
+                      Fazer login
+                    </a>
+                  </p>
+                </div>
               </div>
-            </div>
+            ) : (
+              <div>
+                {renderForm()}
+
+                <div className="!pt-6 sm:pt-4 text-center">
+                  <p className="animate-element animate-delay-700 text-center text-sm text-muted-foreground">
+                    Já possui uma conta?{" "}
+                    <a
+                      href="https://auth.advancemais.com/login"
+                      className="hover:opacity-100 transition-colors text-[var(--primary-color)] cursor-pointer opacity-70 font-semibold"
+                    >
+                      Fazer login
+                    </a>
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
         </section>
       </main>
 
+      {/* Footer minimalista */}
       <footer className="bg-[var(--color-blue)] text-white/80 py-8">
         <div className="max-w-5xl mx-auto px-6 text-center space-y-3">
-          <p className="sm:text-sm tracking-wide text-white">
-            Todos os direitos reservados © {new Date().getFullYear()} {" "}
+          <p className="sm:text-sm tracking-wide !text-white">
+            Todos os direitos reservados © {new Date().getFullYear()}{" "}
             <span className="font-semibold text-[var(--secondary-color)]">
               Advance+
             </span>
@@ -822,7 +634,10 @@ const RegisterPage = () => {
             >
               Política de Privacidade
             </a>
-            <span className="h-4 w-px bg-blue-800/50 self-center" aria-hidden></span>
+            <span
+              className="h-4 w-px bg-blue-800/50 self-center"
+              aria-hidden
+            ></span>
             <a
               href="http://advancemais.com/termos-uso"
               target="_blank"
@@ -831,7 +646,10 @@ const RegisterPage = () => {
             >
               Termos de Uso
             </a>
-            <span className="h-4 w-px bg-blue-800/20 self-center" aria-hidden></span>
+            <span
+              className="h-4 w-px bg-blue-800/20 self-center"
+              aria-hidden
+            ></span>
             <a href="#" className="hover:text-white transition-colors px-3">
               Preferências de Cookies
             </a>
