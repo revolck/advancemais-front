@@ -16,7 +16,6 @@ import { registerUser } from "@/api/usuarios";
 import type { UsuarioRegisterPayload } from "@/api/usuarios";
 import { MaskService } from "@/services";
 import Image from "next/image";
-import { UserRole } from "@/config/roles";
 
 type SelectedType = "student" | "candidate" | "company" | null;
 
@@ -42,8 +41,8 @@ const RegisterPage = () => {
   const [selectedType, setSelectedType] = useState<SelectedType>(null);
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [isPending, startTransition] = useTransition();
-  const [formData, setFormData] = useState<RegisterFormData>(
-    () => createInitialFormData(),
+  const [formData, setFormData] = useState<RegisterFormData>(() =>
+    createInitialFormData()
   );
   const [passwordError, setPasswordError] = useState("");
   const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
@@ -59,13 +58,14 @@ const RegisterPage = () => {
         const parsed = JSON.parse(savedForm) as Partial<RegisterFormData>;
         const allowedKeys = Object.keys(createInitialFormData());
         const sanitized = Object.fromEntries(
-          Object.entries(parsed).filter(([key]) =>
-            allowedKeys.includes(key),
-          ),
+          Object.entries(parsed).filter(([key]) => allowedKeys.includes(key))
         ) as Partial<RegisterFormData>;
         setFormData((prev) => ({ ...prev, ...sanitized }));
       } catch (error) {
-        console.warn("Não foi possível restaurar o formulário de cadastro:", error);
+        console.warn(
+          "Não foi possível restaurar o formulário de cadastro:",
+          error
+        );
         localStorage.removeItem("registerFormData");
       }
     }
@@ -89,6 +89,13 @@ const RegisterPage = () => {
     }
   }, [selectedType]);
 
+  // Resetar formulário quando o tipo de conta mudar
+  useEffect(() => {
+    if (selectedType) {
+      resetFormData();
+    }
+  }, [selectedType]);
+
   useEffect(() => {
     if (
       formData.password &&
@@ -98,7 +105,7 @@ const RegisterPage = () => {
       setPasswordError("As senhas não coincidem");
     } else if (formData.password && !isPasswordValid(formData.password)) {
       setPasswordError(
-        "A senha deve conter letras maiúsculas, minúsculas e caracteres especiais"
+        "A senha deve conter pelo menos 8 caracteres, letras maiúsculas, minúsculas, números e caracteres especiais"
       );
     } else {
       setPasswordError("");
@@ -150,8 +157,7 @@ const RegisterPage = () => {
     const trimmed = value?.trim() ?? "";
     if (!trimmed) return "";
     if (trimmed.length <= visibleChars) {
-      return "*".repeat(Math.max(trimmed.length - 1, 0)) +
-        trimmed.slice(-1);
+      return "*".repeat(Math.max(trimmed.length - 1, 0)) + trimmed.slice(-1);
     }
     const maskedLength = Math.max(trimmed.length - visibleChars, 0);
     return `${"*".repeat(maskedLength)}${trimmed.slice(-visibleChars)}`;
@@ -174,8 +180,16 @@ const RegisterPage = () => {
     setSelectedType(null);
     setFormData(createInitialFormData());
     setAcceptTerms(false);
+    setPasswordError("");
     localStorage.removeItem("registerFormData");
     localStorage.removeItem("registerSelectedType");
+  };
+
+  const resetFormData = () => {
+    setFormData(createInitialFormData());
+    setAcceptTerms(false);
+    setPasswordError("");
+    localStorage.removeItem("registerFormData");
   };
 
   const isDocumentValid = () => {
@@ -191,15 +205,22 @@ const RegisterPage = () => {
   };
 
   const isPasswordValid = (password: string) => {
+    // Validação baseada na documentação da API
+    if (password.length < 8) return false;
+
     const hasUpper = /[A-Z]/.test(password);
     const hasLower = /[a-z]/.test(password);
     const hasSpecial = /[^A-Za-z0-9]/.test(password);
-    return hasUpper && hasLower && hasSpecial;
+    const hasNumber = /[0-9]/.test(password);
+
+    return hasUpper && hasLower && hasSpecial && hasNumber;
   };
 
   const isFormValid = () => {
     const { name, document, phone, email, password, confirmPassword } =
       formData;
+
+    // Verificar se todos os campos obrigatórios estão preenchidos
     const fieldsFilled = [
       name,
       document,
@@ -209,14 +230,29 @@ const RegisterPage = () => {
       confirmPassword,
     ].every((value) => value.trim() !== "");
 
+    // Validações específicas
+    const emailValid = maskService.validate(email, "email");
+    const phoneValid = isPhoneValid();
+    const documentValid = isDocumentValid();
+    const passwordMatch = password === confirmPassword;
+    const passwordValid = isPasswordValid(password);
+    const termsAccepted = acceptTerms;
+
+    // Validação específica baseada no tipo de conta
+    const isCompany = selectedType === "company";
+    const documentTypeValid = isCompany
+      ? maskService.validate(document, "cnpj")
+      : maskService.validate(document, "cpf");
+
     return (
       fieldsFilled &&
-      maskService.validate(email, "email") &&
-      isPhoneValid() &&
-      isDocumentValid() &&
-      password === confirmPassword &&
-      isPasswordValid(password) &&
-      acceptTerms
+      emailValid &&
+      phoneValid &&
+      documentValid &&
+      documentTypeValid &&
+      passwordMatch &&
+      passwordValid &&
+      termsAccepted
     );
   };
 
@@ -241,30 +277,37 @@ const RegisterPage = () => {
     startTransition(async () => {
       const documentoLimpo = maskService.removeMask(
         formData.document,
-        "cpfCnpj",
+        selectedType === "company" ? "cnpj" : "cpf"
       );
       const telefoneFormatado = formatPhoneForApi(formData.phone);
       const isCompanyAccount = selectedType === "company";
       const tipoUsuario: UsuarioRegisterPayload["tipoUsuario"] =
         isCompanyAccount ? "PESSOA_JURIDICA" : "PESSOA_FISICA";
 
+      // Criar payload baseado no tipo selecionado
       const payloadForApi: UsuarioRegisterPayload = {
         nomeCompleto: formData.name.trim(),
-        documento: documentoLimpo,
         telefone: telefoneFormatado,
         email: formData.email.trim().toLowerCase(),
         senha: formData.password,
         confirmarSenha: formData.confirmPassword,
         aceitarTermos: acceptTerms,
         tipoUsuario,
+        // SupabaseId é obrigatório - gerar um UUID temporário
+        supabaseId: `temp-${Date.now()}-${Math.random()
+          .toString(36)
+          .substr(2, 9)}-${Math.random().toString(36).substr(2, 9)}`,
       };
 
+      // Adicionar campos específicos baseados no tipo
       if (isCompanyAccount) {
         payloadForApi.cnpj = documentoLimpo;
-        payloadForApi.role = UserRole.EMPRESA;
+        payloadForApi.cpf = undefined; // CNPJ é obrigatório, CPF deve ser undefined
+        payloadForApi.role = "EMPRESA";
       } else {
         payloadForApi.cpf = documentoLimpo;
-        payloadForApi.role = UserRole.ALUNO_CANDIDATO;
+        payloadForApi.cnpj = undefined; // CPF é obrigatório, CNPJ deve ser undefined
+        payloadForApi.role = "ALUNO_CANDIDATO";
       }
 
       const maskedPayloadForLog: Record<string, unknown> = {
@@ -274,34 +317,58 @@ const RegisterPage = () => {
         email: maskEmail(payloadForApi.email),
         senha: `***(${payloadForApi.senha.length} chars)`,
         confirmarSenha: `***(${payloadForApi.confirmarSenha.length} chars)`,
+        supabaseId: maskSensitiveValue(payloadForApi.supabaseId || ""),
+        cpf: payloadForApi.cpf
+          ? maskSensitiveValue(payloadForApi.cpf)
+          : undefined,
+        cnpj: payloadForApi.cnpj
+          ? maskSensitiveValue(payloadForApi.cnpj)
+          : undefined,
       };
 
-      if (payloadForApi.cpf) {
-        maskedPayloadForLog.cpf = maskSensitiveValue(payloadForApi.cpf);
-      }
-
-      if (payloadForApi.cnpj) {
-        maskedPayloadForLog.cnpj = maskSensitiveValue(payloadForApi.cnpj);
-      }
       console.groupCollapsed("🧪 Registro | Payload sanitizado");
       console.log("Endpoint:", "POST /api/v1/usuarios/registrar");
+      console.log("Tipo de conta:", selectedType);
+      console.log("É empresa:", isCompanyAccount);
       console.table(maskedPayloadForLog);
       console.info(
-        "ℹ️ Payload enviado sem máscara: os valores acima estão mascarados apenas para log.",
+        "ℹ️ Payload enviado sem máscara: os valores acima estão mascarados apenas para log."
       );
+      console.log("Payload real (sem máscara):", payloadForApi);
       console.groupEnd();
       try {
-        await registerUser(payloadForApi);
-        toastCustom.success(
-          "Cadastro realizado com sucesso! Verifique seu email para confirmar."
-        );
-        resetForm();
-        setTimeout(() => {
+        const response = await registerUser(payloadForApi);
+
+        if (response.success) {
+          toastCustom.success(
+            response.message ||
+              "Cadastro realizado com sucesso! Verifique seu email para confirmar."
+          );
+          resetForm();
+          // Redirecionar imediatamente para a tela de login
           window.location.href = "https://auth.advancemais.com/login";
-        }, 1000);
+        } else {
+          // Tratar erros da API
+          let errorMessage =
+            response.message || "Não foi possível realizar o cadastro.";
+
+          // Verificar se há erros específicos de validação
+          if (
+            "errors" in response &&
+            response.errors &&
+            response.errors.length > 0
+          ) {
+            const firstError = response.errors[0];
+            errorMessage = firstError.message;
+          }
+
+          toastCustom.error(errorMessage);
+        }
       } catch (error) {
         console.error("Erro ao cadastrar:", error);
         let message = "Não foi possível realizar o cadastro.";
+
+        // Tratar erros de rede ou parsing
         if (error instanceof Error) {
           const msg = error.message.toLowerCase();
           if (msg.includes("cpf")) {
@@ -314,8 +381,14 @@ const RegisterPage = () => {
             message = "Usuário já cadastrado, por favor faça login.";
           } else if ((error as any).status === 409) {
             message = "Usuário já cadastrado, por favor faça login.";
+          } else if ((error as any).status === 429) {
+            message = "Muitas tentativas. Tente novamente mais tarde.";
+          } else if ((error as any).status === 400) {
+            message =
+              "Dados inválidos. Verifique as informações e tente novamente.";
           }
         }
+
         toastCustom.error(message);
       }
     });
@@ -331,10 +404,23 @@ const RegisterPage = () => {
         <div className="grid grid-cols-1 sm:grid-cols-3 items-center gap-3">
           <div className="hidden sm:block" />
           <div className="text-center space-y-1">
-            <h1 className="!text-2xl sm:text-xl md:text-2xl !mb-0 font-semibold text-gray-900 leading-tight">
-              Criar conta como{" "}
-              {userTypes.find((type) => type.id === selectedType)?.title}
-            </h1>
+            <div className="flex items-center justify-center gap-2 mb-2">
+              {(() => {
+                const selectedUserType = userTypes.find(
+                  (type) => type.id === selectedType
+                );
+                const Icon = selectedUserType?.icon;
+                return Icon ? (
+                  <div className="p-2 rounded-lg bg-blue-50">
+                    <Icon className="w-5 h-5 text-blue-600" />
+                  </div>
+                ) : null;
+              })()}
+              <h1 className="!text-2xl sm:text-xl md:text-2xl !mb-0 font-semibold text-gray-900 leading-tight">
+                Criar conta como{" "}
+                {userTypes.find((type) => type.id === selectedType)?.title}
+              </h1>
+            </div>
             <p className="sm:text-sm text-gray-500">
               {userTypes.find((type) => type.id === selectedType)?.description}
             </p>
@@ -480,7 +566,7 @@ const RegisterPage = () => {
           </Label>
         </div>
 
-        <div>
+        <div className="space-y-3">
           <ButtonCustom
             type="submit"
             fullWidth
@@ -489,10 +575,30 @@ const RegisterPage = () => {
             className="h-10 sm:h-11 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer text-sm"
             disabled={!isFormValid() || isPending}
             isLoading={isPending}
-            loadingText="Criando..."
+            loadingText={`Criando conta ${
+              selectedType === "company"
+                ? "da empresa"
+                : selectedType === "student"
+                ? "do aluno"
+                : "do candidato"
+            }...`}
           >
             Criar conta
           </ButtonCustom>
+
+          {isPending && (
+            <div className="text-center">
+              <p className="text-sm text-gray-500">
+                Enviando dados para{" "}
+                {selectedType === "company"
+                  ? "cadastro de empresa"
+                  : selectedType === "student"
+                  ? "cadastro de aluno"
+                  : "cadastro de candidato"}
+                ...
+              </p>
+            </div>
+          )}
         </div>
       </form>
     );
