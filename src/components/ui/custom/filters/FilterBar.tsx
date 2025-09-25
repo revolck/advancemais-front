@@ -55,9 +55,7 @@ export function FilterBar({
         className
       )}
     >
-      <div
-        className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4 xl:grid-cols-[minmax(0,3fr)_minmax(0,1.2fr)_minmax(0,1.2fr)_auto] xl:items-end xl:gap-5"
-      >
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4 xl:grid-cols-[minmax(0,3fr)_minmax(0,1.2fr)_minmax(0,1.2fr)_auto] xl:items-end xl:gap-5">
         {search && (
           <div className="min-w-0">
             <div className="relative">
@@ -68,6 +66,7 @@ export function FilterBar({
                 onChange={(e) =>
                   search.onChange((e.target as HTMLInputElement).value)
                 }
+                onKeyDown={search.onKeyDown}
               />
             </div>
           </div>
@@ -120,9 +119,7 @@ export function FilterBar({
           );
         })}
         {rightActions && (
-          <div
-            className="flex w-full flex-col items-stretch gap-3 md:col-span-2 md:flex-row md:justify-start xl:col-span-1 xl:flex-col xl:items-end xl:justify-end"
-          >
+          <div className="flex w-full flex-col items-stretch gap-3 md:col-span-2 md:flex-row md:justify-start xl:col-span-1 xl:flex-col xl:items-end xl:justify-end">
             {rightActions}
           </div>
         )}
@@ -140,7 +137,7 @@ export function FilterBar({
                 <button
                   type="button"
                   onClick={() => onChange(chip.key, null)}
-                  className="ml-1 rounded-full p-0.5 text-gray-500 hover:text-gray-700"
+                  className="ml-1 rounded-full p-0.5 text-gray-500 hover:text-gray-700 cursor-pointer"
                   aria-label={`Limpar ${chip.key}`}
                 >
                   <X className="h-3.5 w-3.5" />

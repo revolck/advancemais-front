@@ -17,14 +17,44 @@ export function VacancyTab({
     return status === "PUBLICADO" || status === "EM_ANALISE";
   });
 
-  const statusCounts = relevantVacancies.reduce(
+  // Contar todos os status de vagas
+  const statusCounts = (vacancies ?? []).reduce(
     (acc, vacancy) => {
       const status = vacancy.status?.toUpperCase();
-      if (status === "PUBLICADO") acc.publicadas += 1;
-      if (status === "EM_ANALISE") acc.emAnalise += 1;
+      switch (status) {
+        case "RASCUNHO":
+          acc.rascunho += 1;
+          break;
+        case "EM_ANALISE":
+          acc.emAnalise += 1;
+          break;
+        case "PUBLICADO":
+          acc.publicado += 1;
+          break;
+        case "DESPUBLICADA":
+          acc.despublicada += 1;
+          break;
+        case "PAUSADA":
+          acc.pausada += 1;
+          break;
+        case "ENCERRADA":
+          acc.encerrada += 1;
+          break;
+        case "EXPIRADO":
+          acc.expirado += 1;
+          break;
+      }
       return acc;
     },
-    { publicadas: 0, emAnalise: 0 }
+    {
+      rascunho: 0,
+      emAnalise: 0,
+      publicado: 0,
+      despublicada: 0,
+      pausada: 0,
+      encerrada: 0,
+      expirado: 0,
+    }
   );
 
   const vacancyMainSection = relevantVacancies.length ? (
@@ -52,21 +82,11 @@ export function VacancyTab({
 
   const vacancySidebar = (
     <aside className="space-y-4">
-      <VacancyUsageCard published={publishedVacancies} total={totalVacancies} />
-
-      <div className="rounded-2xl border border-gray-200/60 bg-white p-6">
-        <h3>Resumo por status</h3>
-        <div className="mt-4 space-y-3 text-sm">
-          <div className="flex items-center justify-between rounded-2xl border border-slate-200/60 bg-slate-50/60 px-4 py-3">
-            <span className="font-medium text-gray-700">Em análise</span>
-            <span className="text-green-900">{statusCounts.emAnalise}</span>
-          </div>
-          <div className="flex items-center justify-between rounded-2xl border border-slate-200/60 bg-slate-50/60 px-4 py-3">
-            <span className="font-medium text-gray-700">Publicadas</span>
-            <span className="text-gray-500">{statusCounts.publicadas}</span>
-          </div>
-        </div>
-      </div>
+      <VacancyUsageCard
+        published={publishedVacancies}
+        total={totalVacancies}
+        statusCounts={statusCounts}
+      />
     </aside>
   );
 

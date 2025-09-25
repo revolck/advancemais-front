@@ -212,7 +212,7 @@ export default function SobreForm({ initialData }: SobreFormProps) {
           uploadResult = await uploadImage(
             fileItem.file,
             "website/sobre",
-            previousUrl,
+            previousUrl
           );
           addLog(`Upload concluído: ${uploadResult.url}`);
         } catch (err) {

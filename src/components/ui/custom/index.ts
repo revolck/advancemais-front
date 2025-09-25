@@ -8,7 +8,6 @@ export * from "./modal";
 
 export * from "./toast";
 
-
 export * from "./offline";
 
 export * from "./vertical-tabs";
@@ -29,6 +28,8 @@ export * from "./text-area";
 export * from "./icon-selector";
 
 export * from "./slider-manager";
+
+export * from "./list-manager";
 
 export * from "./select";
 

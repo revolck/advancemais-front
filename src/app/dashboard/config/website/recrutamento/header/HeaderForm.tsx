@@ -69,8 +69,12 @@ export default function HeaderForm() {
     const fetchData = async () => {
       setIsFetching(true);
       try {
-        const data = await listHeaderPages({ headers: { Accept: "application/json" } });
-        const first = (data || []).find((h) => (h.page || "").toString().toUpperCase() === PAGE_KEY);
+        const data = await listHeaderPages({
+          headers: { Accept: "application/json" },
+        });
+        const first = (data || []).find(
+          (h) => (h.page || "").toString().toUpperCase() === PAGE_KEY
+        );
         if (first) applyData(first);
       } catch (err) {
         toastCustom.error("Erro ao carregar cabeçalho");
@@ -142,7 +146,11 @@ export default function HeaderForm() {
       const previousUrl = oldImageUrl;
       if (fileItem?.file) {
         try {
-          uploadResult = await uploadImage(fileItem.file, "website/header-pages", previousUrl);
+          uploadResult = await uploadImage(
+            fileItem.file,
+            "website/header-pages",
+            previousUrl
+          );
         } catch (err) {
           toastCustom.error("Erro no upload da imagem. Tente novamente");
           return;
@@ -167,7 +175,11 @@ export default function HeaderForm() {
         ? await updateHeaderPage(content.id, payload)
         : await createHeaderPage(payload);
 
-      toastCustom.success(content.id ? "Cabeçalho atualizado com sucesso!" : "Cabeçalho criado com sucesso!");
+      toastCustom.success(
+        content.id
+          ? "Cabeçalho atualizado com sucesso!"
+          : "Cabeçalho criado com sucesso!"
+      );
 
       setContent({
         id: saved.id,
@@ -201,7 +213,8 @@ export default function HeaderForm() {
       const status = (err as any)?.status;
       let message = "Não foi possível salvar";
       if (status === 401) message = "Sessão expirada. Faça login novamente";
-      else if (status === 403) message = "Você não tem permissão para esta ação";
+      else if (status === 403)
+        message = "Você não tem permissão para esta ação";
       toastCustom.error(message);
     } finally {
       setIsLoading(false);
@@ -245,7 +258,9 @@ export default function HeaderForm() {
               label="Título"
               id="titulo"
               value={content.titulo}
-              onChange={(e) => setContent((p) => ({ ...p, titulo: e.target.value }))}
+              onChange={(e) =>
+                setContent((p) => ({ ...p, titulo: e.target.value }))
+              }
               maxLength={80}
               required
             />
@@ -253,14 +268,19 @@ export default function HeaderForm() {
               label="Subtítulo"
               id="subtitulo"
               value={content.subtitulo || ""}
-              onChange={(e) => setContent((p) => ({ ...p, subtitulo: e.target.value }))}
+              onChange={(e) =>
+                setContent((p) => ({ ...p, subtitulo: e.target.value }))
+              }
               maxLength={100}
               required
             />
           </div>
 
           <div>
-            <Label htmlFor="descricao" className="text-sm font-medium text-gray-700 required">
+            <Label
+              htmlFor="descricao"
+              className="text-sm font-medium text-gray-700 required"
+            >
               Descrição
             </Label>
             <div className="mt-1">
@@ -283,7 +303,9 @@ export default function HeaderForm() {
               label="Texto do Botão"
               id="buttonLabel"
               value={content.buttonLabel || ""}
-              onChange={(e) => setContent((p) => ({ ...p, buttonLabel: e.target.value }))}
+              onChange={(e) =>
+                setContent((p) => ({ ...p, buttonLabel: e.target.value }))
+              }
               maxLength={40}
               required
             />
@@ -291,7 +313,9 @@ export default function HeaderForm() {
               label="Link do Botão"
               id="buttonLink"
               value={content.buttonLink || ""}
-              onChange={(e) => setContent((p) => ({ ...p, buttonLink: e.target.value }))}
+              onChange={(e) =>
+                setContent((p) => ({ ...p, buttonLink: e.target.value }))
+              }
               maxLength={200}
               type="url"
               icon="Link"
@@ -304,7 +328,9 @@ export default function HeaderForm() {
               type="submit"
               isLoading={isLoading}
               disabled={
-                isLoading || (!content.imagemUrl && files.length === 0) || files.some((f) => f.status === "uploading")
+                isLoading ||
+                (!content.imagemUrl && files.length === 0) ||
+                files.some((f) => f.status === "uploading")
               }
               size="lg"
               variant="default"
@@ -319,4 +345,3 @@ export default function HeaderForm() {
     </div>
   );
 }
-

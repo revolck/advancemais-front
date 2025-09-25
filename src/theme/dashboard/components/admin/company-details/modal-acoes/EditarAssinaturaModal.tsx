@@ -28,7 +28,10 @@ import type {
   AdminCompanyPagamento,
   UpdateAdminCompanyPayload,
 } from "@/api/empresas/admin/types";
-import type { PlanoEmpresarialBackendResponse } from "@/api/empresas/planos-empresariais/types";
+import type {
+  PlanoEmpresarialBackendResponse,
+  PlanoEmpresarialListApiResponse,
+} from "@/api/empresas/planos-empresariais/types";
 
 const PLAN_TYPE_OPTIONS = [
   { value: "parceiro", label: "Parceiro" },
@@ -90,7 +93,20 @@ export function EditarAssinaturaModal({
       if (planOptions.length === 0) {
         setIsLoadingPlans(true);
         listPlanosEmpresariais()
-          .then(setPlanOptions)
+          .then((response) => {
+            // Verificar se é um array (sucesso) ou objeto de erro
+            if (Array.isArray(response)) {
+              setPlanOptions(response);
+            } else {
+              console.error("Erro na resposta da API:", response);
+              toastCustom.error({
+                title: "Erro ao carregar planos",
+                description:
+                  response.message ||
+                  "Não foi possível listar os planos disponíveis.",
+              });
+            }
+          })
           .catch((error) => {
             console.error("Erro ao carregar planos empresariais", error);
             toastCustom.error({

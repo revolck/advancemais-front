@@ -13,6 +13,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   Ban,
   ChevronDown,
   ChevronLeft,
@@ -97,15 +102,20 @@ export function HeaderInfo({
                 {getInitials(company.nome)}
               </AvatarFallback>
             </Avatar>
-            <span
-              className={cn(
-                "absolute bottom-1 right-1 inline-flex size-4 items-center justify-center rounded-full border-2 border-white",
-                statusColor
-              )}
-              aria-label={statusLabel}
-            >
-              <span className="sr-only">{statusLabel}</span>
-            </span>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span
+                  className={cn(
+                    "absolute bottom-1 right-1 inline-flex size-4 items-center justify-center rounded-full border-2 border-white cursor-pointer",
+                    statusColor
+                  )}
+                  aria-label={statusLabel}
+                >
+                  <span className="sr-only">{statusLabel}</span>
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>{statusLabel}</TooltipContent>
+            </Tooltip>
           </div>
           <div className="space-y-3">
             <h3 className="font-semibold !mb-0">{company.nome}</h3>

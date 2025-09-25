@@ -2,7 +2,12 @@
 // TIPOS BASE
 // ============================================================================
 
-export type AdminCompanyStatus = "ATIVO" | "INATIVO";
+export type AdminCompanyStatus =
+  | "ATIVO"
+  | "INATIVO"
+  | "BANIDO"
+  | "PENDENTE"
+  | "SUSPENSO";
 
 export type AdminCompanyPlanMode = "teste" | "parceiro" | "ASSINATURA";
 

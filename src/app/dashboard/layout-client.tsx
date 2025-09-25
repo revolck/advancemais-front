@@ -87,14 +87,16 @@ export default function DashboardLayoutClient({
     <>
       <div className="flex h-screen">
         {/* Sidebar principal do dashboard */}
-        <DashboardSidebar
-          isMobileMenuOpen={isMobileMenuOpen}
-          setIsMobileMenuOpen={setIsMobileMenuOpen}
-          isCollapsed={isCollapsed}
-        />
+        <div className="flex-shrink-0">
+          <DashboardSidebar
+            isMobileMenuOpen={isMobileMenuOpen}
+            setIsMobileMenuOpen={setIsMobileMenuOpen}
+            isCollapsed={isCollapsed}
+          />
+        </div>
 
         {/* Container principal de conteúdo */}
-        <div className="flex flex-1 flex-col bg-white transition-all duration-300 ease-in-out">
+        <div className="flex flex-1 flex-col bg-white transition-all duration-300 ease-in-out min-w-0">
           {/* Header do Dashboard */}
           <DashboardHeader
             toggleSidebar={toggleSidebar}

@@ -11,6 +11,8 @@ export interface IconSelectorProps {
   placeholder?: string;
   className?: string;
   disabled?: boolean;
+  label?: string;
+  required?: boolean;
 }
 
 export interface IconGridProps {

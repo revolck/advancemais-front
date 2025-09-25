@@ -233,7 +233,7 @@ export default function ConsultoriaForm({ initialData }: ConsultoriaFormProps) {
           uploadResult = await uploadImage(
             fileItem.file,
             "website/consultoria",
-            previousUrl,
+            previousUrl
           );
           addLog(`Upload concluído: ${uploadResult.url}`);
         } catch (err) {

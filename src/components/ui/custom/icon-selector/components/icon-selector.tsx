@@ -3,6 +3,7 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { InputCustom } from "@/components/ui/custom/input";
+import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Popover,
@@ -23,6 +24,8 @@ export function IconSelector({
   placeholder = "Selecione um ícone",
   className,
   disabled = false,
+  label,
+  required = false,
 }: IconSelectorProps) {
   const [open, setOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -109,86 +112,109 @@ export function IconSelector({
   }, [open]);
 
   return (
-    <Popover open={open} onOpenChange={handleOpenChange}>
-      <PopoverTrigger asChild>
-        <Button
-          ref={triggerRef}
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          aria-haspopup="listbox"
-          aria-label={
-            selectedIconName
-              ? `Ícone selecionado: ${selectedIconName}`
-              : placeholder
-          }
-          disabled={disabled}
+    <div className="w-full">
+      {/* Label posicionado acima do selector */}
+      {label && (
+        <Label
           className={cn(
-            "w-full justify-between h-11 px-3 text-left font-normal",
-            "border-gray-200 hover:border-gray-300 bg-transparent",
-            "focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2",
-            "disabled:cursor-not-allowed disabled:opacity-50",
-            "transition-colors duration-200",
-            className
+            "block text-sm font-medium text-gray-700 mb-2",
+            required && "required"
           )}
         >
-          <div className="flex items-center gap-2 flex-1 overflow-hidden">
-            {SelectedIcon ? (
-              <>
-                <SelectedIcon className="h-4 w-4 text-gray-600 shrink-0" />
-                <span className="text-gray-900 truncate">
-                  {selectedIconName}
-                </span>
-              </>
-            ) : (
-              <span className="text-gray-500 truncate">{placeholder}</span>
-            )}
-          </div>
-          <ChevronDown
+          {label}
+        </Label>
+      )}
+
+      <Popover open={open} onOpenChange={handleOpenChange}>
+        <PopoverTrigger asChild>
+          <Button
+            ref={triggerRef}
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            aria-haspopup="listbox"
+            aria-label={
+              selectedIconName
+                ? `Ícone selecionado: ${selectedIconName}`
+                : placeholder
+            }
+            disabled={disabled}
             className={cn(
-              "ml-2 h-4 w-4 shrink-0 text-gray-400 transition-transform duration-200",
-              open && "rotate-180"
+              "w-full justify-between h-11 px-3 text-left font-normal",
+              "border-gray-200 hover:border-gray-300 bg-transparent",
+              "focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2",
+              "disabled:cursor-not-allowed disabled:opacity-50",
+              "transition-colors duration-200",
+              className
             )}
-          />
-        </Button>
-      </PopoverTrigger>
-
-      <PopoverContent
-        className="p-0 rounded-lg border border-gray-200 shadow-lg"
-        style={{ width: triggerWidth || "auto" }}
-        align="start"
-        sideOffset={5}
-      >
-        {/* Header com busca */}
-        <div className="p-2 border-b border-gray-100">
-          <InputCustom
-            label=""
-            placeholder="Buscar ícones..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            icon="Search"
-            rightIcon={searchTerm ? "X" : undefined}
-            onRightIconClick={searchTerm ? handleClearSearch : undefined}
-            size="sm"
-            className="w-full"
-            autoFocus
-          />
-        </div>
-
-        {/* Grid de ícones */}
-        <ScrollArea className="h-[280px]">
-          {filteredIcons.length > 0 ? (
-            <IconGrid
-              icons={filteredIcons}
-              selectedIcon={selectedIconName || ""}
-              onSelect={handleSelect}
+          >
+            <div className="flex items-center gap-2 flex-1 overflow-hidden">
+              {SelectedIcon ? (
+                <>
+                  <SelectedIcon className="h-4 w-4 text-gray-600 shrink-0" />
+                  <span className="text-gray-900 truncate">
+                    {selectedIconName}
+                  </span>
+                </>
+              ) : (
+                <span className="text-gray-500 truncate">{placeholder}</span>
+              )}
+            </div>
+            <ChevronDown
+              className={cn(
+                "ml-2 h-4 w-4 shrink-0 text-gray-400 transition-transform duration-200",
+                open && "rotate-180"
+              )}
             />
-          ) : (
-            <EmptyState searchTerm={searchTerm} />
-          )}
-        </ScrollArea>
-      </PopoverContent>
-    </Popover>
+          </Button>
+        </PopoverTrigger>
+
+        <PopoverContent
+          className="p-0 rounded-lg border border-gray-200 shadow-lg z-[9999]"
+          style={{ width: triggerWidth || "auto" }}
+          align="start"
+          sideOffset={5}
+        >
+          {/* Header com busca */}
+          <div className="p-2 border-b border-gray-100">
+            <InputCustom
+              label=""
+              placeholder="Buscar ícones..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              icon="Search"
+              rightIcon={searchTerm ? "X" : undefined}
+              onRightIconClick={searchTerm ? handleClearSearch : undefined}
+              size="sm"
+              className="w-full"
+              autoFocus
+            />
+          </div>
+
+          {/* Grid de ícones */}
+          <div
+            className="h-[280px] overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100"
+            onWheel={(e) => {
+              e.stopPropagation();
+              const target = e.currentTarget;
+              target.scrollTop += e.deltaY;
+            }}
+          >
+            <div className="p-2">
+              {filteredIcons.length > 0 ? (
+                <IconGrid
+                  icons={filteredIcons}
+                  selectedIcon={selectedIconName || ""}
+                  onSelect={handleSelect}
+                />
+              ) : (
+                <EmptyState searchTerm={searchTerm} />
+              )}
+            </div>
+          </div>
+        </PopoverContent>
+      </Popover>
+    </div>
   );
 }
 

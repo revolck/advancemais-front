@@ -79,7 +79,7 @@ export function SliderForm({
 
   // Guarda a URL atual para só remover do Blob após submit
   const [oldImageUrl, setOldImageUrl] = useState<string | undefined>(
-    slider?.image || undefined,
+    slider?.image || undefined
   );
 
   // UI state
@@ -220,7 +220,7 @@ export function SliderForm({
           uploadResult = await uploadImage(
             latest.file,
             uploadPath,
-            previousUrl,
+            previousUrl
           );
           finalImageUrl = uploadResult.url;
           setFormData((prev) => ({ ...prev, image: finalImageUrl }));
@@ -234,11 +234,18 @@ export function SliderForm({
           // (sem upload nem alteração de URL)
         } else if (previousUrl) {
           // Mantém a imagem existente
-          uploadResult = { url: previousUrl, title: getImageTitle(previousUrl) };
+          uploadResult = {
+            url: previousUrl,
+            title: getImageTitle(previousUrl),
+          };
           finalImageUrl = previousUrl;
         }
 
-        await onSubmit({ ...formData, image: finalImageUrl || "", content: formData.content || "" });
+        await onSubmit({
+          ...formData,
+          image: finalImageUrl || "",
+          content: formData.content || "",
+        });
 
         setShowSuccess(true);
         setTimeout(
@@ -252,14 +259,7 @@ export function SliderForm({
         setIsSubmitting(false);
       }
     },
-    [
-      formData,
-      onSubmit,
-      uploadedFiles,
-      validateForm,
-      oldImageUrl,
-      uploadPath,
-    ]
+    [formData, onSubmit, uploadedFiles, validateForm, oldImageUrl, uploadPath]
   );
 
   /**
@@ -318,7 +318,9 @@ export function SliderForm({
         {/* Slider Settings Header */}
         <div className="flex items-center justify-between p-4 bg-muted/20 rounded-xl border border-gray-400/20">
           <div className="flex items-center gap-3">
-            <div className={`p-2 rounded-lg border ${accent.bg} ${accent.border}`}>
+            <div
+              className={`p-2 rounded-lg border ${accent.bg} ${accent.border}`}
+            >
               <ImageIcon className={`h-4 w-4 ${accent.text}`} />
             </div>
             <span className="text-md font-medium text-foreground">
@@ -359,7 +361,8 @@ export function SliderForm({
         {showImageField && (
           <div className="space-y-3">
             <Label className="text-sm font-medium text-gray-700">
-              {imageFieldLabel || `Imagem do ${entityName}`} <span className="text-red-500">*</span>
+              {imageFieldLabel || `Imagem do ${entityName}`}{" "}
+              <span className="text-red-500">*</span>
             </Label>
 
             <FileUpload
@@ -406,12 +409,15 @@ export function SliderForm({
                           label={firstFieldLabel || `Título do ${entityName}`}
                           id="title"
                           value={formData.title}
-                          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-                            handleInputChange("title", e.target.value)
-                          }
+                          onChange={(
+                            e: React.ChangeEvent<HTMLTextAreaElement>
+                          ) => handleInputChange("title", e.target.value)}
                           maxLength={500}
                           showCharCount={true}
-                          placeholder={firstFieldLabel || `Digite o ${entityName.toLowerCase()}`}
+                          placeholder={
+                            firstFieldLabel ||
+                            `Digite o ${entityName.toLowerCase()}`
+                          }
                           className="min-h-[180px]"
                           required
                         />
@@ -427,7 +433,9 @@ export function SliderForm({
                         label={firstFieldLabel || `Título do ${entityName}`}
                         id="title"
                         value={formData.title}
-                        onChange={(e) => handleInputChange("title", e.target.value)}
+                        onChange={(e) =>
+                          handleInputChange("title", e.target.value)
+                        }
                         disabled={isLoading}
                         maxLength={100}
                         required
@@ -451,21 +459,29 @@ export function SliderForm({
                       }
                       maxLength={5000}
                       showCharCount
-                      placeholder={secondFieldLabel || `Digite o ${entityName.toLowerCase()}`}
+                      placeholder={
+                        secondFieldLabel ||
+                        `Digite o ${entityName.toLowerCase()}`
+                      }
                       className="min-h-[180px]"
                       required={secondFieldRequired}
                     />
                   );
                 }
 
-                if (secondFieldType === "select" && secondFieldOptions?.length) {
+                if (
+                  secondFieldType === "select" &&
+                  secondFieldOptions?.length
+                ) {
                   return (
                     <SelectCustom
                       key={`field-${fieldKey}-${idx}`}
                       label={secondFieldLabel || "Selecione uma opção"}
                       options={secondFieldOptions}
                       value={formData.url || null}
-                      onChange={(value) => handleInputChange("url", value ?? "")}
+                      onChange={(value) =>
+                        handleInputChange("url", value ?? "")
+                      }
                       disabled={isLoading}
                       required={secondFieldRequired}
                       error={errors.url}
@@ -515,14 +531,19 @@ export function SliderForm({
                   );
                 }
 
-                if (contentFieldType === "select" && contentFieldOptions?.length) {
+                if (
+                  contentFieldType === "select" &&
+                  contentFieldOptions?.length
+                ) {
                   return (
                     <SelectCustom
                       key={`field-${fieldKey}-${idx}`}
                       label={contentFieldLabel || "Selecione uma opção"}
                       options={contentFieldOptions}
                       value={formData.content || null}
-                      onChange={(value) => handleInputChange("content", value ?? "")}
+                      onChange={(value) =>
+                        handleInputChange("content", value ?? "")
+                      }
                       disabled={isLoading}
                       required={contentFieldRequired}
                       error={errors.content}
@@ -537,7 +558,9 @@ export function SliderForm({
                     id="content"
                     type="text"
                     value={formData.content || ""}
-                    onChange={(e) => handleInputChange("content", e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("content", e.target.value)
+                    }
                     disabled={isLoading}
                     maxLength={200}
                     required={contentFieldRequired}
@@ -562,7 +585,6 @@ export function SliderForm({
             onClick={handleCancel}
             disabled={isLoading || isSubmitting}
           >
-            <Icon name="X" className="h-4 w-4 mr-2" />
             Cancelar
           </ButtonCustom>
 
@@ -572,7 +594,7 @@ export function SliderForm({
             disabled={!canSubmit}
             isLoading={isLoading || isSubmitting}
           >
-            {!isLoading && <Icon name="Save" className="h-4 w-4 mr-2" />}
+            {!isLoading}
             {slider ? "Atualizar" : `Criar ${entityName}`}
           </ButtonCustom>
         </div>

@@ -23,7 +23,7 @@ const DAYS = [
   { value: "DOM", label: "Domingo" },
 ] as const;
 
-type DayKey = typeof DAYS[number]["value"];
+type DayKey = (typeof DAYS)[number]["value"];
 
 const API_DAY: Record<DayKey, string> = {
   SEG: "segunda",
@@ -50,7 +50,9 @@ const NAME_TO_KEY: Record<string, DayKey> = {
 export default function AtendimentoForm() {
   const [id, setId] = useState<string | null>(null);
   const [selectedDays, setSelectedDays] = useState<DayKey[]>([]);
-  const [hours, setHours] = useState<Record<DayKey, { from: string; to: string }>>({} as any);
+  const [hours, setHours] = useState<
+    Record<DayKey, { from: string; to: string }>
+  >({} as any);
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -94,7 +96,9 @@ export default function AtendimentoForm() {
               Dom: "DOM",
             };
             for (const part of parts) {
-              const m = part.match(/^(Seg|Ter|Qua|Qui|Sex|Sáb|Dom)\s+(\d{2}:\d{2})\s*(?:às|-)\s*(\d{2}:\d{2})/);
+              const m = part.match(
+                /^(Seg|Ter|Qua|Qui|Sex|Sáb|Dom)\s+(\d{2}:\d{2})\s*(?:às|-)\s*(\d{2}:\d{2})/
+              );
               if (m) {
                 const key = dayMap[m[1]];
                 sel.push(key);
@@ -176,7 +180,9 @@ export default function AtendimentoForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="space-y-2">
-        <label className="text-sm font-medium required">Dias de atendimento</label>
+        <label className="text-sm font-medium required">
+          Dias de atendimento
+        </label>
         <TagsSelector
           options={DAYS.map((d) => ({ id: d.value, label: d.label }))}
           value={selectedDays}
@@ -184,7 +190,10 @@ export default function AtendimentoForm() {
             const cast = ids as DayKey[];
             // remove horas de dias que saíram
             setHours((prev) => {
-              const next = { ...prev } as Record<DayKey, { from: string; to: string }>;
+              const next = { ...prev } as Record<
+                DayKey,
+                { from: string; to: string }
+              >;
               (Object.keys(next) as DayKey[]).forEach((k) => {
                 if (!cast.includes(k)) delete (next as any)[k];
               });
@@ -216,7 +225,10 @@ export default function AtendimentoForm() {
             const invalid = fromM !== null && toM !== null && toM <= fromM;
 
             return (
-              <div key={d} className="grid grid-cols-3 gap-3 items-center rounded-lg border border-gray-900/20 p-3">
+              <div
+                key={d}
+                className="grid grid-cols-3 gap-3 items-center rounded-lg border border-gray-900/20 p-3"
+              >
                 <span className="text-sm font-medium text-muted-foreground">
                   {DAYS.find((x) => x.value === d)?.label}
                 </span>
@@ -227,7 +239,10 @@ export default function AtendimentoForm() {
                     value={current.from}
                     onChange={(val) =>
                       setHours((prev) => {
-                        const next = { ...prev, [d]: { ...current, from: val } } as typeof prev;
+                        const next = {
+                          ...prev,
+                          [d]: { ...current, from: val },
+                        } as typeof prev;
                         if (!val) {
                           // limpa "até" quando não há início
                           (next as any)[d].to = "";
@@ -244,14 +259,27 @@ export default function AtendimentoForm() {
                     disabled={!current.from}
                     value={current.to}
                     onChange={(val) =>
-                      setHours((prev) => ({ ...prev, [d]: { ...current, to: val } }))
+                      setHours((prev) => ({
+                        ...prev,
+                        [d]: { ...current, to: val },
+                      }))
                     }
                   />
                 </div>
                 {invalid && (
                   <div className="col-span-3">
                     <span className="mt-1 inline-flex items-center gap-1.5 rounded-full border border-red-500/15 bg-red-500/5 px-2 py-1 text-[11px] leading-4 text-red-600">
-                      <svg width="12" height="12" viewBox="0 0 24 24" className="opacity-80"><path fill="currentColor" d="M12 2a10 10 0 1 0 10 10A10.011 10.011 0 0 0 12 2m1 15h-2v-2h2zm0-4h-2V7h2z"/></svg>
+                      <svg
+                        width="12"
+                        height="12"
+                        viewBox="0 0 24 24"
+                        className="opacity-80"
+                      >
+                        <path
+                          fill="currentColor"
+                          d="M12 2a10 10 0 1 0 10 10A10.011 10.011 0 0 0 12 2m1 15h-2v-2h2zm0-4h-2V7h2z"
+                        />
+                      </svg>
                       O término precisa ser posterior ao início.
                     </span>
                   </div>

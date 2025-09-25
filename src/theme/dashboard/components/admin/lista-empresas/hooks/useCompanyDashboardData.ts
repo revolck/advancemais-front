@@ -75,11 +75,28 @@ function buildParams(
   pageSize: number,
   override?: Partial<AdminCompanyListParams>
 ): AdminCompanyListParams {
-  return {
+  const params: AdminCompanyListParams = {
     page: override?.page ?? base?.page ?? 1,
     pageSize: override?.pageSize ?? base?.pageSize ?? pageSize,
-    search: override?.search ?? base?.search,
   };
+
+  // Lógica para search - verificar se 'search' está presente no override
+  if (override && "search" in override) {
+    // Se override tem a propriedade search (mesmo que seja undefined), usar ele
+    if (
+      override.search &&
+      typeof override.search === "string" &&
+      override.search.trim().length > 0
+    ) {
+      params.search = override.search;
+    }
+    // Se override.search for undefined, null ou string vazia, não incluir search (listagem completa)
+  } else if (base?.search !== undefined && base.search.trim().length > 0) {
+    // Só usar base.search se override não tiver a propriedade search
+    params.search = base.search;
+  }
+
+  return params;
 }
 
 export function useCompanyDashboardData({
@@ -132,6 +149,7 @@ export function useCompanyDashboardData({
       }
 
       const params = buildParams(paramsRef.current, pageSize, override);
+      console.log("🔧 buildParams result:", params);
       paramsRef.current = params;
 
       const controller = new AbortController();

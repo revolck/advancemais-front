@@ -133,19 +133,13 @@ const rawMenuSections: MenuSection[] = [
           {
             icon: null,
             label: "Vagas",
-            route: "/admin/companies/jobs",
+            route: "/dashboard/vagas",
             permissions: ADMIN_PERMISSIONS,
           },
           {
             icon: null,
             label: "Candidatos",
             route: "/admin/companies/candidates",
-            permissions: ADMIN_PERMISSIONS,
-          },
-          {
-            icon: null,
-            label: "Configurações",
-            route: "/admin/companies/settings",
             permissions: ADMIN_PERMISSIONS,
           },
         ],
@@ -245,6 +239,12 @@ const rawMenuSections: MenuSection[] = [
                 icon: null,
                 label: "Geral",
                 route: "/config/dashboard/geral",
+                permissions: ADMIN_PERMISSIONS,
+              },
+              {
+                icon: null,
+                label: "Empresarial",
+                route: "/config/dashboard/planos-empresarial",
                 permissions: ADMIN_PERMISSIONS,
               },
             ],
@@ -507,4 +507,5 @@ const rawMenuSections: MenuSection[] = [
   },
 ];
 
-export const menuSections: ReadonlyArray<MenuSection> = deepFreeze(rawMenuSections);
+export const menuSections: ReadonlyArray<MenuSection> =
+  deepFreeze(rawMenuSections);

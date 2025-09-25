@@ -23,6 +23,7 @@ export interface FilterBarProps {
     value: string;
     onChange: (v: string) => void;
     placeholder?: string;
+    onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
   };
   rightActions?: React.ReactNode;
 }

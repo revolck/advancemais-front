@@ -43,7 +43,9 @@ export default function ConexaoForm() {
     3: [],
     4: [],
   });
-  const [oldImages, setOldImages] = useState<Record<ImageKey, string | undefined>>({
+  const [oldImages, setOldImages] = useState<
+    Record<ImageKey, string | undefined>
+  >({
     1: undefined,
     2: undefined,
     3: undefined,
@@ -70,7 +72,12 @@ export default function ConexaoForm() {
         4: first.imagemUrl4 ?? undefined,
       };
       setOldImages(newOld);
-      const newFiles: Record<ImageKey, FileUploadItem[]> = { 1: [], 2: [], 3: [], 4: [] };
+      const newFiles: Record<ImageKey, FileUploadItem[]> = {
+        1: [],
+        2: [],
+        3: [],
+        4: [],
+      };
       imageKeys.forEach((key) => {
         const url = newOld[key];
         if (url) {
@@ -92,7 +99,9 @@ export default function ConexaoForm() {
     const fetchData = async () => {
       setIsFetching(true);
       try {
-        const data = await listConexaoForte({ headers: { Accept: "application/json" } });
+        const data = await listConexaoForte({
+          headers: { Accept: "application/json" },
+        });
         const first = data?.[0];
         if (first) applyData(first);
       } catch (err) {
@@ -129,7 +138,9 @@ export default function ConexaoForm() {
     }
 
     const missing = imageKeys.some(
-      (k) => files[k].length === 0 && !content[`imagemUrl${k}` as keyof ConexaoContent],
+      (k) =>
+        files[k].length === 0 &&
+        !content[`imagemUrl${k}` as keyof ConexaoContent]
     );
     if (missing) {
       toastCustom.error("Todas as imagens são obrigatórias");
@@ -137,7 +148,7 @@ export default function ConexaoForm() {
     }
 
     const uploading = imageKeys.some((k) =>
-      files[k].some((f) => f.status === "uploading"),
+      files[k].some((f) => f.status === "uploading")
     );
     if (uploading) {
       toastCustom.error("Aguarde o upload das imagens terminar");
@@ -147,7 +158,10 @@ export default function ConexaoForm() {
     setIsLoading(true);
     toastCustom.info("Salvando conteúdo...");
 
-    const uploads: Record<ImageKey, { url: string; title: string } | undefined> = {
+    const uploads: Record<
+      ImageKey,
+      { url: string; title: string } | undefined
+    > = {
       1: undefined,
       2: undefined,
       3: undefined,
@@ -160,16 +174,25 @@ export default function ConexaoForm() {
         const previousUrl = oldImages[key];
         if (fileItem?.file) {
           try {
-            uploads[key] = await uploadImage(fileItem.file, "website/conexao", previousUrl);
+            uploads[key] = await uploadImage(
+              fileItem.file,
+              "website/conexao",
+              previousUrl
+            );
           } catch (err) {
-            toastCustom.error(`Erro no upload da imagem ${key}. Tente novamente`);
+            toastCustom.error(
+              `Erro no upload da imagem ${key}. Tente novamente`
+            );
             setIsLoading(false);
             return;
           }
         } else if (!fileItem && previousUrl) {
           await deleteImage(previousUrl);
         } else if (previousUrl) {
-          uploads[key] = { url: previousUrl, title: getImageTitle(previousUrl) };
+          uploads[key] = {
+            url: previousUrl,
+            title: getImageTitle(previousUrl),
+          };
         }
       }
 
@@ -191,7 +214,9 @@ export default function ConexaoForm() {
         : await createConexaoForte(payload);
 
       toastCustom.success(
-        content.id ? "Conteúdo atualizado com sucesso!" : "Conteúdo criado com sucesso!",
+        content.id
+          ? "Conteúdo atualizado com sucesso!"
+          : "Conteúdo criado com sucesso!"
       );
 
       setContent({
@@ -210,7 +235,12 @@ export default function ConexaoForm() {
         4: saved.imagemUrl4 ?? undefined,
       };
       setOldImages(newOld);
-      const newFiles: Record<ImageKey, FileUploadItem[]> = { 1: [], 2: [], 3: [], 4: [] };
+      const newFiles: Record<ImageKey, FileUploadItem[]> = {
+        1: [],
+        2: [],
+        3: [],
+        4: [],
+      };
       for (const key of imageKeys) {
         const url = newOld[key];
         if (url) {
@@ -233,7 +263,8 @@ export default function ConexaoForm() {
       const status = (err as any)?.status;
       let message = "Não foi possível salvar";
       if (status === 401) message = "Sessão expirada. Faça login novamente";
-      else if (status === 403) message = "Você não tem permissão para esta ação";
+      else if (status === 403)
+        message = "Você não tem permissão para esta ação";
       toastCustom.error(message);
     } finally {
       setIsLoading(false);
@@ -274,13 +305,18 @@ export default function ConexaoForm() {
             label="Título"
             id="titulo"
             value={content.titulo}
-            onChange={(e) => setContent((p) => ({ ...p, titulo: e.target.value }))}
+            onChange={(e) =>
+              setContent((p) => ({ ...p, titulo: e.target.value }))
+            }
             maxLength={100}
             required
           />
 
           <div>
-            <Label htmlFor="descricao" className="text-sm font-medium text-gray-700 required">
+            <Label
+              htmlFor="descricao"
+              className="text-sm font-medium text-gray-700 required"
+            >
               Descrição
             </Label>
             <div className="mt-1">
@@ -306,8 +342,9 @@ export default function ConexaoForm() {
                 isLoading ||
                 imageKeys.some(
                   (k) =>
-                    (!content[`imagemUrl${k}` as keyof ConexaoContent] && files[k].length === 0) ||
-                    files[k].some((f) => f.status === "uploading"),
+                    (!content[`imagemUrl${k}` as keyof ConexaoContent] &&
+                      files[k].length === 0) ||
+                    files[k].some((f) => f.status === "uploading")
                 )
               }
               size="lg"

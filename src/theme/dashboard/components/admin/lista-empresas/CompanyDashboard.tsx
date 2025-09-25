@@ -25,7 +25,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import { ArrowUpDown, ChevronUp, ChevronDown } from "lucide-react";
+import { ChevronUp, ChevronDown } from "lucide-react";
 import {
   Tooltip,
   TooltipTrigger,
@@ -52,6 +52,9 @@ const normalizeCnpj = (value?: string | null): string =>
 const STATUS_FILTER_OPTIONS: { value: AdminCompanyStatus; label: string }[] = [
   { value: "ATIVO", label: "Ativo" },
   { value: "INATIVO", label: "Desativado" },
+  { value: "BANIDO", label: "Banido" },
+  { value: "PENDENTE", label: "Pendente" },
+  { value: "SUSPENSO", label: "Suspenso" },
 ];
 
 export function CompanyDashboard({
@@ -238,7 +241,7 @@ export function CompanyDashboard({
       return partnerships;
     }
 
-    const query = searchTerm.trim().toLowerCase();
+    const query = searchTerm?.trim().toLowerCase() || "";
     const numericQuery = query.replace(/\D/g, "");
 
     return partnerships.filter((partnership) => {
@@ -257,8 +260,20 @@ export function CompanyDashboard({
       const matchesPlan =
         selectedPlans.length === 0 || selectedPlans.includes(plan.nome);
 
-      const companyStatus: AdminCompanyStatus =
-        company.status ?? (company.ativo ? "ATIVO" : "INATIVO");
+      // Determinar o status da empresa de forma consistente
+      let companyStatus: AdminCompanyStatus;
+
+      // Verificar se a empresa está banida primeiro
+      if (company.banida || company.banimentoAtivo) {
+        companyStatus = "BANIDO";
+      } else if (company.status) {
+        companyStatus = company.status;
+      } else if (company.ativo !== undefined) {
+        companyStatus = company.ativo ? "ATIVO" : "INATIVO";
+      } else {
+        // Fallback baseado no campo 'ativo' se disponível
+        companyStatus = company.ativo ? "ATIVO" : "INATIVO";
+      }
 
       const matchesStatus =
         selectedStatuses.length === 0 ||
@@ -340,16 +355,31 @@ export function CompanyDashboard({
       hasFetchedRef.current = true;
       const effectiveSize = sizeOverride ?? pageSizeRef.current;
       setCurrentPage(pageToLoad);
-      refetch({
+
+      // Construir parâmetros de busca
+      const searchParams: any = {
         page: pageToLoad,
         pageSize: effectiveSize,
-        search:
-          searchTermRef.current.trim().length > 0
-            ? searchTermRef.current.trim()
-            : undefined,
-      }).catch(() => {});
+      };
+
+      // Só adicionar search se houver termo de busca
+      const trimmedSearch = searchTermRef.current?.trim() || "";
+
+      if (trimmedSearch.length > 0) {
+        searchParams.search = trimmedSearch;
+        console.log("🔍 runFetch: Com busca -", searchParams);
+      } else {
+        // Explicitamente definir search como undefined para limpar a busca
+        searchParams.search = undefined;
+        console.log(
+          "🔍 runFetch: Sem busca (listagem completa) -",
+          searchParams
+        );
+      }
+
+      refetch(searchParams).catch(() => {});
     },
-    [refetch, shouldFetch]
+    [refetch, shouldFetch, searchTerm]
   );
 
   useEffect(() => {
@@ -476,8 +506,25 @@ export function CompanyDashboard({
             search={{
               label: "Pesquisar empresa",
               value: searchTerm,
-              onChange: setSearchTerm,
+              onChange: (value) => {
+                setSearchTerm(value);
+                searchTermRef.current = value;
+              },
               placeholder: "Buscar empresa, código ou CNPJ...",
+              onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  setCurrentPage(1);
+                  if (shouldFetch) {
+                    // Usar o valor atual do input, não o estado
+                    const currentValue = (e.target as HTMLInputElement).value;
+                    searchTermRef.current = currentValue;
+                    selectedPlansRef.current = selectedPlans;
+                    selectedStatusesRef.current = selectedStatuses;
+                    runFetch(1);
+                  }
+                }
+              },
             }}
             rightActions={
               shouldFetch ? (
@@ -486,6 +533,7 @@ export function CompanyDashboard({
                   size="lg"
                   onClick={() => {
                     setCurrentPage(1);
+                    // Usar o valor atual do estado searchTerm
                     searchTermRef.current = searchTerm;
                     selectedPlansRef.current = selectedPlans;
                     selectedStatusesRef.current = selectedStatuses;
@@ -519,205 +567,210 @@ export function CompanyDashboard({
 
       <div className="py-6">
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow className="border-gray-200 bg-gray-50/50">
-                <TableHead
-                  className="font-medium text-gray-700 py-4"
-                  aria-sort={
-                    sortField === "name"
-                      ? sortDirection === "asc"
-                        ? "ascending"
-                        : "descending"
-                      : "none"
-                  }
-                >
-                  <div className="inline-flex items-center gap-1">
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button
-                          type="button"
-                          onClick={() => toggleSort("name")}
-                          className={cn(
-                            "inline-flex items-center gap-1 px-2 py-1 cursor-pointer transition-colors bg-transparent",
-                            sortField === "name" && "text-gray-900"
-                          )}
-                        >
-                          Empresa
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent sideOffset={6}>
-                        {sortField === "name"
-                          ? sortDirection === "asc"
-                            ? "A → Z (clique para Z → A)"
-                            : "Z → A (clique para A → Z)"
-                          : "Ordenar por nome"}
-                      </TooltipContent>
-                    </Tooltip>
-
-                    <div className="ml-1 flex flex-col -space-y-1.5 items-center leading-none">
+          <div className="overflow-x-auto">
+            <Table className="min-w-[800px]">
+              <TableHeader>
+                <TableRow className="border-gray-200 bg-gray-50/50">
+                  <TableHead
+                    className="font-medium text-gray-700 py-4"
+                    aria-sort={
+                      sortField === "name"
+                        ? sortDirection === "asc"
+                          ? "ascending"
+                          : "descending"
+                        : "none"
+                    }
+                  >
+                    <div className="inline-flex items-center gap-1">
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <button
                             type="button"
-                            className="rounded p-0.5 cursor-pointer bg-transparent hover:bg-transparent"
-                            aria-label="Ordenar A → Z"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSort("name", "asc");
-                            }}
+                            onClick={() => toggleSort("name")}
+                            className={cn(
+                              "inline-flex items-center gap-1 px-2 py-1 cursor-pointer transition-colors bg-transparent",
+                              sortField === "name" && "text-gray-900"
+                            )}
                           >
-                            <ChevronUp
-                              className={cn(
-                                "h-3 w-3 text-gray-400",
-                                sortField === "name" &&
-                                  sortDirection === "asc" &&
-                                  "text-[var(--primary-color)]"
-                              )}
-                            />
-                          </button>
-                        </TooltipTrigger>
-                        <TooltipContent sideOffset={6}>A → Z</TooltipContent>
-                      </Tooltip>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <button
-                            type="button"
-                            className="rounded p-0.5 cursor-pointer bg-transparent hover:bg-transparent"
-                            aria-label="Ordenar Z → A"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSort("name", "desc");
-                            }}
-                          >
-                            <ChevronDown
-                              className={cn(
-                                "h-3 w-3 text-gray-400 -mt-0.5",
-                                sortField === "name" &&
-                                  sortDirection === "desc" &&
-                                  "text-[var(--primary-color)]"
-                              )}
-                            />
-                          </button>
-                        </TooltipTrigger>
-                        <TooltipContent sideOffset={6}>Z → A</TooltipContent>
-                      </Tooltip>
-                    </div>
-                  </div>
-                </TableHead>
-                <TableHead className="font-medium text-gray-700">
-                  Plano
-                </TableHead>
-                <TableHead className="font-medium text-gray-700">
-                  Localização
-                </TableHead>
-                {/* Coluna de Vagas removida */}
-                <TableHead className="font-medium text-gray-700">
-                  Status
-                </TableHead>
-                <TableHead
-                  className="font-medium text-gray-700"
-                  aria-sort={
-                    sortField === "createdAt"
-                      ? sortDirection === "asc"
-                        ? "ascending"
-                        : "descending"
-                      : "none"
-                  }
-                >
-                  <div className="inline-flex items-center gap-1">
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button
-                          type="button"
-                          onClick={() => toggleSort("createdAt")}
-                          className={cn(
-                            "inline-flex items-center gap-1 px-2 py-1 cursor-pointer transition-colors bg-transparent",
-                            sortField === "createdAt" && "text-gray-900"
-                          )}
-                        >
-                          Data da criação
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent sideOffset={6}>
-                        {sortField === "createdAt"
-                          ? sortDirection === "asc"
-                            ? "Mais antiga → mais nova"
-                            : "Mais nova → mais antiga"
-                          : "Ordenar por data"}
-                      </TooltipContent>
-                    </Tooltip>
-
-                    <div className="ml-1 flex flex-col -space-y-1.5 items-center leading-none">
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <button
-                            type="button"
-                            className="rounded p-0.5 cursor-pointer bg-transparent hover:bg-transparent"
-                            aria-label="Mais nova → mais antiga"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              // Up = atual → antigo (desc)
-                              setSort("createdAt", "desc");
-                            }}
-                          >
-                            <ChevronUp
-                              className={cn(
-                                "h-3 w-3 text-gray-400",
-                                sortField === "createdAt" &&
-                                  sortDirection === "desc" &&
-                                  "text-[var(--primary-color)]"
-                              )}
-                            />
+                            Empresa
                           </button>
                         </TooltipTrigger>
                         <TooltipContent sideOffset={6}>
-                          Mais nova → mais antiga
+                          {sortField === "name"
+                            ? sortDirection === "asc"
+                              ? "A → Z (clique para Z → A)"
+                              : "Z → A (clique para A → Z)"
+                            : "Ordenar por nome"}
                         </TooltipContent>
                       </Tooltip>
+
+                      <div className="ml-1 flex flex-col -space-y-1.5 items-center leading-none">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button
+                              type="button"
+                              className="rounded p-0.5 cursor-pointer bg-transparent hover:bg-transparent"
+                              aria-label="Ordenar A → Z"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSort("name", "asc");
+                              }}
+                            >
+                              <ChevronUp
+                                className={cn(
+                                  "h-3 w-3 text-gray-400",
+                                  sortField === "name" &&
+                                    sortDirection === "asc" &&
+                                    "text-[var(--primary-color)]"
+                                )}
+                              />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent sideOffset={6}>A → Z</TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button
+                              type="button"
+                              className="rounded p-0.5 cursor-pointer bg-transparent hover:bg-transparent"
+                              aria-label="Ordenar Z → A"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSort("name", "desc");
+                              }}
+                            >
+                              <ChevronDown
+                                className={cn(
+                                  "h-3 w-3 text-gray-400 -mt-0.5",
+                                  sortField === "name" &&
+                                    sortDirection === "desc" &&
+                                    "text-[var(--primary-color)]"
+                                )}
+                              />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent sideOffset={6}>Z → A</TooltipContent>
+                        </Tooltip>
+                      </div>
+                    </div>
+                  </TableHead>
+                  <TableHead className="font-medium text-gray-700">
+                    Plano
+                  </TableHead>
+                  <TableHead className="font-medium text-gray-700">
+                    Localização
+                  </TableHead>
+                  {/* Coluna de Vagas removida */}
+                  <TableHead className="font-medium text-gray-700">
+                    Status
+                  </TableHead>
+                  <TableHead
+                    className="font-medium text-gray-700"
+                    aria-sort={
+                      sortField === "createdAt"
+                        ? sortDirection === "asc"
+                          ? "ascending"
+                          : "descending"
+                        : "none"
+                    }
+                  >
+                    <div className="inline-flex items-center gap-1">
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <button
                             type="button"
-                            className="rounded p-0.5 cursor-pointer bg-transparent hover:bg-transparent"
-                            aria-label="Mais antiga → mais nova"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              // Down = antigo → atual (asc)
-                              setSort("createdAt", "asc");
-                            }}
+                            onClick={() => toggleSort("createdAt")}
+                            className={cn(
+                              "inline-flex items-center gap-1 px-2 py-1 cursor-pointer transition-colors bg-transparent",
+                              sortField === "createdAt" && "text-gray-900"
+                            )}
                           >
-                            <ChevronDown
-                              className={cn(
-                                "h-3 w-3 text-gray-400 -mt-0.5",
-                                sortField === "createdAt" &&
-                                  sortDirection === "asc" &&
-                                  "text-[var(--primary-color)]"
-                              )}
-                            />
+                            Data da criação
                           </button>
                         </TooltipTrigger>
                         <TooltipContent sideOffset={6}>
-                          Mais antiga → mais nova
+                          {sortField === "createdAt"
+                            ? sortDirection === "asc"
+                              ? "Mais antiga → mais nova"
+                              : "Mais nova → mais antiga"
+                            : "Ordenar por data"}
                         </TooltipContent>
                       </Tooltip>
+
+                      <div className="ml-1 flex flex-col -space-y-1.5 items-center leading-none">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button
+                              type="button"
+                              className="rounded p-0.5 cursor-pointer bg-transparent hover:bg-transparent"
+                              aria-label="Mais nova → mais antiga"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                // Up = atual → antigo (desc)
+                                setSort("createdAt", "desc");
+                              }}
+                            >
+                              <ChevronUp
+                                className={cn(
+                                  "h-3 w-3 text-gray-400",
+                                  sortField === "createdAt" &&
+                                    sortDirection === "desc" &&
+                                    "text-[var(--primary-color)]"
+                                )}
+                              />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent sideOffset={6}>
+                            Mais nova → mais antiga
+                          </TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button
+                              type="button"
+                              className="rounded p-0.5 cursor-pointer bg-transparent hover:bg-transparent"
+                              aria-label="Mais antiga → mais nova"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                // Down = antigo → atual (asc)
+                                setSort("createdAt", "asc");
+                              }}
+                            >
+                              <ChevronDown
+                                className={cn(
+                                  "h-3 w-3 text-gray-400 -mt-0.5",
+                                  sortField === "createdAt" &&
+                                    sortDirection === "asc" &&
+                                    "text-[var(--primary-color)]"
+                                )}
+                              />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent sideOffset={6}>
+                            Mais antiga → mais nova
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
                     </div>
-                  </div>
-                </TableHead>
-                <TableHead className="font-medium text-gray-700">
-                  Dias restantes
-                </TableHead>
-                <TableHead className="w-12" />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoadingData && <CompanyTableSkeleton rows={pageSize} />}
-              {!isLoadingData &&
-                displayedPartnerships.map((partnership) => (
-                  <CompanyRow key={partnership.id} partnership={partnership} />
-                ))}
-            </TableBody>
-          </Table>
+                  </TableHead>
+                  <TableHead className="font-medium text-gray-700">
+                    Dias restantes
+                  </TableHead>
+                  <TableHead className="w-12" />
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isLoadingData && <CompanyTableSkeleton rows={pageSize} />}
+                {!isLoadingData &&
+                  displayedPartnerships.map((partnership) => (
+                    <CompanyRow
+                      key={partnership.id}
+                      partnership={partnership}
+                    />
+                  ))}
+              </TableBody>
+            </Table>
+          </div>
 
           {(totalItems > 0 || isLoadingData) && (
             <div className="flex flex-col gap-4 px-6 py-4 border-t border-gray-200 bg-gray-50/30 sm:flex-row sm:items-center sm:justify-between">

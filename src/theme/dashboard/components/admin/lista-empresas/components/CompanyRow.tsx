@@ -121,33 +121,45 @@ function getPaymentStatusBadge(status?: string | null) {
 
 function getCompanyStatusBadges(partnership: Partnership) {
   const badges: React.ReactNode[] = [];
-  const status =
-    partnership.empresa.status ??
-    (partnership.empresa.ativo ? "ATIVO" : "INATIVO");
+
+  // Determinar o status da empresa de forma consistente
+  let status: string;
+  if (partnership.empresa.banida || partnership.empresa.banimentoAtivo) {
+    status = "BANIDO";
+  } else if (partnership.empresa.status) {
+    status = partnership.empresa.status;
+  } else {
+    status = partnership.empresa.ativo ? "ATIVO" : "INATIVO";
+  }
+
+  // Definir classes de cor baseadas no status
+  const getStatusClasses = (status: string) => {
+    switch (status) {
+      case "ATIVO":
+        return "bg-green-100 text-green-800 border-green-200";
+      case "INATIVO":
+        return "bg-red-100 text-red-800 border-red-200";
+      case "BANIDO":
+        return "bg-rose-100 text-rose-800 border-rose-200";
+      case "PENDENTE":
+        return "bg-amber-100 text-amber-800 border-amber-200";
+      case "SUSPENSO":
+        return "bg-orange-100 text-orange-800 border-orange-200";
+      default:
+        return "bg-gray-100 text-gray-800 border-gray-200";
+    }
+  };
 
   badges.push(
     <Badge
       key="company-status"
-      className={
-        status === "ATIVO"
-          ? "bg-green-100 text-green-800 border-green-200 uppercase tracking-wide text-[10px]"
-          : "bg-red-100 text-red-800 border-red-200 uppercase tracking-wide text-[10px]"
-      }
+      className={`${getStatusClasses(
+        status
+      )} uppercase tracking-wide text-[10px]`}
     >
       {status}
     </Badge>
   );
-
-  if (partnership.empresa.banida || partnership.empresa.banimentoAtivo) {
-    badges.push(
-      <Badge
-        key="company-ban"
-        className="bg-rose-100 text-rose-800 border-rose-200 uppercase tracking-wide text-[10px] flex items-center gap-1"
-      >
-        <ShieldAlert className="h-3 w-3" aria-hidden="true" /> Banida
-      </Badge>
-    );
-  }
 
   return badges;
 }
@@ -170,9 +182,9 @@ export const CompanyRow: React.FC<CompanyRowProps> = ({ partnership }) => {
 
   return (
     <TableRow className="border-gray-100 hover:bg-gray-50/50 transition-colors">
-      <TableCell className="py-4">
+      <TableCell className="py-4 min-w-[280px] max-w-[320px]">
         <div className="flex items-center gap-3">
-          <Avatar className="h-8 w-8">
+          <Avatar className="h-8 w-8 flex-shrink-0">
             <AvatarImage
               src={partnership.empresa.avatarUrl || undefined}
               alt={partnership.empresa.nome}
@@ -181,29 +193,33 @@ export const CompanyRow: React.FC<CompanyRowProps> = ({ partnership }) => {
               {partnership.empresa.nome.substring(0, 2).toUpperCase()}
             </AvatarFallback>
           </Avatar>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 mb-1">
-              <div className="font-bold text-gray-900 truncate">
+              <div className="font-bold text-gray-900 truncate text-sm">
                 {partnership.empresa.nome}
               </div>
-              <code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded font-mono text-gray-500">
+              <code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded font-mono text-gray-500 flex-shrink-0">
                 {partnership.empresa.codUsuario}
               </code>
             </div>
             {formattedCnpj && (
-              <div className="text-xs text-gray-500 font-mono">
+              <div className="text-xs text-gray-500 font-mono truncate">
                 {formattedCnpj}
               </div>
             )}
           </div>
         </div>
       </TableCell>
-      <TableCell>
+      <TableCell className="min-w-[140px] max-w-[180px]">
         {hasPlanInfo ? (
           <div>
-            <div className="font-medium text-sm text-gray-900">{planName}</div>
+            <div className="font-medium text-sm text-gray-900 truncate">
+              {planName}
+            </div>
             {formattedPlanPrice && (
-              <div className="text-xs text-gray-500">{formattedPlanPrice}</div>
+              <div className="text-xs text-gray-500 truncate">
+                {formattedPlanPrice}
+              </div>
             )}
             {/* removed plan type badge (Mensal/Teste/Parceira) by request */}
           </div>
@@ -211,42 +227,44 @@ export const CompanyRow: React.FC<CompanyRowProps> = ({ partnership }) => {
           <span className="text-sm text-gray-500">—</span>
         )}
       </TableCell>
-      <TableCell>
+      <TableCell className="min-w-[120px] max-w-[150px]">
         {hasLocation ? (
           <div className="flex items-center gap-1 text-sm text-gray-600">
-            <MapPin className="h-3 w-3" />
-            <span>{locationDisplay}</span>
+            <MapPin className="h-3 w-3 flex-shrink-0" />
+            <span className="truncate">{locationDisplay}</span>
           </div>
         ) : (
           <span className="text-sm text-gray-500">—</span>
         )}
       </TableCell>
-      {/* Coluna de Vagas removida */}
-      {/* removed "Status Plano" column by request */}
-      <TableCell>
+      <TableCell className="min-w-[120px] max-w-[160px]">
         <div className="flex flex-wrap gap-1">{companyBadges}</div>
         {partnership.empresa.banimentoAtivo && (
-          <p className="mt-1 text-[11px] text-rose-600">
+          <p className="mt-1 text-[11px] text-rose-600 truncate">
             Banida até{" "}
             {formatDate(partnership.empresa.banimentoAtivo.banimento.fim)}
           </p>
         )}
       </TableCell>
-      <TableCell>
-        <div className="text-sm text-gray-600 flex flex-col">
-          <span>{formatDate(partnership.empresa.criadoEm ?? undefined)}</span>
+      <TableCell className="min-w-[100px] max-w-[120px]">
+        <div className="text-sm text-gray-600">
+          <span className="truncate block">
+            {formatDate(partnership.empresa.criadoEm ?? undefined)}
+          </span>
         </div>
       </TableCell>
-      <TableCell>
-        <div className="text-sm text-gray-600 flex flex-col">
+      <TableCell className="min-w-[100px] max-w-[140px]">
+        <div className="text-sm text-gray-600">
           {partnership.plano.diasRestantes != null ? (
-            <span>{partnership.plano.diasRestantes} dias restantes</span>
+            <span className="truncate block">
+              {partnership.plano.diasRestantes} dias restantes
+            </span>
           ) : (
             <span className="text-gray-500">—</span>
           )}
         </div>
       </TableCell>
-      <TableCell className="text-right">
+      <TableCell className="text-right w-16">
         <Tooltip>
           <TooltipTrigger asChild>
             <Button

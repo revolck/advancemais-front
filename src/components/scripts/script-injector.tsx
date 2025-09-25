@@ -1,10 +1,14 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useRef } from "react";
+import dynamic from "next/dynamic";
 
 import type { PreparedScriptSnippet } from "@/lib/scripts/load-published-scripts";
 
-const ORIENTATION_TARGET: Record<PreparedScriptSnippet["orientation"], () => HTMLElement | null> = {
+const ORIENTATION_TARGET: Record<
+  PreparedScriptSnippet["orientation"],
+  () => HTMLElement | null
+> = {
   HEADER: () => (typeof document === "undefined" ? null : document.head),
   BODY: () => (typeof document === "undefined" ? null : document.body),
   FOOTER: () => (typeof document === "undefined" ? null : document.body),
@@ -24,7 +28,7 @@ function computeSignature(value: string): string {
 }
 
 function parseScriptsPayload(
-  scripts: PreparedScriptSnippet[],
+  scripts: PreparedScriptSnippet[]
 ): ParsedScriptSnippet[] {
   return scripts.map((script) => ({
     ...script,
@@ -32,96 +36,63 @@ function parseScriptsPayload(
   }));
 }
 
-export function ScriptInjector({
+function ScriptInjectorClient({
   scripts,
 }: {
   scripts: PreparedScriptSnippet[];
 }): null {
-  const payload = useMemo(() => parseScriptsPayload(scripts), [scripts]);
-  const serialized = useMemo(() => JSON.stringify(payload), [payload]);
+  const insertedNodesRef = useRef<Node[]>([]);
 
   useEffect(() => {
-    if (!serialized) return;
+    // Verificar se já estamos no client-side
+    if (typeof window === "undefined") return;
+
+    const parsedPayload = parseScriptsPayload(scripts);
+    const serialized = JSON.stringify(parsedPayload);
 
     let parsed: ParsedScriptSnippet[] = [];
+
     try {
-      parsed = JSON.parse(serialized) as ParsedScriptSnippet[];
-    } catch (error) {
-      console.error("Failed to parse scripts payload", error);
+      parsed = JSON.parse(serialized);
+    } catch {
       return;
     }
 
     const insertedNodes: Node[] = [];
 
     parsed.forEach((script) => {
-      const code = script.code.trim();
-      if (!code) return;
+      const target = ORIENTATION_TARGET[script.orientation]();
 
-      const getTarget = ORIENTATION_TARGET[script.orientation];
-      const target = getTarget?.();
       if (!target) return;
 
-      const selector = `*[data-script-origin="custom-script"][data-script-id="${script.id}"]`;
-      const existing = target.querySelectorAll(selector);
+      const element = document.createElement("script");
+      element.textContent = script.code;
+      element.setAttribute("data-script-id", script.id);
+      element.setAttribute("data-script-signature", script.signature);
 
-      if (
-        existing.length > 0 &&
-        Array.from(existing).every((node) =>
-          node instanceof HTMLElement
-            ? node.dataset.scriptSignature === script.signature
-            : node.textContent?.trim() === code,
-        )
-      ) {
-        return;
-      }
-
-      existing.forEach((node) => {
-        node.parentNode?.removeChild(node);
-      });
-
-      const template = document.createElement("template");
-      template.innerHTML = code;
-
-      const nodes = Array.from(template.content.childNodes).filter((node) => {
-        if (node.nodeType === Node.TEXT_NODE) {
-          return Boolean(node.textContent?.trim());
-        }
-        return true;
-      });
-
-      if (nodes.length === 0) {
-        const inlineScript = document.createElement("script");
-        inlineScript.type = "text/javascript";
-        inlineScript.dataset.scriptOrigin = "custom-script";
-        inlineScript.dataset.scriptId = script.id;
-        inlineScript.dataset.scriptSignature = script.signature;
-        inlineScript.textContent = code;
-        target.appendChild(inlineScript);
-        insertedNodes.push(inlineScript);
-        return;
-      }
-
-      nodes.forEach((node) => {
-        if (node.nodeType === Node.ELEMENT_NODE) {
-          const element = node as HTMLElement;
-          element.dataset.scriptOrigin = "custom-script";
-          element.dataset.scriptId = script.id;
-          element.dataset.scriptSignature = script.signature;
-          if (script.orientation === "FOOTER") {
-            element.dataset.scriptPosition = "footer";
-          }
-        }
-        const appended = target.appendChild(node);
-        insertedNodes.push(appended);
-      });
+      target.appendChild(element);
+      insertedNodes.push(element);
     });
 
+    // Armazenar referência para cleanup
+    insertedNodesRef.current = insertedNodes;
+
     return () => {
-      insertedNodes.forEach((node) => {
+      insertedNodesRef.current.forEach((node) => {
         node.parentNode?.removeChild(node);
       });
+      insertedNodesRef.current = [];
     };
-  }, [serialized]);
+  }, [scripts]);
 
   return null;
 }
+
+// Exportar o componente com dynamic import para evitar SSR
+export const ScriptInjector = dynamic(
+  () => Promise.resolve(ScriptInjectorClient),
+  {
+    ssr: false,
+    loading: () => null,
+  }
+);

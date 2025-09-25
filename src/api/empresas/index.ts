@@ -10,6 +10,17 @@ export type {
   PlanoEmpresarialBackendResponse,
   CreatePlanoEmpresarialPayload,
   UpdatePlanoEmpresarialPayload,
+  PlanoEmpresarialListApiResponse,
+  PlanoEmpresarialDetailApiResponse,
+  PlanoEmpresarialCreateApiResponse,
+  PlanoEmpresarialUpdateApiResponse,
+  PlanoEmpresarialDeleteApiResponse,
+  PlanoEmpresarialErrorResponse,
+  PlanoEmpresarialValidationError,
+  PlanoEmpresarialNotFoundError,
+  PlanoEmpresarialLimitReachedError,
+  PlanoEmpresarialUnauthorizedError,
+  PlanoEmpresarialForbiddenError,
 } from "./planos-empresariais/types";
 
 export {

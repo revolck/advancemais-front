@@ -83,13 +83,11 @@ export default function LoginForm() {
             break;
           case 403:
             toastCustom.error(
-              "Você não tem permissão para acessar este conteúdo",
+              "Você não tem permissão para acessar este conteúdo"
             );
             break;
           case 500:
-            toastCustom.error(
-              "Erro do servidor ao carregar dados existentes",
-            );
+            toastCustom.error("Erro do servidor ao carregar dados existentes");
             break;
           default:
             toastCustom.error("Não foi possível carregar a imagem de login");
@@ -174,7 +172,7 @@ export default function LoginForm() {
           uploadResult = await uploadImage(
             fileItem.file,
             "website/imagem-login",
-            previousUrl,
+            previousUrl
           );
           addLog(`Upload concluído: ${uploadResult.url}`);
         } catch (err) {
@@ -219,7 +217,7 @@ export default function LoginForm() {
 
       if (payload.imagemUrl && payload.imagemUrl !== saved.imagemUrl) {
         addLog(
-          `Forçando uso da imagem enviada: ${payload.imagemUrl} (API retornou ${saved.imagemUrl})`,
+          `Forçando uso da imagem enviada: ${payload.imagemUrl} (API retornou ${saved.imagemUrl})`
         );
       }
 
@@ -270,8 +268,7 @@ export default function LoginForm() {
           break;
         case 422:
           errorMessage =
-            (err as Error).message ||
-            "Erro de validação nos dados enviados";
+            (err as Error).message || "Erro de validação nos dados enviados";
           break;
         case 500:
           errorMessage =
@@ -285,11 +282,13 @@ export default function LoginForm() {
           errorMessage =
             err instanceof TypeError
               ? "Erro de conexão. Verifique sua internet e tente novamente"
-              : `Erro ao salvar${status ? ` (${status})` : ""}. Tente novamente`;
+              : `Erro ao salvar${
+                  status ? ` (${status})` : ""
+                }. Tente novamente`;
       }
       toastCustom.error(
         errorMessage ||
-          "Não foi possível salvar as informações. Tente novamente",
+          "Não foi possível salvar as informações. Tente novamente"
       );
       addLog(`Erro da API: ${errorMessage}`);
 
@@ -361,5 +360,3 @@ export default function LoginForm() {
     </div>
   );
 }
-
-

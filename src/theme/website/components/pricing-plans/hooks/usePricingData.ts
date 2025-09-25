@@ -38,12 +38,18 @@ export function usePricingData(
       setIsLoading(true);
       setError(null);
       const response = await listPlanosEmpresariais();
-      const mapped = mapPlanoEmpresarialToPricingData(response);
 
-      setData(mapped);
+      // Verificar se é um array (sucesso) ou objeto de erro
+      if (Array.isArray(response)) {
+        const mapped = mapPlanoEmpresarialToPricingData(response);
+        setData(mapped);
 
-      if (mapped.length === 0) {
-        setError("Nenhum plano empresarial cadastrado no momento.");
+        if (mapped.length === 0) {
+          setError("Nenhum plano empresarial cadastrado no momento.");
+        }
+      } else {
+        console.error("Erro na resposta da API:", response);
+        setError(response.message || "Erro ao carregar planos empresariais");
       }
     } catch (err) {
       console.error("Erro ao buscar dados dos planos:", err);
@@ -99,9 +105,7 @@ function formatCurrencyValue(value: string): string {
   });
 }
 
-function buildFeatureList(
-  plan: PlanoEmpresarialBackendResponse
-): string[] {
+function buildFeatureList(plan: PlanoEmpresarialBackendResponse): string[] {
   const features: string[] = [];
 
   const vagas = Number(plan.quantidadeVagas) || 0;

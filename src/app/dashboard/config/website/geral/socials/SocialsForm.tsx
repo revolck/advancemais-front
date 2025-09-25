@@ -57,11 +57,10 @@ export default function SocialsForm() {
     };
   }, []);
 
-  const handleChange = (field: keyof SocialsState) => (
-    e: ChangeEvent<HTMLInputElement>,
-  ) => {
-    setState((prev) => ({ ...prev, [field]: e.target.value }));
-  };
+  const handleChange =
+    (field: keyof SocialsState) => (e: ChangeEvent<HTMLInputElement>) => {
+      setState((prev) => ({ ...prev, [field]: e.target.value }));
+    };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
