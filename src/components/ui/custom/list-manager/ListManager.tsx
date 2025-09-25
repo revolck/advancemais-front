@@ -14,7 +14,6 @@ import {
   TableBody,
   TableHead,
   TableRow,
-  TableCell,
 } from "@/components/ui/table";
 import {
   Tooltip,
@@ -28,7 +27,7 @@ import ModalCustom, {
   ModalBody,
 } from "@/components/ui/custom/modal";
 
-import type { ListManagerProps, ListItem } from "./types";
+import type { ListManagerProps, ListItem, TableColumn } from "./types";
 import { LIST_ANIMATIONS } from "./constants";
 import { ListEmptyState } from "./components";
 import { cn } from "@/lib/utils";
@@ -49,6 +48,14 @@ export function ListManager({
   emptyStateTitle,
   emptyStateDescription,
   emptyStateAction,
+  modalCreateTitle,
+  modalEditTitle,
+  emptyStateFirstItemText,
+  createButtonText,
+  tableColumns,
+  disableAutoToasts = false,
+  enablePagination = false,
+  itemsPerPage = 10,
 }: ListManagerProps) {
   // Local state management
   const [items, setItems] = useState<ListItem[]>(initialItems);
@@ -57,6 +64,20 @@ export function ListManager({
   const [currentView, setCurrentView] = useState<"list" | "form">("list");
   const [editingItem, setEditingItem] = useState<ListItem | null>(null);
   const [deletingItems, setDeletingItems] = useState<Set<string>>(new Set());
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Pagination calculations
+  const totalPages = Math.ceil(items.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedItems = enablePagination
+    ? items.slice(startIndex, endIndex)
+    : items;
+
+  // Reset to first page when items change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [items.length]);
 
   // Update items when initialItems change
   useEffect(() => {
@@ -83,12 +104,16 @@ export function ListManager({
               item.id === editingItem.id ? updatedItem : item
             )
           );
-          toastCustom.success(`${entityName} atualizado com sucesso!`);
+          if (!disableAutoToasts) {
+            toastCustom.success(`${entityName} atualizado com sucesso!`);
+          }
         } else {
           // Create new item
           const newItem = await onCreateItem(itemData);
           setItems((prev) => [...prev, newItem]);
-          toastCustom.success(`${entityName} criado com sucesso!`);
+          if (!disableAutoToasts) {
+            toastCustom.success(`${entityName} criado com sucesso!`);
+          }
         }
 
         // Reset form state
@@ -105,7 +130,7 @@ export function ListManager({
         setIsLoading(false);
       }
     },
-    [editingItem, onUpdateItem, onCreateItem, entityName]
+    [editingItem, onUpdateItem, onCreateItem, entityName, disableAutoToasts]
   );
 
   /**
@@ -141,7 +166,9 @@ export function ListManager({
       try {
         await onDeleteItem(id);
         setItems((prev) => prev.filter((item) => item.id !== id));
-        toastCustom.success(`${entityName} excluído com sucesso!`);
+        if (!disableAutoToasts) {
+          toastCustom.success(`${entityName} excluído com sucesso!`);
+        }
       } catch (error) {
         const errorMessage =
           error instanceof Error ? error.message : "Erro ao excluir item";
@@ -155,7 +182,7 @@ export function ListManager({
         });
       }
     },
-    [onDeleteItem, entityName]
+    [onDeleteItem, entityName, disableAutoToasts]
   );
 
   /**
@@ -172,6 +199,86 @@ export function ListManager({
   const clearError = useCallback(() => {
     setError(null);
   }, []);
+
+  // Função para renderizar cabeçalhos das colunas
+  const renderTableHeaders = () => {
+    if (!tableColumns || tableColumns.length === 0) {
+      // Fallback para colunas padrão (compatibilidade com código existente)
+      return (
+        <>
+          <TableHead className="min-w-[200px] max-w-[240px]">
+            <span className="text-xs font-semibold text-gray-600 uppercase tracking-wider">
+              Plano
+            </span>
+          </TableHead>
+          <TableHead className="min-w-[140px] max-w-[180px]">
+            <span className="text-xs font-semibold text-gray-600 uppercase tracking-wider">
+              Valor
+            </span>
+          </TableHead>
+          <TableHead className="min-w-[120px] max-w-[150px]">
+            <span className="text-xs font-semibold text-gray-600 uppercase tracking-wider">
+              Tipo
+            </span>
+          </TableHead>
+          <TableHead className="min-w-[120px] max-w-[150px]">
+            <span className="text-xs font-semibold text-gray-600 uppercase tracking-wider">
+              Desconto
+            </span>
+          </TableHead>
+          <TableHead className="min-w-[120px] max-w-[150px]">
+            <span className="text-xs font-semibold text-gray-600 uppercase tracking-wider">
+              Vagas
+            </span>
+          </TableHead>
+          <TableHead className="min-w-[120px] max-w-[150px]">
+            <span className="text-xs font-semibold text-gray-600 uppercase tracking-wider">
+              Destaque
+            </span>
+          </TableHead>
+          <TableHead className="min-w-[140px] max-w-[180px]">
+            <span className="text-xs font-semibold text-gray-600 uppercase tracking-wider">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="cursor-help">Qtd.</span>
+                </TooltipTrigger>
+                <TooltipContent sideOffset={8}>Quantidade</TooltipContent>
+              </Tooltip>{" "}
+              de Destaque
+            </span>
+          </TableHead>
+          <TableHead className="text-right w-16"></TableHead>
+        </>
+      );
+    }
+
+    return (
+      <>
+        {tableColumns.map((column) => (
+          <TableHead
+            key={column.key}
+            className={column.className || "min-w-[120px] max-w-[150px]"}
+          >
+            <span className="text-xs font-semibold text-gray-600 uppercase tracking-wider">
+              {column.tooltip ? (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="cursor-help">{column.label}</span>
+                  </TooltipTrigger>
+                  <TooltipContent sideOffset={8}>
+                    {column.tooltip}
+                  </TooltipContent>
+                </Tooltip>
+              ) : (
+                column.label
+              )}
+            </span>
+          </TableHead>
+        ))}
+        <TableHead className="text-right w-16"></TableHead>
+      </>
+    );
+  };
 
   return (
     <div
@@ -231,7 +338,7 @@ export function ListManager({
                 ) : (
                   <>
                     <Icon name="Plus" className="h-5 w-5 mr-2" />
-                    Novo {entityName}
+                    {createButtonText || `Novo ${entityName}`}
                   </>
                 )}
               </ButtonCustom>
@@ -271,60 +378,18 @@ export function ListManager({
                 emptyStateTitle={emptyStateTitle}
                 emptyStateDescription={emptyStateDescription}
                 emptyStateAction={emptyStateAction}
+                emptyStateFirstItemText={emptyStateFirstItemText}
               />
             ) : (
               <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
                 <Table>
                   <TableHeader>
                     <TableRow className="border-gray-100 bg-gray-50/50">
-                      <TableHead className="min-w-[200px] max-w-[240px]">
-                        <span className="text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                          Plano
-                        </span>
-                      </TableHead>
-                      <TableHead className="min-w-[140px] max-w-[180px]">
-                        <span className="text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                          Valor
-                        </span>
-                      </TableHead>
-                      <TableHead className="min-w-[120px] max-w-[150px]">
-                        <span className="text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                          Tipo
-                        </span>
-                      </TableHead>
-                      <TableHead className="min-w-[120px] max-w-[150px]">
-                        <span className="text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                          Desconto
-                        </span>
-                      </TableHead>
-                      <TableHead className="min-w-[120px] max-w-[150px]">
-                        <span className="text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                          Vagas
-                        </span>
-                      </TableHead>
-                      <TableHead className="min-w-[120px] max-w-[150px]">
-                        <span className="text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                          Destaque
-                        </span>
-                      </TableHead>
-                      <TableHead className="min-w-[140px] max-w-[180px]">
-                        <span className="text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <span className="cursor-help">Qtd.</span>
-                            </TooltipTrigger>
-                            <TooltipContent sideOffset={8}>
-                              Quantidade
-                            </TooltipContent>
-                          </Tooltip>{" "}
-                          de Destaque
-                        </span>
-                      </TableHead>
-                      <TableHead className="text-right w-16"></TableHead>
+                      {renderTableHeaders()}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {items.map((item) => (
+                    {paginatedItems.map((item) => (
                       <TableRow
                         key={item.id}
                         className="border-gray-100 hover:bg-gray-50/50 transition-colors"
@@ -343,6 +408,68 @@ export function ListManager({
             )}
           </motion.div>
         </AnimatePresence>
+
+        {/* Pagination Controls */}
+        {enablePagination && totalPages > 1 && (
+          <div className="flex items-center justify-between mt-4 px-4 py-3">
+            <div className="flex items-center text-sm text-gray-700">
+              <span>
+                Mostrando {startIndex + 1} a {Math.min(endIndex, items.length)}{" "}
+                de {items.length} {entityNamePlural.toLowerCase()}
+              </span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <ButtonCustom
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                disabled={currentPage === 1}
+                className="h-8 px-3"
+              >
+                Anterior
+              </ButtonCustom>
+              <div className="flex items-center space-x-1">
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let pageNumber;
+                  if (totalPages <= 5) {
+                    pageNumber = i + 1;
+                  } else if (currentPage <= 3) {
+                    pageNumber = i + 1;
+                  } else if (currentPage >= totalPages - 2) {
+                    pageNumber = totalPages - 4 + i;
+                  } else {
+                    pageNumber = currentPage - 2 + i;
+                  }
+
+                  return (
+                    <ButtonCustom
+                      key={pageNumber}
+                      variant={
+                        currentPage === pageNumber ? "default" : "outline"
+                      }
+                      size="sm"
+                      onClick={() => setCurrentPage(pageNumber)}
+                      className="h-8 w-8 p-0"
+                    >
+                      {pageNumber}
+                    </ButtonCustom>
+                  );
+                })}
+              </div>
+              <ButtonCustom
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  setCurrentPage(Math.min(totalPages, currentPage + 1))
+                }
+                disabled={currentPage === totalPages}
+                className="h-8 px-3"
+              >
+                Próxima
+              </ButtonCustom>
+            </div>
+          </div>
+        )}
 
         {/* Modal for create/edit */}
         <ModalCustom
@@ -363,8 +490,8 @@ export function ListManager({
             <ModalHeader>
               <ModalTitle className="!text-xl md:text-lg font-semibold">
                 {editingItem
-                  ? `Editar ${entityName.toLowerCase()}`
-                  : `Criar novo ${entityName.toLowerCase()}`}
+                  ? modalEditTitle || `Editar ${entityName.toLowerCase()}`
+                  : modalCreateTitle || `Criar ${entityName.toLowerCase()}`}
               </ModalTitle>
             </ModalHeader>
             <ModalBody className="pr-1">

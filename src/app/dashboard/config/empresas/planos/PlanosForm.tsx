@@ -331,6 +331,48 @@ export default function PlanosForm() {
       renderItem={renderItem}
       renderCreateForm={renderCreateForm}
       renderEditForm={renderEditForm}
+      modalCreateTitle="Criar novo plano empresarial"
+      modalEditTitle="Editar plano empresarial"
+      emptyStateFirstItemText="Comece criando seu primeiro plano empresarial."
+      createButtonText="Novo plano"
+      tableColumns={[
+        {
+          key: "plano",
+          label: "Plano",
+          className: "min-w-[200px] max-w-[240px]",
+        },
+        {
+          key: "valor",
+          label: "Valor",
+          className: "min-w-[140px] max-w-[180px]",
+        },
+        {
+          key: "tipo",
+          label: "Tipo",
+          className: "min-w-[120px] max-w-[150px]",
+        },
+        {
+          key: "desconto",
+          label: "Desconto",
+          className: "min-w-[120px] max-w-[150px]",
+        },
+        {
+          key: "vagas",
+          label: "Vagas",
+          className: "min-w-[120px] max-w-[150px]",
+        },
+        {
+          key: "destaque",
+          label: "Destaque",
+          className: "min-w-[120px] max-w-[150px]",
+        },
+        {
+          key: "quantidadeDestaque",
+          label: "Qtd. em destaque",
+          tooltip: "Quantidade de Destaque",
+          className: "min-w-[140px] max-w-[180px]",
+        },
+      ]}
     />
   );
 }

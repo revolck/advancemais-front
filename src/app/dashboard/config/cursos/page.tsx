@@ -2,22 +2,22 @@
 
 import React from "react";
 import { VerticalTabs, type VerticalTabItem } from "@/components/ui/custom";
-import LoginForm from "./login/LoginForm";
-import DashboardScriptsForm from "./scripts/ScriptsForm";
+import { CategoriasForm } from "./categorias/CategoriasForm";
+import { SubcategoriasForm } from "./subcategorias/SubcategoriasForm";
 
-export default function GeralDashboardPage() {
+export default function CursosDashboardPage() {
   const items: VerticalTabItem[] = [
     {
-      value: "login",
-      label: "Login",
-      icon: "LogIn",
-      content: <LoginForm />,
+      value: "categorias",
+      label: "Categorias",
+      icon: "BookOpen",
+      content: <CategoriasForm />,
     },
     {
-      value: "scripts",
-      label: "Scripts",
-      icon: "Code2",
-      content: <DashboardScriptsForm />,
+      value: "subcategorias",
+      label: "Subcategorias",
+      icon: "Tags",
+      content: <SubcategoriasForm />,
     },
   ];
 
@@ -26,7 +26,7 @@ export default function GeralDashboardPage() {
       <div className="flex-1 min-h-0">
         <VerticalTabs
           items={items}
-          defaultValue="login"
+          defaultValue="categorias"
           variant="spacious"
           size="sm"
           withAnimation

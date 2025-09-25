@@ -727,7 +727,7 @@ export function ModalTitle({
   return (
     <DialogPrimitive.Title
       data-slot="modal-title"
-      className={cn("!text-2xl leading-none font-normal", className)}
+      className={cn("!text-xl leading-none font-normal", className)}
       {...props}
     />
   );

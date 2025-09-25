@@ -11,6 +11,7 @@ interface ListEmptyStateProps {
   emptyStateTitle?: string;
   emptyStateDescription?: string;
   emptyStateAction?: React.ReactNode;
+  emptyStateFirstItemText?: string;
 }
 
 const EMPTY_STATE_ANIMATION = {
@@ -21,17 +22,17 @@ const EMPTY_STATE_ANIMATION = {
 
 export function ListEmptyState({
   entityName,
-  entityNamePlural,
-  maxItems,
   emptyStateTitle,
   emptyStateDescription,
   emptyStateAction,
+  emptyStateFirstItemText,
 }: ListEmptyStateProps) {
   const title =
     emptyStateTitle || `Nenhum ${entityName.toLowerCase()} encontrado`;
   const description =
     emptyStateDescription ||
-    `Comece criando seu primeiro ${entityName.toLowerCase()} para dar vida ao seu sistema!`;
+    emptyStateFirstItemText ||
+    `Comece criando seu primeiro ${entityName.toLowerCase()}.`;
 
   return (
     <motion.div {...EMPTY_STATE_ANIMATION} className="py-16">

@@ -1,10 +1,7 @@
 "use client";
 
 import React from "react";
-import {
-  VerticalTabs,
-  type VerticalTabItem,
-} from "@/components/ui/custom";
+import { VerticalTabs, type VerticalTabItem } from "@/components/ui/custom";
 import LogosForm from "./logos/LogosForm";
 import DepoimentosForm from "./depoimentos/DepoimentosForm";
 import SocialsForm from "./socials/SocialsForm";
@@ -12,6 +9,7 @@ import EnderecoForm from "./endereco/EnderecoForm";
 import ContatoForm from "./contato/ContatoForm";
 import AtendimentoForm from "./atendimento/AtendimentoForm";
 import ScriptsForm from "./scripts/ScriptsForm";
+import LoginForm from "./login/LoginForm";
 
 export default function GeralPage() {
   const items: VerticalTabItem[] = [
@@ -56,6 +54,12 @@ export default function GeralPage() {
       label: "Scripts",
       icon: "Code2",
       content: <ScriptsForm />,
+    },
+    {
+      value: "login",
+      label: "Login",
+      icon: "LogIn",
+      content: <LoginForm />,
     },
   ];
 

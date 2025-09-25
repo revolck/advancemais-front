@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -11,19 +10,10 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import {
-  Edit,
-  Trash2,
-  Building2,
-  DollarSign,
-  Users,
-  Star,
-  Loader2,
-  Eye,
-} from "lucide-react";
+import { Edit, Trash2, Users, Star, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { PlanoEmpresarialBackendResponse } from "@/api/empresas/planos-empresariais/types";
-import { DeletePlanoModal } from "./DeletePlanoModal";
+import { DeleteConfirmModal } from "@/components/ui/custom/list-manager/components/DeleteConfirmModal";
 import { Icon } from "@/components/ui/custom/Icons";
 
 interface PlanoRowProps {
@@ -114,6 +104,34 @@ export function PlanoRow({
   const handleCancelDelete = () => {
     setShowDeleteModal(false);
   };
+
+  // Conteúdo customizado para delete de plano empresarial
+  const customDeleteContent = (item: PlanoEmpresarialBackendResponse) => (
+    <div className="space-y-4">
+      <div className="bg-red-50 border border-red-200 rounded-lg p-4 space-y-3">
+        <div className="flex items-start gap-2">
+          <div className="space-y-1">
+            <p className="text-sm font-medium !text-red-800 !leading-normal">
+              Esta ação é irreversível e pode impactar todo o sistema!
+            </p>
+            <ul className="text-xs text-gray-700 space-y-1 ml-3">
+              <li>
+                • Empresas com assinatura ativa neste plano serão afetadas
+              </li>
+              <li>
+                • Todas as configurações e dados relacionados serão perdidos
+              </li>
+              <li>• O plano será removido permanentemente do sistema</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <p className="!text-base text-gray-600 !leading-normal !mb-0">
+        Tem certeza absoluta que deseja continuar com esta exclusão?
+      </p>
+    </div>
+  );
 
   // Skeleton de loading durante delete - compatível com estrutura de tabela
   if (externalIsDeleting) {
@@ -321,12 +339,16 @@ export function PlanoRow({
       </TableCell>
 
       {/* Modal de Confirmação de Exclusão */}
-      <DeletePlanoModal
+      <DeleteConfirmModal<PlanoEmpresarialBackendResponse>
         isOpen={showDeleteModal}
         onOpenChange={setShowDeleteModal}
-        plano={plano}
+        item={plano}
+        itemName="o plano empresarial"
         onConfirmDelete={handleConfirmDelete}
         isDeleting={externalIsDeleting}
+        customDeleteContent={customDeleteContent}
+        confirmButtonText="Sim, excluir plano"
+        title="Excluir Plano Empresarial"
       />
     </>
   );

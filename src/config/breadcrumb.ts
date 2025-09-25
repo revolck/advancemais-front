@@ -1,10 +1,10 @@
 "use client";
 
-import { usePathname } from 'next/navigation';
+import { usePathname } from "next/navigation";
 
-export type IconName = 
-  | "Home" 
-  | "Settings" 
+export type IconName =
+  | "Home"
+  | "Settings"
   | "Globe"
   | "Layout"
   | "LayoutDashboard"
@@ -43,7 +43,8 @@ export type IconName =
   | "Briefcase"
   | "BookOpen"
   | "Building2"
-  | "ExternalLink";
+  | "ExternalLink"
+  | "Tag";
 
 export interface BreadcrumbItem {
   label: string;
@@ -58,96 +59,128 @@ export interface BreadcrumbConfig {
 
 // Centralized breadcrumb configuration
 const EMPRESAS_BREADCRUMB: BreadcrumbConfig = {
-  title: 'Empresas',
+  title: "Empresas",
   items: [
-    { label: 'Dashboard', href: '/', icon: 'Home' },
-    { label: 'Empresas', href: '/empresas', icon: 'Building2' }
-  ]
+    { label: "Dashboard", href: "/", icon: "Home" },
+    { label: "Empresas", href: "/empresas", icon: "Building2" },
+  ],
 };
 
 export const breadcrumbConfig: Record<string, BreadcrumbConfig> = {
-  '/': {
-    title: 'Dashboard',
-    items: [
-      { label: 'Dashboard', href: '/', icon: 'Home' }
-    ]
+  "/": {
+    title: "Dashboard",
+    items: [{ label: "Dashboard", href: "/", icon: "Home" }],
   },
 
-  '/dashboard/admin': {
-    title: 'Administração',
+  "/dashboard/admin": {
+    title: "Administração",
     items: [
-      { label: 'Dashboard', href: '/', icon: 'Home' },
-      { label: 'Admin', href: '/dashboard/admin', icon: 'Settings' }
-    ]
+      { label: "Dashboard", href: "/", icon: "Home" },
+      { label: "Admin", href: "/dashboard/admin", icon: "Settings" },
+    ],
   },
 
-  '/dashboard/admin/website': {
-    title: 'Gerenciar Website',
+  "/dashboard/admin/website": {
+    title: "Gerenciar Website",
     items: [
-      { label: 'Dashboard', href: '/', icon: 'Home' },
-      { label: 'Admin', href: '/dashboard/admin', icon: 'Settings' },
-      { label: 'Website', href: '/dashboard/admin/website', icon: 'Globe' }
-    ]
+      { label: "Dashboard", href: "/", icon: "Home" },
+      { label: "Admin", href: "/dashboard/admin", icon: "Settings" },
+      { label: "Website", href: "/dashboard/admin/website", icon: "Globe" },
+    ],
   },
 
-  '/dashboard/admin/companies/list': EMPRESAS_BREADCRUMB,
-  '/empresas': EMPRESAS_BREADCRUMB,
-  '/dashboard/empresas/admin/list': EMPRESAS_BREADCRUMB,
-  '/dashboard/empresas/admin/listagem': EMPRESAS_BREADCRUMB,
+  "/dashboard/admin/companies/list": EMPRESAS_BREADCRUMB,
+  "/empresas": EMPRESAS_BREADCRUMB,
+  "/dashboard/empresas/admin/list": EMPRESAS_BREADCRUMB,
+  "/dashboard/empresas/admin/listagem": EMPRESAS_BREADCRUMB,
 
-  '/config/website/pagina-inicial': {
-    title: 'Configuração Página Inicial',
+  "/config/website/pagina-inicial": {
+    title: "Configuração Página Inicial",
     items: [
-      { label: 'Dashboard', href: '/', icon: 'Home' },
-      { label: 'Configurações', href: '/config', icon: 'Settings' },
-      { label: 'Website', href: '/config/website', icon: 'Globe' },
-      { label: 'Página Inicial', icon: 'Layout' }
-    ]
+      { label: "Dashboard", href: "/", icon: "Home" },
+      { label: "Configurações", href: "/config", icon: "Settings" },
+      { label: "Website", href: "/config/website", icon: "Globe" },
+      { label: "Página Inicial", icon: "Layout" },
+    ],
   },
-  '/config/website/geral': {
-    title: 'Configurações Gerais',
+  "/config/website/geral": {
+    title: "Configurações Gerais",
     items: [
-      { label: 'Dashboard', href: '/', icon: 'Home' },
-      { label: 'Configurações', href: '/config', icon: 'Settings' },
-      { label: 'Website', href: '/config/website', icon: 'Globe' },
-      { label: 'Geral', icon: 'Settings' }
-    ]
+      { label: "Dashboard", href: "/", icon: "Home" },
+      { label: "Configurações", href: "/config", icon: "Settings" },
+      { label: "Website", href: "/config/website", icon: "Globe" },
+      { label: "Geral", icon: "Settings" },
+    ],
   },
-  '/config/website/sobre': {
-    title: 'Configuração Sobre',
+  "/config/website/sobre": {
+    title: "Configuração Sobre",
     items: [
-      { label: 'Dashboard', href: '/', icon: 'Home' },
-      { label: 'Configurações', href: '/config', icon: 'Settings' },
-      { label: 'Website', href: '/config/website', icon: 'Globe' },
-      { label: 'Sobre', icon: 'Info' }
-    ]
+      { label: "Dashboard", href: "/", icon: "Home" },
+      { label: "Configurações", href: "/config", icon: "Settings" },
+      { label: "Website", href: "/config/website", icon: "Globe" },
+      { label: "Sobre", icon: "Info" },
+    ],
   },
-  '/config/website/recrutamento': {
-    title: 'Configuração Recrutamento',
+  "/config/website/recrutamento": {
+    title: "Configuração Recrutamento",
     items: [
-      { label: 'Dashboard', href: '/', icon: 'Home' },
-      { label: 'Configurações', href: '/config', icon: 'Settings' },
-      { label: 'Website', href: '/config/website', icon: 'Globe' },
-      { label: 'Recrutamento', icon: 'Briefcase' }
-    ]
+      { label: "Dashboard", href: "/", icon: "Home" },
+      { label: "Configurações", href: "/config", icon: "Settings" },
+      { label: "Website", href: "/config/website", icon: "Globe" },
+      { label: "Recrutamento", icon: "Briefcase" },
+    ],
   },
-  '/config/website/treinamento': {
-    title: 'Configuração Treinamento',
+  "/config/website/treinamento": {
+    title: "Configuração Treinamento",
     items: [
-      { label: 'Dashboard', href: '/', icon: 'Home' },
-      { label: 'Configurações', href: '/config', icon: 'Settings' },
-      { label: 'Website', href: '/config/website', icon: 'Globe' },
-      { label: 'Treinamento', icon: 'BookOpen' }
-    ]
+      { label: "Dashboard", href: "/", icon: "Home" },
+      { label: "Configurações", href: "/config", icon: "Settings" },
+      { label: "Website", href: "/config/website", icon: "Globe" },
+      { label: "Treinamento", icon: "BookOpen" },
+    ],
   },
-  '/config/dashboard/geral': {
-    title: 'Configuração Dashboard',
+  "/config/dashboard/geral": {
+    title: "Configuração Dashboard",
     items: [
-      { label: 'Dashboard', href: '/', icon: 'Home' },
-      { label: 'Configurações', href: '/config', icon: 'Settings' },
-      { label: 'Dashboard', href: '/config/dashboard', icon: 'LayoutDashboard' },
-      { label: 'Geral', icon: 'Settings' }
-    ]
+      { label: "Dashboard", href: "/", icon: "Home" },
+      { label: "Configurações", href: "/config", icon: "Settings" },
+      {
+        label: "Dashboard",
+        href: "/config/dashboard",
+        icon: "LayoutDashboard",
+      },
+      { label: "Geral", icon: "Settings" },
+    ],
+  },
+  "/config/dashboard/cursos": {
+    title: "Configuração Cursos",
+    items: [
+      { label: "Dashboard", href: "/", icon: "Home" },
+      { label: "Configurações", href: "/config", icon: "Settings" },
+      {
+        label: "Dashboard",
+        href: "/config/dashboard",
+        icon: "LayoutDashboard",
+      },
+      { label: "Cursos", icon: "BookOpen" },
+    ],
+  },
+  "/config/empresas": {
+    title: "Configuração Empresas",
+    items: [
+      { label: "Dashboard", href: "/", icon: "Home" },
+      { label: "Configurações", href: "/config", icon: "Settings" },
+      { label: "Empresas", icon: "Building2" },
+    ],
+  },
+  "/config/empresas/cupons": {
+    title: "Cupons de Desconto",
+    items: [
+      { label: "Dashboard", href: "/", icon: "Home" },
+      { label: "Configurações", href: "/config", icon: "Settings" },
+      { label: "Empresas", href: "/config/empresas", icon: "Building2" },
+      { label: "Cupons", icon: "Tag" },
+    ],
   },
 };
 
@@ -164,23 +197,23 @@ export function useBreadcrumb(): BreadcrumbConfig {
 
   // Regras dinâmicas específicas
   // Detalhes de empresa: /empresas/[id]
-  if (pathname.startsWith('/empresas/')) {
+  if (pathname.startsWith("/empresas/")) {
     return {
-      title: 'Empresa',
+      title: "Empresa",
       items: [
-        { label: 'Dashboard', href: '/', icon: 'Home' },
-        { label: 'Empresas', href: '/empresas', icon: 'Building2' },
-        { label: 'Visualizando empresa' }
-      ]
+        { label: "Dashboard", href: "/", icon: "Home" },
+        { label: "Empresas", href: "/empresas", icon: "Building2" },
+        { label: "Visualizando empresa" },
+      ],
     };
   }
 
   // Fallback: tenta encontrar a rota mais próxima
-  const pathSegments = pathname.split('/').filter(Boolean);
-  let currentPath = '';
+  const pathSegments = pathname.split("/").filter(Boolean);
+  let currentPath = "";
 
   for (let i = pathSegments.length; i > 0; i--) {
-    currentPath = '/' + pathSegments.slice(0, i).join('/');
+    currentPath = "/" + pathSegments.slice(0, i).join("/");
     if (breadcrumbConfig[currentPath]) {
       return breadcrumbConfig[currentPath];
     }
@@ -188,7 +221,7 @@ export function useBreadcrumb(): BreadcrumbConfig {
 
   // Fallback padrão
   return {
-    title: 'Dashboard',
-    items: [{ label: 'Dashboard', href: '/' }]
+    title: "Dashboard",
+    items: [{ label: "Dashboard", href: "/" }],
   };
 }

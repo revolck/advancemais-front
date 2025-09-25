@@ -8,6 +8,14 @@ export interface ListItem {
   [key: string]: any;
 }
 
+export interface TableColumn {
+  key: string;
+  label: string;
+  className?: string;
+  tooltip?: string;
+  sortable?: boolean;
+}
+
 export interface ListManagerProps {
   initialItems: ListItem[];
   entityName: string;
@@ -40,6 +48,20 @@ export interface ListManagerProps {
   emptyStateTitle?: string;
   emptyStateDescription?: string;
   emptyStateAction?: React.ReactNode;
+  // Textos customizáveis para modal
+  modalCreateTitle?: string;
+  modalEditTitle?: string;
+  // Texto customizável para empty state
+  emptyStateFirstItemText?: string;
+  // Texto customizável para botão de criar
+  createButtonText?: string;
+  // Colunas customizáveis da tabela
+  tableColumns?: TableColumn[];
+  // Desabilitar toasts automáticos
+  disableAutoToasts?: boolean;
+  // Configurações de paginação
+  enablePagination?: boolean;
+  itemsPerPage?: number;
 }
 
 export interface ListManagerState {

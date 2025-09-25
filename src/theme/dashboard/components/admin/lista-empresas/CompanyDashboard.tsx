@@ -39,7 +39,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { CompanyRow, CompanyTableSkeleton } from "./components";
+import {
+  CompanyRow,
+  CompanyTableSkeleton,
+  CreateCompanyModal,
+} from "./components";
 import { COMPANY_DASHBOARD_CONFIG } from "./constants";
 import { useCompanyDashboardData } from "./hooks/useCompanyDashboardData";
 import type { CompanyDashboardProps } from "./types";
@@ -79,6 +83,7 @@ export function CompanyDashboard({
     AdminCompanyStatus[]
   >([]);
   const [currentPage, setCurrentPage] = useState(1);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   const searchTermRef = useRef(searchTerm);
   const selectedPlansRef = useRef<string[]>(selectedPlans);
@@ -425,6 +430,13 @@ export function CompanyDashboard({
     runFetch(currentPage);
   }, [runFetch, currentPage]);
 
+  const handleCreateCompanySuccess = useCallback(() => {
+    // Recarregar os dados após criar uma empresa
+    if (shouldFetch) {
+      runFetch(1);
+    }
+  }, [shouldFetch, runFetch]);
+
   const visiblePages = useMemo(() => {
     const pages: number[] = [];
     if (totalPages <= 5) {
@@ -460,8 +472,9 @@ export function CompanyDashboard({
           icon="Plus"
           fullWidth
           className="sm:w-auto"
+          onClick={() => setIsCreateModalOpen(true)}
         >
-          Criar empresa
+          Cadastrar empresa
         </ButtonCustom>
       </div>
 
@@ -895,6 +908,13 @@ export function CompanyDashboard({
           />
         )}
       </div>
+
+      {/* Modal de criação de empresa */}
+      <CreateCompanyModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSuccess={handleCreateCompanySuccess}
+      />
     </div>
   );
 }

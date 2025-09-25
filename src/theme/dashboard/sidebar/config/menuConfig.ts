@@ -193,7 +193,7 @@ const rawMenuSections: MenuSection[] = [
         permissions: ADMIN_PERMISSIONS,
         submenu: [
           {
-            icon: "Globe",
+            icon: null,
             label: "Website",
             route: "/admin/website",
             permissions: ADMIN_PERMISSIONS,
@@ -231,23 +231,16 @@ const rawMenuSections: MenuSection[] = [
             ],
           },
           {
-            icon: "LayoutDashboard",
-            label: "Dashboard",
+            icon: null,
+            label: "Empresas",
+            route: "/config/empresas",
             permissions: ADMIN_PERMISSIONS,
-            submenu: [
-              {
-                icon: null,
-                label: "Geral",
-                route: "/config/dashboard/geral",
-                permissions: ADMIN_PERMISSIONS,
-              },
-              {
-                icon: null,
-                label: "Empresarial",
-                route: "/config/dashboard/planos-empresarial",
-                permissions: ADMIN_PERMISSIONS,
-              },
-            ],
+          },
+          {
+            icon: null,
+            label: "Cursos",
+            route: "/config/cursos",
+            permissions: ADMIN_PERMISSIONS,
           },
         ],
       },

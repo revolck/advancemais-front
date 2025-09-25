@@ -147,7 +147,7 @@ export function MultiSelectFilter({
         </DropdownMenuTrigger>
         <DropdownMenuContent
           className={cn(
-            "p-0",
+            "p-0 z-[9999]",
             "bg-popover border-border/60 rounded-[10px] shadow-lg",
             "animate-in fade-in-0 zoom-in-95 duration-200"
           )}

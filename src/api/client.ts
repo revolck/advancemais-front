@@ -65,12 +65,12 @@ export async function apiFetch<T = unknown>(
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), timeout);
 
-        const res = await fetch(url, {
-          cache: "no-store",
-          signal: controller.signal,
-          ...init,
-          credentials: "include",
-        });
+      const res = await fetch(url, {
+        cache: "no-store",
+        signal: controller.signal,
+        ...init,
+        credentials: "include",
+      });
 
       clearTimeout(timeoutId);
 
@@ -82,7 +82,9 @@ export async function apiFetch<T = unknown>(
           if (errorData && typeof errorData === "object") {
             // many APIs retornam { message: "..." }
             errorMessage =
-              (errorData as any).message || (errorData as any).error || errorMessage;
+              (errorData as any).message ||
+              (errorData as any).error ||
+              errorMessage;
           }
         } catch {
           // tenta obter texto puro caso não seja JSON
