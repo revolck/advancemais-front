@@ -146,7 +146,14 @@ export function EditarEmpresaModal({
     } finally {
       setIsSaving(false);
     }
-  }, [company.id, formState, handleClose, isSaving, onCompanyUpdated]);
+  }, [
+    company.id,
+    company.informacoes,
+    formState,
+    handleClose,
+    isSaving,
+    onCompanyUpdated,
+  ]);
 
   return (
     <ModalCustom

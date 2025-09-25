@@ -207,7 +207,14 @@ export function EditarEmpresaEnderecoModal({
     } finally {
       setIsSaving(false);
     }
-  }, [company.id, formState, handleClose, isSaving, onCompanyUpdated]);
+  }, [
+    company.id,
+    company.enderecos,
+    formState,
+    handleClose,
+    isSaving,
+    onCompanyUpdated,
+  ]);
 
   return (
     <ModalCustom

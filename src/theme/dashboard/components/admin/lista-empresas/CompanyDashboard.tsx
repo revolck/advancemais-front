@@ -379,7 +379,7 @@ export function CompanyDashboard({
 
       refetch(searchParams).catch(() => {});
     },
-    [refetch, shouldFetch, searchTerm]
+    [refetch, shouldFetch]
   );
 
   useEffect(() => {
