@@ -371,7 +371,7 @@ export async function listAdminCompanyBans(
   params?: AdminCompanyBanParams,
   init?: RequestInit
 ): Promise<AdminCompanyBanHistoryApiResponse> {
-  const endpoint = empresasRoutes.adminEmpresas.banimentos.list(id);
+  const endpoint = empresasRoutes.adminEmpresas.bloqueios.list(id);
   const queryParams: Record<string, any> = {};
 
   if (params?.page) queryParams.page = params.page;
@@ -406,7 +406,7 @@ export async function createAdminCompanyBan(
   data: CreateAdminCompanyBanPayload,
   init?: RequestInit
 ): Promise<AdminCompanyBanCreateApiResponse> {
-  const endpoint = empresasRoutes.adminEmpresas.banimentos.create(id);
+  const endpoint = empresasRoutes.adminEmpresas.bloqueios.create(id);
 
   return apiFetch<AdminCompanyBanCreateApiResponse>(endpoint, {
     init: {
@@ -440,7 +440,7 @@ export async function revokeAdminCompanyBan(
   data?: RevokeAdminCompanyBanPayload,
   init?: RequestInit
 ): Promise<AdminCompanyBanRevokeApiResponse> {
-  const endpoint = empresasRoutes.adminEmpresas.banimentos.revogar(id);
+  const endpoint = empresasRoutes.adminEmpresas.bloqueios.revogar(id);
 
   return apiFetch<AdminCompanyBanRevokeApiResponse>(endpoint, {
     init: {

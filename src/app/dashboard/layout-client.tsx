@@ -6,6 +6,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { DashboardSidebar, DashboardHeader } from "@/theme";
 import { toastCustom, ToasterCustom } from "@/components/ui/custom/toast";
 import { DashboardHeader as Breadcrumb } from "@/components/layout";
+import { BlockedUserWrapper } from "@/components/layout/BlockedUserWrapper";
 
 interface DashboardLayoutClientProps {
   children: ReactNode;
@@ -84,7 +85,7 @@ export default function DashboardLayoutClient({
   }
 
   return (
-    <>
+    <BlockedUserWrapper>
       <div className="flex h-screen">
         {/* Sidebar principal do dashboard */}
         <div className="flex-shrink-0">
@@ -113,6 +114,6 @@ export default function DashboardLayoutClient({
         </div>
       </div>
       <ToasterCustom />
-    </>
+    </BlockedUserWrapper>
   );
 }

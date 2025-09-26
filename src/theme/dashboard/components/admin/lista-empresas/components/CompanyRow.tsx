@@ -125,7 +125,7 @@ function getCompanyStatusBadges(partnership: Partnership) {
   // Determinar o status da empresa de forma consistente
   let status: string;
   if (partnership.empresa.banida || partnership.empresa.banimentoAtivo) {
-    status = "BANIDO";
+    status = "BLOQUEADO";
   } else if (partnership.empresa.status) {
     status = partnership.empresa.status;
   } else {
@@ -139,7 +139,7 @@ function getCompanyStatusBadges(partnership: Partnership) {
         return "bg-green-100 text-green-800 border-green-200";
       case "INATIVO":
         return "bg-red-100 text-red-800 border-red-200";
-      case "BANIDO":
+      case "BLOQUEADO":
         return "bg-rose-100 text-rose-800 border-rose-200";
       case "PENDENTE":
         return "bg-amber-100 text-amber-800 border-amber-200";
@@ -241,7 +241,7 @@ export const CompanyRow: React.FC<CompanyRowProps> = ({ partnership }) => {
         <div className="flex flex-wrap gap-1">{companyBadges}</div>
         {partnership.empresa.banimentoAtivo && (
           <p className="mt-1 text-[11px] text-rose-600 truncate">
-            Banida até{" "}
+            Bloqueada até{" "}
             {formatDate(partnership.empresa.banimentoAtivo.banimento.fim)}
           </p>
         )}

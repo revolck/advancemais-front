@@ -222,17 +222,17 @@ export function BloquearEmpresaModal({
       }
 
       toastCustom.success({
-        title: "Banimento aplicado",
-        description: "A empresa foi banida e o período selecionado está ativo.",
+        title: "Bloqueio aplicado",
+        description: "Esta empresa teve o acesso bloqueado e o período selecionado está ativo.",
       });
 
       handleClose();
     } catch (error) {
       console.error("Erro ao banir empresa", error);
       toastCustom.error({
-        title: "Erro ao aplicar banimento",
+        title: "Erro ao aplicar bloqueio",
         description:
-          "Não foi possível banir a empresa agora. Tente novamente em instantes.",
+          "Não foi possível bloquear a empresa agora. Tente novamente em instantes.",
       });
     } finally {
       setIsSubmitting(false);
