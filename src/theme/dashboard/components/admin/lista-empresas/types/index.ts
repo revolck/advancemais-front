@@ -31,6 +31,8 @@ export interface Company {
   diasTesteDisponibilizados?: number | null;
   banida?: boolean;
   banimentoAtivo?: AdminCompanyBanItem | null;
+  bloqueada?: boolean;
+  bloqueioAtivo?: AdminCompanyBanItem | null;
   cep?: string | null;
   bairro?: string | null;
   logradouro?: string | null;

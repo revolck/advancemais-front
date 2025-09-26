@@ -15,10 +15,12 @@ import {
   EditarEmpresaEnderecoModal,
   BloquearEmpresaModal,
   EditarAssinaturaModal,
+  AdicionarAssinaturaModal,
   ResetarSenhaModal,
   ViewVacancyModal,
   EditVacancyModal,
 } from "./modals";
+import { DesbloquearEmpresaModal } from "./modal-acoes/DesbloquearEmpresaModal";
 import type { CompanyDetailsViewProps } from "./types";
 import { AboutTab } from "./tabs/AboutTab";
 import { VacancyTab } from "./tabs/VacancyTab";
@@ -57,7 +59,9 @@ export function CompanyDetailsView({
   const [isEditCompanyOpen, setIsEditCompanyOpen] = useState(false);
   const [isEditAddressOpen, setIsEditAddressOpen] = useState(false);
   const [isBanCompanyOpen, setIsBanCompanyOpen] = useState(false);
+  const [isUnbanCompanyOpen, setIsUnbanCompanyOpen] = useState(false);
   const [isEditSubscriptionOpen, setIsEditSubscriptionOpen] = useState(false);
+  const [isAddSubscriptionOpen, setIsAddSubscriptionOpen] = useState(false);
   const [isResetPasswordOpen, setIsResetPasswordOpen] = useState(false);
 
   const handleCompanyUpdated = useCallback(
@@ -80,6 +84,18 @@ export function CompanyDetailsView({
     }));
   }, []);
 
+  const handleUnbanApplied = useCallback(() => {
+    setCompanyData((prev) => ({
+      ...prev,
+      banimentoAtivo: null,
+      banida: false,
+      bloqueada: false,
+      bloqueioAtivo: null,
+      status: "ATIVO",
+      ativa: true,
+    }));
+  }, []);
+
   const handleSubscriptionUpdated = useCallback(
     (plan: AdminCompanyPlano, payment: AdminCompanyPagamento) => {
       setCompanyData((prev) => ({
@@ -90,6 +106,24 @@ export function CompanyDetailsView({
     },
     []
   );
+
+  // Verificar se a empresa tem um plano
+  const hasPlan = Boolean(
+    companyData.plano &&
+      (companyData.plano.nome ||
+        companyData.plano.valor ||
+        companyData.plano.modo ||
+        companyData.plano.inicio ||
+        companyData.plano.fim)
+  );
+
+  const handleSubscriptionAction = useCallback(() => {
+    if (hasPlan) {
+      setIsEditSubscriptionOpen(true);
+    } else {
+      setIsAddSubscriptionOpen(true);
+    }
+  }, [hasPlan]);
 
   const handleViewVacancyDialogChange = (open: boolean) => {
     setIsViewVacancyOpen(open);
@@ -161,7 +195,8 @@ export function CompanyDetailsView({
         onEditCompany={() => setIsEditCompanyOpen(true)}
         onEditAddress={() => setIsEditAddressOpen(true)}
         onBanCompany={() => setIsBanCompanyOpen(true)}
-        onEditSubscription={() => setIsEditSubscriptionOpen(true)}
+        onUnbanCompany={() => setIsUnbanCompanyOpen(true)}
+        onEditSubscription={handleSubscriptionAction}
         onResetPassword={() => setIsResetPasswordOpen(true)}
       />
 
@@ -195,6 +230,13 @@ export function CompanyDetailsView({
         onSubscriptionUpdated={handleSubscriptionUpdated}
       />
 
+      <AdicionarAssinaturaModal
+        isOpen={isAddSubscriptionOpen}
+        onOpenChange={setIsAddSubscriptionOpen}
+        company={companyData}
+        onSubscriptionAdded={handleSubscriptionUpdated}
+      />
+
       <ResetarSenhaModal
         isOpen={isResetPasswordOpen}
         onOpenChange={setIsResetPasswordOpen}
@@ -216,6 +258,13 @@ export function CompanyDetailsView({
         isOpen={isEditVacancyOpen}
         onOpenChange={handleEditVacancyDialogChange}
         vacancy={editVacancy}
+      />
+
+      <DesbloquearEmpresaModal
+        isOpen={isUnbanCompanyOpen}
+        onOpenChange={setIsUnbanCompanyOpen}
+        company={companyData}
+        onSuccess={handleUnbanApplied}
       />
     </div>
   );

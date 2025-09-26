@@ -5,24 +5,32 @@
 export type AdminCompanyStatus =
   | "ATIVO"
   | "INATIVO"
-  | "BANIDO"
+  | "BLOQUEADO"
   | "PENDENTE"
   | "SUSPENSO";
 
-export type AdminCompanyPlanMode = "teste" | "parceiro" | "ASSINATURA";
+export type AdminCompanyPlanMode = "CLIENTE" | "TESTE" | "PARCEIRO";
 
-export type AdminCompanyPaymentModel = "ASSINATURA";
+export type AdminCompanyPaymentModel =
+  | "ASSINATURA"
+  | "PAGAMENTO_UNICO"
+  | "PAGAMENTO_PARCELADO";
 
 export type AdminCompanyPaymentMethod =
   | "PIX"
   | "CARTAO_CREDITO"
   | "CARTAO_DEBITO"
-  | "BOLETO";
+  | "BOLETO"
+  | "TRANSFERENCIA"
+  | "DINHEIRO";
 
 export type AdminCompanyPaymentStatus =
-  | "APROVADO"
   | "PENDENTE"
-  | "REJEITADO"
+  | "EM_PROCESSAMENTO"
+  | "APROVADO"
+  | "CONCLUIDO"
+  | "RECUSADO"
+  | "ESTORNADO"
   | "CANCELADO";
 
 export type AdminCompanyVacancyStatus =
@@ -33,7 +41,6 @@ export type AdminCompanyVacancyStatus =
   | "PAUSADA"
   | "ENCERRADA"
   | "EXPIRADO";
-
 
 // ============================================================================
 // TIPOS DE ENDEREÇO
@@ -195,6 +202,8 @@ export interface AdminCompanyListItem {
   limiteVagasPlano: number;
   banida: boolean;
   banimentoAtivo: AdminCompanyBanItem | null;
+  bloqueada: boolean;
+  bloqueioAtivo: AdminCompanyBanItem | null;
 }
 
 export interface AdminCompanyDetail {
@@ -221,6 +230,8 @@ export interface AdminCompanyDetail {
   pagamento: AdminCompanyPagamento;
   banida: boolean;
   banimentoAtivo: AdminCompanyBanItem | null;
+  bloqueada: boolean;
+  bloqueioAtivo: AdminCompanyBanItem | null;
   informacoes: AdminCompanyInformacoes;
 }
 
@@ -235,6 +246,128 @@ export interface AdminCompanyVagaItem {
   status: AdminCompanyVacancyStatus;
   inseridaEm: string;
   atualizadoEm: string;
+  inscricoesAte?: string;
+  modoAnonimo?: boolean;
+  descricao?: string;
+  localizacao?: {
+    cidade: string;
+    estado: string;
+    formato?: string;
+    logradouro?: string;
+    numero?: string;
+    bairro?: string;
+    cep?: string;
+    complemento?: string;
+    referencia?: string;
+  };
+  requisitos?: {
+    obrigatorios: string[];
+    desejaveis: string[];
+  };
+  atividades?: {
+    principais: string[];
+    extras: string[];
+  };
+  beneficios?: {
+    lista: string[];
+    observacoes?: string;
+  };
+  modalidade?: string;
+  regimeDeTrabalho?: string;
+  jornada?: string;
+  senioridade?: string;
+  paraPcd?: boolean;
+  vagaEmDestaque?: boolean;
+  salarioConfidencial?: boolean;
+  salarioMin?: string;
+  salarioMax?: string;
+  numeroVagas?: number;
+  maxCandidaturasPorUsuario?: number;
+  observacoes?: string;
+  candidaturasResumo?: {
+    total: number;
+    porStatus: Record<string, number>;
+  };
+  candidaturas?: AdminCompanyCandidatura[];
+}
+
+export interface AdminCompanyCandidatura {
+  id: string;
+  vagaId: string;
+  candidatoId: string;
+  curriculoId: string;
+  empresaUsuarioId: string;
+  status: string;
+  origem: string;
+  aplicadaEm: string;
+  atualizadaEm: string;
+  consentimentos: {
+    newsletter: boolean;
+  };
+  candidato: {
+    id: string;
+    codUsuario: string;
+    nomeCompleto: string;
+    email: string;
+    cpf: string;
+    cnpj?: string;
+    role: string;
+    tipoUsuario: string;
+    status: string;
+    criadoEm: string;
+    ultimoLogin: string;
+    telefone?: string;
+    genero?: string;
+    dataNasc?: string;
+    inscricao?: string;
+    avatarUrl?: string;
+    descricao?: string;
+    aceitarTermos: boolean;
+    cidade?: string;
+    estado?: string;
+    enderecos: any[];
+    socialLinks?: any;
+    informacoes: {
+      telefone?: string;
+      genero?: string;
+      dataNasc?: string;
+      inscricao?: string;
+      avatarUrl?: string;
+      descricao?: string;
+      aceitarTermos: boolean;
+    };
+  };
+  curriculo: {
+    id: string;
+    usuarioId: string;
+    titulo: string;
+    resumo: string;
+    objetivo: string;
+    principal: boolean;
+    areasInteresse: string[];
+    preferencias: {
+      local: string;
+      regime: string;
+    };
+    habilidades: string[];
+    idiomas: string[];
+    experiencias: Array<{
+      cargo: string;
+      empresa: string;
+      periodo: string;
+    }>;
+    formacao: Array<{
+      curso: string;
+      instituicao: string;
+    }>;
+    cursosCertificacoes?: any;
+    premiosPublicacoes?: any;
+    acessibilidade?: any;
+    consentimentos?: any;
+    ultimaAtualizacao: string;
+    criadoEm: string;
+    atualizadoEm: string;
+  };
 }
 
 // ============================================================================
@@ -398,6 +531,29 @@ export interface AdminCompanyPlanoPayload {
   modo: AdminCompanyPlanMode;
   diasTeste?: number;
   resetPeriodo?: boolean;
+}
+
+export interface UpdateAdminCompanyPlanoPayload {
+  planosEmpresariaisId: string;
+  modo: AdminCompanyPlanMode;
+  iniciarEm?: string;
+  diasTeste?: number;
+  modeloPagamento?: AdminCompanyPaymentModel;
+  metodoPagamento?: AdminCompanyPaymentMethod;
+  statusPagamento?: AdminCompanyPaymentStatus;
+  proximaCobranca?: string;
+}
+
+export interface CreateAdminCompanyPlanoPayload {
+  planosEmpresariaisId: string;
+  modo: AdminCompanyPlanMode;
+  iniciarEm: string;
+  diasTeste?: number;
+  modeloPagamento?: AdminCompanyPaymentModel | null;
+  metodoPagamento?: AdminCompanyPaymentMethod | null;
+  statusPagamento?: AdminCompanyPaymentStatus | null;
+  proximaCobranca?: string | null;
+  graceUntil?: string | null;
 }
 
 export interface CreateAdminCompanyPayload {

@@ -81,7 +81,7 @@ function formatDate(value?: string | null): string {
 }
 
 function getPlanTypeBadge(partnership: Partnership) {
-  if (partnership.tipo === "parceiro" || partnership.empresa.parceira) {
+  if (partnership.tipo === "PARCEIRO" || partnership.empresa.parceira) {
     return (
       <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 uppercase tracking-wide text-[10px]">
         Parceira
@@ -124,12 +124,12 @@ function getCompanyStatusBadges(partnership: Partnership) {
 
   // Determinar o status da empresa de forma consistente
   let status: string;
-  if (partnership.empresa.banida || partnership.empresa.banimentoAtivo) {
+  if (partnership.empresa.bloqueada) {
     status = "BLOQUEADO";
   } else if (partnership.empresa.status) {
     status = partnership.empresa.status;
   } else {
-    status = partnership.empresa.ativo ? "ATIVO" : "INATIVO";
+    status = partnership.empresa.ativo ? "ATIVO" : "INATIVA";
   }
 
   // Definir classes de cor baseadas no status
@@ -138,15 +138,25 @@ function getCompanyStatusBadges(partnership: Partnership) {
       case "ATIVO":
         return "bg-green-100 text-green-800 border-green-200";
       case "INATIVO":
-        return "bg-red-100 text-red-800 border-red-200";
+        return "bg-yellow-100 text-yellow-800 border-yellow-200";
       case "BLOQUEADO":
-        return "bg-rose-100 text-rose-800 border-rose-200";
-      case "PENDENTE":
-        return "bg-amber-100 text-amber-800 border-amber-200";
-      case "SUSPENSO":
-        return "bg-orange-100 text-orange-800 border-orange-200";
+        return "bg-red-100 text-red-800 border-red-200";
       default:
         return "bg-gray-100 text-gray-800 border-gray-200";
+    }
+  };
+
+  // Mapear status interno para texto de exibição
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case "ATIVO":
+        return "ATIVA";
+      case "INATIVO":
+        return "INATIVA";
+      case "BLOQUEADO":
+        return "BLOQUEADA";
+      default:
+        return status;
     }
   };
 
@@ -157,7 +167,7 @@ function getCompanyStatusBadges(partnership: Partnership) {
         status
       )} uppercase tracking-wide text-[10px]`}
     >
-      {status}
+      {getStatusText(status)}
     </Badge>
   );
 

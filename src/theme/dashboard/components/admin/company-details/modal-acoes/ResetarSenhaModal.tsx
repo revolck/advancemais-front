@@ -96,7 +96,8 @@ export function ResetarSenhaModal({
 
         <ModalFooter className="pt-4">
           <ButtonCustom
-            variant="ghost"
+            variant="outline"
+            size="md"
             onClick={handleClose}
             disabled={isSubmitting}
           >

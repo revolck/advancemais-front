@@ -3,6 +3,7 @@
 import { EmptyState } from "@/components/ui/custom";
 import { VacancyTable } from "../components";
 import { VacancyUsageCard } from "../components/VacancyUsageCard";
+import { useVacancyCandidates } from "../hooks/useVacancyCandidates";
 import type { VacancyTabProps } from "../types";
 
 export function VacancyTab({
@@ -12,7 +13,17 @@ export function VacancyTab({
   onViewVacancy,
   onEditVacancy,
 }: VacancyTabProps) {
-  const relevantVacancies = (vacancies ?? []).filter((vacancy) => {
+  // Usar o hook para gerenciar candidatos
+  const {
+    vacanciesWithCandidates,
+    loadingStates,
+    errorStates,
+    loadVacancyCandidates,
+  } = useVacancyCandidates({
+    vacancies: vacancies ?? [],
+  });
+
+  const relevantVacancies = vacanciesWithCandidates.filter((vacancy) => {
     const status = vacancy.status?.toUpperCase();
     return status === "PUBLICADO" || status === "EM_ANALISE";
   });
@@ -63,10 +74,9 @@ export function VacancyTab({
         vacancies={relevantVacancies}
         onView={onViewVacancy}
         onEdit={onEditVacancy}
-        getCandidateAvatars={(v) => {
-          const urls: string[] = [];
-          return urls;
-        }}
+        loadingStates={loadingStates}
+        errorStates={errorStates}
+        onLoadCandidates={loadVacancyCandidates}
       />
     </section>
   ) : (

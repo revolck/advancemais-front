@@ -39,4 +39,6 @@ export * from "./tags-selector";
 
 export * from "./user-button";
 
+export * from "./users-avatars";
+
 export * from "./filters";

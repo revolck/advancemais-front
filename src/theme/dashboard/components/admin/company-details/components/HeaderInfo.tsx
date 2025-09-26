@@ -36,6 +36,7 @@ interface HeaderInfoProps {
   onEditCompany: () => void;
   onEditAddress: () => void;
   onBanCompany: () => void;
+  onUnbanCompany: () => void;
   onEditSubscription: () => void;
   onResetPassword: () => void;
 }
@@ -45,6 +46,7 @@ export function HeaderInfo({
   onEditCompany,
   onEditAddress,
   onBanCompany,
+  onUnbanCompany,
   onEditSubscription,
   onResetPassword,
 }: HeaderInfoProps) {
@@ -68,19 +70,25 @@ export function HeaderInfo({
     ? "Editar assinatura"
     : "Adicionar assinatura";
 
-  // Verificar se a empresa está banida
+  // Verificar se a empresa está banida ou bloqueada
   const isCompanyBanned = company.banida || company.banimentoAtivo;
-  const banActionText = isCompanyBanned
-    ? "Remover bloqueio"
+  const isCompanyBlocked = company.bloqueada || company.bloqueioAtivo;
+  const isCompanyRestricted = isCompanyBanned || isCompanyBlocked;
+  const banActionText = isCompanyRestricted
+    ? "Desbloquear empresa"
     : "Bloquear empresa";
 
   const statusColor = company.banimentoAtivo
     ? "bg-amber-500"
+    : isCompanyBlocked
+    ? "bg-red-500"
     : isCompanyActive
     ? "bg-emerald-500"
     : "bg-rose-500";
   const statusLabel = company.banimentoAtivo
     ? "Empresa banida"
+    : isCompanyBlocked
+    ? "Empresa bloqueada"
     : isCompanyActive
     ? "Empresa ativa"
     : "Empresa inativa";
@@ -103,6 +111,16 @@ export function HeaderInfo({
         className="inline-flex items-center gap-1 rounded-full border border-amber-200/70 bg-amber-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-amber-700"
       >
         Banida
+      </Badge>
+    );
+  }
+  if (isCompanyBlocked && !company.banimentoAtivo) {
+    badges.push(
+      <Badge
+        key="bloqueada"
+        className="inline-flex items-center gap-1 rounded-full border border-red-200/70 bg-red-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-red-700"
+      >
+        Bloqueada
       </Badge>
     );
   }
@@ -189,7 +207,7 @@ export function HeaderInfo({
                 <span>{subscriptionActionText}</span>
               </DropdownMenuItem>
               <DropdownMenuItem
-                onSelect={onBanCompany}
+                onSelect={isCompanyRestricted ? onUnbanCompany : onBanCompany}
                 className="cursor-pointer"
               >
                 <Ban className="h-4 w-4 text-gray-500" />

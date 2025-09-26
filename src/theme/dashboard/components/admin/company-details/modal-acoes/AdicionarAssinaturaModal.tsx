@@ -21,15 +21,15 @@ import { InputCustom } from "@/components/ui/custom/input";
 import { toastCustom } from "@/components/ui/custom/toast";
 import { SelectCustom } from "@/components/ui/custom/select";
 import {
-  updateAdminCompanyPlano,
   listPlanosEmpresariais,
+  createAdminCompanyPlano,
 } from "@/api/empresas";
 import type {
   AdminCompanyDetail,
   AdminCompanyPlano,
   AdminCompanyPlanMode,
   AdminCompanyPagamento,
-  UpdateAdminCompanyPlanoPayload,
+  CreateAdminCompanyPlanoPayload,
 } from "@/api/empresas/admin/types";
 import type {
   PlanoEmpresarialBackendResponse,
@@ -74,11 +74,11 @@ const STATUS_PLANO_OPTIONS = [
   { value: "CANCELADO", label: "Cancelado" },
 ];
 
-interface EditarAssinaturaModalProps {
+interface AdicionarAssinaturaModalProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   company: AdminCompanyDetail;
-  onSubscriptionUpdated: (
+  onSubscriptionAdded: (
     plan: AdminCompanyPlano,
     payment: AdminCompanyPagamento
   ) => void;
@@ -92,26 +92,21 @@ type SubscriptionFormState = {
   statusPagamento: string;
 };
 
-export function EditarAssinaturaModal({
+export function AdicionarAssinaturaModal({
   isOpen,
   onOpenChange,
   company,
-  onSubscriptionUpdated,
-}: EditarAssinaturaModalProps) {
+  onSubscriptionAdded,
+}: AdicionarAssinaturaModalProps) {
   const initialState = useMemo<SubscriptionFormState>(
     () => ({
-      planId: company.plano?.id ?? "",
-      planType: company.plano?.modo ?? "CLIENTE",
-      diasTeste:
-        company.plano?.modo === "TESTE"
-          ? company.diasTesteDisponibilizados?.toString() ?? ""
-          : "",
-      metodoPagamento:
-        company.plano?.metodoPagamento ?? company.pagamento?.metodo ?? "",
-      statusPagamento:
-        company.plano?.statusPagamento ?? company.pagamento?.status ?? "",
+      planId: "",
+      planType: "CLIENTE",
+      diasTeste: "",
+      metodoPagamento: "PIX",
+      statusPagamento: "APROVADO",
     }),
-    [company]
+    []
   );
 
   const [formState, setFormState] =
@@ -186,6 +181,13 @@ export function EditarAssinaturaModal({
     }));
   }, []);
 
+  const handleSelectStatusPlano = useCallback((value: string | null) => {
+    setFormState((prev) => ({
+      ...prev,
+      statusPlano: value || "",
+    }));
+  }, []);
+
   const handleInputChange = useCallback(
     (field: keyof SubscriptionFormState) =>
       (e: ChangeEvent<HTMLInputElement>) => {
@@ -209,46 +211,11 @@ export function EditarAssinaturaModal({
   }, []);
 
   const planSelectOptions = useMemo(() => {
-    // Usar Set para garantir unicidade dos IDs
-    const uniquePlanIds = new Set<string>();
-    const options: Array<{ value: string; label: string }> = [];
-
-    // Adicionar "Sem assinatura" sempre primeiro
-    options.push({ value: "", label: "Sem assinatura" });
-    uniquePlanIds.add("");
-
-    // Verificar se o plano atual existe na lista da API
-    const currentPlanExists = planOptions.some(
-      (plan) => plan.id === formState.planId
-    );
-
-    // Adicionar planos da API
-    planOptions.forEach((plan) => {
-      if (plan.id && !uniquePlanIds.has(plan.id)) {
-        options.push({
-          value: plan.id,
-          label: plan.nome,
-        });
-        uniquePlanIds.add(plan.id);
-      }
-    });
-
-    // Adicionar plano atual apenas se não estiver na lista da API
-    if (
-      formState.planId &&
-      company.plano?.nome &&
-      !currentPlanExists &&
-      !uniquePlanIds.has(formState.planId)
-    ) {
-      options.push({
-        value: formState.planId,
-        label: company.plano.nome,
-      });
-      uniquePlanIds.add(formState.planId);
-    }
-
-    return options;
-  }, [planOptions, formState.planId, company.plano?.nome]);
+    return planOptions.map((plan) => ({
+      value: plan.id,
+      label: plan.nome,
+    }));
+  }, [planOptions]);
 
   const handleSave = useCallback(async () => {
     if (isSaving) return;
@@ -303,7 +270,10 @@ export function EditarAssinaturaModal({
       return;
     }
 
-    const payload: UpdateAdminCompanyPlanoPayload = {
+    const proximaCobranca =
+      formState.planType === "TESTE" ? null : getNextBillingDate();
+
+    const payload: CreateAdminCompanyPlanoPayload = {
       planosEmpresariaisId: formState.planId,
       modo: formState.planType,
       iniciarEm: new Date().toISOString(),
@@ -311,24 +281,23 @@ export function EditarAssinaturaModal({
         formState.planType === "TESTE"
           ? parseInt(formState.diasTeste)
           : undefined,
-      modeloPagamento:
-        formState.planType === "TESTE" ? undefined : "ASSINATURA",
+      modeloPagamento: formState.planType === "TESTE" ? null : "ASSINATURA",
       metodoPagamento:
         formState.planType === "TESTE"
-          ? undefined
+          ? null
           : (formState.metodoPagamento as any),
       statusPagamento:
         formState.planType === "TESTE"
-          ? undefined
+          ? null
           : (formState.statusPagamento as any),
-      proximaCobranca:
-        formState.planType === "TESTE" ? undefined : getNextBillingDate(),
+      proximaCobranca,
+      graceUntil: null,
     };
 
     setIsSaving(true);
 
     try {
-      const response = await updateAdminCompanyPlano(company.id, payload);
+      const response = await createAdminCompanyPlano(company.id, payload);
 
       const selectedPlan = planOptions.find(
         (plan) => plan.id === formState.planId
@@ -336,55 +305,50 @@ export function EditarAssinaturaModal({
 
       const nextPlan: AdminCompanyPlano = {
         id: formState.planId,
-        nome:
-          selectedPlan?.nome ?? company.plano?.nome ?? "Plano de assinatura",
+        nome: selectedPlan?.nome ?? "Plano de assinatura",
         modo: formState.planType,
-        status: company.plano?.status ?? "ATIVO",
-        inicio: company.plano?.inicio ?? new Date().toISOString(),
-        fim: company.plano?.fim ?? null,
+        status: "ATIVO" as any,
+        inicio: new Date().toISOString(),
+        fim: null,
         modeloPagamento: "ASSINATURA",
         metodoPagamento: formState.metodoPagamento as any,
         statusPagamento: formState.statusPagamento as any,
-        quantidadeVagas:
-          selectedPlan?.quantidadeVagas ?? company.plano?.quantidadeVagas ?? 0,
-        valor: selectedPlan?.valor ?? company.plano?.valor ?? "0.00",
-        duracaoEmDias: company.plano?.duracaoEmDias ?? null,
-        diasRestantes: company.plano?.diasRestantes ?? null,
+        quantidadeVagas: selectedPlan?.quantidadeVagas ?? 0,
+        valor: selectedPlan?.valor ?? "0.00",
+        duracaoEmDias: null,
+        diasRestantes: 0,
       };
 
       const nextPayment: AdminCompanyPagamento = {
         metodo: formState.metodoPagamento as any,
         status: formState.statusPagamento as any,
         modelo: "ASSINATURA",
-        ultimoPagamentoEm:
-          company.pagamento?.ultimoPagamentoEm ?? new Date().toISOString(),
+        ultimoPagamentoEm: new Date().toISOString(),
       };
 
-      onSubscriptionUpdated(nextPlan, nextPayment);
+      onSubscriptionAdded(nextPlan, nextPayment);
 
       toastCustom.success({
-        title: "Assinatura atualizada",
-        description: "As informações de assinatura foram salvas com sucesso.",
+        title: "Assinatura adicionada",
+        description: "A assinatura foi adicionada com sucesso.",
       });
 
       handleClose();
     } catch (error) {
-      console.error("Erro ao atualizar assinatura", error);
+      console.error("Erro ao adicionar assinatura", error);
       toastCustom.error({
-        title: "Erro ao salvar assinatura",
-        description: "Não foi possível atualizar a assinatura agora.",
+        title: "Erro ao adicionar assinatura",
+        description: "Não foi possível adicionar a assinatura agora.",
       });
     } finally {
       setIsSaving(false);
     }
   }, [
     company.id,
-    company.pagamento,
-    company.plano,
     formState,
     handleClose,
     isSaving,
-    onSubscriptionUpdated,
+    onSubscriptionAdded,
     planOptions,
     getNextBillingDate,
   ]);
@@ -399,14 +363,14 @@ export function EditarAssinaturaModal({
     >
       <ModalContentWrapper>
         <ModalHeader>
-          <ModalTitle>Editar assinatura</ModalTitle>
+          <ModalTitle>Adicionar assinatura</ModalTitle>
         </ModalHeader>
 
         <ModalBody className="space-y-6 p-1">
           <SelectCustom
             mode="single"
             options={planSelectOptions}
-            value={formState.planId ? formState.planId : null}
+            value={formState.planId || null}
             onChange={handleSelectPlan}
             placeholder="Selecione um plano"
             disabled={isSaving || isLoadingPlans}
@@ -543,9 +507,9 @@ export function EditarAssinaturaModal({
             onClick={handleSave}
             size="md"
             isLoading={isSaving}
-            loadingText="Salvando..."
+            loadingText="Adicionando..."
           >
-            Salvar assinatura
+            Adicionar assinatura
           </ButtonCustom>
         </ModalFooter>
       </ModalContentWrapper>

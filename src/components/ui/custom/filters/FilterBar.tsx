@@ -55,7 +55,7 @@ export function FilterBar({
         className
       )}
     >
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4 xl:grid-cols-[minmax(0,3fr)_minmax(0,1.2fr)_minmax(0,1.2fr)_auto] xl:items-end xl:gap-5">
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,0.8fr)_minmax(0,1.2fr)_minmax(0,0.8fr)_auto] lg:items-end lg:gap-3 xl:gap-4">
         {search && (
           <div className="min-w-0">
             <div className="relative">

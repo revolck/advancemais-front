@@ -289,7 +289,7 @@ export function EditarEmpresaEnderecoModal({
 
         <ModalFooter className="pt-4">
           <ButtonCustom
-            variant="ghost"
+            variant="outline"
             onClick={handleClose}
             disabled={isSaving}
             size="md"

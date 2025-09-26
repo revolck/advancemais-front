@@ -24,8 +24,12 @@ export function PlanTab({
   );
 
   const planTypeLabel = plan?.modo
-    ? plan.modo === "parceiro"
+    ? plan.modo === "PARCEIRO"
       ? "Parceiro"
+      : plan.modo === "CLIENTE"
+      ? "Assinatura"
+      : plan.modo === "TESTE"
+      ? "Avaliação"
       : plan.modo
     : null;
   const nextChargeLabel = formatDate(plan?.fim);
@@ -62,21 +66,23 @@ export function PlanTab({
                     {planCardTypeLabel}
                   </p>
                   <div className="space-y-2">
-                    <h4 className="!mb-0">
-                      {plan?.nome ?? "Plano não informado"}
-                    </h4>
+                    <div className="flex items-center gap-3">
+                      <h4 className="!mb-0">
+                        {plan?.nome ?? "Plano não informado"}
+                      </h4>
+                      <span
+                        className={cn(
+                          "inline-flex w-fit items-center gap-2 rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-wide",
+                          planCardStatusClasses
+                        )}
+                      >
+                        {planCardStatusLabel}
+                      </span>
+                    </div>
                     <h4 className="!text-[1.75rem] !font-bold !leading-none !text-green-900">
-                      {plan?.valor ? formatCurrency(plan.valor) : "R$ —"}
+                      {plan?.valor ? formatCurrency(plan.valor) : "R$ —"}
                     </h4>
                   </div>
-                  <span
-                    className={cn(
-                      "inline-flex w-fit items-center gap-2 rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-wide",
-                      planCardStatusClasses
-                    )}
-                  >
-                    {planCardStatusLabel}
-                  </span>
                 </div>
                 <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--primary-color)] text-white">
                   <CreditCard className="h-5 w-5" />

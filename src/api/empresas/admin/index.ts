@@ -20,6 +20,8 @@ import type {
   AdminCompanyVagaParams,
   CreateAdminCompanyPayload,
   UpdateAdminCompanyPayload,
+  UpdateAdminCompanyPlanoPayload,
+  CreateAdminCompanyPlanoPayload,
   CreateAdminCompanyBanPayload,
   RevokeAdminCompanyBanPayload,
   BanItem,
@@ -307,6 +309,63 @@ export async function getAdminCompanyById(
       method: "GET",
       ...init,
       headers: buildAuthHeaders(init?.headers),
+    },
+    cache: "no-cache",
+  });
+}
+
+/**
+ * Atualiza plano da empresa
+ *
+ * Atualiza ou atribui um novo plano empresarial para a empresa informada, permitindo também o ajuste de dados de cobrança manual.
+ * Endpoint restrito aos perfis ADMIN e MODERADOR.
+ *
+ * @param id - ID da empresa
+ * @param data - Dados do plano a serem atualizados
+ * @param init - Configurações adicionais da requisição
+ * @returns Empresa atualizada com sucesso
+ */
+export async function updateAdminCompanyPlano(
+  id: string,
+  data: UpdateAdminCompanyPlanoPayload,
+  init?: RequestInit
+): Promise<AdminCompanyUpdateApiResponse> {
+  const endpoint = empresasRoutes.adminEmpresas.updatePlano(id);
+
+  return apiFetch<AdminCompanyUpdateApiResponse>(endpoint, {
+    init: {
+      method: "PUT",
+      ...init,
+      headers: {
+        "Content-Type": "application/json",
+        Accept: apiConfig.headers.Accept,
+        ...getAuthHeader(),
+        ...normalizeHeaders(init?.headers),
+      },
+      body: init?.body ?? JSON.stringify(data),
+    },
+    cache: "no-cache",
+  });
+}
+
+export async function createAdminCompanyPlano(
+  id: string,
+  data: CreateAdminCompanyPlanoPayload,
+  init?: RequestInit
+): Promise<AdminCompanyUpdateApiResponse> {
+  const endpoint = empresasRoutes.adminEmpresas.createPlano(id);
+
+  return apiFetch<AdminCompanyUpdateApiResponse>(endpoint, {
+    init: {
+      method: "POST",
+      ...init,
+      headers: {
+        "Content-Type": "application/json",
+        Accept: apiConfig.headers.Accept,
+        ...getAuthHeader(),
+        ...normalizeHeaders(init?.headers),
+      },
+      body: init?.body ?? JSON.stringify(data),
     },
     cache: "no-cache",
   });

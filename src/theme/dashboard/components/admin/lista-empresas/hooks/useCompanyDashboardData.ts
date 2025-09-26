@@ -49,6 +49,8 @@ function mapAdminCompanyToPartnership(
       diasTesteDisponibilizados: company.diasTesteDisponibilizados ?? null,
       banida: company.banida,
       banimentoAtivo: company.banimentoAtivo ?? null,
+      bloqueada: company.bloqueada ?? false,
+      bloqueioAtivo: company.bloqueioAtivo ?? null,
     },
     plano: {
       id: plan?.id ?? `${company.id}-plano`,

@@ -223,7 +223,7 @@ export function EditarEmpresaModal({
 
         <ModalFooter className="pt-4">
           <ButtonCustom
-            variant="ghost"
+            variant="outline"
             onClick={handleClose}
             size="md"
             disabled={isSaving}

@@ -192,6 +192,8 @@ export const empresasRoutes = {
     create: () => `${prefix}/empresas/admin`,
     get: (id: string) => `${prefix}/empresas/admin/${id}`,
     update: (id: string) => `${prefix}/empresas/admin/${id}`,
+    updatePlano: (id: string) => `${prefix}/empresas/admin/${id}/plano`,
+    createPlano: (id: string) => `${prefix}/empresas/admin/${id}/plano`,
     validateCnpj: (cnpj: string) =>
       `${prefix}/empresas/admin/validate-cnpj?cnpj=${cnpj}`,
     validateCpf: (cpf: string) =>
@@ -213,6 +215,9 @@ export const empresasRoutes = {
     },
     vagas: {
       list: (id: string) => `${prefix}/empresas/admin/${id}/vagas`,
+      get: (id: string) => `${prefix}/empresas/admin/vagas/${id}`,
+      update: (id: string) => `${prefix}/empresas/vagas/${id}`,
+      delete: (id: string) => `${prefix}/empresas/vagas/${id}`,
       emAnalise: (id: string) =>
         `${prefix}/empresas/admin/${id}/vagas/em-analise`,
       aprovar: (id: string, vagaId: string) =>
@@ -341,9 +346,17 @@ export const uploadRoutes = {
  * Collection of all API route groups.
  * Extend this object as new microservices are added.
  */
+export const vagasRoutes = {
+  list: () => `${prefix}/empresas/vagas`,
+  get: (id: string) => `${prefix}/empresas/vagas/${id}`,
+  update: (id: string) => `${prefix}/empresas/vagas/${id}`,
+  delete: (id: string) => `${prefix}/empresas/vagas/${id}`,
+};
+
 export const routes = {
   website: websiteRoutes,
   empresas: empresasRoutes,
+  vagas: vagasRoutes,
   usuarios: usuarioRoutes,
   mercadopago: mercadoPagoRoutes,
   brevo: brevoRoutes,

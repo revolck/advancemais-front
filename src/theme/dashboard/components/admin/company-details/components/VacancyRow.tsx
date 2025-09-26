@@ -1,15 +1,28 @@
-import React from "react";
+import React, { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TableRow, TableCell } from "@/components/ui/table";
-import { AvatarCircles } from "@/components/ui/avatar-circles";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { EyeOff, Eye, Edit, Trash2, Loader2, RefreshCw } from "lucide-react";
 import type { AdminCompanyVagaItem } from "@/api/empresas/admin/types";
+import { DeleteConfirmModal } from "@/components/ui/custom/list-manager/components/DeleteConfirmModal";
+import { UserAvatars } from "@/components/ui/custom/users-avatars";
 
 interface VacancyRowProps {
   vacancy: AdminCompanyVagaItem;
   onView: (vacancy: AdminCompanyVagaItem) => void;
   onEdit: (vacancy: AdminCompanyVagaItem) => void;
-  candidateAvatars?: string[];
+  onDelete?: (vacancy: AdminCompanyVagaItem) => void;
+  index?: number;
+  isDeleting?: boolean;
+  isLoadingCandidates?: boolean;
+  candidateError?: string;
+  onLoadCandidates?: (vacancyId: string) => void;
 }
 
 function formatDate(value?: string | null): string {
@@ -52,91 +65,271 @@ export function VacancyRow({
   vacancy,
   onView,
   onEdit,
-  candidateAvatars = [],
+  onDelete,
+  index = 0,
+  isDeleting: externalIsDeleting = false,
+  isLoadingCandidates = false,
+  candidateError,
+  onLoadCandidates,
 }: VacancyRowProps) {
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+  const handleDeleteClick = () => {
+    setShowDeleteModal(true);
+  };
+
+  const handleConfirmDelete = () => {
+    onDelete?.(vacancy);
+    setShowDeleteModal(false);
+  };
+
+  const handleCancelDelete = () => {
+    setShowDeleteModal(false);
+  };
+
+  // Conteúdo customizado para delete de vaga
+  const customDeleteContent = (item: AdminCompanyVagaItem) => (
+    <div className="space-y-4">
+      <div className="bg-red-50 border border-red-200 rounded-lg p-4 space-y-3">
+        <div className="flex items-start gap-2">
+          <div className="space-y-1">
+            <p className="text-sm font-medium !text-red-800 !leading-normal">
+              Esta ação é irreversível e pode impactar todo o sistema!
+            </p>
+            <ul className="text-xs text-gray-700 space-y-1 ml-3">
+              <li>
+                • Todos os candidatos que se inscreveram nesta vaga serão
+                afetados
+              </li>
+              <li>
+                • Todas as candidaturas e dados relacionados serão perdidos
+              </li>
+              <li>• A vaga será removida permanentemente do sistema</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <p className="!text-base text-gray-600 !leading-normal !mb-0">
+        Tem certeza absoluta que deseja continuar com esta exclusão?
+      </p>
+    </div>
+  );
+
   const code = vacancy.codigo ?? vacancy.id;
-  const shortCode = (code ?? "").replace(/^#/, "").slice(0, 8);
-  const title = vacancy.titulo ?? `Vaga ${shortCode}`;
-  const regime = "—";
-  const modalidade = "—";
-  const candidatos = 0;
-  const inscricoes = 0;
-  const publicadoEm = formatDate(vacancy.inseridaEm);
-  const inscricoesAte = "—";
+  const title = vacancy.titulo ?? `Vaga ${code}`;
+  const numberOfVacancies = vacancy.numeroVagas || 0;
+  const candidaturas = vacancy.candidaturasResumo?.total || 0;
+  const publishedDate = formatDate(vacancy.inseridaEm);
+  const applicationDeadline = formatDate(vacancy.inscricoesAte);
   const statusBadge = getStatusBadge(vacancy.status);
 
-  const hasCandidates = typeof candidatos === "number" && candidatos > 0;
+  // Dados dos candidatos
+  const candidatesData = vacancy.candidaturas || [];
+  const hasCandidates = candidaturas > 0;
+  const hasFullData = candidatesData.length > 0;
 
   return (
-    <TableRow className="border-gray-200">
-      <TableCell className="py-4 align-top">
-        <div className="flex flex-col">
-          <span className="font-medium text-gray-900">{title}</span>
-          <span className="text-xs text-gray-500">
-            #{(code ?? "").slice(0, 12)}
-          </span>
-        </div>
-      </TableCell>
-      <TableCell className="align-top text-sm text-gray-700">
-        <div className="flex flex-col">
-          <span>Regime: {regime}</span>
-          <span className="text-xs text-gray-500">
-            Modalidade: {modalidade}
-          </span>
-        </div>
-      </TableCell>
-      <TableCell className="align-top text-sm text-gray-700">
-        {hasCandidates ? (
-          <div className="flex flex-col gap-1">
-            <AvatarCircles
-              avatarUrls={candidateAvatars}
-              numPeople={candidatos}
-            />
-            <span className="text-xs text-gray-500">
-              Candidatos: {candidatos}
-              {typeof inscricoes === "number"
-                ? ` · Inscrições: ${inscricoes}`
-                : ""}
-            </span>
+    <>
+      <TableRow className="border-gray-200 hover:bg-gray-50">
+        {/* Vaga */}
+        <TableCell className="py-4">
+          <div className="flex flex-col">
+            <div className="flex items-center gap-2">
+              <span className="font-medium text-gray-900">{title}</span>
+              {vacancy.modoAnonimo && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <EyeOff className="h-4 w-4 text-gray-400" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Publicado em modo anônimo</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
+            </div>
+            <span className="text-xs text-gray-500">#{code}</span>
           </div>
-        ) : (
-          <span className="text-xs text-gray-500">
-            Nenhum candidato aplicado.
-          </span>
-        )}
-      </TableCell>
-      <TableCell className="align-top text-sm text-gray-700">
-        <div className="flex flex-col">
-          <span>Publicado: {publicadoEm}</span>
-          <span className="text-xs text-gray-500">
-            Inscrições até: {inscricoesAte}
-          </span>
-        </div>
-      </TableCell>
-      <TableCell className="align-top">{statusBadge}</TableCell>
-      <TableCell className="w-40 align-top">
-        <div className="flex items-center gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="text-xs"
-            onClick={() => onView(vacancy)}
-          >
-            Ver
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="text-xs"
-            onClick={() => onEdit(vacancy)}
-          >
-            Editar
-          </Button>
-        </div>
-      </TableCell>
-    </TableRow>
+        </TableCell>
+
+        {/* Vagas */}
+        <TableCell className="py-4">
+          <span className="text-sm text-gray-700">{numberOfVacancies}</span>
+        </TableCell>
+
+        {/* Candidaturas */}
+        <TableCell className="py-4">
+          {hasCandidates ? (
+            <div className="flex items-center gap-2">
+              {isLoadingCandidates ? (
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 bg-gray-200 rounded-full animate-pulse"></div>
+                  <span className="text-sm text-gray-500">Carregando...</span>
+                </div>
+              ) : candidateError ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-red-500">
+                    {candidaturas} candidato{candidaturas > 1 ? "s" : ""}
+                  </span>
+                  {onLoadCandidates && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => onLoadCandidates(vacancy.id)}
+                          className="h-6 w-6 text-gray-400 hover:text-gray-600"
+                        >
+                          <RefreshCw className="h-3 w-3" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Recarregar candidatos</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
+                </div>
+              ) : hasFullData ? (
+                <>
+                  <UserAvatars
+                    users={candidatesData.slice(0, 4).map((candidatura) => ({
+                      id: candidatura.candidato.id,
+                      name: candidatura.candidato.nomeCompleto,
+                      image:
+                        candidatura.candidato.avatarUrl ||
+                        candidatura.candidato.informacoes?.avatarUrl ||
+                        `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                          candidatura.candidato.nomeCompleto
+                        )}&background=random`,
+                    }))}
+                    size={24}
+                    maxVisible={4}
+                    overlap={70}
+                    className="flex-shrink-0"
+                  />
+                  <span className="text-sm text-gray-700 font-medium">
+                    {candidaturas}
+                  </span>
+                </>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-500">
+                    {candidaturas} candidato{candidaturas > 1 ? "s" : ""}
+                  </span>
+                  {onLoadCandidates && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => onLoadCandidates(vacancy.id)}
+                          className="h-6 w-6 text-gray-400 hover:text-gray-600"
+                        >
+                          <RefreshCw className="h-3 w-3" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Carregar avatares</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
+                </div>
+              )}
+            </div>
+          ) : (
+            <span className="text-sm text-gray-400">Sem candidatos</span>
+          )}
+        </TableCell>
+
+        {/* Publicado em */}
+        <TableCell className="py-4">
+          <span className="text-sm text-gray-700">{publishedDate}</span>
+        </TableCell>
+
+        {/* Inscrições até */}
+        <TableCell className="py-4">
+          <span className="text-sm text-gray-700">{applicationDeadline}</span>
+        </TableCell>
+
+        {/* Status */}
+        <TableCell className="py-4">{statusBadge}</TableCell>
+
+        {/* Ações */}
+        <TableCell className="text-right w-16">
+          <div className="flex items-center gap-1">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => onView(vacancy)}
+                  className="h-8 w-8 rounded-full text-gray-500 hover:text-white hover:bg-[var(--primary-color)] cursor-pointer"
+                  aria-label="Ver vaga"
+                >
+                  <Eye className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent sideOffset={8}>Ver vaga</TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => onEdit(vacancy)}
+                  className="h-8 w-8 rounded-full text-gray-500 hover:text-white hover:bg-[var(--primary-color)] cursor-pointer"
+                  aria-label="Editar vaga"
+                >
+                  <Edit className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent sideOffset={8}>Editar vaga</TooltipContent>
+            </Tooltip>
+
+            {onDelete && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={handleDeleteClick}
+                    disabled={externalIsDeleting}
+                    className="h-8 w-8 rounded-full text-gray-500 hover:text-white hover:bg-red-500 cursor-pointer"
+                    aria-label="Excluir vaga"
+                  >
+                    {externalIsDeleting ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-4 w-4" />
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent sideOffset={8}>
+                  {externalIsDeleting ? "Excluindo..." : "Excluir vaga"}
+                </TooltipContent>
+              </Tooltip>
+            )}
+          </div>
+        </TableCell>
+      </TableRow>
+
+      {/* Modal de Confirmação de Exclusão */}
+      {onDelete && (
+        <DeleteConfirmModal<AdminCompanyVagaItem>
+          isOpen={showDeleteModal}
+          onOpenChange={setShowDeleteModal}
+          item={vacancy}
+          itemName="a vaga"
+          onConfirmDelete={handleConfirmDelete}
+          isDeleting={externalIsDeleting}
+          customDeleteContent={customDeleteContent}
+          confirmButtonText="Sim, excluir vaga"
+        />
+      )}
+    </>
   );
 }
 

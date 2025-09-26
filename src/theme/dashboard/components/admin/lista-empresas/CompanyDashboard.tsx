@@ -16,35 +16,18 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
 import { ChevronUp, ChevronDown } from "lucide-react";
 import {
   Tooltip,
   TooltipTrigger,
   TooltipContent,
 } from "@/components/ui/tooltip";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import {
   CompanyRow,
   CompanyTableSkeleton,
   CreateCompanyModal,
 } from "./components";
-import { COMPANY_DASHBOARD_CONFIG } from "./constants";
 import { useCompanyDashboardData } from "./hooks/useCompanyDashboardData";
 import type { CompanyDashboardProps } from "./types";
 import type { FilterField } from "@/components/ui/custom/filters";
@@ -54,11 +37,9 @@ const normalizeCnpj = (value?: string | null): string =>
   value?.replace(/\D/g, "") ?? "";
 
 const STATUS_FILTER_OPTIONS: { value: AdminCompanyStatus; label: string }[] = [
-  { value: "ATIVO", label: "Ativo" },
-  { value: "INATIVO", label: "Desativado" },
-  { value: "BANIDO", label: "Banido" },
-  { value: "PENDENTE", label: "Pendente" },
-  { value: "SUSPENSO", label: "Suspenso" },
+  { value: "ATIVO", label: "Ativa" },
+  { value: "INATIVO", label: "Inativa" },
+  { value: "BLOQUEADO", label: "Bloqueada" },
 ];
 
 export function CompanyDashboard({
@@ -70,10 +51,7 @@ export function CompanyDashboard({
   onDataLoaded,
   onError,
 }: CompanyDashboardProps) {
-  const defaultPageSize =
-    pageSizeProp ??
-    itemsPerPageProp ??
-    COMPANY_DASHBOARD_CONFIG.defaultPageSize;
+  const defaultPageSize = 10; // Máximo de 10 empresas por página
   const shouldFetch = fetchFromApi && !partnershipsProp;
 
   const [pageSize, setPageSize] = useState(defaultPageSize);
@@ -262,15 +240,15 @@ export function CompanyDashboard({
       // Determinar o status da empresa de forma consistente
       let companyStatus: AdminCompanyStatus;
 
-      // Verificar se a empresa está banida primeiro
-      if (company.banida || company.banimentoAtivo) {
-        companyStatus = "BANIDO";
+      // Determinar o status da empresa de forma consistente
+      // Prioridade: bloqueada > banida > status > ativo
+      if (company.bloqueada || company.bloqueioAtivo) {
+        companyStatus = "BLOQUEADO";
+      } else if (company.banida || company.banimentoAtivo) {
+        companyStatus = "BLOQUEADO";
       } else if (company.status) {
         companyStatus = company.status;
-      } else if (company.ativo !== undefined) {
-        companyStatus = company.ativo ? "ATIVO" : "INATIVO";
       } else {
-        // Fallback baseado no campo 'ativo' se disponível
         companyStatus = company.ativo ? "ATIVO" : "INATIVO";
       }
 
@@ -294,7 +272,9 @@ export function CompanyDashboard({
     return sortedPartnerships.slice(start, end);
   }, [filteredPartnerships, currentPage, pageSize, shouldFetch, sortList]);
 
-  const totalItems = filteredPartnerships.length;
+  const totalItems = shouldFetch
+    ? pagination?.total ?? 0
+    : filteredPartnerships.length;
 
   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
 
@@ -444,8 +424,6 @@ export function CompanyDashboard({
   }, [currentPage, totalPages]);
 
   const showEmptyState = !isLoadingData && totalItems === 0;
-
-  const pageSizeOptions = COMPANY_DASHBOARD_CONFIG.pageSizeOptions;
 
   return (
     <div className={cn("min-h-full", className)}>
@@ -773,110 +751,83 @@ export function CompanyDashboard({
           {(totalItems > 0 || isLoadingData) && (
             <div className="flex flex-col gap-4 px-6 py-4 border-t border-gray-200 bg-gray-50/30 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-2 text-sm text-gray-600">
-                <span>Mostrando</span>
-                <Select
-                  value={String(pageSize)}
-                  onValueChange={handlePageSizeChange}
-                  disabled={isLoadingData}
-                >
-                  <SelectTrigger className="h-8 w-20 border-gray-200 bg-white">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent align="end">
-                    {pageSizeOptions.map((option) => (
-                      <SelectItem key={option} value={String(option)}>
-                        {option}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
                 <span>
-                  de {totalItems} {totalItems === 1 ? "empresa" : "empresas"}
+                  Mostrando{" "}
+                  {Math.min((currentPage - 1) * pageSize + 1, totalItems)} a{" "}
+                  {Math.min(currentPage * pageSize, totalItems)} de {totalItems}{" "}
+                  {totalItems === 1 ? "empresa" : "empresas"}
                 </span>
               </div>
 
               {totalPages > 1 && (
-                <Pagination>
-                  <PaginationContent>
-                    <PaginationItem>
-                      <PaginationPrevious
-                        href="#"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          handlePageChange(currentPage - 1);
-                        }}
-                        aria-disabled={currentPage === 1}
-                        className={
-                          currentPage === 1
-                            ? "pointer-events-none opacity-50"
-                            : undefined
+                <div className="flex items-center gap-2">
+                  <ButtonCustom
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className="h-8 px-3"
+                  >
+                    Anterior
+                  </ButtonCustom>
+
+                  {visiblePages[0] > 1 && (
+                    <>
+                      <ButtonCustom
+                        variant={currentPage === 1 ? "primary" : "outline"}
+                        size="sm"
+                        onClick={() => handlePageChange(1)}
+                        className="h-8 w-8 p-0"
+                      >
+                        1
+                      </ButtonCustom>
+                      {visiblePages[0] > 2 && (
+                        <span className="text-gray-400">...</span>
+                      )}
+                    </>
+                  )}
+
+                  {visiblePages.map((page) => (
+                    <ButtonCustom
+                      key={page}
+                      variant={currentPage === page ? "primary" : "outline"}
+                      size="sm"
+                      onClick={() => handlePageChange(page)}
+                      className="h-8 w-8 p-0"
+                    >
+                      {page}
+                    </ButtonCustom>
+                  ))}
+
+                  {visiblePages[visiblePages.length - 1] < totalPages && (
+                    <>
+                      {visiblePages[visiblePages.length - 1] <
+                        totalPages - 1 && (
+                        <span className="text-gray-400">...</span>
+                      )}
+                      <ButtonCustom
+                        variant={
+                          currentPage === totalPages ? "primary" : "outline"
                         }
-                      />
-                    </PaginationItem>
-                    {visiblePages[0] > 1 && (
-                      <>
-                        <PaginationItem>
-                          <PaginationLink
-                            href="#"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              handlePageChange(1);
-                            }}
-                          >
-                            1
-                          </PaginationLink>
-                        </PaginationItem>
-                        {visiblePages[0] > 2 && <PaginationEllipsis />}
-                      </>
-                    )}
-                    {visiblePages.map((page) => (
-                      <PaginationItem key={page}>
-                        <PaginationLink
-                          href="#"
-                          isActive={currentPage === page}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            handlePageChange(page);
-                          }}
-                        >
-                          {page}
-                        </PaginationLink>
-                      </PaginationItem>
-                    ))}
-                    {visiblePages[visiblePages.length - 1] < totalPages && (
-                      <>
-                        {visiblePages[visiblePages.length - 1] <
-                          totalPages - 1 && <PaginationEllipsis />}
-                        <PaginationItem>
-                          <PaginationLink
-                            href="#"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              handlePageChange(totalPages);
-                            }}
-                          >
-                            {totalPages}
-                          </PaginationLink>
-                        </PaginationItem>
-                      </>
-                    )}
-                    <PaginationItem>
-                      <PaginationNext
-                        href="#"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          handlePageChange(currentPage + 1);
-                        }}
-                        aria-disabled={currentPage === totalPages}
-                        className={
-                          currentPage === totalPages
-                            ? "pointer-events-none opacity-50"
-                            : undefined
-                        }
-                      />
-                    </PaginationItem>
-                  </PaginationContent>
-                </Pagination>
+                        size="sm"
+                        onClick={() => handlePageChange(totalPages)}
+                        className="h-8 w-8 p-0"
+                      >
+                        {totalPages}
+                      </ButtonCustom>
+                    </>
+                  )}
+
+                  <ButtonCustom
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className="h-8 px-3"
+                  >
+                    Próxima
+                  </ButtonCustom>
+                </div>
               )}
             </div>
           )}
