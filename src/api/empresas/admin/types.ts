@@ -34,16 +34,6 @@ export type AdminCompanyVacancyStatus =
   | "ENCERRADA"
   | "EXPIRADO";
 
-export type BanType = "TEMPORARIO" | "PERMANENTE" | "RESTRICAO_DE_RECURSO";
-
-export type BanReason =
-  | "SPAM"
-  | "VIOLACAO_POLITICAS"
-  | "FRAUDE"
-  | "ABUSO_DE_RECURSOS"
-  | "OUTROS";
-
-export type BanStatus = "ATIVO" | "REVOGADO" | "EXPIRADO";
 
 // ============================================================================
 // TIPOS DE ENDEREÇO
@@ -318,6 +308,74 @@ export interface AdminCompanyListParams {
 export interface AdminCompanyPaymentParams {
   page?: number;
   pageSize?: number;
+}
+
+// ============================================================================
+// TIPOS DE BLOQUEIO DE USUÁRIOS
+// ============================================================================
+
+export type BanType = "TEMPORARIO" | "PERMANENTE";
+export type BanReason =
+  | "SPAM"
+  | "VIOLACAO_POLITICAS"
+  | "FRAUDE"
+  | "ABUSO_DE_RECURSOS"
+  | "OUTROS";
+export type BanStatus = "ATIVO" | "REVOGADO" | "EXPIRADO";
+
+export interface BanTarget {
+  tipo: "EMPRESA";
+  id: string;
+  nome: string;
+  role: "EMPRESA";
+}
+
+export interface BanDetails {
+  tipo: BanType;
+  motivo: BanReason;
+  status: BanStatus;
+  inicio: string;
+  fim: string | null;
+  observacoes: string;
+}
+
+export interface BanAppliedBy {
+  id: string;
+  nome: string;
+  role: "ADMIN" | "MODERADOR";
+}
+
+export interface BanAudit {
+  criadoEm: string;
+  atualizadoEm: string;
+}
+
+export interface BanItem {
+  id: string;
+  alvo: BanTarget;
+  bloqueio: BanDetails;
+  aplicadoPor: BanAppliedBy;
+  auditoria: BanAudit;
+}
+
+export interface BanListResponse {
+  data: BanItem[];
+  pagination: AdminCompanyPagination;
+}
+
+export interface CreateBanPayload {
+  tipo: BanType;
+  motivo: BanReason;
+  dias?: number; // Apenas para bloqueios temporários
+  observacoes: string;
+}
+
+export interface RevokeBanPayload {
+  observacoes: string;
+}
+
+export interface BanResponse {
+  bloqueio: BanItem;
 }
 
 export interface AdminCompanyBanParams {

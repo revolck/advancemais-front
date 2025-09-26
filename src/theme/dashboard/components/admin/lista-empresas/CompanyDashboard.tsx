@@ -128,10 +128,8 @@ export function CompanyDashboard({
   }, [onDataLoaded, partnershipsProp]);
 
   useEffect(() => {
-    if (!shouldFetch) {
-      setCurrentPage(1);
-    }
-  }, [searchTerm, selectedPlans, selectedStatuses, shouldFetch]);
+    setCurrentPage(1);
+  }, [searchTerm, selectedPlans, selectedStatuses]);
 
   useEffect(() => {
     if (!shouldFetch) {
@@ -242,10 +240,6 @@ export function CompanyDashboard({
   }, [partnerships]);
 
   const filteredPartnerships = useMemo(() => {
-    if (shouldFetch) {
-      return partnerships;
-    }
-
     const query = searchTerm?.trim().toLowerCase() || "";
     const numericQuery = query.replace(/\D/g, "");
 
@@ -286,31 +280,29 @@ export function CompanyDashboard({
 
       return matchesSearch && matchesPlan && matchesStatus;
     });
-  }, [partnerships, searchTerm, selectedPlans, selectedStatuses, shouldFetch]);
+  }, [partnerships, searchTerm, selectedPlans, selectedStatuses]);
 
   const displayedPartnerships = useMemo(() => {
+    const sortedPartnerships = sortList(filteredPartnerships);
+
     if (shouldFetch) {
-      return sortList(filteredPartnerships);
+      return sortedPartnerships;
     }
 
     const start = (currentPage - 1) * pageSize;
     const end = start + pageSize;
-    return sortList(filteredPartnerships).slice(start, end);
+    return sortedPartnerships.slice(start, end);
   }, [filteredPartnerships, currentPage, pageSize, shouldFetch, sortList]);
 
-  const totalItems = shouldFetch
-    ? pagination?.total ?? 0
-    : filteredPartnerships.length;
+  const totalItems = filteredPartnerships.length;
 
-  const totalPages = shouldFetch
-    ? Math.max(1, pagination?.totalPages ?? 1)
-    : Math.max(1, Math.ceil(totalItems / pageSize));
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
 
   useEffect(() => {
-    if (!shouldFetch && currentPage > totalPages) {
+    if (currentPage > totalPages) {
       setCurrentPage(totalPages);
     }
-  }, [currentPage, totalPages, shouldFetch]);
+  }, [currentPage, totalPages]);
 
   const isLoadingData = shouldFetch && isLoading;
 
@@ -318,13 +310,7 @@ export function CompanyDashboard({
     ? Math.max(totalItems - (currentPage - 1) * pageSizeRef.current, 0)
     : 0;
 
-  const visibleCount = shouldFetch
-    ? totalItems === 0
-      ? 0
-      : isLoadingData
-      ? Math.min(pageSizeRef.current, remainingItems || pageSizeRef.current)
-      : partnerships.length
-    : displayedPartnerships.length;
+  const visibleCount = displayedPartnerships.length;
 
   const filterFields: FilterField[] = useMemo(
     () => [
@@ -457,8 +443,7 @@ export function CompanyDashboard({
     return pages;
   }, [currentPage, totalPages]);
 
-  const showEmptyState =
-    !isLoadingData && totalItems === 0 && displayedPartnerships.length === 0;
+  const showEmptyState = !isLoadingData && totalItems === 0;
 
   const pageSizeOptions = COMPANY_DASHBOARD_CONFIG.pageSizeOptions;
 

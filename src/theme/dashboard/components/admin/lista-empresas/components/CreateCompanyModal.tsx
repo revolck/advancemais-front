@@ -12,7 +12,11 @@ import {
 import { ButtonCustom } from "@/components/ui/custom";
 import { InputCustom } from "@/components/ui/custom/input";
 import { toastCustom } from "@/components/ui/custom";
-import { createAdminCompany } from "@/api/empresas/admin";
+import {
+  createAdminCompany,
+  validateAdminCompanyCnpj,
+} from "@/api/empresas/admin";
+import { Loader2, Check, AlertTriangle } from "lucide-react";
 
 interface CreateCompanyModalProps {
   isOpen: boolean;
@@ -41,6 +45,10 @@ export function CreateCompanyModal({
 }: CreateCompanyModalProps) {
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [isLoading, setIsLoading] = useState(false);
+  const [isValidatingCnpj, setIsValidatingCnpj] = useState(false);
+  const [cnpjValidationStatus, setCnpjValidationStatus] = useState<
+    "idle" | "validating" | "success" | "error"
+  >("idle");
   const [errors, setErrors] = useState<Partial<FormData>>({});
 
   const validateForm = (): boolean => {
@@ -82,11 +90,60 @@ export function CreateCompanyModal({
     return Object.keys(newErrors).length === 0;
   };
 
+  const validateCnpj = async (cnpj: string) => {
+    if (!cnpj || cnpj.length < 14) {
+      setCnpjValidationStatus("idle");
+      return;
+    }
+
+    setIsValidatingCnpj(true);
+    setCnpjValidationStatus("validating");
+
+    try {
+      const result = await validateAdminCompanyCnpj(cnpj);
+      if (result.exists) {
+        setCnpjValidationStatus("error");
+        toastCustom.error({
+          title: "CNPJ já cadastrado",
+          description: "Este CNPJ já está cadastrado em nossa base de dados",
+        });
+      } else {
+        setCnpjValidationStatus("success");
+        setErrors((prev) => {
+          const newErrors = { ...prev };
+          delete newErrors.cnpj;
+          return newErrors;
+        });
+      }
+    } catch (error) {
+      console.error("Erro ao validar CNPJ:", error);
+      setCnpjValidationStatus("error");
+      toastCustom.error({
+        title: "Erro de validação",
+        description: "Não foi possível validar o CNPJ. Tente novamente.",
+      });
+    } finally {
+      setIsValidatingCnpj(false);
+    }
+  };
+
   const handleInputChange = (field: keyof FormData, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     // Limpar erro quando o usuário começar a digitar
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: undefined }));
+    }
+
+    // Validar CNPJ quando o usuário parar de digitar
+    if (field === "cnpj") {
+      // Resetar status quando o usuário começar a digitar
+      setCnpjValidationStatus("idle");
+
+      const timeoutId = setTimeout(() => {
+        validateCnpj(value);
+      }, 1000);
+
+      return () => clearTimeout(timeoutId);
     }
   };
 
@@ -95,6 +152,27 @@ export function CreateCompanyModal({
 
     if (!validateForm()) {
       return;
+    }
+
+    // Validar CNPJ antes de submeter
+    if (formData.cnpj.trim()) {
+      try {
+        const result = await validateAdminCompanyCnpj(formData.cnpj.trim());
+        if (result.exists) {
+          toastCustom.error({
+            title: "CNPJ já cadastrado",
+            description: "Este CNPJ já está cadastrado em nossa base de dados",
+          });
+          return;
+        }
+      } catch (error) {
+        console.error("Erro ao validar CNPJ:", error);
+        toastCustom.error({
+          title: "Erro de validação",
+          description: "Não foi possível validar o CNPJ. Tente novamente.",
+        });
+        return;
+      }
     }
 
     setIsLoading(true);
@@ -126,13 +204,26 @@ export function CreateCompanyModal({
       setFormData(initialFormData);
       setErrors({});
 
+      // Toast de sucesso
+      toastCustom.success({
+        title: "Empresa cadastrada com sucesso!",
+        description: `A empresa "${nomeNormalized}" foi cadastrada com sucesso.`,
+      });
+
       onSuccess?.();
       onClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao criar empresa:", error);
+
+      // Toast de erro com mensagem específica
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Não foi possível criar a empresa. Tente novamente.";
+
       toastCustom.error({
-        title: "Erro ao criar empresa",
-        description: "Não foi possível criar a empresa. Tente novamente.",
+        title: "Erro ao cadastrar empresa",
+        description: errorMessage,
       });
     } finally {
       setIsLoading(false);
@@ -142,7 +233,21 @@ export function CreateCompanyModal({
   const handleClose = () => {
     setFormData(initialFormData);
     setErrors({});
+    setCnpjValidationStatus("idle");
     onClose();
+  };
+
+  const renderCnpjStatusIcon = () => {
+    switch (cnpjValidationStatus) {
+      case "validating":
+        return <Loader2 className="h-4 w-4 animate-spin text-blue-500" />;
+      case "success":
+        return <Check className="h-4 w-4 text-green-500" />;
+      case "error":
+        return <AlertTriangle className="h-4 w-4 text-red-500" />;
+      default:
+        return null;
+    }
   };
 
   return (
@@ -162,16 +267,24 @@ export function CreateCompanyModal({
             {/* Informações Básicas */}
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <InputCustom
-                  label="CNPJ"
-                  name="cnpj"
-                  value={formData.cnpj}
-                  onChange={(e) => handleInputChange("cnpj", e.target.value)}
-                  error={errors.cnpj}
-                  required
-                  mask="cnpj"
-                  placeholder="00.000.000/0000-00"
-                />
+                <div className="relative">
+                  <InputCustom
+                    label="CNPJ"
+                    name="cnpj"
+                    value={formData.cnpj}
+                    onChange={(e) => handleInputChange("cnpj", e.target.value)}
+                    error={errors.cnpj}
+                    required
+                    mask="cnpj"
+                    placeholder="00.000.000/0000-00"
+                    disabled={isValidatingCnpj || isLoading}
+                  />
+                  {cnpjValidationStatus !== "idle" && (
+                    <div className="absolute right-3 top-2/3 -translate-y-1/2 flex items-center">
+                      {renderCnpjStatusIcon()}
+                    </div>
+                  )}
+                </div>
 
                 <InputCustom
                   label="Nome da Empresa"
@@ -181,6 +294,7 @@ export function CreateCompanyModal({
                   error={errors.nome}
                   required
                   placeholder="Digite o nome da empresa"
+                  disabled={isLoading}
                 />
 
                 <InputCustom
@@ -192,6 +306,7 @@ export function CreateCompanyModal({
                   error={errors.email}
                   required
                   placeholder="contato@empresa.com.br"
+                  disabled={isLoading}
                 />
 
                 <InputCustom
@@ -205,6 +320,7 @@ export function CreateCompanyModal({
                   required
                   mask="phone"
                   placeholder="(11) 99999-9999"
+                  disabled={isLoading}
                 />
               </div>
             </div>
@@ -223,10 +339,18 @@ export function CreateCompanyModal({
               type="submit"
               size="md"
               variant="primary"
-              disabled={isLoading}
+              disabled={
+                isLoading ||
+                isValidatingCnpj ||
+                cnpjValidationStatus === "error"
+              }
               isLoading={isLoading}
             >
-              {isLoading ? "Cadastrando..." : "Cadasrar Empresa"}
+              {isLoading
+                ? "Cadastrando..."
+                : isValidatingCnpj
+                ? "Validando..."
+                : "Cadastrar Empresa"}
             </ButtonCustom>
           </ModalFooter>
         </form>

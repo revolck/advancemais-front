@@ -22,6 +22,11 @@ import type {
   UpdateAdminCompanyPayload,
   CreateAdminCompanyBanPayload,
   RevokeAdminCompanyBanPayload,
+  BanItem,
+  BanListResponse,
+  CreateBanPayload,
+  RevokeBanPayload,
+  BanResponse,
 } from "./types";
 
 // ============================================================================
@@ -154,6 +159,58 @@ export async function listAdminCompanies(
   const url = queryString ? `${endpoint}?${queryString}` : endpoint;
 
   return apiFetch<AdminCompanyListApiResponse>(url, {
+    init: {
+      method: "GET",
+      ...init,
+      headers: buildAuthHeaders(init?.headers),
+    },
+    cache: "no-cache",
+  });
+}
+
+/**
+ * Valida se um CNPJ já existe na base de dados
+ *
+ * Verifica se o CNPJ informado já está cadastrado para outra empresa.
+ * Endpoint restrito aos perfis ADMIN e MODERADOR.
+ *
+ * @param cnpj - CNPJ a ser validado
+ * @param init - Configurações adicionais da requisição
+ * @returns Status da validação do CNPJ
+ */
+export async function validateAdminCompanyCnpj(
+  cnpj: string,
+  init?: RequestInit
+): Promise<{ exists: boolean; message?: string }> {
+  const endpoint = empresasRoutes.adminEmpresas.validateCnpj(cnpj);
+
+  return apiFetch<{ exists: boolean; message?: string }>(endpoint, {
+    init: {
+      method: "GET",
+      ...init,
+      headers: buildAuthHeaders(init?.headers),
+    },
+    cache: "no-cache",
+  });
+}
+
+/**
+ * Valida se um CPF já existe na base de dados
+ *
+ * Verifica se o CPF informado já está cadastrado para outro usuário.
+ * Endpoint restrito aos perfis ADMIN e MODERADOR.
+ *
+ * @param cpf - CPF a ser validado
+ * @param init - Configurações adicionais da requisição
+ * @returns Status da validação do CPF
+ */
+export async function validateAdminCompanyCpf(
+  cpf: string,
+  init?: RequestInit
+): Promise<{ exists: boolean; message?: string }> {
+  const endpoint = empresasRoutes.adminEmpresas.validateCpf(cpf);
+
+  return apiFetch<{ exists: boolean; message?: string }>(endpoint, {
     init: {
       method: "GET",
       ...init,
@@ -503,6 +560,113 @@ export async function approveAdminCompanyVacancy(
         ...normalizeHeaders(init?.headers),
       },
       body: init?.body ?? null,
+    },
+    cache: "no-cache",
+  });
+}
+
+// ============================================================================
+// BLOQUEIOS DE USUÁRIOS
+// ============================================================================
+
+/**
+ * Lista bloqueios aplicados a uma empresa
+ *
+ * Retorna o histórico de bloqueios aplicados ao usuário da empresa,
+ * detalhando vigência, status e responsável.
+ *
+ * @param id - ID da empresa
+ * @param params - Parâmetros de paginação
+ * @param init - Configurações adicionais da requisição
+ * @returns Lista paginada de bloqueios
+ */
+export async function listAdminCompanyUserBans(
+  id: string,
+  params?: AdminCompanyBanParams,
+  init?: RequestInit
+): Promise<BanListResponse> {
+  const endpoint = empresasRoutes.adminEmpresas.bloqueios.list(id);
+  const queryParams: Record<string, any> = {};
+
+  if (params?.page) queryParams.page = params.page;
+  if (params?.pageSize) queryParams.pageSize = params.pageSize;
+
+  const queryString = buildQueryString(queryParams);
+  const url = queryString ? `${endpoint}?${queryString}` : endpoint;
+
+  return apiFetch<BanListResponse>(url, {
+    init: {
+      method: "GET",
+      ...init,
+      headers: buildAuthHeaders(init?.headers),
+    },
+    cache: "no-cache",
+  });
+}
+
+/**
+ * Aplica bloqueio a uma empresa
+ *
+ * Centraliza o bloqueio do usuário da empresa, permitindo bloqueios
+ * temporários ou permanentes com registro de auditoria.
+ *
+ * @param id - ID da empresa
+ * @param data - Dados do bloqueio
+ * @param init - Configurações adicionais da requisição
+ * @returns Bloqueio aplicado com sucesso
+ */
+export async function createAdminCompanyUserBan(
+  id: string,
+  data: CreateBanPayload,
+  init?: RequestInit
+): Promise<BanResponse> {
+  const endpoint = empresasRoutes.adminEmpresas.bloqueios.create(id);
+
+  return apiFetch<BanResponse>(endpoint, {
+    init: {
+      method: "POST",
+      ...init,
+      headers: {
+        "Content-Type": "application/json",
+        Accept: apiConfig.headers.Accept,
+        ...getAuthHeader(),
+        ...normalizeHeaders(init?.headers),
+      },
+      body: JSON.stringify(data),
+    },
+    cache: "no-cache",
+  });
+}
+
+/**
+ * Revoga bloqueio ativo de uma empresa
+ *
+ * Revoga o bloqueio ativo da empresa, restaura o status do usuário
+ * e registra auditoria da ação.
+ *
+ * @param id - ID da empresa
+ * @param data - Dados da revogação
+ * @param init - Configurações adicionais da requisição
+ * @returns Revogação realizada com sucesso
+ */
+export async function revokeAdminCompanyUserBan(
+  id: string,
+  data: RevokeBanPayload,
+  init?: RequestInit
+): Promise<void> {
+  const endpoint = empresasRoutes.adminEmpresas.bloqueios.revogar(id);
+
+  await apiFetch<void>(endpoint, {
+    init: {
+      method: "POST",
+      ...init,
+      headers: {
+        "Content-Type": "application/json",
+        Accept: apiConfig.headers.Accept,
+        ...getAuthHeader(),
+        ...normalizeHeaders(init?.headers),
+      },
+      body: JSON.stringify(data),
     },
     cache: "no-cache",
   });

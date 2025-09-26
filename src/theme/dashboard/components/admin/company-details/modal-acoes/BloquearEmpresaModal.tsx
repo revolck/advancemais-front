@@ -18,6 +18,7 @@ import {
 import { ButtonCustom } from "@/components/ui/custom/button";
 import { SimpleTextarea } from "@/components/ui/custom/text-area";
 import { SelectCustom } from "@/components/ui/custom/select";
+import { InputCustom } from "@/components/ui/custom/input";
 import { toastCustom } from "@/components/ui/custom/toast";
 import { createAdminCompanyBan } from "@/api/empresas";
 import type {
@@ -30,7 +31,6 @@ import { AlertTriangle, Shield, Clock, FileText } from "lucide-react";
 const BAN_TYPE_OPTIONS = [
   { label: "Temporário", value: "TEMPORARIO" },
   { label: "Permanente", value: "PERMANENTE" },
-  { label: "Restrição de recurso", value: "RESTRICAO_DE_RECURSO" },
 ];
 
 const BAN_REASON_OPTIONS = [
@@ -39,15 +39,6 @@ const BAN_REASON_OPTIONS = [
   { label: "Fraude", value: "FRAUDE" },
   { label: "Abuso de recursos", value: "ABUSO_DE_RECURSOS" },
   { label: "Outros", value: "OUTROS" },
-];
-
-const BAN_DURATION_OPTIONS = [
-  { label: "7 dias", value: "7" },
-  { label: "15 dias", value: "15" },
-  { label: "30 dias", value: "30" },
-  { label: "60 dias", value: "60" },
-  { label: "120 dias", value: "120" },
-  { label: "Banimento permanente", value: "0" },
 ];
 
 interface BloquearEmpresaModalProps {
@@ -97,12 +88,99 @@ export function BloquearEmpresaModal({
     }));
   }, []);
 
-  const handleDaysChange = useCallback((value: string | null) => {
-    setState((prev) => ({
-      ...prev,
-      dias: value || "30",
-    }));
-  }, []);
+  const handleDaysKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLInputElement>) => {
+      // Permitir apenas teclas de números (0-9)
+      const allowedKeys = [
+        "Backspace",
+        "Delete",
+        "Tab",
+        "Escape",
+        "Enter",
+        "ArrowLeft",
+        "ArrowRight",
+        "ArrowUp",
+        "ArrowDown",
+      ];
+
+      if (allowedKeys.includes(event.key)) {
+        return; // Permitir teclas de controle
+      }
+
+      // Bloquear tudo que não for dígito (0-9)
+      if (!/^[0-9]$/.test(event.key)) {
+        event.preventDefault();
+        return;
+      }
+
+      // Se já tem 4 dígitos, bloquear mais digitação
+      if (state.dias.length >= 4) {
+        event.preventDefault();
+        return;
+      }
+    },
+    [state.dias.length]
+  );
+
+  const handleDaysChange = useCallback(
+    (event: ChangeEvent<HTMLInputElement>) => {
+      const value = event.target.value;
+
+      // Se o campo estiver vazio, permitir
+      if (!value) {
+        setState((prev) => ({
+          ...prev,
+          dias: "",
+        }));
+        return;
+      }
+
+      // Garantir que só tem números e máximo 4 caracteres
+      const numericValue = value.replace(/[^\d]/g, "").slice(0, 4);
+
+      // Se for 0, não permitir
+      if (numericValue === "0") {
+        setState((prev) => ({
+          ...prev,
+          dias: "",
+        }));
+        return;
+      }
+
+      // Se não há valor após filtrar, limpar o campo
+      if (!numericValue) {
+        setState((prev) => ({
+          ...prev,
+          dias: "",
+        }));
+        return;
+      }
+
+      // Converter para número e verificar se é válido (1-9999)
+      const numValue = parseInt(numericValue, 10);
+
+      // Se for um número válido entre 1 e 9999, usar o valor
+      if (numValue >= 1 && numValue <= 9999) {
+        setState((prev) => ({
+          ...prev,
+          dias: numericValue,
+        }));
+      } else if (numericValue.length === 4 && numValue > 9999) {
+        // Se tiver 4 dígitos e for maior que 9999, limitar a 9999
+        setState((prev) => ({
+          ...prev,
+          dias: "9999",
+        }));
+      } else {
+        // Para outros casos (digitação em progresso), manter apenas os números
+        setState((prev) => ({
+          ...prev,
+          dias: numericValue,
+        }));
+      }
+    },
+    []
+  );
 
   const handleObservationsChange = useCallback(
     (event: ChangeEvent<HTMLTextAreaElement>) => {
@@ -189,7 +267,7 @@ export function BloquearEmpresaModal({
             <div className="space-y-3">
               <SelectCustom
                 mode="single"
-                label="Tipo de banimento"
+                label="Tipo"
                 required
                 options={BAN_TYPE_OPTIONS}
                 value={state.tipo}
@@ -217,21 +295,24 @@ export function BloquearEmpresaModal({
             </div>
           </div>
 
-          {/* Duração */}
-          <div className="space-y-3">
-            <SelectCustom
-              mode="single"
-              label="Duração do banimento"
-              required
-              options={BAN_DURATION_OPTIONS}
-              value={state.dias}
-              onChange={handleDaysChange}
-              placeholder="Selecione a duração"
-              disabled={isSubmitting}
-              size="sm"
-              fullWidth
-            />
-          </div>
+          {/* Duração - apenas para tipo temporário */}
+          {state.tipo === "TEMPORARIO" && (
+            <div className="space-y-3">
+              <InputCustom
+                type="text"
+                label="Duração (dias)"
+                required
+                value={state.dias}
+                onChange={handleDaysChange}
+                onKeyDown={handleDaysKeyDown}
+                placeholder="Digite a quantidade de dias (1-9999)"
+                disabled={isSubmitting}
+                size="sm"
+                fullWidth
+                maxLength={4}
+              />
+            </div>
+          )}
 
           {/* Observações */}
           <div className="space-y-3">
@@ -243,16 +324,16 @@ export function BloquearEmpresaModal({
               showCharCount
               onChange={handleObservationsChange}
               disabled={isSubmitting}
-              placeholder="Descreva detalhadamente as observações que justificam o banimento da empresa..."
+              placeholder="Descreva detalhadamente as observações que justificam o bloqueio de acesso da empresa..."
               className="min-h-[120px] resize-none"
             />
           </div>
         </ModalBody>
 
-        <ModalFooter className="border-t border-gray-200 bg-gray-50/50 px-6 py-4">
+        <ModalFooter className="py-2">
           <div className="flex w-full justify-end gap-3">
             <ButtonCustom
-              variant="ghost"
+              variant="outline"
               onClick={handleClose}
               disabled={isSubmitting}
               size="md"

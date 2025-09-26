@@ -192,6 +192,10 @@ export const empresasRoutes = {
     create: () => `${prefix}/empresas/admin`,
     get: (id: string) => `${prefix}/empresas/admin/${id}`,
     update: (id: string) => `${prefix}/empresas/admin/${id}`,
+    validateCnpj: (cnpj: string) =>
+      `${prefix}/empresas/admin/validate-cnpj?cnpj=${cnpj}`,
+    validateCpf: (cpf: string) =>
+      `${prefix}/empresas/admin/validate-cpf?cpf=${cpf}`,
     pagamentos: {
       list: (id: string) => `${prefix}/empresas/admin/${id}/pagamentos`,
     },
@@ -200,6 +204,12 @@ export const empresasRoutes = {
       create: (id: string) => `${prefix}/empresas/admin/${id}/banimentos`,
       revogar: (id: string) =>
         `${prefix}/empresas/admin/${id}/banimentos/revogar`,
+    },
+    bloqueios: {
+      list: (id: string) => `${prefix}/empresas/admin/${id}/bloqueios`,
+      create: (id: string) => `${prefix}/empresas/admin/${id}/bloqueios`,
+      revogar: (id: string) =>
+        `${prefix}/empresas/admin/${id}/bloqueios/revogar`,
     },
     vagas: {
       list: (id: string) => `${prefix}/empresas/admin/${id}/vagas`,

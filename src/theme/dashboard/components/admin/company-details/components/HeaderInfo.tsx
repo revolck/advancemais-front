@@ -55,6 +55,25 @@ export function HeaderInfo({
   const cnpjLabel =
     formattedCnpj !== "—" ? formattedCnpj : "CNPJ não informado";
 
+  // Verificar se a empresa tem um plano (qualquer tipo de plano)
+  const hasPlan = Boolean(
+    company.plano &&
+      (company.plano.nome ||
+        company.plano.valor ||
+        company.plano.modo ||
+        company.plano.inicio ||
+        company.plano.fim)
+  );
+  const subscriptionActionText = hasPlan
+    ? "Editar assinatura"
+    : "Adicionar assinatura";
+
+  // Verificar se a empresa está banida
+  const isCompanyBanned = company.banida || company.banimentoAtivo;
+  const banActionText = isCompanyBanned
+    ? "Remover bloqueio"
+    : "Bloquear empresa";
+
   const statusColor = company.banimentoAtivo
     ? "bg-amber-500"
     : isCompanyActive
@@ -167,14 +186,14 @@ export function HeaderInfo({
                 className="cursor-pointer"
               >
                 <CreditCard className="h-4 w-4 text-gray-500" />
-                <span>Editar assinatura</span>
+                <span>{subscriptionActionText}</span>
               </DropdownMenuItem>
               <DropdownMenuItem
                 onSelect={onBanCompany}
                 className="cursor-pointer"
               >
                 <Ban className="h-4 w-4 text-gray-500" />
-                <span>Bloquear acesso</span>
+                <span>{banActionText}</span>
               </DropdownMenuItem>
               <DropdownMenuItem
                 onSelect={onResetPassword}

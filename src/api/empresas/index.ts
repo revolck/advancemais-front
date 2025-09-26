@@ -34,6 +34,11 @@ export {
   listAdminCompanyVacancies,
   listAdminCompanyVacanciesInReview,
   approveAdminCompanyVacancy,
+  listAdminCompanyUserBans,
+  createAdminCompanyUserBan,
+  revokeAdminCompanyUserBan,
+  validateAdminCompanyCnpj,
+  validateAdminCompanyCpf,
 } from "./admin";
 
 export type {
@@ -63,4 +68,12 @@ export type {
   AdminCompanyVagaListResponse,
   AdminCompanyVagaDetailResponse,
   AdminCompanyVacancyStatus,
+  BanItem,
+  BanListResponse,
+  CreateBanPayload,
+  RevokeBanPayload,
+  BanResponse,
+  BanType,
+  BanReason,
+  BanStatus,
 } from "./admin/types";
