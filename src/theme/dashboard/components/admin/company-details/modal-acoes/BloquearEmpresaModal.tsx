@@ -223,7 +223,8 @@ export function BloquearEmpresaModal({
 
       toastCustom.success({
         title: "Bloqueio aplicado",
-        description: "Esta empresa teve o acesso bloqueado e o período selecionado está ativo.",
+        description:
+          "Esta empresa teve o acesso bloqueado e o período selecionado está ativo.",
       });
 
       handleClose();
