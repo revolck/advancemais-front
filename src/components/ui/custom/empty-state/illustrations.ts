@@ -13,6 +13,7 @@ export const emptyStateIllustrations = {
   terms: "/empty-state/termos.svg",
   userProfiles: "/empty-state/perfis_users.svg",
   companyDetails: "/empty-state/empresa_descricao.svg",
+  subscription: "/empty-state/plano_empresarial.svg",
 } as const;
 
 export type EmptyStateIllustration = keyof typeof emptyStateIllustrations;
