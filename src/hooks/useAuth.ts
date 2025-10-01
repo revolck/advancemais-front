@@ -19,11 +19,16 @@ export const useAuth = () => {
       try {
         // Aqui você obteria o usuário do token JWT ou cookie
         // Por enquanto, vou simular com dados mockados
+        const roleCookie = document.cookie
+          .split("; ")
+          .find((row) => row.startsWith("user_role="))
+          ?.split("=")[1];
+
         const mockUser: User = {
           id: "user-123",
           email: "user@example.com",
           name: "Usuário Teste",
-          role: "ADMIN",
+          role: roleCookie ?? "ADMIN",
         };
 
         setUser(mockUser);

@@ -96,50 +96,56 @@ export default function ContatoForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <InputCustom
-          label="Telefone (1)"
-          mask="phone"
-          value={state.telefone1}
-          onChange={handleChange("telefone1")}
-          required
-        />
-        <InputCustom
-          label="Telefone (2)"
-          mask="phone"
-          value={state.telefone2}
-          onChange={handleChange("telefone2")}
-        />
-        <InputCustom
-          label="WhatsApp"
-          mask="phone"
-          value={state.whatsapp}
-          onChange={handleChange("whatsapp")}
-          required
-        />
-        <InputCustom
-          label="E-mail"
-          type="email"
-          value={state.email}
-          onChange={handleChange("email")}
-          required
-        />
-      </div>
-      <div className="pt-4 flex justify-end">
-        <ButtonCustom
-          type="submit"
-          size="lg"
-          variant="default"
-          className="w-40"
-          withAnimation
-          isLoading={isSaving}
-          disabled={
-            isSaving || !state.telefone1 || !state.whatsapp || !state.email
-          }
-        >
-          Salvar
-        </ButtonCustom>
-      </div>
+      <fieldset disabled={isSaving} className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <InputCustom
+            label="Telefone (1)"
+            mask="phone"
+            value={state.telefone1}
+            onChange={handleChange("telefone1")}
+            required
+            disabled={isSaving}
+          />
+          <InputCustom
+            label="Telefone (2)"
+            mask="phone"
+            value={state.telefone2}
+            onChange={handleChange("telefone2")}
+            disabled={isSaving}
+          />
+          <InputCustom
+            label="WhatsApp"
+            mask="phone"
+            value={state.whatsapp}
+            onChange={handleChange("whatsapp")}
+            required
+            disabled={isSaving}
+          />
+          <InputCustom
+            label="E-mail"
+            type="email"
+            value={state.email}
+            onChange={handleChange("email")}
+            required
+            disabled={isSaving}
+          />
+        </div>
+        <div className="pt-4 flex justify-end">
+          <ButtonCustom
+            type="submit"
+            size="lg"
+            variant="default"
+            className="w-40"
+            withAnimation
+            isLoading={isSaving}
+            disabled={
+              isSaving || !state.telefone1 || !state.whatsapp || !state.email
+            }
+          >
+            Salvar
+          </ButtonCustom>
+        </div>
+      </fieldset>
     </form>
   );
 }

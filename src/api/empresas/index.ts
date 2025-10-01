@@ -81,3 +81,32 @@ export type {
   BanReason,
   BanStatus,
 } from "./admin/types";
+
+export {
+  listEmpresaVagaCategorias,
+  getEmpresaVagaCategoria,
+  createEmpresaVagaCategoria,
+  updateEmpresaVagaCategoria,
+  deleteEmpresaVagaCategoria,
+  listEmpresaVagaSubcategorias,
+  getEmpresaVagaSubcategoria,
+  createEmpresaVagaSubcategoria,
+  updateEmpresaVagaSubcategoria,
+  deleteEmpresaVagaSubcategoria,
+} from "./vagas/categorias";
+
+export type {
+  EmpresaVagaCategoria,
+  EmpresaVagaSubcategoria,
+  CreateEmpresaVagaCategoriaPayload,
+  UpdateEmpresaVagaCategoriaPayload,
+  CreateEmpresaVagaSubcategoriaPayload,
+  UpdateEmpresaVagaSubcategoriaPayload,
+  EmpresaVagaCategoriasListApiResponse,
+  EmpresaVagaCategoriaDetailApiResponse,
+  EmpresaVagaSubcategoriaDetailApiResponse,
+  EmpresaVagaCategoriaCreateApiResponse,
+  EmpresaVagaSubcategoriaCreateApiResponse,
+  EmpresaVagaCategoriasListParams,
+  EmpresaVagaErrorResponse,
+} from "./vagas/categorias/types";

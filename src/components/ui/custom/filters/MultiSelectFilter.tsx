@@ -26,6 +26,7 @@ interface MultiSelectFilterProps {
   showApplyButton?: boolean;
   onApply?: () => Promise<void> | void;
   className?: string;
+  disabled?: boolean;
 }
 
 export function MultiSelectFilter({
@@ -37,6 +38,7 @@ export function MultiSelectFilter({
   showApplyButton = false,
   onApply,
   className,
+  disabled = false,
 }: MultiSelectFilterProps) {
   const [isOpen, setIsOpen] = React.useState(false);
   const [temp, setTemp] = React.useState<string[]>(selectedValues);
@@ -58,6 +60,7 @@ export function MultiSelectFilter({
   }, [isOpen, selectedValues]);
 
   const toggle = (value: string) => {
+    if (disabled) return;
     if (!showApplyButton) {
       const next = selectedValues.includes(value)
         ? selectedValues.filter((v) => v !== value)
@@ -81,6 +84,7 @@ export function MultiSelectFilter({
   }, [options, placeholder, selectedValues]);
 
   const apply = async () => {
+    if (disabled) return;
     if (!showApplyButton || temp.length === 0) return;
 
     setIsApplying(true);
@@ -94,6 +98,7 @@ export function MultiSelectFilter({
   };
 
   const handleClear = () => {
+    if (disabled) return;
     if (showApplyButton) {
       if (temp.length === 0 && selectedValues.length === 0) return;
       setTemp([]);
@@ -111,12 +116,19 @@ export function MultiSelectFilter({
 
   return (
     <div className={cn("w-full", className)}>
-      <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
+      <DropdownMenu
+        open={isOpen}
+        onOpenChange={(open) => {
+          if (disabled) return;
+          setIsOpen(open);
+        }}
+      >
         <DropdownMenuTrigger asChild>
           <Button
             variant="outline"
             role="combobox"
             aria-expanded={isOpen}
+            disabled={disabled}
             className={cn(
               "w-full justify-between h-12 px-4 py-2.5",
               "file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground border-input",

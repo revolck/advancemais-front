@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/radix-checkbox";
 import {
@@ -28,6 +28,32 @@ type RegisterFormData = {
   confirmPassword: string;
 };
 
+const PASSWORD_REQUIREMENTS = [
+  {
+    id: "length",
+    label: "Pelo menos 8 caracteres",
+    validate: (value: string) => value.length >= 8,
+  },
+  {
+    id: "case",
+    label: "Letras maiúsculas e minúsculas",
+    validate: (value: string) => /[A-Z]/.test(value) && /[a-z]/.test(value),
+  },
+  {
+    id: "number",
+    label: "Número (0-9)",
+    validate: (value: string) => /[0-9]/.test(value),
+  },
+  {
+    id: "special",
+    label: "Caractere especial (ex.: !@#$%)",
+    validate: (value: string) => /[^A-Za-z0-9]/.test(value),
+  },
+];
+
+const isPasswordStrong = (value: string): boolean =>
+  PASSWORD_REQUIREMENTS.every((requirement) => requirement.validate(value));
+
 const createInitialFormData = (): RegisterFormData => ({
   name: "",
   document: "",
@@ -44,7 +70,6 @@ const RegisterPage = () => {
   const [formData, setFormData] = useState<RegisterFormData>(() =>
     createInitialFormData()
   );
-  const [passwordError, setPasswordError] = useState("");
   const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
   const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
 
@@ -95,22 +120,6 @@ const RegisterPage = () => {
       resetFormData();
     }
   }, [selectedType]);
-
-  useEffect(() => {
-    if (
-      formData.password &&
-      formData.confirmPassword &&
-      formData.password !== formData.confirmPassword
-    ) {
-      setPasswordError("As senhas não coincidem");
-    } else if (formData.password && !isPasswordValid(formData.password)) {
-      setPasswordError(
-        "A senha deve conter pelo menos 8 caracteres, letras maiúsculas, minúsculas, números e caracteres especiais"
-      );
-    } else {
-      setPasswordError("");
-    }
-  }, [formData.password, formData.confirmPassword]);
 
   const userTypes = [
     {
@@ -180,7 +189,6 @@ const RegisterPage = () => {
     setSelectedType(null);
     setFormData(createInitialFormData());
     setAcceptTerms(false);
-    setPasswordError("");
     localStorage.removeItem("registerFormData");
     localStorage.removeItem("registerSelectedType");
   };
@@ -188,9 +196,41 @@ const RegisterPage = () => {
   const resetFormData = () => {
     setFormData(createInitialFormData());
     setAcceptTerms(false);
-    setPasswordError("");
     localStorage.removeItem("registerFormData");
   };
+
+  const trimmedPassword = formData.password.trim();
+  const trimmedConfirmPassword = formData.confirmPassword.trim();
+
+  const passwordMismatch =
+    trimmedConfirmPassword.length > 0 &&
+    trimmedPassword !== trimmedConfirmPassword;
+
+  const satisfiedRequirements = useMemo(
+    () =>
+      PASSWORD_REQUIREMENTS.map((requirement) => ({
+        id: requirement.id,
+        label: requirement.label,
+        satisfied: requirement.validate(trimmedPassword),
+      })),
+    [trimmedPassword]
+  );
+
+  const passwordValidationMessage = useMemo(() => {
+    if (passwordMismatch) {
+      return "As senhas não são iguais. Confira os campos.";
+    }
+
+    if (
+      trimmedPassword.length > 0 &&
+      trimmedConfirmPassword.length > 0 &&
+      !isPasswordStrong(trimmedPassword)
+    ) {
+      return "A senha precisa atender a todos os requisitos de segurança.";
+    }
+
+    return null;
+  }, [passwordMismatch, trimmedConfirmPassword, trimmedPassword]);
 
   const isDocumentValid = () => {
     if (!selectedType) {
@@ -204,21 +244,8 @@ const RegisterPage = () => {
     return maskService.validate(formData.phone, "phone");
   };
 
-  const isPasswordValid = (password: string) => {
-    // Validação baseada na documentação da API
-    if (password.length < 8) return false;
-
-    const hasUpper = /[A-Z]/.test(password);
-    const hasLower = /[a-z]/.test(password);
-    const hasSpecial = /[^A-Za-z0-9]/.test(password);
-    const hasNumber = /[0-9]/.test(password);
-
-    return hasUpper && hasLower && hasSpecial && hasNumber;
-  };
-
   const isFormValid = () => {
-    const { name, document, phone, email, password, confirmPassword } =
-      formData;
+    const { name, document, phone, email } = formData;
 
     // Verificar se todos os campos obrigatórios estão preenchidos
     const fieldsFilled = [
@@ -226,16 +253,17 @@ const RegisterPage = () => {
       document,
       phone,
       email,
-      password,
-      confirmPassword,
+      trimmedPassword,
+      trimmedConfirmPassword,
     ].every((value) => value.trim() !== "");
 
     // Validações específicas
-    const emailValid = maskService.validate(email, "email");
+    const trimmedEmail = email.trim();
+    const emailValid = maskService.validate(trimmedEmail, "email");
     const phoneValid = isPhoneValid();
     const documentValid = isDocumentValid();
-    const passwordMatch = password === confirmPassword;
-    const passwordValid = isPasswordValid(password);
+    const passwordMatch = !passwordMismatch;
+    const passwordValid = isPasswordStrong(trimmedPassword);
     const termsAccepted = acceptTerms;
 
     // Validação específica baseada no tipo de conta
@@ -472,36 +500,80 @@ const RegisterPage = () => {
             />
           </div>
 
-          <div className="space-y-3 sm:space-y-0 sm:grid sm:grid-cols-2 sm:gap-4">
-            <InputCustom
-              label="Senha"
-              name="password"
-              type="password"
-              value={formData.password}
-              onChange={(e) => handleInputChange("password", e.target.value)}
-              placeholder="••••••••"
-              showPasswordToggle
-              size="md"
-              className="text-sm"
-              error={passwordError}
-              required
-            />
+          <div className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <InputCustom
+                label="Senha"
+                name="password"
+                type="password"
+                value={formData.password}
+                onChange={(e) => handleInputChange("password", e.target.value)}
+                placeholder="••••••••"
+                showPasswordToggle
+                size="md"
+                className="text-sm"
+                required
+              />
 
-            <InputCustom
-              label="Confirmar senha"
-              name="confirmPassword"
-              type="password"
-              value={formData.confirmPassword}
-              onChange={(e) =>
-                handleInputChange("confirmPassword", e.target.value)
-              }
-              placeholder="••••••••"
-              showPasswordToggle
-              size="md"
-              className="text-sm"
-              error={passwordError}
-              required
-            />
+              <InputCustom
+                label="Confirmar senha"
+                name="confirmPassword"
+                type="password"
+                value={formData.confirmPassword}
+                onChange={(e) =>
+                  handleInputChange("confirmPassword", e.target.value)
+                }
+                placeholder="••••••••"
+                showPasswordToggle
+                size="md"
+                className="text-sm"
+                error={
+                  passwordMismatch
+                    ? "As senhas não são iguais. Confira os campos."
+                    : undefined
+                }
+                required
+              />
+            </div>
+
+            <div className="rounded-2xl border border-gray-200 bg-gray-100/30 p-4">
+              <p className="!mb-0 text-sm">Sua senha deve conter:</p>
+              <ul className="mt-2 space-y-2 text-left text-sm">
+                {satisfiedRequirements.map((requirement) => (
+                  <li key={requirement.id} className="flex items-center gap-2">
+                    <span
+                      className={`flex h-4 w-4 items-center justify-center rounded-full border text-[11px] font-semibold transition ${
+                        requirement.satisfied
+                          ? "border-emerald-500 bg-emerald-500 text-white"
+                          : "border-[var(--primary-color)]/40 bg-white text-[var(--primary-color)]/70"
+                      }`}
+                      aria-hidden
+                    >
+                      {requirement.satisfied ? "✓" : ""}
+                    </span>
+                    <span
+                      className={
+                        requirement.satisfied
+                          ? "text-foreground"
+                          : "text-muted-foreground"
+                      }
+                    >
+                      {requirement.label}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {passwordValidationMessage && (
+              <p
+                className="text-sm font-medium text-destructive"
+                role="alert"
+                aria-live="assertive"
+              >
+                {passwordValidationMessage}
+              </p>
+            )}
           </div>
         </div>
 

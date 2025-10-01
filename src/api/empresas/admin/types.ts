@@ -62,6 +62,7 @@ export interface AdminCompanyEndereco {
 
 export interface AdminCompanyPlano {
   id: string;
+  planosEmpresariaisId?: string;
   nome: string;
   modo: AdminCompanyPlanMode;
   status: AdminCompanyStatus;
@@ -578,6 +579,8 @@ export interface UpdateAdminCompanyPayload {
   enderecos?: AdminCompanyEndereco[];
   cidade?: string;
   estado?: string;
+  senha?: string;
+  confirmarSenha?: string;
 }
 
 export interface CreateAdminCompanyBanPayload {

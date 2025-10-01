@@ -232,6 +232,7 @@ export function CupomForm({
       // ativo sempre true por padrão
     },
   });
+  const isDisabled = isSubmitting;
 
   const watchedTipoDesconto = watch("tipoDesconto");
   const watchedAplicacaoCupom = watch("aplicacaoCupom");
@@ -312,7 +313,8 @@ export function CupomForm({
   // Funções de planos removidas - cupons aplicam apenas em cursos
 
   return (
-    <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-6 p-1">
+    <form onSubmit={handleSubmit(onFormSubmit)} className="p-1">
+      <fieldset disabled={isDisabled} className="space-y-6">
       {/* Linha 1: Código do Cupom (full width) */}
       <InputCustom
         label="Código do Cupom"
@@ -323,6 +325,7 @@ export function CupomForm({
         error={errors.codigo?.message}
         required
         size="md"
+        disabled={isDisabled}
       />
 
       {/* Linha 2: Tipo de Desconto + Valor (relacionados) */}
@@ -338,6 +341,7 @@ export function CupomForm({
           placeholder="Selecione o tipo"
           required
           size="md"
+          disabled={isDisabled}
         />
 
         {watchedTipoDesconto === "PORCENTAGEM" ? (
@@ -374,6 +378,7 @@ export function CupomForm({
             error={errors.valorPercentual?.message}
             required
             size="md"
+            disabled={isDisabled}
           />
         ) : (
           <InputCustom
@@ -471,6 +476,7 @@ export function CupomForm({
             error={errors.valorFixo?.message}
             required
             size="md"
+            disabled={isDisabled}
           />
         )}
       </div>
@@ -515,6 +521,7 @@ export function CupomForm({
             selectedValues={assinaturasSelecionadas}
             onSelectionChange={setAssinaturasSelecionadas}
             className="w-full"
+            disabled={isDisabled}
           />
         </div>
       )}
@@ -528,6 +535,7 @@ export function CupomForm({
           onChange={setPeriodoRange}
           required
           size="md"
+          disabled={isDisabled}
         />
       )}
 
@@ -543,6 +551,7 @@ export function CupomForm({
             onChange={(value) => setValue("limiteUsoTotalTipo", value as any)}
             placeholder="Selecione o limite"
             size="md"
+            disabled={isDisabled}
           />
 
           {watchedLimiteUsoTotalTipo === "LIMITADO" && (
@@ -588,6 +597,7 @@ export function CupomForm({
               error={errors.limiteUsoTotalQuantidade?.message}
               required
               size="md"
+              disabled={isDisabled}
             />
           )}
         </div>
@@ -602,6 +612,7 @@ export function CupomForm({
             onChange={(value) => setValue("limitePorUsuarioTipo", value as any)}
             placeholder="Selecione o limite"
             size="md"
+            disabled={isDisabled}
           />
 
           {watchedLimitePorUsuarioTipo === "LIMITADO" && (
@@ -647,6 +658,7 @@ export function CupomForm({
               error={errors.limitePorUsuarioQuantidade?.message}
               required
               size="md"
+              disabled={isDisabled}
             />
           )}
         </div>
@@ -659,13 +671,14 @@ export function CupomForm({
           variant="outline"
           onClick={onCancel}
           size="md"
+          disabled={isDisabled}
         >
           Cancelar
         </ButtonCustom>
         <ButtonCustom
           type="submit"
           variant="default"
-          disabled={isSubmitting}
+          disabled={isDisabled}
           isLoading={isSubmitting}
           loadingText="Salvando..."
           size="md"
@@ -673,6 +686,7 @@ export function CupomForm({
           {cupom ? "Atualizar Cupom" : "Criar Cupom"}
         </ButtonCustom>
       </div>
+      </fieldset>
     </form>
   );
 }

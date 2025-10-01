@@ -299,41 +299,35 @@ export function AdicionarAssinaturaModal({
     try {
       const response = await createAdminCompanyPlano(company.id, payload);
 
-      const selectedPlan = planOptions.find(
-        (plan) => plan.id === formState.planId
-      );
+      if (!response || typeof response !== "object") {
+        throw new Error("Resposta inválida da API ao criar assinatura.");
+      }
 
-      const nextPlan: AdminCompanyPlano = {
-        id: formState.planId,
-        nome: selectedPlan?.nome ?? "Plano de assinatura",
-        modo: formState.planType,
-        status: "ATIVO" as any,
-        inicio: new Date().toISOString(),
-        fim: null,
-        modeloPagamento: "ASSINATURA",
-        metodoPagamento: formState.metodoPagamento as any,
-        statusPagamento: formState.statusPagamento as any,
-        quantidadeVagas: selectedPlan?.quantidadeVagas ?? 0,
-        valor: selectedPlan?.valor ?? "0.00",
-        duracaoEmDias: null,
-        diasRestantes: 0,
-      };
+      if ("empresa" in response) {
+        const updatedPlan = response.empresa.plano;
+        const updatedPayment = response.empresa.pagamento;
 
-      const nextPayment: AdminCompanyPagamento = {
-        metodo: formState.metodoPagamento as any,
-        status: formState.statusPagamento as any,
-        modelo: "ASSINATURA",
-        ultimoPagamentoEm: new Date().toISOString(),
-      };
+        onSubscriptionAdded(updatedPlan, updatedPayment);
 
-      onSubscriptionAdded(nextPlan, nextPayment);
+        toastCustom.success({
+          title: "Assinatura adicionada",
+          description: "A assinatura foi adicionada com sucesso.",
+        });
 
-      toastCustom.success({
-        title: "Assinatura adicionada",
-        description: "A assinatura foi adicionada com sucesso.",
+        handleClose();
+        return;
+      }
+
+      const errorMessage =
+        "message" in response && response.message
+          ? response.message
+          : "Não foi possível adicionar a assinatura.";
+
+      console.error("Erro na resposta da API ao adicionar assinatura", response);
+      toastCustom.error({
+        title: "Erro ao adicionar assinatura",
+        description: errorMessage,
       });
-
-      handleClose();
     } catch (error) {
       console.error("Erro ao adicionar assinatura", error);
       toastCustom.error({
@@ -349,7 +343,6 @@ export function AdicionarAssinaturaModal({
     handleClose,
     isSaving,
     onSubscriptionAdded,
-    planOptions,
     getNextBillingDate,
   ]);
 

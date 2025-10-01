@@ -170,6 +170,7 @@ export default function SistemaForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      <fieldset disabled={isLoading} className="space-y-6">
       <InputCustom
         label="Título"
         id="titulo"
@@ -259,6 +260,7 @@ export default function SistemaForm() {
           Salvar
         </ButtonCustom>
       </div>
+      </fieldset>
     </form>
   );
 }

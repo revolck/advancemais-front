@@ -218,6 +218,7 @@ export default function HeaderForm() {
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-6">
+          <fieldset disabled={isLoading} className="space-y-6">
           {/* Upload de Imagem */}
           <div className="space-y-4">
             <div>
@@ -234,6 +235,7 @@ export default function HeaderForm() {
                   deleteOnRemove={false}
                   onFilesChange={handleFilesChange}
                   showProgress={false}
+                  disabled={isLoading}
                 />
               </div>
             </div>
@@ -249,6 +251,7 @@ export default function HeaderForm() {
               maxLength={80}
               placeholder="Digite o título do cabeçalho"
               required
+              disabled={isLoading}
             />
             <InputCustom
               label="Subtítulo"
@@ -258,6 +261,7 @@ export default function HeaderForm() {
               maxLength={100}
               placeholder="Digite o subtítulo"
               required
+              disabled={isLoading}
             />
           </div>
 
@@ -277,6 +281,7 @@ export default function HeaderForm() {
                 placeholder="Insira uma descrição resumida"
                 className="min-h-[200px]"
                 required
+                disabled={isLoading}
               />
             </div>
           </div>
@@ -290,6 +295,7 @@ export default function HeaderForm() {
               maxLength={40}
               placeholder="Ex.: Saiba mais"
               required
+              disabled={isLoading}
             />
             <InputCustom
               label="Link do Botão"
@@ -301,6 +307,7 @@ export default function HeaderForm() {
               type="url"
               icon="Link"
               required
+              disabled={isLoading}
             />
           </div>
 
@@ -319,6 +326,7 @@ export default function HeaderForm() {
               Salvar
             </ButtonCustom>
           </div>
+          </fieldset>
         </form>
       )}
     </div>

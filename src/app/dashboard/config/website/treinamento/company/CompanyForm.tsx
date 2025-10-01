@@ -225,6 +225,7 @@ export default function CompanyForm() {
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-6">
+          <fieldset disabled={isLoading} className="space-y-6">
           {/* Cabeçalho */}
           <div className="space-y-3">
             <InputCustom
@@ -260,6 +261,7 @@ export default function CompanyForm() {
                     value={(content as any)[`icone${i}`]}
                     onValueChange={(iconName) => handleIconChange(i, iconName)}
                     placeholder="Selecionar ícone"
+                    disabled={isLoading}
                   />
                 </div>
 
@@ -273,6 +275,7 @@ export default function CompanyForm() {
                   showCharCount
                   placeholder={`Descrição do bloco ${i}`}
                   required
+                  disabled={isLoading}
                 />
               </div>
             ))}
@@ -301,6 +304,7 @@ export default function CompanyForm() {
               Salvar
             </ButtonCustom>
           </div>
+          </fieldset>
         </form>
       )}
 

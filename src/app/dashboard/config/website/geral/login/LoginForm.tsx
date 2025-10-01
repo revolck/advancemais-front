@@ -309,20 +309,22 @@ export default function LoginForm() {
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-6">
+          <fieldset disabled={isLoading} className="space-y-6">
           <div className="space-y-4">
             <Label className="text-sm font-medium text-gray-700">
               Imagem de Login <span className="text-red-500">*</span>
             </Label>
-            <FileUpload
-              files={files}
-              multiple={false}
-              maxFiles={1}
-              validation={{ accept: [".jpg", ".png", ".webp"] }}
-              autoUpload={false}
-              deleteOnRemove={false}
-              onFilesChange={handleFilesChange}
-              showProgress={false}
-            />
+                <FileUpload
+                  files={files}
+                  multiple={false}
+                  maxFiles={1}
+                  validation={{ accept: [".jpg", ".png", ".webp"] }}
+                  autoUpload={false}
+                  deleteOnRemove={false}
+                  onFilesChange={handleFilesChange}
+                  showProgress={false}
+                  disabled={isLoading}
+                />
           </div>
 
           <div>
@@ -355,6 +357,7 @@ export default function LoginForm() {
               Salvar
             </ButtonCustom>
           </div>
+          </fieldset>
         </form>
       )}
     </div>

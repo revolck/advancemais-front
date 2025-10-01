@@ -74,6 +74,27 @@ const STATUS_PLANO_OPTIONS = [
   { value: "CANCELADO", label: "Cancelado" },
 ];
 
+type AdminCompanyPlanoWithReference = AdminCompanyPlano & {
+  planoEmpresarialId?: string;
+  planosEmpresarialId?: string;
+  planoId?: string;
+};
+
+const getPlanReferenceId = (plan?: AdminCompanyPlano | null): string => {
+  if (!plan) return "";
+
+  const planWithReference = plan as AdminCompanyPlanoWithReference;
+
+  return (
+    planWithReference.planosEmpresariaisId ??
+    planWithReference.planoEmpresarialId ??
+    planWithReference.planosEmpresarialId ??
+    planWithReference.planoId ??
+    plan.id ??
+    ""
+  );
+};
+
 interface EditarAssinaturaModalProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
@@ -100,7 +121,7 @@ export function EditarAssinaturaModal({
 }: EditarAssinaturaModalProps) {
   const initialState = useMemo<SubscriptionFormState>(
     () => ({
-      planId: company.plano?.id ?? "",
+      planId: getPlanReferenceId(company.plano),
       planType: company.plano?.modo ?? "CLIENTE",
       diasTeste:
         company.plano?.modo === "TESTE"
@@ -208,47 +229,87 @@ export function EditarAssinaturaModal({
     return nextMonth.toISOString();
   }, []);
 
+  const currentPlanReference = useMemo(
+    () => getPlanReferenceId(company.plano),
+    [company.plano]
+  );
+
   const planSelectOptions = useMemo(() => {
-    // Usar Set para garantir unicidade dos IDs
-    const uniquePlanIds = new Set<string>();
-    const options: Array<{ value: string; label: string }> = [];
+    const uniquePlanIds = new Set<string>([""]);
+    const options: Array<{ value: string; label: string }> = [
+      { value: "", label: "Sem assinatura" },
+    ];
 
-    // Adicionar "Sem assinatura" sempre primeiro
-    options.push({ value: "", label: "Sem assinatura" });
-    uniquePlanIds.add("");
-
-    // Verificar se o plano atual existe na lista da API
-    const currentPlanExists = planOptions.some(
-      (plan) => plan.id === formState.planId
-    );
-
-    // Adicionar planos da API
     planOptions.forEach((plan) => {
       if (plan.id && !uniquePlanIds.has(plan.id)) {
-        options.push({
-          value: plan.id,
-          label: plan.nome,
-        });
+        options.push({ value: plan.id, label: plan.nome });
         uniquePlanIds.add(plan.id);
       }
     });
 
-    // Adicionar plano atual apenas se não estiver na lista da API
+    const hasSelectedPlanInOptions = planOptions.some(
+      (plan) => plan.id === formState.planId
+    );
+
+    const hasCurrentPlanOption =
+      currentPlanReference && uniquePlanIds.has(currentPlanReference);
+
     if (
-      formState.planId &&
-      company.plano?.nome &&
-      !currentPlanExists &&
-      !uniquePlanIds.has(formState.planId)
+      !hasSelectedPlanInOptions &&
+      currentPlanReference &&
+      !hasCurrentPlanOption &&
+      company.plano?.nome
     ) {
       options.push({
-        value: formState.planId,
+        value: currentPlanReference,
         label: company.plano.nome,
       });
-      uniquePlanIds.add(formState.planId);
+      uniquePlanIds.add(currentPlanReference);
     }
 
     return options;
-  }, [planOptions, formState.planId, company.plano?.nome]);
+  }, [
+    company.plano?.nome,
+    currentPlanReference,
+    formState.planId,
+    planOptions,
+  ]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    setFormState((prev) => {
+      const planExists = planOptions.some((plan) => plan.id === prev.planId);
+
+      if (planExists) {
+        return prev;
+      }
+
+      if (currentPlanReference && currentPlanReference !== prev.planId) {
+        return {
+          ...prev,
+          planId: currentPlanReference,
+        };
+      }
+
+      if (!company.plano?.nome) {
+        return prev;
+      }
+
+      const matchedPlanByName = planOptions.find(
+        (plan) => plan.nome === company.plano?.nome
+      );
+
+      if (matchedPlanByName && matchedPlanByName.id !== prev.planId) {
+        return {
+          ...prev,
+          planId: matchedPlanByName.id,
+        };
+      }
+
+      return prev;
+    });
+  }, [company.plano?.nome, currentPlanReference, isOpen, planOptions]);
 
   const handleSave = useCallback(async () => {
     if (isSaving) return;
@@ -258,6 +319,14 @@ export function EditarAssinaturaModal({
       toastCustom.error({
         title: "Plano obrigatório",
         description: "Selecione um plano de assinatura.",
+      });
+      return;
+    }
+
+    if (!planOptions.some((plan) => plan.id === formState.planId)) {
+      toastCustom.error({
+        title: "Plano inválido",
+        description: "Selecione um plano válido na lista disponível.",
       });
       return;
     }
@@ -330,44 +399,39 @@ export function EditarAssinaturaModal({
     try {
       const response = await updateAdminCompanyPlano(company.id, payload);
 
-      const selectedPlan = planOptions.find(
-        (plan) => plan.id === formState.planId
+      if (!response || typeof response !== "object") {
+        throw new Error("Resposta inválida da API ao atualizar assinatura.");
+      }
+
+      if ("empresa" in response) {
+        const updatedPlan = response.empresa.plano;
+        const updatedPayment = response.empresa.pagamento;
+
+        onSubscriptionUpdated(updatedPlan, updatedPayment);
+
+        toastCustom.success({
+          title: "Assinatura atualizada",
+          description:
+            "As informações de assinatura foram salvas com sucesso.",
+        });
+
+        handleClose();
+        return;
+      }
+
+      const errorMessage =
+        "message" in response && response.message
+          ? response.message
+          : "Não foi possível atualizar a assinatura.";
+
+      console.error(
+        "Erro na resposta da API ao atualizar assinatura",
+        response
       );
-
-      const nextPlan: AdminCompanyPlano = {
-        id: formState.planId,
-        nome:
-          selectedPlan?.nome ?? company.plano?.nome ?? "Plano de assinatura",
-        modo: formState.planType,
-        status: company.plano?.status ?? "ATIVO",
-        inicio: company.plano?.inicio ?? new Date().toISOString(),
-        fim: company.plano?.fim ?? null,
-        modeloPagamento: "ASSINATURA",
-        metodoPagamento: formState.metodoPagamento as any,
-        statusPagamento: formState.statusPagamento as any,
-        quantidadeVagas:
-          selectedPlan?.quantidadeVagas ?? company.plano?.quantidadeVagas ?? 0,
-        valor: selectedPlan?.valor ?? company.plano?.valor ?? "0.00",
-        duracaoEmDias: company.plano?.duracaoEmDias ?? null,
-        diasRestantes: company.plano?.diasRestantes ?? null,
-      };
-
-      const nextPayment: AdminCompanyPagamento = {
-        metodo: formState.metodoPagamento as any,
-        status: formState.statusPagamento as any,
-        modelo: "ASSINATURA",
-        ultimoPagamentoEm:
-          company.pagamento?.ultimoPagamentoEm ?? new Date().toISOString(),
-      };
-
-      onSubscriptionUpdated(nextPlan, nextPayment);
-
-      toastCustom.success({
-        title: "Assinatura atualizada",
-        description: "As informações de assinatura foram salvas com sucesso.",
+      toastCustom.error({
+        title: "Erro ao salvar assinatura",
+        description: errorMessage,
       });
-
-      handleClose();
     } catch (error) {
       console.error("Erro ao atualizar assinatura", error);
       toastCustom.error({
@@ -379,8 +443,6 @@ export function EditarAssinaturaModal({
     }
   }, [
     company.id,
-    company.pagamento,
-    company.plano,
     formState,
     handleClose,
     isSaving,

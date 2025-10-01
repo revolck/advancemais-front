@@ -376,6 +376,7 @@ export default function RecrutamentoForm({ initialData }: RecrutamentoFormProps)
       ) : (
         <>
           <form onSubmit={handleSubmit} className="space-y-6">
+            <fieldset disabled={isLoading} className="space-y-6">
             {/* Upload de Imagem */}
             <div className="space-y-4">
               <div>
@@ -392,6 +393,7 @@ export default function RecrutamentoForm({ initialData }: RecrutamentoFormProps)
                     deleteOnRemove={false}
                     onFilesChange={handleFilesChange}
                     showProgress={false}
+                    disabled={isLoading}
                   />
                 </div>
               </div>
@@ -410,6 +412,7 @@ export default function RecrutamentoForm({ initialData }: RecrutamentoFormProps)
                   maxLength={50}
                   placeholder="Digite o título da seção de recrutamento"
                   required
+                  disabled={isLoading}
                 />
               </div>
 
@@ -427,6 +430,7 @@ export default function RecrutamentoForm({ initialData }: RecrutamentoFormProps)
                   }
                   placeholder="https://exemplo.com/recrutamento"
                   required
+                  disabled={isLoading}
                 />
               </div>
 
@@ -469,6 +473,7 @@ export default function RecrutamentoForm({ initialData }: RecrutamentoFormProps)
                     placeholder="Descreva a seção de recrutamento."
                     className="min-h-[250px]"
                     required
+                    disabled={isLoading}
                   />
                 </div>
               </div>
@@ -492,6 +497,7 @@ export default function RecrutamentoForm({ initialData }: RecrutamentoFormProps)
                 Salvar
               </ButtonCustom>
             </div>
+            </fieldset>
           </form>
         </>
       )}

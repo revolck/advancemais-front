@@ -9,7 +9,12 @@ import { getRoutePermissions } from "@/config/dashboardRoutes";
 const ADMIN_PERMISSIONS = getRoutePermissions("/admin");
 const ADMIN_ONLY_PERMISSIONS = getRoutePermissions("/admin/financeiro");
 const PEDAGOGICO_PERMISSIONS = getRoutePermissions("/pedagogico");
-const EMPRESA_PERMISSIONS = getRoutePermissions("/empresa");
+const EMPRESA_PERMISSIONS = (() => {
+  const dashboardPermissions = getRoutePermissions("/dashboard/empresa");
+  return dashboardPermissions.length > 0
+    ? dashboardPermissions
+    : getRoutePermissions("/empresa");
+})();
 const RECRUTADOR_PERMISSIONS = getRoutePermissions("/recrutador");
 const PROFESSOR_PERMISSIONS = getRoutePermissions("/professor");
 const ALUNO_PERMISSIONS = getRoutePermissions("/aluno");
@@ -294,37 +299,31 @@ const rawMenuSections: MenuSection[] = [
       {
         icon: "LayoutDashboard",
         label: "Visão geral",
-        route: "/empresa/overview",
+        route: "/dashboard/empresa/overview",
         permissions: EMPRESA_PERMISSIONS,
       },
       {
         icon: "Briefcase",
-        label: "Gerenciar Vagas",
-        route: "/empresa/jobs",
+        label: "Vagas",
+        route: "/dashboard/vagas",
         permissions: EMPRESA_PERMISSIONS,
       },
       {
         icon: "Users",
         label: "Candidatos",
-        route: "/empresa/candidates",
+        route: "/dashboard/empresa/candidatos",
         permissions: EMPRESA_PERMISSIONS,
       },
       {
-        icon: "Calendar",
-        label: "Agenda",
-        route: "/empresa/agenda",
-        permissions: EMPRESA_PERMISSIONS,
-      },
-      {
-        icon: "UserCheck",
-        label: "Entrevistas",
-        route: "/empresa/interviews",
+        icon: "CreditCard",
+        label: "Assinatura",
+        route: "/dashboard/empresa/assinatura",
         permissions: EMPRESA_PERMISSIONS,
       },
       {
         icon: "Settings",
         label: "Configurações",
-        route: "/empresa/settings",
+        route: "/dashboard/empresa/configuracoes",
         permissions: EMPRESA_PERMISSIONS,
       },
     ],

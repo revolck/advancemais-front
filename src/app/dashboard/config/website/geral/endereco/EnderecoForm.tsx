@@ -130,53 +130,58 @@ export default function EnderecoForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <InputCustom
-          label="CEP"
-          mask="cep"
-          value={cep}
-          onChange={handleCepChange}
-          required
-        />
-        <InputCustom
-          label="Endereço"
-          value={endereco}
-          onChange={(e) => setEndereco(e.target.value)}
-          required
-        />
-        <SelectCustom
-          label="Estado"
-          mode="single"
-          placeholder="Estado"
-          options={states.map((s) => ({ value: s.sigla, label: s.nome }))}
-          value={estado}
-          onChange={(v) => setEstado(v || "")}
-          required
-        />
-        <SelectCustom
-          label="Cidade"
-          mode="single"
-          placeholder="Cidade"
-          options={cities.map((c) => ({ value: c.nome, label: c.nome }))}
-          value={cidade}
-          onChange={(v) => setCidade(v || "")}
-          disabled={!estado}
-          required
-        />
-      </div>
-      <div className="pt-4 flex justify-end">
-        <ButtonCustom
-          type="submit"
-          size="lg"
-          variant="default"
-          className="w-40"
-          withAnimation
-          isLoading={isSaving}
-          disabled={isSaving || !cep || !endereco || !estado || !cidade}
-        >
-          Salvar
-        </ButtonCustom>
-      </div>
+      <fieldset disabled={isSaving} className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <InputCustom
+            label="CEP"
+            mask="cep"
+            value={cep}
+            onChange={handleCepChange}
+            required
+            disabled={isSaving}
+          />
+          <InputCustom
+            label="Endereço"
+            value={endereco}
+            onChange={(e) => setEndereco(e.target.value)}
+            required
+            disabled={isSaving}
+          />
+          <SelectCustom
+            label="Estado"
+            mode="single"
+            placeholder="Estado"
+            options={states.map((s) => ({ value: s.sigla, label: s.nome }))}
+            value={estado}
+            onChange={(v) => setEstado(v || "")}
+            required
+            disabled={isSaving}
+          />
+          <SelectCustom
+            label="Cidade"
+            mode="single"
+            placeholder="Cidade"
+            options={cities.map((c) => ({ value: c.nome, label: c.nome }))}
+            value={cidade}
+            onChange={(v) => setCidade(v || "")}
+            disabled={isSaving || !estado}
+            required
+          />
+        </div>
+        <div className="pt-4 flex justify-end">
+          <ButtonCustom
+            type="submit"
+            size="lg"
+            variant="default"
+            className="w-40"
+            withAnimation
+            isLoading={isSaving}
+            disabled={isSaving || !cep || !endereco || !estado || !cidade}
+          >
+            Salvar
+          </ButtonCustom>
+        </div>
+      </fieldset>
     </form>
   );
 }

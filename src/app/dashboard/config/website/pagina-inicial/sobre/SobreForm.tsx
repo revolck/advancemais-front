@@ -351,6 +351,7 @@ export default function SobreForm({ initialData }: SobreFormProps) {
       ) : (
         <>
           <form onSubmit={handleSubmit} className="space-y-6">
+            <fieldset disabled={isLoading} className="space-y-6">
             {/* Upload de Imagem */}
             <div className="space-y-4">
               <div>
@@ -367,6 +368,7 @@ export default function SobreForm({ initialData }: SobreFormProps) {
                     deleteOnRemove={false}
                     onFilesChange={handleFilesChange}
                     showProgress={false}
+                    disabled={isLoading}
                   />
                 </div>
               </div>
@@ -433,6 +435,7 @@ export default function SobreForm({ initialData }: SobreFormProps) {
                 Salvar
               </ButtonCustom>
             </div>
+            </fieldset>
           </form>
         </>
       )}

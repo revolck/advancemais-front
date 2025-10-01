@@ -263,6 +263,7 @@ export function CreateCompanyModal({
         </ModalHeader>
 
         <form onSubmit={handleSubmit}>
+          <fieldset disabled={isLoading} className="space-y-6">
           <ModalBody className="space-y-6 p-1">
             {/* Informações Básicas */}
             <div className="space-y-4">
@@ -353,6 +354,7 @@ export function CreateCompanyModal({
                 : "Cadastrar Empresa"}
             </ButtonCustom>
           </ModalFooter>
+          </fieldset>
         </form>
       </ModalContentWrapper>
     </ModalCustom>

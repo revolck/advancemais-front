@@ -376,6 +376,7 @@ export default function ConsultoriaForm({ initialData }: ConsultoriaFormProps) {
       ) : (
         <>
           <form onSubmit={handleSubmit} className="space-y-6">
+            <fieldset disabled={isLoading} className="space-y-6">
             {/* Upload de Imagem */}
             <div className="space-y-4">
               <div>
@@ -392,6 +393,7 @@ export default function ConsultoriaForm({ initialData }: ConsultoriaFormProps) {
                     deleteOnRemove={false}
                     onFilesChange={handleFilesChange}
                     showProgress={false}
+                    disabled={isLoading}
                   />
                 </div>
               </div>
@@ -410,6 +412,7 @@ export default function ConsultoriaForm({ initialData }: ConsultoriaFormProps) {
                   maxLength={50}
                   placeholder="Digite o título da seção de consultoria"
                   required
+                  disabled={isLoading}
                 />
               </div>
 
@@ -427,6 +430,7 @@ export default function ConsultoriaForm({ initialData }: ConsultoriaFormProps) {
                   }
                   placeholder="https://exemplo.com/consultoria"
                   required
+                  disabled={isLoading}
                 />
               </div>
 
@@ -444,6 +448,7 @@ export default function ConsultoriaForm({ initialData }: ConsultoriaFormProps) {
                   maxLength={50}
                   placeholder="Digite o texto do botão"
                   required
+                  disabled={isLoading}
                 />
               </div>
 
@@ -469,6 +474,7 @@ export default function ConsultoriaForm({ initialData }: ConsultoriaFormProps) {
                     placeholder="Descreva a seção de consultoria."
                     className="min-h-[250px]"
                     required
+                    disabled={isLoading}
                   />
                 </div>
               </div>
@@ -492,6 +498,7 @@ export default function ConsultoriaForm({ initialData }: ConsultoriaFormProps) {
                 Salvar
               </ButtonCustom>
             </div>
+            </fieldset>
           </form>
         </>
       )}

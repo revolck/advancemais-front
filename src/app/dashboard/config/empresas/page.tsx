@@ -5,6 +5,8 @@ import { VerticalTabs, type VerticalTabItem } from "@/components/ui/custom";
 
 import PlanosForm from "./planos/PlanosForm";
 import { CuponsForm } from "./cupons/CuponsForm";
+import { CategoriasForm } from "./categorias/CategoriasForm";
+import { SubcategoriasForm } from "./subcategorias/SubcategoriasForm";
 
 export default function PlanosDashboardPage() {
   const items: VerticalTabItem[] = [
@@ -19,6 +21,18 @@ export default function PlanosDashboardPage() {
       label: "Cupons",
       icon: "Tag",
       content: <CuponsForm />,
+    },
+    {
+      value: "Categorias",
+      label: "Categorias",
+      icon: "Briefcase",
+      content: <CategoriasForm />,
+    },
+    {
+      value: "Subcategorias",
+      label: "Subcategorias",
+      icon: "ListTree",
+      content: <SubcategoriasForm />,
     },
   ];
 

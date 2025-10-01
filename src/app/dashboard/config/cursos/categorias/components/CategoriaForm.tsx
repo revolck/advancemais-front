@@ -42,6 +42,7 @@ export function CategoriaForm({
   onCancel,
   isSubmitting = false,
 }: CategoriaFormProps) {
+  const isDisabled = isSubmitting;
   const form = useForm<CategoriaFormData>({
     resolver: zodResolver(categoriaFormSchema),
     defaultValues: {
@@ -61,68 +62,69 @@ export function CategoriaForm({
   return (
     <div className="space-y-6">
       <Form {...form}>
-        <form
-          onSubmit={form.handleSubmit(handleSubmit)}
-          className="space-y-4 p-1"
-        >
-          <FormField
-            control={form.control}
-            name="nome"
-            render={({ field }) => (
-              <FormItem>
-                <FormControl>
-                  <InputCustom
-                    label="Nome da Categoria"
-                    placeholder="Ex: Tecnologia da Informação"
-                    {...field}
-                    error={form.formState.errors.nome?.message}
-                    required
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+        <form onSubmit={form.handleSubmit(handleSubmit)} className="p-1">
+          <fieldset disabled={isDisabled} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="nome"
+              render={({ field }) => (
+                <FormItem>
+                  <FormControl>
+                    <InputCustom
+                      label="Nome da Categoria"
+                      placeholder="Ex: Tecnologia da Informação"
+                      {...field}
+                      error={form.formState.errors.nome?.message}
+                      required
+                      disabled={isDisabled}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-          <FormField
-            control={form.control}
-            name="descricao"
-            render={({ field }) => (
-              <FormItem>
-                <FormControl>
-                  <SimpleTextarea
-                    label="Descrição"
-                    placeholder="Descreva brevemente sobre esta categoria de cursos..."
-                    {...field}
-                    required
-                    rows={4}
-                    maxLength={100}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+            <FormField
+              control={form.control}
+              name="descricao"
+              render={({ field }) => (
+                <FormItem>
+                  <FormControl>
+                    <SimpleTextarea
+                      label="Descrição"
+                      placeholder="Descreva brevemente sobre esta categoria de cursos..."
+                      {...field}
+                      required
+                      rows={4}
+                      maxLength={100}
+                      disabled={isDisabled}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-          <div className="flex items-center justify-end gap-3 pt-4">
-            <ButtonCustom
-              variant="outline"
-              size="md"
-              onClick={onCancel}
-              disabled={isSubmitting}
-            >
-              Cancelar
-            </ButtonCustom>
-            <ButtonCustom
-              type="submit"
-              variant="primary"
-              size="md"
-              isLoading={isSubmitting}
-              disabled={isSubmitting}
-            >
-              {categoria ? "Atualizar Categoria" : "Criar Categoria"}
-            </ButtonCustom>
-          </div>
+            <div className="flex items-center justify-end gap-3 pt-4">
+              <ButtonCustom
+                variant="outline"
+                size="md"
+                onClick={onCancel}
+                disabled={isDisabled}
+              >
+                Cancelar
+              </ButtonCustom>
+              <ButtonCustom
+                type="submit"
+                variant="primary"
+                size="md"
+                isLoading={isSubmitting}
+                disabled={isDisabled}
+              >
+                {categoria ? "Atualizar Categoria" : "Criar Categoria"}
+              </ButtonCustom>
+            </div>
+          </fieldset>
         </form>
       </Form>
     </div>

@@ -241,6 +241,7 @@ export default function PlaninhasForm({ initialData }: PlaninhasFormProps) {
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-6">
+          <fieldset disabled={isLoading} className="space-y-6">
           {/* Cabeçalho */}
           <div className="space-y-3">
             <InputCustom
@@ -329,6 +330,7 @@ export default function PlaninhasForm({ initialData }: PlaninhasFormProps) {
               Salvar
             </ButtonCustom>
           </div>
+          </fieldset>
         </form>
       )}
 

@@ -187,6 +187,7 @@ export default function DiferenciaisForm({
   return (
     <div className="space-y-6">
       <form onSubmit={handleSubmit} className="space-y-6">
+        <fieldset disabled={isLoading} className="space-y-6">
         <div className="space-y-3">
           <InputCustom
             label="Título Geral"
@@ -306,6 +307,7 @@ export default function DiferenciaisForm({
             Salvar
           </ButtonCustom>
         </div>
+        </fieldset>
       </form>
     </div>
   );

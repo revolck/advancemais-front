@@ -156,6 +156,7 @@ export default function SobreEmpresaForm({ initialData }: SobreEmpresaFormProps)
       ) : (
         <>
           <form onSubmit={handleSubmit} className="space-y-6">
+            <fieldset disabled={isLoading} className="space-y-6">
             <div className="space-y-3">
               <div>
                 <InputCustom
@@ -289,20 +290,21 @@ export default function SobreEmpresaForm({ initialData }: SobreEmpresaFormProps)
               </div>
             </div>
 
-            <div className="pt-4 flex justify-end">
-              <ButtonCustom
-                type="submit"
-                isLoading={isLoading}
-                disabled={isLoading}
-                size="lg"
-                variant="default"
-                className="w-40"
-                withAnimation={true}
-              >
-                Salvar
-              </ButtonCustom>
-            </div>
-          </form>
+          <div className="pt-4 flex justify-end">
+            <ButtonCustom
+              type="submit"
+              isLoading={isLoading}
+              disabled={isLoading}
+              size="lg"
+              variant="default"
+              className="w-40"
+              withAnimation={true}
+            >
+              Salvar
+            </ButtonCustom>
+          </div>
+        </fieldset>
+        </form>
         </>
       )}
     </div>

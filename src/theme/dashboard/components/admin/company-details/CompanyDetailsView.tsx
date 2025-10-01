@@ -241,6 +241,7 @@ export function CompanyDetailsView({
         isOpen={isResetPasswordOpen}
         onOpenChange={setIsResetPasswordOpen}
         email={companyData.email}
+        companyId={companyData.id}
       />
 
       <ViewVacancyModal

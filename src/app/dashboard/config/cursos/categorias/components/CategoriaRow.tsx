@@ -47,9 +47,6 @@ export function CategoriaRow({
   // Contar subcategorias
   const subcategoriasCount = categoria.subcategorias?.length || 0;
 
-  // Verificar se pode deletar (sem subcategorias ativas)
-  const canDelete = subcategoriasCount === 0;
-
   const handleDeleteClick = () => {
     setShowDeleteModal(true);
   };
@@ -204,38 +201,29 @@ export function CategoriaRow({
             <TooltipContent sideOffset={8}>Editar categoria</TooltipContent>
           </Tooltip>
 
-          {canDelete && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={handleDeleteClick}
-                  disabled={externalIsDeleting}
-                  className="h-8 w-8 rounded-full text-gray-500 hover:text-white hover:bg-red-500 cursor-pointer"
-                  aria-label="Excluir categoria"
-                >
-                  {externalIsDeleting ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Trash2 className="h-4 w-4" />
-                  )}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent sideOffset={8}>
-                {externalIsDeleting ? "Excluindo..." : "Excluir categoria"}
-              </TooltipContent>
-            </Tooltip>
-          )}
-
-          {!canDelete && (
-            <div className="h-8 w-8 flex items-center justify-center">
-              <div className="w-1.5 h-1.5 rounded-full bg-gray-300"></div>
-            </div>
-          )}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleDeleteClick}
+                disabled={externalIsDeleting}
+                className="h-8 w-8 rounded-full text-gray-500 hover:text-white hover:bg-red-500 cursor-pointer"
+                aria-label="Excluir categoria"
+              >
+                {externalIsDeleting ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Trash2 className="h-4 w-4" />
+                )}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent sideOffset={8}>
+              {externalIsDeleting ? "Excluindo..." : "Excluir categoria"}
+            </TooltipContent>
+          </Tooltip>
         </div>
       </TableCell>
-
       {/* Modal de Confirmação de Exclusão */}
       <DeleteConfirmModal<CategoriaCurso>
         isOpen={showDeleteModal}

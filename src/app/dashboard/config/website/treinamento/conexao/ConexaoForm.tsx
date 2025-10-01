@@ -281,6 +281,7 @@ export default function ConexaoForm() {
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-6">
+          <fieldset disabled={isLoading} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {imageKeys.map((i) => (
               <div key={i} className="space-y-2">
@@ -296,6 +297,7 @@ export default function ConexaoForm() {
                   deleteOnRemove={false}
                   onFilesChange={(list) => handleFilesChange(i, list)}
                   showProgress={false}
+                  disabled={isLoading}
                 />
               </div>
             ))}
@@ -310,6 +312,7 @@ export default function ConexaoForm() {
             }
             maxLength={100}
             required
+            disabled={isLoading}
           />
 
           <div>
@@ -330,6 +333,7 @@ export default function ConexaoForm() {
                 showCharCount
                 className="min-h-[200px]"
                 required
+                disabled={isLoading}
               />
             </div>
           </div>
@@ -355,6 +359,7 @@ export default function ConexaoForm() {
               Salvar
             </ButtonCustom>
           </div>
+          </fieldset>
         </form>
       )}
     </div>

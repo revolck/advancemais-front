@@ -16,7 +16,7 @@ export default function CursosDashboardPage() {
     {
       value: "subcategorias",
       label: "Subcategorias",
-      icon: "Tags",
+      icon: "ListTree",
       content: <SubcategoriasForm />,
     },
   ];

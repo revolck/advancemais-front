@@ -54,6 +54,7 @@ export function SubcategoriaForm({
   onCancel,
   isSubmitting = false,
 }: SubcategoriaFormProps) {
+  const isDisabled = isSubmitting || isLoadingCategorias;
   const form = useForm<SubcategoriaFormData>({
     resolver: zodResolver(subcategoriaFormSchema),
     defaultValues: {
@@ -73,101 +74,103 @@ export function SubcategoriaForm({
 
   return (
     <Form {...form}>
-      <form
-        onSubmit={form.handleSubmit(handleSubmit)}
-        className="space-y-6 p-1"
-      >
-        <div className="space-y-4">
-          <FormField
-            control={form.control}
-            name="categoriaPaiId"
-            render={({ field }) => (
-              <FormItem>
-                <FormControl>
-                  <SelectCustom
-                    label="Categoria"
-                    value={field.value?.toString() || ""}
-                    onChange={(value) => field.onChange(value)}
-                    disabled={isSubmitting || isLoadingCategorias}
-                    required
-                    placeholder={
-                      isLoadingCategorias
-                        ? "Carregando categorias..."
-                        : "Selecione uma categoria"
-                    }
-                    options={categorias.map((categoria) => ({
-                      value: categoria.id.toString(),
-                      label: categoria.nome,
-                    }))}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="p-1">
+        <fieldset
+          disabled={isDisabled}
+          className="space-y-6"
+        >
+          <div className="space-y-4">
+            <FormField
+              control={form.control}
+              name="categoriaPaiId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormControl>
+                    <SelectCustom
+                      label="Categoria"
+                      value={field.value?.toString() || ""}
+                      onChange={(value) => field.onChange(value)}
+                      disabled={isDisabled}
+                      required
+                      placeholder={
+                        isLoadingCategorias
+                          ? "Carregando categorias..."
+                          : "Selecione uma categoria"
+                      }
+                      options={categorias.map((categoria) => ({
+                        value: categoria.id.toString(),
+                        label: categoria.nome,
+                      }))}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-          <FormField
-            control={form.control}
-            name="nome"
-            render={({ field }) => (
-              <FormItem>
-                <FormControl>
-                  <InputCustom
-                    label="Nome da Subcategoria"
-                    value={field.value}
-                    onChange={field.onChange}
-                    disabled={isSubmitting}
-                    required
-                    placeholder="Digite o nome da subcategoria..."
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+            <FormField
+              control={form.control}
+              name="nome"
+              render={({ field }) => (
+                <FormItem>
+                  <FormControl>
+                    <InputCustom
+                      label="Nome da Subcategoria"
+                      value={field.value}
+                      onChange={field.onChange}
+                      disabled={isDisabled}
+                      required
+                      placeholder="Digite o nome da subcategoria..."
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-          <FormField
-            control={form.control}
-            name="descricao"
-            render={({ field }) => (
-              <FormItem>
-                <FormControl>
-                  <SimpleTextarea
-                    label="Descrição"
-                    placeholder="Descreva brevemente sobre esta subcategoria de cursos..."
-                    value={field.value}
-                    onChange={field.onChange}
-                    required
-                    rows={4}
-                    maxLength={100}
-                    disabled={isSubmitting}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
+            <FormField
+              control={form.control}
+              name="descricao"
+              render={({ field }) => (
+                <FormItem>
+                  <FormControl>
+                    <SimpleTextarea
+                      label="Descrição"
+                      placeholder="Descreva brevemente sobre esta subcategoria de cursos..."
+                      value={field.value}
+                      onChange={field.onChange}
+                      required
+                      rows={4}
+                      maxLength={100}
+                      disabled={isDisabled}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
 
-        <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
-          <ButtonCustom
-            type="button"
-            variant="outline"
-            onClick={onCancel}
-            disabled={isSubmitting}
-            size="md"
-          >
-            Cancelar
-          </ButtonCustom>
-          <ButtonCustom
-            type="submit"
-            disabled={isSubmitting || !form.formState.isValid}
-            isLoading={isSubmitting}
-            size="md"
-          >
-            {subcategoria ? "Atualizar" : "Criar subcategoria"}
-          </ButtonCustom>
-        </div>
+          <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+            <ButtonCustom
+              type="button"
+              variant="outline"
+              onClick={onCancel}
+              disabled={isDisabled}
+              size="md"
+            >
+              Cancelar
+            </ButtonCustom>
+            <ButtonCustom
+              type="submit"
+              disabled={isDisabled || !form.formState.isValid}
+              isLoading={isSubmitting}
+              size="md"
+            >
+              {subcategoria ? "Atualizar" : "Criar subcategoria"}
+            </ButtonCustom>
+          </div>
+        </fieldset>
       </form>
     </Form>
   );

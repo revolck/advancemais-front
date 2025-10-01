@@ -9,7 +9,6 @@ import { InputCustom } from "@/components/ui/custom/input";
 import { SimpleTextarea } from "@/components/ui/custom/text-area";
 import { SelectCustom } from "@/components/ui/custom/select";
 import { IconSelector } from "@/components/ui/custom/icon-selector";
-import { Icon } from "@/components/ui/custom/Icons";
 import {
   Form,
   FormControl,
@@ -58,6 +57,7 @@ export function PlanoForm({
   onCancel,
   loading = false,
 }: PlanoFormProps) {
+  const isDisabled = loading;
   const form = useForm<PlanoFormData>({
     resolver: zodResolver(planoFormSchema),
     defaultValues: {
@@ -99,32 +99,31 @@ export function PlanoForm({
 
   return (
     <Form {...form}>
-      <form
-        onSubmit={form.handleSubmit(handleSubmit)}
-        className="space-y-2 p-1"
-      >
-        {/* Primeira linha: Ícone e Nome do Plano */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {/* Ícone */}
-          <FormField
-            control={form.control}
-            name="icon"
-            render={({ field }) => (
-              <FormItem>
-                <FormControl>
-                  <IconSelector
-                    value={field.value}
-                    onValueChange={field.onChange}
-                    placeholder="Selecionar ícone"
-                    className="cursor-pointer"
-                    label="Ícone"
-                    required
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="p-1">
+        <fieldset disabled={isDisabled} className="space-y-2">
+          {/* Primeira linha: Ícone e Nome do Plano */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {/* Ícone */}
+            <FormField
+              control={form.control}
+              name="icon"
+              render={({ field }) => (
+                <FormItem>
+                  <FormControl>
+                    <IconSelector
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      placeholder="Selecionar ícone"
+                      className="cursor-pointer"
+                      label="Ícone"
+                      required
+                      disabled={isDisabled}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
           {/* Nome */}
           <FormField
@@ -138,6 +137,7 @@ export function PlanoForm({
                     label="Nome do Plano"
                     placeholder="Ex: Plano Corporativo"
                     required
+                    disabled={isDisabled}
                   />
                 </FormControl>
                 <FormMessage />
@@ -177,39 +177,40 @@ export function PlanoForm({
                     <InputCustom
                       {...field}
                       label="Valor (R$)"
-                      placeholder="0,00"
-                      value={field.value || "0,00"}
-                      onChange={(e) => {
-                        const formatted = formatCurrency(e.target.value);
-                        field.onChange(formatted);
-                      }}
-                      onBlur={(e) => {
-                        // Garante que sempre tenha um valor válido
-                        const formatted = formatCurrency(e.target.value);
-                        field.onChange(formatted);
-                      }}
-                      onKeyDown={(e) => {
-                        // Permite apenas números e teclas de controle
-                        if (
-                          !/[0-9]/.test(e.key) &&
-                          e.key !== "Backspace" &&
-                          e.key !== "Delete" &&
-                          e.key !== "ArrowLeft" &&
-                          e.key !== "ArrowRight" &&
-                          e.key !== "Tab" &&
-                          e.key !== "Enter"
-                        ) {
-                          e.preventDefault();
-                        }
-                      }}
-                      required
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              );
-            }}
-          />
+                    placeholder="0,00"
+                    value={field.value || "0,00"}
+                    onChange={(e) => {
+                      const formatted = formatCurrency(e.target.value);
+                      field.onChange(formatted);
+                    }}
+                    onBlur={(e) => {
+                      // Garante que sempre tenha um valor válido
+                      const formatted = formatCurrency(e.target.value);
+                      field.onChange(formatted);
+                    }}
+                    onKeyDown={(e) => {
+                      // Permite apenas números e teclas de controle
+                      if (
+                        !/[0-9]/.test(e.key) &&
+                        e.key !== "Backspace" &&
+                        e.key !== "Delete" &&
+                        e.key !== "ArrowLeft" &&
+                        e.key !== "ArrowRight" &&
+                        e.key !== "Tab" &&
+                        e.key !== "Enter"
+                      ) {
+                        e.preventDefault();
+                      }
+                    }}
+                    required
+                    disabled={isDisabled}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            );
+          }}
+        />
 
           {/* Desconto */}
           <FormField
@@ -271,12 +272,13 @@ export function PlanoForm({
                         e.key !== "Delete" &&
                         e.key !== "ArrowLeft" &&
                         e.key !== "ArrowRight" &&
-                        e.key !== "Tab"
-                      ) {
-                        e.preventDefault();
-                      }
-                    }}
+                      e.key !== "Tab"
+                    ) {
+                      e.preventDefault();
+                    }
+                  }}
                     required
+                    disabled={isDisabled}
                   />
                 </FormControl>
                 <FormMessage />
@@ -353,6 +355,7 @@ export function PlanoForm({
                       }
                     }}
                     required
+                    disabled={isDisabled}
                   />
                 </FormControl>
                 <FormMessage />
@@ -377,6 +380,7 @@ export function PlanoForm({
                       { value: "sim", label: "Ativar" },
                       { value: "nao", label: "Desativar" },
                     ]}
+                    disabled={isDisabled}
                   />
                 </FormControl>
                 <FormMessage />
@@ -439,25 +443,26 @@ export function PlanoForm({
                           field.onChange(numValue);
                         }
                       }}
-                      onKeyDown={(e) => {
-                        // Previne digitação de caracteres inválidos
-                        if (
-                          !/[0-9]/.test(e.key) &&
-                          e.key !== "Backspace" &&
-                          e.key !== "Delete" &&
-                          e.key !== "ArrowLeft" &&
-                          e.key !== "ArrowRight" &&
-                          e.key !== "Tab"
-                        ) {
-                          e.preventDefault();
-                        }
-                      }}
-                      required
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+                    onKeyDown={(e) => {
+                      // Previne digitação de caracteres inválidos
+                      if (
+                        !/[0-9]/.test(e.key) &&
+                        e.key !== "Backspace" &&
+                        e.key !== "Delete" &&
+                        e.key !== "ArrowLeft" &&
+                        e.key !== "ArrowRight" &&
+                        e.key !== "Tab"
+                      ) {
+                        e.preventDefault();
+                      }
+                    }}
+                    required
+                    disabled={isDisabled}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
             />
           </div>
         )}
@@ -477,6 +482,7 @@ export function PlanoForm({
                   label="Descrição"
                   maxLength={150}
                   showCharCount={true}
+                  disabled={isDisabled}
                 />
               </FormControl>
               <FormMessage />
@@ -491,22 +497,20 @@ export function PlanoForm({
               type="button"
               variant="outline"
               onClick={onCancel}
-              disabled={loading}
+              disabled={isDisabled}
             >
               Cancelar
             </ButtonCustom>
-            <ButtonCustom type="submit" disabled={loading}>
-              {loading ? (
-                <>
-                  <Icon name="Loader2" className="h-5 w-5 mr-2 animate-spin" />
-                  {plano ? "Atualizando..." : "Criando..."}
-                </>
-              ) : (
-                <>{plano ? "Atualizar" : "Criar"} Plano</>
-              )}
+            <ButtonCustom
+              type="submit"
+              disabled={isDisabled}
+              isLoading={loading}
+            >
+              {plano ? "Atualizar" : "Criar"} Plano
             </ButtonCustom>
           </div>
         </footer>
+        </fieldset>
       </form>
     </Form>
   );

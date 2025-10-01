@@ -182,6 +182,14 @@ export const breadcrumbConfig: Record<string, BreadcrumbConfig> = {
       { label: "Cupons", icon: "Tag" },
     ],
   },
+
+  "/dashboard/vagas": {
+    title: "Vagas",
+    items: [
+      { label: "Dashboard", href: "/", icon: "Home" },
+      { label: "Vagas", href: "/dashboard/vagas", icon: "Briefcase" },
+    ],
+  },
 };
 
 // Hook centralizado que consome a configuração acima
@@ -204,6 +212,21 @@ export function useBreadcrumb(): BreadcrumbConfig {
         { label: "Dashboard", href: "/", icon: "Home" },
         { label: "Empresas", href: "/empresas", icon: "Building2" },
         { label: "Visualizando empresa" },
+      ],
+    };
+  }
+
+  // Detalhes de vaga: /dashboard/vagas/[id]
+  if (
+    pathname.startsWith("/dashboard/vagas/") &&
+    pathname !== "/dashboard/vagas"
+  ) {
+    return {
+      title: "Detalhes da Vaga",
+      items: [
+        { label: "Dashboard", href: "/", icon: "Home" },
+        { label: "Vagas", href: "/dashboard/vagas", icon: "Briefcase" },
+        { label: "Visualizando vaga" },
       ],
     };
   }

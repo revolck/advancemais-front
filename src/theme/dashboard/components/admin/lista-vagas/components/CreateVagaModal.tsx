@@ -96,6 +96,7 @@ export function CreateVagaModal({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          <fieldset disabled={isLoading} className="space-y-6">
           <div className="grid grid-cols-1 gap-4">
             <div className="space-y-2">
               <Label htmlFor="titulo">Título da Vaga *</Label>
@@ -105,6 +106,7 @@ export function CreateVagaModal({
                 onChange={(e) => handleInputChange("titulo", e.target.value)}
                 placeholder="Ex: Desenvolvedor Frontend"
                 required
+                disabled={isLoading}
               />
             </div>
 
@@ -116,6 +118,7 @@ export function CreateVagaModal({
                 onChange={(e) => handleInputChange("descricao", e.target.value)}
                 placeholder="Descreva as responsabilidades e requisitos da vaga..."
                 rows={4}
+                disabled={isLoading}
               />
             </div>
 
@@ -127,6 +130,7 @@ export function CreateVagaModal({
                   value={formData.empresa}
                   onChange={(e) => handleInputChange("empresa", e.target.value)}
                   placeholder="Nome da empresa"
+                  disabled={isLoading}
                 />
               </div>
 
@@ -139,6 +143,7 @@ export function CreateVagaModal({
                     handleInputChange("localizacao", e.target.value)
                   }
                   placeholder="Cidade, Estado"
+                  disabled={isLoading}
                 />
               </div>
             </div>
@@ -151,6 +156,7 @@ export function CreateVagaModal({
                   value={formData.salario}
                   onChange={(e) => handleInputChange("salario", e.target.value)}
                   placeholder="Ex: R$ 5.000 - R$ 8.000"
+                  disabled={isLoading}
                 />
               </div>
 
@@ -159,6 +165,7 @@ export function CreateVagaModal({
                 <Select
                   value={formData.status}
                   onValueChange={(value) => handleInputChange("status", value)}
+                  disabled={isLoading}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -191,6 +198,7 @@ export function CreateVagaModal({
               {isLoading ? "Criando..." : "Criar Vaga"}
             </ButtonCustom>
           </div>
+          </fieldset>
         </form>
       </DialogContent>
     </Dialog>

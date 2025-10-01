@@ -179,6 +179,7 @@ export default function AtendimentoForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      <fieldset disabled={isSaving} className="space-y-6">
       <div className="space-y-2">
         <label className="text-sm font-medium required">
           Dias de atendimento
@@ -201,6 +202,7 @@ export default function AtendimentoForm() {
             });
             setSelectedDays(cast);
           }}
+          disabled={isSaving}
         />
       </div>
 
@@ -250,13 +252,14 @@ export default function AtendimentoForm() {
                         return next;
                       })
                     }
+                    disabled={isSaving}
                   />
                 </div>
                 <div>
                   <DateTimeCustom
                     mode="time"
                     required
-                    disabled={!current.from}
+                    disabled={isSaving || !current.from}
                     value={current.to}
                     onChange={(val) =>
                       setHours((prev) => ({
@@ -308,6 +311,7 @@ export default function AtendimentoForm() {
           Salvar
         </ButtonCustom>
       </div>
+      </fieldset>
     </form>
   );
 }

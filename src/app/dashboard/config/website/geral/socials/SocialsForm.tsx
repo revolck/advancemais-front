@@ -96,49 +96,55 @@ export default function SocialsForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <InputCustom
-          label="Instagram"
-          value={state.instagram}
-          onChange={handleChange("instagram")}
-          required
-        />
-        <InputCustom
-          label="Facebook"
-          value={state.facebook}
-          onChange={handleChange("facebook")}
-        />
-        <InputCustom
-          label="YouTube"
-          value={state.youtube}
-          onChange={handleChange("youtube")}
-        />
-        <InputCustom
-          label="LinkedIn"
-          value={state.linkedin}
-          onChange={handleChange("linkedin")}
-        />
-      </div>
-      {!id && (
-        <p className="text-xs text-muted-foreground/80">
-          Para atualizar redes sociais é necessário já existir um registro base
-          (criado em Endereço/Contato). Selecione os dados e clique em salvar
-          para verificar.
-        </p>
-      )}
-      <div className="pt-4 flex justify-end">
-        <ButtonCustom
-          type="submit"
-          size="lg"
-          variant="default"
-          className="w-40"
-          withAnimation
-          isLoading={isSaving}
-          disabled={isSaving || !state.instagram}
-        >
-          Salvar
-        </ButtonCustom>
-      </div>
+      <fieldset disabled={isSaving} className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <InputCustom
+            label="Instagram"
+            value={state.instagram}
+            onChange={handleChange("instagram")}
+            required
+            disabled={isSaving}
+          />
+          <InputCustom
+            label="Facebook"
+            value={state.facebook}
+            onChange={handleChange("facebook")}
+            disabled={isSaving}
+          />
+          <InputCustom
+            label="YouTube"
+            value={state.youtube}
+            onChange={handleChange("youtube")}
+            disabled={isSaving}
+          />
+          <InputCustom
+            label="LinkedIn"
+            value={state.linkedin}
+            onChange={handleChange("linkedin")}
+            disabled={isSaving}
+          />
+        </div>
+        {!id && (
+          <p className="text-xs text-muted-foreground/80">
+            Para atualizar redes sociais é necessário já existir um registro base
+            (criado em Endereço/Contato). Selecione os dados e clique em salvar
+            para verificar.
+          </p>
+        )}
+        <div className="pt-4 flex justify-end">
+          <ButtonCustom
+            type="submit"
+            size="lg"
+            variant="default"
+            className="w-40"
+            withAnimation
+            isLoading={isSaving}
+            disabled={isSaving || !state.instagram}
+          >
+            Salvar
+          </ButtonCustom>
+        </div>
+      </fieldset>
     </form>
   );
 }
