@@ -47,7 +47,7 @@ export default function DashboardVagasPage() {
       <EmptyState
         title="Acesso restrito"
         description="Você não possui permissão para visualizar o módulo de vagas."
-        illustration="accessDenied"
+        illustration="pass"
         actions={
           <Link
             href="/dashboard"

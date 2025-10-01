@@ -44,7 +44,8 @@ export default function VagaDetailPage() {
         setLoading(true);
         setError(null);
         const response = await getVagaById(vagaId);
-        setVaga(response.data || response);
+        const vagaData = "data" in response ? response.data : response;
+        setVaga(vagaData);
       } catch (err) {
         console.error("Erro ao carregar vaga:", err);
         setError("Erro ao carregar os detalhes da vaga");
