@@ -97,7 +97,7 @@ const EmptyState = React.forwardRef<HTMLDivElement, EmptyStateProps>(
 
         <div
           className={cn(
-            "flex w-full flex-col gap-3 text-gray-600",
+            "flex w-full flex-col gap-2 text-gray-600",
             align === "start"
               ? "items-start text-left"
               : "items-center text-center",
@@ -110,7 +110,7 @@ const EmptyState = React.forwardRef<HTMLDivElement, EmptyStateProps>(
             </span>
           )}
 
-          <TitleTag className="text-2xl font-semibold leading-tight text-[var(--primary-color)]">
+          <TitleTag className="text-2xl font-semibold leading-tight text-[var(--primary-color)] !mb-0">
             {title}
           </TitleTag>
 

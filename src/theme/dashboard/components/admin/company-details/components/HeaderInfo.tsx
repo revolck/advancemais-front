@@ -172,7 +172,7 @@ export function HeaderInfo({
             <DropdownMenuTrigger asChild>
               <Button
                 aria-expanded={isActionsOpen}
-                className="flex items-center gap-2 rounded-full bg-[var(--primary-color)] px-6 py-2 text-sm font-semibold text-white hover:bg-[var(--primary-color)]/90"
+                className="flex items-center gap-2 rounded-full bg-[var(--primary-color)] px-6 py-2 text-sm font-semibold text-white hover:bg-[var(--primary-color)]/90 cursor-pointer"
               >
                 Ações
                 <ChevronDown

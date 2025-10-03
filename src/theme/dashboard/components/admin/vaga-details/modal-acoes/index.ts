@@ -1,0 +1,1 @@
+export { EditarStatusCandidatoModal } from "./EditarStatusCandidatoModal";
