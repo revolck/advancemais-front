@@ -41,18 +41,44 @@ export const BarChartComponent = ({
       setFocusedElement(elementKey);
     }
   };
+  const toNumericValue = (value: string | number | null | undefined) => {
+    if (typeof value === "number" && Number.isFinite(value)) {
+      return value;
+    }
+
+    if (typeof value === "string") {
+      const sanitizedValue = value.replace(/[^0-9,-]/g, "").replace(",", ".");
+
+      if (!sanitizedValue) {
+        return null;
+      }
+
+      const parsedValue = Number(sanitizedValue);
+
+      if (Number.isFinite(parsedValue)) {
+        return parsedValue;
+      }
+    }
+
+    return null;
+  };
+
   // Calcular valores mínimos e máximos para o domínio do eixo Y
   const allValues = data
-    .flatMap((d) => [d.vaga, d.mercado])
-    .filter((v) => v != null);
-  const minValue = Math.min(...allValues);
-  const maxValue = Math.max(...allValues);
-  const padding = Math.max((maxValue - minValue) * 0.2, 1000);
+    .flatMap((d) => [toNumericValue(d.vaga as string | number | null | undefined), toNumericValue(d.mercado as string | number | null | undefined)])
+    .filter((value): value is number => value !== null);
+
+  const hasValues = allValues.length > 0;
+  const minValue = hasValues ? Math.min(...allValues) : 0;
+  const maxValue = hasValues ? Math.max(...allValues) : 0;
+  const padding = hasValues ? Math.max((maxValue - minValue) * 0.2, 1000) : 1000;
 
   // Garantir que o domínio tenha valores "redondos" para evitar ticks duplicados
-  const yMin = Math.max(0, Math.floor((minValue - padding) / 1000) * 1000);
-  const yMax = Math.ceil((maxValue + padding) / 1000) * 1000;
-  const yDomain = [yMin, yMax];
+  const yMin = hasValues
+    ? Math.max(0, Math.floor((minValue - padding) / 1000) * 1000)
+    : 0;
+  const yMax = hasValues ? Math.ceil((maxValue + padding) / 1000) * 1000 : 1000;
+  const yDomain: [number, number] = hasValues ? [yMin, yMax] : [0, 1000];
 
   // Função para formatar valores do eixo Y
   const formatYAxisValue = (value: number) => {
@@ -63,8 +89,10 @@ export const BarChartComponent = ({
   };
 
   // Função para formatar valores nas barras
-  const formatBarValue = (value: number) => {
-    return `R$ ${value.toLocaleString("pt-BR")}`;
+  const formatBarValue = (value: number | string) => {
+    const numericValue = toNumericValue(value) ?? 0;
+
+    return `R$ ${numericValue.toLocaleString("pt-BR")}`;
   };
 
   // Componente de tooltip customizado
@@ -95,7 +123,7 @@ export const BarChartComponent = ({
                   </span>
                 </div>
                 <span className="text-sm font-semibold" style={{ color }}>
-                  R$ {entry.value.toLocaleString("pt-BR")}
+                  R$ {(toNumericValue(entry.value) ?? 0).toLocaleString("pt-BR")}
                 </span>
               </div>
             </div>
@@ -128,7 +156,7 @@ export const BarChartComponent = ({
                     </span>
                   </div>
                   <span className="text-sm font-semibold" style={{ color }}>
-                    R$ {entry.value.toLocaleString("pt-BR")}
+                    R$ {(toNumericValue(entry.value) ?? 0).toLocaleString("pt-BR")}
                   </span>
                 </div>
               );
@@ -174,7 +202,8 @@ export const BarChartComponent = ({
             domain={yDomain}
             allowDecimals={false}
             ticks={(() => {
-              const step = Math.ceil((yMax - yMin) / 5 / 1000) * 1000;
+              const calculatedStep = Math.ceil((yMax - yMin) / 5 / 1000) * 1000;
+              const step = calculatedStep > 0 ? calculatedStep : 1000;
               const ticks = [];
               for (let i = yMin; i <= yMax; i += step) {
                 ticks.push(i);
