@@ -6,7 +6,9 @@ import type {
   VagaDetailApiResponse,
   VagaUpdateApiResponse,
   VagaDeleteApiResponse,
+  VagaCreateApiResponse,
   VagaListParams,
+  CreateVagaPayload,
   UpdateVagaPayload,
 } from "./types";
 
@@ -109,6 +111,27 @@ export async function listVagas(
       method: "GET",
       ...init,
       headers: buildAuthHeaders(init?.headers),
+    },
+    cache: "no-cache",
+  });
+}
+
+export async function createVaga(
+  data: CreateVagaPayload,
+  init?: RequestInit
+): Promise<VagaCreateApiResponse> {
+  const endpoint = routes.vagas.list();
+
+  return apiFetch<VagaCreateApiResponse>(endpoint, {
+    init: {
+      method: "POST",
+      ...init,
+      headers: buildAuthHeaders({
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        ...init?.headers,
+      }),
+      body: init?.body ?? JSON.stringify(data),
     },
     cache: "no-cache",
   });

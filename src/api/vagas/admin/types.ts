@@ -172,6 +172,34 @@ export interface VagaListParams {
 // PAYLOADS DE ATUALIZAÇÃO
 // ============================================================================
 
+export interface CreateVagaPayload {
+  usuarioId: string;
+  areaInteresseId: number | string;
+  subareaInteresseId: number | string;
+  slug?: string;
+  modoAnonimo: boolean;
+  regimeDeTrabalho: RegimeTrabalho;
+  modalidade: ModalidadeTrabalho;
+  titulo: string;
+  paraPcd: boolean;
+  vagaEmDestaque: boolean;
+  numeroVagas: number;
+  descricao: string;
+  requisitos?: VagaRequisitos | null;
+  atividades?: VagaAtividades | null;
+  beneficios?: VagaBeneficios | null;
+  observacoes?: string;
+  jornada: JornadaTrabalho;
+  senioridade: Senioridade;
+  localizacao: VagaLocalizacao;
+  inscricoesAte?: string;
+  inseridaEm?: string;
+  salarioMin?: number | string | null;
+  salarioMax?: number | string | null;
+  salarioConfidencial: boolean;
+  maxCandidaturasPorUsuario?: number | null;
+}
+
 export interface UpdateVagaPayload {
   usuarioId?: string;
   areaInteresseId?: number;
@@ -222,6 +250,12 @@ export type VagaListApiResponse = VagaListItem[] | VagaListResponse;
 export type VagaDetailApiResponse = VagaDetail | VagaDetailResponse;
 export type VagaUpdateApiResponse = VagaDetail | VagaDetailResponse;
 export type VagaDeleteApiResponse = void;
+export type VagaCreateApiResponse =
+  | VagaListItem
+  | VagaDetailResponse
+  | VagaErrorResponse
+  | VagaValidationError
+  | VagaLimitReachedError;
 
 // ============================================================================
 // RESPOSTAS DE ERRO

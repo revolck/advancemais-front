@@ -12,21 +12,11 @@ export default function CadastrarVagaPage() {
     router.push("/dashboard/vagas");
   };
 
-  const handleCancel = () => {
-    router.push("/dashboard/vagas");
-  };
-
   return (
-    <div className="bg-white rounded-3xl p-5 h-full min-h-[calc(100vh-8rem)] flex flex-col">
-      {/* Form */}
-      <div className="flex-1 min-h-0">
-        <CreateVagaForm
-          onSuccess={handleSuccess}
-          onCancel={handleCancel}
-          isSubmitting={isSubmitting}
-          setIsSubmitting={setIsSubmitting}
-        />
-      </div>
-    </div>
+    <CreateVagaForm
+      onSuccess={handleSuccess}
+      isSubmitting={isSubmitting}
+      setIsSubmitting={setIsSubmitting}
+    />
   );
 }

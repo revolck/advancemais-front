@@ -22,6 +22,7 @@ const SimpleTextarea = React.forwardRef<
       showCharCount = false,
       size,
       style,
+      error,
       ...props
     },
     ref
@@ -80,7 +81,7 @@ const SimpleTextarea = React.forwardRef<
     };
 
     const handleKeyDownInternal = (
-      e: React.KeyboardEvent<HTMLTextAreaElement>,
+      e: React.KeyboardEvent<HTMLTextAreaElement>
     ) => {
       // Bloqueia teclas que adicionam caracteres se já atingiu o limite
       if (maxLength && value.length >= maxLength) {
@@ -108,7 +109,7 @@ const SimpleTextarea = React.forwardRef<
     };
 
     const handlePasteInternal = (
-      e: React.ClipboardEvent<HTMLTextAreaElement>,
+      e: React.ClipboardEvent<HTMLTextAreaElement>
     ) => {
       // Intercepta colar para respeitar maxLength
       if (maxLength) {
@@ -142,8 +143,7 @@ const SimpleTextarea = React.forwardRef<
     const isRequired = Boolean((props as any)?.required);
 
     return (
-      <div className={cn("w-full space-y-2")}
-      >
+      <div className={cn("w-full space-y-2")}>
         {label && (
           <div className="flex items-center gap-2">
             <Label
@@ -168,7 +168,12 @@ const SimpleTextarea = React.forwardRef<
           </div>
         )}
 
-        <div className="rounded-lg border border-input bg-background">
+        <div
+          className={cn(
+            "rounded-lg border bg-background",
+            error ? "border-destructive" : "border-input"
+          )}
+        >
           <textarea
             className={cn(
               textareaVariants({ size }),
@@ -200,6 +205,7 @@ const SimpleTextarea = React.forwardRef<
             </div>
           )}
         </div>
+        {error && <p className="text-sm text-destructive mt-1">{error}</p>}
       </div>
     );
   }

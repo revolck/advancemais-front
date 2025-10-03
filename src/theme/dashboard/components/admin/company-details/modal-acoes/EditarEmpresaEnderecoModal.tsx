@@ -143,37 +143,38 @@ export function EditarEmpresaEnderecoModal({
       return;
     }
 
-    const sanitize = (value: string): string | null => {
-      const trimmed = value.trim();
-      return trimmed.length > 0 ? trimmed : null;
-    };
+    // Limpa e formata os dados
+    const sanitizedCep = formState.cep ? formState.cep.replace(/\D/g, "") : "";
 
-    const sanitizedCep = formState.cep
-      ? formState.cep.replace(/\D/g, "") || null
-      : null;
+    // WORKAROUND TEMPORÁRIO: Salvar dados no nível raiz da empresa
+    // até o backend corrigir o bug no array enderecos
+    const payload: any = {
+      // Campos que funcionam (nível raiz)
+      cidade: formState.cidade.trim(),
+      estado: formState.estado.trim(),
 
-    const payload: UpdateAdminCompanyPayload = {
+      // Campos de endereço no nível raiz (workaround)
+      cep: sanitizedCep,
+      logradouro: formState.logradouro.trim(),
+      bairro: formState.bairro.trim(),
+      numero: formState.numero.trim(),
+
+      // Array enderecos com dados mínimos (mantém estrutura)
       enderecos: [
         {
           id: company.enderecos?.[0]?.id || "",
-          cep: sanitizedCep || "",
-          logradouro: formState.logradouro || "",
-          bairro: formState.bairro || "",
-          numero: formState.numero || "",
-          cidade: formState.cidade || "",
-          estado: formState.estado || "",
+          cidade: formState.cidade.trim(),
+          estado: formState.estado.trim(),
         },
       ],
-      cidade: formState.cidade || undefined,
-      estado: formState.estado || undefined,
     };
 
     setIsSaving(true);
 
     try {
-      await updateAdminCompany(company.id, payload);
+      const response = await updateAdminCompany(company.id, payload);
 
-      const formattedCep = sanitizedCep ? normalizeCep(sanitizedCep) : null;
+      const formattedCep = sanitizedCep ? normalizeCep(sanitizedCep) : "";
 
       onCompanyUpdated({
         cidade: formState.cidade || undefined,
@@ -181,12 +182,12 @@ export function EditarEmpresaEnderecoModal({
         enderecos: [
           {
             id: company.enderecos?.[0]?.id || "",
-            cep: formattedCep || "",
-            logradouro: formState.logradouro || "",
-            bairro: formState.bairro || "",
-            numero: formState.numero || "",
-            cidade: formState.cidade || "",
-            estado: formState.estado || "",
+            cep: formattedCep,
+            logradouro: formState.logradouro.trim(),
+            bairro: formState.bairro.trim(),
+            numero: formState.numero.trim(),
+            cidade: formState.cidade.trim(),
+            estado: formState.estado.trim(),
           },
         ],
       });
@@ -238,6 +239,7 @@ export function EditarEmpresaEnderecoModal({
                 value={formState.cep}
                 onChange={handleCepChange}
                 disabled={isSaving || isCepLoading}
+                mask="cep"
                 maxLength={9}
                 rightIcon={isCepLoading ? "Loader2" : undefined}
                 size="sm"

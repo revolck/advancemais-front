@@ -1,0 +1,42 @@
+import type { FormState } from "../types/formTypes";
+
+export function getInitialFormState(): FormState {
+  return {
+    usuarioId: "",
+    areaInteresseId: "",
+    subareaInteresseId: [],
+    titulo: "",
+    descricao: "",
+    requisitosObrigatorios: "",
+    requisitosDesejaveis: "",
+    atividadesPrincipais: "",
+    atividadesExtras: "",
+    beneficiosLista: "",
+    beneficiosObservacoes: "",
+    observacoes: "",
+    modoAnonimo: false,
+    paraPcd: false,
+    vagaEmDestaque: false,
+    regimeDeTrabalho: "",
+    modalidade: "",
+    jornada: "",
+    senioridade: "",
+    numeroVagas: "1",
+    salarioMin: "",
+    salarioMax: "",
+    salarioConfidencial: true,
+    maxCandidaturasPorUsuario: "",
+    limitarCandidaturas: "NAO",
+    inscricoesAte: "",
+    localizacao: {
+      logradouro: "",
+      numero: "",
+      bairro: "",
+      cidade: "",
+      estado: "",
+      cep: "",
+      complemento: "",
+      referencia: "",
+    },
+  };
+}

@@ -1,4 +1,4 @@
-export { listVagas, getVagaById, updateVaga, deleteVaga } from "./admin";
+export { listVagas, getVagaById, createVaga, updateVaga, deleteVaga } from "./admin";
 
 export type {
   VagaDetail,
@@ -8,9 +8,11 @@ export type {
   VagaStatus,
   VagaListParams,
   VagaListResponse,
+  CreateVagaPayload,
   UpdateVagaPayload,
   VagaListApiResponse,
   VagaDetailApiResponse,
+  VagaCreateApiResponse,
   VagaUpdateApiResponse,
   VagaDeleteApiResponse,
   VagaErrorResponse,
@@ -18,4 +20,5 @@ export type {
   VagaNotFoundError,
   VagaUnauthorizedError,
   VagaForbiddenError,
+  VagaLimitReachedError,
 } from "./admin/types";

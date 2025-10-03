@@ -10,6 +10,7 @@ export interface BaseTextareaProps
   onInfoClick?: () => void;
   maxLength?: number;
   showCharCount?: boolean;
+  error?: string;
 }
 
 export interface RichTextareaProps
@@ -29,6 +30,7 @@ export interface RichTextareaProps
   onInfoClick?: () => void;
   maxLength?: number;
   showCharCount?: boolean;
+  error?: string;
   // Propriedades essenciais para compatibilidade com forms
   value?: string;
   defaultValue?: string;

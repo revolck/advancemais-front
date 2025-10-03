@@ -31,6 +31,7 @@ export interface SingleSelectProps extends BaseSelectProps {
   options: SelectOption[];
   value: string | null;
   onChange: (value: string | null) => void;
+  searchable?: boolean;
 }
 
 export interface MultipleSelectProps extends BaseSelectProps {
