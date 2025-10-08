@@ -65,7 +65,20 @@ export function CompanyDetailsView({
         const empresaComPlano = {
           ...consolidatedResult.empresa,
           plano: planAtivo,
-          pagamento: pagamentoAtual,
+          pagamento: {
+            modelo: planAtivo?.modeloPagamento || "MENSAL",
+            metodo: planAtivo?.metodoPagamento || "CREDITO",
+            status: planAtivo?.statusPagamento || "PENDENTE",
+            ultimoPagamentoEm:
+              pagamentoAtual?.criadoEm || new Date().toISOString(),
+          },
+          enderecos: [],
+          vagas: {
+            publicadas: consolidatedResult.vagas?.total || 0,
+            limitePlano: planAtivo?.quantidadeVagas || 0,
+          },
+          banida: false,
+          banimentoAtivo: consolidatedResult.bloqueios?.ativos?.[0] || null,
         };
 
         setCompanyData(empresaComPlano);
