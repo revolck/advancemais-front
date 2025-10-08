@@ -13,6 +13,7 @@ import type {
   AdminCompanyBanRevokeApiResponse,
   AdminCompanyVagaListApiResponse,
   AdminCompanyVagaApproveApiResponse,
+  AdminCompanyConsolidatedApiResponse,
   AdminCompanyDashboardParams,
   AdminCompanyListParams,
   AdminCompanyPaymentParams,
@@ -305,6 +306,32 @@ export async function getAdminCompanyById(
   const endpoint = empresasRoutes.adminEmpresas.get(id);
 
   return apiFetch<AdminCompanyDetailApiResponse>(endpoint, {
+    init: {
+      method: "GET",
+      ...init,
+      headers: buildAuthHeaders(init?.headers),
+    },
+    cache: "no-cache",
+  });
+}
+
+/**
+ * Obtém visão consolidada da empresa
+ *
+ * Retorna uma visão consolidada da empresa (Pessoa Jurídica) incluindo plano atual e histórico,
+ * vagas, candidaturas, pagamentos e bloqueios ativos. Apenas perfis ADMIN e MODERADOR podem acessar.
+ *
+ * @param id - ID da empresa
+ * @param init - Configurações adicionais da requisição
+ * @returns Visão consolidada da empresa
+ */
+export async function getAdminCompanyConsolidated(
+  id: string,
+  init?: RequestInit
+): Promise<AdminCompanyConsolidatedApiResponse> {
+  const endpoint = empresasRoutes.adminEmpresas.get(id);
+
+  return apiFetch<AdminCompanyConsolidatedApiResponse>(endpoint, {
     init: {
       method: "GET",
       ...init,

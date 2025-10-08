@@ -9,7 +9,9 @@ import type {
   AdminCompanyVagaItem,
   AdminCompanyPlano,
   AdminCompanyPagamento,
+  AdminCompanyAuditoriaItem,
 } from "@/api/empresas/admin/types";
+import { getAdminCompanyConsolidated } from "@/api/empresas/admin";
 import {
   EditarEmpresaModal,
   EditarEmpresaEnderecoModal,
@@ -25,26 +27,85 @@ import type { CompanyDetailsViewProps } from "./types";
 import { AboutTab } from "./tabs/AboutTab";
 import { VacancyTab } from "./tabs/VacancyTab";
 import { PlanTab } from "./tabs/PlanTab";
+import { HistoryTab } from "./tabs/HistoryTab";
 import { HeaderInfo } from "./components/HeaderInfo";
 
 export function CompanyDetailsView({
   company,
   payments = [],
   vacancies = [],
-}: CompanyDetailsViewProps) {
+  auditoria = [],
+}: CompanyDetailsViewProps & { auditoria?: AdminCompanyAuditoriaItem[] }) {
   const [companyData, setCompanyData] = useState(company);
+  const [allPayments, setAllPayments] = useState(payments);
+  const [allVacancies, setAllVacancies] = useState(vacancies);
+  const [allAuditoria, setAllAuditoria] = useState(auditoria);
+  const [isReloading, setIsReloading] = useState(false);
 
   useEffect(() => {
     setCompanyData(company);
-  }, [company]);
+    setAllPayments(payments);
+    setAllVacancies(vacancies);
+    setAllAuditoria(auditoria);
+  }, [company, payments, vacancies, auditoria]);
+
+  // Função para recarregar todos os dados da API consolidada
+  const reloadCompanyData = useCallback(async () => {
+    setIsReloading(true);
+    try {
+      const consolidatedResult = await getAdminCompanyConsolidated(
+        companyData.id
+      );
+
+      if ("empresa" in consolidatedResult) {
+        const planAtivo = consolidatedResult.planos?.ativos?.[0] || null;
+        const pagamentoAtual =
+          consolidatedResult.pagamentos?.recentes?.[0] || null;
+
+        const empresaComPlano = {
+          ...consolidatedResult.empresa,
+          plano: planAtivo,
+          pagamento: pagamentoAtual,
+        };
+
+        setCompanyData(empresaComPlano);
+        setAllPayments(consolidatedResult.pagamentos?.recentes || []);
+        setAllVacancies(consolidatedResult.vagas?.recentes || []);
+        setAllAuditoria(consolidatedResult.auditoria?.recentes || []);
+      }
+    } catch (error) {
+      console.error("Erro ao recarregar dados da empresa:", error);
+    } finally {
+      setIsReloading(false);
+    }
+  }, [companyData.id]);
 
   const plan = companyData.plano;
   const payment = companyData.pagamento;
 
-  const publishedVacancies = companyData.vagas?.publicadas ?? 0;
+  // Calcular vagas publicadas + em análise baseado nos dados das vagas
+  const publishedVacancies = allVacancies.reduce((count, vacancy) => {
+    const status = vacancy.status?.toUpperCase();
+    return count + (status === "PUBLICADO" || status === "EM_ANALISE" ? 1 : 0);
+  }, 0);
 
   const totalVacancies =
     plan?.quantidadeVagas ?? companyData.vagas?.limitePlano ?? 0;
+
+  // Contar apenas vagas relevantes para o badge (excluindo RASCUNHO e DESPUBLICADA)
+  const relevantVacanciesCount = allVacancies.reduce((count, vacancy) => {
+    const status = vacancy.status?.toUpperCase();
+    return (
+      count +
+      (status === "PUBLICADO" ||
+      status === "EM_ANALISE" ||
+      status === "PAUSADA" ||
+      status === "ENCERRADA" ||
+      status === "EXPIRADO"
+        ? 1
+        : 0)
+    );
+  }, 0);
 
   const isCompanyActive = companyData.status === "ATIVO" || companyData.ativa;
 
@@ -65,26 +126,38 @@ export function CompanyDetailsView({
   const [isResetPasswordOpen, setIsResetPasswordOpen] = useState(false);
 
   const handleCompanyUpdated = useCallback(
-    (updates: Partial<AdminCompanyDetail>) => {
+    async (updates: Partial<AdminCompanyDetail>) => {
+      // Atualizar dados locais imediatamente para UX responsivo
       setCompanyData((prev) => ({
         ...prev,
         ...updates,
       }));
+
+      // Recarregar dados completos da API para atualizar auditoria e histórico
+      await reloadCompanyData();
     },
-    []
+    [reloadCompanyData]
   );
 
-  const handleBanApplied = useCallback((ban: AdminCompanyBanItem) => {
-    setCompanyData((prev) => ({
-      ...prev,
-      banimentoAtivo: ban,
-      banida: true,
-      status: "INATIVO",
-      ativa: false,
-    }));
-  }, []);
+  const handleBanApplied = useCallback(
+    async (ban: AdminCompanyBanItem) => {
+      // Atualizar dados locais imediatamente para UX responsivo
+      setCompanyData((prev) => ({
+        ...prev,
+        banimentoAtivo: ban,
+        banida: true,
+        status: "INATIVO",
+        ativa: false,
+      }));
 
-  const handleUnbanApplied = useCallback(() => {
+      // Recarregar dados completos da API para atualizar auditoria e histórico
+      await reloadCompanyData();
+    },
+    [reloadCompanyData]
+  );
+
+  const handleUnbanApplied = useCallback(async () => {
+    // Atualizar dados locais imediatamente para UX responsivo
     setCompanyData((prev) => ({
       ...prev,
       banimentoAtivo: null,
@@ -94,17 +167,24 @@ export function CompanyDetailsView({
       status: "ATIVO",
       ativa: true,
     }));
-  }, []);
+
+    // Recarregar dados completos da API para atualizar auditoria e histórico
+    await reloadCompanyData();
+  }, [reloadCompanyData]);
 
   const handleSubscriptionUpdated = useCallback(
-    (plan: AdminCompanyPlano, payment: AdminCompanyPagamento) => {
+    async (plan: AdminCompanyPlano, payment: AdminCompanyPagamento) => {
+      // Atualizar dados locais imediatamente para UX responsivo
       setCompanyData((prev) => ({
         ...prev,
         plano: plan,
         pagamento: payment,
       }));
+
+      // Recarregar dados completos da API para atualizar auditoria e histórico
+      await reloadCompanyData();
     },
-    []
+    [reloadCompanyData]
   );
 
   // Verificar se a empresa tem um plano
@@ -139,11 +219,13 @@ export function CompanyDetailsView({
     }
   };
 
-  const aboutTabContent = <AboutTab company={companyData} />;
+  const aboutTabContent = (
+    <AboutTab company={companyData} isLoading={isReloading} />
+  );
 
   const vacancyTabContent = (
     <VacancyTab
-      vacancies={vacancies}
+      vacancies={allVacancies}
       publishedVacancies={publishedVacancies}
       totalVacancies={totalVacancies}
       onViewVacancy={(vacancy) => {
@@ -162,8 +244,13 @@ export function CompanyDetailsView({
       isCompanyActive={isCompanyActive}
       plan={plan}
       payment={payment}
-      payments={payments}
+      payments={allPayments}
+      isLoading={isReloading}
     />
+  );
+
+  const historyTabContent = (
+    <HistoryTab auditoria={allAuditoria} isLoading={isReloading} />
   );
 
   const tabs: HorizontalTabItem[] = [
@@ -184,7 +271,16 @@ export function CompanyDetailsView({
       label: "Vagas",
       icon: "Briefcase",
       content: vacancyTabContent,
-      badge: vacancies.length ? <span>{vacancies.length}</span> : null,
+      badge: relevantVacanciesCount ? (
+        <span>{relevantVacanciesCount}</span>
+      ) : null,
+    },
+    {
+      value: "historico",
+      label: "Histórico",
+      icon: "History",
+      content: historyTabContent,
+      badge: allAuditoria.length ? <span>{allAuditoria.length}</span> : null,
     },
   ];
 
@@ -265,7 +361,7 @@ export function CompanyDetailsView({
         isOpen={isUnbanCompanyOpen}
         onOpenChange={setIsUnbanCompanyOpen}
         company={companyData}
-        onSuccess={handleUnbanApplied}
+        onUnbanApplied={handleUnbanApplied}
       />
     </div>
   );

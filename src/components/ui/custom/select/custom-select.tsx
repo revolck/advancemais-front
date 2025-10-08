@@ -141,7 +141,7 @@ export function SelectCustom(props: SelectCustomProps) {
                 type="button"
                 disabled={disabled}
                 className={cn(
-                  "file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground border-input flex min-w-0 items-center rounded-md border bg-transparent px-3 py-0 text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm aria-invalid:ring-destructive/20 aria-invalid:border-destructive w-full text-foreground focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] cursor-pointer",
+                  "file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground border-input flex min-w-0 items-center rounded-md border bg-transparent px-3 py-0 text-base shadow-none transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm aria-invalid:ring-destructive/20 aria-invalid:border-destructive w-full text-foreground focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] cursor-pointer",
                   size === "sm" && "h-10",
                   size === "md" && "h-12",
                   size === "lg" && "h-14",
@@ -166,7 +166,7 @@ export function SelectCustom(props: SelectCustomProps) {
             </PopoverTrigger>
             <PopoverContent
               className={cn(
-                "z-[120] w-[--radix-popover-trigger-width] min-w-[--radix-popover-trigger-width] rounded-md border border-gray-200 bg-white p-0 shadow-xl shadow-black/5 box-border"
+                "z-[120] w-[--radix-popover-trigger-width] min-w-[--radix-popover-trigger-width] rounded-md border border-gray-200 bg-white p-0 shadow-none box-border"
               )}
               style={{
                 width: "var(--radix-popover-trigger-width)",
@@ -246,7 +246,7 @@ export function SelectCustom(props: SelectCustomProps) {
             size={size === "sm" ? "sm" : "default"}
             className={cn(
               // Alinha visualmente ao InputCustom (altura e tipografia)
-              "file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground border-input flex min-w-0 rounded-md border bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm aria-invalid:ring-destructive/20 aria-invalid:border-destructive w-full text-foreground focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] focus:border-[var(--primary-color)] cursor-pointer",
+              "file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground border-input flex min-w-0 rounded-md border bg-transparent px-3 py-1 text-base shadow-none transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm aria-invalid:ring-destructive/20 aria-invalid:border-destructive w-full text-foreground focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] focus:border-[var(--primary-color)] cursor-pointer",
               // Força altura equivalente ao InputCustom usando o mesmo seletor de atributo do Radix
               size === "sm" && "data-[size=sm]:h-10",
               size === "md" && "data-[size=default]:h-12",
@@ -339,7 +339,7 @@ export function SelectCustom(props: SelectCustomProps) {
           <button
             type="button"
             className={cn(
-              "file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground border-input flex min-w-0 rounded-md border bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm aria-invalid:ring-destructive/20 aria-invalid:border-destructive w-full text-foreground focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] focus:border-blue-400 focus:ring-1 focus:ring-blue-300 cursor-pointer",
+              "file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground border-input flex min-w-0 rounded-md border bg-transparent px-3 py-1 text-base shadow-none transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm aria-invalid:ring-destructive/20 aria-invalid:border-destructive w-full text-foreground focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] focus:border-blue-400 focus:ring-1 focus:ring-blue-300 cursor-pointer",
               size === "sm" && "h-10",
               size === "md" && "h-12",
               size === "lg" && "h-14",
@@ -366,7 +366,7 @@ export function SelectCustom(props: SelectCustomProps) {
         </PopoverTrigger>
         <PopoverContent
           className={cn(
-            "z-[120] w-[--radix-popover-trigger-width] min-w-[--radix-popover-trigger-width] rounded-md border border-gray-200 bg-white p-0 shadow-xl shadow-black/5 box-border"
+            "z-[120] w-[--radix-popover-trigger-width] min-w-[--radix-popover-trigger-width] rounded-md border border-gray-200 bg-white p-0 shadow-none box-border"
           )}
           style={{
             width: "var(--radix-popover-trigger-width)",

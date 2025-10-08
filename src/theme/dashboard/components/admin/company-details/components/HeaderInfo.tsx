@@ -70,24 +70,22 @@ export function HeaderInfo({
     ? "Editar assinatura"
     : "Adicionar assinatura";
 
-  // Verificar se a empresa está banida ou bloqueada
-  const isCompanyBanned = company.banida || company.banimentoAtivo;
-  const isCompanyBlocked = company.bloqueada || company.bloqueioAtivo;
-  const isCompanyRestricted = isCompanyBanned || isCompanyBlocked;
-  const banActionText = isCompanyRestricted
+  // Verificar se a empresa está bloqueada
+  const isCompanyBlocked =
+    company.banida ||
+    company.banimentoAtivo ||
+    company.bloqueada ||
+    company.bloqueioAtivo;
+  const banActionText = isCompanyBlocked
     ? "Desbloquear empresa"
     : "Bloquear empresa";
 
-  const statusColor = company.banimentoAtivo
-    ? "bg-amber-500"
-    : isCompanyBlocked
+  const statusColor = isCompanyBlocked
     ? "bg-red-500"
     : isCompanyActive
     ? "bg-emerald-500"
     : "bg-rose-500";
-  const statusLabel = company.banimentoAtivo
-    ? "Empresa banida"
-    : isCompanyBlocked
+  const statusLabel = isCompanyBlocked
     ? "Empresa bloqueada"
     : isCompanyActive
     ? "Empresa ativa"
@@ -104,17 +102,7 @@ export function HeaderInfo({
       </Badge>
     );
   }
-  if (company.banimentoAtivo) {
-    badges.push(
-      <Badge
-        key="banida"
-        className="inline-flex items-center gap-1 rounded-full border border-amber-200/70 bg-amber-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-amber-700"
-      >
-        Banida
-      </Badge>
-    );
-  }
-  if (isCompanyBlocked && !company.banimentoAtivo) {
+  if (isCompanyBlocked) {
     badges.push(
       <Badge
         key="bloqueada"
@@ -207,7 +195,7 @@ export function HeaderInfo({
                 <span>{subscriptionActionText}</span>
               </DropdownMenuItem>
               <DropdownMenuItem
-                onSelect={isCompanyRestricted ? onUnbanCompany : onBanCompany}
+                onSelect={isCompanyBlocked ? onUnbanCompany : onBanCompany}
                 className="cursor-pointer"
               >
                 <Ban className="h-4 w-4 text-gray-500" />

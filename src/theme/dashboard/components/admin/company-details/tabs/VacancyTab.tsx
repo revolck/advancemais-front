@@ -23,9 +23,16 @@ export function VacancyTab({
     vacancies: vacancies ?? [],
   });
 
+  // Filtrar vagas para mostrar todas exceto RASCUNHO e DESPUBLICADA
   const relevantVacancies = vacanciesWithCandidates.filter((vacancy) => {
     const status = vacancy.status?.toUpperCase();
-    return status === "PUBLICADO" || status === "EM_ANALISE";
+    return (
+      status === "PUBLICADO" ||
+      status === "EM_ANALISE" ||
+      status === "PAUSADA" ||
+      status === "ENCERRADA" ||
+      status === "EXPIRADO"
+    );
   });
 
   // Contar todos os status de vagas
@@ -83,17 +90,20 @@ export function VacancyTab({
     <EmptyState
       illustration="companyDetails"
       illustrationAlt="Ilustração de vagas"
-      title="Nenhuma vaga publicada"
-      description="Ainda não encontramos vagas publicadas ou em análise para esta empresa. Assim que uma vaga entrar na fila, ela aparece aqui."
+      title="Nenhuma vaga encontrada"
+      description="Não encontramos vagas ativas para esta empresa. As vagas aparecem aqui quando estão publicadas, em análise, pausadas, encerradas ou expiradas."
       maxContentWidth="sm"
       className="rounded-2xl border border-gray-200/60 bg-white p-6"
     />
   );
 
+  // Calcular vagas em análise e publicadas corretamente
+  const publishedAndInReview = statusCounts.emAnalise + statusCounts.publicado;
+
   const vacancySidebar = (
     <aside className="space-y-4">
       <VacancyUsageCard
-        published={publishedVacancies}
+        published={publishedAndInReview}
         total={totalVacancies}
         statusCounts={statusCounts}
       />

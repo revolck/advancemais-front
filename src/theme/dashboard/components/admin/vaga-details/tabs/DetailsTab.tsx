@@ -1,7 +1,7 @@
 "use client";
 
 import type { DetailsTabProps } from "../types";
-import { Database, Shield, Activity, Tag } from "lucide-react";
+import { Database, Shield } from "lucide-react";
 import { formatDate } from "../utils";
 
 export function DetailsTab({ vaga }: DetailsTabProps) {
@@ -93,42 +93,6 @@ export function DetailsTab({ vaga }: DetailsTabProps) {
               </span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">Visibilidade:</span>
-              <span className="text-sm font-medium">Pública</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Configurações de Performance */}
-        <div className="rounded-2xl border border-gray-200/60 bg-white p-6">
-          <h5 className="!mb-0 flex items-center gap-2">
-            <Activity className="h-5 w-5 text-orange-600" />
-            Configurações de Performance
-          </h5>
-          <div className="mt-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">Número de vagas:</span>
-              <span className="text-sm font-medium">
-                {vaga.numeroVagas || "—"}
-              </span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">
-                Status de Publicação:
-              </span>
-              <span className="text-sm font-medium">Publicada</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Categorização e Classificação */}
-        <div className="rounded-2xl border border-gray-200/60 bg-white p-6">
-          <h5 className="!mb-0 flex items-center gap-2">
-            <Tag className="h-5 w-5 text-purple-600" />
-            Categorização e Classificação
-          </h5>
-          <div className="mt-4 space-y-3">
-            <div className="flex items-center justify-between">
               <span className="text-sm text-gray-600">Categoria:</span>
               <span className="text-sm font-medium">
                 {vaga.areaInteresse?.categoria || "—"}
@@ -139,10 +103,6 @@ export function DetailsTab({ vaga }: DetailsTabProps) {
               <span className="text-sm font-medium">
                 {vaga.subareaInteresse?.nome || "—"}
               </span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">Tipo de Vaga:</span>
-              <span className="text-sm font-medium">Padrão</span>
             </div>
           </div>
         </div>

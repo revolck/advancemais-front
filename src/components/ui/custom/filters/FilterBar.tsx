@@ -75,8 +75,6 @@ export function FilterBar({
         {fields.map((field) => {
           const mode = field.mode ?? "single";
           const commonProps = {
-            key: field.key,
-            label: field.label,
             options: field.options,
             placeholder: field.placeholder ?? "Selecionar",
             className: "w-full",

@@ -86,20 +86,12 @@ export function VacancyUsageCard({
         </h4>
         <div className="space-y-2 text-xs">
           <div className="flex items-center justify-between rounded-lg border border-gray-200/60 bg-gray-50/60 px-3 py-2">
-            <span className="font-medium text-gray-600">Rascunho</span>
-            <span className="text-gray-500">{statusCounts.rascunho}</span>
-          </div>
-          <div className="flex items-center justify-between rounded-lg border border-gray-200/60 bg-gray-50/60 px-3 py-2">
             <span className="font-medium text-gray-600">Em análise</span>
             <span className="text-gray-500">{statusCounts.emAnalise}</span>
           </div>
           <div className="flex items-center justify-between rounded-lg border border-gray-200/60 bg-gray-50/60 px-3 py-2">
             <span className="font-medium text-gray-600">Publicadas</span>
             <span className="text-gray-500">{statusCounts.publicado}</span>
-          </div>
-          <div className="flex items-center justify-between rounded-lg border border-gray-200/60 bg-gray-50/60 px-3 py-2">
-            <span className="font-medium text-gray-600">Despublicadas</span>
-            <span className="text-gray-500">{statusCounts.despublicada}</span>
           </div>
           <div className="flex items-center justify-between rounded-lg border border-gray-200/60 bg-gray-50/60 px-3 py-2">
             <span className="font-medium text-gray-600">Pausadas</span>

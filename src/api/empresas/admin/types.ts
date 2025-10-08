@@ -18,6 +18,7 @@ export type AdminCompanyPaymentModel =
 
 export type AdminCompanyPaymentMethod =
   | "PIX"
+  | "CARTAO"
   | "CARTAO_CREDITO"
   | "CARTAO_DEBITO"
   | "BOLETO"
@@ -31,7 +32,8 @@ export type AdminCompanyPaymentStatus =
   | "CONCLUIDO"
   | "RECUSADO"
   | "ESTORNADO"
-  | "CANCELADO";
+  | "CANCELADO"
+  | "EXPIRADO";
 
 export type AdminCompanyVacancyStatus =
   | "RASCUNHO"
@@ -75,6 +77,11 @@ export interface AdminCompanyPlano {
   quantidadeVagas: number;
   duracaoEmDias: number | null;
   diasRestantes: number;
+  origin?: string;
+  criadoEm?: string;
+  atualizadoEm?: string;
+  proximaCobranca?: string | null;
+  graceUntil?: string | null;
 }
 
 // ============================================================================
@@ -82,9 +89,12 @@ export interface AdminCompanyPlano {
 // ============================================================================
 
 export interface AdminCompanyInformacoes {
-  telefone: string;
-  descricao: string;
-  avatarUrl: string;
+  telefone: string | null;
+  descricao: string | null;
+  avatarUrl: string | null;
+  genero?: string | null;
+  dataNasc?: string | null;
+  inscricao?: string | null;
   aceitarTermos: boolean;
 }
 
@@ -380,7 +390,13 @@ export interface AdminCompanyPaymentLog {
   tipo: string;
   status: string;
   mensagem: string;
+  externalRef?: string;
+  mpResourceId?: string;
   criadoEm: string;
+  plano?: {
+    id: string;
+    nome: string;
+  };
 }
 
 // ============================================================================
@@ -422,6 +438,91 @@ export interface AdminCompanyVagaListResponse {
 
 export interface AdminCompanyVagaDetailResponse {
   vaga: AdminCompanyVagaItem;
+}
+
+// ============================================================================
+// TIPOS PARA ESTRUTURA CONSOLIDADA
+// ============================================================================
+
+export interface AdminCompanyConsolidatedEmpresa {
+  id: string;
+  codUsuario: string;
+  nome: string;
+  email: string;
+  telefone: string;
+  avatarUrl: string;
+  cnpj: string;
+  descricao: string;
+  socialLinks: AdminCompanySocialLinks;
+  cidade: string;
+  estado: string;
+  criadoEm: string;
+  status: AdminCompanyStatus;
+  ultimoLogin: string;
+  ativa: boolean;
+  parceira: boolean;
+  diasTesteDisponibilizados: number;
+  planoAtual: AdminCompanyPlano | null;
+  bloqueada: boolean;
+  bloqueioAtivo: AdminCompanyBanItem | null;
+  informacoes: AdminCompanyInformacoes;
+}
+
+export interface AdminCompanyConsolidatedPlanos {
+  ativos: AdminCompanyPlano[];
+  historico: AdminCompanyPlano[];
+}
+
+export interface AdminCompanyConsolidatedPagamentos {
+  total: number;
+  recentes: AdminCompanyPaymentLog[];
+}
+
+export interface AdminCompanyConsolidatedVagas {
+  total: number;
+  porStatus: Record<string, number>;
+  recentes: AdminCompanyVagaItem[];
+}
+
+export interface AdminCompanyConsolidatedCandidaturas {
+  total: number;
+  porStatus: Record<string, number>;
+}
+
+export interface AdminCompanyConsolidatedBloqueios {
+  ativos: AdminCompanyBanItem[];
+  historico: AdminCompanyBanItem[];
+}
+
+export interface AdminCompanyAuditoriaItem {
+  id: string;
+  acao: string;
+  campo: string | null;
+  valorAnterior: string | null;
+  valorNovo: string | null;
+  descricao: string;
+  metadata: Record<string, any> | null;
+  criadoEm: string;
+  alteradoPor: {
+    id: string;
+    nomeCompleto: string;
+    role: string;
+  };
+}
+
+export interface AdminCompanyConsolidatedAuditoria {
+  total: number;
+  recentes: AdminCompanyAuditoriaItem[];
+}
+
+export interface AdminCompanyConsolidatedResponse {
+  empresa: AdminCompanyConsolidatedEmpresa;
+  planos: AdminCompanyConsolidatedPlanos;
+  pagamentos: AdminCompanyConsolidatedPagamentos;
+  vagas: AdminCompanyConsolidatedVagas;
+  candidaturas: AdminCompanyConsolidatedCandidaturas;
+  bloqueios: AdminCompanyConsolidatedBloqueios;
+  auditoria: AdminCompanyConsolidatedAuditoria;
 }
 
 // ============================================================================
@@ -572,8 +673,11 @@ export interface CreateAdminCompanyPayload {
 }
 
 export interface UpdateAdminCompanyPayload {
-  telefone?: string;
-  descricao?: string;
+  telefone?: string | null;
+  email?: string;
+  descricao?: string | null;
+  instagram?: string | null;
+  linkedin?: string | null;
   status?: AdminCompanyStatus;
   plano?: AdminCompanyPlanoPayload;
   enderecos?: AdminCompanyEndereco[];
@@ -677,3 +781,7 @@ export type AdminCompanyVagaApproveApiResponse =
   | AdminCompanyVagaDetailResponse
   | AdminCompanyValidationError
   | AdminCompanyNotFoundError;
+
+export type AdminCompanyConsolidatedApiResponse =
+  | AdminCompanyConsolidatedResponse
+  | AdminCompanyErrorResponse;

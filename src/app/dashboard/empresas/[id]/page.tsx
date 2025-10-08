@@ -1,12 +1,7 @@
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 
-import {
-  getAdminCompanyById,
-  listAdminCompanyPayments,
-  listAdminCompanyBans,
-  listAdminCompanyVacancies,
-} from "@/api/empresas/admin";
+import { getAdminCompanyConsolidated } from "@/api/empresas/admin";
 import { CompanyDetailsView } from "@/theme/dashboard/components/admin";
 
 interface CompanyDetailsPageProps {
@@ -21,45 +16,39 @@ export default async function CompanyDetailsPage(
   const token = cookieStore.get("token")?.value;
   const authHeaders = token ? { Authorization: `Bearer ${token}` } : undefined;
 
-  const [companyResult, paymentsResult, bansResult, vacanciesResult] =
-    await Promise.allSettled([
-      getAdminCompanyById(id, { headers: authHeaders }),
-      listAdminCompanyPayments(id, { pageSize: 20 }, { headers: authHeaders }),
-      listAdminCompanyBans(id, { pageSize: 20 }, { headers: authHeaders }),
-      listAdminCompanyVacancies(id, { pageSize: 20 }, { headers: authHeaders }),
-    ]);
+  const consolidatedResult = await getAdminCompanyConsolidated(id, {
+    headers: authHeaders,
+  });
 
-  if (companyResult.status !== "fulfilled") {
-    console.error("Erro ao carregar detalhes da empresa", companyResult.reason);
+  if (!("empresa" in consolidatedResult)) {
+    console.error("Erro na resposta da API consolidada:", consolidatedResult);
     notFound();
   }
 
-  // Verificar se a resposta é um erro
-  if (!("empresa" in companyResult.value)) {
-    console.error("Erro na resposta da API:", companyResult.value);
-    notFound();
-  }
+  const empresa = consolidatedResult.empresa;
+  const payments = consolidatedResult.pagamentos?.recentes || [];
+  const bans = consolidatedResult.bloqueios?.historico || [];
+  const vacancies = consolidatedResult.vagas?.recentes || [];
+  const auditoria = consolidatedResult.auditoria?.recentes || [];
 
-  const empresa = companyResult.value.empresa;
-  const payments =
-    paymentsResult.status === "fulfilled" && "data" in paymentsResult.value
-      ? paymentsResult.value.data
-      : [];
-  const bans =
-    bansResult.status === "fulfilled" && "data" in bansResult.value
-      ? bansResult.value.data
-      : [];
-  const vacancies =
-    vacanciesResult.status === "fulfilled" && "data" in vacanciesResult.value
-      ? vacanciesResult.value.data
-      : [];
+  // Extrair plano ativo e pagamento atual da estrutura consolidada
+  const planAtivo = consolidatedResult.planos?.ativos?.[0] || null;
+  const pagamentoAtual = consolidatedResult.pagamentos?.recentes?.[0] || null;
+
+  // Adicionar plano e pagamento aos dados da empresa para compatibilidade
+  const empresaComPlano = {
+    ...empresa,
+    plano: planAtivo,
+    pagamento: pagamentoAtual,
+  };
 
   return (
     <CompanyDetailsView
-      company={empresa}
+      company={empresaComPlano}
       payments={payments}
       bans={bans}
       vacancies={vacancies}
+      auditoria={auditoria}
     />
   );
 }

@@ -23,6 +23,8 @@ import { updateAdminCompany } from "@/api/empresas";
 import type {
   AdminCompanyDetail,
   UpdateAdminCompanyPayload,
+  AdminCompanyInformacoes,
+  AdminCompanySocialLinks,
 } from "@/api/empresas/admin/types";
 import MaskService from "@/services/components/input/maskService";
 
@@ -59,7 +61,7 @@ export function EditarEmpresaModal({
       email: company.email ?? "",
       instagram: company.socialLinks?.instagram ?? "",
       linkedin: company.socialLinks?.linkedin ?? "",
-      descricao: company.informacoes?.descricao ?? "",
+      descricao: company.descricao ?? company.informacoes?.descricao ?? "",
     };
   }, [company]);
 
@@ -107,27 +109,140 @@ export function EditarEmpresaModal({
       return trimmed.length > 0 ? trimmed : null;
     };
 
-    const payload: UpdateAdminCompanyPayload = {
-      telefone: sanitize(formState.telefone) ?? undefined,
-      descricao: sanitize(formState.descricao) ?? undefined,
-    };
+    const emailSanitizado = sanitize(formState.email);
+    if (!emailSanitizado) {
+      toastCustom.error({
+        title: "Email obrigatório",
+        description: "O campo email é obrigatório.",
+      });
+      return;
+    }
+
+    // Preparar payload apenas com campos que mudaram
+    const maskService = MaskService.getInstance();
+    const payload: UpdateAdminCompanyPayload = {};
+    let hasChanges = false;
+
+    if (emailSanitizado !== (company.email || "")) {
+      payload.email = emailSanitizado;
+      hasChanges = true;
+    }
+
+    const telefoneSanitizado = sanitize(formState.telefone);
+    if (telefoneSanitizado) {
+      if (!maskService.validate(telefoneSanitizado, "phone")) {
+        toastCustom.error({
+          title: "Telefone inválido",
+          description: "Informe um telefone completo com DDD antes de salvar.",
+        });
+        return;
+      }
+
+      const digits = maskService.removeMask(telefoneSanitizado, "phone");
+      const currentDigits = (company.telefone || "").replace(/\D/g, "");
+      if (digits !== currentDigits) {
+        payload.telefone = digits;
+        hasChanges = true;
+      }
+    } else if (company.telefone) {
+      payload.telefone = null;
+      hasChanges = true;
+    }
+
+    const descricaoSanitizada = sanitize(formState.descricao);
+    const descricaoAtual =
+      company.descricao ?? company.informacoes?.descricao ?? "";
+    if (descricaoSanitizada !== null) {
+      if (descricaoAtual !== descricaoSanitizada) {
+        payload.descricao = descricaoSanitizada;
+        hasChanges = true;
+      }
+    } else if (company.descricao || company.informacoes?.descricao) {
+      payload.descricao = null;
+      hasChanges = true;
+    }
+
+    const instagramSanitizado = sanitize(formState.instagram);
+    const instagramAtual = company.socialLinks?.instagram;
+    if (instagramSanitizado !== null) {
+      if (instagramAtual !== instagramSanitizado) {
+        payload.instagram = instagramSanitizado;
+        hasChanges = true;
+      }
+    } else if (instagramAtual) {
+      payload.instagram = null;
+      hasChanges = true;
+    }
+
+    const linkedinSanitizado = sanitize(formState.linkedin);
+    const linkedinAtual = company.socialLinks?.linkedin;
+    if (linkedinSanitizado !== null) {
+      if (linkedinAtual !== linkedinSanitizado) {
+        payload.linkedin = linkedinSanitizado;
+        hasChanges = true;
+      }
+    } else if (linkedinAtual) {
+      payload.linkedin = null;
+      hasChanges = true;
+    }
+
+    if (!hasChanges) {
+      toastCustom.info({
+        title: "Nenhuma alteração",
+        description:
+          "Atualize os campos antes de salvar ou feche a modal para sair.",
+      });
+      return;
+    }
 
     setIsSaving(true);
 
     try {
       await updateAdminCompany(company.id, payload);
 
+      const updatedInformacoes: AdminCompanyInformacoes = {
+        telefone:
+          payload.telefone !== undefined
+            ? payload.telefone ?? null
+            : company.informacoes?.telefone ?? null,
+        descricao:
+          payload.descricao !== undefined
+            ? payload.descricao ?? null
+            : company.informacoes?.descricao ?? null,
+        avatarUrl: company.informacoes?.avatarUrl ?? null,
+        aceitarTermos: company.informacoes?.aceitarTermos ?? false,
+        genero: company.informacoes?.genero ?? null,
+        dataNasc: company.informacoes?.dataNasc ?? null,
+        inscricao: company.informacoes?.inscricao ?? null,
+      };
+
+      const updatedSocialLinks: AdminCompanySocialLinks = {
+        ...(company.socialLinks ?? {}),
+      };
+
+      if (payload.instagram !== undefined) {
+        updatedSocialLinks.instagram = payload.instagram ?? undefined;
+      }
+      if (payload.linkedin !== undefined) {
+        updatedSocialLinks.linkedin = payload.linkedin ?? undefined;
+      }
+
+      const telefoneAtualizado =
+        payload.telefone !== undefined
+          ? payload.telefone ?? ""
+          : company.telefone ?? "";
+
+      const descricaoAtualizada =
+        payload.descricao !== undefined
+          ? payload.descricao ?? ""
+          : company.descricao ?? "";
+
       onCompanyUpdated({
-        telefone: payload.telefone ?? undefined,
-        email: formState.email,
-        informacoes: {
-          ...company.informacoes,
-          descricao: payload.descricao ?? "",
-        },
-        socialLinks: {
-          instagram: formState.instagram || undefined,
-          linkedin: formState.linkedin || undefined,
-        },
+        telefone: telefoneAtualizado || undefined,
+        email: emailSanitizado,
+        descricao: descricaoAtualizada || "",
+        informacoes: updatedInformacoes,
+        socialLinks: updatedSocialLinks,
       });
 
       toastCustom.success({
@@ -138,17 +253,44 @@ export function EditarEmpresaModal({
       handleClose();
     } catch (error) {
       console.error("Erro ao atualizar empresa", error);
+
+      // Determinar tipo de erro para mensagem mais específica
+      let errorMessage =
+        "Não foi possível atualizar os dados da empresa. Tente novamente em instantes.";
+
+      if (error instanceof Error) {
+        if (
+          error.message.includes("404") ||
+          error.message.includes("não encontrada")
+        ) {
+          errorMessage =
+            "Empresa não encontrada. Verifique se o ID da empresa está correto.";
+        } else if (
+          error.message.includes("400") ||
+          error.message.includes("Dados inválidos")
+        ) {
+          errorMessage =
+            "Dados inválidos. Verifique se todos os campos obrigatórios estão preenchidos corretamente.";
+        } else if (error.message.includes("telefone")) {
+          errorMessage =
+            "Formato de telefone inválido. Verifique se o telefone está no formato correto.";
+        }
+      }
+
       toastCustom.error({
         title: "Erro ao salvar",
-        description:
-          "Não foi possível atualizar os dados da empresa. Tente novamente em instantes.",
+        description: errorMessage,
       });
     } finally {
       setIsSaving(false);
     }
   }, [
     company.id,
+    company.email,
     company.informacoes,
+    company.socialLinks,
+    company.telefone,
+    company.descricao,
     formState,
     handleClose,
     isSaving,
@@ -186,6 +328,7 @@ export function EditarEmpresaModal({
                 value={formState.email}
                 onChange={handleInputChange("email")}
                 disabled={isSaving}
+                required
               />
             </div>
 

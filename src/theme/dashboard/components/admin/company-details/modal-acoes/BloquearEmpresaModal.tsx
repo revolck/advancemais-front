@@ -217,8 +217,8 @@ export function BloquearEmpresaModal({
         observacoes: trimmedObservations,
       });
 
-      if ("banimento" in response) {
-        onBanApplied(response.banimento);
+      if ("bloqueio" in response) {
+        onBanApplied(response.bloqueio as AdminCompanyBanItem);
       }
 
       toastCustom.success({
@@ -345,7 +345,7 @@ export function BloquearEmpresaModal({
               variant="danger"
               onClick={handleSubmit}
               isLoading={isSubmitting}
-              loadingText="Aplicando banimento..."
+              loadingText="Aplicando bloqueio..."
               size="md"
             >
               Bloquear

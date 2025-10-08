@@ -2,6 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import { EmptyState } from "@/components/ui/custom";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { PlanTabProps } from "../types";
 import { CreditCard } from "lucide-react";
 import {
@@ -18,6 +19,7 @@ export function PlanTab({
   plan,
   payment,
   payments,
+  isLoading = false,
 }: PlanTabProps) {
   const planExists = Boolean(
     plan && (plan.nome || plan.valor || plan.modo || plan.inicio || plan.fim)
@@ -171,6 +173,61 @@ export function PlanTab({
       </div>
     </aside>
   );
+
+  // Se está carregando, mostrar skeleton
+  if (isLoading) {
+    return (
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,_7fr)_minmax(0,_3fr)]">
+        {/* Skeleton da seção principal do plano */}
+        <section className="rounded-2xl border border-gray-200/60 bg-white p-6">
+          <div className="flex items-start justify-between">
+            <div className="space-y-3">
+              <Skeleton className="h-6 w-32" />
+              <Skeleton className="h-8 w-48" />
+              <Skeleton className="h-4 w-24" />
+            </div>
+            <Skeleton className="h-12 w-12 rounded-lg" />
+          </div>
+
+          <div className="mt-6 space-y-3">
+            {Array.from({ length: 4 }, (_, i) => (
+              <div
+                key={i}
+                className="flex items-center justify-between rounded-2xl border border-slate-200/60 bg-slate-50/60 px-4 py-3"
+              >
+                <Skeleton className="h-3 w-32" />
+                <Skeleton className="h-3 w-24" />
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Skeleton da sidebar */}
+        <aside className="space-y-4">
+          <div className="rounded-2xl border border-gray-200/60 bg-white p-6">
+            <Skeleton className="h-6 w-32 mb-4" />
+            <div className="space-y-3">
+              {Array.from({ length: 3 }, (_, i) => (
+                <div
+                  key={i}
+                  className="rounded-2xl border border-gray-200/70 bg-gray-50/80 p-4"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-5 w-20" />
+                  </div>
+                  <div className="space-y-2">
+                    <Skeleton className="h-3 w-24" />
+                    <Skeleton className="h-3 w-28" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </aside>
+      </div>
+    );
+  }
 
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,_7fr)_minmax(0,_3fr)]">

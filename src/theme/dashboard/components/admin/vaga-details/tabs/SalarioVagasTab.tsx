@@ -16,14 +16,28 @@ import { CardsStatistics, ChartsCustom } from "@/components/ui/custom";
 import { Badge } from "@/components/ui/badge";
 
 export function SalarioVagasTab({ vaga }: AboutTabProps) {
-  // Dados simulados de mercado baseados no título da vaga
+  // Função para extrair a localização da vaga
+  const getVagaLocation = () => {
+    if (!vaga.localizacao) return "Brasil";
+
+    const { cidade, estado } = vaga.localizacao;
+    if (cidade && estado) {
+      return `${cidade}/${estado}`;
+    }
+    if (cidade) return cidade;
+    if (estado) return estado;
+    return "Brasil";
+  };
+
+  // Dados simulados de mercado baseados no título da vaga e localização
   const getMarketData = () => {
     const baseSalary = Number(vaga.salarioMin) || 3000;
     const title = vaga.titulo?.toLowerCase() || "";
+    const vagaLocation = getVagaLocation();
 
-    // Simulação de dados de mercado baseada no título
+    // Simulação de dados de mercado baseada no título e localização
     const marketData = {
-      maceio: {
+      local: {
         min: Math.round(baseSalary * 0.85),
         max: Math.round(baseSalary * 1.15),
         media: Math.round(baseSalary * 1.0),
@@ -39,15 +53,17 @@ export function SalarioVagasTab({ vaga }: AboutTabProps) {
       },
     };
 
-    return marketData;
+    return { marketData, vagaLocation };
   };
 
   // Dados para gráfico de barras comparativo
   const getChartData = () => {
     const baseSalary = Number(vaga.salarioMin) || 3000;
+    const vagaLocation = getVagaLocation();
+
     return [
       {
-        name: "Maceió",
+        name: vagaLocation,
         vaga: baseSalary,
         mercado: Math.round(baseSalary * 1.0),
         diferenca: Math.round(baseSalary * 0.15),
@@ -125,16 +141,17 @@ export function SalarioVagasTab({ vaga }: AboutTabProps) {
   // Dados para gráfico de comparativo salarial
   const getSalaryComparisonData = () => {
     const baseSalary = Number(vaga.salarioMin) || 3000;
+    const vagaLocation = getVagaLocation();
 
     // Dados mais realistas baseados em pesquisas de mercado
-    const maceioMarket = Math.round(baseSalary * 0.85); // Mercado de Maceió 15% menor
+    const localMarket = Math.round(baseSalary * 0.85); // Mercado local 15% menor
     const brasilMarket = Math.round(baseSalary * 1.25); // Mercado do Brasil 25% maior
 
     return [
       {
-        region: "Maceió",
+        region: vagaLocation,
         vaga: baseSalary,
-        mercado: maceioMarket,
+        mercado: localMarket,
       },
       {
         region: "Brasil",
@@ -244,7 +261,7 @@ export function SalarioVagasTab({ vaga }: AboutTabProps) {
   };
 
   const salarioInfo = getSalarioInfo();
-  const marketData = getMarketData();
+  const { marketData, vagaLocation } = getMarketData();
   const chartData = getChartData();
   const kpiMetrics = getKPIMetrics();
 
@@ -265,8 +282,8 @@ export function SalarioVagasTab({ vaga }: AboutTabProps) {
           data={getSalaryComparisonData()}
           config={getChartConfig()}
           xAxisKey="region"
-          title="Comparativo Salarial por Região"
-          description="Comparação entre salário da vaga e mercado"
+          title={`Comparativo Salarial: ${vagaLocation} vs Brasil`}
+          description="Comparação entre salário da vaga e mercado regional"
           height={300}
           showLegend={true}
         />

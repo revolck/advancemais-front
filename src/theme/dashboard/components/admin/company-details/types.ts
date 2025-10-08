@@ -4,6 +4,7 @@ import type {
   AdminCompanyVagaItem,
   AdminCompanyPlano,
   AdminCompanyPagamento,
+  AdminCompanyAuditoriaItem,
 } from "@/api/empresas/admin/types";
 
 export interface CompanyDetailsViewProps {
@@ -15,6 +16,7 @@ export interface CompanyDetailsViewProps {
 
 export interface AboutTabProps {
   company: AdminCompanyDetail;
+  isLoading?: boolean;
 }
 
 export interface VacancyTabProps {
@@ -30,4 +32,10 @@ export interface PlanTabProps {
   plan: AdminCompanyPlano | null | undefined;
   payment: AdminCompanyPagamento | null | undefined;
   payments: AdminCompanyPaymentLog[];
+  isLoading?: boolean;
+}
+
+export interface HistoryTabProps {
+  auditoria: AdminCompanyAuditoriaItem[];
+  isLoading?: boolean;
 }

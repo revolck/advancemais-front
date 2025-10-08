@@ -21,14 +21,14 @@ interface DesbloquearEmpresaModalProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   company: AdminCompanyDetail;
-  onSuccess?: () => void;
+  onUnbanApplied?: () => void;
 }
 
 export function DesbloquearEmpresaModal({
   isOpen,
   onOpenChange,
   company,
-  onSuccess,
+  onUnbanApplied,
 }: DesbloquearEmpresaModalProps) {
   const [isLoading, setIsLoading] = useState(false);
 
@@ -41,7 +41,7 @@ export function DesbloquearEmpresaModal({
       });
 
       toastCustom.success("Empresa desbloqueada com sucesso!");
-      onSuccess?.();
+      onUnbanApplied?.();
       onOpenChange(false);
     } catch (error) {
       console.error("Erro ao desbloquear empresa:", error);
