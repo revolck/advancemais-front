@@ -44,7 +44,8 @@ export const BarChartComponent = ({
   // Calcular valores mínimos e máximos para o domínio do eixo Y
   const allValues = data
     .flatMap((d) => [d.vaga, d.mercado])
-    .filter((v) => v != null);
+    .filter((v) => v != null)
+    .map((v) => Number(v));
   const minValue = Math.min(...allValues);
   const maxValue = Math.max(...allValues);
   const padding = Math.max((maxValue - minValue) * 0.2, 1000);
