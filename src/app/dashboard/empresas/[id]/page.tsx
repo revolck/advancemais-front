@@ -35,11 +35,23 @@ export default async function CompanyDetailsPage(
   const planAtivo = consolidatedResult.planos?.ativos?.[0] || null;
   const pagamentoAtual = consolidatedResult.pagamentos?.recentes?.[0] || null;
 
-  // Adicionar plano e pagamento aos dados da empresa para compatibilidade
+  // Adicionar plano, pagamento e propriedades faltantes aos dados da empresa para compatibilidade
   const empresaComPlano = {
     ...empresa,
     plano: planAtivo,
-    pagamento: pagamentoAtual,
+    pagamento: {
+      modelo: planAtivo?.modeloPagamento || "MENSAL",
+      metodo: planAtivo?.metodoPagamento || "CREDITO",
+      status: planAtivo?.statusPagamento || "PENDENTE",
+      ultimoPagamentoEm: pagamentoAtual?.criadoEm || new Date().toISOString(),
+    },
+    enderecos: [],
+    vagas: {
+      publicadas: consolidatedResult.vagas?.total || 0,
+      limitePlano: planAtivo?.quantidadeVagas || 0,
+    },
+    banida: false,
+    banimentoAtivo: consolidatedResult.bloqueios?.ativos?.[0] || null,
   };
 
   return (
