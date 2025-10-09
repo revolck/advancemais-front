@@ -1,4 +1,4 @@
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 
 import { getAdminCompanyConsolidated } from "@/api/empresas/admin";
@@ -15,12 +15,32 @@ export default async function CompanyDetailsPage({
   const safeCompanyPath = `/dashboard/empresas/${encodeURIComponent(id)}`;
   const encodedRedirect = encodeURIComponent(safeCompanyPath);
 
+  const headerList = await headers();
+  const hostHeader =
+    headerList.get("x-forwarded-host") ?? headerList.get("host") ?? "";
+  const [hostnameRaw, port] = hostHeader.split(":");
+  const hostname = hostnameRaw || "app.advancemais.com";
+  const isLocalhost = hostname === "localhost" || hostname === "127.0.0.1";
+  const protocol =
+    headerList.get("x-forwarded-proto") ??
+    (isLocalhost ? "http" : "https");
+  const portSegment = port ? `:${port}` : "";
+
+  const baseDomain = hostname
+    .replace(/^www\./, "")
+    .replace(/^app\./, "")
+    .replace(/^auth\./, "");
+
+  const loginUrl = isLocalhost
+    ? `${protocol}://${hostname}${portSegment}/auth/login?redirect=${encodedRedirect}`
+    : `${protocol}://auth.${baseDomain}${portSegment}/login?redirect=${encodedRedirect}`;
+
   const cookieStore = await cookies();
   const token = cookieStore.get("token")?.value;
   const authHeaders = token ? { Authorization: `Bearer ${token}` } : undefined;
 
   if (!token) {
-    redirect(`/auth/login?redirect=${encodedRedirect}`);
+    redirect(loginUrl);
   }
 
   let consolidatedResult: Awaited<
@@ -35,7 +55,7 @@ export default async function CompanyDetailsPage({
     const status = (error as { status?: number } | undefined)?.status;
 
     if (status === 401) {
-      redirect(`/auth/login?redirect=${encodedRedirect}`);
+      redirect(loginUrl);
     }
 
     if (status === 403) {
