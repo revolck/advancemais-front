@@ -23,6 +23,7 @@ interface VagaDashboardDataReturn {
   isLoading: boolean;
   error: string | null;
   refetch: (params?: VagaListParams) => Promise<void>;
+  clearError: () => void;
 }
 
 export function useVagaDashboardData({
@@ -86,6 +87,10 @@ export function useVagaDashboardData({
     [fetchVagas]
   );
 
+  const clearError = useCallback(() => {
+    setError(null);
+  }, []);
+
   useEffect(() => {
     if (enabled && autoFetch) {
       fetchVagas();
@@ -98,5 +103,6 @@ export function useVagaDashboardData({
     isLoading,
     error,
     refetch,
+    clearError,
   };
 }

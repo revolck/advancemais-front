@@ -38,6 +38,18 @@ const STATUS_FILTER_OPTIONS: { value: VagaStatus; label: string }[] = [
   { value: "EXPIRADO", label: "Expirada" },
 ];
 
+const MIN_SEARCH_LENGTH = 3;
+const SEARCH_HELPER_TEXT = "Pesquise por título da vaga ou código da vaga.";
+
+const getSearchValidationMessage = (value: string): string | null => {
+  const trimmed = value.trim();
+  if (trimmed.length === 0) return null;
+  if (trimmed.length < MIN_SEARCH_LENGTH) {
+    return `Informe pelo menos ${MIN_SEARCH_LENGTH} caracteres para pesquisar.`;
+  }
+  return null;
+};
+
 export function VagasDashboard({
   className,
   vagas: vagasProp,
@@ -51,22 +63,30 @@ export function VagasDashboard({
   const shouldFetch = fetchFromApi && !vagasProp;
 
   const [pageSize, setPageSize] = useState(defaultPageSize);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [pendingSearchTerm, setPendingSearchTerm] = useState("");
+  const [appliedSearchTerm, setAppliedSearchTerm] = useState("");
   const [selectedStatuses, setSelectedStatuses] = useState<VagaStatus[]>([]);
   const [selectedCompanies, setSelectedCompanies] = useState<string[]>([]);
   const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
 
-  const searchTermRef = useRef(searchTerm);
+  const searchTermRef = useRef(appliedSearchTerm);
   const selectedStatusesRef = useRef<VagaStatus[]>(selectedStatuses);
   const selectedCompaniesRef = useRef<string[]>(selectedCompanies);
   const selectedLocationsRef = useRef<string[]>(selectedLocations);
   const pageSizeRef = useRef(pageSize);
   const hasFetchedRef = useRef(false);
 
+  const searchValidationMessage = useMemo(
+    () => getSearchValidationMessage(pendingSearchTerm),
+    [pendingSearchTerm]
+  );
+  const isSearchInputValid = !searchValidationMessage;
+  const searchHelperText = SEARCH_HELPER_TEXT;
+
   useEffect(() => {
-    searchTermRef.current = searchTerm;
-  }, [searchTerm]);
+    searchTermRef.current = appliedSearchTerm;
+  }, [appliedSearchTerm]);
 
   useEffect(() => {
     selectedStatusesRef.current = selectedStatuses;
@@ -90,6 +110,7 @@ export function VagasDashboard({
     isLoading,
     error,
     refetch,
+    clearError,
   } = useVagaDashboardData({
     enabled: shouldFetch,
     pageSize,
@@ -106,7 +127,12 @@ export function VagasDashboard({
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, selectedStatuses, selectedCompanies, selectedLocations]);
+  }, [
+    appliedSearchTerm,
+    selectedStatuses,
+    selectedCompanies,
+    selectedLocations,
+  ]);
 
   useEffect(() => {
     if (!shouldFetch) {
@@ -228,7 +254,7 @@ export function VagasDashboard({
   );
 
   const filteredVagas = useMemo(() => {
-    const query = searchTerm?.trim().toLowerCase() || "";
+    const query = appliedSearchTerm?.trim().toLowerCase() || "";
 
     return vagas.filter((vaga) => {
       const matchesSearch =
@@ -255,7 +281,7 @@ export function VagasDashboard({
     });
   }, [
     vagas,
-    searchTerm,
+    appliedSearchTerm,
     selectedStatuses,
     selectedCompanies,
     selectedLocations,
@@ -367,6 +393,39 @@ export function VagasDashboard({
     [refetch, shouldFetch]
   );
 
+  const handleSearchSubmit = useCallback(
+    (rawValue?: string) => {
+      clearError();
+      const value = rawValue ?? pendingSearchTerm;
+      const validationMessage = getSearchValidationMessage(value);
+      if (validationMessage) {
+        return;
+      }
+
+      const trimmedValue = value.trim();
+      setPendingSearchTerm(value);
+      setAppliedSearchTerm(trimmedValue);
+      searchTermRef.current = trimmedValue;
+      selectedStatusesRef.current = selectedStatuses;
+      selectedCompaniesRef.current = selectedCompanies;
+      selectedLocationsRef.current = selectedLocations;
+      setCurrentPage(1);
+
+      if (shouldFetch) {
+        runFetch(1);
+      }
+    },
+    [
+      clearError,
+      pendingSearchTerm,
+      selectedStatuses,
+      selectedCompanies,
+      selectedLocations,
+      shouldFetch,
+      runFetch,
+    ]
+  );
+
   useEffect(() => {
     if (!shouldFetch || hasFetchedRef.current) return;
     runFetch(1);
@@ -374,6 +433,7 @@ export function VagasDashboard({
 
   const handlePageSizeChange = useCallback(
     (value: string) => {
+      clearError();
       const numericValue = Number(value);
       if (!Number.isFinite(numericValue) || numericValue <= 0) {
         return;
@@ -383,18 +443,29 @@ export function VagasDashboard({
 
       setPageSize(numericValue);
       if (shouldFetch) {
-        searchTermRef.current = searchTerm;
+        searchTermRef.current = appliedSearchTerm;
         selectedStatusesRef.current = selectedStatuses;
+        selectedCompaniesRef.current = selectedCompanies;
+        selectedLocationsRef.current = selectedLocations;
         runFetch(1, numericValue);
       } else {
         setCurrentPage(1);
       }
     },
-    [runFetch, searchTerm, selectedStatuses, shouldFetch]
+    [
+      clearError,
+      runFetch,
+      appliedSearchTerm,
+      selectedStatuses,
+      selectedCompanies,
+      selectedLocations,
+      shouldFetch,
+    ]
   );
 
   const handlePageChange = useCallback(
     (page: number) => {
+      clearError();
       if (page < 1 || page > totalPages) return;
       if (shouldFetch) {
         runFetch(page);
@@ -402,12 +473,13 @@ export function VagasDashboard({
         setCurrentPage(page);
       }
     },
-    [runFetch, shouldFetch, totalPages]
+    [clearError, runFetch, shouldFetch, totalPages]
   );
 
   const handleRetry = useCallback(() => {
+    clearError();
     runFetch(currentPage);
-  }, [runFetch, currentPage]);
+  }, [clearError, runFetch, currentPage]);
 
   const visiblePages = useMemo(() => {
     const pages: number[] = [];
@@ -453,6 +525,7 @@ export function VagasDashboard({
             fields={filterFields}
             values={filterValues}
             onChange={(key, value) => {
+              clearError();
               if (key === "status") {
                 const values = Array.isArray(value)
                   ? (value as VagaStatus[])
@@ -482,58 +555,46 @@ export function VagasDashboard({
               }
             }}
             onClearAll={() => {
-              setSearchTerm("");
+              clearError();
+              setPendingSearchTerm("");
+              setAppliedSearchTerm("");
               setSelectedStatuses([]);
               setSelectedCompanies([]);
               setSelectedLocations([]);
               setCurrentPage(1);
+              searchTermRef.current = "";
+              selectedStatusesRef.current = [];
+              selectedCompaniesRef.current = [];
+              selectedLocationsRef.current = [];
               if (shouldFetch) {
-                searchTermRef.current = "";
-                selectedStatusesRef.current = [];
-                selectedCompaniesRef.current = [];
-                selectedLocationsRef.current = [];
                 runFetch(1);
               }
             }}
             search={{
               label: "Pesquisar vaga",
-              value: searchTerm,
+              value: pendingSearchTerm,
               onChange: (value) => {
-                setSearchTerm(value);
-                searchTermRef.current = value;
+                clearError();
+                setPendingSearchTerm(value);
               },
               placeholder: "Buscar vaga ou código...",
               onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => {
                 if (e.key === "Enter") {
                   e.preventDefault();
-                  setCurrentPage(1);
-                  if (shouldFetch) {
-                    // Usar o valor atual do input, não o estado
-                    const currentValue = (e.target as HTMLInputElement).value;
-                    searchTermRef.current = currentValue;
-                    selectedStatusesRef.current = selectedStatuses;
-                    selectedCompaniesRef.current = selectedCompanies;
-                    selectedLocationsRef.current = selectedLocations;
-                    runFetch(1);
-                  }
+                  handleSearchSubmit((e.target as HTMLInputElement).value);
                 }
               },
+              error: searchValidationMessage,
+              helperText: searchHelperText,
+              helperPlacement: "tooltip",
             }}
             rightActions={
               shouldFetch ? (
                 <ButtonCustom
                   variant="ghost"
                   size="lg"
-                  onClick={() => {
-                    setCurrentPage(1);
-                    // Usar o valor atual do estado searchTerm
-                    searchTermRef.current = searchTerm;
-                    selectedStatusesRef.current = selectedStatuses;
-                    selectedCompaniesRef.current = selectedCompanies;
-                    selectedLocationsRef.current = selectedLocations;
-                    runFetch(1);
-                  }}
-                  disabled={isLoadingData}
+                  onClick={() => handleSearchSubmit()}
+                  disabled={isLoadingData || !isSearchInputValid}
                   fullWidth
                   className="md:w-full xl:w-auto"
                 >
@@ -651,14 +712,14 @@ export function VagasDashboard({
                   <TableHead className="font-medium text-gray-700">
                     Empresa
                   </TableHead>
-                  <TableHead className="font-medium text-gray-700">
+                  <TableHead className="font-medium text-gray-700 text-center">
                     Localização
                   </TableHead>
                   <TableHead className="font-medium text-gray-700">
                     Status
                   </TableHead>
                   <TableHead
-                    className="font-medium text-gray-700 w-32"
+                    className="font-medium text-gray-700 w-32 text-center"
                     aria-sort={
                       sortField === "createdAt"
                         ? sortDirection === "asc"
@@ -667,7 +728,7 @@ export function VagasDashboard({
                         : "none"
                     }
                   >
-                    <div className="inline-flex items-center gap-1">
+                    <div className="inline-flex items-center justify-center gap-1">
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <button
@@ -746,7 +807,7 @@ export function VagasDashboard({
                       </div>
                     </div>
                   </TableHead>
-                  <TableHead className="font-medium text-gray-700 w-32">
+                  <TableHead className="font-medium text-gray-700 w-32 text-center">
                     Inscrições até
                   </TableHead>
                   <TableHead className="font-medium text-gray-700 w-24">

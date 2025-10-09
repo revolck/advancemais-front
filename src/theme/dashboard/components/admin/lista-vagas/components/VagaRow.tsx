@@ -5,7 +5,7 @@ import { TableCell, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, MapPin, Calendar, Clock } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -103,18 +103,21 @@ export function VagaRow({ vaga }: VagaRowProps) {
       </TableCell>
 
       <TableCell className="py-4">
-        <div className="flex flex-col">
-          <div className="text-sm text-gray-900">
-            {vaga.localizacao.cidade}, {vaga.localizacao.estado}
-          </div>
-          <div className="text-sm text-gray-500">
-            {vaga.modalidade === "REMOTO"
-              ? "Remoto"
-              : vaga.modalidade === "PRESENCIAL"
-              ? "Presencial"
-              : vaga.modalidade === "HIBRIDO"
-              ? "Híbrido"
-              : vaga.modalidade}
+        <div className="flex items-start gap-2">
+          <MapPin className="h-4 w-4 flex-shrink-0 text-gray-400 mt-0.5" />
+          <div className="flex flex-col">
+            <div className="text-sm text-gray-900">
+              {vaga.localizacao.cidade}, {vaga.localizacao.estado}
+            </div>
+            <div className="text-sm text-gray-500">
+              {vaga.modalidade === "REMOTO"
+                ? "Remoto"
+                : vaga.modalidade === "PRESENCIAL"
+                ? "Presencial"
+                : vaga.modalidade === "HIBRIDO"
+                ? "Híbrido"
+                : vaga.modalidade}
+            </div>
           </div>
         </div>
       </TableCell>
@@ -129,15 +132,23 @@ export function VagaRow({ vaga }: VagaRowProps) {
       </TableCell>
 
       <TableCell className="py-4">
-        <div className="text-sm text-gray-900">
-          {formatDate(vaga.inseridaEm)}
+        <div className="flex items-center justify-center gap-2 text-sm text-gray-600">
+          <Calendar className="h-4 w-4 flex-shrink-0 text-gray-400" />
+          <span className="truncate">{formatDate(vaga.inseridaEm)}</span>
         </div>
       </TableCell>
 
       <TableCell className="py-4">
-        <div className="text-sm text-gray-900">
-          {vaga.inscricoesAte ? formatDate(vaga.inscricoesAte) : "Não definida"}
-        </div>
+        {vaga.inscricoesAte ? (
+          <div className="flex items-center justify-center gap-2 text-sm text-gray-600">
+            <Clock className="h-4 w-4 flex-shrink-0 text-gray-400" />
+            <span className="truncate">{formatDate(vaga.inscricoesAte)}</span>
+          </div>
+        ) : (
+          <div className="flex items-center justify-center text-sm text-gray-500">
+            —
+          </div>
+        )}
       </TableCell>
 
       <TableCell className="py-4">
