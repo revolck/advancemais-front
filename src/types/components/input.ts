@@ -2,7 +2,7 @@
  * Tipos relacionados aos componentes de input
  */
 import { IconName } from "@/components/ui/custom/Icons";
-import { InputHTMLAttributes } from "react";
+import { InputHTMLAttributes, type ReactNode } from "react";
 
 /**
  * Tipos de máscaras suportadas pelo componente
@@ -40,10 +40,12 @@ export type MaskConfig = {
  */
 export interface InputCustomProps
   extends Omit<InputHTMLAttributes<HTMLInputElement>, "size"> {
-  label: string;
+  label?: ReactNode;
   error?: string;
   icon?: IconName;
   rightIcon?: IconName;
+  forceError?: boolean;
+  showInlineError?: boolean;
   mask?: MaskType;
   maskConfig?: MaskConfig;
   showPasswordToggle?: boolean;

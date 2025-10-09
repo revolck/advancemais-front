@@ -4,9 +4,14 @@ import React, { useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { InputCustom } from "@/components/ui/custom/input";
 import { Label } from "@/components/ui/label";
-import { X } from "lucide-react";
+import { X, Info, AlertTriangle } from "lucide-react";
 import { SelectCustom } from "@/components/ui/custom/select";
 import { DatePickerRangeCustom } from "@/components/ui/custom/date-picker";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { MultiSelectFilter } from "./MultiSelectFilter";
 import type { FilterBarProps, FilterField } from "./types";
 import type { DateRange } from "@/components/ui/custom/date-picker";
@@ -52,6 +57,68 @@ export function FilterBar({
   search,
   rightActions,
 }: FilterBarProps) {
+  const searchHelperPlacement = search?.helperPlacement ?? "inline";
+  const showTooltipHelper =
+    !!search &&
+    searchHelperPlacement === "tooltip" &&
+    !!search.helperText;
+  const showTooltipError =
+    !!search &&
+    searchHelperPlacement === "tooltip" &&
+    !!search.error;
+
+  const searchLabelContent = search ? (
+    <span className="inline-flex items-center gap-1">
+      <span>{search.label || ""}</span>
+      {showTooltipHelper && (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-transparent text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-1"
+              aria-label="Saiba mais sobre a busca"
+            >
+              <Info className="h-3 w-3" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent
+            sideOffset={6}
+            align="start"
+            className="max-w-xs text-xs leading-relaxed"
+          >
+            {search.helperText}
+          </TooltipContent>
+        </Tooltip>
+      )}
+      {showTooltipError && (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              className="inline-flex h-4 w-4 items-center justify-center text-destructive transition-colors hover:text-destructive/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive/40 focus-visible:ring-offset-1"
+              aria-label={search.error ?? "Erro na busca"}
+            >
+              <AlertTriangle className="h-3 w-3" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent
+            sideOffset={6}
+            align="start"
+            className="max-w-xs bg-destructive text-xs font-medium leading-relaxed text-white shadow-lg"
+            arrowClassName="bg-destructive fill-destructive"
+          >
+            {search.error}
+          </TooltipContent>
+        </Tooltip>
+      )}
+    </span>
+  ) : undefined;
+
+  const searchHelperTextProp =
+    searchHelperPlacement === "inline"
+      ? search?.helperText ?? undefined
+      : undefined;
+
   const activeChips = useMemo(() => {
     return fields
       .map((f) => ({
@@ -87,13 +154,17 @@ export function FilterBar({
           <div className="min-w-0">
             <div className="relative">
               <InputCustom
-                label={search.label || ""}
+                label={searchLabelContent}
                 placeholder={search.placeholder || "Buscar..."}
                 value={search.value}
                 onChange={(e) =>
                   search.onChange((e.target as HTMLInputElement).value)
                 }
                 onKeyDown={search.onKeyDown}
+                helperText={searchHelperTextProp}
+                error={search.error ?? undefined}
+                forceError={Boolean(search.error)}
+                showInlineError={searchHelperPlacement === "inline"}
               />
             </div>
           </div>

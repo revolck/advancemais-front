@@ -37,6 +37,23 @@ import type { DateRange } from "@/components/ui/custom/date-picker";
 const normalizeCnpj = (value?: string | null): string =>
   value?.replace(/\D/g, "") ?? "";
 
+const MIN_SEARCH_LENGTH = 3;
+const SEARCH_HELPER_TEXT =
+  "Pesquise por razão social, código da empresa ou CNPJ.";
+
+const getSearchValidationMessage = (value: string): string | null => {
+  const trimmed = value.trim();
+  if (trimmed.length === 0) {
+    return null;
+  }
+
+  if (trimmed.length < MIN_SEARCH_LENGTH) {
+    return `Informe pelo menos ${MIN_SEARCH_LENGTH} caracteres para pesquisar.`;
+  }
+
+  return null;
+};
+
 const createEmptyDateRange = (): DateRange => ({
   from: null,
   to: null,
@@ -72,11 +89,11 @@ export function CompanyDashboard({
   const [selectedStatuses, setSelectedStatuses] = useState<
     AdminCompanyStatus[]
   >([]);
-  const [appliedDateRange, setAppliedDateRange] = useState<DateRange>(
-    () => createEmptyDateRange()
+  const [appliedDateRange, setAppliedDateRange] = useState<DateRange>(() =>
+    createEmptyDateRange()
   );
-  const [pendingDateRange, setPendingDateRange] = useState<DateRange>(
-    () => createEmptyDateRange()
+  const [pendingDateRange, setPendingDateRange] = useState<DateRange>(() =>
+    createEmptyDateRange()
   );
   const [currentPage, setCurrentPage] = useState(1);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -87,6 +104,13 @@ export function CompanyDashboard({
   const dateRangeRef = useRef<DateRange>(appliedDateRange);
   const pageSizeRef = useRef(pageSize);
   const hasFetchedRef = useRef(false);
+
+  const searchValidationMessage = useMemo(
+    () => getSearchValidationMessage(pendingSearchTerm),
+    [pendingSearchTerm]
+  );
+  const isSearchInputValid = !searchValidationMessage;
+  const searchHelperText = SEARCH_HELPER_TEXT;
 
   useEffect(() => {
     searchTermRef.current = appliedSearchTerm;
@@ -114,6 +138,7 @@ export function CompanyDashboard({
     isLoading,
     error,
     refetch,
+    clearError,
   } = useCompanyDashboardData({
     enabled: shouldFetch,
     pageSize,
@@ -412,6 +437,41 @@ export function CompanyDashboard({
     [refetch, shouldFetch]
   );
 
+  const handleSearchSubmit = useCallback(
+    (rawValue?: string) => {
+      clearError();
+      const value = rawValue ?? pendingSearchTerm;
+      const validationMessage = getSearchValidationMessage(value);
+      if (validationMessage) {
+        return;
+      }
+
+      const trimmedValue = value.trim();
+      setPendingSearchTerm(trimmedValue);
+      setAppliedSearchTerm(trimmedValue);
+      searchTermRef.current = trimmedValue;
+      selectedPlansRef.current = selectedPlans;
+      selectedStatusesRef.current = selectedStatuses;
+      const appliedRange = cloneDateRange(pendingDateRange);
+      setAppliedDateRange(appliedRange);
+      dateRangeRef.current = appliedRange;
+      setCurrentPage(1);
+
+      if (shouldFetch) {
+        runFetch(1);
+      }
+    },
+    [
+      clearError,
+      pendingSearchTerm,
+      pendingDateRange,
+      selectedPlans,
+      selectedStatuses,
+      shouldFetch,
+      runFetch,
+    ]
+  );
+
   useEffect(() => {
     if (!shouldFetch || hasFetchedRef.current) return;
     runFetch(1);
@@ -419,6 +479,7 @@ export function CompanyDashboard({
 
   const handlePageSizeChange = useCallback(
     (value: string) => {
+      clearError();
       const numericValue = Number(value);
       if (!Number.isFinite(numericValue) || numericValue <= 0) {
         return;
@@ -436,11 +497,19 @@ export function CompanyDashboard({
         setCurrentPage(1);
       }
     },
-    [runFetch, appliedSearchTerm, selectedPlans, selectedStatuses, shouldFetch]
+    [
+      clearError,
+      runFetch,
+      appliedSearchTerm,
+      selectedPlans,
+      selectedStatuses,
+      shouldFetch,
+    ]
   );
 
   const handlePageChange = useCallback(
     (page: number) => {
+      clearError();
       if (page < 1 || page > totalPages) return;
       if (shouldFetch) {
         runFetch(page);
@@ -448,19 +517,21 @@ export function CompanyDashboard({
         setCurrentPage(page);
       }
     },
-    [runFetch, shouldFetch, totalPages]
+    [clearError, runFetch, shouldFetch, totalPages]
   );
 
   const handleRetry = useCallback(() => {
+    clearError();
     runFetch(currentPage);
-  }, [runFetch, currentPage]);
+  }, [clearError, runFetch, currentPage]);
 
   const handleCreateCompanySuccess = useCallback(() => {
     // Recarregar os dados após criar uma empresa
     if (shouldFetch) {
+      clearError();
       runFetch(1);
     }
-  }, [shouldFetch, runFetch]);
+  }, [clearError, shouldFetch, runFetch]);
 
   const visiblePages = useMemo(() => {
     const pages: number[] = [];
@@ -506,6 +577,7 @@ export function CompanyDashboard({
             fields={filterFields}
             values={filterValues}
             onChange={(key, value) => {
+              clearError();
               if (key === "plan") {
                 const values = (value as string[]) ?? [];
                 setSelectedPlans(values);
@@ -538,6 +610,7 @@ export function CompanyDashboard({
               }
             }}
             onClearAll={() => {
+              clearError();
               setPendingSearchTerm("");
               setAppliedSearchTerm("");
               setSelectedPlans([]);
@@ -558,47 +631,27 @@ export function CompanyDashboard({
               label: "Pesquisar empresa",
               value: pendingSearchTerm,
               onChange: (value) => {
+                clearError();
                 setPendingSearchTerm(value);
               },
               placeholder: "Buscar empresa, código ou CNPJ...",
               onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => {
                 if (e.key === "Enter") {
                   e.preventDefault();
-                  setCurrentPage(1);
-                  const currentValue = (e.target as HTMLInputElement).value;
-                  const trimmedValue = currentValue.trim();
-                  setPendingSearchTerm(currentValue);
-                  setAppliedSearchTerm(trimmedValue);
-                  searchTermRef.current = trimmedValue;
-                  selectedPlansRef.current = selectedPlans;
-                  selectedStatusesRef.current = selectedStatuses;
-                  const appliedRange = cloneDateRange(pendingDateRange);
-                  setAppliedDateRange(appliedRange);
-                  dateRangeRef.current = appliedRange;
-                  if (shouldFetch) {
-                    runFetch(1);
-                  }
+                  handleSearchSubmit((e.target as HTMLInputElement).value);
                 }
               },
+              error: searchValidationMessage,
+              helperText: searchHelperText,
+              helperPlacement: "tooltip",
             }}
             rightActions={
               shouldFetch ? (
                 <ButtonCustom
                   variant="ghost"
                   size="lg"
-                  onClick={() => {
-                    setCurrentPage(1);
-                    const trimmedValue = pendingSearchTerm.trim();
-                    setAppliedSearchTerm(trimmedValue);
-                    searchTermRef.current = trimmedValue;
-                    selectedPlansRef.current = selectedPlans;
-                    selectedStatusesRef.current = selectedStatuses;
-                    const appliedRange = cloneDateRange(pendingDateRange);
-                    setAppliedDateRange(appliedRange);
-                    dateRangeRef.current = appliedRange;
-                    runFetch(1);
-                  }}
-                  disabled={isLoadingData}
+                  onClick={() => handleSearchSubmit()}
+                  disabled={isLoadingData || !isSearchInputValid}
                   fullWidth
                   className="md:w-full xl:w-auto"
                 >
@@ -724,7 +777,7 @@ export function CompanyDashboard({
                     Status
                   </TableHead>
                   <TableHead
-                    className="font-medium text-gray-700"
+                    className="font-medium text-gray-700 text-center"
                     aria-sort={
                       sortField === "createdAt"
                         ? sortDirection === "asc"
@@ -733,7 +786,7 @@ export function CompanyDashboard({
                         : "none"
                     }
                   >
-                    <div className="inline-flex items-center gap-1">
+                    <div className="inline-flex items-center justify-center gap-1">
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <button
@@ -812,7 +865,7 @@ export function CompanyDashboard({
                       </div>
                     </div>
                   </TableHead>
-                  <TableHead className="font-medium text-gray-700">
+                  <TableHead className="font-medium text-gray-700 text-center">
                     Dias restantes
                   </TableHead>
                   <TableHead className="w-12" />

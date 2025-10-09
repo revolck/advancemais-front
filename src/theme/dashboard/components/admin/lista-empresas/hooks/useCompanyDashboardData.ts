@@ -215,6 +215,10 @@ export function useCompanyDashboardData({
     partnershipsRef.current = partnerships;
   }, [partnerships]);
 
+  const clearError = useCallback(() => {
+    setError(null);
+  }, []);
+
   const initialParamsRef = useRef(initialParams);
   useEffect(() => {
     initialParamsRef.current = initialParams;
@@ -231,5 +235,6 @@ export function useCompanyDashboardData({
     isLoading,
     error,
     refetch: fetchData,
+    clearError,
   };
 }

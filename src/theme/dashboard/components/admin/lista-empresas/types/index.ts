@@ -111,4 +111,5 @@ export interface UseCompanyDashboardDataReturn {
   isLoading: boolean;
   error: string | null;
   refetch: (params?: Partial<AdminCompanyListParams>) => Promise<Partnership[]>;
+  clearError: () => void;
 }

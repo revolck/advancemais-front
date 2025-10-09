@@ -30,6 +30,9 @@ export interface FilterBarProps {
     onChange: (v: string) => void;
     placeholder?: string;
     onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
+    error?: string | null;
+    helperText?: string | null;
+    helperPlacement?: "inline" | "tooltip";
   };
   rightActions?: React.ReactNode;
 }

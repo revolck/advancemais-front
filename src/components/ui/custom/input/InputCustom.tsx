@@ -41,6 +41,8 @@ export const InputCustom = React.forwardRef<HTMLInputElement, InputCustomProps>(
       successMessage,
       onIconClick,
       onRightIconClick,
+      forceError = false,
+      showInlineError = true,
       ...props
     },
     ref
@@ -143,7 +145,8 @@ export const InputCustom = React.forwardRef<HTMLInputElement, InputCustomProps>(
         "h-10": size === "sm",
         "h-12": size === "md",
         "h-14": size === "lg",
-        "border-destructive": error && touched,
+        "border-destructive":
+          (error && touched) || (error && forceError && !touched),
         "border-emerald-500": successMessage && !error,
         "focus:border-blue-400 focus:ring-1 focus:ring-blue-300":
           !error && !successMessage,
@@ -161,7 +164,8 @@ export const InputCustom = React.forwardRef<HTMLInputElement, InputCustomProps>(
         : icon || rightIcon;
 
     // Deve mostrar erro apenas quando o campo foi tocado e existe uma mensagem de erro
-    const shouldShowError = touched && error;
+    const hasError = (touched || forceError) && !!error;
+    const shouldShowError = hasError && showInlineError;
 
     return (
       <div className={containerClasses}>
@@ -172,7 +176,7 @@ export const InputCustom = React.forwardRef<HTMLInputElement, InputCustomProps>(
             className={cn(
               "block text-sm font-medium",
               {
-                "text-destructive": error && touched,
+                "text-destructive": hasError,
                 "text-emerald-500": successMessage && !error,
               },
               required && "required"
@@ -199,7 +203,9 @@ export const InputCustom = React.forwardRef<HTMLInputElement, InputCustomProps>(
             required={required}
             maxLength={maxLength}
             aria-invalid={!!error}
-            aria-describedby={error ? `${inputId}-error` : undefined}
+            aria-describedby={
+              shouldShowError ? `${inputId}-error` : undefined
+            }
             style={{
               // Garantir que o texto tenha alta prioridade de cor
               caretColor: error

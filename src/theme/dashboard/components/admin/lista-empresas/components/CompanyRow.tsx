@@ -1,5 +1,11 @@
 import React from "react";
-import { MapPin, ChevronRight, ShieldAlert } from "lucide-react";
+import {
+  MapPin,
+  ChevronRight,
+  ShieldAlert,
+  Calendar,
+  Clock,
+} from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -257,22 +263,26 @@ export const CompanyRow: React.FC<CompanyRowProps> = ({ partnership }) => {
         )}
       </TableCell>
       <TableCell className="min-w-[100px] max-w-[120px]">
-        <div className="text-sm text-gray-600">
-          <span className="truncate block">
+        <div className="flex items-center justify-center gap-2 text-sm text-gray-600">
+          <Calendar className="h-4 w-4 flex-shrink-0 text-gray-400" />
+          <span className="truncate">
             {formatDate(partnership.empresa.criadoEm ?? undefined)}
           </span>
         </div>
       </TableCell>
       <TableCell className="min-w-[100px] max-w-[140px]">
-        <div className="text-sm text-gray-600">
-          {partnership.plano.diasRestantes != null ? (
-            <span className="truncate block">
-              {partnership.plano.diasRestantes} dias restantes
+        {partnership.plano.diasRestantes != null ? (
+          <div className="flex items-center justify-center gap-2 text-sm text-gray-600">
+            <Clock className="h-4 w-4 flex-shrink-0 text-gray-400" />
+            <span className="truncate">
+              {partnership.plano.diasRestantes} dias
             </span>
-          ) : (
-            <span className="text-gray-500">—</span>
-          )}
-        </div>
+          </div>
+        ) : (
+          <div className="flex items-center justify-center text-sm text-gray-500">
+            —
+          </div>
+        )}
       </TableCell>
       <TableCell className="text-right w-16">
         <Tooltip>
