@@ -32,6 +32,7 @@ import { useCompanyDashboardData } from "./hooks/useCompanyDashboardData";
 import type { CompanyDashboardProps } from "./types";
 import type { FilterField } from "@/components/ui/custom/filters";
 import type { AdminCompanyStatus } from "@/api/empresas";
+import type { DateRange } from "@/components/ui/custom/date-picker";
 
 const normalizeCnpj = (value?: string | null): string =>
   value?.replace(/\D/g, "") ?? "";
@@ -60,12 +61,17 @@ export function CompanyDashboard({
   const [selectedStatuses, setSelectedStatuses] = useState<
     AdminCompanyStatus[]
   >([]);
+  const [dateRange, setDateRange] = useState<DateRange>({
+    from: null,
+    to: null,
+  });
   const [currentPage, setCurrentPage] = useState(1);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   const searchTermRef = useRef(searchTerm);
   const selectedPlansRef = useRef<string[]>(selectedPlans);
   const selectedStatusesRef = useRef<AdminCompanyStatus[]>(selectedStatuses);
+  const dateRangeRef = useRef<DateRange>(dateRange);
   const pageSizeRef = useRef(pageSize);
   const hasFetchedRef = useRef(false);
 
@@ -80,6 +86,10 @@ export function CompanyDashboard({
   useEffect(() => {
     selectedStatusesRef.current = selectedStatuses;
   }, [selectedStatuses]);
+
+  useEffect(() => {
+    dateRangeRef.current = dateRange;
+  }, [dateRange]);
 
   useEffect(() => {
     pageSizeRef.current = pageSize;
@@ -256,9 +266,28 @@ export function CompanyDashboard({
         selectedStatuses.length === 0 ||
         selectedStatuses.includes(companyStatus);
 
-      return matchesSearch && matchesPlan && matchesStatus;
+      // Filtro por data de criação
+      const matchesDateRange = (() => {
+        if (!dateRange.from && !dateRange.to) return true;
+
+        const companyCreatedDate = new Date(company.criadoEm || new Date());
+        const fromDate = dateRange.from ? new Date(dateRange.from) : null;
+        const toDate = dateRange.to ? new Date(dateRange.to) : null;
+
+        if (fromDate && toDate) {
+          return companyCreatedDate >= fromDate && companyCreatedDate <= toDate;
+        } else if (fromDate) {
+          return companyCreatedDate >= fromDate;
+        } else if (toDate) {
+          return companyCreatedDate <= toDate;
+        }
+
+        return true;
+      })();
+
+      return matchesSearch && matchesPlan && matchesStatus && matchesDateRange;
     });
-  }, [partnerships, searchTerm, selectedPlans, selectedStatuses]);
+  }, [partnerships, searchTerm, selectedPlans, selectedStatuses, dateRange]);
 
   const displayedPartnerships = useMemo(() => {
     const sortedPartnerships = sortList(filteredPartnerships);
@@ -308,6 +337,12 @@ export function CompanyDashboard({
         options: STATUS_FILTER_OPTIONS,
         placeholder: "Selecione status",
       },
+      {
+        key: "dateRange",
+        label: "Data de criação",
+        type: "date-range",
+        placeholder: "Selecionar período",
+      },
     ],
     [uniquePlans]
   );
@@ -316,8 +351,9 @@ export function CompanyDashboard({
     () => ({
       plan: selectedPlans,
       status: selectedStatuses,
+      dateRange: dateRange,
     }),
-    [selectedPlans, selectedStatuses]
+    [selectedPlans, selectedStatuses, dateRange]
   );
 
   const runFetch = useCallback(
@@ -465,17 +501,27 @@ export function CompanyDashboard({
                 if (shouldFetch) {
                   runFetch(1);
                 }
+              } else if (key === "dateRange") {
+                const range = (value as DateRange) ?? { from: null, to: null };
+                setDateRange(range);
+                dateRangeRef.current = range;
+                setCurrentPage(1);
+                if (shouldFetch) {
+                  runFetch(1);
+                }
               }
             }}
             onClearAll={() => {
               setSearchTerm("");
               setSelectedPlans([]);
               setSelectedStatuses([]);
+              setDateRange({ from: null, to: null });
               setCurrentPage(1);
               if (shouldFetch) {
                 searchTermRef.current = "";
                 selectedPlansRef.current = [];
                 selectedStatusesRef.current = [];
+                dateRangeRef.current = { from: null, to: null };
                 runFetch(1);
               }
             }}

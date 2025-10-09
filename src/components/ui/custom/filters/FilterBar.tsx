@@ -6,20 +6,42 @@ import { InputCustom } from "@/components/ui/custom/input";
 import { Label } from "@/components/ui/label";
 import { X } from "lucide-react";
 import { SelectCustom } from "@/components/ui/custom/select";
+import { DatePickerRangeCustom } from "@/components/ui/custom/date-picker";
 import { MultiSelectFilter } from "./MultiSelectFilter";
 import type { FilterBarProps, FilterField } from "./types";
+import type { DateRange } from "@/components/ui/custom/date-picker";
 
 function valueIsEmpty(value: unknown): boolean {
   if (value === undefined || value === null) return true;
   if (Array.isArray(value)) return value.length === 0;
   if (typeof value === "string") return value.length === 0;
+  if (typeof value === "object" && "from" in value && "to" in value) {
+    const dateRange = value as DateRange;
+    return !dateRange.from && !dateRange.to;
+  }
   return false;
 }
 
-function findLabel(field: FilterField, value: string | null): string | null {
+function findLabel(
+  field: FilterField,
+  value: string | DateRange | null
+): string | null {
   if (!value) return null;
-  const found = field.options.find((o) => o.value === value);
-  return found?.label ?? value;
+  if (typeof value === "object" && "from" in value && "to" in value) {
+    const dateRange = value as DateRange;
+    if (dateRange.from && dateRange.to) {
+      const fromStr = dateRange.from.toLocaleDateString("pt-BR");
+      const toStr = dateRange.to.toLocaleDateString("pt-BR");
+      return `${fromStr} - ${toStr}`;
+    } else if (dateRange.from) {
+      return `Desde ${dateRange.from.toLocaleDateString("pt-BR")}`;
+    } else if (dateRange.to) {
+      return `Até ${dateRange.to.toLocaleDateString("pt-BR")}`;
+    }
+    return null;
+  }
+  const found = field.options?.find((o) => o.value === value);
+  return found?.label ?? (value as string);
 }
 
 export function FilterBar({
@@ -34,7 +56,12 @@ export function FilterBar({
     return fields
       .map((f) => ({
         field: f,
-        value: values[f.key] as string | string[] | null | undefined,
+        value: values[f.key] as
+          | string
+          | string[]
+          | DateRange
+          | null
+          | undefined,
       }))
       .filter(({ value }) => !valueIsEmpty(value))
       .map(({ field, value }) => {
@@ -43,7 +70,7 @@ export function FilterBar({
           const arr = (value as string[]).map((v) => findLabel(field, v) ?? v);
           return { key: field.key, label: `${field.label}: ${arr.join(", ")}` };
         }
-        const label = findLabel(field, (value as string) ?? null);
+        const label = findLabel(field, (value as string | DateRange) ?? null);
         return { key: field.key, label: `${field.label}: ${label ?? "-"}` };
       });
   }, [fields, values]);
@@ -55,7 +82,7 @@ export function FilterBar({
         className
       )}
     >
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,0.8fr)_minmax(0,1.2fr)_minmax(0,0.8fr)_auto] lg:items-end lg:gap-3 xl:gap-4">
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.2fr)_auto] lg:items-end lg:gap-3 xl:gap-4">
         {search && (
           <div className="min-w-0">
             <div className="relative">
@@ -73,9 +100,34 @@ export function FilterBar({
         )}
 
         {fields.map((field) => {
+          const type = field.type ?? "select";
           const mode = field.mode ?? "single";
+
+          if (type === "date-range") {
+            return (
+              <div key={field.key} className="min-w-0">
+                {field.label && (
+                  <Label className="text-sm font-medium mb-1 block">
+                    {field.label}
+                  </Label>
+                )}
+                <DatePickerRangeCustom
+                  value={
+                    (values[field.key] as DateRange) ?? { from: null, to: null }
+                  }
+                  onChange={(range) => onChange(field.key, range)}
+                  placeholder={field.placeholder ?? "Selecionar período"}
+                  size="md"
+                  clearable
+                  format="dd/MM/yyyy"
+                  maxDate={new Date()}
+                />
+              </div>
+            );
+          }
+
           const commonProps = {
-            options: field.options,
+            options: field.options ?? [],
             placeholder: field.placeholder ?? "Selecionar",
             className: "w-full",
           } as const;
@@ -91,7 +143,7 @@ export function FilterBar({
                 <MultiSelectFilter
                   title={field.label}
                   placeholder={field.placeholder ?? "Selecionar..."}
-                  options={field.options}
+                  options={field.options ?? []}
                   selectedValues={(values[field.key] as string[]) || []}
                   onSelectionChange={(val) => onChange(field.key, val)}
                   showApplyButton

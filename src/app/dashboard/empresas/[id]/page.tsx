@@ -1,5 +1,5 @@
 import { cookies } from "next/headers";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 import { getAdminCompanyConsolidated } from "@/api/empresas/admin";
 import { CompanyDetailsView } from "@/theme/dashboard/components/admin";
@@ -8,17 +8,51 @@ interface CompanyDetailsPageProps {
   params: Promise<{ id: string }>;
 }
 
-export default async function CompanyDetailsPage(
-  props: CompanyDetailsPageProps
-) {
-  const { id } = await props.params;
+export default async function CompanyDetailsPage({
+  params,
+}: CompanyDetailsPageProps) {
+  const { id } = await params;
+  const safeCompanyPath = `/dashboard/empresas/${encodeURIComponent(id)}`;
+  const encodedRedirect = encodeURIComponent(safeCompanyPath);
+
   const cookieStore = await cookies();
   const token = cookieStore.get("token")?.value;
   const authHeaders = token ? { Authorization: `Bearer ${token}` } : undefined;
 
-  const consolidatedResult = await getAdminCompanyConsolidated(id, {
-    headers: authHeaders,
-  });
+  if (!token) {
+    redirect(`/auth/login?redirect=${encodedRedirect}`);
+  }
+
+  let consolidatedResult: Awaited<
+    ReturnType<typeof getAdminCompanyConsolidated>
+  >;
+
+  try {
+    consolidatedResult = await getAdminCompanyConsolidated(id, {
+      headers: authHeaders,
+    });
+  } catch (error) {
+    const status = (error as { status?: number } | undefined)?.status;
+
+    if (status === 401) {
+      redirect(`/auth/login?redirect=${encodedRedirect}`);
+    }
+
+    if (status === 403) {
+      redirect("/dashboard/unauthorized");
+    }
+
+    if (status === 404) {
+      notFound();
+    }
+
+    console.error("Erro inesperado ao carregar empresa", {
+      id,
+      error,
+    });
+
+    throw error;
+  }
 
   if (!("empresa" in consolidatedResult)) {
     console.error("Erro na resposta da API consolidada:", consolidatedResult);
