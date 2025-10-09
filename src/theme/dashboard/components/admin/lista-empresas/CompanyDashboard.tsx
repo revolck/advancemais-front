@@ -37,6 +37,16 @@ import type { DateRange } from "@/components/ui/custom/date-picker";
 const normalizeCnpj = (value?: string | null): string =>
   value?.replace(/\D/g, "") ?? "";
 
+const createEmptyDateRange = (): DateRange => ({
+  from: null,
+  to: null,
+});
+
+const cloneDateRange = (range: DateRange): DateRange => ({
+  from: range.from ?? null,
+  to: range.to ?? null,
+});
+
 const STATUS_FILTER_OPTIONS: { value: AdminCompanyStatus; label: string }[] = [
   { value: "ATIVO", label: "Ativa" },
   { value: "INATIVO", label: "Inativa" },
@@ -56,28 +66,31 @@ export function CompanyDashboard({
   const shouldFetch = fetchFromApi && !partnershipsProp;
 
   const [pageSize, setPageSize] = useState(defaultPageSize);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [pendingSearchTerm, setPendingSearchTerm] = useState("");
+  const [appliedSearchTerm, setAppliedSearchTerm] = useState("");
   const [selectedPlans, setSelectedPlans] = useState<string[]>([]);
   const [selectedStatuses, setSelectedStatuses] = useState<
     AdminCompanyStatus[]
   >([]);
-  const [dateRange, setDateRange] = useState<DateRange>({
-    from: null,
-    to: null,
-  });
+  const [appliedDateRange, setAppliedDateRange] = useState<DateRange>(
+    () => createEmptyDateRange()
+  );
+  const [pendingDateRange, setPendingDateRange] = useState<DateRange>(
+    () => createEmptyDateRange()
+  );
   const [currentPage, setCurrentPage] = useState(1);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
-  const searchTermRef = useRef(searchTerm);
+  const searchTermRef = useRef(appliedSearchTerm);
   const selectedPlansRef = useRef<string[]>(selectedPlans);
   const selectedStatusesRef = useRef<AdminCompanyStatus[]>(selectedStatuses);
-  const dateRangeRef = useRef<DateRange>(dateRange);
+  const dateRangeRef = useRef<DateRange>(appliedDateRange);
   const pageSizeRef = useRef(pageSize);
   const hasFetchedRef = useRef(false);
 
   useEffect(() => {
-    searchTermRef.current = searchTerm;
-  }, [searchTerm]);
+    searchTermRef.current = appliedSearchTerm;
+  }, [appliedSearchTerm]);
 
   useEffect(() => {
     selectedPlansRef.current = selectedPlans;
@@ -88,8 +101,8 @@ export function CompanyDashboard({
   }, [selectedStatuses]);
 
   useEffect(() => {
-    dateRangeRef.current = dateRange;
-  }, [dateRange]);
+    dateRangeRef.current = appliedDateRange;
+  }, [appliedDateRange]);
 
   useEffect(() => {
     pageSizeRef.current = pageSize;
@@ -117,7 +130,7 @@ export function CompanyDashboard({
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, selectedPlans, selectedStatuses]);
+  }, [appliedSearchTerm, selectedPlans, selectedStatuses]);
 
   useEffect(() => {
     if (!shouldFetch) {
@@ -228,7 +241,7 @@ export function CompanyDashboard({
   }, [partnerships]);
 
   const filteredPartnerships = useMemo(() => {
-    const query = searchTerm?.trim().toLowerCase() || "";
+    const query = appliedSearchTerm?.trim().toLowerCase() || "";
     const numericQuery = query.replace(/\D/g, "");
 
     return partnerships.filter((partnership) => {
@@ -268,11 +281,15 @@ export function CompanyDashboard({
 
       // Filtro por data de criação
       const matchesDateRange = (() => {
-        if (!dateRange.from && !dateRange.to) return true;
+        if (!appliedDateRange.from && !appliedDateRange.to) return true;
 
         const companyCreatedDate = new Date(company.criadoEm || new Date());
-        const fromDate = dateRange.from ? new Date(dateRange.from) : null;
-        const toDate = dateRange.to ? new Date(dateRange.to) : null;
+        const fromDate = appliedDateRange.from
+          ? new Date(appliedDateRange.from)
+          : null;
+        const toDate = appliedDateRange.to
+          ? new Date(appliedDateRange.to)
+          : null;
 
         if (fromDate && toDate) {
           return companyCreatedDate >= fromDate && companyCreatedDate <= toDate;
@@ -287,7 +304,13 @@ export function CompanyDashboard({
 
       return matchesSearch && matchesPlan && matchesStatus && matchesDateRange;
     });
-  }, [partnerships, searchTerm, selectedPlans, selectedStatuses, dateRange]);
+  }, [
+    partnerships,
+    appliedSearchTerm,
+    selectedPlans,
+    selectedStatuses,
+    appliedDateRange,
+  ]);
 
   const displayedPartnerships = useMemo(() => {
     const sortedPartnerships = sortList(filteredPartnerships);
@@ -351,9 +374,9 @@ export function CompanyDashboard({
     () => ({
       plan: selectedPlans,
       status: selectedStatuses,
-      dateRange: dateRange,
+      dateRange: pendingDateRange,
     }),
-    [selectedPlans, selectedStatuses, dateRange]
+    [selectedPlans, selectedStatuses, pendingDateRange]
   );
 
   const runFetch = useCallback(
@@ -405,7 +428,7 @@ export function CompanyDashboard({
 
       setPageSize(numericValue);
       if (shouldFetch) {
-        searchTermRef.current = searchTerm;
+        searchTermRef.current = appliedSearchTerm;
         selectedPlansRef.current = selectedPlans;
         selectedStatusesRef.current = selectedStatuses;
         runFetch(1, numericValue);
@@ -413,7 +436,7 @@ export function CompanyDashboard({
         setCurrentPage(1);
       }
     },
-    [runFetch, searchTerm, selectedPlans, selectedStatuses, shouldFetch]
+    [runFetch, appliedSearchTerm, selectedPlans, selectedStatuses, shouldFetch]
   );
 
   const handlePageChange = useCallback(
@@ -502,47 +525,57 @@ export function CompanyDashboard({
                   runFetch(1);
                 }
               } else if (key === "dateRange") {
-                const range = (value as DateRange) ?? { from: null, to: null };
-                setDateRange(range);
-                dateRangeRef.current = range;
-                setCurrentPage(1);
-                if (shouldFetch) {
-                  runFetch(1);
+                const range = value
+                  ? cloneDateRange(value as DateRange)
+                  : createEmptyDateRange();
+                setPendingDateRange(range);
+
+                if (!shouldFetch) {
+                  setAppliedDateRange(range);
+                  dateRangeRef.current = range;
+                  setCurrentPage(1);
                 }
               }
             }}
             onClearAll={() => {
-              setSearchTerm("");
+              setPendingSearchTerm("");
+              setAppliedSearchTerm("");
               setSelectedPlans([]);
               setSelectedStatuses([]);
-              setDateRange({ from: null, to: null });
+              const resetRange = createEmptyDateRange();
+              setPendingDateRange(resetRange);
+              setAppliedDateRange(resetRange);
+              dateRangeRef.current = resetRange;
               setCurrentPage(1);
               if (shouldFetch) {
                 searchTermRef.current = "";
                 selectedPlansRef.current = [];
                 selectedStatusesRef.current = [];
-                dateRangeRef.current = { from: null, to: null };
                 runFetch(1);
               }
             }}
             search={{
               label: "Pesquisar empresa",
-              value: searchTerm,
+              value: pendingSearchTerm,
               onChange: (value) => {
-                setSearchTerm(value);
-                searchTermRef.current = value;
+                setPendingSearchTerm(value);
               },
               placeholder: "Buscar empresa, código ou CNPJ...",
               onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => {
                 if (e.key === "Enter") {
                   e.preventDefault();
                   setCurrentPage(1);
+                  const currentValue = (e.target as HTMLInputElement).value;
+                  const trimmedValue = currentValue.trim();
+                  setPendingSearchTerm(currentValue);
+                  setAppliedSearchTerm(trimmedValue);
+                  searchTermRef.current = trimmedValue;
+                  selectedPlansRef.current = selectedPlans;
+                  selectedStatusesRef.current = selectedStatuses;
+                  const appliedRange = cloneDateRange(pendingDateRange);
+                  setAppliedDateRange(appliedRange);
+                  dateRangeRef.current = appliedRange;
                   if (shouldFetch) {
-                    // Usar o valor atual do input, não o estado
-                    const currentValue = (e.target as HTMLInputElement).value;
-                    searchTermRef.current = currentValue;
-                    selectedPlansRef.current = selectedPlans;
-                    selectedStatusesRef.current = selectedStatuses;
                     runFetch(1);
                   }
                 }
@@ -555,10 +588,14 @@ export function CompanyDashboard({
                   size="lg"
                   onClick={() => {
                     setCurrentPage(1);
-                    // Usar o valor atual do estado searchTerm
-                    searchTermRef.current = searchTerm;
+                    const trimmedValue = pendingSearchTerm.trim();
+                    setAppliedSearchTerm(trimmedValue);
+                    searchTermRef.current = trimmedValue;
                     selectedPlansRef.current = selectedPlans;
                     selectedStatusesRef.current = selectedStatuses;
+                    const appliedRange = cloneDateRange(pendingDateRange);
+                    setAppliedDateRange(appliedRange);
+                    dateRangeRef.current = appliedRange;
                     runFetch(1);
                   }}
                   disabled={isLoadingData}
