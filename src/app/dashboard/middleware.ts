@@ -2,13 +2,26 @@
 import { NextRequest, NextResponse } from "next/server";
 import { UserRole } from "@/config/roles";
 import { canAccessRoute } from "@/config/dashboardRoutes";
+import { composeDashboardLoginUrl } from "@/lib/auth/server";
 
 export function dashboardMiddleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const host = request.headers.get("host") || "";
+  const hostHeader = request.headers.get("host") || "";
+  const protocol = request.nextUrl.protocol || "https:";
+  let hostname = "app.advancemais.com";
+  let port: string | undefined;
 
-  // Extrai hostname e porta
-  const [hostname, port] = host.split(":");
+  if (hostHeader) {
+    try {
+      const url = new URL(`${protocol}//${hostHeader}`);
+      hostname = url.hostname || hostname;
+      port = url.port || undefined;
+    } catch {
+      const parts = hostHeader.split(":");
+      hostname = parts[0] || hostname;
+      port = parts[1];
+    }
+  }
   const isLocalhost = hostname === "localhost" || hostname === "127.0.0.1";
   const baseDomain = hostname
     .replace(/^www\./, "")
@@ -28,12 +41,23 @@ export function dashboardMiddleware(request: NextRequest) {
   const isAuthenticated =
     request.cookies.has("token") || request.cookies.has("refresh_token");
 
-  if (!isAuthenticated && !isLocalhost) {
-    const authUrl = request.nextUrl.clone();
-    authUrl.hostname = `auth.${baseDomain}`;
-    authUrl.pathname = "/login";
-    if (port) authUrl.port = port;
-    return NextResponse.redirect(authUrl);
+  if (!isAuthenticated) {
+    const redirectPath = `${pathname}${request.nextUrl.search}`;
+
+    const loginUrl = composeDashboardLoginUrl({
+      hostname,
+      protocol,
+      port,
+      redirectPath,
+    });
+
+    const response = NextResponse.redirect(loginUrl);
+
+    if (isLocalhost) {
+      response.headers.set("location", loginUrl);
+    }
+
+    return response;
   }
 
   // Se estamos na raiz do app, redirecionar para visão geral
