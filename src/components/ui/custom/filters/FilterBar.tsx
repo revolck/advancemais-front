@@ -241,6 +241,7 @@ export function FilterBar({
           }
 
           const disabled = field.disabled || (field.options?.length ?? 0) === 0;
+          const fieldValue = (values[field.key] as string | null) ?? null;
           return (
             <div key={field.key} className="min-w-0">
               {field.label && (
@@ -250,7 +251,8 @@ export function FilterBar({
               )}
               <SelectCustom
                 {...commonProps}
-                value={(values[field.key] as string | null) ?? null}
+                key={`${field.key}-${fieldValue ?? 'null'}`} // Força re-render quando valor muda
+                value={fieldValue}
                 onChange={(val) => onChange(field.key, val)}
                 disabled={disabled}
               />

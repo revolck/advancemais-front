@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { ButtonCustom } from "@/components/ui/custom";
 import { InputCustom } from "@/components/ui/custom/input";
 import { SimpleTextarea } from "@/components/ui/custom/text-area";
@@ -15,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { BookOpen } from "lucide-react";
 import { FileUpload, type FileUploadItem } from "@/components/ui/custom/file-upload";
 import { uploadImage, deleteImage } from "@/services/upload";
+import { queryKeys } from "@/lib/react-query/queryKeys";
 
 type StatusPadrao = "PUBLICADO" | "RASCUNHO";
 
@@ -44,6 +46,7 @@ export interface CreateCursoFormProps {
 }
 
 export function CreateCursoForm({ onSuccess, onCancel }: CreateCursoFormProps) {
+  const queryClient = useQueryClient();
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Partial<Record<keyof FormData | "imagemUrl", string>>>({});
@@ -93,6 +96,15 @@ export function CreateCursoForm({ onSuccess, onCancel }: CreateCursoFormProps) {
       };
 
       await createCurso(payload);
+      
+      // Invalida todas as queries de listagem de cursos para atualizar a lista
+      await queryClient.invalidateQueries({
+        predicate: (query) => {
+          const key = query.queryKey;
+          return Array.isArray(key) && key[0] === "admin-cursos-list";
+        },
+      });
+      
       toastCustom.success({ title: "Curso cadastrado com sucesso!", description: `O curso "${payload.nome}" foi criado.` });
       setFormData(initialFormData);
       setImagemUrl(null);

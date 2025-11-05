@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   ModalCustom,
   ModalContentWrapper,
@@ -60,6 +61,7 @@ export function CreateCursoModal({
   onClose,
   onSuccess,
 }: CreateCursoModalProps) {
+  const queryClient = useQueryClient();
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>(
@@ -136,6 +138,14 @@ export function CreateCursoModal({
       };
 
       await createCurso(payload);
+
+      // Invalida todas as queries de listagem de cursos para atualizar a lista
+      await queryClient.invalidateQueries({
+        predicate: (query) => {
+          const key = query.queryKey;
+          return Array.isArray(key) && key[0] === "admin-cursos-list";
+        },
+      });
 
       toastCustom.success({
         title: "Curso cadastrado com sucesso!",

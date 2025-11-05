@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   ModalCustom,
   ModalContentWrapper,
@@ -24,6 +25,7 @@ import {
 } from "@/components/ui/custom/file-upload";
 import { deleteImage } from "@/services/upload";
 import { Switch } from "@/components/ui/switch";
+import { queryKeys } from "@/lib/react-query/queryKeys";
 
 interface EditCursoModalProps {
   isOpen: boolean;
@@ -54,6 +56,7 @@ export function EditCursoModal({
   onSuccess,
   curso,
 }: EditCursoModalProps) {
+  const queryClient = useQueryClient();
   const [formData, setFormData] = useState<FormData>({
     nome: "",
     descricao: "",
@@ -174,6 +177,15 @@ export function EditCursoModal({
       };
 
       await updateCurso(curso.id, payload);
+
+      // Invalida todas as queries de listagem de cursos e detalhes para atualizar
+      await queryClient.invalidateQueries({
+        predicate: (query) => {
+          const key = query.queryKey;
+          return Array.isArray(key) && 
+            (key[0] === "admin-cursos-list" || key[0] === "admin-curso-detail");
+        },
+      });
 
       toastCustom.success({
         title: "Curso atualizado com sucesso!",

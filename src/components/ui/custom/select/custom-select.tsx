@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useId, useMemo, useState } from "react";
+import React, { useId, useMemo, useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
 import {
@@ -119,8 +119,19 @@ export function SelectCustom(props: SelectCustomProps) {
       props.mode !== "user" &&
       (options as SelectOption[]).length > 5
     ) {
-      const current =
-        (options as SelectOption[]).find((o) => o.value === value) || null;
+      // Usa useMemo para recalcular quando value ou options mudam
+      const current = useMemo(() => {
+        if (value === null || value === undefined) return null;
+        return (options as SelectOption[]).find((o) => o.value === value) || null;
+      }, [value, options]);
+      
+      // Fecha o popover quando o valor é limpo (null)
+      useEffect(() => {
+        if (value === null || value === undefined) {
+          setOpen(false);
+        }
+      }, [value]);
+      
       return (
         <div className={container}>
           {label && (

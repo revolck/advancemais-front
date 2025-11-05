@@ -174,14 +174,20 @@ export function CursosDashboard({
       setSelectedStatuses(applied.statusPadrao);
     }
     
-    // Restaura categoria
-    if (applied.categoriaId) {
+    // Restaura categoria (apenas se não for null/undefined)
+    if (applied.categoriaId != null) {
       setSelectedCategoryId(String(applied.categoriaId));
+    } else {
+      // Se o backend retornou null/undefined, limpa o estado
+      setSelectedCategoryId(null);
     }
     
-    // Restaura subcategoria
-    if (applied.subcategoriaId) {
+    // Restaura subcategoria (apenas se não for null/undefined)
+    if (applied.subcategoriaId != null) {
       setSelectedSubcategoryId(String(applied.subcategoriaId));
+    } else {
+      // Se o backend retornou null/undefined, limpa o estado
+      setSelectedSubcategoryId(null);
     }
     
     setFiltersInitialized(true);
@@ -358,6 +364,9 @@ export function CursosDashboard({
     }
   }, [currentPage, totalPages]);
 
+  // Verifica se há filtros ativos (usado antes de isFetchingData para evitar erro de ordem)
+  const hasActiveFilters = selectedStatuses.length > 0 || selectedCategoryId || selectedSubcategoryId || appliedSearchTerm.length > 0;
+
   const isLoadingData = shouldFetch && queryLoading;
   const isFetchingData = shouldFetch && isFetching;
 
@@ -365,8 +374,16 @@ export function CursosDashboard({
     ? queryError.message || "Erro ao carregar cursos"
     : null;
 
+  // Mostra skeleton quando:
+  // 1. Está carregando pela primeira vez
+  // 2. Está fazendo fetch E não há cursos ainda (primeira carga)
+  // 3. Está fazendo fetch E há filtros aplicados (busca com filtros)
   const shouldShowSkeleton =
-    shouldFetch && (isLoadingData || (isFetchingData && fetchedCursos.length === 0));
+    shouldFetch && (
+      isLoadingData || 
+      (isFetchingData && fetchedCursos.length === 0) ||
+      (isFetchingData && hasActiveFilters)
+    );
 
   const visiblePages = useMemo(() => {
     const pages: number[] = [];
@@ -450,8 +467,8 @@ export function CursosDashboard({
   const filterValues = useMemo(
     () => ({
       status: selectedStatuses,
-      category: selectedCategoryId,
-      subcategory: selectedSubcategoryId,
+      category: selectedCategoryId ?? null, // Garante que undefined vira null
+      subcategory: selectedSubcategoryId ?? null, // Garante que undefined vira null
     }),
     [selectedStatuses, selectedCategoryId, selectedSubcategoryId]
   );
@@ -492,9 +509,8 @@ export function CursosDashboard({
 
   // Trata estados vazios com base em meta.empty
   const isEmptyBasedOnMeta = queryData?.meta?.empty ?? false;
-  const hasFilters = selectedStatuses.length > 0 || selectedCategoryId || selectedSubcategoryId || appliedSearchTerm;
   const showEmptyState =
-    !isLoadingData && !isFetchingData && (isEmptyBasedOnMeta || displayedCursos.length === 0);
+    !isLoadingData && !isFetchingData && !shouldShowSkeleton && (isEmptyBasedOnMeta || displayedCursos.length === 0);
 
   return (
     <div className={cn("min-h-full", className)}>
@@ -519,16 +535,19 @@ export function CursosDashboard({
             values={filterValues}
             onChange={(key, value) => {
               if (key === "status") {
-                setSelectedStatuses((value as string[]) || []);
+                setSelectedStatuses(value === null ? [] : ((value as string[]) || []));
                 setCurrentPage(1);
               } else if (key === "category") {
-                const newCategoryId = (value as string) || null;
+                // Garante que quando value é null, seta como null explicitamente
+                const newCategoryId = value === null ? null : ((value as string) || null);
                 setSelectedCategoryId(newCategoryId);
                 // Limpar subcategoria quando mudar categoria
                 setSelectedSubcategoryId(null);
                 setCurrentPage(1);
               } else if (key === "subcategory") {
-                setSelectedSubcategoryId((value as string) || null);
+                // Garante que quando value é null, seta como null explicitamente
+                const newSubcategoryId = value === null ? null : ((value as string) || null);
+                setSelectedSubcategoryId(newSubcategoryId);
                 setCurrentPage(1);
               }
             }}
@@ -553,9 +572,10 @@ export function CursosDashboard({
                 size="lg"
                 onClick={() => handleSearchSubmit()}
                 disabled={
-                  (shouldFetch && (isLoadingData || isFetchingData)) ||
+                  (shouldFetch && (isLoadingData || (isFetchingData && hasActiveFilters))) ||
                   !isSearchInputValid
                 }
+                isLoading={shouldFetch && isFetchingData && hasActiveFilters}
                 className="md:w-full xl:w-auto"
               >
                 Pesquisar
