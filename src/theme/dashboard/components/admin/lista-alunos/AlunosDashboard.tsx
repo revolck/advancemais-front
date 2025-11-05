@@ -56,7 +56,7 @@ export function AlunosDashboard({ className }: { className?: string }) {
   const cursoFiltradoId =
     selectedCursos.length > 0 ? Number(selectedCursos[0]) : null;
 
-  const statusOptions: SelectOption[] = [
+  const statusOptions: SelectOption[] = useMemo(() => [
     { value: "MATRICULADO", label: "Inscrito" },
     { value: "EM_ANDAMENTO", label: "Em Andamento" },
     { value: "CONCLUIDO", label: "Concluído" },
@@ -64,7 +64,7 @@ export function AlunosDashboard({ className }: { className?: string }) {
     { value: "EM_ESTAGIO", label: "Em Estágio" },
     { value: "CANCELADO", label: "Cancelado" },
     { value: "TRANCADO", label: "Trancado" },
-  ];
+  ], []);
 
   const cursosQuery = useQuery({
     queryKey: queryKeys.cursos.list({ page: 1, pageSize: 100 }),
@@ -135,7 +135,7 @@ export function AlunosDashboard({ className }: { className?: string }) {
   ]);
 
   const alunosQuery = useAlunosDashboardQuery(normalizedFilters);
-  const alunos = alunosQuery.data?.alunos ?? [];
+  const alunos = useMemo(() => alunosQuery.data?.alunos ?? [], [alunosQuery.data?.alunos]);
 
   const turmasFromAlunos = useMemo(() => {
     const map = new Map<string, any>();

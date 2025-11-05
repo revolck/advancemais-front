@@ -2,6 +2,7 @@ export * from "./lista-empresas";
 export * from "./company-details";
 export * from "./lista-vagas";
 export * from "./lista-cursos";
+export { VisaoGeralDashboard } from "./visao-geral/VisaoGeralDashboard";
 
 // Curso Details
 export {

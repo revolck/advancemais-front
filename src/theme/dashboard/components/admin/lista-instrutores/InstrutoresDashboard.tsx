@@ -67,11 +67,11 @@ export function InstrutoresDashboard({ className }: { className?: string }) {
   type SortDirection = "asc" | "desc";
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
 
-  const statusOptions: SelectOption[] = [
+  const statusOptions: SelectOption[] = useMemo(() => [
     { value: "ATIVO", label: "Ativo" },
     { value: "INATIVO", label: "Inativo" },
     { value: "BLOQUEADO", label: "Bloqueado" },
-  ];
+  ], []);
 
   const searchValidationMessage = useMemo(
     () => getSearchValidationMessage(pendingSearchTerm),

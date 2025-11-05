@@ -73,7 +73,7 @@ function useCursoCategoriasData() {
 
 export function useCursoCategorias() {
   const query = useCursoCategoriasData();
-  const categorias = query.data ?? [];
+  const categorias = useMemo(() => query.data ?? [], [query.data]);
 
   const categoriaOptions = useMemo(
     () =>
@@ -107,7 +107,7 @@ export function useCursoCategorias() {
 
 export function useCursoSubcategorias(categoriaId: number | null) {
   const categoriasQuery = useCursoCategoriasData();
-  const categorias = categoriasQuery.data ?? [];
+  const categorias = useMemo(() => categoriasQuery.data ?? [], [categoriasQuery.data]);
 
   // Sempre chama useQuery, mesmo quando não há categoriaId
   // Isso garante que o hook seja sempre chamado na mesma ordem
@@ -184,7 +184,7 @@ export function useCursoSubcategorias(categoriaId: number | null) {
 
 export function useAllSubcategorias() {
   const categoriasQuery = useCursoCategoriasData();
-  const categorias = categoriasQuery.data ?? [];
+  const categorias = useMemo(() => categoriasQuery.data ?? [], [categoriasQuery.data]);
 
   const inlineSubcategorias = useMemo(() => {
     const subs: SubcategoriaCurso[] = [];

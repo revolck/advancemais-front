@@ -107,30 +107,49 @@ export function SelectCustom(props: SelectCustomProps) {
   }, [props.mode, props.options, props.value]);
 
   // Single and User modes share
-  if (props.mode !== "multiple") {
-    const options = props.options as SelectOption[] | UserOption[];
-    const value = props.value as string | null;
-    const onChange = props.onChange as (v: string | null) => void;
-    const searchableSingle = (props as any).searchable ?? true;
+  const options = props.mode !== "multiple" ? (props.options as SelectOption[] | UserOption[]) : null;
+  const value = props.mode !== "multiple" ? (props.value as string | null) : null;
+  const onChange = props.mode !== "multiple" ? (props.onChange as (v: string | null) => void) : null;
+  const searchableSingle = props.mode !== "multiple" ? ((props as any).searchable ?? true) : false;
+  
+  // Hooks movidos para fora do condicional para evitar erro de hooks condicionais
+  // Usa useMemo para recalcular quando value ou options mudam (apenas para searchable single)
+  const current = useMemo(() => {
+    if (
+      !searchableSingle ||
+      props.mode === "multiple" ||
+      props.mode === "user" ||
+      !options ||
+      (options as SelectOption[]).length <= 5 ||
+      value === null ||
+      value === undefined
+    ) {
+      return null;
+    }
+    return (options as SelectOption[]).find((o) => o.value === value) || null;
+  }, [searchableSingle, props.mode, options, value]);
+  
+  // Fecha o popover quando o valor é limpo (null) - apenas para searchable single
+  useEffect(() => {
+    if (
+      searchableSingle &&
+      props.mode !== "multiple" &&
+      props.mode !== "user" &&
+      options &&
+      (options as SelectOption[]).length > 5 &&
+      (value === null || value === undefined)
+    ) {
+      setOpen(false);
+    }
+  }, [searchableSingle, props.mode, options, value]);
 
-    // Searchable single: Popover + Command (better UX for long lists)
+  if (props.mode !== "multiple") {
     if (
       searchableSingle &&
       props.mode !== "user" &&
+      options &&
       (options as SelectOption[]).length > 5
     ) {
-      // Usa useMemo para recalcular quando value ou options mudam
-      const current = useMemo(() => {
-        if (value === null || value === undefined) return null;
-        return (options as SelectOption[]).find((o) => o.value === value) || null;
-      }, [value, options]);
-      
-      // Fecha o popover quando o valor é limpo (null)
-      useEffect(() => {
-        if (value === null || value === undefined) {
-          setOpen(false);
-        }
-      }, [value]);
       
       return (
         <div className={container}>
@@ -336,7 +355,10 @@ export function SelectCustom(props: SelectCustomProps) {
   }
 
   // Multiple mode using Popover + Command
-  const { options, value, onChange, searchable = true } = props;
+  const multipleOptions = props.options as SelectOption[];
+  const multipleValue = props.value as string[];
+  const multipleOnChange = props.onChange as (v: string[]) => void;
+  const searchable = (props as any).searchable ?? true;
 
   return (
     <div className={container}>
@@ -392,7 +414,7 @@ export function SelectCustom(props: SelectCustomProps) {
           }}
         >
           <Command className="bg-white text-foreground [&_[cmdk-group]]:gap-1 [&_[cmdk-item]]:rounded-md [&_[data-slot=command-input-wrapper]]:border-gray-500/10">
-            {searchable && options.length > 5 && (
+            {searchable && multipleOptions.length > 5 && (
               <CommandInput placeholder="Buscar..." className="h-10" />
             )}
             <CommandEmpty>
@@ -400,24 +422,24 @@ export function SelectCustom(props: SelectCustomProps) {
                 Nenhuma opção encontrada
               </div>
             </CommandEmpty>
-            {value.length > 0 && (
+            {multipleValue.length > 0 && (
               <div className="px-3 py-2 text-xs text-muted-foreground border-b border-gray-200/80">
-                {value.length} selecionado{value.length > 1 ? "s" : ""}
+                {multipleValue.length} selecionado{multipleValue.length > 1 ? "s" : ""}
               </div>
             )}
             <CommandList className="max-h-72 overflow-y-auto pr-0 pb-1.5 scrollbar-thin scrollbar-thumb-gray-400/50 hover:scrollbar-thumb-gray-400/70 scrollbar-track-transparent">
               <CommandGroup>
-                {options.map((opt) => {
-                  const checked = value.includes(opt.value);
+                {multipleOptions.map((opt) => {
+                  const checked = multipleValue.includes(opt.value);
                   return (
                     <CommandItem
                       key={opt.value}
                       value={opt.label}
                       onSelect={() => {
                         const next = checked
-                          ? value.filter((v) => v !== opt.value)
-                          : [...value, opt.value];
-                        onChange(next);
+                          ? multipleValue.filter((v) => v !== opt.value)
+                          : [...multipleValue, opt.value];
+                        multipleOnChange(next);
                       }}
                       className={cn(
                         "group cursor-pointer pl-3 pr-3 py-2.5 text-sm transition-colors",

@@ -1,0 +1,10 @@
+export { MetricCard } from "./MetricCard";
+export { CursosProximos } from "./CursosProximos";
+export { FaturamentoSection } from "./FaturamentoSection";
+export { PerformanceSection } from "./PerformanceSection";
+export { CursosPopularesList } from "./CursosPopularesList";
+export { CursosMaisPopularesList } from "./CursosMaisPopularesList";
+export { CursosMaiorTaxaConclusaoList } from "./CursosMaiorTaxaConclusaoList";
+export { CursosProximosList } from "./CursosProximosList";
+export { CursosListTabs } from "./CursosListTabs";
+export { CursosCardsGrid } from "./CursosCardsGrid";

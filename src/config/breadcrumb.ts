@@ -200,6 +200,14 @@ export const breadcrumbConfig: Record<string, BreadcrumbConfig> = {
       { label: "Cursos", href: "/dashboard/cursos", icon: "BookOpen" },
     ],
   },
+  "/dashboard/cursos/visao-geral": {
+    title: "Visão Geral de Cursos",
+    items: [
+      { label: "Dashboard", href: "/", icon: "Home" },
+      { label: "Cursos", href: "/dashboard/cursos", icon: "BookOpen" },
+      { label: "Visão Geral de Cursos", icon: "LayoutDashboard" },
+    ],
+  },
   "/dashboard/cursos/turmas": {
     title: "Turmas",
     items: [

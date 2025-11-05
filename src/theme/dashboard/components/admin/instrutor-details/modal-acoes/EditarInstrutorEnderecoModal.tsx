@@ -165,7 +165,7 @@ export function EditarInstrutorEnderecoModal({
     } finally {
       setIsSaving(false);
     }
-  }, [instrutor.enderecos, formState, handleClose, isSaving, onConfirm]);
+  }, [formState, handleClose, isSaving, onConfirm]);
 
   return (
     <ModalCustom

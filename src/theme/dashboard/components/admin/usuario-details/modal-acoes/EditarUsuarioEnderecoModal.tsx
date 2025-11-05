@@ -165,7 +165,7 @@ export function EditarUsuarioEnderecoModal({
     } finally {
       setIsSaving(false);
     }
-  }, [usuario.enderecos, formState, handleClose, isSaving, onConfirm]);
+  }, [formState, handleClose, isSaving, onConfirm]);
 
   return (
     <ModalCustom

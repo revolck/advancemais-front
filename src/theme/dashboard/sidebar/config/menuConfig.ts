@@ -65,7 +65,7 @@ const rawMenuSections: MenuSection[] = [
           {
             icon: null,
             label: "Visão geral",
-            route: "/admin/courses/overview",
+            route: "/dashboard/cursos/visao-geral",
             permissions: ADMIN_PERMISSIONS,
           },
           {

@@ -19,6 +19,7 @@ import type {
   ListAlunosComInscricaoResponse,
   CursoAlunoDetalhes,
   CursoAlunoDetalhesResponse,
+  VisaoGeralResponse,
 } from "./types";
 
 function normalizeHeaders(headers?: HeadersInit): Record<string, string> {
@@ -618,6 +619,18 @@ export async function getCursoAlunoDetalhes(
       method: "GET",
       ...init,
       headers: buildHeaders(init?.headers, true),
+    },
+    cache: "no-cache",
+  });
+}
+
+export async function getVisaoGeral(
+  init?: RequestInit
+): Promise<VisaoGeralResponse> {
+  return apiFetch<VisaoGeralResponse>(cursosRoutes.visaoGeral(), {
+    init: {
+      headers: buildHeaders(init?.headers, true),
+      ...init,
     },
     cache: "no-cache",
   });

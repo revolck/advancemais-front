@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { EmptyState } from "@/components/ui/custom";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -53,8 +54,10 @@ export function CursosTurmasTab({
   inscricoes,
   isLoading,
 }: InscricoesTabProps) {
-  const inscricoesData =
-    (inscricoes && inscricoes.length > 0 ? inscricoes : aluno.inscricoes) || [];
+  const inscricoesData = useMemo(
+    () => (inscricoes && inscricoes.length > 0 ? inscricoes : aluno.inscricoes) || [],
+    [inscricoes, aluno.inscricoes]
+  );
   const pageSize = 12;
   const [page, setPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
@@ -374,11 +377,12 @@ export function CursosTurmasTab({
                   {/* Imagem limpa */}
                   <div className="relative h-40 w-full overflow-hidden bg-gray-50">
                     {img ? (
-                      <img
+                      <Image
                         src={img}
                         alt={inscricao.curso?.nome || "Imagem do curso"}
-                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                        loading="lazy"
+                        fill
+                        className="object-cover transition-transform duration-500 group-hover:scale-105"
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                       />
                     ) : (
                       <div className="flex h-full items-center justify-center bg-gray-100">

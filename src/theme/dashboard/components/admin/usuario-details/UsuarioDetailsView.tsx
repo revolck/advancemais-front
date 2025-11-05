@@ -114,31 +114,10 @@ export function UsuarioDetailsView({
     },
   });
 
-  if (isPending && !usuarioData) {
-    return (
-      <div className="flex items-center justify-center min-h-[320px]">
-        <div className="flex items-center gap-3 text-gray-600">
-          <Loader2 className="h-5 w-5 animate-spin" />
-          <span>Carregando dados do usuário...</span>
-        </div>
-      </div>
-    );
-  }
-
-  if (!usuarioData) {
-    return (
-      <div className="space-y-6">
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            {queryErrorMessage ?? "Usuário não encontrado"}
-          </AlertDescription>
-        </Alert>
-      </div>
-    );
-  }
-
+  // Movido para antes dos returns condicionais para evitar hook condicional
   const tabs: HorizontalTabItem[] = useMemo(() => {
+    if (!usuarioData) return [];
+    
     const baseTabs: HorizontalTabItem[] = [
       {
         value: "sobre",
@@ -183,6 +162,30 @@ export function UsuarioDetailsView({
 
     return baseTabs;
   }, [usuarioData, isReloading]);
+
+  if (isReloading) {
+    return (
+      <div className="flex items-center justify-center min-h-[320px]">
+        <div className="flex items-center gap-3 text-gray-600">
+          <Loader2 className="h-5 w-5 animate-spin" />
+          <span>Carregando dados do usuário...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (!usuarioData) {
+    return (
+      <div className="space-y-6">
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            {queryErrorMessage ?? "Usuário não encontrado"}
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">

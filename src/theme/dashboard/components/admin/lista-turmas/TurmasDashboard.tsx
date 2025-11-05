@@ -68,7 +68,7 @@ export function TurmasDashboard({ className }: { className?: string }) {
   const { cursos, isLoading: loadingCursos } = useCursosForSelect();
   const { instrutores, isLoading: loadingInstrutores } = useInstrutoresForSelect();
   const turmasQuery = useTurmasDashboardQuery({ cursoId: selectedCourseId });
-  const turmas = turmasQuery.data ?? [];
+  const turmas = useMemo(() => turmasQuery.data ?? [], [turmasQuery.data]);
   const isLoading = turmasQuery.status === "pending";
   const isFetching = turmasQuery.isFetching;
   const errorMessage =

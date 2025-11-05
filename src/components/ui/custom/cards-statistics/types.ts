@@ -7,6 +7,8 @@ export interface StatisticCard {
   value: string | number;
   label: string;
   info?: ReactNode;
+  cardBg?: string;
+  cardBorder?: string;
 }
 
 export interface CardsStatisticsProps {

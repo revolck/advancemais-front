@@ -4,3 +4,5 @@ export { LineChartComponent } from "./LineChartComponent";
 export { BarChartComponent } from "./BarChartComponent";
 export { AreaChartComponent } from "./AreaChartComponent";
 export { ChartLegend } from "./ChartLegend";
+export { InteractiveLineChart } from "./InteractiveLineChart";
+export type { InteractiveLineChartProps, MetricConfig, PeriodType } from "./InteractiveLineChart";

@@ -156,6 +156,7 @@ export function CursosDashboard({
     }
   }, [
     shouldFetch,
+    queryData,
     queryData?.pagination?.isPageAdjusted,
     queryData?.pagination?.page,
     currentPage,

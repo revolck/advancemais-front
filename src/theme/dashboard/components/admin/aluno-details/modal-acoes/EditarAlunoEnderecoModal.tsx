@@ -157,7 +157,7 @@ export function EditarAlunoEnderecoModal({
     } finally {
       setIsSaving(false);
     }
-  }, [aluno.enderecos, formState, handleClose, isSaving, onConfirm]);
+  }, [formState, handleClose, isSaving, onConfirm]);
 
   return (
     <ModalCustom

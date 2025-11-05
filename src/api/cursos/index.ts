@@ -56,6 +56,7 @@ export {
   listAlunosComInscricao,
   getCursoAlunoDetalhes,
   updateCursoAluno,
+  getVisaoGeral,
 } from "./core";
 export type {
   CursosModuleMeta as CursosModuleInfoResponse,
@@ -81,4 +82,14 @@ export type {
   CursoAlunoEstatisticas,
   CursoAlunoCursoResumo,
   CursoAlunoTurmaResumo,
+  VisaoGeralResponse,
+  VisaoGeralData,
+  VisaoGeralMetricasGerais,
+  VisaoGeralFaturamento,
+  VisaoGeralPerformance,
+  CursosProximosInicio,
+  TurmaProximoInicio,
+  CursoFaturamento,
+  CursoPerformance,
+  CursoTaxaConclusao,
 } from "./types";

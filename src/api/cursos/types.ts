@@ -352,3 +352,91 @@ export interface CreateCursoPayload {
 }
 
 export type UpdateCursoPayload = Partial<CreateCursoPayload>;
+
+// Visão Geral de Cursos
+export interface VisaoGeralMetricasGerais {
+  totalCursos: number;
+  cursosPublicados: number;
+  cursosRascunho: number;
+  totalTurmas: number;
+  turmasAtivas: number;
+  turmasInscricoesAbertas: number;
+  totalAlunosInscritos: number;
+  totalAlunosAtivos: number;
+  totalAlunosConcluidos: number;
+}
+
+export interface TurmaProximoInicio {
+  turmaId: string;
+  cursoId: number;
+  cursoNome: string;
+  cursoCodigo: string;
+  turmaNome: string;
+  turmaCodigo: string;
+  dataInicio: string;
+  diasParaInicio: number;
+  vagasTotais: number;
+  vagasDisponiveis: number;
+  inscricoesAtivas: number;
+  status: string;
+}
+
+export interface CursosProximosInicio {
+  proximos7Dias: TurmaProximoInicio[];
+  proximos15Dias: TurmaProximoInicio[];
+  proximos30Dias: TurmaProximoInicio[];
+}
+
+export interface CursoFaturamento {
+  cursoId: number;
+  cursoNome: string;
+  cursoCodigo: string;
+  totalFaturamento: number;
+  totalTransacoes: number;
+  transacoesAprovadas: number;
+  transacoesPendentes: number;
+  ultimaTransacao: string;
+}
+
+export interface VisaoGeralFaturamento {
+  totalFaturamento: number;
+  faturamentoMesAtual: number;
+  faturamentoMesAnterior: number;
+  cursoMaiorFaturamento: CursoFaturamento;
+  topCursosFaturamento: CursoFaturamento[];
+}
+
+export interface CursoPerformance {
+  cursoId: number;
+  cursoNome: string;
+  cursoCodigo: string;
+  totalInscricoes: number;
+  totalTurmas: number;
+}
+
+export interface CursoTaxaConclusao {
+  cursoId: number;
+  cursoNome: string;
+  cursoCodigo: string;
+  taxaConclusao: number;
+  totalInscricoes: number;
+  totalConcluidos: number;
+}
+
+export interface VisaoGeralPerformance {
+  cursosMaisPopulares: CursoPerformance[];
+  taxaConclusao: number;
+  cursosComMaiorTaxaConclusao: CursoTaxaConclusao[];
+}
+
+export interface VisaoGeralData {
+  metricasGerais: VisaoGeralMetricasGerais;
+  cursosProximosInicio: CursosProximosInicio;
+  faturamento: VisaoGeralFaturamento;
+  performance: VisaoGeralPerformance;
+}
+
+export interface VisaoGeralResponse {
+  success: boolean;
+  data: VisaoGeralData;
+}

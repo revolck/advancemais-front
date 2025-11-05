@@ -201,6 +201,7 @@ export const cursosRoutes = {
     verificarPorCodigo: (codigo: string) =>
       `${BASE}/certificados/codigo/${codigo}`,
   },
+  visaoGeral: () => `${BASE}/visaogeral`,
 } as const;
 
 export default cursosRoutes;

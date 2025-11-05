@@ -8,35 +8,38 @@ const StatisticCard = ({
   className,
   showBadge = true,
 }: StatisticCardProps) => {
-  const { icon: Icon, iconBg, value, label, info } = card;
+  const { icon: Icon, iconBg, value, label, info, cardBg } = card;
 
   return (
     <div
       className={cn(
-        "bg-gray-100/20 rounded-lg border border-gray-200/50 p-6",
+        "rounded-xl p-6 h-full transition-all",
+        cardBg || "bg-white",
         className
       )}
     >
-      {/* Icon and Badge Row */}
-      <div className="flex items-center justify-between mb-4">
-        {/* Icon */}
+      <div className="flex items-center justify-between h-full">
+        {/* Value & Label - Left Side */}
+        <div className="flex-1">
+          <div className="space-y-1">
+            <h3 className="text-3xl font-bold text-gray-900 !mb-0">
+              {typeof value === "number" ? value.toLocaleString("pt-BR") : value}
+            </h3>
+            <p className="text-sm text-gray-600 font-medium">{label}</p>
+          </div>
+          {/* Info Badge */}
+          {showBadge && info && <div className="mt-3">{info}</div>}
+        </div>
+
+        {/* Icon - Right Side */}
         <div
           className={cn(
-            `rounded-lg flex items-center justify-center size-10 border border-opacity-20`,
+            "rounded-xl flex items-center justify-center size-14 flex-shrink-0",
             iconBg
           )}
         >
-          <Icon className="size-5" />
+          <Icon className="size-7" />
         </div>
-
-        {/* Info Badge */}
-        {showBadge && info && <div>{info}</div>}
-      </div>
-
-      {/* Value & Label */}
-      <div className="space-y-1">
-        <h3 className="!mb-0">{value}</h3>
-        <p className="!text-sm">{label}</p>
       </div>
     </div>
   );
