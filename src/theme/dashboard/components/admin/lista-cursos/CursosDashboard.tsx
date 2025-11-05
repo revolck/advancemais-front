@@ -193,14 +193,19 @@ export function CursosDashboard({
   }, [selectedStatuses, selectedCategoryId, selectedSubcategoryId, normalizedSearch]);
 
   const fetchedCursos = queryData?.cursos ?? [];
+  const remoteTotalPages = Math.max(
+    1,
+    Math.ceil(fetchedCursos.length / normalizedFilters.pageSize)
+  );
   const remotePagination = queryData?.pagination ?? {
+    requestedPage: normalizedFilters.page,
     page: normalizedFilters.page,
+    isPageAdjusted: false,
     pageSize: normalizedFilters.pageSize,
     total: fetchedCursos.length,
-    totalPages: Math.max(
-      1,
-      Math.ceil(fetchedCursos.length / normalizedFilters.pageSize)
-    ),
+    totalPages: remoteTotalPages,
+    hasNext: normalizedFilters.page < remoteTotalPages,
+    hasPrevious: normalizedFilters.page > 1,
   };
 
   const cursos = cursosProp ?? fetchedCursos;
@@ -324,16 +329,22 @@ export function CursosDashboard({
     return sorted.slice(start, end);
   }, [filteredCursos, currentPage, pageSize, shouldFetch, sortList]);
 
+  const localTotalPages = useMemo(
+    () => Math.max(1, Math.ceil(filteredCursos.length / pageSize)),
+    [filteredCursos.length, pageSize]
+  );
+
   const pagination = shouldFetch
     ? remotePagination
     : {
+        requestedPage: currentPage,
         page: currentPage,
+        isPageAdjusted: false,
         pageSize,
         total: filteredCursos.length,
-        totalPages: Math.max(
-          1,
-          Math.ceil(filteredCursos.length / pageSize)
-        ),
+        totalPages: localTotalPages,
+        hasNext: currentPage < localTotalPages,
+        hasPrevious: currentPage > 1,
       };
 
   const totalItems = pagination.total ?? filteredCursos.length;
