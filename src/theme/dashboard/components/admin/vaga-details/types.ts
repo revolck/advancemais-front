@@ -3,6 +3,7 @@ import type { VagaListItem } from "@/api/vagas";
 // Interface para candidato
 export interface CandidatoItem {
   id: string;
+  candidaturaId?: string;
   nome: string;
   email: string;
   telefone?: string;
@@ -26,7 +27,8 @@ export interface DetailsTabProps {
 
 // Props para VagaDetailsView
 export interface VagaDetailsViewProps {
-  vaga: VagaListItem;
+  vagaId: string;
+  initialData?: VagaListItem | null;
 }
 
 // Props para VagaHeaderInfo - Updated

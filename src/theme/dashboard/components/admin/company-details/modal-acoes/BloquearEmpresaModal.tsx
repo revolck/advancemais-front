@@ -20,13 +20,8 @@ import { SimpleTextarea } from "@/components/ui/custom/text-area";
 import { SelectCustom } from "@/components/ui/custom/select";
 import { InputCustom } from "@/components/ui/custom/input";
 import { toastCustom } from "@/components/ui/custom/toast";
-import { createAdminCompanyBan } from "@/api/empresas";
-import type {
-  AdminCompanyBanItem,
-  BanType,
-  BanReason,
-} from "@/api/empresas/admin/types";
-import { AlertTriangle, Shield, Clock, FileText } from "lucide-react";
+import type { BanType, BanReason } from "@/api/empresas/admin/types";
+import { useCompanyMutations } from "../hooks/useCompanyMutations";
 
 const BAN_TYPE_OPTIONS = [
   { label: "Temporário", value: "TEMPORARIO" },
@@ -45,14 +40,12 @@ interface BloquearEmpresaModalProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   companyId: string;
-  onBanApplied: (ban: AdminCompanyBanItem) => void;
 }
 
 export function BloquearEmpresaModal({
   isOpen,
   onOpenChange,
   companyId,
-  onBanApplied,
 }: BloquearEmpresaModalProps) {
   const initialState = useMemo(
     () => ({
@@ -65,12 +58,12 @@ export function BloquearEmpresaModal({
   );
 
   const [state, setState] = useState(initialState);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { banCompany } = useCompanyMutations(companyId);
+  const isSubmitting = banCompany.status === "pending";
 
   useEffect(() => {
     if (isOpen) {
       setState(initialState);
-      setIsSubmitting(false);
     }
   }, [initialState, isOpen]);
 
@@ -207,19 +200,13 @@ export function BloquearEmpresaModal({
       return;
     }
 
-    setIsSubmitting(true);
-
     try {
-      const response = await createAdminCompanyBan(companyId, {
+      await banCompany.mutateAsync({
         tipo: state.tipo as BanType,
         motivo: state.motivo as BanReason,
         dias: Number(state.dias),
         observacoes: trimmedObservations,
       });
-
-      if ("bloqueio" in response) {
-        onBanApplied(response.bloqueio as AdminCompanyBanItem);
-      }
 
       toastCustom.success({
         title: "Bloqueio aplicado",
@@ -235,14 +222,11 @@ export function BloquearEmpresaModal({
         description:
           "Não foi possível bloquear a empresa agora. Tente novamente em instantes.",
       });
-    } finally {
-      setIsSubmitting(false);
     }
   }, [
-    companyId,
+    banCompany,
     handleClose,
     isSubmitting,
-    onBanApplied,
     state.tipo,
     state.motivo,
     state.dias,
@@ -259,7 +243,7 @@ export function BloquearEmpresaModal({
     >
       <ModalContentWrapper>
         <ModalHeader>
-          <ModalTitle>Bloquear acesso</ModalTitle>
+          <ModalTitle>Bloquear empresa</ModalTitle>
         </ModalHeader>
 
         <ModalBody className="space-y-8 p-1">

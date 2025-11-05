@@ -122,3 +122,36 @@ export type {
   EmpresaVagaCategoriasListParams,
   EmpresaVagaErrorResponse,
 } from "./vagas/categorias/types";
+
+// Processos seletivos por vaga
+export {
+  listVagaProcessos,
+  createVagaProcesso,
+  getVagaProcessoById,
+  updateVagaProcesso,
+  deleteVagaProcesso,
+} from "./vagas/processos";
+export type {
+  VagaProcesso,
+  VagaProcessoListParams,
+  VagaProcessoListResponse,
+  CreateVagaProcessoPayload,
+  UpdateVagaProcessoPayload,
+} from "./vagas/processos/types";
+
+// Clientes (vinculações de planos)
+export {
+  listClientesPlanos,
+  createClientePlano,
+  getClientePlanoById,
+  updateClientePlano,
+  deleteClientePlano,
+} from "./clientes";
+export type {
+  EmpresaClientePlano,
+  EmpresaClientePlanoListParams,
+  EmpresaClientePlanoCreatePayload,
+  EmpresaClientePlanoUpdatePayload,
+  EmpresaClientePlanoListResponse,
+  EmpresaClientePlanoDetailResponse,
+} from "./clientes/types";

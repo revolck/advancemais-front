@@ -90,7 +90,6 @@ export function formatSenioridade(senioridade?: string | null): string {
     PLENO: "Pleno",
     SENIOR: "Sênior",
     ESPECIALISTA: "Especialista",
-    COORDENADOR: "Coordenador",
     GERENTE: "Gerente",
     DIRETOR: "Diretor",
   };

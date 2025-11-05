@@ -12,7 +12,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { X, Calendar as CalendarIcon } from "lucide-react";
+import { X, Calendar as CalendarIcon, Info } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -36,10 +36,20 @@ export interface DatePickerRangeCustomProps {
   maxDate?: Date;
   error?: string;
   helperText?: string;
+  helperLabel?: string; // Text to show in tooltip next to label
   className?: string;
   clearable?: boolean;
   format?: string; // date-fns format string for display
   locale?: Locale;
+  /**
+   * Quando verdadeiro, o popover tenta acompanhar a largura do trigger,
+   * limitado por `popoverMaxWidth`.
+   */
+  popoverMatchTriggerWidth?: boolean;
+  /** Largura padrão do popover quando não acompanha o trigger. */
+  popoverWidth?: number;
+  /** Largura máxima do popover. */
+  popoverMaxWidth?: number;
 }
 
 export function DatePickerRangeCustom({
@@ -54,10 +64,14 @@ export function DatePickerRangeCustom({
   maxDate,
   error,
   helperText,
+  helperLabel,
   className,
   clearable = true,
   format = "dd/MM/yyyy",
   locale = ptBR,
+  popoverMatchTriggerWidth = false,
+  popoverWidth = 360,
+  popoverMaxWidth = 420,
 }: DatePickerRangeCustomProps) {
   const [open, setOpen] = useState(false);
   const [triggerWidth, setTriggerWidth] = useState<number>(0);
@@ -130,15 +144,25 @@ export function DatePickerRangeCustom({
   return (
     <div className={container}>
       {label && (
-        <Label
-          className={cn(
-            "text-sm font-medium",
-            required && "required",
-            error && "text-destructive"
+        <div className="flex items-center gap-2">
+          <Label
+            className={cn(
+              "text-sm font-medium",
+              required && "required",
+              error && "text-destructive"
+            )}
+          >
+            {label}
+          </Label>
+          {helperLabel && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+              </TooltipTrigger>
+              <TooltipContent sideOffset={6}>{helperLabel}</TooltipContent>
+            </Tooltip>
           )}
-        >
-          {label}
-        </Label>
+        </div>
       )}
 
       <Popover open={open} onOpenChange={setOpen}>
@@ -198,7 +222,12 @@ export function DatePickerRangeCustom({
         <PopoverContent
           className="z-[120] rounded-lg border border-gray-200 bg-white p-0 shadow-xl"
           style={{
-            width: triggerWidth > 0 ? `${triggerWidth}px` : undefined,
+            width: popoverMatchTriggerWidth
+              ? triggerWidth > 0
+                ? Math.min(triggerWidth, popoverMaxWidth)
+                : popoverWidth
+              : popoverWidth,
+            maxWidth: popoverMaxWidth,
           }}
           align="start"
         >
@@ -222,7 +251,27 @@ export function DatePickerRangeCustom({
             }}
             fromDate={minDate}
             toDate={maxDate}
-            disabled={disabled}
+            // Desabilita seleção fora do intervalo permitido
+            disabled={[
+              ...(minDate
+                ? [
+                    {
+                      before: new Date(
+                        new Date(minDate).setHours(0, 0, 0, 0)
+                      ),
+                    } as any,
+                  ]
+                : []),
+              ...(maxDate
+                ? [
+                    {
+                      after: new Date(
+                        new Date(maxDate).setHours(23, 59, 59, 999)
+                      ),
+                    } as any,
+                  ]
+                : []),
+            ]}
             locale={locale}
             className="w-full"
           />
@@ -231,7 +280,7 @@ export function DatePickerRangeCustom({
 
       {error ? (
         <p className="text-[11px] leading-4 text-destructive/90">{error}</p>
-      ) : helperText ? (
+      ) : helperText && !helperLabel ? (
         <span className="mt-1 inline-flex items-center gap-1.5 rounded-full border border-gray-500/10 bg-muted/40 px-2 py-1 text-[11px] leading-4 text-muted-foreground/85">
           <svg
             width="14"

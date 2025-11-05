@@ -20,21 +20,17 @@ import { ButtonCustom } from "@/components/ui/custom/button";
 import { InputCustom } from "@/components/ui/custom/input";
 import { toastCustom } from "@/components/ui/custom/toast";
 import { SelectCustom } from "@/components/ui/custom/select";
-import {
-  listPlanosEmpresariais,
-  createAdminCompanyPlano,
-} from "@/api/empresas";
+import { listPlanosEmpresariais } from "@/api/empresas";
 import type {
   AdminCompanyDetail,
-  AdminCompanyPlano,
   AdminCompanyPlanMode,
-  AdminCompanyPagamento,
   CreateAdminCompanyPlanoPayload,
 } from "@/api/empresas/admin/types";
 import type {
   PlanoEmpresarialBackendResponse,
   PlanoEmpresarialListApiResponse,
 } from "@/api/empresas/planos-empresariais/types";
+import { useCompanyMutations } from "../hooks/useCompanyMutations";
 
 const PLAN_TYPE_OPTIONS = [
   { value: "CLIENTE", label: "Cliente" },
@@ -78,10 +74,6 @@ interface AdicionarAssinaturaModalProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   company: AdminCompanyDetail;
-  onSubscriptionAdded: (
-    plan: AdminCompanyPlano,
-    payment: AdminCompanyPagamento
-  ) => void;
 }
 
 type SubscriptionFormState = {
@@ -96,7 +88,6 @@ export function AdicionarAssinaturaModal({
   isOpen,
   onOpenChange,
   company,
-  onSubscriptionAdded,
 }: AdicionarAssinaturaModalProps) {
   const initialState = useMemo<SubscriptionFormState>(
     () => ({
@@ -115,12 +106,12 @@ export function AdicionarAssinaturaModal({
     PlanoEmpresarialBackendResponse[]
   >([]);
   const [isLoadingPlans, setIsLoadingPlans] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
+  const { createCompanyPlan } = useCompanyMutations(company.id);
+  const isSaving = createCompanyPlan.status === "pending";
 
   useEffect(() => {
     if (isOpen) {
       setFormState(initialState);
-      setIsSaving(false);
 
       if (planOptions.length === 0) {
         setIsLoadingPlans(true);
@@ -294,56 +285,28 @@ export function AdicionarAssinaturaModal({
       graceUntil: null,
     };
 
-    setIsSaving(true);
-
     try {
-      const response = await createAdminCompanyPlano(company.id, payload);
+      await createCompanyPlan.mutateAsync(payload);
 
-      if (!response || typeof response !== "object") {
-        throw new Error("Resposta inválida da API ao criar assinatura.");
-      }
-
-      if ("empresa" in response) {
-        const updatedPlan = response.empresa.plano;
-        const updatedPayment = response.empresa.pagamento;
-
-        onSubscriptionAdded(updatedPlan, updatedPayment);
-
-        toastCustom.success({
-          title: "Assinatura adicionada",
-          description: "A assinatura foi adicionada com sucesso.",
-        });
-
-        handleClose();
-        return;
-      }
-
-      const errorMessage =
-        "message" in response && response.message
-          ? response.message
-          : "Não foi possível adicionar a assinatura.";
-
-      console.error("Erro na resposta da API ao adicionar assinatura", response);
-      toastCustom.error({
-        title: "Erro ao adicionar assinatura",
-        description: errorMessage,
+      toastCustom.success({
+        title: "Assinatura adicionada",
+        description: "A assinatura foi adicionada com sucesso.",
       });
+
+      handleClose();
     } catch (error) {
       console.error("Erro ao adicionar assinatura", error);
       toastCustom.error({
         title: "Erro ao adicionar assinatura",
         description: "Não foi possível adicionar a assinatura agora.",
       });
-    } finally {
-      setIsSaving(false);
     }
   }, [
-    company.id,
     formState,
     handleClose,
     isSaving,
-    onSubscriptionAdded,
     getNextBillingDate,
+    createCompanyPlan,
   ]);
 
   return (

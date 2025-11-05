@@ -15,10 +15,10 @@ const EMPRESA_PERMISSIONS = (() => {
     ? dashboardPermissions
     : getRoutePermissions("/empresa");
 })();
-const RECRUTADOR_PERMISSIONS = getRoutePermissions("/recrutador");
-const PROFESSOR_PERMISSIONS = getRoutePermissions("/professor");
+const SETOR_DE_VAGAS_PERMISSIONS = getRoutePermissions("/setor-de-vagas");
+const INSTRUTOR_PERMISSIONS = getRoutePermissions("/instrutor");
 const ALUNO_PERMISSIONS = getRoutePermissions("/aluno");
-const PSICOLOGO_PERMISSIONS = getRoutePermissions("/psicologo");
+const RECRUTADOR_PERMISSIONS = getRoutePermissions("/recrutador");
 const FINANCEIRO_PERMISSIONS = getRoutePermissions("/financeiro");
 
 /**
@@ -70,53 +70,59 @@ const rawMenuSections: MenuSection[] = [
           },
           {
             icon: null,
-            label: "Listagem",
-            route: "/admin/courses/list",
+            label: "Cursos",
+            route: "/dashboard/cursos",
+            permissions: ADMIN_PERMISSIONS,
+          },
+          {
+            icon: null,
+            label: "Turmas",
+            route: "/dashboard/cursos/turmas",
             permissions: ADMIN_PERMISSIONS,
           },
           {
             icon: null,
             label: "Alunos",
-            route: "/admin/courses/enrollments",
+            route: "/dashboard/cursos/alunos",
             permissions: ADMIN_PERMISSIONS,
           },
           {
             icon: null,
             label: "Instrutores",
-            route: "/admin/courses/instructors",
+            route: "/dashboard/cursos/instrutores",
             permissions: ADMIN_PERMISSIONS,
           },
           {
             icon: null,
             label: "Provas",
-            route: "/admin/courses/exams",
+            route: "/dashboard/cursos/provas",
             permissions: ADMIN_PERMISSIONS,
           },
           {
             icon: null,
             label: "Certificados",
-            route: "/admin/courses/certificates",
+            route: "/dashboard/cursos/certificados",
             permissions: ADMIN_PERMISSIONS,
           },
           {
             icon: null,
             label: "Estágios",
-            route: "/admin/courses/internships",
+            route: "/dashboard/cursos/estagios",
             permissions: ADMIN_PERMISSIONS,
           },
           {
             icon: null,
             label: "Agenda",
-            route: "/admin/courses/schedule",
-            permissions: ADMIN_PERMISSIONS,
-          },
-          {
-            icon: null,
-            label: "Configurações",
-            route: "/admin/courses/settings",
+            route: "/dashboard/cursos/agenda",
             permissions: ADMIN_PERMISSIONS,
           },
         ],
+      },
+      {
+        icon: "Users",
+        label: "Usuários",
+        route: "/dashboard/usuarios",
+        permissions: ADMIN_ONLY_PERMISSIONS,
       },
       {
         icon: "Building2",
@@ -144,7 +150,7 @@ const rawMenuSections: MenuSection[] = [
           {
             icon: null,
             label: "Candidatos",
-            route: "/admin/companies/candidates",
+            route: "/dashboard/candidatos",
             permissions: ADMIN_PERMISSIONS,
           },
         ],
@@ -247,6 +253,12 @@ const rawMenuSections: MenuSection[] = [
             route: "/config/cursos",
             permissions: ADMIN_PERMISSIONS,
           },
+          {
+            icon: null,
+            label: "Candidatos",
+            route: "/config/candidatos",
+            permissions: ADMIN_PERMISSIONS,
+          },
         ],
       },
     ],
@@ -298,74 +310,39 @@ const rawMenuSections: MenuSection[] = [
     items: [
       {
         icon: "LayoutDashboard",
-        label: "Visão geral",
-        route: "/dashboard/empresa/overview",
-        permissions: EMPRESA_PERMISSIONS,
-      },
-      {
-        icon: "Briefcase",
-        label: "Vagas",
-        route: "/dashboard/vagas",
-        permissions: EMPRESA_PERMISSIONS,
-      },
-      {
-        icon: "Users",
-        label: "Candidatos",
-        route: "/dashboard/empresa/candidatos",
-        permissions: EMPRESA_PERMISSIONS,
-      },
-      {
-        icon: "CreditCard",
-        label: "Assinatura",
-        route: "/dashboard/empresa/assinatura",
-        permissions: EMPRESA_PERMISSIONS,
-      },
-      {
-        icon: "Settings",
-        label: "Configurações",
-        route: "/dashboard/empresa/configuracoes",
-        permissions: EMPRESA_PERMISSIONS,
-      },
-    ],
-  },
-  {
-    title: "DASHBOARD",
-    items: [
-      {
-        icon: "LayoutDashboard",
         label: "Visão Geral",
-        route: "/recrutador/overview",
-        permissions: RECRUTADOR_PERMISSIONS,
+        route: "/setor-de-vagas/overview",
+        permissions: SETOR_DE_VAGAS_PERMISSIONS,
       },
       {
         icon: "Briefcase",
         label: "Vagas Pendentes",
-        route: "/recrutador/jobs",
-        permissions: RECRUTADOR_PERMISSIONS,
+        route: "/setor-de-vagas/jobs",
+        permissions: SETOR_DE_VAGAS_PERMISSIONS,
       },
       {
         icon: "Users",
         label: "Candidatos",
-        route: "/recrutador/candidates",
-        permissions: RECRUTADOR_PERMISSIONS,
+        route: "/setor-de-vagas/candidates",
+        permissions: SETOR_DE_VAGAS_PERMISSIONS,
       },
       {
         icon: "Calendar",
         label: "Agenda",
-        route: "/recrutador/agenda",
-        permissions: RECRUTADOR_PERMISSIONS,
+        route: "/setor-de-vagas/agenda",
+        permissions: SETOR_DE_VAGAS_PERMISSIONS,
       },
       {
         icon: "UserCheck",
         label: "Entrevistas",
-        route: "/recrutador/interviews",
-        permissions: RECRUTADOR_PERMISSIONS,
+        route: "/setor-de-vagas/interviews",
+        permissions: SETOR_DE_VAGAS_PERMISSIONS,
       },
       {
         icon: "Settings",
         label: "Configurações",
-        route: "/recrutador/settings",
-        permissions: RECRUTADOR_PERMISSIONS,
+        route: "/setor-de-vagas/settings",
+        permissions: SETOR_DE_VAGAS_PERMISSIONS,
       },
     ],
   },
@@ -375,32 +352,32 @@ const rawMenuSections: MenuSection[] = [
       {
         icon: "LayoutDashboard",
         label: "Visão geral",
-        route: "/professor/overview",
-        permissions: PROFESSOR_PERMISSIONS,
+        route: "/instrutor/overview",
+        permissions: INSTRUTOR_PERMISSIONS,
       },
       {
         icon: "GraduationCap",
         label: "Alunos",
-        route: "/professor/students",
-        permissions: PROFESSOR_PERMISSIONS,
+        route: "/instrutor/students",
+        permissions: INSTRUTOR_PERMISSIONS,
       },
       {
         icon: "ClipboardList",
         label: "Provas",
-        route: "/professor/exams",
-        permissions: PROFESSOR_PERMISSIONS,
+        route: "/instrutor/exams",
+        permissions: INSTRUTOR_PERMISSIONS,
       },
       {
         icon: "ClipboardCheck",
         label: "Notas",
-        route: "/professor/grades",
-        permissions: PROFESSOR_PERMISSIONS,
+        route: "/instrutor/grades",
+        permissions: INSTRUTOR_PERMISSIONS,
       },
       {
         icon: "BookOpen",
         label: "Cursos",
-        route: "/professor/courses",
-        permissions: PROFESSOR_PERMISSIONS,
+        route: "/instrutor/courses",
+        permissions: INSTRUTOR_PERMISSIONS,
       },
     ],
   },
@@ -463,26 +440,26 @@ const rawMenuSections: MenuSection[] = [
       {
         icon: "LayoutDashboard",
         label: "Visão geral",
-        route: "/psicologo/overview",
-        permissions: PSICOLOGO_PERMISSIONS,
+        route: "/recrutador/overview",
+        permissions: RECRUTADOR_PERMISSIONS,
       },
       {
         icon: "Users",
         label: "Candidatos",
-        route: "/psicologo/candidates",
-        permissions: PSICOLOGO_PERMISSIONS,
+        route: "/recrutador/candidates",
+        permissions: RECRUTADOR_PERMISSIONS,
       },
       {
         icon: "Briefcase",
         label: "Vagas",
-        route: "/psicologo/jobs",
-        permissions: PSICOLOGO_PERMISSIONS,
+        route: "/recrutador/jobs",
+        permissions: RECRUTADOR_PERMISSIONS,
       },
       {
         icon: "BarChart2",
         label: "Relatórios",
-        route: "/psicologo/reports",
-        permissions: PSICOLOGO_PERMISSIONS,
+        route: "/recrutador/reports",
+        permissions: RECRUTADOR_PERMISSIONS,
       },
     ],
   },

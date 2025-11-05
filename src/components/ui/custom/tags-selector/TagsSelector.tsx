@@ -89,7 +89,10 @@ export function TagsSelector({
             )}
             disabled={disabled}
           >
-            <div data-chips className="flex flex-wrap items-center gap-1.5 text-foreground text-sm flex-1 min-h-8">
+            <div
+              data-chips
+              className="flex flex-wrap items-center gap-1.5 text-foreground text-sm flex-1 min-h-8"
+            >
               {selected.length === 0 ? (
                 <span className="text-muted-foreground">{placeholder}</span>
               ) : (
@@ -99,7 +102,10 @@ export function TagsSelector({
                     layoutId={`tag-${tag.id}`}
                     className="inline-flex items-center gap-1.5 rounded-full bg-[var(--primary-color)] px-2.5 py-1 text-white shadow-sm"
                   >
-                    <motion.span layoutId={`tag-${tag.id}-label`} className="text-white text-[13px]">
+                    <motion.span
+                      layoutId={`tag-${tag.id}-label`}
+                      className="text-white text-[13px]"
+                    >
                       {tag.label}
                     </motion.span>
                     <span
@@ -141,8 +147,10 @@ export function TagsSelector({
                 <div
                   key={opt.id}
                   className={cn(
-                    "flex w-full items-center gap-2 px-3 py-2 rounded-lg text-left",
-                    checked ? "bg-primary/5 ring-1 ring-primary/30" : "hover:bg-muted/40 ring-1 ring-transparent"
+                    "flex w-full items-center gap-2 px-3 py-2 rounded-lg text-left cursor-pointer",
+                    checked
+                      ? "bg-primary/5 ring-1 ring-primary/30"
+                      : "hover:bg-muted/40 ring-1 ring-transparent"
                   )}
                   onClick={() => toggle(opt.id)}
                   role="checkbox"
@@ -156,8 +164,11 @@ export function TagsSelector({
                     }
                   }}
                 >
-                  <span className="pointer-events-none">
-                    <Checkbox checked={checked} className="size-4 rounded-[6px]" />
+                  <span>
+                    <Checkbox
+                      checked={checked}
+                      className="size-4 rounded-[6px]"
+                    />
                   </span>
                   <span className="text-sm text-foreground">{opt.label}</span>
                 </div>

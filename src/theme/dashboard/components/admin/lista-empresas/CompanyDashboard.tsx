@@ -1,12 +1,6 @@
 "use client";
 
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ButtonCustom, EmptyState, FilterBar } from "@/components/ui/custom";
 import {
@@ -28,31 +22,26 @@ import {
   CompanyTableSkeleton,
   CreateCompanyModal,
 } from "./components";
-import { useCompanyDashboardData } from "./hooks/useCompanyDashboardData";
+import { useCompanyDashboardQuery } from "./hooks/useCompanyDashboardQuery";
 import type { CompanyDashboardProps } from "./types";
 import type { FilterField } from "@/components/ui/custom/filters";
-import type { AdminCompanyStatus } from "@/api/empresas";
+import type {
+  AdminCompanyListItem,
+  AdminCompanyListResponse,
+  AdminCompanyStatus,
+} from "@/api/empresas";
 import type { DateRange } from "@/components/ui/custom/date-picker";
+import {
+  DEFAULT_SEARCH_MIN_LENGTH,
+  getNormalizedSearchOrUndefined,
+  getSearchValidationMessage,
+} from "../shared/filterUtils";
 
 const normalizeCnpj = (value?: string | null): string =>
   value?.replace(/\D/g, "") ?? "";
 
-const MIN_SEARCH_LENGTH = 3;
 const SEARCH_HELPER_TEXT =
   "Pesquise por razão social, código da empresa ou CNPJ.";
-
-const getSearchValidationMessage = (value: string): string | null => {
-  const trimmed = value.trim();
-  if (trimmed.length === 0) {
-    return null;
-  }
-
-  if (trimmed.length < MIN_SEARCH_LENGTH) {
-    return `Informe pelo menos ${MIN_SEARCH_LENGTH} caracteres para pesquisar.`;
-  }
-
-  return null;
-};
 
 const createEmptyDateRange = (): DateRange => ({
   from: null,
@@ -79,31 +68,24 @@ export function CompanyDashboard({
   onDataLoaded,
   onError,
 }: CompanyDashboardProps) {
-  const defaultPageSize = 10; // Máximo de 10 empresas por página
+  const defaultPageSize = pageSizeProp ?? 10;
   const shouldFetch = fetchFromApi && !partnershipsProp;
 
   const [pageSize, setPageSize] = useState(defaultPageSize);
+  const [currentPage, setCurrentPage] = useState(1);
   const [pendingSearchTerm, setPendingSearchTerm] = useState("");
   const [appliedSearchTerm, setAppliedSearchTerm] = useState("");
   const [selectedPlans, setSelectedPlans] = useState<string[]>([]);
   const [selectedStatuses, setSelectedStatuses] = useState<
     AdminCompanyStatus[]
   >([]);
-  const [appliedDateRange, setAppliedDateRange] = useState<DateRange>(() =>
-    createEmptyDateRange()
-  );
   const [pendingDateRange, setPendingDateRange] = useState<DateRange>(() =>
     createEmptyDateRange()
   );
-  const [currentPage, setCurrentPage] = useState(1);
+  const [appliedDateRange, setAppliedDateRange] = useState<DateRange>(() =>
+    createEmptyDateRange()
+  );
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-
-  const searchTermRef = useRef(appliedSearchTerm);
-  const selectedPlansRef = useRef<string[]>(selectedPlans);
-  const selectedStatusesRef = useRef<AdminCompanyStatus[]>(selectedStatuses);
-  const dateRangeRef = useRef<DateRange>(appliedDateRange);
-  const pageSizeRef = useRef(pageSize);
-  const hasFetchedRef = useRef(false);
 
   const searchValidationMessage = useMemo(
     () => getSearchValidationMessage(pendingSearchTerm),
@@ -112,72 +94,102 @@ export function CompanyDashboard({
   const isSearchInputValid = !searchValidationMessage;
   const searchHelperText = SEARCH_HELPER_TEXT;
 
-  useEffect(() => {
-    searchTermRef.current = appliedSearchTerm;
-  }, [appliedSearchTerm]);
+  const normalizedSearch = useMemo(
+    () =>
+      getNormalizedSearchOrUndefined(
+        appliedSearchTerm,
+        DEFAULT_SEARCH_MIN_LENGTH
+      ),
+    [appliedSearchTerm]
+  );
 
-  useEffect(() => {
-    selectedPlansRef.current = selectedPlans;
-  }, [selectedPlans]);
-
-  useEffect(() => {
-    selectedStatusesRef.current = selectedStatuses;
-  }, [selectedStatuses]);
-
-  useEffect(() => {
-    dateRangeRef.current = appliedDateRange;
-  }, [appliedDateRange]);
-
-  useEffect(() => {
-    pageSizeRef.current = pageSize;
-  }, [pageSize]);
+  const normalizedFilters = useMemo(
+    () => ({
+      page: currentPage,
+      pageSize,
+      search: normalizedSearch,
+    }),
+    [currentPage, pageSize, normalizedSearch]
+  );
 
   const {
-    partnerships: fetchedPartnerships,
-    pagination,
-    isLoading,
-    error,
+    data: queryData,
+    error: queryError,
+    isLoading: queryLoading,
+    isFetching,
     refetch,
-    clearError,
-  } = useCompanyDashboardData({
-    enabled: shouldFetch,
-    pageSize,
-    autoFetch: false,
-    onSuccess: (data, response) => onDataLoaded?.(data, response),
-    onError,
-  });
+  } = useCompanyDashboardQuery(normalizedFilters, shouldFetch);
 
   useEffect(() => {
-    if (partnershipsProp) {
+    if (!shouldFetch && partnershipsProp) {
       onDataLoaded?.(partnershipsProp, null);
     }
-  }, [onDataLoaded, partnershipsProp]);
+  }, [shouldFetch, partnershipsProp, onDataLoaded]);
+
+  useEffect(() => {
+    if (shouldFetch && queryData) {
+      const rawItems = queryData.partnerships
+        .map((partnership) => partnership.raw)
+        .filter(Boolean) as AdminCompanyListItem[];
+
+      const response =
+        rawItems.length === queryData.partnerships.length
+          ? ({
+              data: rawItems,
+              pagination: {
+                page: queryData.pagination.page,
+                pageSize: queryData.pagination.pageSize,
+                total: queryData.pagination.total,
+                totalPages: queryData.pagination.totalPages,
+              },
+            } satisfies AdminCompanyListResponse)
+          : null;
+
+      onDataLoaded?.(queryData.partnerships, response);
+    }
+  }, [shouldFetch, queryData, onDataLoaded]);
+
+  useEffect(() => {
+    if (shouldFetch && queryError && onError) {
+      onError(queryError.message || "Erro ao carregar empresas.");
+    }
+  }, [shouldFetch, queryError, onError]);
+
+  useEffect(() => {
+    if (!shouldFetch) return;
+    const serverPage = queryData?.pagination.page;
+    if (serverPage && serverPage !== currentPage) {
+      setCurrentPage(serverPage);
+    }
+  }, [shouldFetch, queryData?.pagination.page, currentPage]);
+
+  useEffect(() => {
+    if (!shouldFetch) return;
+    const serverPageSize = queryData?.pagination.pageSize;
+    if (serverPageSize && serverPageSize !== pageSize) {
+      setPageSize(serverPageSize);
+    }
+  }, [shouldFetch, queryData?.pagination.pageSize, pageSize]);
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [appliedSearchTerm, selectedPlans, selectedStatuses]);
+  }, [
+    selectedPlans,
+    selectedStatuses,
+    appliedDateRange,
+    normalizedSearch,
+  ]);
 
-  useEffect(() => {
-    if (!shouldFetch) {
-      hasFetchedRef.current = false;
-    }
-  }, [shouldFetch]);
-
-  useEffect(() => {
-    if (shouldFetch && pagination?.page) {
-      setCurrentPage(pagination.page);
-    }
-  }, [pagination?.page, shouldFetch]);
-
-  useEffect(() => {
-    if (
-      shouldFetch &&
-      pagination?.pageSize &&
-      pagination.pageSize !== pageSize
-    ) {
-      setPageSize(pagination.pageSize);
-    }
-  }, [pagination?.pageSize, shouldFetch, pageSize]);
+  const fetchedPartnerships = queryData?.partnerships ?? [];
+  const remotePagination = queryData?.pagination ?? {
+    page: normalizedFilters.page,
+    pageSize: normalizedFilters.pageSize,
+    total: fetchedPartnerships.length,
+    totalPages: Math.max(
+      1,
+      Math.ceil(fetchedPartnerships.length / normalizedFilters.pageSize)
+    ),
+  };
 
   const partnerships = partnershipsProp ?? fetchedPartnerships;
 
@@ -266,7 +278,7 @@ export function CompanyDashboard({
   }, [partnerships]);
 
   const filteredPartnerships = useMemo(() => {
-    const query = appliedSearchTerm?.trim().toLowerCase() || "";
+    const query = (normalizedSearch ?? "").toLowerCase();
     const numericQuery = query.replace(/\D/g, "");
 
     return partnerships.filter((partnership) => {
@@ -331,7 +343,7 @@ export function CompanyDashboard({
     });
   }, [
     partnerships,
-    appliedSearchTerm,
+    normalizedSearch,
     selectedPlans,
     selectedStatuses,
     appliedDateRange,
@@ -349,25 +361,49 @@ export function CompanyDashboard({
     return sortedPartnerships.slice(start, end);
   }, [filteredPartnerships, currentPage, pageSize, shouldFetch, sortList]);
 
-  const totalItems = shouldFetch
-    ? pagination?.total ?? 0
-    : filteredPartnerships.length;
+  const hasClientFilters =
+    selectedPlans.length > 0 ||
+    selectedStatuses.length > 0 ||
+    Boolean(appliedDateRange.from || appliedDateRange.to);
 
-  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const localTotal = filteredPartnerships.length;
+  const localTotalPages = Math.max(1, Math.ceil(localTotal / pageSize));
+
+  const pagination = shouldFetch
+    ? hasClientFilters
+      ? {
+          page: Math.min(currentPage, localTotalPages),
+          pageSize,
+          total: localTotal,
+          totalPages: localTotalPages,
+        }
+      : remotePagination
+    : {
+        page: currentPage,
+        pageSize,
+        total: localTotal,
+        totalPages: localTotalPages,
+      };
+
+  const totalItems = pagination.total ?? filteredPartnerships.length;
+  const totalPages = pagination.totalPages ?? 1;
+  const currentPageValue = pagination.page ?? currentPage;
+  const pageSizeValue = pagination.pageSize ?? pageSize;
 
   useEffect(() => {
     if (currentPage > totalPages) {
-      setCurrentPage(totalPages);
+      setCurrentPage(Math.max(1, totalPages));
     }
   }, [currentPage, totalPages]);
 
-  const isLoadingData = shouldFetch && isLoading;
+  const isLoadingData = shouldFetch && queryLoading;
+  const isFetchingData = shouldFetch && isFetching;
+  const errorMessage = shouldFetch && queryError
+    ? queryError.message || "Erro ao carregar empresas."
+    : null;
 
-  const remainingItems = shouldFetch
-    ? Math.max(totalItems - (currentPage - 1) * pageSizeRef.current, 0)
-    : 0;
-
-  const visibleCount = displayedPartnerships.length;
+  const shouldShowSkeleton =
+    shouldFetch && (isLoadingData || (isFetchingData && fetchedPartnerships.length === 0));
 
   const filterFields: FilterField[] = useMemo(
     () => [
@@ -404,42 +440,8 @@ export function CompanyDashboard({
     [selectedPlans, selectedStatuses, pendingDateRange]
   );
 
-  const runFetch = useCallback(
-    (pageToLoad = 1, sizeOverride?: number) => {
-      if (!shouldFetch) return;
-      hasFetchedRef.current = true;
-      const effectiveSize = sizeOverride ?? pageSizeRef.current;
-      setCurrentPage(pageToLoad);
-
-      // Construir parâmetros de busca
-      const searchParams: any = {
-        page: pageToLoad,
-        pageSize: effectiveSize,
-      };
-
-      // Só adicionar search se houver termo de busca
-      const trimmedSearch = searchTermRef.current?.trim() || "";
-
-      if (trimmedSearch.length > 0) {
-        searchParams.search = trimmedSearch;
-        console.log("🔍 runFetch: Com busca -", searchParams);
-      } else {
-        // Explicitamente definir search como undefined para limpar a busca
-        searchParams.search = undefined;
-        console.log(
-          "🔍 runFetch: Sem busca (listagem completa) -",
-          searchParams
-        );
-      }
-
-      refetch(searchParams).catch(() => {});
-    },
-    [refetch, shouldFetch]
-  );
-
   const handleSearchSubmit = useCallback(
     (rawValue?: string) => {
-      clearError();
       const value = rawValue ?? pendingSearchTerm;
       const validationMessage = getSearchValidationMessage(value);
       if (validationMessage) {
@@ -449,89 +451,40 @@ export function CompanyDashboard({
       const trimmedValue = value.trim();
       setPendingSearchTerm(trimmedValue);
       setAppliedSearchTerm(trimmedValue);
-      searchTermRef.current = trimmedValue;
-      selectedPlansRef.current = selectedPlans;
-      selectedStatusesRef.current = selectedStatuses;
-      const appliedRange = cloneDateRange(pendingDateRange);
-      setAppliedDateRange(appliedRange);
-      dateRangeRef.current = appliedRange;
+      setAppliedDateRange(cloneDateRange(pendingDateRange));
       setCurrentPage(1);
-
-      if (shouldFetch) {
-        runFetch(1);
-      }
     },
-    [
-      clearError,
-      pendingSearchTerm,
-      pendingDateRange,
-      selectedPlans,
-      selectedStatuses,
-      shouldFetch,
-      runFetch,
-    ]
+    [pendingSearchTerm, pendingDateRange]
   );
 
-  useEffect(() => {
-    if (!shouldFetch || hasFetchedRef.current) return;
-    runFetch(1);
-  }, [shouldFetch, runFetch]);
-
-  const handlePageSizeChange = useCallback(
-    (value: string) => {
-      clearError();
-      const numericValue = Number(value);
-      if (!Number.isFinite(numericValue) || numericValue <= 0) {
-        return;
-      }
-
-      if (numericValue === pageSizeRef.current) return;
-
-      setPageSize(numericValue);
-      if (shouldFetch) {
-        searchTermRef.current = appliedSearchTerm;
-        selectedPlansRef.current = selectedPlans;
-        selectedStatusesRef.current = selectedStatuses;
-        runFetch(1, numericValue);
-      } else {
-        setCurrentPage(1);
-      }
-    },
-    [
-      clearError,
-      runFetch,
-      appliedSearchTerm,
-      selectedPlans,
-      selectedStatuses,
-      shouldFetch,
-    ]
-  );
+  const handlePageSizeChange = useCallback((value: string) => {
+    const numericValue = Number(value);
+    if (!Number.isFinite(numericValue) || numericValue <= 0) {
+      return;
+    }
+    setPageSize(numericValue);
+    setCurrentPage(1);
+  }, []);
 
   const handlePageChange = useCallback(
     (page: number) => {
-      clearError();
-      if (page < 1 || page > totalPages) return;
-      if (shouldFetch) {
-        runFetch(page);
-      } else {
-        setCurrentPage(page);
-      }
+      const nextPage = Math.max(1, Math.min(page, totalPages));
+      setCurrentPage(nextPage);
     },
-    [clearError, runFetch, shouldFetch, totalPages]
+    [totalPages]
   );
 
   const handleRetry = useCallback(() => {
-    clearError();
-    runFetch(currentPage);
-  }, [clearError, runFetch, currentPage]);
+    if (shouldFetch) {
+      void refetch();
+    }
+  }, [shouldFetch, refetch]);
 
   const handleCreateCompanySuccess = useCallback(() => {
-    // Recarregar os dados após criar uma empresa
     if (shouldFetch) {
-      clearError();
-      runFetch(1);
+      void refetch();
     }
-  }, [clearError, shouldFetch, runFetch]);
+  }, [shouldFetch, refetch]);
 
   const visiblePages = useMemo(() => {
     const pages: number[] = [];
@@ -542,7 +495,7 @@ export function CompanyDashboard({
       return pages;
     }
 
-    const start = Math.max(1, currentPage - 2);
+    const start = Math.max(1, currentPageValue - 2);
     const end = Math.min(totalPages, start + 4);
     const adjustedStart = Math.max(1, end - 4);
 
@@ -551,9 +504,10 @@ export function CompanyDashboard({
     }
 
     return pages;
-  }, [currentPage, totalPages]);
+  }, [currentPageValue, totalPages]);
 
-  const showEmptyState = !isLoadingData && totalItems === 0;
+  const showEmptyState =
+    !isLoadingData && !isFetchingData && totalItems === 0;
 
   return (
     <div className={cn("min-h-full", className)}>
@@ -577,40 +531,26 @@ export function CompanyDashboard({
             fields={filterFields}
             values={filterValues}
             onChange={(key, value) => {
-              clearError();
               if (key === "plan") {
                 const values = (value as string[]) ?? [];
                 setSelectedPlans(values);
-                selectedPlansRef.current = values;
                 setCurrentPage(1);
-                if (shouldFetch) {
-                  runFetch(1);
-                }
               } else if (key === "status") {
                 const values = Array.isArray(value)
                   ? (value as AdminCompanyStatus[])
                   : [];
                 setSelectedStatuses(values);
-                selectedStatusesRef.current = values;
                 setCurrentPage(1);
-                if (shouldFetch) {
-                  runFetch(1);
-                }
               } else if (key === "dateRange") {
                 const range = value
                   ? cloneDateRange(value as DateRange)
                   : createEmptyDateRange();
                 setPendingDateRange(range);
-
-                if (!shouldFetch) {
-                  setAppliedDateRange(range);
-                  dateRangeRef.current = range;
-                  setCurrentPage(1);
-                }
+                setAppliedDateRange(range);
+                setCurrentPage(1);
               }
             }}
             onClearAll={() => {
-              clearError();
               setPendingSearchTerm("");
               setAppliedSearchTerm("");
               setSelectedPlans([]);
@@ -618,22 +558,12 @@ export function CompanyDashboard({
               const resetRange = createEmptyDateRange();
               setPendingDateRange(resetRange);
               setAppliedDateRange(resetRange);
-              dateRangeRef.current = resetRange;
               setCurrentPage(1);
-              if (shouldFetch) {
-                searchTermRef.current = "";
-                selectedPlansRef.current = [];
-                selectedStatusesRef.current = [];
-                runFetch(1);
-              }
             }}
             search={{
               label: "Pesquisar empresa",
               value: pendingSearchTerm,
-              onChange: (value) => {
-                clearError();
-                setPendingSearchTerm(value);
-              },
+              onChange: (value) => setPendingSearchTerm(value),
               placeholder: "Buscar empresa, código ou CNPJ...",
               onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => {
                 if (e.key === "Enter") {
@@ -651,7 +581,9 @@ export function CompanyDashboard({
                   variant="ghost"
                   size="lg"
                   onClick={() => handleSearchSubmit()}
-                  disabled={isLoadingData || !isSearchInputValid}
+                  disabled={
+                    (isLoadingData || isFetchingData) || !isSearchInputValid
+                  }
                   fullWidth
                   className="md:w-full xl:w-auto"
                 >
@@ -661,14 +593,15 @@ export function CompanyDashboard({
             }
           />
 
-          {error && shouldFetch && (
+          {errorMessage && shouldFetch && (
             <div className="mt-3 text-sm text-red-600 flex items-center gap-2 px-1">
-              <span>{error}</span>
+              <span>{errorMessage}</span>
               <Button
                 variant="link"
                 size="sm"
                 onClick={handleRetry}
                 className="p-0 h-auto"
+                disabled={isLoadingData}
               >
                 Tentar novamente
               </Button>
@@ -678,21 +611,22 @@ export function CompanyDashboard({
       </div>
 
       <div className="py-6">
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <div className="overflow-x-auto">
-            <Table className="min-w-[800px]">
-              <TableHeader>
-                <TableRow className="border-gray-200 bg-gray-50/50">
-                  <TableHead
-                    className="font-medium text-gray-700 py-4"
-                    aria-sort={
-                      sortField === "name"
-                        ? sortDirection === "asc"
-                          ? "ascending"
-                          : "descending"
-                        : "none"
-                    }
-                  >
+        {!showEmptyState && (
+          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div className="overflow-x-auto">
+              <Table className="min-w-[800px]">
+                <TableHeader>
+                  <TableRow className="border-gray-200 bg-gray-50/50">
+                    <TableHead
+                      className="font-medium text-gray-700 py-4"
+                      aria-sort={
+                        sortField === "name"
+                          ? sortDirection === "asc"
+                            ? "ascending"
+                            : "descending"
+                          : "none"
+                      }
+                    >
                     <div className="inline-flex items-center gap-1">
                       <Tooltip>
                         <TooltipTrigger asChild>
@@ -872,25 +806,27 @@ export function CompanyDashboard({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {isLoadingData && <CompanyTableSkeleton rows={pageSize} />}
-                {!isLoadingData &&
+                {shouldShowSkeleton ? (
+                  <CompanyTableSkeleton rows={pageSizeValue} />
+                ) : (
                   displayedPartnerships.map((partnership) => (
                     <CompanyRow
                       key={partnership.id}
                       partnership={partnership}
                     />
-                  ))}
+                  ))
+                )}
               </TableBody>
             </Table>
           </div>
 
-          {(totalItems > 0 || isLoadingData) && (
+          {(totalItems > 0 || shouldShowSkeleton) && (
             <div className="flex flex-col gap-4 px-6 py-4 border-t border-gray-200 bg-gray-50/30 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-2 text-sm text-gray-600">
                 <span>
                   Mostrando{" "}
-                  {Math.min((currentPage - 1) * pageSize + 1, totalItems)} a{" "}
-                  {Math.min(currentPage * pageSize, totalItems)} de {totalItems}{" "}
+                  {Math.min((currentPageValue - 1) * pageSizeValue + 1, totalItems)} a{" "}
+                  {Math.min(currentPageValue * pageSizeValue, totalItems)} de {totalItems}{" "}
                   {totalItems === 1 ? "empresa" : "empresas"}
                 </span>
               </div>
@@ -900,8 +836,8 @@ export function CompanyDashboard({
                   <ButtonCustom
                     variant="outline"
                     size="sm"
-                    onClick={() => handlePageChange(currentPage - 1)}
-                    disabled={currentPage === 1}
+                    onClick={() => handlePageChange(currentPageValue - 1)}
+                    disabled={currentPageValue === 1}
                     className="h-8 px-3"
                   >
                     Anterior
@@ -910,7 +846,7 @@ export function CompanyDashboard({
                   {visiblePages[0] > 1 && (
                     <>
                       <ButtonCustom
-                        variant={currentPage === 1 ? "primary" : "outline"}
+                        variant={currentPageValue === 1 ? "primary" : "outline"}
                         size="sm"
                         onClick={() => handlePageChange(1)}
                         className="h-8 w-8 p-0"
@@ -926,7 +862,7 @@ export function CompanyDashboard({
                   {visiblePages.map((page) => (
                     <ButtonCustom
                       key={page}
-                      variant={currentPage === page ? "primary" : "outline"}
+                      variant={currentPageValue === page ? "primary" : "outline"}
                       size="sm"
                       onClick={() => handlePageChange(page)}
                       className="h-8 w-8 p-0"
@@ -943,7 +879,9 @@ export function CompanyDashboard({
                       )}
                       <ButtonCustom
                         variant={
-                          currentPage === totalPages ? "primary" : "outline"
+                          currentPageValue === totalPages
+                            ? "primary"
+                            : "outline"
                         }
                         size="sm"
                         onClick={() => handlePageChange(totalPages)}
@@ -957,8 +895,8 @@ export function CompanyDashboard({
                   <ButtonCustom
                     variant="outline"
                     size="sm"
-                    onClick={() => handlePageChange(currentPage + 1)}
-                    disabled={currentPage === totalPages}
+                    onClick={() => handlePageChange(currentPageValue + 1)}
+                    disabled={currentPageValue === totalPages}
                     className="h-8 px-3"
                   >
                     Próxima
@@ -968,16 +906,19 @@ export function CompanyDashboard({
             </div>
           )}
         </div>
+      )}
 
-        {showEmptyState && (
-          <EmptyState
-            fullHeight
-            maxContentWidth="sm"
-            illustration="fileNotFound"
-            illustrationAlt="Ilustração de arquivo não encontrado"
-            title="Nenhuma empresa encontrada"
-            description="Revise os filtros aplicados ou cadastre uma nova empresa para começar a acompanhar os resultados."
-          />
+      {showEmptyState && (
+          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <EmptyState
+              fullHeight
+              maxContentWidth="sm"
+              illustration="fileNotFound"
+              illustrationAlt="Ilustração de arquivo não encontrado"
+              title="Nenhuma empresa encontrada"
+              description="Revise os filtros aplicados ou cadastre uma nova empresa para começar a acompanhar os resultados."
+            />
+          </div>
         )}
       </div>
 

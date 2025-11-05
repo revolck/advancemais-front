@@ -409,6 +409,517 @@ export async function getEmailVerificationStatus(
 }
 
 // ============================================================================
+// ADMIN - CANDIDATOS/ALUNOS
+// ============================================================================
+
+/**
+ * GET /api/v1/usuarios/candidatos
+ * Lista todos os alunos/candidatos com paginação e filtros
+ *
+ * @param params - Parâmetros de filtro e paginação
+ * @param token - Token JWT (opcional)
+ * @returns Lista paginada de alunos
+ */
+export async function listAlunos(
+  params?: import("./types").ListAlunosParams,
+  token?: string
+): Promise<import("./types").ListAlunosResponse> {
+  const queryParams = new URLSearchParams();
+
+  if (params?.page) queryParams.set("page", String(params.page));
+  if (params?.limit) queryParams.set("limit", String(params.limit));
+  if (params?.status) queryParams.set("status", params.status);
+  if (params?.tipoUsuario) queryParams.set("tipoUsuario", params.tipoUsuario);
+  if (params?.search) queryParams.set("search", params.search);
+
+  const url = usuarioRoutes.admin.candidatos.list();
+  const fullUrl = queryParams.toString()
+    ? `${url}?${queryParams.toString()}`
+    : url;
+
+  return apiFetch<import("./types").ListAlunosResponse>(fullUrl, {
+    init: {
+      method: "GET",
+      headers: buildAuthHeaders(token),
+    },
+    cache: "no-cache",
+  });
+}
+
+/**
+ * GET /api/v1/usuarios/candidatos/dashboard
+ * Lista alunos/candidatos para dashboard (otimizado, 10 por página)
+ *
+ * @param params - Parâmetros de filtro
+ * @param token - Token JWT (opcional)
+ * @returns Lista paginada de alunos (máx 10 por página)
+ */
+export async function listAlunosDashboard(
+  params?: Omit<import("./types").ListAlunosParams, "limit">,
+  token?: string
+): Promise<import("./types").ListAlunosResponse> {
+  const queryParams = new URLSearchParams();
+
+  if (params?.page) queryParams.set("page", String(params.page));
+  if (params?.status) queryParams.set("status", params.status);
+  if (params?.tipoUsuario) queryParams.set("tipoUsuario", params.tipoUsuario);
+  if (params?.search) queryParams.set("search", params.search);
+
+  const url = usuarioRoutes.admin.candidatos.dashboard();
+  const fullUrl = queryParams.toString()
+    ? `${url}?${queryParams.toString()}`
+    : url;
+
+  return apiFetch<import("./types").ListAlunosResponse>(fullUrl, {
+    init: {
+      method: "GET",
+      headers: buildAuthHeaders(token),
+    },
+    cache: "no-cache",
+  });
+}
+
+/**
+ * GET /api/v1/usuarios/candidatos/{userId}
+ * Busca um aluno/candidato específico por ID
+ *
+ * @param userId - ID do aluno
+ * @param token - Token JWT (opcional)
+ * @returns Dados completos do aluno
+ */
+export async function getAlunoById(
+  userId: string,
+  token?: string
+): Promise<import("./types").GetAlunoResponse> {
+  return apiFetch<import("./types").GetAlunoResponse>(
+    usuarioRoutes.admin.candidatos.get(userId),
+    {
+      init: {
+        method: "GET",
+        headers: buildAuthHeaders(token),
+      },
+      cache: "no-cache",
+    }
+  );
+}
+
+/**
+ * GET /api/v1/usuarios/candidatos/{userId}/logs
+ * Busca logs de um aluno/candidato específico
+ *
+ * @param userId - ID do aluno
+ * @param token - Token JWT (opcional)
+ * @returns Logs do aluno
+ */
+export async function getAlunoLogs(
+  userId: string,
+  token?: string
+): Promise<any> {
+  return apiFetch<any>(usuarioRoutes.admin.candidatos.logs(userId), {
+    init: {
+      method: "GET",
+      headers: buildAuthHeaders(token),
+    },
+    cache: "no-cache",
+  });
+}
+
+// ============================================================================
+// Alunos - Bloqueios (módulo Usuários)
+// ============================================================================
+
+export async function createAlunoBloqueio(
+  alunoId: string,
+  payload: import("./types").CreateAlunoBloqueioPayload,
+  token?: string
+): Promise<any> {
+  return apiFetch<any>(usuarioRoutes.alunos.bloqueios.create(alunoId), {
+    init: {
+      method: "POST",
+      headers: {
+        ...buildAuthHeaders(token),
+        "Content-Type": apiConfig.headers["Content-Type"],
+      },
+      body: JSON.stringify(payload),
+    },
+    cache: "no-cache",
+  });
+}
+
+export async function revokeAlunoBloqueio(
+  alunoId: string,
+  payload?: import("./types").RevokeAlunoBloqueioPayload,
+  token?: string
+): Promise<any> {
+  return apiFetch<any>(usuarioRoutes.alunos.bloqueios.revoke(alunoId), {
+    init: {
+      method: "POST",
+      headers: {
+        ...buildAuthHeaders(token),
+        "Content-Type": apiConfig.headers["Content-Type"],
+      },
+      body: payload ? JSON.stringify(payload) : undefined,
+    },
+    cache: "no-cache",
+  });
+}
+
+export async function listAlunoBloqueios(
+  alunoId: string,
+  token?: string
+): Promise<any> {
+  return apiFetch<any>(usuarioRoutes.alunos.bloqueios.list(alunoId), {
+    init: {
+      method: "GET",
+      headers: buildAuthHeaders(token),
+    },
+    cache: "no-cache",
+  });
+}
+
+// ============================================================================
+// ADMIN - INSTRUTORES
+// ============================================================================
+
+/**
+ * GET /api/v1/usuarios/instrutores
+ * Lista todos os instrutores com paginação e filtros
+ *
+ * @param params - Parâmetros de filtro e paginação
+ * @param token - Token JWT (opcional)
+ * @returns Lista paginada de instrutores
+ */
+export async function listInstrutores(
+  params?: import("./types").ListInstrutoresParams,
+  token?: string
+): Promise<import("./types").ListInstrutoresResponse> {
+  const queryParams = new URLSearchParams();
+
+  if (params?.page) queryParams.set("page", String(params.page));
+  if (params?.limit) queryParams.set("limit", String(params.limit));
+  if (params?.status) queryParams.set("status", params.status);
+  if (params?.search) queryParams.set("search", params.search);
+
+  const url = usuarioRoutes.instrutores.list();
+  const fullUrl = queryParams.toString()
+    ? `${url}?${queryParams.toString()}`
+    : url;
+
+  return apiFetch<import("./types").ListInstrutoresResponse>(fullUrl, {
+    init: {
+      method: "GET",
+      headers: buildAuthHeaders(token),
+    },
+    cache: "no-cache",
+  });
+}
+
+/**
+ * GET /api/v1/usuarios/instrutores/:instrutorId
+ * Busca um instrutor específico por ID
+ *
+ * @param instrutorId - ID do instrutor
+ * @param token - Token JWT (opcional)
+ * @returns Dados completos do instrutor
+ */
+export async function getInstrutorById(
+  instrutorId: string,
+  token?: string
+): Promise<import("./types").GetInstrutorResponse> {
+  return apiFetch<import("./types").GetInstrutorResponse>(
+    usuarioRoutes.instrutores.get(instrutorId),
+    {
+      init: {
+        method: "GET",
+        headers: buildAuthHeaders(token),
+      },
+      cache: "no-cache",
+    }
+  );
+}
+
+/**
+ * PUT /api/v1/usuarios/instrutores/:instrutorId
+ * Atualiza dados do instrutor
+ *
+ * @param instrutorId - ID do instrutor
+ * @param payload - Dados para atualização
+ * @param token - Token JWT (opcional)
+ * @returns Dados atualizados do instrutor
+ */
+export async function updateInstrutor(
+  instrutorId: string,
+  payload: import("./types").UpdateInstrutorPayload,
+  token?: string
+): Promise<import("./types").GetInstrutorResponse> {
+  return apiFetch<import("./types").GetInstrutorResponse>(
+    usuarioRoutes.instrutores.update(instrutorId),
+    {
+      init: {
+        method: "PUT",
+        headers: {
+          ...buildAuthHeaders(token),
+          "Content-Type": apiConfig.headers["Content-Type"],
+        },
+        body: JSON.stringify(payload),
+      },
+      cache: "no-cache",
+    }
+  );
+}
+
+/**
+ * POST /api/v1/usuarios/instrutores/:userId/bloqueios
+ * Aplica bloqueio a um instrutor
+ *
+ * @param instrutorId - ID do instrutor
+ * @param payload - Dados do bloqueio
+ * @param token - Token JWT (opcional)
+ * @returns Confirmação do bloqueio
+ */
+export async function createInstrutorBloqueio(
+  instrutorId: string,
+  payload: import("./types").CreateInstrutorBloqueioPayload,
+  token?: string
+): Promise<any> {
+  return apiFetch<any>(
+    usuarioRoutes.instrutores.bloqueios.create(instrutorId),
+    {
+      init: {
+        method: "POST",
+        headers: {
+          ...buildAuthHeaders(token),
+          "Content-Type": apiConfig.headers["Content-Type"],
+        },
+        body: JSON.stringify(payload),
+      },
+      cache: "no-cache",
+    }
+  );
+}
+
+/**
+ * POST /api/v1/usuarios/instrutores/:userId/bloqueios/revogar
+ * Revoga bloqueio de um instrutor
+ *
+ * @param instrutorId - ID do instrutor
+ * @param payload - Observações sobre a revogação (opcional)
+ * @param token - Token JWT (opcional)
+ * @returns Confirmação da revogação
+ */
+export async function revokeInstrutorBloqueio(
+  instrutorId: string,
+  payload?: import("./types").RevokeInstrutorBloqueioPayload,
+  token?: string
+): Promise<any> {
+  return apiFetch<any>(
+    usuarioRoutes.instrutores.bloqueios.revoke(instrutorId),
+    {
+      init: {
+        method: "POST",
+        headers: {
+          ...buildAuthHeaders(token),
+          "Content-Type": apiConfig.headers["Content-Type"],
+        },
+        body: payload ? JSON.stringify(payload) : undefined,
+      },
+      cache: "no-cache",
+    }
+  );
+}
+
+/**
+ * GET /api/v1/usuarios/instrutores/:userId/bloqueios
+ * Lista histórico de bloqueios de um instrutor
+ *
+ * @param instrutorId - ID do instrutor
+ * @param token - Token JWT (opcional)
+ * @returns Histórico de bloqueios
+ */
+export async function listInstrutorBloqueios(
+  instrutorId: string,
+  token?: string
+): Promise<any> {
+  return apiFetch<any>(usuarioRoutes.instrutores.bloqueios.list(instrutorId), {
+    init: {
+      method: "GET",
+      headers: buildAuthHeaders(token),
+    },
+    cache: "no-cache",
+  });
+}
+
+// ============================================================================
+// ADMIN - USUARIOS GERAIS
+// ============================================================================
+
+/**
+ * GET /api/v1/usuarios/usuarios
+ * Lista todos os usuários gerais com paginação e filtros
+ *
+ * @param params - Parâmetros de filtro e paginação
+ * @param token - Token JWT (opcional)
+ * @returns Lista paginada de usuários
+ */
+export async function listUsuarios(
+  params?: import("./types").ListUsuariosParams,
+  token?: string
+): Promise<import("./types").ListUsuariosResponse> {
+  const queryParams = new URLSearchParams();
+
+  if (params?.page) queryParams.set("page", String(params.page));
+  if (params?.limit) queryParams.set("limit", String(params.limit));
+  if (params?.status) queryParams.set("status", params.status);
+  if (params?.role) queryParams.set("role", params.role);
+  if (params?.tipoUsuario) queryParams.set("tipoUsuario", params.tipoUsuario);
+  if (params?.search) queryParams.set("search", params.search);
+  if (params?.cidade) queryParams.set("cidade", params.cidade);
+  if (params?.estado) queryParams.set("estado", params.estado);
+
+  const url = usuarioRoutes.admin.usuarios.list();
+  const fullUrl = queryParams.toString()
+    ? `${url}?${queryParams.toString()}`
+    : url;
+
+  return apiFetch<import("./types").ListUsuariosResponse>(fullUrl, {
+    init: {
+      method: "GET",
+      headers: buildAuthHeaders(token),
+    },
+    cache: "no-cache",
+  });
+}
+
+/**
+ * GET /api/v1/usuarios/usuarios/:userId
+ * Busca um usuário específico por ID
+ *
+ * @param userId - ID do usuário
+ * @param token - Token JWT (opcional)
+ * @returns Dados completos do usuário
+ */
+export async function getUsuarioById(
+  userId: string,
+  token?: string
+): Promise<import("./types").GetUsuarioResponse> {
+  return apiFetch<import("./types").GetUsuarioResponse>(
+    usuarioRoutes.admin.usuarios.get(userId),
+    {
+      init: {
+        method: "GET",
+        headers: buildAuthHeaders(token),
+      },
+      cache: "no-cache",
+    }
+  );
+}
+
+/**
+ * PUT /api/v1/usuarios/usuarios/:userId
+ * Atualiza informações de um usuário
+ *
+ * @param userId - ID do usuário
+ * @param payload - Dados para atualização
+ * @param token - Token JWT (opcional)
+ * @returns Dados atualizados do usuário
+ */
+export async function updateUsuario(
+  userId: string,
+  payload: import("./types").UpdateUsuarioPayload,
+  token?: string
+): Promise<import("./types").GetUsuarioResponse> {
+  return apiFetch<import("./types").GetUsuarioResponse>(
+    usuarioRoutes.admin.usuarios.update(userId),
+    {
+      init: {
+        method: "PUT",
+        headers: {
+          ...buildAuthHeaders(token),
+          ...JSON_HEADERS,
+        },
+        body: JSON.stringify(payload),
+      },
+      cache: "no-cache",
+    }
+  );
+}
+
+/**
+ * POST /api/v1/usuarios/usuarios/:userId/bloqueios
+ * Aplica um bloqueio em um usuário
+ *
+ * @param userId - ID do usuário
+ * @param payload - Dados do bloqueio
+ * @param token - Token JWT (opcional)
+ * @returns Confirmação do bloqueio
+ */
+export async function createUsuarioBloqueio(
+  userId: string,
+  payload: import("./types").CreateUsuarioBloqueioPayload,
+  token?: string
+): Promise<any> {
+  return apiFetch<any>(usuarioRoutes.admin.usuarios.bloqueios.create(userId), {
+    init: {
+      method: "POST",
+      headers: {
+        ...buildAuthHeaders(token),
+        ...JSON_HEADERS,
+      },
+      body: JSON.stringify(payload),
+    },
+    cache: "no-cache",
+  });
+}
+
+/**
+ * POST /api/v1/usuarios/usuarios/:userId/bloqueios/revogar
+ * Revoga um bloqueio ativo de um usuário
+ *
+ * @param userId - ID do usuário
+ * @param payload - Observações da revogação (opcional)
+ * @param token - Token JWT (opcional)
+ * @returns Confirmação da revogação
+ */
+export async function revokeUsuarioBloqueio(
+  userId: string,
+  payload?: import("./types").RevokeUsuarioBloqueioPayload,
+  token?: string
+): Promise<any> {
+  return apiFetch<any>(usuarioRoutes.admin.usuarios.bloqueios.revoke(userId), {
+    init: {
+      method: "POST",
+      headers: {
+        ...buildAuthHeaders(token),
+        ...JSON_HEADERS,
+      },
+      body: JSON.stringify(payload || {}),
+    },
+    cache: "no-cache",
+  });
+}
+
+/**
+ * GET /api/v1/usuarios/usuarios/:userId/bloqueios
+ * Lista histórico de bloqueios de um usuário
+ *
+ * @param userId - ID do usuário
+ * @param token - Token JWT (opcional)
+ * @returns Histórico de bloqueios
+ */
+export async function listUsuarioBloqueios(
+  userId: string,
+  token?: string
+): Promise<any> {
+  return apiFetch<any>(usuarioRoutes.admin.usuarios.bloqueios.list(userId), {
+    init: {
+      method: "GET",
+      headers: buildAuthHeaders(token),
+    },
+    cache: "no-cache",
+  });
+}
+
+// ============================================================================
 // ALIASES E FUNÇÕES DE CONVENIÊNCIA
 // ============================================================================
 
@@ -509,6 +1020,28 @@ export const usuarioApi = {
   verifyUserEmail,
   resendEmailVerification,
   getEmailVerificationStatus,
+
+  // Admin - Candidatos/Alunos
+  listAlunos,
+  listAlunosDashboard,
+  getAlunoById,
+  getAlunoLogs,
+
+  // Admin - Instrutores
+  listInstrutores,
+  getInstrutorById,
+  updateInstrutor,
+  createInstrutorBloqueio,
+  revokeInstrutorBloqueio,
+  listInstrutorBloqueios,
+
+  // Admin - Usuarios Gerais
+  listUsuarios,
+  getUsuarioById,
+  updateUsuario,
+  createUsuarioBloqueio,
+  revokeUsuarioBloqueio,
+  listUsuarioBloqueios,
 
   // Aliases
   requestPasswordReset,

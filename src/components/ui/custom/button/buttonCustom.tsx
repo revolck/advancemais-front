@@ -31,28 +31,33 @@ const ButtonCustom = React.forwardRef<HTMLButtonElement, ButtonCustomProps>(
     ref
   ) => {
     // Determina o componente a ser renderizado
-    const Comp = asChild ? Slot : "button";
+    const Comp = asChild ? Slot : ("button" as const);
 
-    // Conteúdo interno do botão
-    const buttonContent = (
+    // Função para montar o conteúdo interno do botão,
+    // permitindo injetar filhos customizados quando "asChild" for usado
+    const renderInner = (innerChildren: React.ReactNode) => (
       <>
         {isLoading ? (
           <>
             <Loader2 className="size-4 animate-spin" />
-            {loadingText || children}
+            {loadingText || innerChildren}
           </>
         ) : (
           <>
             {icon && iconPosition === "left" && <Icon name={icon} />}
-            {children}
+            {innerChildren}
             {icon && iconPosition === "right" && <Icon name={icon} />}
           </>
         )}
       </>
     );
 
-    // Se withAnimation for true, aplica animação no próprio botão
-    if (withAnimation) {
+    // Para usos como Trigger/Slot (Radix asChild), evitar recriar Motion component
+    // pois isso pode causar loops de atualização (ex.: Dropdown/Menu/Popover triggers).
+    const shouldAnimate = withAnimation && !asChild;
+
+    // Se withAnimation for true (e não asChild), aplica animação no próprio botão
+    if (shouldAnimate) {
       const MotionComp = (motion as any).create
         ? (motion as any).create(Comp as any)
         : (motion as any)(Comp as any);
@@ -75,7 +80,7 @@ const ButtonCustom = React.forwardRef<HTMLButtonElement, ButtonCustomProps>(
           {...props}
         >
           <span className="flex items-center justify-center gap-2 w-full">
-            {buttonContent}
+            {renderInner(children as React.ReactNode)}
           </span>
         </MotionComp>
       );
@@ -83,6 +88,37 @@ const ButtonCustom = React.forwardRef<HTMLButtonElement, ButtonCustomProps>(
 
     // Versão sem animação
     const { disabled, ...rest } = props;
+
+    // Quando "asChild" é true, precisamos garantir que o Slot receba
+    // exatamente um elemento React válido (não um Fragment). Além disso,
+    // injetamos o conteúdo (ícones/loader + filhos) dentro do elemento filho.
+    if (asChild && React.isValidElement(children)) {
+      const childElement = children as React.ReactElement;
+      const inner = (childElement.props as any)?.children as React.ReactNode;
+      const composedChildren = renderInner(inner);
+      const clonedChild = React.cloneElement(childElement, undefined, composedChildren);
+
+      return (
+        <Comp
+          data-slot="button-custom"
+          className={cn(
+            buttonCustomVariants({
+              variant,
+              size,
+              fullWidth,
+              withAnimation,
+              className,
+            })
+          )}
+          ref={ref}
+          // Evitar passar "disabled" diretamente para elementos não-button
+          {...(rest as React.ButtonHTMLAttributes<HTMLButtonElement>)}
+        >
+          {clonedChild}
+        </Comp>
+      );
+    }
+
     return (
       <Comp
         data-slot="button-custom"
@@ -99,7 +135,9 @@ const ButtonCustom = React.forwardRef<HTMLButtonElement, ButtonCustomProps>(
         disabled={isLoading || disabled}
         {...(rest as React.ButtonHTMLAttributes<HTMLButtonElement>)}
       >
-        {buttonContent}
+        <span className="flex items-center justify-center gap-2 w-full">
+          {renderInner(children as React.ReactNode)}
+        </span>
       </Comp>
     );
   }

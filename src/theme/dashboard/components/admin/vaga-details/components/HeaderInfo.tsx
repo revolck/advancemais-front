@@ -30,6 +30,7 @@ import { cn } from "@/lib/utils";
 import type { VagaHeaderInfoProps } from "../types";
 import { formatVagaStatus, getVagaStatusBadgeClasses } from "../utils";
 import { getInitials } from "../utils/formatters";
+import { DespublicarVagaModal, DeletarVagaModal } from "../modal-acoes";
 
 export function HeaderInfo({
   vaga,
@@ -39,6 +40,8 @@ export function HeaderInfo({
   onUnpublishVaga,
 }: VagaHeaderInfoProps) {
   const [isActionsOpen, setIsActionsOpen] = useState(false);
+  const [isUnpublishModalOpen, setIsUnpublishModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   const isVagaPublished = vaga.status === "PUBLICADO";
   const statusColor = isVagaPublished ? "bg-emerald-500" : "bg-amber-500";
@@ -64,6 +67,24 @@ export function HeaderInfo({
       <TooltipContent sideOffset={8}>Vaga elegível para PCD</TooltipContent>
     </Tooltip>
   ) : null;
+
+  const handleUnpublishClick = () => {
+    setIsUnpublishModalOpen(true);
+    setIsActionsOpen(false);
+  };
+
+  const handleUnpublishConfirm = async () => {
+    await onUnpublishVaga?.();
+  };
+
+  const handleDeleteClick = () => {
+    setIsDeleteModalOpen(true);
+    setIsActionsOpen(false);
+  };
+
+  const handleDeleteConfirm = async () => {
+    await onDeleteVaga?.();
+  };
 
   return (
     <section className="relative overflow-hidden rounded-3xl bg-white">
@@ -132,7 +153,9 @@ export function HeaderInfo({
                 <span>Editar vaga</span>
               </DropdownMenuItem>
               <DropdownMenuItem
-                onSelect={isVagaPublished ? onUnpublishVaga : onPublishVaga}
+                onSelect={
+                  isVagaPublished ? handleUnpublishClick : onPublishVaga
+                }
                 className="cursor-pointer"
               >
                 {isVagaPublished ? (
@@ -149,7 +172,7 @@ export function HeaderInfo({
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
-                onSelect={onDeleteVaga}
+                onSelect={handleDeleteClick}
                 className="cursor-pointer text-red-600 focus:text-red-600"
               >
                 <Trash2 className="h-4 w-4" />
@@ -169,6 +192,22 @@ export function HeaderInfo({
           </Button>
         </div>
       </div>
+
+      {/* Modal de Despublicação */}
+      <DespublicarVagaModal
+        isOpen={isUnpublishModalOpen}
+        onOpenChange={setIsUnpublishModalOpen}
+        onConfirmUnpublish={handleUnpublishConfirm}
+        vaga={vaga}
+      />
+
+      {/* Modal de Exclusão */}
+      <DeletarVagaModal
+        isOpen={isDeleteModalOpen}
+        onOpenChange={setIsDeleteModalOpen}
+        onConfirmDelete={handleDeleteConfirm}
+        vaga={vaga}
+      />
     </section>
   );
 }

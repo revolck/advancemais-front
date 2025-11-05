@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from "next";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import "@/styles/globals.css";
+import { AppProviders } from "./providers";
 
 /**
  * Layout raiz global da aplicação
@@ -50,9 +51,11 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
       </head>
       <body className="font-sans antialiased">
-        <div id="root-container" className="min-h-screen">
-          {children}
-        </div>
+        <AppProviders>
+          <div id="root-container" className="min-h-screen">
+            {children}
+          </div>
+        </AppProviders>
         <div id="modal-portal" />
         <div id="tooltip-portal" />
         <Analytics />

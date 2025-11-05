@@ -23,8 +23,8 @@ const sections: Array<{
     content: [
       "Empresa: pessoa jurídica que divulga vagas, contrata planos/assinaturas e usa serviços B2B.",
       "Candidato(a): pessoa física que cadastra currículo e aplica a vagas.",
-      "Aluno(a): pessoa física matriculada em cursos/treinamentos.",
-      "Professor(a): instrutor(a) responsável por conteúdo/avaliações.",
+      "Aluno(a): pessoa física inscrita em cursos/treinamentos.",
+      "Instrutor(a): responsável por conteúdo/avaliações e ministrar cursos.",
       "Profissional de Psicologia/Pedagógico: presta serviços de avaliação/orientação educacional/psicológica na Plataforma.",
       "Usuário(a): qualquer pessoa que acesse ou use a Plataforma.",
     ],
@@ -35,7 +35,7 @@ const sections: Array<{
       "2.1. Idade mínima: recomendado para maiores de 18 anos; menores só com consentimento do responsável e observância ao ECA quando aplicável.",
       "2.2. Dados verídicos: você declara fornecer informações verdadeiras, completas e atualizadas.",
       "2.3. Credenciais: mantenha login/senha sob sigilo; atividades feitas na sua conta são de sua responsabilidade.",
-      "2.4. Perfis e permissões: funcionalidades variam conforme o papel (Empresa, Candidato, Aluno, Professor, Psicologia/Pedagógico).",
+      "2.4. Perfis e permissões: funcionalidades variam conforme o papel (Empresa, Candidato, Aluno, Instrutor, Psicologia/Pedagógico).",
     ],
   },
   {
@@ -76,7 +76,7 @@ const sections: Array<{
     title: "Privacidade, LGPD e Cookies",
     content: [
       "7.1. Conformidade: tratamos dados pessoais conforme LGPD, Marco Civil da Internet e normas de consumo. Detalhes na Política de Privacidade.",
-      "7.2. Bases legais: execução de contrato (matrícula/inscrição), obrigação legal (fiscal/contábil), legítimo interesse (segurança/antifraude), consentimento quando exigido.",
+      "7.2. Bases legais: execução de contrato (inscrição), obrigação legal (fiscal/contábil), legítimo interesse (segurança/antifraude), consentimento quando exigido.",
       "7.3. Direitos do titular: confirmação de tratamento, acesso, correção, portabilidade, anonimização, revogação de consentimento e eliminação (nos termos legais).",
       "7.4. Registros de acesso: guardados pelo prazo legal mínimo (Marco Civil).",
       "7.5. Cookies: usamos cookies para funcionalidade, analytics e personalização; preferências podem ser geridas no banner ou navegador.",

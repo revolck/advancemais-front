@@ -15,6 +15,24 @@ export interface UsuarioResponseBase {
   timestamp?: string;
 }
 
+export type UsuarioErrorCode =
+  | "EMAIL_NOT_VERIFIED"
+  | "ACCOUNT_INACTIVE"
+  | "INVALID_CREDENTIALS"
+  | "USER_NOT_FOUND"
+  | "USER_ALREADY_EXISTS"
+  | "INVALID_TOKEN"
+  | "TOKEN_EXPIRED"
+  | "RATE_LIMIT_EXCEEDED"
+  | "INVALID_DOCUMENT"
+  | "PASSWORD_MISMATCH"
+  | "TERMS_NOT_ACCEPTED"
+  | "INVALID_EMAIL_FORMAT"
+  | "WEAK_PASSWORD"
+  | "INVALID_REFRESH_TOKEN"
+  | "REFRESH_TOKEN_EXPIRED"
+  | "INTERNAL_ERROR";
+
 export interface UsuarioErrorResponse extends UsuarioResponseBase {
   errors?: Array<{
     path: string;
@@ -24,6 +42,7 @@ export interface UsuarioErrorResponse extends UsuarioResponseBase {
   retryAfter?: number;
   data?: Record<string, any>;
   status?: string;
+  code?: UsuarioErrorCode;
 }
 
 // ============================================================================
@@ -38,7 +57,16 @@ export type Genero =
   | "OUTRO"
   | "PREFIRO_NAO_INFORMAR";
 
-export type Role = "ADMIN" | "ALUNO_CANDIDATO" | "EMPRESA" | "INSTRUTOR";
+export type Role =
+  | "ADMIN"
+  | "ALUNO_CANDIDATO"
+  | "EMPRESA"
+  | "INSTRUTOR"
+  | "MODERADOR"
+  | "FINANCEIRO"
+  | "PEDAGOGICO"
+  | "SETOR_DE_VAGAS"
+  | "RECRUTADOR";
 
 export type StatusUsuario = "ATIVO" | "INATIVO" | "SUSPENSO" | "BLOQUEADO";
 
@@ -54,15 +82,23 @@ export interface UsuarioPasswordRecoveryRequestPayload {
 }
 
 export interface UsuarioPasswordRecoveryResponse extends UsuarioResponseBase {
+  success: boolean;
   message: string;
+  data: {
+    email: string;
+    tokenExpirationMinutes: number;
+    canResendInMinutes: number;
+  };
 }
 
 export interface UsuarioPasswordRecoveryValidationResponse
   extends UsuarioResponseBase {
+  success: boolean;
   message: string;
-  usuario?: {
-    email: string;
-    nomeCompleto: string;
+  data: {
+    valid: boolean;
+    expiresAt: string;
+    remainingMinutes: number;
   };
 }
 
@@ -73,7 +109,13 @@ export interface UsuarioPasswordResetPayload {
 }
 
 export interface UsuarioPasswordResetResponse extends UsuarioResponseBase {
+  success: boolean;
   message: string;
+  data: {
+    userId: string;
+    email: string;
+    passwordChangedAt: string;
+  };
 }
 
 // ============================================================================
@@ -289,6 +331,7 @@ export interface UsuarioModuleInfoResponse extends UsuarioResponseBase {
   environment: string;
   features: UsuarioModuleFeatures;
   endpoints: UsuarioModuleEndpoints;
+  status?: string;
 }
 
 // ============================================================================
@@ -364,6 +407,295 @@ export interface UsuarioInvalidRefreshTokenError extends UsuarioErrorResponse {
 
 export interface UsuarioInternalError extends UsuarioErrorResponse {
   code: "INTERNAL_ERROR";
+}
+
+// ============================================================================
+// ADMIN - CANDIDATOS/ALUNOS
+// ============================================================================
+
+export interface Aluno {
+  id: string;
+  nomeCompleto: string;
+  email: string;
+  cpf?: string;
+  codUsuario: string;
+  status: StatusUsuario;
+  tipoUsuario: TipoUsuario;
+  role: Role;
+  telefone?: string;
+  celular?: string;
+  criadoEm: string;
+  atualizadoEm?: string;
+}
+
+export interface ListAlunosParams {
+  page?: number;
+  limit?: number;
+  status?: StatusUsuario;
+  tipoUsuario?: TipoUsuario;
+  search?: string;
+}
+
+export interface ListAlunosResponse extends UsuarioResponseBase {
+  data: Aluno[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    total: number;
+    pages: number;
+  };
+}
+
+export interface GetAlunoResponse extends UsuarioResponseBase {
+  data: Aluno;
+}
+
+// ============================================================================
+// ADMIN - INSTRUTORES
+// ============================================================================
+
+export interface Instrutor {
+  id: string;
+  nomeCompleto: string;
+  email: string;
+  cpf?: string;
+  codUsuario: string;
+  status: StatusUsuario;
+  tipoUsuario: TipoUsuario;
+  role: Role;
+  telefone?: string;
+  celular?: string;
+  cidade?: string;
+  estado?: string;
+  criadoEm: string;
+  atualizadoEm?: string;
+  ultimoLogin?: string | null;
+  descricao?: string | null;
+  genero?: string | null;
+  dataNasc?: string | null;
+  avatarUrl?: string | null;
+  enderecos?: UsuarioEndereco[];
+  socialLinks?: UsuarioSocialLinks;
+}
+
+export interface ListInstrutoresParams {
+  page?: number;
+  limit?: number;
+  status?: StatusUsuario;
+  search?: string;
+}
+
+export interface ListInstrutoresResponse extends UsuarioResponseBase {
+  data: Instrutor[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    total: number;
+    pages: number;
+  };
+}
+
+export interface GetInstrutorResponse extends UsuarioResponseBase {
+  data: Instrutor;
+}
+
+export interface UpdateInstrutorPayload {
+  nomeCompleto?: string;
+  email?: string;
+  telefone?: string;
+  genero?: string;
+  dataNasc?: string;
+  descricao?: string;
+  avatarUrl?: string;
+  enderecos?: UsuarioEndereco[];
+  socialLinks?: UsuarioSocialLinks;
+  senha?: string;
+  confirmarSenha?: string;
+}
+
+// ============================================================================
+// ALUNOS - BLOQUEIOS
+// ============================================================================
+
+export type AlunoBloqueioTipo = "TEMPORARIO" | "PERMANENTE";
+
+export interface CreateAlunoBloqueioPayload {
+  tipo: AlunoBloqueioTipo;
+  motivo: string;
+  dias?: number; // obrigatório quando tipo = TEMPORARIO
+  observacoes?: string;
+}
+
+export interface RevokeAlunoBloqueioPayload {
+  observacoes?: string;
+}
+
+// ============================================================================
+// INSTRUTORES - BLOQUEIOS
+// ============================================================================
+
+export type InstrutorBloqueioTipo =
+  | "TEMPORARIO"
+  | "PERMANENTE"
+  | "RESTRICAO_DE_RECURSO";
+
+export type InstrutorBloqueioMotivo =
+  | "SPAM"
+  | "VIOLACAO_POLITICAS"
+  | "FRAUDE"
+  | "ABUSO_DE_RECURSOS"
+  | "OUTROS";
+
+export interface CreateInstrutorBloqueioPayload {
+  tipo: InstrutorBloqueioTipo;
+  motivo: InstrutorBloqueioMotivo;
+  dias?: number; // obrigatório quando tipo = TEMPORARIO
+  observacoes?: string;
+}
+
+export interface RevokeInstrutorBloqueioPayload {
+  observacoes?: string;
+}
+
+// ============================================================================
+// ADMIN - USUARIOS GERAIS
+// ============================================================================
+
+export interface UsuarioGenerico {
+  id: string;
+  nomeCompleto: string;
+  email: string;
+  cpf?: string;
+  cnpj?: string;
+  codUsuario?: string;
+  status: StatusUsuario;
+  tipoUsuario: TipoUsuario;
+  role: Role;
+  telefone?: string;
+  celular?: string;
+  cidade?: string;
+  estado?: string;
+  criadoEm: string;
+  atualizadoEm?: string;
+  ultimoLogin?: string | null;
+  descricao?: string | null;
+  genero?: string | null;
+  dataNasc?: string | null;
+  avatarUrl?: string | null;
+  enderecos?: UsuarioEndereco[];
+  socialLinks?: UsuarioSocialLinks;
+  // Relações por role
+  curriculos?: UsuarioCurriculo[];
+  candidaturas?: UsuarioCandidatura[];
+  cursosInscricoes?: UsuarioCursoInscricao[];
+  vagas?: UsuarioVaga[];
+}
+
+// Tipos simplificados para relações
+export interface UsuarioCurriculo {
+  id: string;
+  titulo: string;
+  resumo?: string | null;
+  principal: boolean;
+  criadoEm: string;
+}
+
+export interface UsuarioCandidatura {
+  id: string;
+  vagaId: string;
+  status: string;
+  aplicadaEm: string;
+  vaga?: {
+    id: string;
+    titulo: string;
+  };
+}
+
+export interface UsuarioCursoInscricao {
+  id: string;
+  status: string;
+  turma?: {
+    id: string;
+    nome: string;
+    curso?: {
+      id: number;
+      nome: string;
+    };
+  };
+}
+
+export interface UsuarioVaga {
+  id: string;
+  titulo: string;
+  status: string;
+  modalidade?: string;
+  senioridade?: string;
+}
+
+export interface ListUsuariosParams {
+  page?: number;
+  limit?: number;
+  status?: StatusUsuario;
+  role?: Role;
+  tipoUsuario?: TipoUsuario;
+  search?: string;
+  cidade?: string;
+  estado?: string;
+}
+
+export interface ListUsuariosResponse extends UsuarioResponseBase {
+  usuarios: UsuarioGenerico[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    pages: number;
+  };
+}
+
+export interface GetUsuarioResponse extends UsuarioResponseBase {
+  usuario: UsuarioGenerico;
+}
+
+export interface UpdateUsuarioPayload {
+  nomeCompleto?: string;
+  email?: string;
+  telefone?: string;
+  genero?: string;
+  dataNasc?: string;
+  descricao?: string;
+  avatarUrl?: string;
+  enderecos?: UsuarioEndereco[];
+  socialLinks?: UsuarioSocialLinks;
+  senha?: string;
+  confirmarSenha?: string;
+}
+
+// ============================================================================
+// USUARIOS GERAIS - BLOQUEIOS
+// ============================================================================
+
+export type UsuarioBloqueioTipo =
+  | "TEMPORARIO"
+  | "PERMANENTE"
+  | "RESTRICAO_DE_RECURSO";
+
+export type UsuarioBloqueioMotivo =
+  | "SPAM"
+  | "VIOLACAO_POLITICAS"
+  | "FRAUDE"
+  | "ABUSO_DE_RECURSOS"
+  | "OUTROS";
+
+export interface CreateUsuarioBloqueioPayload {
+  tipo: UsuarioBloqueioTipo;
+  motivo: UsuarioBloqueioMotivo;
+  dias?: number;
+  observacoes?: string;
+}
+
+export interface RevokeUsuarioBloqueioPayload {
+  observacoes?: string;
 }
 
 // ============================================================================

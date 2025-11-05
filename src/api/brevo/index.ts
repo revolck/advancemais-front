@@ -7,6 +7,13 @@ import type {
   BrevoResendVerificationResponse,
   BrevoStatusResponse,
   BrevoVerificationResponse,
+  BrevoModuleInfoResponse,
+  BrevoHealthResponse,
+  BrevoConfigResponse,
+  BrevoTestEmailPayload,
+  BrevoTestEmailResponse,
+  BrevoTestSmsPayload,
+  BrevoTestSmsResponse,
 } from "./types";
 
 const ACCEPT_HEADER = { Accept: apiConfig.headers.Accept } as const;
@@ -109,4 +116,68 @@ export async function getVerificationStatusByEmail(
       cache: "no-cache",
     },
   );
+}
+
+// ----------------------------------------------------------------------------
+// Module info, health, config
+// ----------------------------------------------------------------------------
+
+export async function getModuleInfo(): Promise<BrevoModuleInfoResponse> {
+  return apiFetch<BrevoModuleInfoResponse>(brevoRoutes.info(), {
+    init: {
+      method: "GET",
+      headers: ACCEPT_HEADER,
+    },
+    cache: "no-cache",
+  });
+}
+
+export async function getHealthStatus(): Promise<BrevoHealthResponse> {
+  return apiFetch<BrevoHealthResponse>(brevoRoutes.health(), {
+    init: {
+      method: "GET",
+      headers: ACCEPT_HEADER,
+    },
+    cache: "no-cache",
+  });
+}
+
+export async function getConfigStatus(): Promise<BrevoConfigResponse> {
+  return apiFetch<BrevoConfigResponse>(brevoRoutes.config(), {
+    init: {
+      method: "GET",
+      headers: ACCEPT_HEADER,
+    },
+    cache: "no-cache",
+  });
+}
+
+// ----------------------------------------------------------------------------
+// Test endpoints (dev only)
+// ----------------------------------------------------------------------------
+
+export async function sendTestEmail(
+  payload: BrevoTestEmailPayload,
+): Promise<BrevoTestEmailResponse> {
+  return apiFetch<BrevoTestEmailResponse>(brevoRoutes.test.email(), {
+    init: {
+      method: "POST",
+      headers: JSON_HEADERS,
+      body: JSON.stringify(payload),
+    },
+    cache: "no-cache",
+  });
+}
+
+export async function sendTestSms(
+  payload: BrevoTestSmsPayload,
+): Promise<BrevoTestSmsResponse> {
+  return apiFetch<BrevoTestSmsResponse>(brevoRoutes.test.sms(), {
+    init: {
+      method: "POST",
+      headers: JSON_HEADERS,
+      body: JSON.stringify(payload),
+    },
+    cache: "no-cache",
+  });
 }

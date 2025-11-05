@@ -65,17 +65,7 @@ export function dashboardMiddleware(request: NextRequest) {
     return NextResponse.rewrite(new URL("/admin/overview", request.url));
   }
 
-  // Verificação de acesso baseado em função
-  const userRole =
-    (request.cookies.get("user_role")?.value as UserRole) ||
-    UserRole.ALUNO_CANDIDATO;
-
-  if (!canAccessRoute(pathname, userRole)) {
-    const url = new URL("/?denied=1", request.url);
-    return NextResponse.redirect(url);
-  }
-
-  // Configurações de desenvolvimento
+  // Configurações de desenvolvimento - PRIMEIRO para garantir cookies
   if (process.env.NODE_ENV === "development") {
     const response = NextResponse.next();
 
@@ -97,7 +87,26 @@ export function dashboardMiddleware(request: NextRequest) {
       });
     }
 
+    // Após configurar cookies, verificar permissões
+    const userRole =
+      (request.cookies.get("user_role")?.value as UserRole) || UserRole.ADMIN; // Default para ADMIN em desenvolvimento
+
+    if (!canAccessRoute(pathname, userRole)) {
+      const url = new URL("/dashboard/unauthorized", request.url);
+      return NextResponse.redirect(url);
+    }
+
     return response;
+  }
+
+  // Verificação de acesso baseado em função (produção)
+  const userRole =
+    (request.cookies.get("user_role")?.value as UserRole) ||
+    UserRole.ALUNO_CANDIDATO;
+
+  if (!canAccessRoute(pathname, userRole)) {
+    const url = new URL("/dashboard/unauthorized", request.url);
+    return NextResponse.redirect(url);
   }
 
   return NextResponse.next();

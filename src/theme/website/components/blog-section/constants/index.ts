@@ -45,7 +45,7 @@ export const DEFAULT_BLOG_DATA: BlogPostData[] = [
     image: "/images/blog/blog-post-3.png",
     link: "/blog/resumo-profissional-dicas-modelos",
     excerpt:
-      "Aprenda a criar um resumo profissional que chame a atenção dos recrutadores.",
+      "Aprenda a criar um resumo profissional que chame a atenção do Setor de Vagas.",
     author: "Ana Costa",
     publishedAt: "2024-01-05",
     category: "Currículo",

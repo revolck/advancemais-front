@@ -18,22 +18,36 @@ export const DASHBOARD_ROUTE_RULES: readonly RouteRule[] = Object.freeze([
     pattern: "/dashboard/admin{/*path}",
     roles: [UserRole.ADMIN, UserRole.MODERADOR],
   },
+  { pattern: "/config{/*path}", roles: [UserRole.ADMIN, UserRole.MODERADOR] },
+  {
+    pattern: "/dashboard/cursos{/*path}",
+    roles: [UserRole.ADMIN, UserRole.MODERADOR],
+  },
   {
     pattern: "/dashboard/vagas{/*path}",
     roles: [
       UserRole.ADMIN,
       UserRole.MODERADOR,
       UserRole.EMPRESA,
+      UserRole.SETOR_DE_VAGAS,
+    ],
+  },
+  {
+    pattern: "/dashboard/candidatos{/*path}",
+    roles: [
+      UserRole.ADMIN,
+      UserRole.MODERADOR,
+      UserRole.EMPRESA,
+      UserRole.SETOR_DE_VAGAS,
       UserRole.RECRUTADOR,
     ],
   },
-  { pattern: "/dashboard/empresa{/*path}", roles: [UserRole.EMPRESA] },
   { pattern: "/pedagogico{/*path}", roles: [UserRole.PEDAGOGICO] },
   { pattern: "/empresa{/*path}", roles: [UserRole.EMPRESA] },
-  { pattern: "/recrutador{/*path}", roles: [UserRole.RECRUTADOR] },
-  { pattern: "/professor{/*path}", roles: [UserRole.PROFESSOR] },
+  { pattern: "/setor-de-vagas{/*path}", roles: [UserRole.SETOR_DE_VAGAS] },
+  { pattern: "/instrutor{/*path}", roles: [UserRole.INSTRUTOR] },
   { pattern: "/aluno{/*path}", roles: [UserRole.ALUNO_CANDIDATO] },
-  { pattern: "/psicologo{/*path}", roles: [UserRole.PSICOLOGO] },
+  { pattern: "/recrutador{/*path}", roles: [UserRole.RECRUTADOR] },
   { pattern: "/financeiro{/*path}", roles: [UserRole.FINANCEIRO] },
 ]);
 

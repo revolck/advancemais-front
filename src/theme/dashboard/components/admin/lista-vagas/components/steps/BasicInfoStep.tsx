@@ -101,7 +101,6 @@ export function BasicInfoStep({
     { value: "PLENO", label: "Pleno" },
     { value: "SENIOR", label: "Sênior" },
     { value: "ESPECIALISTA", label: "Especialista" },
-    { value: "COORDENADOR", label: "Coordenador" },
     { value: "GERENTE", label: "Gerente" },
     { value: "DIRETOR", label: "Diretor" },
   ];

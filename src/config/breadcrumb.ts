@@ -91,8 +91,12 @@ export const breadcrumbConfig: Record<string, BreadcrumbConfig> = {
 
   "/dashboard/admin/companies/list": EMPRESAS_BREADCRUMB,
   "/empresas": EMPRESAS_BREADCRUMB,
+  // Rotas antigas removidas (/empresas/admin) – manter compatibilidade de breadcrumb
   "/dashboard/empresas/admin/list": EMPRESAS_BREADCRUMB,
   "/dashboard/empresas/admin/listagem": EMPRESAS_BREADCRUMB,
+  // Novas rotas consolidadas
+  "/dashboard/empresas/list": EMPRESAS_BREADCRUMB,
+  "/dashboard/empresas/listagem": EMPRESAS_BREADCRUMB,
 
   "/config/website/pagina-inicial": {
     title: "Configuração Página Inicial",
@@ -182,6 +186,127 @@ export const breadcrumbConfig: Record<string, BreadcrumbConfig> = {
       { label: "Cupons", icon: "Tag" },
     ],
   },
+  "/dashboard/candidatos": {
+    title: "Candidatos",
+    items: [
+      { label: "Dashboard", href: "/", icon: "Home" },
+      { label: "Candidatos", icon: "Users" },
+    ],
+  },
+  "/dashboard/cursos": {
+    title: "Cursos",
+    items: [
+      { label: "Dashboard", href: "/", icon: "Home" },
+      { label: "Cursos", href: "/dashboard/cursos", icon: "BookOpen" },
+    ],
+  },
+  "/dashboard/cursos/turmas": {
+    title: "Turmas",
+    items: [
+      { label: "Dashboard", href: "/", icon: "Home" },
+      { label: "Cursos", href: "/dashboard/cursos", icon: "BookOpen" },
+      { label: "Turmas" },
+    ],
+  },
+  "/dashboard/cursos/turmas/cadastrar": {
+    title: "Cadastrar Turma",
+    items: [
+      { label: "Dashboard", href: "/", icon: "Home" },
+      { label: "Cursos", href: "/dashboard/cursos", icon: "BookOpen" },
+      { label: "Turmas", href: "/dashboard/cursos/turmas" },
+      { label: "Cadastrar" },
+    ],
+  },
+  // Detalhes de turma: /dashboard/cursos/turmas/[turmaId]
+  "/dashboard/cursos/turmas/[turmaId]": {
+    title: "Detalhes da Turma",
+    items: [
+      { label: "Dashboard", href: "/", icon: "Home" },
+      { label: "Cursos", href: "/dashboard/cursos", icon: "BookOpen" },
+      { label: "Turmas", href: "/dashboard/cursos/turmas" },
+      { label: "Detalhes" },
+    ],
+  },
+  "/dashboard/cursos/alunos": {
+    title: "Alunos",
+    items: [
+      { label: "Dashboard", href: "/", icon: "Home" },
+      { label: "Cursos", href: "/dashboard/cursos", icon: "BookOpen" },
+      { label: "Alunos", icon: "Users" },
+    ],
+  },
+  "/dashboard/cursos/instrutores": {
+    title: "Instrutores",
+    items: [
+      { label: "Dashboard", href: "/", icon: "Home" },
+      { label: "Cursos", href: "/dashboard/cursos", icon: "BookOpen" },
+      { label: "Instrutores" },
+    ],
+  },
+  "/dashboard/cursos/provas": {
+    title: "Provas",
+    items: [
+      { label: "Dashboard", href: "/", icon: "Home" },
+      { label: "Cursos", href: "/dashboard/cursos", icon: "BookOpen" },
+      { label: "Provas" },
+    ],
+  },
+  "/dashboard/cursos/certificados": {
+    title: "Certificados",
+    items: [
+      { label: "Dashboard", href: "/", icon: "Home" },
+      { label: "Cursos", href: "/dashboard/cursos", icon: "BookOpen" },
+      { label: "Certificados" },
+    ],
+  },
+  "/dashboard/cursos/estagios": {
+    title: "Estágios",
+    items: [
+      { label: "Dashboard", href: "/", icon: "Home" },
+      { label: "Cursos", href: "/dashboard/cursos", icon: "BookOpen" },
+      { label: "Estágios" },
+    ],
+  },
+  "/dashboard/cursos/agenda": {
+    title: "Agenda",
+    items: [
+      { label: "Dashboard", href: "/", icon: "Home" },
+      { label: "Cursos", href: "/dashboard/cursos", icon: "BookOpen" },
+      { label: "Agenda" },
+    ],
+  },
+  "/dashboard/cursos/cadastrar": {
+    title: "Novo Curso",
+    items: [
+      { label: "Dashboard", href: "/", icon: "Home" },
+      { label: "Cursos", href: "/dashboard/cursos", icon: "BookOpen" },
+      { label: "Cadastrar", icon: "FileText" },
+    ],
+  },
+  "/config/candidatos": {
+    title: "Configuração Candidatos",
+    items: [
+      { label: "Dashboard", href: "/", icon: "Home" },
+      { label: "Configurações", href: "/config", icon: "Settings" },
+      { label: "Candidatos", icon: "Users" },
+    ],
+  },
+  "/config/candidatos/status-processos": {
+    title: "Status de Processos",
+    items: [
+      { label: "Dashboard", href: "/", icon: "Home" },
+      { label: "Configurações", href: "/config", icon: "Settings" },
+      { label: "Candidatos", href: "/config/candidatos", icon: "Users" },
+      { label: "Status de Processos", icon: "Settings" },
+    ],
+  },
+  "/dashboard/usuarios": {
+    title: "Usuários",
+    items: [
+      { label: "Dashboard", href: "/", icon: "Home" },
+      { label: "Usuários", icon: "Users" },
+    ],
+  },
 };
 
 // Hook centralizado que consome a configuração acima
@@ -203,7 +328,44 @@ export function useBreadcrumb(): BreadcrumbConfig {
       items: [
         { label: "Dashboard", href: "/", icon: "Home" },
         { label: "Empresas", href: "/empresas", icon: "Building2" },
-        { label: "Visualizando empresa" },
+        { label: "Visualizando empresa", icon: "Eye" },
+      ],
+    };
+  }
+
+  // Detalhes de turma: /dashboard/cursos/turmas/[turmaId] (nova rota)
+  if (pathname.match(/^\/dashboard\/cursos\/turmas\/[^/]+$/)) {
+    return {
+      title: "Detalhes da Turma",
+      items: [
+        { label: "Dashboard", href: "/", icon: "Home" },
+        { label: "Cursos", href: "/dashboard/cursos", icon: "BookOpen" },
+        { label: "Turmas", href: "/dashboard/cursos/turmas" },
+        { label: "Detalhes" },
+      ],
+    };
+  }
+
+  // Rota antiga de turma (mantida para compatibilidade): /dashboard/cursos/[id]/turmas/[turmaId]
+  if (pathname.match(/^\/dashboard\/cursos\/\d+\/turmas\/[^/]+$/)) {
+    return {
+      title: "Detalhes da Turma",
+      items: [
+        { label: "Dashboard", href: "/", icon: "Home" },
+        { label: "Cursos", href: "/dashboard/cursos", icon: "BookOpen" },
+        { label: "Turma", icon: "Users" },
+      ],
+    };
+  }
+
+  // Detalhes de curso: /dashboard/cursos/[id]
+  if (pathname.match(/^\/dashboard\/cursos\/\d+$/)) {
+    return {
+      title: "Detalhes do Curso",
+      items: [
+        { label: "Dashboard", href: "/", icon: "Home" },
+        { label: "Cursos", href: "/dashboard/cursos", icon: "BookOpen" },
+        { label: "Detalhes", icon: "Eye" },
       ],
     };
   }

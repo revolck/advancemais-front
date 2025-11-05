@@ -1,12 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useMemo } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+
 import type { SelectOption } from "@/components/ui/custom/select/types";
 import {
   listAdminCompanies,
-  type AdminCompanyListItem,
-  type AdminCompanyListResponse,
   type AdminCompanyListApiResponse,
+  type AdminCompanyListItem,
 } from "@/api/empresas";
 
 interface EmpresaOption extends SelectOption {
@@ -53,79 +54,109 @@ function mapEmpresaToOption(empresa: AdminCompanyListItem): EmpresaOption {
   };
 }
 
-export function useEmpresasForSelect() {
-  const [empresas, setEmpresas] = useState<EmpresaOption[]>([]);
-  const [empresasData, setEmpresasData] = useState<AdminCompanyListItem[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+const SELECT_QUERY_KEY = ["admin-companies", "select-options"] as const;
+const STALE_TIME = 5 * 60 * 1000;
+const GC_TIME = 30 * 60 * 1000;
 
-  const fetchEmpresas = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
+const buildCompanyListQueryKey = (
+  page: number,
+  pageSize: number,
+  search = ""
+) => ["admin-company-list", page, pageSize, search] as const;
 
-    try {
-      const pageSize = 100;
-      const collected: AdminCompanyListItem[] = [];
+async function fetchEligibleCompanies(
+  queryClient: ReturnType<typeof useQueryClient>
+): Promise<AdminCompanyListItem[]> {
+  const pageSize = 100;
+  const collected: AdminCompanyListItem[] = [];
 
-      let currentPage = 1;
-      let totalPages = 1;
+  let currentPage = 1;
+  let totalPages = 1;
 
-      while (currentPage <= totalPages) {
-        const response = await listAdminCompanies({
-          page: currentPage,
-          pageSize,
-        });
+  while (currentPage <= totalPages) {
+    const params = { page: currentPage, pageSize };
+    const response = await queryClient.fetchQuery({
+      queryKey: buildCompanyListQueryKey(
+        params.page ?? 1,
+        params.pageSize ?? pageSize
+      ),
+      queryFn: async () => listAdminCompanies(params),
+      staleTime: STALE_TIME,
+      gcTime: GC_TIME,
+    });
 
-        if (isErrorResponse(response)) {
-          throw new Error(response.message || "Erro ao carregar empresas.");
-        }
-
-        const data = response.data ?? [];
-        const pagination = response.pagination;
-
-        collected.push(...data);
-
-        totalPages = pagination?.totalPages ?? currentPage;
-        currentPage += 1;
-        if (!pagination) {
-          break;
-        }
-
-        if (currentPage > (pagination.totalPages ?? 1)) {
-          break;
-        }
-      }
-
-      const elegiveis = collected.filter(isEmpresaElegivel);
-
-      const options = elegiveis
-        .map(mapEmpresaToOption)
-        .sort((a, b) => a.label.localeCompare(b.label, "pt-BR"));
-
-      setEmpresas(options);
-      setEmpresasData(elegiveis);
-    } catch (err) {
-      console.error("Erro ao buscar empresas:", err);
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Erro ao carregar empresas. Tente novamente."
-      );
-      setEmpresas([]);
-    } finally {
-      setIsLoading(false);
+    if (isErrorResponse(response)) {
+      throw new Error(response.message || "Erro ao carregar empresas.");
     }
-  }, []);
 
-  useEffect(() => {
-    fetchEmpresas();
-  }, [fetchEmpresas]);
+    const data = response.data ?? [];
+    collected.push(...data);
+
+    const pagination = response.pagination;
+
+    if (!pagination) {
+      break;
+    }
+
+    totalPages = pagination.totalPages ?? currentPage;
+    if (currentPage >= totalPages) {
+      break;
+    }
+
+    currentPage += 1;
+  }
+
+  return collected.filter(isEmpresaElegivel);
+}
+
+export function useEmpresasForSelect() {
+  const queryClient = useQueryClient();
+
+  const queryFn = useCallback(
+    () => fetchEligibleCompanies(queryClient),
+    [queryClient]
+  );
+
+  const {
+    data: rawEmpresas = [],
+    error,
+    isLoading,
+    isFetching,
+    refetch,
+  } = useQuery({
+    queryKey: SELECT_QUERY_KEY,
+    queryFn,
+    staleTime: STALE_TIME,
+    gcTime: GC_TIME,
+  });
+
+  const empresas = useMemo(() => {
+    return rawEmpresas
+      .map(mapEmpresaToOption)
+      .sort((a, b) => a.label.localeCompare(b.label, "pt-BR"));
+  }, [rawEmpresas]);
+
+  const errorMessage =
+    error instanceof Error
+      ? error.message
+      : error
+        ? "Erro ao carregar empresas. Tente novamente."
+        : null;
+
+  const handleRefetch = useCallback(async () => {
+    const result = await refetch();
+    if (result.error) {
+      throw result.error;
+    }
+    return result.data ?? [];
+  }, [refetch]);
 
   return {
     empresas,
-    empresasData,
-    isLoading,
-    error,
-    refetch: fetchEmpresas,
+    empresasData: rawEmpresas,
+    isLoading: isLoading || isFetching,
+    error: errorMessage,
+    refetch: handleRefetch,
   };
 }
+

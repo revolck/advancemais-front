@@ -5,6 +5,7 @@ import type {
   AdminCompanyPlano,
   AdminCompanyPagamento,
   AdminCompanyAuditoriaItem,
+  AdminCompanyConsolidatedResponse,
 } from "@/api/empresas/admin/types";
 
 export interface CompanyDetailsViewProps {
@@ -12,6 +13,8 @@ export interface CompanyDetailsViewProps {
   payments?: AdminCompanyPaymentLog[];
   bans?: any[]; // not directly used in view props; modals handle payloads
   vacancies?: AdminCompanyVagaItem[];
+  auditoria?: AdminCompanyAuditoriaItem[];
+  initialConsolidated: AdminCompanyConsolidatedResponse;
 }
 
 export interface AboutTabProps {

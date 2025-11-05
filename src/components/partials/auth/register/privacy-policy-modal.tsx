@@ -22,9 +22,9 @@ const sections: Array<{
   {
     title: "1. Quais dados coletamos",
     content: [
-      "1.1 Conta e cadastro (obrigatórios para uso de serviços): nome/razão social, CPF/CNPJ, data de nascimento, e-mail, telefones, endereço, senha (hash), papel na plataforma (Empresa, Candidato, Aluno, Professor, Psicologia/Pedagógico).",
+      "1.1 Conta e cadastro (obrigatórios para uso de serviços): nome/razão social, CPF/CNPJ, data de nascimento, e-mail, telefones, endereço, senha (hash), papel na plataforma (Empresa, Candidato, Aluno, Instrutor, Psicologia/Pedagógico).",
       "Advance+",
-      "1.2 Dados acadêmicos e de cursos (Alunos/Professores): turmas, presença, notas/avaliações, certificados, interações em fóruns e suporte.",
+      "1.2 Dados acadêmicos e de cursos (Alunos/Instrutores): turmas, presença, notas/avaliações, certificados, interações em fóruns e suporte.",
       "1.3 Recrutamento e seleção (Candidatos/Empresas): currículo, experiências, formações, dados de candidatura, mensagens e agendamentos de entrevistas.",
       "1.4 Faturamento e contratação (quando aplicável): plano/assinatura, meios de pagamento (tokens/identificadores do provedor), notas fiscais e dados de cobrança (limitados ao necessário).",
       "1.5 Suporte e comunicação: tickets, gravação de interações textuais, preferências e consentimentos.",
@@ -39,7 +39,7 @@ const sections: Array<{
     title: "2. Para que usamos seus dados (finalidades e bases legais da LGPD)",
     content: [
       "2.1 Execução de contrato e procedimentos preliminares:",
-      "• criar e manter sua conta; matricular em cursos; emitir certificados; permitir candidaturas e contato Empresa↔Candidato; operacionalizar assinaturas/planos. (Base: execução de contrato/ procedimento preliminar).",
+      "• criar e manter sua conta; inscrever em cursos; emitir certificados; permitir candidaturas e contato Empresa↔Candidato; operacionalizar assinaturas/planos. (Base: execução de contrato/ procedimento preliminar).",
       "Planalto",
       "2.2 Cumprimento de obrigação legal/regulatória:",
       "• emissão fiscal; guarda de registros de acesso (Marco Civil); respostas a autoridades. (Base: obrigação legal).",
@@ -214,7 +214,7 @@ const PrivacyPolicyModal = ({
             <p>E-mail do Encarregado (DPO): contato@advancemais.com</p>
             <p>
               Esta Política explica como tratamos dados pessoais de Empresas,
-              Candidatos, Alunos, Professores, Profissionais de
+              Candidatos, Alunos, Instrutores, Profissionais de
               Psicologia/Pedagógico e demais Usuários, conforme a LGPD. Ao usar
               a Plataforma, você concorda com esta Política.
             </p>

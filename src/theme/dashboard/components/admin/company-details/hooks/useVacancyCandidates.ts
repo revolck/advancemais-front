@@ -1,4 +1,6 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+
 import { getAdminCompanyVacancyById } from "@/api/empresas/admin/vacancy-details";
 import type { AdminCompanyVagaItem } from "@/api/empresas/admin/types";
 
@@ -12,6 +14,8 @@ interface VacancyWithCandidates extends AdminCompanyVagaItem {
 }
 
 export function useVacancyCandidates({ vacancies }: UseVacancyCandidatesProps) {
+  const queryClient = useQueryClient();
+
   const [vacanciesWithCandidates, setVacanciesWithCandidates] = useState<
     VacancyWithCandidates[]
   >([]);
@@ -20,21 +24,59 @@ export function useVacancyCandidates({ vacancies }: UseVacancyCandidatesProps) {
   );
   const [errorStates, setErrorStates] = useState<Record<string, string>>({});
 
-  // Função para carregar candidatos de uma vaga específica
+  const getVacancyQueryKey = useCallback(
+    (vacancyId: string) => ["admin-company-vacancy", vacancyId] as const,
+    []
+  );
+
+  const applyVacancyData = useCallback(
+    (vacancyId: string, data?: AdminCompanyVagaItem) => {
+      setVacanciesWithCandidates((prev) =>
+        prev.map((vacancy) =>
+          vacancy.id === vacancyId
+            ? {
+                ...vacancy,
+                ...(data ?? {}),
+                candidatesLoaded:
+                  data !== undefined
+                    ? true
+                    : vacancy.candidatesLoaded ??
+                      !!(
+                        vacancy.candidaturas && vacancy.candidaturas.length > 0
+                      ),
+              }
+            : vacancy
+        )
+      );
+    },
+    []
+  );
+
   const loadVacancyCandidates = useCallback(
     async (vacancyId: string) => {
       console.log(`🔄 Tentando carregar candidatos da vaga ${vacancyId}...`);
 
-      // Verificar se já está carregando ou já foi carregado
-      if (
-        loadingStates[vacancyId] ||
-        vacanciesWithCandidates.find((v) => v.id === vacancyId)
-          ?.candidatesLoaded
-      ) {
-        console.log(
-          `⏭️ Vaga ${vacancyId} já está carregando ou já foi carregada`
-        );
+      if (loadingStates[vacancyId]) {
+        console.log(`⏳ Vaga ${vacancyId} já está em carregamento`);
         return;
+      }
+
+      const queryKey = getVacancyQueryKey(vacancyId);
+      const cachedVacancy =
+        queryClient.getQueryData<AdminCompanyVagaItem>(queryKey);
+
+      if (cachedVacancy) {
+        console.log(
+          `📋 Usando cache para candidatos da vaga ${vacancyId}`,
+          cachedVacancy.candidaturas?.length || 0
+        );
+        applyVacancyData(vacancyId, cachedVacancy);
+        if (
+          vacanciesWithCandidates.find((v) => v.id === vacancyId)
+            ?.candidatesLoaded
+        ) {
+          return;
+        }
       }
 
       console.log(`✅ Iniciando carregamento da vaga ${vacancyId}`);
@@ -42,19 +84,20 @@ export function useVacancyCandidates({ vacancies }: UseVacancyCandidatesProps) {
       setErrorStates((prev) => ({ ...prev, [vacancyId]: "" }));
 
       try {
-        const fullVacancy = await getAdminCompanyVacancyById(vacancyId);
+        const fullVacancy = await queryClient.fetchQuery({
+          queryKey,
+          queryFn: () => getAdminCompanyVacancyById(vacancyId),
+          staleTime: 5 * 60 * 1000,
+          gcTime: 30 * 60 * 1000,
+        });
+
         console.log(
           `🎉 Candidatos carregados para vaga ${vacancyId}:`,
           fullVacancy.candidaturas?.length || 0
         );
 
-        setVacanciesWithCandidates((prev) =>
-          prev.map((vacancy) =>
-            vacancy.id === vacancyId
-              ? { ...vacancy, ...fullVacancy, candidatesLoaded: true }
-              : vacancy
-          )
-        );
+        queryClient.setQueryData(queryKey, fullVacancy);
+        applyVacancyData(vacancyId, fullVacancy);
       } catch (error) {
         console.error(
           `❌ Erro ao carregar candidatos da vaga ${vacancyId}:`,
@@ -68,10 +111,15 @@ export function useVacancyCandidates({ vacancies }: UseVacancyCandidatesProps) {
         setLoadingStates((prev) => ({ ...prev, [vacancyId]: false }));
       }
     },
-    [loadingStates, vacanciesWithCandidates]
+    [
+      applyVacancyData,
+      getVacancyQueryKey,
+      loadingStates,
+      queryClient,
+      vacanciesWithCandidates,
+    ]
   );
 
-  // Função para carregar candidatos de vagas que têm candidatos mas não têm dados completos
   const loadCandidatesForVacanciesWithCandidates = useCallback(async () => {
     console.log("🔍 Verificando vagas para carregar candidatos...");
     console.log("Vagas recebidas:", vacancies.length);
@@ -83,9 +131,12 @@ export function useVacancyCandidates({ vacancies }: UseVacancyCandidatesProps) {
       const hasFullData =
         vacancy.candidaturas && vacancy.candidaturas.length > 0;
       const notLoading = !loadingStates[vacancy.id];
-      const notLoaded = !vacanciesWithCandidates.find(
-        (v) => v.id === vacancy.id
-      )?.candidatesLoaded;
+      const cachedVacancy = queryClient.getQueryData<AdminCompanyVagaItem>(
+        getVacancyQueryKey(vacancy.id)
+      );
+      const notLoaded =
+        !vacanciesWithCandidates.find((v) => v.id === vacancy.id)
+          ?.candidatesLoaded && !cachedVacancy;
 
       console.log(`Vaga ${vacancy.id}:`, {
         hasCandidates,
@@ -93,6 +144,7 @@ export function useVacancyCandidates({ vacancies }: UseVacancyCandidatesProps) {
         hasFullData,
         candidaturas: vacancy.candidaturas?.length || 0,
         notLoading,
+        cached: !!cachedVacancy,
         notLoaded,
       });
 
@@ -101,12 +153,10 @@ export function useVacancyCandidates({ vacancies }: UseVacancyCandidatesProps) {
 
     console.log("Vagas para carregar:", vacanciesToLoad.length);
 
-    // Carregar apenas as primeiras 3 vagas para não sobrecarregar
     const limitedVacancies = vacanciesToLoad.slice(0, 3);
 
     if (limitedVacancies.length > 0) {
       console.log("🚀 Iniciando carregamento de candidatos...");
-      // Carregar em paralelo, mas com limite de concorrência
       const loadPromises = limitedVacancies.map((vacancy) =>
         loadVacancyCandidates(vacancy.id)
       );
@@ -115,34 +165,47 @@ export function useVacancyCandidates({ vacancies }: UseVacancyCandidatesProps) {
       console.log("ℹ️ Nenhuma vaga precisa de carregamento de candidatos");
     }
   }, [
-    vacancies,
-    loadingStates,
-    vacanciesWithCandidates,
+    getVacancyQueryKey,
     loadVacancyCandidates,
+    loadingStates,
+    queryClient,
+    vacancies,
+    vacanciesWithCandidates,
   ]);
 
-  // Inicializar com as vagas básicas
   useEffect(() => {
-    setVacanciesWithCandidates(
-      vacancies.map((vacancy) => ({
+    const nextVacancies = vacancies.map((vacancy) => {
+      const cachedVacancy = queryClient.getQueryData<AdminCompanyVagaItem>(
+        getVacancyQueryKey(vacancy.id)
+      );
+
+      if (cachedVacancy) {
+        return {
+          ...vacancy,
+          ...cachedVacancy,
+          candidatesLoaded: true,
+        };
+      }
+
+      return {
         ...vacancy,
         candidatesLoaded: !!(
           vacancy.candidaturas && vacancy.candidaturas.length > 0
         ),
-      }))
-    );
-  }, [vacancies]);
+      };
+    });
 
-  // Carregar candidatos automaticamente quando a aba é acessada
+    setVacanciesWithCandidates(nextVacancies);
+  }, [getVacancyQueryKey, queryClient, vacancies]);
+
   useEffect(() => {
     const timer = setTimeout(() => {
       loadCandidatesForVacanciesWithCandidates();
-    }, 500); // Delay de 500ms para não sobrecarregar
+    }, 500);
 
     return () => clearTimeout(timer);
   }, [loadCandidatesForVacanciesWithCandidates]);
 
-  // Função para forçar o carregamento de uma vaga específica
   const forceLoadVacancyCandidates = useCallback(
     (vacancyId: string) => {
       loadVacancyCandidates(vacancyId);
@@ -150,11 +213,24 @@ export function useVacancyCandidates({ vacancies }: UseVacancyCandidatesProps) {
     [loadVacancyCandidates]
   );
 
+  const isLoading = useMemo(() => {
+    const statesLoading = Object.values(loadingStates).some(
+      (loading) => loading
+    );
+    if (statesLoading) return true;
+
+    return vacancies.some((vacancy) => {
+      const queryKey = getVacancyQueryKey(vacancy.id);
+      return queryClient.isFetching({ queryKey }) > 0;
+    });
+  }, [getVacancyQueryKey, loadingStates, queryClient, vacancies]);
+
   return {
     vacanciesWithCandidates,
     loadingStates,
     errorStates,
     loadVacancyCandidates: forceLoadVacancyCandidates,
-    isLoading: Object.values(loadingStates).some((loading) => loading),
+    isLoading,
   };
 }
+

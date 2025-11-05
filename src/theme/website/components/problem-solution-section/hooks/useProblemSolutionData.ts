@@ -11,7 +11,7 @@ const DEFAULT_SECTION_DATA: SectionData = {
   id: "recruitment-problems",
   mainTitle: "Você ainda recruta com emails e planilhas?",
   mainDescription:
-    "O esforço e a boa vontade do recrutador têm um limite claro e acabam criando problemas e desafios relevantes. Simplifique seus processos e alcance resultados melhores com as ferramentas certas.",
+    "O esforço e a boa vontade do Setor de Vagas têm um limite claro e acabam criando problemas e desafios relevantes. Simplifique seus processos e alcance resultados melhores com as ferramentas certas.",
   problems: [
     {
       id: "desorganization",

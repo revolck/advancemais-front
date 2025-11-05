@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { getAdminCompanyConsolidated } from "@/api/empresas/admin";
+import type { AdminCompanyConsolidatedResponse } from "@/api/empresas/admin/types";
 import { CompanyDetailsView } from "@/theme/dashboard/components/admin";
 import {
   handleDashboardApiError,
@@ -76,6 +77,9 @@ export default async function CompanyDetailsPage({
       bans={bans}
       vacancies={vacancies}
       auditoria={auditoria}
+      initialConsolidated={
+        consolidatedResult as AdminCompanyConsolidatedResponse
+      }
     />
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Users,
   Mail,
@@ -27,9 +27,12 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { EditarStatusCandidatoModal } from "../modal-acoes";
+import { VerCandidatoDetalheModal } from "../modal-acoes";
 import type { CandidatoItem, AboutTabProps } from "../types";
+import { listarCandidatosOverview } from "@/api/candidatos";
+import type { CandidatoOverview, Candidatura } from "@/api/candidatos/types";
 
-// Dados simulados de candidatos
+// Dados simulados de candidatos (fallback apenas se API falhar)
 const getCandidatosSimulados = (): CandidatoItem[] => {
   const candidatos: CandidatoItem[] = [];
   const nomes = [
@@ -116,6 +119,29 @@ const getCandidatosSimulados = (): CandidatoItem[] => {
   );
 };
 
+// Mapeia status do backend para o enum local exibido
+function mapBackendStatusToUi(status?: Candidatura["status"]): CandidatoItem["status"] {
+  switch (status) {
+    case "CONTRATADO":
+      return "aprovado";
+    case "RECUSADO":
+    case "DESISTIU":
+    case "NAO_COMPARECEU":
+    case "ARQUIVADO":
+    case "CANCELADO":
+      return "rejeitado";
+    case "EM_ANALISE":
+    case "EM_TRIAGEM":
+    case "ENTREVISTA":
+    case "DESAFIO":
+    case "DOCUMENTACAO":
+      return "em_analise";
+    case "RECEBIDA":
+    default:
+      return "pendente";
+  }
+}
+
 // Função para obter cor do status
 const getStatusColor = (status: CandidatoItem["status"]) => {
   switch (status) {
@@ -147,16 +173,68 @@ const getStatusLabel = (status: CandidatoItem["status"]) => {
 };
 
 export function CandidatosTab({ vaga }: AboutTabProps) {
-  const candidatos = getCandidatosSimulados();
   const [currentPage, setCurrentPage] = useState(1);
-  const [candidatosData, setCandidatosData] = useState(candidatos);
+  const [candidatosData, setCandidatosData] = useState<CandidatoItem[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedCandidato, setSelectedCandidato] =
     useState<CandidatoItem | null>(null);
   const itemsPerPage = 8;
 
+  // Buscar candidatos reais da vaga
+  useEffect(() => {
+    let isMounted = true;
+    async function fetchData() {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const resp = await listarCandidatosOverview({ vagaId: vaga.id, page: 1, pageSize: 100 });
+        const data = resp?.data ?? [];
+
+        // Mapear para o formato local
+        const mapped: CandidatoItem[] = data.map((cand: CandidatoOverview) => {
+          const candidatura = (cand.candidaturas || []).find(
+            (c) => c.vagaId === vaga.id
+          );
+          const statusUI = mapBackendStatusToUi(candidatura?.status);
+          const aplicadaEm = candidatura?.aplicadaEm || cand.criadoEm;
+          return {
+            id: cand.id,
+            nome: cand.nomeCompleto,
+            email: cand.email,
+            telefone: cand.telefone ?? undefined,
+            dataInscricao: aplicadaEm,
+            status: statusUI,
+            experiencia: "—",
+            formacao: "—",
+            createdAt: aplicadaEm,
+            candidaturaId: candidatura?.id,
+          } satisfies CandidatoItem;
+        });
+
+        if (isMounted) {
+          setCandidatosData(mapped);
+        }
+      } catch (err) {
+        console.error("Erro ao carregar candidatos da vaga:", err);
+        if (isMounted) {
+          setError("Não foi possível carregar candidatos da vaga.");
+          // fallback para mock se necessário
+          setCandidatosData(getCandidatosSimulados());
+        }
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    }
+    fetchData();
+    return () => {
+      isMounted = false;
+    };
+  }, [vaga.id]);
+
   // Cálculos de paginação
-  const totalPages = Math.ceil(candidatosData.length / itemsPerPage);
+  const totalPages = Math.ceil(candidatosData.length / itemsPerPage) || 1;
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const paginatedCandidatos = candidatosData.slice(startIndex, endIndex);
@@ -198,6 +276,15 @@ export function CandidatosTab({ vaga }: AboutTabProps) {
   const handleCancelEdit = () => {
     setIsEditModalOpen(false);
     setSelectedCandidato(null);
+  };
+
+  // Detalhes do candidato
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [detailsCandidato, setDetailsCandidato] = useState<CandidatoItem | null>(null);
+
+  const handleViewDetails = (candidato: CandidatoItem) => {
+    setDetailsCandidato(candidato);
+    setIsDetailsOpen(true);
   };
 
   // Lógica para páginas visíveis (mesmo padrão do CompanyDashboard)
@@ -258,7 +345,7 @@ export function CandidatosTab({ vaga }: AboutTabProps) {
   // Função para renderizar cada item da lista
   const renderCandidatoItem = (
     candidato: CandidatoItem,
-    onEdit: (item: CandidatoItem) => void,
+    onView: (item: CandidatoItem) => void,
     onDelete: (id: string) => void,
     isDeleting?: boolean
   ) => {
@@ -338,7 +425,7 @@ export function CandidatosTab({ vaga }: AboutTabProps) {
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => onEdit(candidato)}
+                  onClick={() => onView(candidato)}
                   className="h-8 w-8 rounded-full text-gray-500 hover:text-white hover:bg-[var(--primary-color)] cursor-pointer"
                   aria-label="Ver detalhes"
                 >
@@ -430,17 +517,26 @@ export function CandidatosTab({ vaga }: AboutTabProps) {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {paginatedCandidatos.map((candidato) => (
+                  {isLoading && (
+                    <TableRow>
+                      <td className="px-4 py-6 text-sm text-gray-500" colSpan={tableColumns.length + 1}>
+                        Carregando candidatos...
+                      </td>
+                    </TableRow>
+                  )}
+                  {!isLoading && error && (
+                    <TableRow>
+                      <td className="px-4 py-6 text-sm text-red-600" colSpan={tableColumns.length + 1}>
+                        {error}
+                      </td>
+                    </TableRow>
+                  )}
+                  {!isLoading && !error && paginatedCandidatos.map((candidato) => (
                     <TableRow
                       key={candidato.id}
                       className="border-gray-100 hover:bg-gray-50/50 transition-colors"
                     >
-                      {renderCandidatoItem(
-                        candidato,
-                        () => {},
-                        () => {},
-                        false
-                      )}
+                      {renderCandidatoItem(candidato, handleViewDetails, () => {}, false)}
                     </TableRow>
                   ))}
                 </TableBody>
@@ -547,6 +643,23 @@ export function CandidatosTab({ vaga }: AboutTabProps) {
         onOpenChange={setIsEditModalOpen}
         candidato={selectedCandidato}
         onSaveStatus={handleSaveStatus}
+      />
+
+      {/* Modal de Detalhes do Candidato */}
+      <VerCandidatoDetalheModal
+        isOpen={isDetailsOpen}
+        onOpenChange={setIsDetailsOpen}
+        candidaturaId={detailsCandidato?.candidaturaId}
+        fallback={
+          detailsCandidato
+            ? {
+                nome: detailsCandidato.nome,
+                email: detailsCandidato.email,
+                telefone: detailsCandidato.telefone,
+                dataInscricao: detailsCandidato.dataInscricao,
+              }
+            : undefined
+        }
       />
     </div>
   );

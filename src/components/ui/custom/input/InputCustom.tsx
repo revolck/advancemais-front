@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useId } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Icon } from "@/components/ui/custom/Icons";
@@ -60,8 +60,9 @@ export const InputCustom = React.forwardRef<HTMLInputElement, InputCustomProps>(
       isPasswordVisible && type === "password" ? "text" : type;
 
     // ID gerado automaticamente se não for fornecido
+    const reactAutoId = useId();
     const inputId =
-      id || `input-custom-${name || Math.random().toString(36).substr(2, 9)}`;
+      id || (name ? `input-custom-${name}` : `input-custom-${reactAutoId}`);
 
     // Atualiza o valor interno quando o prop value muda
     useEffect(() => {
@@ -203,9 +204,7 @@ export const InputCustom = React.forwardRef<HTMLInputElement, InputCustomProps>(
             required={required}
             maxLength={maxLength}
             aria-invalid={!!error}
-            aria-describedby={
-              shouldShowError ? `${inputId}-error` : undefined
-            }
+            aria-describedby={shouldShowError ? `${inputId}-error` : undefined}
             style={{
               // Garantir que o texto tenha alta prioridade de cor
               caretColor: error

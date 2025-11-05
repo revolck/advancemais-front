@@ -11,12 +11,13 @@ export * from "./toast";
 export * from "./offline";
 
 export * from "./vertical-tabs";
+
 export * from "./horizontal-tabs";
 
 export * from "./empty-state";
 
-// Export everything from modules (modules avoid name collisions internally)
 export * from "./file-upload";
+
 export * from "./avatar";
 
 export * from "./loader";
@@ -52,3 +53,11 @@ export * from "./date-picker";
 export * from "./cards-statistics";
 
 export * from "./charts-custom";
+
+export * from "./card-custom";
+
+export * from "./user-search";
+
+export * from "./users-list";
+
+export * from "./calendar";

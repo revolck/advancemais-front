@@ -19,20 +19,17 @@ import { InputCustom } from "@/components/ui/custom/input";
 import { SimpleTextarea } from "@/components/ui/custom/text-area";
 import { ButtonCustom } from "@/components/ui/custom/button";
 import { toastCustom } from "@/components/ui/custom/toast";
-import { updateAdminCompany } from "@/api/empresas";
 import type {
   AdminCompanyDetail,
   UpdateAdminCompanyPayload,
-  AdminCompanyInformacoes,
-  AdminCompanySocialLinks,
 } from "@/api/empresas/admin/types";
 import MaskService from "@/services/components/input/maskService";
+import { useCompanyMutations } from "../hooks/useCompanyMutations";
 
 interface EditarEmpresaModalProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   company: AdminCompanyDetail;
-  onCompanyUpdated: (updates: Partial<AdminCompanyDetail>) => void;
 }
 
 type CompanyFormState = {
@@ -47,7 +44,6 @@ export function EditarEmpresaModal({
   isOpen,
   onOpenChange,
   company,
-  onCompanyUpdated,
 }: EditarEmpresaModalProps) {
   const initialValues = useMemo<CompanyFormState>(() => {
     const maskService = MaskService.getInstance();
@@ -66,12 +62,12 @@ export function EditarEmpresaModal({
   }, [company]);
 
   const [formState, setFormState] = useState<CompanyFormState>(initialValues);
-  const [isSaving, setIsSaving] = useState(false);
+  const { updateCompanyProfile } = useCompanyMutations(company.id);
+  const isSaving = updateCompanyProfile.status === "pending";
 
   useEffect(() => {
     if (isOpen) {
       setFormState(initialValues);
-      setIsSaving(false);
     }
   }, [initialValues, isOpen]);
 
@@ -195,55 +191,8 @@ export function EditarEmpresaModal({
       return;
     }
 
-    setIsSaving(true);
-
     try {
-      await updateAdminCompany(company.id, payload);
-
-      const updatedInformacoes: AdminCompanyInformacoes = {
-        telefone:
-          payload.telefone !== undefined
-            ? payload.telefone ?? null
-            : company.informacoes?.telefone ?? null,
-        descricao:
-          payload.descricao !== undefined
-            ? payload.descricao ?? null
-            : company.informacoes?.descricao ?? null,
-        avatarUrl: company.informacoes?.avatarUrl ?? null,
-        aceitarTermos: company.informacoes?.aceitarTermos ?? false,
-        genero: company.informacoes?.genero ?? null,
-        dataNasc: company.informacoes?.dataNasc ?? null,
-        inscricao: company.informacoes?.inscricao ?? null,
-      };
-
-      const updatedSocialLinks: AdminCompanySocialLinks = {
-        ...(company.socialLinks ?? {}),
-      };
-
-      if (payload.instagram !== undefined) {
-        updatedSocialLinks.instagram = payload.instagram ?? undefined;
-      }
-      if (payload.linkedin !== undefined) {
-        updatedSocialLinks.linkedin = payload.linkedin ?? undefined;
-      }
-
-      const telefoneAtualizado =
-        payload.telefone !== undefined
-          ? payload.telefone ?? ""
-          : company.telefone ?? "";
-
-      const descricaoAtualizada =
-        payload.descricao !== undefined
-          ? payload.descricao ?? ""
-          : company.descricao ?? "";
-
-      onCompanyUpdated({
-        telefone: telefoneAtualizado || undefined,
-        email: emailSanitizado,
-        descricao: descricaoAtualizada || "",
-        informacoes: updatedInformacoes,
-        socialLinks: updatedSocialLinks,
-      });
+      await updateCompanyProfile.mutateAsync(payload);
 
       toastCustom.success({
         title: "Dados atualizados",
@@ -281,20 +230,17 @@ export function EditarEmpresaModal({
         title: "Erro ao salvar",
         description: errorMessage,
       });
-    } finally {
-      setIsSaving(false);
     }
   }, [
-    company.id,
     company.email,
-    company.informacoes,
-    company.socialLinks,
     company.telefone,
     company.descricao,
+    company.informacoes,
+    company.socialLinks,
     formState,
     handleClose,
     isSaving,
-    onCompanyUpdated,
+    updateCompanyProfile,
   ]);
 
   return (

@@ -13,6 +13,11 @@ interface FetchOptions<T> {
    * Útil para rotas públicas como login, onde o redirect quebra a UX.
    */
   skipLogoutOn401?: boolean;
+  /**
+   * Silencia erros 404 (não loga como erro em desenvolvimento).
+   * Útil para endpoints que podem não existir ou retornar 404 quando não há dados.
+   */
+  silence404?: boolean;
 }
 
 // Cache em memória simples
@@ -41,6 +46,7 @@ export async function apiFetch<T = unknown>(
     retries = 3,
     timeout = 15000,
     skipLogoutOn401 = false,
+    silence404 = false,
   }: FetchOptions<T> = {}
 ): Promise<T> {
   const url = endpoint.startsWith("http") ? endpoint : buildApiUrl(endpoint);
@@ -60,7 +66,9 @@ export async function apiFetch<T = unknown>(
 
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
-      console.log(`🌐 API Request [${attempt}/${retries}]: ${endpoint}`);
+      if (env.isDevelopment) {
+        console.log(`🌐 API Request [${attempt}/${retries}]: ${endpoint}`);
+      }
 
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), timeout);
@@ -76,6 +84,7 @@ export async function apiFetch<T = unknown>(
 
       if (!res.ok) {
         let errorMessage = `API responded with ${res.status}: ${res.statusText}`;
+        let errorDetails: any = null;
 
         try {
           const errorData = await res.json();
@@ -85,19 +94,49 @@ export async function apiFetch<T = unknown>(
               (errorData as any).message ||
               (errorData as any).error ||
               errorMessage;
+            errorDetails = errorData;
           }
         } catch {
           // tenta obter texto puro caso não seja JSON
           try {
             const text = await res.text();
-            if (text) errorMessage = text;
+            if (text) {
+              errorMessage = text;
+              // Tenta parsear como JSON se possível
+              try {
+                errorDetails = JSON.parse(text);
+              } catch {
+                errorDetails = { raw: text };
+              }
+            }
           } catch {
             /* ignore */
           }
         }
 
-        const errorObj = new Error(errorMessage);
-        (errorObj as any).status = res.status;
+        const errorObj = new Error(errorMessage) as Error & {
+          status?: number;
+          details?: any;
+        };
+        errorObj.status = res.status;
+        if (errorDetails) {
+          errorObj.details = errorDetails;
+        }
+        
+        // Silencia 404 se a opção estiver ativada (não loga como erro)
+        if (env.isDevelopment) {
+          if (res.status === 404 && silence404) {
+            console.warn(`API 404 (silenciado) (${endpoint}): Endpoint não encontrado ou recurso não existe`);
+          } else {
+            console.error(`API Error ${res.status} (${endpoint}):`, {
+              status: res.status,
+              statusText: res.statusText,
+              message: errorMessage,
+              details: errorDetails,
+            });
+          }
+        }
+        
         if (res.status === 401 && !skipLogoutOn401) {
           logoutUser();
         }
@@ -119,11 +158,17 @@ export async function apiFetch<T = unknown>(
         setCache(cacheKey, data, CACHE_TTL[cache]);
       }
 
-      console.log(`✅ API Success: ${endpoint}`);
+      if (env.isDevelopment) {
+        console.log(`✅ API Success: ${endpoint}`);
+      }
       return data as T;
     } catch (error) {
       lastError = error as Error;
-      console.warn(`⚠️ API Error [${attempt}/${retries}]:`, error);
+
+      // Não loga AbortError (requisição cancelada intencionalmente)
+      if ((error as any)?.name !== "AbortError") {
+        console.warn(`⚠️ API Error [${attempt}/${retries}]:`, error);
+      }
 
       if ((error as any).status === 401) {
         break;
@@ -140,8 +185,20 @@ export async function apiFetch<T = unknown>(
     throw lastError;
   }
 
+  // Se o erro for AbortError, apenas relança sem logar (requisição foi cancelada intencionalmente)
+  if (
+    (lastError as any)?.name === "AbortError" ||
+    lastError?.message?.includes("aborted")
+  ) {
+    throw lastError!;
+  }
+
   // Se chegou aqui, todas as tentativas falharam
-  console.error(`❌ API Failed após ${retries} tentativas:`, lastError!);
+  if (process.env.NODE_ENV === "development") {
+    console.warn(`❌ API Failed após ${retries} tentativas:`, lastError!);
+  } else {
+    console.error(`❌ API Failed após ${retries} tentativas:`, lastError!);
+  }
 
   // Tenta retornar dados em cache expirados como fallback
   const expiredCache = getFromCache<T>(cacheKey, true);

@@ -19,7 +19,6 @@ export type Senioridade =
   | "PLENO"
   | "SENIOR"
   | "ESPECIALISTA"
-  | "COORDENADOR"
   | "GERENTE"
   | "DIRETOR";
 

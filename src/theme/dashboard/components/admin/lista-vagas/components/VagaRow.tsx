@@ -107,7 +107,8 @@ export function VagaRow({ vaga }: VagaRowProps) {
           <MapPin className="h-4 w-4 flex-shrink-0 text-gray-400 mt-0.5" />
           <div className="flex flex-col">
             <div className="text-sm text-gray-900">
-              {vaga.localizacao.cidade}, {vaga.localizacao.estado}
+              {vaga.localizacao?.cidade ?? "—"},{" "}
+              {vaga.localizacao?.estado ?? "—"}
             </div>
             <div className="text-sm text-gray-500">
               {vaga.modalidade === "REMOTO"

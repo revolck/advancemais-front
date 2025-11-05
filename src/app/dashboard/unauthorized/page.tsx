@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { getRoleLabel } from "@/config/roles";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle } from "lucide-react";
@@ -9,13 +10,15 @@ export default function UnauthorizedPage() {
   const [role, setRole] = useState("carregando...");
 
   useEffect(() => {
-    const userRole =
+    let userRole =
       document.cookie
         .split("; ")
         .find((row) => row.startsWith("user_role="))
         ?.split("=")[1] || "não definido";
-
-    setRole(userRole);
+    // Migração de papéis para compatibilidade
+    if (userRole === "RECRUTADOR") userRole = "SETOR_DE_VAGAS";
+    if (userRole === "PSICOLOGO") userRole = "RECRUTADOR";
+    setRole(getRoleLabel(userRole));
   }, []);
 
   return (

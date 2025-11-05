@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { listAdminCompanies } from "@/api/empresas";
 import { apiConfig } from "@/lib/env";
 import {
@@ -13,9 +14,17 @@ import type {
   UseCompanyDashboardDataReturn,
 } from "../types";
 import type {
+  AdminCompanyListApiResponse,
   AdminCompanyListItem,
   AdminCompanyListParams,
+  AdminCompanyListResponse,
 } from "@/api/empresas";
+
+function isAdminCompanyListResponse(
+  response: AdminCompanyListApiResponse | undefined
+): response is AdminCompanyListResponse {
+  return Boolean(response && "data" in response && Array.isArray(response.data));
+}
 
 function mapAdminCompanyToPartnership(
   company: AdminCompanyListItem
@@ -110,6 +119,8 @@ export function useCompanyDashboardData({
   onError,
   autoFetch = true,
 }: UseCompanyDashboardDataOptions = {}): UseCompanyDashboardDataReturn {
+  const queryClient = useQueryClient();
+
   const initialPagination = initialData
     ? {
         ...DEFAULT_COMPANY_PAGINATION,
@@ -134,6 +145,63 @@ export function useCompanyDashboardData({
   const onSuccessRef = useRef(onSuccess);
   const onErrorRef = useRef(onError);
 
+  const buildQueryKey = useCallback(
+    (params: AdminCompanyListParams) => {
+      const normalizedPage = params.page ?? 1;
+      const normalizedPageSize = params.pageSize ?? pageSize;
+      const normalizedSearch = params.search?.trim() || "";
+      return [
+        "admin-company-list",
+        normalizedPage,
+        normalizedPageSize,
+        normalizedSearch,
+      ] as const;
+    },
+    [pageSize]
+  );
+
+  const applyResponse = useCallback(
+    (
+      response: AdminCompanyListApiResponse | null,
+      params: AdminCompanyListParams
+    ) => {
+      if (!response || !("data" in response)) {
+        return;
+      }
+
+      const mapped = response.data.map(mapAdminCompanyToPartnership);
+      partnershipsRef.current = mapped;
+      setPartnerships(mapped);
+      setPagination(
+        response.pagination ?? {
+          ...DEFAULT_COMPANY_PAGINATION,
+          page: params.page ?? 1,
+          pageSize: params.pageSize ?? pageSize,
+          total: mapped.length,
+          totalPages:
+            Math.ceil(mapped.length / (params.pageSize ?? pageSize)) || 0,
+        }
+      );
+
+      onSuccessRef.current?.(mapped, response);
+    },
+    [pageSize]
+  );
+
+  // Hidratar estado inicial com cache já existente (caso usuário volte à tela)
+  useEffect(() => {
+    if (initialData?.length) return;
+
+    const params = paramsRef.current;
+    const cached = queryClient.getQueryData<AdminCompanyListApiResponse>(
+      buildQueryKey(params)
+    );
+
+    if (cached) {
+      applyResponse(cached, params);
+    }
+  }, [initialData, queryClient, buildQueryKey, applyResponse]);
+
   useEffect(() => {
     onSuccessRef.current = onSuccess;
   }, [onSuccess]);
@@ -154,39 +222,42 @@ export function useCompanyDashboardData({
       console.log("🔧 buildParams result:", params);
       paramsRef.current = params;
 
-      const controller = new AbortController();
-      const timeoutId = window.setTimeout(
-        () => controller.abort(),
-        COMPANY_DASHBOARD_CONFIG.api.timeout
-      );
+      const queryKey = buildQueryKey(params);
+      const cachedResponse =
+        queryClient.getQueryData<AdminCompanyListApiResponse>(queryKey);
+
+      if (isAdminCompanyListResponse(cachedResponse) && cachedResponse.data?.length) {
+        applyResponse(cachedResponse, params);
+        setIsLoading(false);
+      } else {
+        setIsLoading(true);
+      }
 
       try {
-        setIsLoading(true);
         setError(null);
 
-        const response = await listAdminCompanies(params, {
-          signal: controller.signal,
-          headers: { Accept: apiConfig.headers.Accept },
-        });
-
-        if (!("data" in response)) {
-          throw new Error("Resposta inválida da API");
-        }
-        const mapped = response.data.map(mapAdminCompanyToPartnership);
-        partnershipsRef.current = mapped;
-        setPartnerships(mapped);
-        setPagination(
-          response.pagination ?? {
-            ...DEFAULT_COMPANY_PAGINATION,
-            page: params.page ?? 1,
-            pageSize: params.pageSize ?? pageSize,
-            total: mapped.length,
-            totalPages:
-              Math.ceil(mapped.length / (params.pageSize ?? pageSize)) || 0,
-          }
+        const controller = new AbortController();
+        const timeoutId = window.setTimeout(
+          () => controller.abort(),
+          COMPANY_DASHBOARD_CONFIG.api.timeout
         );
-        onSuccessRef.current?.(mapped, response);
-        return mapped;
+
+        try {
+          const response = await listAdminCompanies(params, {
+            signal: controller.signal,
+            headers: { Accept: apiConfig.headers.Accept },
+          });
+
+          if (!("data" in response)) {
+            throw new Error("Resposta inválida da API");
+          }
+
+          queryClient.setQueryData(queryKey, response);
+          applyResponse(response, params);
+          return partnershipsRef.current;
+        } finally {
+          window.clearTimeout(timeoutId);
+        }
       } catch (err) {
         let message = "Erro ao carregar empresas.";
 
@@ -204,11 +275,10 @@ export function useCompanyDashboardData({
 
         throw err;
       } finally {
-        window.clearTimeout(timeoutId);
         setIsLoading(false);
       }
     },
-    [enabled, pageSize]
+    [enabled, pageSize, buildQueryKey, queryClient, applyResponse]
   );
 
   useEffect(() => {

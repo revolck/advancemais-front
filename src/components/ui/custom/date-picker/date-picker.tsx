@@ -162,7 +162,27 @@ export function DatePickerCustom({
             }}
             fromDate={minDate}
             toDate={maxDate}
-            disabled={disabled}
+            // Desabilita seleção fora do intervalo permitido
+            disabled={[
+              ...(minDate
+                ? [
+                    {
+                      before: new Date(
+                        new Date(minDate).setHours(0, 0, 0, 0)
+                      ),
+                    } as any,
+                  ]
+                : []),
+              ...(maxDate
+                ? [
+                    {
+                      after: new Date(
+                        new Date(maxDate).setHours(23, 59, 59, 999)
+                      ),
+                    } as any,
+                  ]
+                : []),
+            ]}
             locale={locale}
             className="w-full"
           />

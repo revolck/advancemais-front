@@ -11,6 +11,8 @@ export interface FilterField {
   mode?: FilterMode; // default: single
   options?: SelectOption[]; // required for select type
   placeholder?: string;
+  disabled?: boolean; // quando true, componente fica desabilitado
+  emptyPlaceholder?: string; // placeholder quando não há opções
 }
 
 export type FilterValues = Record<

@@ -29,12 +29,19 @@ export function useActiveRoute() {
 
       // Se o item tem um route, verificamos se corresponde à rota atual
       if (item.route) {
-        // Correspondência exata
-        if (pathname === item.route) return true;
+        const route = item.route.replace(/\/$/, "");
+        const path = pathname.replace(/\/$/, "");
 
-        // Correspondência parcial para subrotas (ex: /dashboard/analytics é uma subrota de /dashboard)
-        // Exceto para a rota raiz, evitando que "/" corresponda a tudo
-        if (item.route !== "/" && pathname.startsWith(item.route)) return true;
+        // 1) Sempre marcar ativo se for correspondência exata
+        if (path === route) return true;
+
+        // 2) Para itens com submenu, considerar ativo quando a rota atual for uma subrota
+        //    Ex.: parent '/dashboard/cursos' fica ativo em '/dashboard/cursos/turmas'
+        if (item.submenu && route !== "/" && path.startsWith(route + "/")) {
+          return true;
+        }
+        // 3) Itens folha (sem submenu) NÃO devem usar startsWith para evitar marcar
+        //    '/dashboard/cursos' quando estamos em '/dashboard/cursos/turmas'
       }
 
       // Verifica recursivamente se algum submenu está ativo

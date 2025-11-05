@@ -1,0 +1,25 @@
+<svg width="1200" height="700" viewBox="0 0 1200 700" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#a78bfa"/>
+      <stop offset="100%" stop-color="#6366f1"/>
+    </linearGradient>
+    <linearGradient id="grid" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0.02"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="700" fill="#0a0a0a"/>
+  <rect x="60" y="60" width="1080" height="580" rx="24" fill="url(#g1)" opacity="0.18"/>
+  <!-- grid blocks representing módulos -->
+  <g transform="translate(120,120)">
+    <rect x="0" y="0" width="300" height="120" rx="16" fill="url(#grid)"/>
+    <rect x="340" y="0" width="300" height="120" rx="16" fill="url(#grid)"/>
+    <rect x="680" y="0" width="300" height="120" rx="16" fill="url(#grid)"/>
+
+    <rect x="0" y="160" width="300" height="120" rx="16" fill="url(#grid)"/>
+    <rect x="340" y="160" width="300" height="120" rx="16" fill="url(#grid)"/>
+    <rect x="680" y="160" width="300" height="120" rx="16" fill="url(#grid)"/>
+  </g>
+  <text x="80" y="620" fill="#ffffff" opacity="0.6" font-family="Inter, system-ui, -apple-system, Segoe UI, Roboto" font-size="22">Visualização modular</text>
+</svg>

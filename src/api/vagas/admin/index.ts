@@ -167,7 +167,7 @@ export async function getVagaById(
  * Atualiza vaga
  *
  * Permite editar os dados de uma vaga existente, incluindo o status do fluxo.
- * Requer autenticação com perfil autorizado (roles: ADMIN, MODERADOR ou RECRUTADOR).
+ * Requer autenticação com perfil autorizado (roles: ADMIN, MODERADOR ou SETOR_DE_VAGAS).
  *
  * @param id - ID da vaga
  * @param data - Dados a serem atualizados
@@ -200,7 +200,7 @@ export async function updateVaga(
  * Remove vaga
  *
  * Exclui uma vaga cadastrada. Requer autenticação com perfil autorizado
- * (roles: ADMIN, MODERADOR, EMPRESA ou RECRUTADOR).
+ * (roles: ADMIN, MODERADOR, EMPRESA ou SETOR_DE_VAGAS).
  *
  * @param id - ID da vaga
  * @param init - Configurações adicionais da requisição

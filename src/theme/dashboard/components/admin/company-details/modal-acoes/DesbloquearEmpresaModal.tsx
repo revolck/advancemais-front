@@ -1,7 +1,4 @@
 "use client";
-
-import { useState } from "react";
-import { AlertTriangle, CheckCircle } from "lucide-react";
 import { ButtonCustom } from "@/components/ui/custom";
 import {
   ModalCustom,
@@ -12,42 +9,36 @@ import {
   ModalTitle,
   ModalDescription,
 } from "@/components/ui/custom/modal";
-import { revokeAdminCompanyUserBan } from "@/api/empresas/admin";
 import { toastCustom } from "@/components/ui/custom/toast";
 import { formatCnpj } from "../utils";
 import type { AdminCompanyDetail } from "@/api/empresas/admin/types";
+import { useCompanyMutations } from "../hooks/useCompanyMutations";
 
 interface DesbloquearEmpresaModalProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   company: AdminCompanyDetail;
-  onUnbanApplied?: () => void;
 }
 
 export function DesbloquearEmpresaModal({
   isOpen,
   onOpenChange,
   company,
-  onUnbanApplied,
 }: DesbloquearEmpresaModalProps) {
-  const [isLoading, setIsLoading] = useState(false);
+  const { revokeCompanyBan } = useCompanyMutations(company.id);
+  const isLoading = revokeCompanyBan.status === "pending";
 
   const handleDesbloquear = async () => {
     try {
-      setIsLoading(true);
-
-      await revokeAdminCompanyUserBan(company.id, {
+      await revokeCompanyBan.mutateAsync({
         observacoes: "Empresa desbloqueada pelo administrador",
       });
 
       toastCustom.success("Empresa desbloqueada com sucesso!");
-      onUnbanApplied?.();
       onOpenChange(false);
     } catch (error) {
       console.error("Erro ao desbloquear empresa:", error);
       toastCustom.error("Erro ao desbloquear empresa. Tente novamente.");
-    } finally {
-      setIsLoading(false);
     }
   };
 

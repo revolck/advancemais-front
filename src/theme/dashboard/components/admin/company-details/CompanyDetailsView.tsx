@@ -1,15 +1,15 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+
 import { HorizontalTabs } from "@/components/ui/custom";
 import type { HorizontalTabItem } from "@/components/ui/custom";
 import type {
   AdminCompanyDetail,
-  AdminCompanyBanItem,
-  AdminCompanyVagaItem,
-  AdminCompanyPlano,
+  AdminCompanyConsolidatedResponse,
   AdminCompanyPagamento,
-  AdminCompanyAuditoriaItem,
+  AdminCompanyVagaItem,
 } from "@/api/empresas/admin/types";
 import { getAdminCompanyConsolidated } from "@/api/empresas/admin";
 import {
@@ -28,75 +28,121 @@ import { AboutTab } from "./tabs/AboutTab";
 import { VacancyTab } from "./tabs/VacancyTab";
 import { PlanTab } from "./tabs/PlanTab";
 import { HistoryTab } from "./tabs/HistoryTab";
+import { queryKeys } from "@/lib/react-query/queryKeys";
 import { HeaderInfo } from "./components/HeaderInfo";
+
+const COMPANY_QUERY_STALE_TIME = 5 * 60 * 1000; // 5 minutos
+const COMPANY_QUERY_GC_TIME = 30 * 60 * 1000; // 30 minutos
+
+async function fetchCompanyConsolidated(
+  companyId: string
+): Promise<AdminCompanyConsolidatedResponse> {
+  const response = await getAdminCompanyConsolidated(companyId);
+  if ("empresa" in response) {
+    return response;
+  }
+
+  const message =
+    (response as { message?: string }).message ??
+    "Não foi possível carregar os dados da empresa.";
+  throw new Error(message);
+}
+
+function deriveCompanyData(
+  baseCompany: AdminCompanyDetail,
+  consolidated: AdminCompanyConsolidatedResponse
+): AdminCompanyDetail {
+  const planAtivo = consolidated.planos.ativos?.[0] ?? baseCompany.plano ?? null;
+  const pagamentoAtual =
+    consolidated.pagamentos.recentes?.[0] ?? baseCompany.pagamento ?? null;
+
+  const pagamento: AdminCompanyPagamento = {
+    modelo:
+      planAtivo?.modeloPagamento ??
+      baseCompany.pagamento?.modelo ??
+      "MENSAL",
+    metodo:
+      planAtivo?.metodoPagamento ??
+      baseCompany.pagamento?.metodo ??
+      "CREDITO",
+    status:
+      planAtivo?.statusPagamento ??
+      baseCompany.pagamento?.status ??
+      "PENDENTE",
+    ultimoPagamentoEm:
+      pagamentoAtual?.criadoEm ??
+      baseCompany.pagamento?.ultimoPagamentoEm ??
+      new Date().toISOString(),
+  };
+
+  return {
+    ...baseCompany,
+    ...consolidated.empresa,
+    plano: planAtivo ?? null,
+    pagamento,
+    vagas: {
+      publicadas:
+        consolidated.vagas.total ??
+        baseCompany.vagas?.publicadas ??
+        consolidated.vagas.recentes.length ??
+        0,
+      limitePlano:
+        planAtivo?.quantidadeVagas ?? baseCompany.vagas?.limitePlano ?? 0,
+    },
+    banida:
+      Boolean(consolidated.bloqueios.ativos.length) || baseCompany.banida,
+    banimentoAtivo:
+      consolidated.bloqueios.ativos[0] ??
+      baseCompany.banimentoAtivo ??
+      null,
+  };
+}
 
 export function CompanyDetailsView({
   company,
   payments = [],
   vacancies = [],
   auditoria = [],
-}: CompanyDetailsViewProps & { auditoria?: AdminCompanyAuditoriaItem[] }) {
-  const [companyData, setCompanyData] = useState(company);
-  const [allPayments, setAllPayments] = useState(payments);
-  const [allVacancies, setAllVacancies] = useState(vacancies);
-  const [allAuditoria, setAllAuditoria] = useState(auditoria);
-  const [isReloading, setIsReloading] = useState(false);
+  initialConsolidated,
+}: CompanyDetailsViewProps) {
+  const queryKey = useMemo(
+    () => queryKeys.empresas.detail(company.id),
+    [company.id]
+  );
 
-  useEffect(() => {
-    setCompanyData(company);
-    setAllPayments(payments);
-    setAllVacancies(vacancies);
-    setAllAuditoria(auditoria);
-  }, [company, payments, vacancies, auditoria]);
+  const {
+    data: consolidatedData,
+    isFetching,
+    refetch,
+  } = useQuery<AdminCompanyConsolidatedResponse, Error>({
+    queryKey,
+    queryFn: () => fetchCompanyConsolidated(company.id),
+    initialData: initialConsolidated,
+    staleTime: COMPANY_QUERY_STALE_TIME,
+    gcTime: COMPANY_QUERY_GC_TIME,
+  });
 
-  // Função para recarregar todos os dados da API consolidada
-  const reloadCompanyData = useCallback(async () => {
-    setIsReloading(true);
-    try {
-      const consolidatedResult = await getAdminCompanyConsolidated(
-        companyData.id
-      );
+  const companyData = useMemo(
+    () => deriveCompanyData(company, consolidatedData),
+    [company, consolidatedData]
+  );
 
-      if ("empresa" in consolidatedResult) {
-        const planAtivo = consolidatedResult.planos?.ativos?.[0] || null;
-        const pagamentoAtual =
-          consolidatedResult.pagamentos?.recentes?.[0] || null;
-
-        const empresaComPlano = {
-          ...consolidatedResult.empresa,
-          plano: planAtivo,
-          pagamento: {
-            modelo: planAtivo?.modeloPagamento || "MENSAL",
-            metodo: planAtivo?.metodoPagamento || "CREDITO",
-            status: planAtivo?.statusPagamento || "PENDENTE",
-            ultimoPagamentoEm:
-              pagamentoAtual?.criadoEm || new Date().toISOString(),
-          },
-          enderecos: [],
-          vagas: {
-            publicadas: consolidatedResult.vagas?.total || 0,
-            limitePlano: planAtivo?.quantidadeVagas || 0,
-          },
-          banida: false,
-          banimentoAtivo: consolidatedResult.bloqueios?.ativos?.[0] || null,
-        };
-
-        setCompanyData(empresaComPlano);
-        setAllPayments(consolidatedResult.pagamentos?.recentes || []);
-        setAllVacancies(consolidatedResult.vagas?.recentes || []);
-        setAllAuditoria(consolidatedResult.auditoria?.recentes || []);
-      }
-    } catch (error) {
-      console.error("Erro ao recarregar dados da empresa:", error);
-    } finally {
-      setIsReloading(false);
-    }
-  }, [companyData.id]);
+  const allPayments =
+    consolidatedData.pagamentos.recentes?.length !== undefined
+      ? consolidatedData.pagamentos.recentes
+      : payments;
+  const allVacancies =
+    consolidatedData.vagas.recentes?.length !== undefined
+      ? consolidatedData.vagas.recentes
+      : vacancies;
+  const allAuditoria =
+    consolidatedData.auditoria.recentes?.length !== undefined
+      ? consolidatedData.auditoria.recentes
+      : auditoria;
 
   const plan = companyData.plano;
   const payment = companyData.pagamento;
 
-  // Calcular vagas publicadas + em análise baseado nos dados das vagas
   const publishedVacancies = allVacancies.reduce((count, vacancy) => {
     const status = vacancy.status?.toUpperCase();
     return count + (status === "PUBLICADO" || status === "EM_ANALISE" ? 1 : 0);
@@ -105,7 +151,6 @@ export function CompanyDetailsView({
   const totalVacancies =
     plan?.quantidadeVagas ?? companyData.vagas?.limitePlano ?? 0;
 
-  // Contar apenas vagas relevantes para o badge (excluindo RASCUNHO e DESPUBLICADA)
   const relevantVacanciesCount = allVacancies.reduce((count, vacancy) => {
     const status = vacancy.status?.toUpperCase();
     return (
@@ -121,6 +166,7 @@ export function CompanyDetailsView({
   }, 0);
 
   const isCompanyActive = companyData.status === "ATIVO" || companyData.ativa;
+  const isReloading = isFetching;
 
   const [viewVacancy, setViewVacancy] = useState<AdminCompanyVagaItem | null>(
     null
@@ -138,69 +184,14 @@ export function CompanyDetailsView({
   const [isAddSubscriptionOpen, setIsAddSubscriptionOpen] = useState(false);
   const [isResetPasswordOpen, setIsResetPasswordOpen] = useState(false);
 
-  const handleCompanyUpdated = useCallback(
-    async (updates: Partial<AdminCompanyDetail>) => {
-      // Atualizar dados locais imediatamente para UX responsivo
-      setCompanyData((prev) => ({
-        ...prev,
-        ...updates,
-      }));
+  const reloadCompanyData = useCallback(async () => {
+    const result = await refetch();
+    if (result.error) {
+      throw result.error;
+    }
+    return result.data;
+  }, [refetch]);
 
-      // Recarregar dados completos da API para atualizar auditoria e histórico
-      await reloadCompanyData();
-    },
-    [reloadCompanyData]
-  );
-
-  const handleBanApplied = useCallback(
-    async (ban: AdminCompanyBanItem) => {
-      // Atualizar dados locais imediatamente para UX responsivo
-      setCompanyData((prev) => ({
-        ...prev,
-        banimentoAtivo: ban,
-        banida: true,
-        status: "INATIVO",
-        ativa: false,
-      }));
-
-      // Recarregar dados completos da API para atualizar auditoria e histórico
-      await reloadCompanyData();
-    },
-    [reloadCompanyData]
-  );
-
-  const handleUnbanApplied = useCallback(async () => {
-    // Atualizar dados locais imediatamente para UX responsivo
-    setCompanyData((prev) => ({
-      ...prev,
-      banimentoAtivo: null,
-      banida: false,
-      bloqueada: false,
-      bloqueioAtivo: null,
-      status: "ATIVO",
-      ativa: true,
-    }));
-
-    // Recarregar dados completos da API para atualizar auditoria e histórico
-    await reloadCompanyData();
-  }, [reloadCompanyData]);
-
-  const handleSubscriptionUpdated = useCallback(
-    async (plan: AdminCompanyPlano, payment: AdminCompanyPagamento) => {
-      // Atualizar dados locais imediatamente para UX responsivo
-      setCompanyData((prev) => ({
-        ...prev,
-        plano: plan,
-        pagamento: payment,
-      }));
-
-      // Recarregar dados completos da API para atualizar auditoria e histórico
-      await reloadCompanyData();
-    },
-    [reloadCompanyData]
-  );
-
-  // Verificar se a empresa tem um plano
   const hasPlan = Boolean(
     companyData.plano &&
       (companyData.plano.nome ||
@@ -232,67 +223,58 @@ export function CompanyDetailsView({
     }
   };
 
-  const aboutTabContent = (
-    <AboutTab company={companyData} isLoading={isReloading} />
-  );
-
-  const vacancyTabContent = (
-    <VacancyTab
-      vacancies={allVacancies}
-      publishedVacancies={publishedVacancies}
-      totalVacancies={totalVacancies}
-      onViewVacancy={(vacancy) => {
-        setViewVacancy(vacancy);
-        setIsViewVacancyOpen(true);
-      }}
-      onEditVacancy={(vacancy) => {
-        setEditVacancy(vacancy);
-        setIsEditVacancyOpen(true);
-      }}
-    />
-  );
-
-  const planTabContent = (
-    <PlanTab
-      isCompanyActive={isCompanyActive}
-      plan={plan}
-      payment={payment}
-      payments={allPayments}
-      isLoading={isReloading}
-    />
-  );
-
-  const historyTabContent = (
-    <HistoryTab auditoria={allAuditoria} isLoading={isReloading} />
-  );
-
   const tabs: HorizontalTabItem[] = [
     {
       value: "sobre",
       label: "Sobre",
       icon: "FileText",
-      content: aboutTabContent,
+      content: <AboutTab company={companyData} isLoading={isReloading} />,
     },
     {
       value: "assinatura",
       label: "Assinatura",
       icon: "CreditCard",
-      content: planTabContent,
+      content: (
+        <PlanTab
+          isCompanyActive={isCompanyActive}
+          plan={plan}
+          payment={payment}
+          payments={allPayments}
+          isLoading={isReloading}
+        />
+      ),
     },
     {
       value: "vagas",
       label: "Vagas",
       icon: "Briefcase",
-      content: vacancyTabContent,
-      badge: relevantVacanciesCount ? (
-        <span>{relevantVacanciesCount}</span>
-      ) : null,
+      content: (
+        <VacancyTab
+          vacancies={allVacancies}
+          publishedVacancies={publishedVacancies}
+          totalVacancies={totalVacancies}
+          onViewVacancy={(vacancy) => {
+            setViewVacancy(vacancy);
+            setIsViewVacancyOpen(true);
+          }}
+          onEditVacancy={(vacancy) => {
+            setEditVacancy(vacancy);
+            setIsEditVacancyOpen(true);
+          }}
+        />
+      ),
+      badge: relevantVacanciesCount ? <span>{relevantVacanciesCount}</span> : null,
     },
     {
       value: "historico",
       label: "Histórico",
       icon: "History",
-      content: historyTabContent,
+      content: (
+        <HistoryTab
+          auditoria={allAuditoria}
+          isLoading={isReloading}
+        />
+      ),
       badge: allAuditoria.length ? <span>{allAuditoria.length}</span> : null,
     },
   ];
@@ -315,42 +297,43 @@ export function CompanyDetailsView({
         isOpen={isEditCompanyOpen}
         onOpenChange={setIsEditCompanyOpen}
         company={companyData}
-        onCompanyUpdated={handleCompanyUpdated}
       />
 
       <EditarEmpresaEnderecoModal
         isOpen={isEditAddressOpen}
         onOpenChange={setIsEditAddressOpen}
         company={companyData}
-        onCompanyUpdated={handleCompanyUpdated}
       />
 
       <BloquearEmpresaModal
         isOpen={isBanCompanyOpen}
         onOpenChange={setIsBanCompanyOpen}
         companyId={companyData.id}
-        onBanApplied={handleBanApplied}
+      />
+
+      <DesbloquearEmpresaModal
+        isOpen={isUnbanCompanyOpen}
+        onOpenChange={setIsUnbanCompanyOpen}
+        company={companyData}
       />
 
       <EditarAssinaturaModal
         isOpen={isEditSubscriptionOpen}
         onOpenChange={setIsEditSubscriptionOpen}
         company={companyData}
-        onSubscriptionUpdated={handleSubscriptionUpdated}
       />
 
       <AdicionarAssinaturaModal
         isOpen={isAddSubscriptionOpen}
         onOpenChange={setIsAddSubscriptionOpen}
         company={companyData}
-        onSubscriptionAdded={handleSubscriptionUpdated}
       />
 
       <ResetarSenhaModal
         isOpen={isResetPasswordOpen}
         onOpenChange={setIsResetPasswordOpen}
-        email={companyData.email}
         companyId={companyData.id}
+        email={companyData.email}
       />
 
       <ViewVacancyModal
@@ -358,23 +341,13 @@ export function CompanyDetailsView({
         onOpenChange={handleViewVacancyDialogChange}
         vacancy={viewVacancy}
         company={companyData}
-        onEditVacancy={(vacancy) => {
-          setEditVacancy(vacancy);
-          setIsEditVacancyOpen(true);
-        }}
       />
 
       <EditVacancyModal
         isOpen={isEditVacancyOpen}
         onOpenChange={handleEditVacancyDialogChange}
         vacancy={editVacancy}
-      />
-
-      <DesbloquearEmpresaModal
-        isOpen={isUnbanCompanyOpen}
-        onOpenChange={setIsUnbanCompanyOpen}
-        company={companyData}
-        onUnbanApplied={handleUnbanApplied}
+        onVacancyUpdated={reloadCompanyData}
       />
     </div>
   );

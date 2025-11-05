@@ -25,6 +25,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { getRoleLabel } from "@/config/roles";
 import {
   User,
   Edit,
@@ -607,7 +608,7 @@ export function HistoryTab({ auditoria, isLoading = false }: HistoryTabProps) {
     return (
       <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-gray-50 text-gray-600 text-xs font-medium border border-gray-200/50">
         {getRoleIcon(role)}
-        {role}
+        {getRoleLabel(role)}
       </span>
     );
   };

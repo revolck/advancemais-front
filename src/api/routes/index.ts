@@ -11,9 +11,24 @@ const prefix = `/api/${env.apiVersion}`;
  */
 export const websiteRoutes = {
   get: () => `${prefix}/website`,
+  info: () => `${prefix}/website`,
   put: () => `${prefix}/website`,
   update: (id: string) => `${prefix}/website/${id}`,
   delete: (id: string) => `${prefix}/website/${id}`,
+  item: {
+    get: (recurso: string, id: string) =>
+      `${prefix}/website/${encodeURIComponent(recurso)}/${encodeURIComponent(
+        id
+      )}`,
+    update: (recurso: string, id: string) =>
+      `${prefix}/website/${encodeURIComponent(recurso)}/${encodeURIComponent(
+        id
+      )}`,
+    delete: (recurso: string, id: string) =>
+      `${prefix}/website/${encodeURIComponent(recurso)}/${encodeURIComponent(
+        id
+      )}`,
+  },
   about: {
     list: () => `${prefix}/website/sobre`,
     create: () => `${prefix}/website/sobre`,
@@ -186,42 +201,52 @@ export const empresasRoutes = {
     update: (id: string) => `${prefix}/empresas/planos-empresariais/${id}`,
     delete: (id: string) => `${prefix}/empresas/planos-empresariais/${id}`,
   },
+  clientes: {
+    list: () => `${prefix}/empresas/clientes`,
+    create: () => `${prefix}/empresas/clientes`,
+    get: (id: string) =>
+      `${prefix}/empresas/clientes/${encodeURIComponent(id)}`,
+    update: (id: string) =>
+      `${prefix}/empresas/clientes/${encodeURIComponent(id)}`,
+    delete: (id: string) =>
+      `${prefix}/empresas/clientes/${encodeURIComponent(id)}`,
+  },
   adminEmpresas: {
-    dashboard: () => `${prefix}/empresas/admin/dashboard`,
-    list: () => `${prefix}/empresas/admin`,
-    create: () => `${prefix}/empresas/admin`,
-    get: (id: string) => `${prefix}/empresas/admin/${id}`,
-    update: (id: string) => `${prefix}/empresas/admin/${id}`,
-    updatePlano: (id: string) => `${prefix}/empresas/admin/${id}/plano`,
-    createPlano: (id: string) => `${prefix}/empresas/admin/${id}/plano`,
+    // Após unificação, não existe mais /empresas/admin.
+    // Mantemos o namespace "adminEmpresas" no front para compatibilidade,
+    // apontando para as novas rotas públicas do módulo Empresas.
+    dashboard: () => `${prefix}/empresas/dashboard`,
+    list: () => `${prefix}/empresas`,
+    create: () => `${prefix}/empresas`,
+    get: (id: string) => `${prefix}/empresas/${id}`,
+    update: (id: string) => `${prefix}/empresas/${id}`,
+    updatePlano: (id: string) => `${prefix}/empresas/${id}/plano`,
+    createPlano: (id: string) => `${prefix}/empresas/${id}/plano`,
     validateCnpj: (cnpj: string) =>
-      `${prefix}/empresas/admin/validate-cnpj?cnpj=${cnpj}`,
-    validateCpf: (cpf: string) =>
-      `${prefix}/empresas/admin/validate-cpf?cpf=${cpf}`,
+      `${prefix}/empresas/validate-cnpj?cnpj=${cnpj}`,
+    validateCpf: (cpf: string) => `${prefix}/empresas/validate-cpf?cpf=${cpf}`,
     pagamentos: {
-      list: (id: string) => `${prefix}/empresas/admin/${id}/pagamentos`,
+      list: (id: string) => `${prefix}/empresas/${id}/pagamentos`,
     },
     banimentos: {
-      list: (id: string) => `${prefix}/empresas/admin/${id}/banimentos`,
-      create: (id: string) => `${prefix}/empresas/admin/${id}/banimentos`,
-      revogar: (id: string) =>
-        `${prefix}/empresas/admin/${id}/banimentos/revogar`,
+      // Backward-compat: map "banimentos" para as novas rotas de "bloqueios".
+      list: (id: string) => `${prefix}/empresas/${id}/bloqueios`,
+      create: (id: string) => `${prefix}/empresas/${id}/bloqueios`,
+      revogar: (id: string) => `${prefix}/empresas/${id}/bloqueios/revogar`,
     },
     bloqueios: {
-      list: (id: string) => `${prefix}/empresas/admin/${id}/bloqueios`,
-      create: (id: string) => `${prefix}/empresas/admin/${id}/bloqueios`,
-      revogar: (id: string) =>
-        `${prefix}/empresas/admin/${id}/bloqueios/revogar`,
+      list: (id: string) => `${prefix}/empresas/${id}/bloqueios`,
+      create: (id: string) => `${prefix}/empresas/${id}/bloqueios`,
+      revogar: (id: string) => `${prefix}/empresas/${id}/bloqueios/revogar`,
     },
     vagas: {
-      list: (id: string) => `${prefix}/empresas/admin/${id}/vagas`,
-      get: (id: string) => `${prefix}/empresas/admin/vagas/${id}`,
+      list: (id: string) => `${prefix}/empresas/${id}/vagas`,
+      get: (id: string) => `${prefix}/empresas/vagas/${id}`,
       update: (id: string) => `${prefix}/empresas/vagas/${id}`,
       delete: (id: string) => `${prefix}/empresas/vagas/${id}`,
-      emAnalise: (id: string) =>
-        `${prefix}/empresas/admin/${id}/vagas/em-analise`,
+      emAnalise: (id: string) => `${prefix}/empresas/${id}/vagas/em-analise`,
       aprovar: (id: string, vagaId: string) =>
-        `${prefix}/empresas/admin/${id}/vagas/${vagaId}/aprovar`,
+        `${prefix}/empresas/${id}/vagas/${vagaId}/aprovar`,
     },
   },
 };
@@ -242,6 +267,9 @@ export const dashboardRoutes = {
  */
 export const brevoRoutes = {
   base: () => `${prefix}/brevo`,
+  info: () => `${prefix}/brevo`,
+  health: () => `${prefix}/brevo/health`,
+  config: () => `${prefix}/brevo/config`,
   verification: {
     /**
      * GET /api/v1/brevo/verificar-email?token=...
@@ -273,6 +301,36 @@ export const brevoRoutes = {
        */
       resendVerification: () => `${prefix}/brevo/reenviar`,
     },
+  },
+  test: {
+    email: () => `${prefix}/brevo/test/email`,
+    sms: () => `${prefix}/brevo/test/sms`,
+  },
+};
+
+/**
+ * Endpoints for Permissions module (permissoes).
+ * Covers resources, grants, my permissions and audit logs.
+ */
+export const permissoesRoutes = {
+  base: () => `${prefix}/permissoes`,
+  recursos: {
+    list: () => `${prefix}/permissoes/recursos`,
+    create: () => `${prefix}/permissoes/recursos`,
+  },
+  grants: {
+    list: () => `${prefix}/permissoes/grants`,
+    create: () => `${prefix}/permissoes/grants`,
+    get: (id: string) =>
+      `${prefix}/permissoes/grants/${encodeURIComponent(id)}`,
+    update: (id: string) =>
+      `${prefix}/permissoes/grants/${encodeURIComponent(id)}`,
+    delete: (id: string) =>
+      `${prefix}/permissoes/grants/${encodeURIComponent(id)}`,
+  },
+  minhas: () => `${prefix}/permissoes/minhas`,
+  auditoria: {
+    list: () => `${prefix}/permissoes/auditoria`,
   },
 };
 
@@ -324,6 +382,69 @@ export const usuarioRoutes = {
     status: brevoRoutes.verification.statusByUserId,
     alias: brevoRoutes.verification.alias,
   },
+  admin: {
+    candidatos: {
+      list: () => `${prefix}/usuarios/candidatos`,
+      dashboard: () => `${prefix}/usuarios/candidatos/dashboard`,
+      get: (userId: string) =>
+        `${prefix}/usuarios/candidatos/${encodeURIComponent(userId)}`,
+      logs: (userId: string) =>
+        `${prefix}/usuarios/candidatos/${encodeURIComponent(userId)}/logs`,
+    },
+    usuarios: {
+      list: () => `${prefix}/usuarios/usuarios`,
+      create: () => `${prefix}/usuarios/usuarios`,
+      get: (userId: string) =>
+        `${prefix}/usuarios/usuarios/${encodeURIComponent(userId)}`,
+      update: (userId: string) =>
+        `${prefix}/usuarios/usuarios/${encodeURIComponent(userId)}`,
+      updateRole: (userId: string) =>
+        `${prefix}/usuarios/usuarios/${encodeURIComponent(userId)}/role`,
+      updateStatus: (userId: string) =>
+        `${prefix}/usuarios/usuarios/${encodeURIComponent(userId)}/status`,
+      bloqueios: {
+        list: (userId: string) =>
+          `${prefix}/usuarios/usuarios/${encodeURIComponent(userId)}/bloqueios`,
+        create: (userId: string) =>
+          `${prefix}/usuarios/usuarios/${encodeURIComponent(userId)}/bloqueios`,
+        revoke: (userId: string) =>
+          `${prefix}/usuarios/usuarios/${encodeURIComponent(
+            userId
+          )}/bloqueios/revogar`,
+      },
+    },
+  },
+  alunos: {
+    bloqueios: {
+      list: (id: string) =>
+        `${prefix}/usuarios/alunos/${encodeURIComponent(id)}/bloqueios`,
+      create: (id: string) =>
+        `${prefix}/usuarios/alunos/${encodeURIComponent(id)}/bloqueios`,
+      revoke: (id: string) =>
+        `${prefix}/usuarios/alunos/${encodeURIComponent(id)}/bloqueios/revogar`,
+    },
+  },
+  instrutores: {
+    list: () => `${prefix}/usuarios/instrutores`,
+    get: (instrutorId: string) =>
+      `${prefix}/usuarios/instrutores/${encodeURIComponent(instrutorId)}`,
+    update: (instrutorId: string) =>
+      `${prefix}/usuarios/instrutores/${encodeURIComponent(instrutorId)}`,
+    bloqueios: {
+      list: (instrutorId: string) =>
+        `${prefix}/usuarios/instrutores/${encodeURIComponent(
+          instrutorId
+        )}/bloqueios`,
+      create: (instrutorId: string) =>
+        `${prefix}/usuarios/instrutores/${encodeURIComponent(
+          instrutorId
+        )}/bloqueios`,
+      revoke: (instrutorId: string) =>
+        `${prefix}/usuarios/instrutores/${encodeURIComponent(
+          instrutorId
+        )}/bloqueios/revogar`,
+    },
+  },
 };
 
 /**
@@ -332,6 +453,25 @@ export const usuarioRoutes = {
  */
 export const mercadoPagoRoutes = {
   base: () => `${prefix}/mercadopago`,
+  logs: {
+    list: () => `${prefix}/mercadopago/logs`,
+    get: (id: string) => `${prefix}/mercadopago/logs/${encodeURIComponent(id)}`,
+  },
+  assinaturas: {
+    checkout: () => `${prefix}/mercadopago/assinaturas/checkout`,
+    cancelar: () => `${prefix}/mercadopago/assinaturas/cancelar`,
+    upgrade: () => `${prefix}/mercadopago/assinaturas/upgrade`,
+    downgrade: () => `${prefix}/mercadopago/assinaturas/downgrade`,
+    remindPayment: () => `${prefix}/mercadopago/assinaturas/remind-payment`,
+    reconcile: () => `${prefix}/mercadopago/assinaturas/reconcile`,
+    webhook: () => `${prefix}/mercadopago/assinaturas/webhook`,
+    admin: {
+      remindPayment: () =>
+        `${prefix}/mercadopago/assinaturas/admin/remind-payment`,
+      syncPlan: () => `${prefix}/mercadopago/assinaturas/admin/sync-plan`,
+      syncPlans: () => `${prefix}/mercadopago/assinaturas/admin/sync-plans`,
+    },
+  },
 };
 
 /**
@@ -351,6 +491,44 @@ export const vagasRoutes = {
   get: (id: string) => `${prefix}/empresas/vagas/${id}`,
   update: (id: string) => `${prefix}/empresas/vagas/${id}`,
   delete: (id: string) => `${prefix}/empresas/vagas/${id}`,
+  processos: {
+    list: (vagaId: string) =>
+      `${prefix}/empresas/vagas/${encodeURIComponent(vagaId)}/processos`,
+    create: (vagaId: string) =>
+      `${prefix}/empresas/vagas/${encodeURIComponent(vagaId)}/processos`,
+    get: (vagaId: string, processoId: string) =>
+      `${prefix}/empresas/vagas/${encodeURIComponent(
+        vagaId
+      )}/processos/${encodeURIComponent(processoId)}`,
+    update: (vagaId: string, processoId: string) =>
+      `${prefix}/empresas/vagas/${encodeURIComponent(
+        vagaId
+      )}/processos/${encodeURIComponent(processoId)}`,
+    delete: (vagaId: string, processoId: string) =>
+      `${prefix}/empresas/vagas/${encodeURIComponent(
+        vagaId
+      )}/processos/${encodeURIComponent(processoId)}`,
+  },
+};
+
+/**
+ * Endpoints for Status de Processo operations.
+ */
+export const statusProcessoRoutes = {
+  list: () => `${prefix}/status-processo`,
+  create: () => `${prefix}/status-processo`,
+  get: (id: string) => `${prefix}/status-processo/${encodeURIComponent(id)}`,
+  update: (id: string) => `${prefix}/status-processo/${encodeURIComponent(id)}`,
+  delete: (id: string) => `${prefix}/status-processo/${encodeURIComponent(id)}`,
+  reorder: (id: string) =>
+    `${prefix}/status-processo/${encodeURIComponent(id)}/reorder`,
+  checkUsage: (id: string) =>
+    `${prefix}/status-processo/${encodeURIComponent(id)}/usage`,
+  validateCodigo: (codigo: string) =>
+    `${prefix}/status-processo/validate-codigo?codigo=${encodeURIComponent(
+      codigo
+    )}`,
+  validateDefault: () => `${prefix}/status-processo/validate-default`,
 };
 
 export const routes = {
@@ -360,7 +538,9 @@ export const routes = {
   usuarios: usuarioRoutes,
   mercadopago: mercadoPagoRoutes,
   brevo: brevoRoutes,
+  permissoes: permissoesRoutes,
   upload: uploadRoutes,
+  statusProcesso: statusProcessoRoutes,
 };
 
 export type Routes = typeof routes;

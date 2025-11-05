@@ -1,0 +1,204 @@
+"use client";
+
+import Image from "next/image";
+import { EmptyState } from "@/components/ui/custom";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  CalendarDays,
+  BookOpen,
+  Clock,
+  Tag,
+  Layers,
+  Briefcase,
+  type LucideIcon,
+} from "lucide-react";
+import type { Curso } from "@/api/cursos";
+
+interface AboutTabProps {
+  curso: Curso & {
+    categoria?: { nome: string };
+    subcategoria?: { nome: string };
+    turmas?: any[];
+    turmasCount?: number;
+  };
+  isLoading?: boolean;
+}
+
+export function AboutTab({ curso, isLoading = false }: AboutTabProps) {
+  const aboutDescription = curso.descricao?.trim();
+
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return "—";
+    const date = new Date(dateString);
+    return date.toLocaleDateString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+  };
+
+  const formatDateTime = (dateString?: string) => {
+    if (!dateString) return "—";
+    const date = new Date(dateString);
+    const dateStr = date.toLocaleDateString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+    const timeStr = date.toLocaleTimeString("pt-BR", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    return `${dateStr} às ${timeStr}`;
+  };
+
+  const aboutSidebar: Array<{
+    label: string;
+    value: React.ReactNode | null;
+    icon: LucideIcon;
+  }> = [
+    {
+      label: "Categoria",
+      value: curso.categoria?.nome ?? curso.categoriaId ?? "—",
+      icon: BookOpen,
+    },
+    {
+      label: "Subcategoria",
+      value: curso.subcategoria?.nome ?? "—",
+      icon: BookOpen,
+    },
+    {
+      label: "Carga horária",
+      value: curso.cargaHoraria ? `${curso.cargaHoraria}h` : "—",
+      icon: Clock,
+    },
+    {
+      label: "Estágio obrigatório",
+      value:
+        "estagioObrigatorio" in curso &&
+        Boolean((curso as { estagioObrigatorio?: boolean }).estagioObrigatorio)
+          ? "Sim"
+          : "Não",
+      icon: Briefcase,
+    },
+    {
+      label: "Turmas cadastradas",
+      value:
+        curso.turmasCount ??
+        (Array.isArray(curso.turmas) ? curso.turmas.length : 0),
+      icon: Layers,
+    },
+    {
+      label: "Código do curso",
+      value: curso.codigo ?? "—",
+      icon: Tag,
+    },
+    {
+      label: "Criado em",
+      value: formatDateTime(curso.criadoEm),
+      icon: CalendarDays,
+    },
+    {
+      label: "Última atualização",
+      value: formatDateTime(curso.atualizadoEm),
+      icon: CalendarDays,
+    },
+  ];
+
+  // Se está carregando, mostrar skeleton
+  if (isLoading) {
+    return (
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,_7fr)_minmax(0,_3fr)]">
+        {/* Skeleton da seção principal */}
+        <section className="rounded-2xl border border-gray-200/60 bg-white p-6">
+          <Skeleton className="h-4 w-full mb-2" />
+          <Skeleton className="h-4 w-3/4 mb-2" />
+          <Skeleton className="h-4 w-1/2" />
+        </section>
+
+        {/* Skeleton da sidebar */}
+        <aside className="space-y-4">
+          <div className="rounded-2xl border border-gray-200/60 bg-white p-6">
+            <div className="space-y-4">
+              {Array.from({ length: 6 }, (_, i) => (
+                <div key={i} className="flex items-start gap-3">
+                  <Skeleton className="h-9 w-9 rounded-full" />
+                  <div className="flex flex-1 flex-col space-y-2">
+                    <Skeleton className="h-3 w-24" />
+                    <Skeleton className="h-3 w-32" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </aside>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid gap-6 lg:grid-cols-[minmax(0,_7fr)_minmax(0,_3fr)]">
+      <section className="rounded-2xl border border-gray-200/60 bg-white p-6">
+        {aboutDescription ? (
+          <p className="mt-4 whitespace-pre-line !leading-relaxed text-muted-foreground">
+            {aboutDescription}
+          </p>
+        ) : (
+          <EmptyState
+            illustration="companyDetails"
+            illustrationAlt="Ilustração de descrição vazia do curso"
+            title="Descrição não adicionada."
+            description="Até o momento, este curso não possui uma descrição detalhada."
+            maxContentWidth="md"
+          />
+        )}
+      </section>
+
+      <aside className="space-y-4">
+        {/* Imagem do curso */}
+        {curso.imagemUrl && (
+          <div className="rounded-2xl border border-gray-200/60 bg-white p-6">
+            <div className="relative aspect-video w-full overflow-hidden rounded-lg">
+              <Image
+                src={curso.imagemUrl}
+                alt={curso.nome}
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 100vw, 400px"
+              />
+            </div>
+          </div>
+        )}
+
+        <div className="rounded-2xl border border-gray-200/60 bg-white p-6">
+          <dl className="space-y-5 text-sm">
+            {aboutSidebar
+              .filter((info) => {
+                // Mostrar categoria sempre, mesmo se não tiver valor
+                if (info.label === "Categoria") return true;
+                // Para subcategoria, mostrar apenas se tiver valor (não for "—")
+                if (info.label === "Subcategoria") return info.value !== null && info.value !== "—";
+                // Para outros campos, mostrar apenas se tiver valor
+                return info.value !== null && info.value !== "—";
+              })
+              .map((info) => (
+                <div key={info.label} className="flex items-start gap-3">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-600">
+                    <info.icon className="h-4 w-4" aria-hidden="true" />
+                  </span>
+                  <div className="flex flex-1 flex-col gap-1">
+                    <dt className="text-xs font-medium text-gray-500">
+                      {info.label}
+                    </dt>
+                    <dd className="text-sm font-medium text-gray-900">
+                      {info.value ?? "—"}
+                    </dd>
+                  </div>
+                </div>
+              ))}
+          </dl>
+        </div>
+      </aside>
+    </div>
+  );
+}

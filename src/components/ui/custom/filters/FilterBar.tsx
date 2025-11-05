@@ -59,13 +59,9 @@ export function FilterBar({
 }: FilterBarProps) {
   const searchHelperPlacement = search?.helperPlacement ?? "inline";
   const showTooltipHelper =
-    !!search &&
-    searchHelperPlacement === "tooltip" &&
-    !!search.helperText;
+    !!search && searchHelperPlacement === "tooltip" && !!search.helperText;
   const showTooltipError =
-    !!search &&
-    searchHelperPlacement === "tooltip" &&
-    !!search.error;
+    !!search && searchHelperPlacement === "tooltip" && !!search.error;
 
   const searchLabelContent = search ? (
     <span className="inline-flex items-center gap-1">
@@ -149,7 +145,21 @@ export function FilterBar({
         className
       )}
     >
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.2fr)_auto] lg:items-end lg:gap-3 xl:gap-4">
+      <div className={cn(
+        "grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.2fr)_auto] lg:items-end lg:gap-3 xl:gap-4",
+        className?.includes("lg:grid-cols") ? (() => {
+          const match = className.match(/lg:grid-cols-\[([^\]]+)\]/);
+          if (match) {
+            const gridCols = `lg:grid-cols-[${match[1]}]`;
+            const rowRules = className.match(/\[&>div>\*:nth-child\(\d+\)\]:lg:row-start-\d+/g) || [];
+            const colRules = className.match(/\[&>div>\*:nth-child\(\d+\)\]:lg:col-start-\d+/g) || [];
+            const colEndRules = className.match(/\[&>div>\*:nth-child\(\d+\)\]:lg:col-end-\d+/g) || [];
+            const colSpanRules = className.match(/\[&>div>\*:nth-child\(\d+\)\]:lg:col-span-\d+/g) || [];
+            return [gridCols, ...rowRules, ...colRules, ...colEndRules, ...colSpanRules].join(" ");
+          }
+          return "";
+        })() : ""
+      )}>
         {search && (
           <div className="min-w-0">
             <div className="relative">
@@ -199,11 +209,16 @@ export function FilterBar({
 
           const commonProps = {
             options: field.options ?? [],
-            placeholder: field.placeholder ?? "Selecionar",
+            placeholder:
+              field.options && field.options.length === 0
+                ? field.emptyPlaceholder ?? "Sem opções disponíveis"
+                : field.placeholder ?? "Selecionar",
             className: "w-full",
           } as const;
 
           if (mode === "multiple") {
+            const disabled =
+              field.disabled || (field.options?.length ?? 0) === 0;
             return (
               <div key={field.key} className="min-w-0">
                 {field.label && (
@@ -213,17 +228,19 @@ export function FilterBar({
                 )}
                 <MultiSelectFilter
                   title={field.label}
-                  placeholder={field.placeholder ?? "Selecionar..."}
+                  placeholder={commonProps.placeholder}
                   options={field.options ?? []}
                   selectedValues={(values[field.key] as string[]) || []}
                   onSelectionChange={(val) => onChange(field.key, val)}
                   showApplyButton
                   className="w-full"
+                  disabled={disabled}
                 />
               </div>
             );
           }
 
+          const disabled = field.disabled || (field.options?.length ?? 0) === 0;
           return (
             <div key={field.key} className="min-w-0">
               {field.label && (
@@ -235,6 +252,7 @@ export function FilterBar({
                 {...commonProps}
                 value={(values[field.key] as string | null) ?? null}
                 onChange={(val) => onChange(field.key, val)}
+                disabled={disabled}
               />
             </div>
           );

@@ -20,21 +20,18 @@ import { ButtonCustom } from "@/components/ui/custom/button";
 import { InputCustom } from "@/components/ui/custom/input";
 import { toastCustom } from "@/components/ui/custom/toast";
 import { SelectCustom } from "@/components/ui/custom/select";
-import {
-  updateAdminCompanyPlano,
-  listPlanosEmpresariais,
-} from "@/api/empresas";
+import { listPlanosEmpresariais } from "@/api/empresas";
 import type {
   AdminCompanyDetail,
   AdminCompanyPlano,
   AdminCompanyPlanMode,
-  AdminCompanyPagamento,
   UpdateAdminCompanyPlanoPayload,
 } from "@/api/empresas/admin/types";
 import type {
   PlanoEmpresarialBackendResponse,
   PlanoEmpresarialListApiResponse,
 } from "@/api/empresas/planos-empresariais/types";
+import { useCompanyMutations } from "../hooks/useCompanyMutations";
 
 const PLAN_TYPE_OPTIONS = [
   { value: "CLIENTE", label: "Cliente" },
@@ -99,10 +96,6 @@ interface EditarAssinaturaModalProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   company: AdminCompanyDetail;
-  onSubscriptionUpdated: (
-    plan: AdminCompanyPlano,
-    payment: AdminCompanyPagamento
-  ) => void;
 }
 
 type SubscriptionFormState = {
@@ -117,7 +110,6 @@ export function EditarAssinaturaModal({
   isOpen,
   onOpenChange,
   company,
-  onSubscriptionUpdated,
 }: EditarAssinaturaModalProps) {
   const initialState = useMemo<SubscriptionFormState>(
     () => ({
@@ -141,13 +133,12 @@ export function EditarAssinaturaModal({
     PlanoEmpresarialBackendResponse[]
   >([]);
   const [isLoadingPlans, setIsLoadingPlans] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
+  const { updateCompanyPlan } = useCompanyMutations(company.id);
+  const isSaving = updateCompanyPlan.status === "pending";
 
   useEffect(() => {
     if (isOpen) {
       setFormState(initialState);
-      setIsSaving(false);
-
       if (planOptions.length === 0) {
         setIsLoadingPlans(true);
         listPlanosEmpresariais()
@@ -394,61 +385,29 @@ export function EditarAssinaturaModal({
         formState.planType === "TESTE" ? undefined : getNextBillingDate(),
     };
 
-    setIsSaving(true);
-
     try {
-      const response = await updateAdminCompanyPlano(company.id, payload);
+      await updateCompanyPlan.mutateAsync(payload);
 
-      if (!response || typeof response !== "object") {
-        throw new Error("Resposta inválida da API ao atualizar assinatura.");
-      }
-
-      if ("empresa" in response) {
-        const updatedPlan = response.empresa.plano;
-        const updatedPayment = response.empresa.pagamento;
-
-        onSubscriptionUpdated(updatedPlan, updatedPayment);
-
-        toastCustom.success({
-          title: "Assinatura atualizada",
-          description:
-            "As informações de assinatura foram salvas com sucesso.",
-        });
-
-        handleClose();
-        return;
-      }
-
-      const errorMessage =
-        "message" in response && response.message
-          ? response.message
-          : "Não foi possível atualizar a assinatura.";
-
-      console.error(
-        "Erro na resposta da API ao atualizar assinatura",
-        response
-      );
-      toastCustom.error({
-        title: "Erro ao salvar assinatura",
-        description: errorMessage,
+      toastCustom.success({
+        title: "Assinatura atualizada",
+        description: "As informações de assinatura foram salvas com sucesso.",
       });
+
+      handleClose();
     } catch (error) {
       console.error("Erro ao atualizar assinatura", error);
       toastCustom.error({
         title: "Erro ao salvar assinatura",
         description: "Não foi possível atualizar a assinatura agora.",
       });
-    } finally {
-      setIsSaving(false);
     }
   }, [
-    company.id,
     formState,
     handleClose,
     isSaving,
-    onSubscriptionUpdated,
     planOptions,
     getNextBillingDate,
+    updateCompanyPlan,
   ]);
 
   return (

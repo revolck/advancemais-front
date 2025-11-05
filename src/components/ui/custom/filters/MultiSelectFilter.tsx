@@ -44,6 +44,20 @@ export function MultiSelectFilter({
   const [temp, setTemp] = React.useState<string[]>(selectedValues);
   const [isApplying, setIsApplying] = React.useState(false);
 
+  // Sanitiza opções: remove nulas/vazias e chaves duplicadas
+  const normalizedOptions = React.useMemo(() => {
+    const seen = new Set<string>();
+    const cleaned = (options ?? []).filter((opt) => {
+      if (!opt || opt.value == null) return false;
+      const key = String(opt.value).trim();
+      if (key.length === 0) return false;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+    return cleaned;
+  }, [options]);
+
   React.useEffect(() => {
     if (!isOpen) return;
     setTemp((prev) => {
@@ -77,11 +91,11 @@ export function MultiSelectFilter({
   const displayText = React.useMemo(() => {
     if (selectedValues.length === 0) return placeholder;
     if (selectedValues.length === 1) {
-      const opt = options.find((o) => o.value === selectedValues[0]);
+      const opt = normalizedOptions.find((o) => o.value === selectedValues[0]);
       return opt?.label ?? selectedValues[0];
     }
     return `${selectedValues.length} selecionados`;
-  }, [options, placeholder, selectedValues]);
+  }, [normalizedOptions, placeholder, selectedValues]);
 
   const apply = async () => {
     if (disabled) return;
@@ -109,10 +123,11 @@ export function MultiSelectFilter({
     }
   };
 
-  const checkedCount = showApplyButton ? temp.length : selectedValues.length;
+  const checkedList = showApplyButton ? temp : selectedValues;
+  const checkedCount = checkedList.length;
 
   const checkboxId = (v: string) =>
-    `${title.replace(/\s+/g, "-").toLowerCase()}-${v}`;
+    `${title.replace(/\s+/g, "-").toLowerCase()}-${String(v)}`;
 
   return (
     <div className={cn("w-full", className)}>
@@ -192,13 +207,12 @@ export function MultiSelectFilter({
             </div>
 
             <div className="h-48 overflow-y-auto overflow-x-hidden space-y-0.5">
-              {options.map((opt) => {
-                const checked = (
-                  showApplyButton ? temp : selectedValues
-                ).includes(opt.value);
+              {normalizedOptions.map((opt, idx) => {
+                const checked = checkedList.includes(opt.value);
+                const key = `${String(opt.value)}__${idx}`; // chave estável e única
                 return (
                   <div
-                    key={opt.value}
+                    key={key}
                     className={cn(
                       "flex items-center space-x-2.5 p-2 -mx-1",
                       "hover:bg-gray-200/10 rounded-lg transition-all duration-200",
@@ -224,6 +238,11 @@ export function MultiSelectFilter({
                   </div>
                 );
               })}
+              {normalizedOptions.length === 0 && (
+                <div className="text-sm text-muted-foreground px-1 py-2">
+                  Sem opções disponíveis
+                </div>
+              )}
             </div>
 
             {showApplyButton && (

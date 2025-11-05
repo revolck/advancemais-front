@@ -19,17 +19,16 @@ import { InputCustom } from "@/components/ui/custom/input";
 import { ButtonCustom } from "@/components/ui/custom/button";
 import { toastCustom } from "@/components/ui/custom/toast";
 import { lookupCep, normalizeCep, isValidCep } from "@/lib/cep";
-import { updateAdminCompany } from "@/api/empresas";
 import type {
   AdminCompanyDetail,
   UpdateAdminCompanyPayload,
 } from "@/api/empresas/admin/types";
+import { useCompanyMutations } from "../hooks/useCompanyMutations";
 
 interface EditarEmpresaEnderecoModalProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   company: AdminCompanyDetail;
-  onCompanyUpdated: (updates: Partial<AdminCompanyDetail>) => void;
 }
 
 type AddressFormState = {
@@ -45,7 +44,6 @@ export function EditarEmpresaEnderecoModal({
   isOpen,
   onOpenChange,
   company,
-  onCompanyUpdated,
 }: EditarEmpresaEnderecoModalProps) {
   const initialValues = useMemo<AddressFormState>(
     () => ({
@@ -62,13 +60,13 @@ export function EditarEmpresaEnderecoModal({
   );
 
   const [formState, setFormState] = useState<AddressFormState>(initialValues);
-  const [isSaving, setIsSaving] = useState(false);
+  const { updateCompanyProfile } = useCompanyMutations(company.id);
+  const isSaving = updateCompanyProfile.status === "pending";
   const [isCepLoading, setIsCepLoading] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
       setFormState(initialValues);
-      setIsSaving(false);
       setIsCepLoading(false);
     }
   }, [initialValues, isOpen]);
@@ -148,7 +146,7 @@ export function EditarEmpresaEnderecoModal({
 
     // WORKAROUND TEMPORÁRIO: Salvar dados no nível raiz da empresa
     // até o backend corrigir o bug no array enderecos
-    const payload: any = {
+    const payload: UpdateAdminCompanyPayload & Record<string, unknown> = {
       // Campos que funcionam (nível raiz)
       cidade: formState.cidade.trim(),
       estado: formState.estado.trim(),
@@ -165,32 +163,16 @@ export function EditarEmpresaEnderecoModal({
           id: company.enderecos?.[0]?.id || "",
           cidade: formState.cidade.trim(),
           estado: formState.estado.trim(),
+          logradouro: formState.logradouro.trim(),
+          numero: formState.numero.trim(),
+          bairro: formState.bairro.trim(),
+          cep: sanitizedCep,
         },
       ],
     };
 
-    setIsSaving(true);
-
     try {
-      const response = await updateAdminCompany(company.id, payload);
-
-      const formattedCep = sanitizedCep ? normalizeCep(sanitizedCep) : "";
-
-      onCompanyUpdated({
-        cidade: formState.cidade || undefined,
-        estado: formState.estado || undefined,
-        enderecos: [
-          {
-            id: company.enderecos?.[0]?.id || "",
-            cep: formattedCep,
-            logradouro: formState.logradouro.trim(),
-            bairro: formState.bairro.trim(),
-            numero: formState.numero.trim(),
-            cidade: formState.cidade.trim(),
-            estado: formState.estado.trim(),
-          },
-        ],
-      });
+      await updateCompanyProfile.mutateAsync(payload);
 
       toastCustom.success({
         title: "Endereço atualizado",
@@ -205,16 +187,13 @@ export function EditarEmpresaEnderecoModal({
         description:
           "Não foi possível atualizar o endereço da empresa. Tente novamente em instantes.",
       });
-    } finally {
-      setIsSaving(false);
     }
   }, [
-    company.id,
-    company.enderecos,
     formState,
     handleClose,
     isSaving,
-    onCompanyUpdated,
+    updateCompanyProfile,
+    company.enderecos,
   ]);
 
   return (
