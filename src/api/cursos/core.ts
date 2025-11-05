@@ -92,18 +92,54 @@ export async function listCursos(
   });
 }
 
+function buildCursoRequest(
+  payload: CreateCursoPayload | UpdateCursoPayload
+): { body: BodyInit; headers: Record<string, string> } {
+  const baseHeaders = {
+    Accept: apiConfig.headers.Accept,
+    ...getAuthHeader(),
+  };
+
+  const form = new FormData();
+  
+  if ("nome" in payload && payload.nome !== undefined) {
+    form.append("nome", String(payload.nome));
+  }
+  if ("descricao" in payload && payload.descricao !== undefined) {
+    form.append("descricao", String(payload.descricao));
+  }
+  if ("cargaHoraria" in payload && payload.cargaHoraria !== undefined) {
+    form.append("cargaHoraria", String(payload.cargaHoraria));
+  }
+  if ("categoriaId" in payload && payload.categoriaId !== undefined) {
+    form.append("categoriaId", String(payload.categoriaId));
+  }
+  if ("subcategoriaId" in payload && payload.subcategoriaId !== undefined) {
+    form.append("subcategoriaId", String(payload.subcategoriaId));
+  }
+  if ("estagioObrigatorio" in payload && payload.estagioObrigatorio !== undefined) {
+    form.append("estagioObrigatorio", String(payload.estagioObrigatorio));
+  }
+  if ("statusPadrao" in payload && payload.statusPadrao !== undefined) {
+    form.append("statusPadrao", String(payload.statusPadrao));
+  }
+  if (payload.imagemUrl !== undefined) {
+    form.append("imagemUrl", String(payload.imagemUrl));
+  }
+
+  return { body: form, headers: baseHeaders };
+}
+
 export async function createCurso(
   payload: CreateCursoPayload,
   init?: RequestInit
 ): Promise<Curso> {
+  const { body, headers } = buildCursoRequest(payload);
   return apiFetch<Curso>(cursosRoutes.cursos.create(), {
     init: {
       method: "POST",
-      headers: buildHeaders(
-        { "Content-Type": "application/json", ...init?.headers },
-        true
-      ),
-      body: JSON.stringify(payload),
+      body,
+      headers: { ...headers, ...normalizeHeaders(init?.headers) },
       ...init,
     },
     cache: "no-cache",
@@ -225,14 +261,12 @@ export async function updateCurso(
   payload: UpdateCursoPayload,
   init?: RequestInit
 ): Promise<Curso> {
+  const { body, headers } = buildCursoRequest(payload);
   return apiFetch<Curso>(cursosRoutes.cursos.update(cursoId), {
     init: {
       method: "PUT",
-      headers: buildHeaders(
-        { "Content-Type": "application/json", ...init?.headers },
-        true
-      ),
-      body: JSON.stringify(payload),
+      body,
+      headers: { ...headers, ...normalizeHeaders(init?.headers) },
       ...init,
     },
     cache: "no-cache",

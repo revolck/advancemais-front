@@ -182,8 +182,10 @@ export function EditCursoModal({
       await queryClient.invalidateQueries({
         predicate: (query) => {
           const key = query.queryKey;
-          return Array.isArray(key) && 
-            (key[0] === "admin-cursos-list" || key[0] === "admin-curso-detail");
+          return (
+            Array.isArray(key) &&
+            (key[0] === "admin-cursos-list" || key[0] === "admin-curso-detail")
+          );
         },
       });
 
@@ -223,7 +225,7 @@ export function EditCursoModal({
             <ModalTitle>Editar Curso</ModalTitle>
           </ModalHeader>
 
-          <ModalBody className="space-y-6">
+          <ModalBody className="space-y-6 p-1">
             <div className="space-y-4">
               {/* Upload de Imagem */}
               <div className="space-y-2">

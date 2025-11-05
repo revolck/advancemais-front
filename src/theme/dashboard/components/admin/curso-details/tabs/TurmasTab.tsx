@@ -141,13 +141,6 @@ export function TurmasTab({ turmas, cursoId }: TurmasTabProps) {
         title="Nenhuma turma cadastrada"
         description="Este curso ainda não possui turmas cadastradas. As turmas aparecerão aqui quando forem criadas."
         maxContentWidth="md"
-        actions={
-          <Link href={`/dashboard/cursos/turmas/cadastrar?cursoId=${cursoId}`}>
-            <Button className="bg-[var(--primary-color)] hover:bg-[var(--primary-color)]/90">
-              Cadastrar turma
-            </Button>
-          </Link>
-        }
       />
     );
   }
