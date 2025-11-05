@@ -219,7 +219,9 @@ export function SelectCustom(props: SelectCustomProps) {
                         value={opt.label}
                         disabled={opt.disabled}
                         onSelect={() => {
-                          onChange(opt.value);
+                          if (onChange) {
+                            onChange(opt.value);
+                          }
                           setOpen(false);
                         }}
                         className={cn(
@@ -268,7 +270,11 @@ export function SelectCustom(props: SelectCustomProps) {
         )}
         <Select
           value={value ?? undefined}
-          onValueChange={(v) => onChange(v === "empty" ? null : v || null)}
+          onValueChange={(v) => {
+            if (onChange) {
+              onChange(v === "empty" ? null : v || null);
+            }
+          }}
           disabled={disabled}
         >
           <SelectTrigger
