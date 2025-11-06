@@ -22,7 +22,7 @@ type CursoDetails = Curso & {
 };
 
 interface CursoDetailsViewProps {
-  cursoId: number;
+  cursoId: string;
   initialCurso: CursoDetails | null;
   initialError?: Error;
   auditoria?: any[];

@@ -204,7 +204,7 @@ export async function getCursoById(
 
     // Normaliza o curso e suas turmas se existirem
     const curso: Curso & { turmas?: CursoTurma[]; turmasCount?: number } = {
-      id: Number(response.id),
+      id: String(response.id ?? ""),
       nome: String(response.nome ?? ""),
       codigo: String(response.codigo ?? ""),
       descricao: String(response.descricao ?? ""),

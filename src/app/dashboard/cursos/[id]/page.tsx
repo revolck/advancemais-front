@@ -16,9 +16,8 @@ export default async function CursoDetailsPage({
   params,
 }: CursoDetailsPageProps) {
   const { id } = await params;
-  const cursoIdNumber = Number(id);
 
-  if (!Number.isFinite(cursoIdNumber)) {
+  if (!id || typeof id !== "string") {
     notFound();
   }
 
@@ -29,7 +28,7 @@ export default async function CursoDetailsPage({
   let error: Error | null = null;
 
   try {
-    curso = await getCursoById(cursoIdNumber, { headers: authHeaders });
+    curso = await getCursoById(id, { headers: authHeaders });
   } catch (err) {
     const apiError = err as { status?: number };
     const status = apiError?.status;
@@ -71,7 +70,7 @@ export default async function CursoDetailsPage({
     return (
       <div className="space-y-8">
         <CursoDetailsView
-          cursoId={cursoIdNumber}
+          cursoId={id}
           initialCurso={null as any}
           initialError={error}
         />
@@ -81,7 +80,7 @@ export default async function CursoDetailsPage({
 
   return (
     <div className="space-y-8">
-      <CursoDetailsView cursoId={cursoIdNumber} initialCurso={curso!} />
+      <CursoDetailsView cursoId={id} initialCurso={curso!} />
     </div>
   );
 }

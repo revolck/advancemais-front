@@ -30,7 +30,7 @@ import type { CursoTurma } from "@/api/cursos";
 
 interface TurmasTabProps {
   turmas: CursoTurma[];
-  cursoId: number;
+  cursoId: string;
 }
 
 const getStatusColor = (status?: string) => {
