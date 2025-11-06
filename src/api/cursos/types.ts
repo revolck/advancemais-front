@@ -9,7 +9,7 @@ export interface CursosModuleMeta {
 }
 
 export interface Curso {
-  id: number;
+  id: string; // UUID (string) - alterado de number para string
   nome: string;
   codigo: string;
   descricao: string;
@@ -145,7 +145,7 @@ export interface AlunoComInscricao {
       status: string;
     };
     curso: {
-      id: number; // ID numérico do curso
+      id: string; // UUID (string) - alterado de number para string
       nome: string;
       codigo: string;
     };
@@ -155,11 +155,11 @@ export interface AlunoComInscricao {
 export interface ListAlunosComInscricaoParams {
   page?: number;
   limit?: number;
-  status?: string; // Status da INSCRIÇÃO (statusInscricao): INSCRITO, EM_ANDAMENTO, CONCLUIDO, REPROVADO, EM_ESTAGIO, CANCELADO, TRANCADO
+  status?: string | string[]; // Status da INSCRIÇÃO (statusInscricao): INSCRITO, EM_ANDAMENTO, CONCLUIDO, REPROVADO, EM_ESTAGIO, CANCELADO, TRANCADO (ou array para múltiplos)
   search?: string;
-  cursoId?: number;
-  turmaId?: string;
-  cidade?: string;
+  cursoId?: string | string[]; // UUID (string) ou array de UUIDs para múltiplos cursos
+  turmaId?: string | string[]; // UUID (string) ou array de UUIDs para múltiplas turmas
+  cidade?: string | string[]; // Cidade (string) ou array de strings para múltiplas cidades
 }
 
 export interface ListAlunosComInscricaoResponse {

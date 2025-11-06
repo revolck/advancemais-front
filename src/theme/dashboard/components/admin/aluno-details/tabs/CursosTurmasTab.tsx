@@ -107,13 +107,8 @@ export function CursosTurmasTab({
     if (statusFilter !== "TODOS") {
       filtered = filtered.filter((inscricao) => {
         const status = (inscricao.statusInscricao || "").toUpperCase();
-        if (statusFilter === "ATIVAS") {
-          return [
-            "MATRICULADO",
-            "EM_ANDAMENTO",
-            "EM_ESTAGIO",
-            "EM_CURSO",
-          ].includes(status);
+        if (statusFilter === "INSCRITO") {
+          return ["INSCRITO", "MATRICULADO"].includes(status);
         }
         if (statusFilter === "CONCLUIDOS") {
           return ["CONCLUIDO", "CONCLUÍDO"].includes(status);
@@ -204,7 +199,7 @@ export function CursosTurmasTab({
   // Opções do filtro de status
   const statusOptions: SelectOption[] = [
     { value: "TODOS", label: "Todos os status" },
-    { value: "ATIVAS", label: "Ativas" },
+    { value: "INSCRITO", label: "Inscrito" },
     { value: "CONCLUIDOS", label: "Concluídos" },
     { value: "CANCELADOS", label: "Reprovados" },
   ];

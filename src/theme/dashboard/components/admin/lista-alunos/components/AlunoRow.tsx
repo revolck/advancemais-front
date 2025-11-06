@@ -17,12 +17,14 @@ import { ChevronRight } from "lucide-react";
 
 interface AlunoRowProps {
   aluno: AlunoComInscricao;
-  cursoFiltradoId?: number | null;
+  cursoFiltradoId?: string | null; // UUID (string) - alterado de number para string
 }
 
-const getStatusColor = (status: string) => {
+const getStatusColor = (status?: string) => {
+  if (!status) return "bg-gray-100 text-gray-800 border-gray-200";
+  
   switch (status) {
-    case "MATRICULADO":
+    case "INSCRITO":
       return "bg-green-100 text-green-800 border-green-200";
     case "EM_ANDAMENTO":
       return "bg-blue-100 text-blue-800 border-blue-200";
@@ -41,9 +43,11 @@ const getStatusColor = (status: string) => {
   }
 };
 
-const getStatusLabel = (status: string) => {
+const getStatusLabel = (status?: string) => {
+  if (!status) return "—";
+  
   switch (status) {
-    case "MATRICULADO":
+    case "INSCRITO":
       return "Inscrito";
     case "EM_ANDAMENTO":
       return "Em Andamento";
@@ -103,12 +107,12 @@ const getModalidadeColor = (metodo?: string) => {
 // Se houver filtro de curso e o ultimoCurso for de outro curso, não exibimos nada
 const getUltimaTurma = (
   ultimoCurso?: AlunoComInscricao["ultimoCurso"],
-  cursoFiltradoId?: number | null
+  cursoFiltradoId?: string | null // UUID (string) - alterado de number para string
 ) => {
   if (!ultimoCurso) return null;
 
   // Se houver filtro de curso, verifica se o ultimoCurso é daquele curso
-  if (cursoFiltradoId && ultimoCurso.curso.id !== cursoFiltradoId) {
+  if (cursoFiltradoId && ultimoCurso.curso?.id !== cursoFiltradoId) {
     return null; // Não exibe se for de outro curso
   }
 
@@ -129,8 +133,8 @@ const getTipoLabel = (tipo: string) => {
 export function AlunoRow({ aluno, cursoFiltradoId }: AlunoRowProps) {
   const ultimaTurma = getUltimaTurma(aluno.ultimoCurso, cursoFiltradoId);
 
-  const cursoNome = ultimaTurma?.curso.nome;
-  const turmaNome = ultimaTurma?.turma.nome;
+  const cursoNome = ultimaTurma?.curso?.nome;
+  const turmaNome = ultimaTurma?.turma?.nome;
 
   return (
     <TableRow className="border-gray-100 hover:bg-gray-50/50 transition-colors">
@@ -242,7 +246,7 @@ export function AlunoRow({ aluno, cursoFiltradoId }: AlunoRowProps) {
         )}
       </TableCell>
       <TableCell className="py-4">
-        {ultimaTurma ? (
+        {ultimaTurma?.statusInscricao ? (
           <Badge
             variant="outline"
             className={cn(

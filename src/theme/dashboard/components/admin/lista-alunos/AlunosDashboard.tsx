@@ -42,8 +42,8 @@ export function AlunosDashboard({ className }: { className?: string }) {
   const [pendingSearchTerm, setPendingSearchTerm] = useState("");
   const [appliedSearchTerm, setAppliedSearchTerm] = useState("");
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
-  const [selectedCursos, setSelectedCursos] = useState<string[]>([]);
-  const [selectedTurmas, setSelectedTurmas] = useState<string[]>([]);
+  const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null); // Seleção individual
+  const [selectedTurmaId, setSelectedTurmaId] = useState<string | null>(null); // Seleção individual (como curso)
   const [selectedCidades, setSelectedCidades] = useState<string[]>([]);
   const pageSize = defaultPageSize;
   const [currentPage, setCurrentPage] = useState(1);
@@ -52,12 +52,11 @@ export function AlunosDashboard({ className }: { className?: string }) {
   type SortDirection = "asc" | "desc";
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
 
-  // ID do curso filtrado para exibir na tabela
-  const cursoFiltradoId =
-    selectedCursos.length > 0 ? Number(selectedCursos[0]) : null;
+  // ID do curso filtrado para exibir na tabela (UUID string)
+  const cursoFiltradoId = selectedCourseId;
 
   const statusOptions: SelectOption[] = useMemo(() => [
-    { value: "MATRICULADO", label: "Inscrito" },
+    { value: "INSCRITO", label: "Inscrito" },
     { value: "EM_ANDAMENTO", label: "Em Andamento" },
     { value: "CONCLUIDO", label: "Concluído" },
     { value: "REPROVADO", label: "Reprovado" },
@@ -82,31 +81,14 @@ export function AlunosDashboard({ className }: { className?: string }) {
 
   const loadingCursos = cursosQuery.status === "pending";
 
-  const selectedCourseIds = useMemo(
-    () =>
-      selectedCursos
-        .map((cursoId) => Number(cursoId))
-        .filter((id) => Number.isFinite(id)),
-    [selectedCursos]
-  );
-
+  // Busca turmas apenas do curso selecionado (individual)
   const turmasQuery = useQuery({
-    queryKey: queryKeys.turmas.list({ courseIds: selectedCourseIds }),
+    queryKey: queryKeys.turmas.list({ cursoId: selectedCourseId }),
     queryFn: async () => {
-      const results = await Promise.all(
-        selectedCourseIds.map((cursoId) => listTurmas(cursoId))
-      );
-
-      const unique = new Map<string, any>();
-      results.flat().forEach((turma) => {
-        if (turma) {
-          unique.set(turma.id, turma);
-        }
-      });
-
-      return Array.from(unique.values());
+      if (!selectedCourseId) return [];
+      return await listTurmas(selectedCourseId);
     },
-    enabled: selectedCourseIds.length > 0,
+    enabled: !!selectedCourseId,
     staleTime: 5 * 60 * 1000,
     gcTime: 30 * 60 * 1000,
   });
@@ -115,10 +97,22 @@ export function AlunosDashboard({ className }: { className?: string }) {
     return {
       page: currentPage,
       pageSize,
-      status: selectedStatuses[0] ?? null,
-      cursoId: selectedCursos.length ? Number(selectedCursos[0]) : null,
-      turmaId: selectedTurmas.length ? selectedTurmas[0] : null,
-      cidade: selectedCidades.length ? selectedCidades[0].trim() : null,
+      // Enviar todos os status selecionados (array ou string único)
+      status: selectedStatuses.length > 0
+        ? selectedStatuses.length === 1
+          ? selectedStatuses[0]
+          : selectedStatuses
+        : null,
+      // Curso individual (string único)
+      cursoId: selectedCourseId,
+      // Turma individual (string único)
+      turmaId: selectedTurmaId,
+      // Enviar todas as cidades selecionadas (array ou string único)
+      cidade: selectedCidades.length > 0
+        ? selectedCidades.length === 1
+          ? selectedCidades[0].trim()
+          : selectedCidades.map((c) => c.trim())
+        : null,
       search:
         appliedSearchTerm.length >= MIN_SEARCH_LENGTH
           ? appliedSearchTerm
@@ -128,8 +122,8 @@ export function AlunosDashboard({ className }: { className?: string }) {
     currentPage,
     pageSize,
     selectedStatuses,
-    selectedCursos,
-    selectedTurmas,
+    selectedCourseId,
+    selectedTurmaId,
     selectedCidades,
     appliedSearchTerm,
   ]);
@@ -142,10 +136,7 @@ export function AlunosDashboard({ className }: { className?: string }) {
     alunos.forEach((aluno) => {
       const ultimo = aluno.ultimoCurso;
       if (!ultimo?.turma) return;
-      if (
-        selectedCourseIds.length > 0 &&
-        !selectedCourseIds.includes(ultimo.curso.id)
-      ) {
+      if (selectedCourseId && ultimo.curso.id !== selectedCourseId) {
         return;
       }
       map.set(ultimo.turma.id, ultimo.turma);
@@ -153,10 +144,10 @@ export function AlunosDashboard({ className }: { className?: string }) {
     return Array.from(map.values()).sort((a, b) =>
       a.nome.localeCompare(b.nome)
     );
-  }, [alunos, selectedCourseIds]);
+  }, [alunos, selectedCourseId]);
 
   const turmasSource = useMemo(() => {
-    if (selectedCourseIds.length === 0) {
+    if (!selectedCourseId) {
       return turmasFromAlunos;
     }
 
@@ -166,7 +157,7 @@ export function AlunosDashboard({ className }: { className?: string }) {
     }
 
     return turmasFromAlunos;
-  }, [selectedCourseIds, turmasFromAlunos, turmasQuery.data]);
+  }, [selectedCourseId, turmasFromAlunos, turmasQuery.data]);
 
   const turmasOptions: SelectOption[] = useMemo(
     () =>
@@ -191,13 +182,13 @@ export function AlunosDashboard({ className }: { className?: string }) {
   }, [alunos]);
 
   useEffect(() => {
-    if (selectedTurmas.length > 0) {
+    if (selectedTurmaId) {
       const allowed = new Set(turmasOptions.map((opt) => opt.value));
-      if (!allowed.has(selectedTurmas[0])) {
-        setSelectedTurmas([]);
+      if (!allowed.has(selectedTurmaId)) {
+        setSelectedTurmaId(null);
       }
     }
-  }, [turmasOptions, selectedTurmas]);
+  }, [turmasOptions, selectedTurmaId]);
 
   useEffect(() => {
     if (selectedCidades.length > 0) {
@@ -210,7 +201,7 @@ export function AlunosDashboard({ className }: { className?: string }) {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [selectedStatuses, selectedCursos, selectedTurmas, selectedCidades]);
+  }, [selectedStatuses, selectedCourseId, selectedTurmaId, selectedCidades]);
 
   const alunosPagination = alunosQuery.data?.pagination ?? {
     page: normalizedFilters.page,
@@ -230,14 +221,18 @@ export function AlunosDashboard({ className }: { className?: string }) {
   }, [alunosPagination.totalPages, currentPage]);
   const isLoading = alunosQuery.isLoading;
   const isFetching = alunosQuery.isFetching;
+  // Mostra skeleton quando está buscando novos dados (isFetching)
+  // Isso garante que o skeleton apareça mesmo quando há dados anteriores (placeholderData)
+  const showSkeleton = isFetching;
+  
   const errorMessage = alunosQuery.error
     ? alunosQuery.error.message || "Erro ao carregar alunos"
     : null;
   const showEmptyState = !isLoading && !isFetching && alunos.length === 0;
-  const emptyStateTitle = selectedCursos.length
+  const emptyStateTitle = selectedCourseId
     ? "Nenhum aluno encontrado"
     : "Nenhum aluno listado";
-  const emptyStateDescription = selectedCursos.length
+  const emptyStateDescription = selectedCourseId
     ? "Não encontramos alunos com os filtros aplicados. Tente ajustar sua busca."
     : "Cadastre alunos com inscrições ou ajuste os filtros para visualizar resultados.";
 
@@ -333,20 +328,18 @@ export function AlunosDashboard({ className }: { className?: string }) {
       {
         key: "curso",
         label: "Curso",
-        mode: "multiple",
         options: cursosOptions,
         placeholder: loadingCursos ? "Carregando..." : "Selecione curso",
       },
       {
         key: "turma",
         label: "Turma",
-        mode: "multiple",
         options: turmasOptions,
         placeholder:
-          selectedCursos.length > 0
+          selectedCourseId
             ? "Selecione turma"
             : "Selecione um curso primeiro",
-        disabled: selectedCursos.length === 0,
+        disabled: !selectedCourseId,
       },
       {
         key: "cidade",
@@ -361,7 +354,7 @@ export function AlunosDashboard({ className }: { className?: string }) {
       cursosOptions,
       turmasOptions,
       cidadesOptions,
-      selectedCursos,
+      selectedCourseId,
       loadingCursos,
     ]
   );
@@ -369,11 +362,11 @@ export function AlunosDashboard({ className }: { className?: string }) {
   const filterValues = useMemo(
     () => ({
       status: selectedStatuses,
-      curso: selectedCursos,
-      turma: selectedTurmas,
+      curso: selectedCourseId,
+      turma: selectedTurmaId,
       cidade: selectedCidades,
     }),
-    [selectedStatuses, selectedCursos, selectedTurmas, selectedCidades]
+    [selectedStatuses, selectedCourseId, selectedTurmaId, selectedCidades]
   );
 
   return (
@@ -389,21 +382,29 @@ export function AlunosDashboard({ className }: { className?: string }) {
                 setSelectedStatuses(
                   Array.isArray(value) ? (value as string[]) : []
                 );
+                setCurrentPage(1);
               } else if (key === "curso") {
-                const cursos = Array.isArray(value)
-                  ? (value as string[])
-                  : [];
-                setSelectedCursos(cursos);
-                setSelectedTurmas([]);
+                setSelectedCourseId((value as string) || null);
+                setSelectedTurmaId(null); // Limpa turma quando curso muda
+                setCurrentPage(1);
               } else if (key === "turma") {
-                setSelectedTurmas(
-                  Array.isArray(value) ? (value as string[]) : []
-                );
+                setSelectedTurmaId((value as string) || null);
+                setCurrentPage(1);
               } else if (key === "cidade") {
                 setSelectedCidades(
                   Array.isArray(value) ? (value as string[]) : []
                 );
+                setCurrentPage(1);
               }
+            }}
+            onClearAll={() => {
+              setPendingSearchTerm("");
+              setAppliedSearchTerm("");
+              setSelectedStatuses([]);
+              setSelectedCourseId(null);
+              setSelectedTurmaId(null);
+              setSelectedCidades([]);
+              setCurrentPage(1);
             }}
             search={{
               label: "Pesquisar aluno",
@@ -451,8 +452,8 @@ export function AlunosDashboard({ className }: { className?: string }) {
         </div>
       )}
 
-      {isLoading ? (
-        // Skeleton de loading
+      {showSkeleton && alunos.length === 0 ? (
+        // Skeleton de loading inicial (quando não há dados ainda)
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
           <div className="overflow-x-auto">
             <Table className="min-w-[1000px]">
@@ -566,8 +567,8 @@ export function AlunosDashboard({ className }: { className?: string }) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {isFetching && alunos.length === 0 ? (
-                  <AlunoTableSkeleton rows={8} />
+                {showSkeleton ? (
+                  <AlunoTableSkeleton rows={pageSize} />
                 ) : (
                   sortedAlunos.map((aluno) => (
                     <AlunoRow

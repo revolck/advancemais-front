@@ -220,7 +220,7 @@ export function SelectCustom(props: SelectCustomProps) {
                         disabled={opt.disabled}
                         onSelect={() => {
                           if (onChange) {
-                            onChange(opt.value);
+                          onChange(opt.value);
                           }
                           setOpen(false);
                         }}

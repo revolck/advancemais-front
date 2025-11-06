@@ -88,7 +88,42 @@ export function AlunoDetailsView({
     mutationFn: (payload: Partial<AlunoDetailsData>) =>
       updateCursoAluno(alunoId, payload),
     onSuccess: (response) => {
-      queryClient.setQueryData(queryKey, response);
+      // Preserva as inscrições existentes se a resposta não as incluir ou se vierem vazias
+      const currentData = queryClient.getQueryData<CursoAlunoDetalhesResponse>(
+        queryKey
+      );
+      
+      // Verifica se a resposta tem inscrições válidas
+      const responseHasInscricoes =
+        Array.isArray(response?.data?.inscricoes) &&
+        response.data.inscricoes.length > 0;
+      
+      // Obtém inscrições existentes do cache
+      const currentInscricoes =
+        Array.isArray(currentData?.data?.inscricoes) &&
+        currentData.data.inscricoes.length > 0
+          ? currentData.data.inscricoes
+          : null;
+
+      // Se a resposta não tem inscrições ou está vazia, preserva as existentes
+      const mergedResponse: CursoAlunoDetalhesResponse = {
+        ...response,
+        data: {
+          ...response.data,
+          // Prioriza inscrições da resposta se existirem, senão preserva as do cache
+          inscricoes: responseHasInscricoes
+            ? response.data.inscricoes
+            : currentInscricoes ?? response.data.inscricoes ?? [],
+          // Atualiza totalInscricoes baseado nas inscrições finais
+          totalInscricoes: responseHasInscricoes
+            ? response.data.totalInscricoes ?? response.data.inscricoes.length
+            : currentInscricoes?.length ??
+              response.data.totalInscricoes ??
+              0,
+        },
+      };
+
+      queryClient.setQueryData(queryKey, mergedResponse);
     },
   });
 

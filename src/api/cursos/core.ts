@@ -562,11 +562,44 @@ export async function listAlunosComInscricao(
 
   if (params?.page) queryParams.set("page", String(params.page));
   if (params?.limit) queryParams.set("limit", String(params.limit));
-  if (params?.status) queryParams.set("status", params.status);
+  
+  // Suporte para múltiplos status
+  if (params?.status) {
+    if (Array.isArray(params.status)) {
+      params.status.forEach((status) => queryParams.append("status", status));
+    } else {
+      queryParams.set("status", params.status);
+    }
+  }
+  
   if (params?.search) queryParams.set("search", params.search);
-  if (params?.cursoId) queryParams.set("cursoId", String(params.cursoId));
-  if (params?.turmaId) queryParams.set("turmaId", params.turmaId);
-  if (params?.cidade) queryParams.set("cidade", params.cidade);
+  
+  // Suporte para múltiplos cursoIds
+  if (params?.cursoId) {
+    if (Array.isArray(params.cursoId)) {
+      params.cursoId.forEach((id) => queryParams.append("cursoId", id));
+    } else {
+      queryParams.set("cursoId", params.cursoId);
+    }
+  }
+  
+  // Suporte para múltiplos turmaIds
+  if (params?.turmaId) {
+    if (Array.isArray(params.turmaId)) {
+      params.turmaId.forEach((id) => queryParams.append("turmaId", id));
+    } else {
+      queryParams.set("turmaId", params.turmaId);
+    }
+  }
+  
+  // Suporte para múltiplas cidades
+  if (params?.cidade) {
+    if (Array.isArray(params.cidade)) {
+      params.cidade.forEach((cidade) => queryParams.append("cidade", cidade));
+    } else {
+      queryParams.set("cidade", params.cidade);
+    }
+  }
 
   const url = cursosRoutes.admin.alunos.list();
   const fullUrl = queryParams.toString()

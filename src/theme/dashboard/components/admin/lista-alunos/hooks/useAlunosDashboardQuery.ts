@@ -12,10 +12,10 @@ import { queryKeys } from "@/lib/react-query/queryKeys";
 export interface NormalizedAlunosFilters {
   page: number;
   pageSize: number;
-  status?: string | null;
-  cursoId?: number | null;
-  turmaId?: string | null;
-  cidade?: string | null;
+  status?: string | string[] | null; // Status único ou array para múltiplos status
+  cursoId?: string | null; // UUID (string) - seleção individual
+  turmaId?: string | null; // UUID (string) - seleção individual
+  cidade?: string | string[] | null; // Cidade único ou array para múltiplas cidades
   search?: string;
 }
 
@@ -38,10 +38,24 @@ export function useAlunosDashboardQuery(filters: NormalizedAlunosFilters) {
         limit: filters.pageSize,
       };
 
-      if (filters.status) params.status = filters.status;
-      if (filters.cursoId) params.cursoId = filters.cursoId;
-      if (filters.turmaId) params.turmaId = filters.turmaId;
-      if (filters.cidade) params.cidade = filters.cidade;
+      if (filters.status) {
+        params.status = Array.isArray(filters.status) && filters.status.length === 1
+          ? filters.status[0]
+          : filters.status;
+      }
+      if (filters.cursoId) {
+        // Agora sempre é string único (não array)
+        params.cursoId = filters.cursoId;
+      }
+      if (filters.turmaId) {
+        // Agora sempre é string único (não array)
+        params.turmaId = filters.turmaId;
+      }
+      if (filters.cidade) {
+        params.cidade = Array.isArray(filters.cidade) && filters.cidade.length === 1
+          ? filters.cidade[0]
+          : filters.cidade;
+      }
       if (filters.search) params.search = filters.search;
 
       const response = await listAlunosComInscricao(params);
@@ -49,16 +63,31 @@ export function useAlunosDashboardQuery(filters: NormalizedAlunosFilters) {
       const originalAlunos = response.data ?? [];
 
       const filtered = originalAlunos.filter((aluno) => {
-        const matchesCurso =
-          !filters.cursoId ||
-          aluno.ultimoCurso?.curso.id === filters.cursoId;
-        const matchesTurma =
-          !filters.turmaId ||
-          aluno.ultimoCurso?.turma.id === filters.turmaId;
-        const matchesCidade =
-          !filters.cidade ||
-          (aluno.cidade || "").toLowerCase() ===
-            filters.cidade.toLowerCase();
+        // Suporte para múltiplos status
+        const matchesStatus = !filters.status
+          ? true
+          : Array.isArray(filters.status)
+          ? filters.status.includes(aluno.ultimoCurso?.statusInscricao || "")
+          : aluno.ultimoCurso?.statusInscricao === filters.status;
+        
+        // Curso individual (string único)
+        const matchesCurso = !filters.cursoId
+          ? true
+          : aluno.ultimoCurso?.curso.id === filters.cursoId;
+        
+        // Turma individual (string único)
+        const matchesTurma = !filters.turmaId
+          ? true
+          : aluno.ultimoCurso?.turma.id === filters.turmaId;
+        
+        // Suporte para múltiplas cidades
+        const matchesCidade = !filters.cidade
+          ? true
+          : Array.isArray(filters.cidade)
+          ? filters.cidade.some((cidade) =>
+              (aluno.cidade || "").toLowerCase() === cidade.toLowerCase()
+            )
+          : (aluno.cidade || "").toLowerCase() === filters.cidade.toLowerCase();
 
         if (filters.search && filters.search.length >= 3) {
           const searchLower = filters.search.toLowerCase();
@@ -69,6 +98,7 @@ export function useAlunosDashboardQuery(filters: NormalizedAlunosFilters) {
             aluno.id.toLowerCase().includes(searchLower);
 
           return (
+            matchesStatus &&
             matchesCurso &&
             matchesTurma &&
             matchesCidade &&
@@ -76,7 +106,7 @@ export function useAlunosDashboardQuery(filters: NormalizedAlunosFilters) {
           );
         }
 
-        return matchesCurso && matchesTurma && matchesCidade;
+        return matchesStatus && matchesCurso && matchesTurma && matchesCidade;
       });
 
       const filteredTotal = filtered.length;
@@ -86,11 +116,11 @@ export function useAlunosDashboardQuery(filters: NormalizedAlunosFilters) {
             page: response.pagination.page ?? filters.page,
             pageSize: response.pagination.pageSize ?? filters.pageSize,
             total:
-              filters.cursoId || filters.turmaId || filters.cidade
+              filters.status || filters.cursoId || filters.turmaId || filters.cidade || filters.search
                 ? filteredTotal
                 : response.pagination.total ?? filteredTotal,
             totalPages:
-              filters.cursoId || filters.turmaId || filters.cidade
+              filters.status || filters.cursoId || filters.turmaId || filters.cidade || filters.search
                 ? Math.max(
                     1,
                     Math.ceil(filteredTotal / filters.pageSize)
