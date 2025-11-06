@@ -213,7 +213,7 @@ export const breadcrumbConfig: Record<string, BreadcrumbConfig> = {
     items: [
       { label: "Dashboard", href: "/", icon: "Home" },
       { label: "Cursos", href: "/dashboard/cursos", icon: "BookOpen" },
-      { label: "Turmas" },
+      { label: "Turmas", icon: "Users" },
     ],
   },
   "/dashboard/cursos/turmas/cadastrar": {
@@ -221,7 +221,7 @@ export const breadcrumbConfig: Record<string, BreadcrumbConfig> = {
     items: [
       { label: "Dashboard", href: "/", icon: "Home" },
       { label: "Cursos", href: "/dashboard/cursos", icon: "BookOpen" },
-      { label: "Turmas", href: "/dashboard/cursos/turmas" },
+      { label: "Turmas", href: "/dashboard/cursos/turmas", icon: "Users" },
       { label: "Cadastrar" },
     ],
   },
@@ -231,8 +231,8 @@ export const breadcrumbConfig: Record<string, BreadcrumbConfig> = {
     items: [
       { label: "Dashboard", href: "/", icon: "Home" },
       { label: "Cursos", href: "/dashboard/cursos", icon: "BookOpen" },
-      { label: "Turmas", href: "/dashboard/cursos/turmas" },
-      { label: "Detalhes" },
+      { label: "Turmas", href: "/dashboard/cursos/turmas", icon: "Users" },
+      { label: "Detalhes", icon: "Eye" },
     ],
   },
   "/dashboard/cursos/alunos": {
@@ -348,8 +348,8 @@ export function useBreadcrumb(): BreadcrumbConfig {
       items: [
         { label: "Dashboard", href: "/", icon: "Home" },
         { label: "Cursos", href: "/dashboard/cursos", icon: "BookOpen" },
-        { label: "Turmas", href: "/dashboard/cursos/turmas" },
-        { label: "Detalhes" },
+        { label: "Turmas", href: "/dashboard/cursos/turmas", icon: "Users" },
+        { label: "Detalhes", icon: "Eye" },
       ],
     };
   }

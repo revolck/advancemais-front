@@ -107,7 +107,8 @@ export interface TurmaInscricao {
     telefone?: string;
     celular?: string;
     cpf?: string;
-    codUsuario?: string;
+    codigo?: string; // Código do aluno (ex: MAT0001)
+    codUsuario?: string; // Fallback para código do usuário
     status?: string;
     tipoUsuario?: string;
     role?: string;

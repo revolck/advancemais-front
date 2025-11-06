@@ -3,7 +3,7 @@
 import React from "react";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, User, Users, BookOpen, ChevronRight } from "lucide-react";
+import { Calendar, User, Users, BookOpen, ChevronRight, Sun, Moon, Clock } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
@@ -88,18 +88,82 @@ const formatDate = (value?: string) => {
   return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
 };
 
+const getTurnoLabel = (turno?: string) => {
+  if (!turno) return "—";
+  
+  const turnoMap: Record<string, string> = {
+    MANHA: "Manhã",
+    TARDE: "Tarde",
+    NOITE: "Noite",
+    INTEGRAL: "Integral",
+  };
+  
+  return turnoMap[turno.toUpperCase()] || turno;
+};
+
+const getTurnoIcon = (turno?: string) => {
+  if (!turno) return Clock;
+  
+  const normalized = turno.toUpperCase();
+  
+  switch (normalized) {
+    case "MANHA":
+      return Sun;
+    case "TARDE":
+      return Sun;
+    case "NOITE":
+      return Moon;
+    case "INTEGRAL":
+      return Clock;
+    default:
+      return Clock;
+  }
+};
+
+const getMetodoLabel = (metodo?: string) => {
+  if (!metodo) return "—";
+  
+  const metodoMap: Record<string, string> = {
+    ONLINE: "Online",
+    PRESENCIAL: "Presencial",
+    LIVE: "Ao vivo",
+    SEMIPRESENCIAL: "Semipresencial",
+  };
+  
+  return metodoMap[metodo.toUpperCase()] || metodo;
+};
+
+const getMetodoBadgeColor = (metodo?: string) => {
+  if (!metodo) return "bg-gray-100 text-gray-800 border-gray-200";
+  
+  const normalized = metodo.toUpperCase();
+  
+  switch (normalized) {
+    case "ONLINE":
+      return "bg-blue-100 text-blue-800 border-blue-200";
+    case "PRESENCIAL":
+      return "bg-green-100 text-green-800 border-green-200";
+    case "LIVE":
+      return "bg-purple-100 text-purple-800 border-purple-200";
+    case "SEMIPRESENCIAL":
+      return "bg-amber-100 text-amber-800 border-amber-200";
+    default:
+      return "bg-gray-100 text-gray-800 border-gray-200";
+  }
+};
+
 export function TurmaRow({ turma, showCurso = false }: TurmaRowProps) {
   const turmaComCurso = turma as TurmaComCurso;
   
   return (
     <TableRow className="border-gray-100 hover:bg-gray-50/50 transition-colors">
       <TableCell className="py-4">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <div className="font-medium text-gray-900">{turma.nome}</div>
           {turma.codigo && (
-            <Badge variant="outline" className="text-xs font-mono bg-gray-50 text-gray-600 border-gray-200">
+            <code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded font-mono text-gray-500 flex-shrink-0">
               {turma.codigo}
-            </Badge>
+            </code>
           )}
         </div>
       </TableCell>
@@ -112,8 +176,24 @@ export function TurmaRow({ turma, showCurso = false }: TurmaRowProps) {
         </TableCell>
       )}
       <TableCell className="py-4">
-        <div className="text-sm text-gray-900">{turma.turno}</div>
-        <div className="text-xs text-gray-500">{turma.metodo}</div>
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-1.5 text-sm text-gray-700">
+            {React.createElement(getTurnoIcon(turma.turno), {
+              className: "h-4 w-4 text-gray-500 flex-shrink-0",
+            })}
+            <span className="font-medium">{getTurnoLabel(turma.turno)}</span>
+          </div>
+          <span className="text-gray-300">•</span>
+          <Badge
+            variant="outline"
+            className={cn(
+              "text-xs font-medium",
+              getMetodoBadgeColor(turma.metodo)
+            )}
+          >
+            {getMetodoLabel(turma.metodo)}
+          </Badge>
+        </div>
       </TableCell>
       <TableCell className="py-4">
         <Badge

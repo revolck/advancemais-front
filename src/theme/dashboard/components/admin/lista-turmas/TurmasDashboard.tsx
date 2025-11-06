@@ -59,6 +59,10 @@ export function TurmasDashboard({ className }: { className?: string }) {
   const [selectedMetodos, setSelectedMetodos] = useState<string[]>([]);
   const [selectedInstrutorId, setSelectedInstrutorId] = useState<string | null>(null);
   
+  // Pagination
+  const [pageSize] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
+  
   // Sorting
   type SortField = "nome" | "dataInicio" | null;
   type SortDirection = "asc" | "desc";
@@ -101,17 +105,19 @@ export function TurmasDashboard({ className }: { className?: string }) {
       const trimmedValue = value.trim();
       setPendingSearchTerm(value);
       setAppliedSearchTerm(trimmedValue);
+      setCurrentPage(1); // Reset para página 1 ao buscar
     },
     [pendingSearchTerm]
   );
 
   // Sorting functions
-  const setSort = (field: SortField, direction: SortDirection) => {
+  const setSort = useCallback((field: SortField, direction: SortDirection) => {
     setSortField(field);
     setSortDirection(direction);
-  };
+    setCurrentPage(1); // Reset para página 1 ao ordenar
+  }, []);
 
-  const toggleSort = (field: SortField) => {
+  const toggleSort = useCallback((field: SortField) => {
     if (field === null) return;
     setSortField((prev) => {
       if (prev !== field) {
@@ -119,9 +125,10 @@ export function TurmasDashboard({ className }: { className?: string }) {
         return field;
       }
       setSortDirection((d) => (d === "asc" ? "desc" : "asc"));
-      return field;
+      return prev;
     });
-  };
+    setCurrentPage(1); // Reset para página 1 ao ordenar
+  }, []);
 
   // Persist sort
   useEffect(() => {
@@ -200,6 +207,44 @@ export function TurmasDashboard({ className }: { className?: string }) {
     return sortList(filtered);
   }, [turmas, normalizedSearch, selectedStatuses, selectedTurnos, selectedMetodos, selectedInstrutorId, sortList]);
 
+  // Paginação
+  const totalItems = filteredTurmas.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const paginatedTurmas = filteredTurmas.slice(startIndex, endIndex);
+
+  // Páginas visíveis para paginação
+  const visiblePages = useMemo(() => {
+    const pages: number[] = [];
+    if (totalPages <= 5) {
+      for (let i = 1; i <= totalPages; i += 1) pages.push(i);
+      return pages;
+    }
+    const start = Math.max(1, currentPage - 2);
+    const end = Math.min(totalPages, start + 4);
+    const adjustedStart = Math.max(1, end - 4);
+    for (let i = adjustedStart; i <= end; i += 1) pages.push(i);
+    return pages;
+  }, [currentPage, totalPages]);
+
+  const handlePageChange = useCallback((page: number) => {
+    const nextPage = Math.max(1, Math.min(page, totalPages));
+    setCurrentPage(nextPage);
+  }, [totalPages]);
+
+  // Reset página quando filtros mudam
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [appliedSearchTerm, selectedCourseId, selectedStatuses, selectedTurnos, selectedMetodos, selectedInstrutorId]);
+
+  // Ajusta página atual se necessário (ex: se estiver na página 5 e só houver 2 páginas)
+  useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(Math.max(1, totalPages));
+    }
+  }, [currentPage, totalPages]);
+
   const shouldShowSkeleton =
     isLoading || (isFetching && turmas.length === 0);
   const canDisplayTable =
@@ -248,11 +293,26 @@ export function TurmasDashboard({ className }: { className?: string }) {
             fields={filterFields}
             values={filterValues}
             onChange={(key, value) => {
-              if (key === "curso") setSelectedCourseId((value as string) || null);
-              if (key === "status") setSelectedStatuses(Array.isArray(value) ? (value as string[]) : []);
-              if (key === "turno") setSelectedTurnos(Array.isArray(value) ? (value as string[]) : []);
-              if (key === "metodo") setSelectedMetodos(Array.isArray(value) ? (value as string[]) : []);
-              if (key === "instrutor") setSelectedInstrutorId((value as string) || null);
+              if (key === "curso") {
+                setSelectedCourseId((value as string) || null);
+                setCurrentPage(1);
+              }
+              if (key === "status") {
+                setSelectedStatuses(Array.isArray(value) ? (value as string[]) : []);
+                setCurrentPage(1);
+              }
+              if (key === "turno") {
+                setSelectedTurnos(Array.isArray(value) ? (value as string[]) : []);
+                setCurrentPage(1);
+              }
+              if (key === "metodo") {
+                setSelectedMetodos(Array.isArray(value) ? (value as string[]) : []);
+                setCurrentPage(1);
+              }
+              if (key === "instrutor") {
+                setSelectedInstrutorId((value as string) || null);
+                setCurrentPage(1);
+              }
             }}
             onClearAll={() => {
               setPendingSearchTerm("");
@@ -262,6 +322,7 @@ export function TurmasDashboard({ className }: { className?: string }) {
               setSelectedTurnos([]);
               setSelectedMetodos([]);
               setSelectedInstrutorId(null);
+              setCurrentPage(1);
             }}
             search={{
               label: "Pesquisar turma",
@@ -498,12 +559,103 @@ export function TurmasDashboard({ className }: { className?: string }) {
                 {shouldShowSkeleton ? (
                   <TurmaTableSkeleton rows={8} />
                 ) : (
-                  filteredTurmas.map((t) => (
+                  paginatedTurmas.map((t) => (
                     <TurmaRow key={t.id} turma={t} showCurso={!selectedCourseId} />
                   ))
                 )}
               </TableBody>
             </Table>
+
+            {/* Paginação */}
+            {totalItems > 0 && (
+              <div className="flex flex-col gap-4 px-6 py-4 border-t border-gray-200 bg-gray-50/30 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <span>
+                    Mostrando{" "}
+                    {Math.min(startIndex + 1, totalItems)}{" "}
+                    a {Math.min(endIndex, totalItems)}{" "}
+                    de {totalItems} turma{totalItems === 1 ? "" : "s"}
+                  </span>
+                </div>
+
+                {totalPages > 1 && (
+                  <div className="flex items-center gap-2">
+                    <ButtonCustom
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={currentPage === 1}
+                      className="h-8 px-3"
+                    >
+                      Anterior
+                    </ButtonCustom>
+
+                    {visiblePages[0] > 1 && (
+                      <>
+                        <ButtonCustom
+                          variant={
+                            currentPage === 1 ? "primary" : "outline"
+                          }
+                          size="sm"
+                          onClick={() => handlePageChange(1)}
+                          className="h-8 w-8 p-0"
+                        >
+                          1
+                        </ButtonCustom>
+                        {visiblePages[0] > 2 && (
+                          <span className="text-gray-400">...</span>
+                        )}
+                      </>
+                    )}
+
+                    {visiblePages.map((page) => (
+                      <ButtonCustom
+                        key={page}
+                        variant={
+                          currentPage === page ? "primary" : "outline"
+                        }
+                        size="sm"
+                        onClick={() => handlePageChange(page)}
+                        className="h-8 w-8 p-0"
+                      >
+                        {page}
+                      </ButtonCustom>
+                    ))}
+
+                    {visiblePages[visiblePages.length - 1] < totalPages && (
+                      <>
+                        {visiblePages[visiblePages.length - 1] <
+                          totalPages - 1 && (
+                          <span className="text-gray-400">...</span>
+                        )}
+                        <ButtonCustom
+                          variant={
+                            currentPage === totalPages
+                              ? "primary"
+                              : "outline"
+                          }
+                          size="sm"
+                          onClick={() => handlePageChange(totalPages)}
+                          className="h-8 w-8 p-0"
+                        >
+                          {totalPages}
+                        </ButtonCustom>
+                      </>
+                    )}
+
+                    <ButtonCustom
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                      className="h-8 px-3"
+                    >
+                      Próxima
+                    </ButtonCustom>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}
