@@ -104,6 +104,7 @@ export async function getPlataformaOverview(
       // Empresas
       totalEmpresas:
         empresasResponse.status === "fulfilled" &&
+        empresasData !== null &&
         !Array.isArray(empresasData) &&
         "pagination" in empresasData
           ? empresasData.pagination.total
@@ -112,6 +113,7 @@ export async function getPlataformaOverview(
           : empresasData?.data?.length || 0,
       empresasAtivas:
         (empresasResponse.status === "fulfilled" &&
+        empresasData !== null &&
         !Array.isArray(empresasData) &&
         "data" in empresasData
           ? empresasData.data
@@ -121,6 +123,7 @@ export async function getPlataformaOverview(
         ).filter((e: any) => e.status === "ATIVO").length || 0,
       empresasBloqueadas:
         (empresasResponse.status === "fulfilled" &&
+        empresasData !== null &&
         !Array.isArray(empresasData) &&
         "data" in empresasData
           ? empresasData.data
@@ -130,6 +133,7 @@ export async function getPlataformaOverview(
         ).filter((e: any) => e.status === "BLOQUEADO").length || 0,
       empresasPendentes:
         (empresasResponse.status === "fulfilled" &&
+        empresasData !== null &&
         !Array.isArray(empresasData) &&
         "data" in empresasData
           ? empresasData.data
@@ -174,7 +178,14 @@ export async function getPlataformaOverview(
       porTipo: {
         alunos: alunosData?.pagination?.total || 0,
         instrutores: instrutoresData?.pagination?.total || 0,
-        empresas: empresasData?.pagination?.total || 0,
+        empresas:
+          empresasData !== null &&
+          !Array.isArray(empresasData) &&
+          "pagination" in empresasData
+            ? empresasData.pagination.total
+            : Array.isArray(empresasData)
+            ? empresasData.length
+            : empresasData?.data?.length || 0,
         candidatos:
           usuariosData?.usuarios?.filter((u: any) => u.role === "ALUNO_CANDIDATO").length || 0,
         admins:
@@ -214,6 +225,7 @@ export async function getPlataformaOverview(
         pendentes: metricasGerais.empresasPendentes,
         inativas:
           (empresasResponse.status === "fulfilled" &&
+          empresasData !== null &&
           !Array.isArray(empresasData) &&
           "data" in empresasData
             ? empresasData.data
