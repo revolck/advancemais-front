@@ -247,7 +247,7 @@ export async function getPlataformaOverview(
       porCategoria: [], // TODO: Buscar por categoria quando disponível
       topCursos:
         cursosData?.faturamento.topCursosFaturamento.map((c) => ({
-          cursoId: c.cursoId,
+          cursoId: String(c.cursoId),
           cursoNome: c.cursoNome,
           cursoCodigo: c.cursoCodigo,
           faturamento: c.totalFaturamento,
