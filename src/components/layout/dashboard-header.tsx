@@ -55,13 +55,14 @@ export function DashboardHeader({
 
       {/* Lado direito - Data/Hora, Breadcrumb e conteúdo customizável */}
       <div className="flex items-center gap-6">
-        {/* Data e Hora */}
-        <DashboardDateTime />
+        {/* Data e Hora - apenas na página inicial do dashboard */}
+        {isDashboardPage && <DashboardDateTime />}
 
         {/* Separador e Breadcrumb */}
         {shouldShowBreadcrumb && (
           <>
-            <div className="h-6 w-px bg-gray-300" />
+            {/* Separador antes do breadcrumb se houver data/hora antes */}
+            {isDashboardPage && <div className="h-6 w-px bg-gray-300" />}
             <DashboardBreadcrumb items={items} />
           </>
         )}
@@ -69,7 +70,10 @@ export function DashboardHeader({
         {/* Separador e Conteúdo customizável */}
         {children && (
           <>
-            <div className="h-6 w-px bg-gray-300" />
+            {/* Separador antes de children se houver data/hora ou breadcrumb antes */}
+            {(isDashboardPage || shouldShowBreadcrumb) && (
+              <div className="h-6 w-px bg-gray-300" />
+            )}
             <div className="flex items-center gap-4">{children}</div>
           </>
         )}

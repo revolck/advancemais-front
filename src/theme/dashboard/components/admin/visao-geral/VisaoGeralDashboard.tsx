@@ -59,8 +59,10 @@ export function VisaoGeralDashboard() {
       }
       return result.data;
     },
-    staleTime: 5 * 60 * 1000, // 5 minutos
-    retry: 2,
+    staleTime: 10 * 60 * 1000, // 10 minutos (aumentado para aproveitar cache da API)
+    gcTime: 15 * 60 * 1000, // Mantém em cache por 15 minutos
+    retry: 1, // Reduz retries para evitar espera desnecessária
+    refetchOnWindowFocus: false, // Não refaz fetch ao focar na janela
   });
 
   const primaryMetrics = useMemo((): StatisticCard[] => {

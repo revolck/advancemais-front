@@ -51,12 +51,15 @@ export function useActiveRoute() {
         // 3) Para itens sem submenu (folha), considerar ativo se a rota começar com a rota do item
         //    MAS apenas se não houver outro irmão mais específico que corresponda melhor
         //    Isso captura rotas dinâmicas como '/dashboard/cursos/turmas/[turmaId]'
+        //    IMPORTANTE: Para rotas genéricas como "/dashboard", só marcar como ativo se for correspondência exata
+        //    ou se não houver nenhum irmão com submenu que corresponda melhor
         if (!item.submenu && route !== "/" && path.startsWith(route + "/")) {
           // Verifica se há algum irmão (submenu no mesmo nível) que corresponde melhor
           // Ex.: se estamos em '/dashboard/cursos/turmas', não devemos marcar '/dashboard/cursos'
           // como ativo porque '/dashboard/cursos/turmas' corresponde melhor
           if (siblings) {
             const hasBetterMatch = siblings.some((sibling) => {
+              // Verifica irmãos com route direto
               if (sibling.route && sibling !== item) {
                 const siblingRoute = sibling.route.replace(/\/$/, "");
                 // Se algum irmão corresponde exatamente, não marcar este item
@@ -69,6 +72,27 @@ export function useActiveRoute() {
                   return siblingRoute.length > route.length;
                 }
               }
+              
+              // Verifica irmãos com submenu que podem ter rotas mais específicas
+              // CRÍTICO: Para evitar que "/dashboard" fique ativo quando estamos em "/dashboard/cursos"
+              if (sibling.submenu && sibling !== item) {
+                const hasActiveSubmenu = sibling.submenu.some((subItem) => {
+                  if (subItem.route) {
+                    const subRoute = subItem.route.replace(/\/$/, "");
+                    // Se algum submenu do irmão corresponde exatamente, não marcar este item
+                    if (path === subRoute) return true;
+                    // Se algum submenu do irmão corresponde e é mais específico que a rota atual do item, não marcar este item
+                    // Ex.: se estamos em '/dashboard/cursos' e o item atual é '/dashboard', 
+                    // o submenu '/dashboard/cursos' é mais específico, então não marcar '/dashboard' como ativo
+                    if (path.startsWith(subRoute + "/") || path === subRoute) {
+                      return subRoute.length > route.length || path === subRoute;
+                    }
+                  }
+                  return false;
+                });
+                if (hasActiveSubmenu) return true;
+              }
+              
               return false;
             });
             // Se há um match melhor, não marcar este item como ativo

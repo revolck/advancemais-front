@@ -665,7 +665,9 @@ export async function getVisaoGeral(
       headers: buildHeaders(init?.headers, true),
       ...init,
     },
-    cache: "no-cache",
+    cache: "medium", // Cache de 30 minutos para melhorar performance
+    timeout: 60000, // Timeout de 60 segundos (maior que o padrão de 15s)
+    retries: 2, // Reduz retries para evitar espera desnecessária
   });
 }
 
