@@ -49,6 +49,7 @@ export function InstrutoresDashboard({ className }: { className?: string }) {
   const [pendingSearchTerm, setPendingSearchTerm] = useState("");
   const [appliedSearchTerm, setAppliedSearchTerm] = useState("");
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
+  const [selectedCidades, setSelectedCidades] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [initialLoad, setInitialLoad] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -72,6 +73,24 @@ export function InstrutoresDashboard({ className }: { className?: string }) {
     { value: "INATIVO", label: "Inativo" },
     { value: "BLOQUEADO", label: "Bloqueado" },
   ], []);
+
+  // Extrai opções de localização dos instrutores carregados
+  const cidadesOptions: SelectOption[] = useMemo(() => {
+    const localizacoes = new Set<string>();
+    instrutores.forEach((instrutor) => {
+      if (instrutor.cidade && instrutor.estado) {
+        localizacoes.add(`${instrutor.cidade}, ${instrutor.estado}`);
+      } else if (instrutor.cidade) {
+        localizacoes.add(instrutor.cidade);
+      } else if (instrutor.estado) {
+        localizacoes.add(instrutor.estado);
+      }
+    });
+
+    return Array.from(localizacoes)
+      .sort((a, b) => a.localeCompare(b, "pt-BR"))
+      .map((localizacao) => ({ value: localizacao, label: localizacao }));
+  }, [instrutores]);
 
   const searchValidationMessage = useMemo(
     () => getSearchValidationMessage(pendingSearchTerm),
@@ -104,15 +123,41 @@ export function InstrutoresDashboard({ className }: { className?: string }) {
         }
 
         const response = await listInstrutores(params);
-        setInstrutores(response.data || []);
-        setPagination(
-          response.pagination || {
-            page: 1,
-            pageSize: 10,
-            total: 0,
-            pages: 0,
-          }
-        );
+        let filteredInstrutores = response.data || [];
+
+        // Filtro de localização (lado do cliente, pois a API pode não suportar)
+        if (selectedCidades.length > 0) {
+          filteredInstrutores = filteredInstrutores.filter((instrutor) => {
+            const localizacao = instrutor.cidade && instrutor.estado
+              ? `${instrutor.cidade}, ${instrutor.estado}`
+              : instrutor.cidade || instrutor.estado || "";
+            
+            return selectedCidades.some((selected) => localizacao === selected);
+          });
+        }
+
+        setInstrutores(filteredInstrutores);
+        
+        // Ajusta paginação se houver filtro de localização (filtrado no cliente)
+        const basePagination = response.pagination || {
+          page: 1,
+          pageSize: 10,
+          total: 0,
+          pages: 0,
+        };
+        
+        if (selectedCidades.length > 0) {
+          // Recalcula paginação baseado nos resultados filtrados
+          const totalFiltered = filteredInstrutores.length;
+          const pagesFiltered = Math.max(1, Math.ceil(totalFiltered / basePagination.pageSize));
+          setPagination({
+            ...basePagination,
+            total: totalFiltered,
+            pages: pagesFiltered,
+          });
+        } else {
+          setPagination(basePagination);
+        }
 
         setLoading(false);
         setInitialLoad(false);
@@ -144,7 +189,7 @@ export function InstrutoresDashboard({ className }: { className?: string }) {
         setInitialLoad(false);
       }
     },
-    [selectedStatuses, appliedSearchTerm]
+    [selectedStatuses, appliedSearchTerm, selectedCidades]
   );
 
   const handleSearchSubmit = useCallback(
@@ -178,7 +223,18 @@ export function InstrutoresDashboard({ className }: { className?: string }) {
       runFetch(1);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedStatuses, appliedSearchTerm, initialLoad]);
+  }, [selectedStatuses, appliedSearchTerm, selectedCidades, initialLoad]);
+
+  // Limpa seleção de cidades se não estiverem mais disponíveis
+  useEffect(() => {
+    if (selectedCidades.length > 0 && cidadesOptions.length > 0) {
+      const allowed = new Set(cidadesOptions.map((opt) => opt.value));
+      const filtered = selectedCidades.filter((cidade) => allowed.has(cidade));
+      if (filtered.length !== selectedCidades.length) {
+        setSelectedCidades(filtered);
+      }
+    }
+  }, [cidadesOptions, selectedCidades]);
 
   // Persistir ordenação no localStorage
   useEffect(() => {
@@ -248,15 +304,23 @@ export function InstrutoresDashboard({ className }: { className?: string }) {
         options: statusOptions,
         placeholder: "Selecione status",
       },
+      {
+        key: "localizacao",
+        label: "Localização",
+        mode: "multiple",
+        options: cidadesOptions,
+        placeholder: "Selecione localização",
+      },
     ],
-    [statusOptions]
+    [statusOptions, cidadesOptions]
   );
 
   const filterValues = useMemo(
     () => ({
       status: selectedStatuses,
+      localizacao: selectedCidades,
     }),
-    [selectedStatuses]
+    [selectedStatuses, selectedCidades]
   );
 
   return (
@@ -264,12 +328,16 @@ export function InstrutoresDashboard({ className }: { className?: string }) {
       <div className="border-b border-gray-200 top-0 z-10">
         <div className="py-4">
           <FilterBar
-            className="[&>div]:lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)_auto]"
+            className="[&>div]:lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_auto]"
             fields={filterFields}
             values={filterValues}
             onChange={(key, value) => {
               if (key === "status") {
                 setSelectedStatuses(
+                  Array.isArray(value) ? (value as string[]) : []
+                );
+              } else if (key === "localizacao") {
+                setSelectedCidades(
                   Array.isArray(value) ? (value as string[]) : []
                 );
               }

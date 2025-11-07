@@ -44,7 +44,8 @@ export type IconName =
   | "BookOpen"
   | "Building2"
   | "ExternalLink"
-  | "Tag";
+  | "Tag"
+  | "GraduationCap";
 
 export interface BreadcrumbItem {
   label: string;
@@ -226,13 +227,15 @@ export const breadcrumbConfig: Record<string, BreadcrumbConfig> = {
     ],
   },
   // Detalhes de turma: /dashboard/cursos/turmas/[turmaId]
+  // Nota: Esta configuração estática não funciona para rotas dinâmicas
+  // O breadcrumb é resolvido dinamicamente pelo regex abaixo
   "/dashboard/cursos/turmas/[turmaId]": {
     title: "Detalhes da Turma",
     items: [
       { label: "Dashboard", href: "/", icon: "Home" },
       { label: "Cursos", href: "/dashboard/cursos", icon: "BookOpen" },
       { label: "Turmas", href: "/dashboard/cursos/turmas", icon: "Users" },
-      { label: "Detalhes", icon: "Eye" },
+      { label: "Detalhes da Turma", icon: "Eye" },
     ],
   },
   "/dashboard/cursos/alunos": {
@@ -248,7 +251,7 @@ export const breadcrumbConfig: Record<string, BreadcrumbConfig> = {
     items: [
       { label: "Dashboard", href: "/", icon: "Home" },
       { label: "Cursos", href: "/dashboard/cursos", icon: "BookOpen" },
-      { label: "Instrutores" },
+      { label: "Instrutores", icon: "GraduationCap" },
     ],
   },
   "/dashboard/cursos/provas": {
@@ -341,6 +344,32 @@ export function useBreadcrumb(): BreadcrumbConfig {
     };
   }
 
+  // Detalhes de aluno: /dashboard/cursos/alunos/[id] (deve vir antes da verificação de curso)
+  if (pathname.match(/^\/dashboard\/cursos\/alunos\/[^/]+$/)) {
+    return {
+      title: "Detalhes do Aluno",
+      items: [
+        { label: "Dashboard", href: "/", icon: "Home" },
+        { label: "Cursos", href: "/dashboard/cursos", icon: "BookOpen" },
+        { label: "Alunos", href: "/dashboard/cursos/alunos", icon: "Users" },
+        { label: "Detalhes do Aluno", icon: "Eye" },
+      ],
+    };
+  }
+
+  // Detalhes de instrutor: /dashboard/cursos/instrutores/[id]
+  if (pathname.match(/^\/dashboard\/cursos\/instrutores\/[^/]+$/)) {
+    return {
+      title: "Detalhes do Instrutor",
+      items: [
+        { label: "Dashboard", href: "/", icon: "Home" },
+        { label: "Cursos", href: "/dashboard/cursos", icon: "BookOpen" },
+        { label: "Instrutores", href: "/dashboard/cursos/instrutores", icon: "GraduationCap" },
+        { label: "Detalhes do Instrutor", icon: "Eye" },
+      ],
+    };
+  }
+
   // Detalhes de turma: /dashboard/cursos/turmas/[turmaId] (nova rota)
   if (pathname.match(/^\/dashboard\/cursos\/turmas\/[^/]+$/)) {
     return {
@@ -349,7 +378,7 @@ export function useBreadcrumb(): BreadcrumbConfig {
         { label: "Dashboard", href: "/", icon: "Home" },
         { label: "Cursos", href: "/dashboard/cursos", icon: "BookOpen" },
         { label: "Turmas", href: "/dashboard/cursos/turmas", icon: "Users" },
-        { label: "Detalhes", icon: "Eye" },
+        { label: "Detalhes da Turma", icon: "Eye" },
       ],
     };
   }
@@ -366,14 +395,15 @@ export function useBreadcrumb(): BreadcrumbConfig {
     };
   }
 
-  // Detalhes de curso: /dashboard/cursos/[id]
-  if (pathname.match(/^\/dashboard\/cursos\/\d+$/)) {
+  // Detalhes de curso: /dashboard/cursos/[id] (aceita números ou UUIDs)
+  // Deve vir por último para não capturar rotas de alunos/turmas
+  if (pathname.match(/^\/dashboard\/cursos\/[^/]+$/)) {
     return {
       title: "Detalhes do Curso",
       items: [
         { label: "Dashboard", href: "/", icon: "Home" },
         { label: "Cursos", href: "/dashboard/cursos", icon: "BookOpen" },
-        { label: "Detalhes", icon: "Eye" },
+        { label: "Detalhes do Curso", icon: "Eye" },
       ],
     };
   }

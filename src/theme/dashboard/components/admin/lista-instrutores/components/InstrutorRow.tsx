@@ -52,6 +52,21 @@ const formatCpf = (cpf?: string | null) => {
   return digits.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
 };
 
+const formatTelefone = (telefone?: string | null): string => {
+  if (!telefone) return "—";
+  const digits = telefone.replace(/\D/g, "");
+
+  if (digits.length === 10) {
+    return digits.replace(/(\d{2})(\d{4})(\d{4})/, "($1) $2-$3");
+  }
+
+  if (digits.length === 11) {
+    return digits.replace(/(\d{2})(\d{5})(\d{4})/, "($1) $2-$3");
+  }
+
+  return telefone;
+};
+
 const getInitials = (nome: string) => {
   if (!nome) return "??";
   const words = nome.trim().split(" ");
@@ -81,7 +96,7 @@ export function InstrutorRow({ instrutor }: InstrutorRowProps) {
                 {instrutor.nomeCompleto || instrutor.id}
               </div>
               <code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded font-mono text-gray-500 flex-shrink-0">
-                {instrutor.codUsuario}
+                {instrutor.codigo || instrutor.codUsuario}
               </code>
             </div>
             {instrutor.cpf && (
@@ -105,7 +120,9 @@ export function InstrutorRow({ instrutor }: InstrutorRowProps) {
             size={16}
             className="text-gray-400 flex-shrink-0"
           />
-          <span>{instrutor.telefone || instrutor.celular || "—"}</span>
+          <span>
+            {formatTelefone(instrutor.telefone || instrutor.celular)}
+          </span>
         </div>
       </TableCell>
       <TableCell className="py-4">

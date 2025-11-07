@@ -459,6 +459,7 @@ export interface Instrutor {
   nomeCompleto: string;
   email: string;
   cpf?: string;
+  codigo?: string; // Código do instrutor (ex: "INS-94479")
   codUsuario: string;
   status: StatusUsuario;
   tipoUsuario: TipoUsuario;
