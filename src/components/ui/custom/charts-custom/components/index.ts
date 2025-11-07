@@ -3,6 +3,8 @@ export { RadialChartComponent } from "./RadialChartComponent";
 export { LineChartComponent } from "./LineChartComponent";
 export { BarChartComponent } from "./BarChartComponent";
 export { AreaChartComponent } from "./AreaChartComponent";
+export { DonutChartComponent } from "./DonutChartComponent";
+export type { DonutChartSegment } from "./DonutChartComponent";
 export { ChartLegend } from "./ChartLegend";
 export { InteractiveLineChart } from "./InteractiveLineChart";
 export type { InteractiveLineChartProps, MetricConfig, PeriodType } from "./InteractiveLineChart";

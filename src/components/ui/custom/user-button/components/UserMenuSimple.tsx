@@ -23,6 +23,7 @@ interface User {
   name: string;
   email: string;
   avatar?: string;
+  role?: string;
 }
 
 export default function UserMenuSimple() {
@@ -63,6 +64,7 @@ export default function UserMenuSimple() {
           name,
           email: profile.usuario.email,
           avatar: undefined, // imagemPerfil não está disponível no tipo atual
+          role: profile.usuario.role,
         });
       } catch (error) {
         console.error("Erro ao carregar perfil:", error);
@@ -104,64 +106,92 @@ export default function UserMenuSimple() {
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" className="gap-2 px-2">
-          <Avatar className="size-6 rounded-lg">
+        <button
+          className="flex items-center gap-2.5 px-1 py-1 rounded-lg hover:bg-white/5 transition-all duration-200 group focus:outline-none focus:ring-2 focus:ring-white/20 focus:ring-offset-2 focus:ring-offset-[var(--color-blue)]"
+          aria-label="Menu do usuário"
+        >
+          <Avatar className="size-8 rounded-full ring-2 ring-white/20 group-hover:ring-white/40 transition-all duration-200">
             {user.avatar && <AvatarImage src={user.avatar} alt={user.name} />}
-            <AvatarFallback className="rounded-lg">{initials}</AvatarFallback>
+            <AvatarFallback className="rounded-full bg-gradient-to-br from-white/25 via-white/15 to-transparent text-white font-semibold text-xs shadow-sm">
+              {initials}
+            </AvatarFallback>
           </Avatar>
-          <div className="truncate">{user.name}</div>
-          <ChevronDown />
-        </Button>
+          <div className="flex flex-col items-start min-w-0 max-w-[140px]">
+            <span className="text-sm font-medium text-white truncate w-full">
+              {user.name}
+            </span>
+          </div>
+          <ChevronDown className="size-4 text-white/60 group-hover:text-white/90 group-hover:translate-y-0.5 transition-all duration-200 shrink-0" />
+        </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent
-        className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
-        sideOffset={4}
+        className="w-64 rounded-lg border border-gray-200 shadow-lg bg-white p-1.5"
+        sideOffset={8}
+        align="end"
       >
-        <DropdownMenuLabel className="p-0 font-normal">
-          <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-            <Avatar className="size-8 rounded-lg">
+        {/* Header do usuário - simples e direto */}
+        <div className="px-3 py-2.5 mb-1">
+          <div className="flex items-center gap-3">
+            <Avatar className="size-9 rounded-full">
               {user.avatar && <AvatarImage src={user.avatar} alt={user.name} />}
-              <AvatarFallback className="rounded-lg">{initials}</AvatarFallback>
+              <AvatarFallback className="rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-white font-semibold text-xs">
+                {initials}
+              </AvatarFallback>
             </Avatar>
-            <div className="grid flex-1 text-left text-sm leading-tight">
-              <span className="truncate font-semibold">{user.name}</span>
-              <span className="text-muted-foreground truncate text-xs">
+            <div className="flex flex-col flex-1 min-w-0">
+              <span className="text-sm font-semibold text-gray-900 truncate">
+                {user.name}
+              </span>
+              <span className="text-xs text-gray-500 truncate">
                 {user.email}
               </span>
             </div>
           </div>
-        </DropdownMenuLabel>
+        </div>
+
         <DropdownMenuSeparator />
+
+        {/* Menu items - design minimalista */}
+        {/* Upgrade apenas para empresas */}
+        {user.role === "EMPRESA" && (
+          <>
+            <DropdownMenuGroup>
+              {MENU_UPGRADE.map((item) => (
+                <DropdownMenuItem key={item.href} asChild>
+                  <Link href={item.href} className="cursor-pointer">
+                    <item.icon className="size-4" />
+                    <span>{item.label}</span>
+                  </Link>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuGroup>
+            <DropdownMenuSeparator />
+          </>
+        )}
+
+        {/* Menu de conta - removendo Notificações */}
         <DropdownMenuGroup>
-          {MENU_UPGRADE.map((item) => (
+          {MENU_ACCOUNT.filter(
+            (item) => item.label !== "Notificações"
+          ).map((item) => (
             <DropdownMenuItem key={item.href} asChild>
-              <Link href={item.href} className="flex items-center gap-2">
-                <item.icon />
-                {item.label}
+              <Link href={item.href} className="cursor-pointer">
+                <item.icon className="size-4" />
+                <span>{item.label}</span>
               </Link>
             </DropdownMenuItem>
           ))}
         </DropdownMenuGroup>
+
         <DropdownMenuSeparator />
-        <DropdownMenuGroup>
-          {MENU_ACCOUNT.map((item) => (
-            <DropdownMenuItem key={item.href} asChild>
-              <Link href={item.href} className="flex items-center gap-2">
-                <item.icon />
-                {item.label}
-              </Link>
-            </DropdownMenuItem>
-          ))}
-        </DropdownMenuGroup>
-        <DropdownMenuSeparator />
+
+        {/* Logout */}
         <DropdownMenuItem
           onClick={handleLogout}
-          className={MENU_LOGOUT.className}
+          className="cursor-pointer text-red-600 focus:text-red-700 focus:bg-red-50"
         >
-          <div className="flex items-center gap-2">
-            <MENU_LOGOUT.icon className={MENU_LOGOUT.iconClassName} />
-            {isLoggingOut ? "Saindo..." : MENU_LOGOUT.label}
-          </div>
+          <MENU_LOGOUT.icon className="size-4" />
+          <span>{isLoggingOut ? "Saindo..." : MENU_LOGOUT.label}</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

@@ -140,10 +140,10 @@ export function InstrutoresDashboard({ className }: { className?: string }) {
         
         // Ajusta paginação se houver filtro de localização (filtrado no cliente)
         const basePagination = response.pagination || {
-          page: 1,
-          pageSize: 10,
-          total: 0,
-          pages: 0,
+            page: 1,
+            pageSize: 10,
+            total: 0,
+            pages: 0,
         };
         
         if (selectedCidades.length > 0) {

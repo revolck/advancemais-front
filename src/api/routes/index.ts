@@ -259,6 +259,7 @@ export const dashboardRoutes = {
     update: (id: string) => `${prefix}/website/scripts/${id}`,
     delete: (id: string) => `${prefix}/website/scripts/${id}`,
   },
+  overview: () => `${prefix}/dashboard/overview`,
 };
 
 /**

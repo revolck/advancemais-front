@@ -54,7 +54,7 @@ const rawMenuSections: MenuSection[] = [
       {
         icon: "LayoutDashboard",
         label: "Visão geral",
-        route: "/admin/overview",
+        route: "/dashboard",
         permissions: ADMIN_PERMISSIONS,
       },
       {
