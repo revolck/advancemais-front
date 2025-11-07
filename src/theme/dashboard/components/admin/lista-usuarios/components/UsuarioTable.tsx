@@ -13,6 +13,7 @@ import {
   TooltipTrigger,
   TooltipContent,
 } from "@/components/ui/tooltip";
+import { ButtonCustom } from "@/components/ui/custom";
 import { cn } from "@/lib/utils";
 import { UsuarioRow } from "./UsuarioRow";
 import { UsuarioTableSkeleton } from "./UsuarioTableSkeleton";
@@ -24,6 +25,15 @@ interface UsuarioTableProps {
   pageSize?: number;
   sortDirection?: "asc" | "desc";
   onSortChange?: (direction: "asc" | "desc") => void;
+  // Props para paginação
+  pagination?: {
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
+  };
+  onPageChange?: (page: number) => void;
+  visiblePages?: number[];
 }
 
 export function UsuarioTable({
@@ -32,6 +42,9 @@ export function UsuarioTable({
   pageSize = 10,
   sortDirection = "asc",
   onSortChange,
+  pagination,
+  onPageChange,
+  visiblePages = [],
 }: UsuarioTableProps) {
   return (
     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
@@ -115,6 +128,87 @@ export function UsuarioTable({
           </TableBody>
         </Table>
       </div>
+
+      {/* Paginação dentro do mesmo container */}
+      {pagination && pagination.total > 0 && (
+        <div className="flex flex-col gap-4 px-6 py-4 border-t border-gray-200 bg-gray-50/30 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2 text-sm text-gray-600">
+            <span>
+              Mostrando {Math.min((pagination.page - 1) * pagination.pageSize + 1, pagination.total)}{" "}
+              a {Math.min(pagination.page * pagination.pageSize, pagination.total)} de {pagination.total}{" "}
+              usuário{pagination.total === 1 ? "" : "s"}
+            </span>
+          </div>
+
+          {pagination.totalPages > 1 && onPageChange && visiblePages.length > 0 && (
+            <div className="flex items-center gap-2">
+              <ButtonCustom
+                variant="outline"
+                size="sm"
+                onClick={() => onPageChange(pagination.page - 1)}
+                disabled={pagination.page === 1}
+                className="h-8 px-3"
+              >
+                Anterior
+              </ButtonCustom>
+
+              {visiblePages[0] > 1 && (
+                <>
+                  <ButtonCustom
+                    variant={pagination.page === 1 ? "primary" : "outline"}
+                    size="sm"
+                    onClick={() => onPageChange(1)}
+                    className="h-8 w-8 p-0"
+                  >
+                    1
+                  </ButtonCustom>
+                  {visiblePages[0] > 2 && (
+                    <span className="text-gray-400">...</span>
+                  )}
+                </>
+              )}
+
+              {visiblePages.map((page) => (
+                <ButtonCustom
+                  key={page}
+                  variant={pagination.page === page ? "primary" : "outline"}
+                  size="sm"
+                  onClick={() => onPageChange(page)}
+                  className="h-8 w-8 p-0"
+                >
+                  {page}
+                </ButtonCustom>
+              ))}
+
+              {visiblePages.length > 0 && visiblePages[visiblePages.length - 1] < pagination.totalPages && (
+                <>
+                  {visiblePages[visiblePages.length - 1] < pagination.totalPages - 1 && (
+                    <span className="text-gray-400">...</span>
+                  )}
+                  <ButtonCustom
+                    variant={pagination.page === pagination.totalPages ? "primary" : "outline"}
+                    size="sm"
+                    onClick={() => onPageChange(pagination.totalPages)}
+                    className="h-8 w-8 p-0"
+                  >
+                    {pagination.totalPages}
+                  </ButtonCustom>
+                </>
+              )}
+
+              <ButtonCustom
+                variant="outline"
+                size="sm"
+                onClick={() => onPageChange(pagination.page + 1)}
+                disabled={pagination.page === pagination.totalPages}
+                className="h-8 px-3"
+              >
+                Próxima
+              </ButtonCustom>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

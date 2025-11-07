@@ -337,11 +337,6 @@ export function AgendaDashboard({ className }: { className?: string }) {
 
   return (
     <div className={cn("min-h-full space-y-6", className)}>
-      <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-semibold text-gray-900">Agenda de Cursos</h1>
-        <p className="text-sm text-gray-500">Visualize cronogramas, workshops e compromissos em um só lugar.</p>
-      </div>
-
       <div className="space-y-6">
         <div className="rounded-3xl border border-gray-200 bg-white p-6">
           <div className="flex flex-wrap items-end gap-4">

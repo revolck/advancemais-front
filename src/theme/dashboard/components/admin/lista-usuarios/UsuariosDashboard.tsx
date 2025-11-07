@@ -241,7 +241,7 @@ export function UsuariosDashboard({
         </Alert>
       )}
 
-      {/* Tabela */}
+      {/* Tabela com paginação integrada */}
       {!showEmptyState && (
         <UsuarioTable
           usuarios={sortedUsuarios}
@@ -249,6 +249,18 @@ export function UsuariosDashboard({
           pageSize={pageSize}
           sortDirection={sortDirection}
           onSortChange={setSortDirection}
+          pagination={
+            pagination
+              ? {
+                  page: currentPage,
+                  pageSize,
+                  total: totalItems,
+                  totalPages,
+                }
+              : undefined
+          }
+          onPageChange={handlePageChange}
+          visiblePages={visiblePages}
         />
       )}
 
@@ -263,87 +275,6 @@ export function UsuariosDashboard({
             title="Nenhum usuário encontrado"
             description="Não encontramos usuários com os filtros aplicados. Tente ajustar sua busca."
           />
-        </div>
-      )}
-
-      {/* Paginação */}
-      {!showEmptyState && totalPages > 0 && (
-        <div className="flex flex-col gap-4 px-6 py-4 border-t border-gray-200 bg-gray-50/30 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-2 text-sm text-gray-600">
-            <span>
-              Mostrando {Math.min((currentPage - 1) * pageSize + 1, totalItems)}{" "}
-              a {Math.min(currentPage * pageSize, totalItems)} de {totalItems}{" "}
-              usuário{totalItems === 1 ? "" : "s"}
-            </span>
-          </div>
-
-          {totalPages > 1 && (
-            <div className="flex items-center gap-2">
-              <ButtonCustom
-                variant="outline"
-                size="sm"
-                onClick={() => handlePageChange(currentPage - 1)}
-                disabled={currentPage === 1}
-                className="h-8 px-3"
-              >
-                Anterior
-              </ButtonCustom>
-
-              {visiblePages[0] > 1 && (
-                <>
-                  <ButtonCustom
-                    variant={currentPage === 1 ? "primary" : "outline"}
-                    size="sm"
-                    onClick={() => handlePageChange(1)}
-                    className="h-8 w-8 p-0"
-                  >
-                    1
-                  </ButtonCustom>
-                  {visiblePages[0] > 2 && (
-                    <span className="text-gray-400">...</span>
-                  )}
-                </>
-              )}
-
-              {visiblePages.map((page) => (
-                <ButtonCustom
-                  key={page}
-                  variant={currentPage === page ? "primary" : "outline"}
-                  size="sm"
-                  onClick={() => handlePageChange(page)}
-                  className="h-8 w-8 p-0"
-                >
-                  {page}
-                </ButtonCustom>
-              ))}
-
-              {visiblePages[visiblePages.length - 1] < totalPages && (
-                <>
-                  {visiblePages[visiblePages.length - 1] < totalPages - 1 && (
-                    <span className="text-gray-400">...</span>
-                  )}
-                  <ButtonCustom
-                    variant={currentPage === totalPages ? "primary" : "outline"}
-                    size="sm"
-                    onClick={() => handlePageChange(totalPages)}
-                    className="h-8 w-8 p-0"
-                  >
-                    {totalPages}
-                  </ButtonCustom>
-                </>
-              )}
-
-              <ButtonCustom
-                variant="outline"
-                size="sm"
-                onClick={() => handlePageChange(currentPage + 1)}
-                disabled={currentPage === totalPages}
-                className="h-8 px-3"
-              >
-                Próxima
-              </ButtonCustom>
-            </div>
-          )}
         </div>
       )}
     </div>

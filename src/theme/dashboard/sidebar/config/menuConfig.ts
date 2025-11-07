@@ -131,26 +131,20 @@ const rawMenuSections: MenuSection[] = [
         submenu: [
           {
             icon: null,
-            label: "Visão Geral",
-            route: "/admin/companies/overview",
-            permissions: ADMIN_PERMISSIONS,
-          },
-          {
-            icon: null,
             label: "Empresas",
-            route: "/empresas",
+            route: "/dashboard/empresas",
             permissions: ADMIN_PERMISSIONS,
           },
           {
             icon: null,
             label: "Vagas",
-            route: "/dashboard/vagas",
+            route: "/dashboard/empresas/vagas",
             permissions: ADMIN_PERMISSIONS,
           },
           {
             icon: null,
             label: "Candidatos",
-            route: "/dashboard/candidatos",
+            route: "/dashboard/empresas/candidatos",
             permissions: ADMIN_PERMISSIONS,
           },
         ],

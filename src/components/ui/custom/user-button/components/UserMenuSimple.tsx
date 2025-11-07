@@ -15,7 +15,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { getUserProfile, logoutUserSession } from "@/api/usuarios";
 import { logoutUser } from "@/lib/auth";
 
@@ -94,7 +94,24 @@ export default function UserMenuSimple() {
     }
   };
 
-  if (isLoading || !user) return null;
+  // Skeleton loader enquanto carrega
+  if (isLoading) {
+    return (
+      <div className="flex items-center gap-2.5 px-1 py-1">
+        {/* Avatar skeleton */}
+        <Skeleton className="size-8 rounded-full bg-white/10" />
+        {/* Nome skeleton */}
+        <div className="flex flex-col items-start min-w-0 max-w-[140px] gap-1">
+          <Skeleton className="h-4 w-24 bg-white/10 rounded" />
+        </div>
+        {/* Chevron skeleton */}
+        <ChevronDown className="size-4 text-white/30 shrink-0" />
+      </div>
+    );
+  }
+
+  // Se não há usuário após o carregamento, não renderiza nada
+  if (!user) return null;
 
   const initials = user.name
     .split(" ")

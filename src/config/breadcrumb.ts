@@ -283,7 +283,7 @@ export const breadcrumbConfig: Record<string, BreadcrumbConfig> = {
     items: [
       { label: "Dashboard", href: "/", icon: "Home" },
       { label: "Cursos", href: "/dashboard/cursos", icon: "BookOpen" },
-      { label: "Agenda" },
+      { label: "Agenda", icon: "Calendar" },
     ],
   },
   "/dashboard/cursos/cadastrar": {
@@ -340,6 +340,18 @@ export function useBreadcrumb(): BreadcrumbConfig {
         { label: "Dashboard", href: "/", icon: "Home" },
         { label: "Empresas", href: "/empresas", icon: "Building2" },
         { label: "Visualizando empresa", icon: "Eye" },
+      ],
+    };
+  }
+
+  // Detalhes de usuário: /dashboard/usuarios/[id]
+  if (pathname.match(/^\/dashboard\/usuarios\/[^/]+$/)) {
+    return {
+      title: "Detalhes do Usuário",
+      items: [
+        { label: "Dashboard", href: "/", icon: "Home" },
+        { label: "Usuários", href: "/dashboard/usuarios", icon: "Users" },
+        { label: "Detalhes do Usuário", icon: "Eye" },
       ],
     };
   }
