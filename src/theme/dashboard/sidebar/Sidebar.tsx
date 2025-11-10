@@ -91,16 +91,29 @@ const mergeMenuItems = (
       // Ambos têm permissão, mescla submenus
       if (newItem.submenu && existingItem.submenu) {
         // Mescla submenus (já filtrados por permissão)
-        existingItem.submenu = mergeMenuItems(
+        const mergedSubmenu = mergeMenuItems(
           existingItem.submenu,
           newItem.submenu,
           role
         );
+        // Cria novo objeto em vez de modificar o existente
+        const updatedItem = {
+          ...existingItem,
+          submenu: mergedSubmenu,
+        };
+        itemsByRoute.set(newItem.route, updatedItem);
+        itemsByLabel.set(itemKey, updatedItem);
       } else if (newItem.submenu && !existingItem.submenu) {
         // Adiciona submenu ao item existente (já filtrado)
         const filteredSubmenu = filterItemsByRole(newItem.submenu, role);
         if (filteredSubmenu.length > 0) {
-          existingItem.submenu = filteredSubmenu;
+          // Cria novo objeto em vez de modificar o existente
+          const updatedItem = {
+            ...existingItem,
+            submenu: filteredSubmenu,
+          };
+          itemsByRoute.set(newItem.route, updatedItem);
+          itemsByLabel.set(itemKey, updatedItem);
         }
       }
     } else if (!itemsByLabel.has(itemKey)) {
