@@ -40,7 +40,10 @@ export function useActiveRoute() {
         const route = item.route.replace(/\/$/, "");
 
         // 1) Sempre marcar ativo se for correspondência exata
-        if (path === route) return true;
+        // IMPORTANTE: Correspondência exata tem prioridade máxima - não verificar irmãos
+        if (path === route) {
+          return true;
+        }
 
         // 2) Para itens com submenu, considerar ativo quando a rota atual for uma subrota
         //    Ex.: parent '/dashboard/cursos' fica ativo em '/dashboard/cursos/turmas'

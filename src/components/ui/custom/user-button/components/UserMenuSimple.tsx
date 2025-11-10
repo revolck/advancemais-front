@@ -186,11 +186,19 @@ export default function UserMenuSimple() {
           </>
         )}
 
-        {/* Menu de conta - removendo Notificações */}
+        {/* Menu de conta - removendo Notificações e Pagamentos (apenas para ALUNO_CANDIDATO e EMPRESA) */}
         <DropdownMenuGroup>
-          {MENU_ACCOUNT.filter(
-            (item) => item.label !== "Notificações"
-          ).map((item) => (
+          {MENU_ACCOUNT.filter((item) => {
+            // Remove Notificações
+            if (item.label === "Notificações") return false;
+            // Remove Pagamentos se o role não for ALUNO_CANDIDATO ou EMPRESA
+            if (item.label === "Pagamentos") {
+              return (
+                user.role === "ALUNO_CANDIDATO" || user.role === "EMPRESA"
+              );
+            }
+            return true;
+          }).map((item) => (
             <DropdownMenuItem key={item.href} asChild>
               <Link href={item.href} className="cursor-pointer">
                 <item.icon className="size-4" />
