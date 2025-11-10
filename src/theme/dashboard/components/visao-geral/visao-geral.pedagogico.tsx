@@ -67,6 +67,15 @@ interface PedagogicoOverviewData {
   cursos: PlataformaCursosStats;
 }
 
+// Cores para cada tipo de usuário (constante, não precisa estar no componente)
+const usuarioTipoColors: Record<string, string> = {
+  Alunos: "#3b82f6",
+  Instrutores: "#10b981",
+  Candidatos: "#f59e0b",
+  Admins: "#ef4444",
+  Moderadores: "#06b6d4",
+};
+
 export function VisaoGeralPedagogico() {
   const [hoveredSegment, setHoveredSegment] =
     useState<DonutChartSegment | null>(null);
@@ -182,15 +191,6 @@ export function VisaoGeralPedagogico() {
       },
     ];
   }, [response]);
-
-  // Cores para cada tipo de usuário
-  const usuarioTipoColors: Record<string, string> = {
-    Alunos: "#3b82f6",
-    Instrutores: "#10b981",
-    Candidatos: "#f59e0b",
-    Admins: "#ef4444",
-    Moderadores: "#06b6d4",
-  };
 
   // Dados formatados para o DonutChart (apenas tipos relevantes para pedagógico)
   const usuariosPorTipoDonutData = useMemo(() => {

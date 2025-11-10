@@ -91,9 +91,12 @@ const mergeMenuItems = (
       // Ambos têm permissão, mescla submenus
       if (newItem.submenu && existingItem.submenu) {
         // Mescla submenus (já filtrados por permissão)
+        // Converte readonly array para array mutável
+        const existingSubmenu = Array.from(existingItem.submenu);
+        const newSubmenu = Array.from(newItem.submenu);
         const mergedSubmenu = mergeMenuItems(
-          existingItem.submenu,
-          newItem.submenu,
+          existingSubmenu,
+          newSubmenu,
           role
         );
         // Cria novo objeto em vez de modificar o existente

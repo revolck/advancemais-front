@@ -25,22 +25,22 @@ interface PlataformaChartsSectionProps {
   data: PlataformaOverviewData;
 }
 
+// Cores para cada tipo de usuário (constante, não precisa estar no componente)
+const usuarioTipoColors: Record<string, string> = {
+  Alunos: "#3b82f6",
+  Instrutores: "#10b981",
+  Empresas: "#8b5cf6",
+  Candidatos: "#f59e0b",
+  Admins: "#ef4444",
+  Moderadores: "#06b6d4",
+};
+
 export function PlataformaChartsSection({
   data,
 }: PlataformaChartsSectionProps) {
   // Estado para hover no gráfico de donut
   const [hoveredSegment, setHoveredSegment] =
     useState<DonutChartSegment | null>(null);
-
-  // Cores para cada tipo de usuário
-  const usuarioTipoColors: Record<string, string> = {
-    Alunos: "#3b82f6",
-    Instrutores: "#10b981",
-    Empresas: "#8b5cf6",
-    Candidatos: "#f59e0b",
-    Admins: "#ef4444",
-    Moderadores: "#06b6d4",
-  };
 
   // Dados formatados para o DonutChart
   const usuariosPorTipoDonutData = useMemo(() => {
