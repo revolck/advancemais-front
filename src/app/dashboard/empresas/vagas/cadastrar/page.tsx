@@ -9,7 +9,7 @@ export default function CadastrarVagaPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSuccess = () => {
-    router.push("/dashboard/vagas");
+    router.push("/dashboard/empresas/vagas");
   };
 
   return (

@@ -1,22 +1,57 @@
 "use client";
 
 import Link from "next/link";
-import {
-  BookOpen,
-  Users,
-  Building2,
-  Briefcase,
-  GraduationCap,
-} from "lucide-react";
+import { BookOpen, Users, GraduationCap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ButtonCustom } from "@/components/ui/custom/button";
-import type { PlataformaOverviewData } from "@/api/dashboard/types";
+import type { PlataformaUsuariosStats, PlataformaCursosStats } from "@/api/dashboard/types";
 
-interface PlataformaQuickActionsProps {
-  data: PlataformaOverviewData;
+/**
+ * Métricas gerais filtradas para pedagógico (sem empresas/vagas/financeiro)
+ */
+interface PedagogicoMetricasGerais {
+  // Cursos
+  totalCursos: number;
+  cursosPublicados: number;
+  cursosRascunho: number;
+  totalTurmas: number;
+  turmasAtivas: number;
+  turmasInscricoesAbertas: number;
+  // Alunos
+  totalAlunos: number;
+  totalAlunosAtivos: number;
+  totalAlunosInscritos: number;
+  totalAlunosConcluidos: number;
+  // Instrutores
+  totalInstrutores: number;
+  totalInstrutoresAtivos: number;
+  // Usuários
+  totalUsuarios: number;
+  // Candidatos
+  totalCandidatos: number;
+  totalCandidatosAtivos: number;
 }
 
-export function PlataformaQuickActions({ data }: PlataformaQuickActionsProps) {
+/**
+ * Tipo filtrado para pedagógico - apenas cursos e usuários (sem empresas/vagas)
+ */
+interface PedagogicoData {
+  metricasGerais: PedagogicoMetricasGerais;
+  usuarios: PlataformaUsuariosStats;
+  cursos: PlataformaCursosStats;
+}
+
+interface QuickActionsPedagogicoProps {
+  data: PedagogicoData;
+}
+
+/**
+ * Quick Actions específico para setor pedagógico
+ * Não inclui empresas ou vagas
+ */
+export function QuickActionsPedagogico({
+  data,
+}: QuickActionsPedagogicoProps) {
   if (!data?.metricasGerais) {
     return null;
   }
@@ -72,47 +107,6 @@ export function PlataformaQuickActions({ data }: PlataformaQuickActionsProps) {
         },
       ],
     },
-    // Empresas e Vagas apenas se tiverem valores (não para pedagógico)
-    ...(metricasGerais.totalEmpresas > 0
-      ? [
-          {
-            title: "Empresas",
-            icon: Building2,
-            color: "rose",
-            href: "/dashboard/empresas",
-            stats: [
-              {
-                label: "Ativas",
-                value: metricasGerais.empresasAtivas,
-              },
-              {
-                label: "Total",
-                value: metricasGerais.totalEmpresas,
-              },
-            ],
-          },
-        ]
-      : []),
-    ...(metricasGerais.totalVagas > 0
-      ? [
-          {
-            title: "Vagas",
-            icon: Briefcase,
-            color: "emerald",
-            href: "/dashboard/empresas/vagas",
-            stats: [
-              {
-                label: "Publicadas",
-                value: metricasGerais.vagasPublicadas,
-              },
-              {
-                label: "Em Análise",
-                value: metricasGerais.vagasEmAnalise,
-              },
-            ],
-          },
-        ]
-      : []),
   ];
 
   const colorVariants = {
@@ -131,28 +125,10 @@ export function PlataformaQuickActions({ data }: PlataformaQuickActionsProps) {
       iconColor: "text-purple-600",
       valueBg: "bg-purple-100/60",
     },
-    rose: {
-      iconBg: "bg-rose-100",
-      iconColor: "text-rose-600",
-      valueBg: "bg-rose-100/60",
-    },
-    emerald: {
-      iconBg: "bg-emerald-100",
-      iconColor: "text-emerald-600",
-      valueBg: "bg-emerald-100/60",
-    },
   };
 
   return (
-    <div
-      className={`grid grid-cols-1 sm:grid-cols-2 ${
-        quickActions.length >= 5
-          ? "lg:grid-cols-5"
-          : quickActions.length === 4
-            ? "lg:grid-cols-4"
-            : "lg:grid-cols-3"
-      } gap-5`}
-    >
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
       {quickActions.map((action) => {
         const colors =
           colorVariants[action.color as keyof typeof colorVariants];
@@ -216,3 +192,4 @@ export function PlataformaQuickActions({ data }: PlataformaQuickActionsProps) {
     </div>
   );
 }
+

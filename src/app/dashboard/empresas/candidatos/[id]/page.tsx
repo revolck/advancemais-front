@@ -16,7 +16,7 @@ export default async function CandidatoDetailsPage({
   params,
 }: CandidatoDetailsPageProps) {
   const { id } = await params;
-  const safeCandidatoPath = `/dashboard/candidatos/${encodeURIComponent(id)}`;
+  const safeCandidatoPath = `/dashboard/empresas/candidatos/${encodeURIComponent(id)}`;
   const { authHeaders, loginUrl } = await requireDashboardAuth(
     safeCandidatoPath
   );

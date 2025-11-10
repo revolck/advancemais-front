@@ -194,6 +194,38 @@ export const breadcrumbConfig: Record<string, BreadcrumbConfig> = {
       { label: "Candidatos", icon: "Users" },
     ],
   },
+  "/dashboard/empresas": {
+    title: "Empresas",
+    items: [
+      { label: "Dashboard", href: "/", icon: "Home" },
+      { label: "Empresas", icon: "Building2" },
+    ],
+  },
+  "/dashboard/empresas/vagas": {
+    title: "Vagas",
+    items: [
+      { label: "Dashboard", href: "/", icon: "Home" },
+      { label: "Empresas", href: "/dashboard/empresas", icon: "Building2" },
+      { label: "Vagas", icon: "Briefcase" },
+    ],
+  },
+  "/dashboard/empresas/vagas/cadastrar": {
+    title: "Cadastrar Vaga",
+    items: [
+      { label: "Dashboard", href: "/", icon: "Home" },
+      { label: "Empresas", href: "/dashboard/empresas", icon: "Building2" },
+      { label: "Vagas", href: "/dashboard/empresas/vagas", icon: "Briefcase" },
+      { label: "Cadastrar", icon: "Plus" },
+    ],
+  },
+  "/dashboard/empresas/candidatos": {
+    title: "Candidatos",
+    items: [
+      { label: "Dashboard", href: "/", icon: "Home" },
+      { label: "Empresas", href: "/dashboard/empresas", icon: "Building2" },
+      { label: "Candidatos", icon: "Users" },
+    ],
+  },
   "/dashboard/cursos": {
     title: "Cursos",
     items: [
@@ -324,28 +356,69 @@ export const breadcrumbConfig: Record<string, BreadcrumbConfig> = {
 export function useBreadcrumb(): BreadcrumbConfig {
   const pathname = usePathname() || "/";
 
+  // Remove query strings e hash do pathname para garantir correspondência exata
+  const cleanPathname = pathname.split("?")[0].split("#")[0];
+
   // Busca a configuração exata da rota
-  const config = breadcrumbConfig[pathname];
+  const config = breadcrumbConfig[cleanPathname];
 
   if (config) {
     return config;
   }
 
   // Regras dinâmicas específicas
-  // Detalhes de empresa: /empresas/[id]
-  if (pathname.startsWith("/empresas/")) {
+  // Detalhes de candidato: /dashboard/empresas/candidatos/[id]
+  if (cleanPathname.match(/^\/dashboard\/empresas\/candidatos\/[^/]+$/)) {
+    return {
+      title: "Detalhes do Candidato",
+      items: [
+        { label: "Dashboard", href: "/", icon: "Home" },
+        { label: "Empresas", href: "/dashboard/empresas", icon: "Building2" },
+        { label: "Candidatos", href: "/dashboard/empresas/candidatos", icon: "Users" },
+        { label: "Detalhes do Candidato", icon: "Eye" },
+      ],
+    };
+  }
+
+  // Detalhes de vaga: /dashboard/empresas/vagas/[id]
+  if (cleanPathname.match(/^\/dashboard\/empresas\/vagas\/[^/]+$/)) {
+    return {
+      title: "Detalhes da Vaga",
+      items: [
+        { label: "Dashboard", href: "/", icon: "Home" },
+        { label: "Empresas", href: "/dashboard/empresas", icon: "Building2" },
+        { label: "Vagas", href: "/dashboard/empresas/vagas", icon: "Briefcase" },
+        { label: "Detalhes da Vaga", icon: "Eye" },
+      ],
+    };
+  }
+
+  // Detalhes de empresa: /dashboard/empresas/[id] (deve vir após verificações de candidatos/vagas)
+  if (cleanPathname.match(/^\/dashboard\/empresas\/[^/]+$/)) {
+    return {
+      title: "Detalhes da Empresa",
+      items: [
+        { label: "Dashboard", href: "/", icon: "Home" },
+        { label: "Empresas", href: "/dashboard/empresas", icon: "Building2" },
+        { label: "Detalhes da Empresa", icon: "Eye" },
+      ],
+    };
+  }
+
+  // Detalhes de empresa (rota antiga): /empresas/[id]
+  if (cleanPathname.startsWith("/empresas/") && !cleanPathname.startsWith("/dashboard/empresas/")) {
     return {
       title: "Empresa",
       items: [
         { label: "Dashboard", href: "/", icon: "Home" },
-        { label: "Empresas", href: "/empresas", icon: "Building2" },
+        { label: "Empresas", href: "/dashboard/empresas", icon: "Building2" },
         { label: "Visualizando empresa", icon: "Eye" },
       ],
     };
   }
 
   // Detalhes de usuário: /dashboard/usuarios/[id]
-  if (pathname.match(/^\/dashboard\/usuarios\/[^/]+$/)) {
+  if (cleanPathname.match(/^\/dashboard\/usuarios\/[^/]+$/)) {
     return {
       title: "Detalhes do Usuário",
       items: [
@@ -357,7 +430,7 @@ export function useBreadcrumb(): BreadcrumbConfig {
   }
 
   // Detalhes de aluno: /dashboard/cursos/alunos/[id] (deve vir antes da verificação de curso)
-  if (pathname.match(/^\/dashboard\/cursos\/alunos\/[^/]+$/)) {
+  if (cleanPathname.match(/^\/dashboard\/cursos\/alunos\/[^/]+$/)) {
     return {
       title: "Detalhes do Aluno",
       items: [
@@ -370,7 +443,7 @@ export function useBreadcrumb(): BreadcrumbConfig {
   }
 
   // Detalhes de instrutor: /dashboard/cursos/instrutores/[id]
-  if (pathname.match(/^\/dashboard\/cursos\/instrutores\/[^/]+$/)) {
+  if (cleanPathname.match(/^\/dashboard\/cursos\/instrutores\/[^/]+$/)) {
     return {
       title: "Detalhes do Instrutor",
       items: [
@@ -383,7 +456,7 @@ export function useBreadcrumb(): BreadcrumbConfig {
   }
 
   // Detalhes de turma: /dashboard/cursos/turmas/[turmaId] (nova rota)
-  if (pathname.match(/^\/dashboard\/cursos\/turmas\/[^/]+$/)) {
+  if (cleanPathname.match(/^\/dashboard\/cursos\/turmas\/[^/]+$/)) {
     return {
       title: "Detalhes da Turma",
       items: [
@@ -396,7 +469,7 @@ export function useBreadcrumb(): BreadcrumbConfig {
   }
 
   // Rota antiga de turma (mantida para compatibilidade): /dashboard/cursos/[id]/turmas/[turmaId]
-  if (pathname.match(/^\/dashboard\/cursos\/\d+\/turmas\/[^/]+$/)) {
+  if (cleanPathname.match(/^\/dashboard\/cursos\/\d+\/turmas\/[^/]+$/)) {
     return {
       title: "Detalhes da Turma",
       items: [
@@ -409,7 +482,7 @@ export function useBreadcrumb(): BreadcrumbConfig {
 
   // Detalhes de curso: /dashboard/cursos/[id] (aceita números ou UUIDs)
   // Deve vir por último para não capturar rotas de alunos/turmas
-  if (pathname.match(/^\/dashboard\/cursos\/[^/]+$/)) {
+  if (cleanPathname.match(/^\/dashboard\/cursos\/[^/]+$/)) {
     return {
       title: "Detalhes do Curso",
       items: [
@@ -421,7 +494,7 @@ export function useBreadcrumb(): BreadcrumbConfig {
   }
 
   // Fallback: tenta encontrar a rota mais próxima
-  const pathSegments = pathname.split("/").filter(Boolean);
+  const pathSegments = cleanPathname.split("/").filter(Boolean);
   let currentPath = "";
 
   for (let i = pathSegments.length; i > 0; i--) {

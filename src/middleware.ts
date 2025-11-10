@@ -101,10 +101,13 @@ function getWebsiteRedirect(pathname: string): string | null {
 /**
  * Configura cookies de desenvolvimento
  */
-function setupDevCookies(response: NextResponse): NextResponse {
+function setupDevCookies(
+  request: NextRequest,
+  response: NextResponse
+): NextResponse {
   if (process.env.NODE_ENV === "development") {
     // Tenant para desenvolvimento
-    const existingTenant = response.cookies.get("tenant_id");
+    const existingTenant = request.cookies.get("tenant_id");
     if (!existingTenant) {
       response.cookies.set("tenant_id", "dev-tenant", {
         path: "/",
@@ -117,9 +120,20 @@ function setupDevCookies(response: NextResponse): NextResponse {
     }
 
     // Role padrão para desenvolvimento
-    const existingRole = response.cookies.get("user_role");
-    if (!existingRole) {
+    // IMPORTANTE: Verifica o cookie no REQUEST primeiro (não no response)
+    // Isso preserva o cookie definido pelo login ou manualmente
+    const existingRole = request.cookies.get("user_role")?.value;
+    const validRoles = Object.values(UserRole);
+
+    if (!existingRole || !validRoles.includes(existingRole as UserRole)) {
+      // Só define como ADMIN se não houver cookie válido
       response.cookies.set("user_role", UserRole.ADMIN, {
+        path: "/",
+        maxAge: 60 * 60 * 24 * 7,
+      });
+    } else {
+      // Preserva o cookie existente (importante para manter o role do login)
+      response.cookies.set("user_role", existingRole, {
         path: "/",
         maxAge: 60 * 60 * 24 * 7,
       });
@@ -200,15 +214,15 @@ export function middleware(request: NextRequest) {
     if (pathname === "/") {
       const url = request.nextUrl.clone();
       url.pathname = "/login";
-      return setupDevCookies(NextResponse.redirect(url));
+      return setupDevCookies(request, NextResponse.redirect(url));
     }
     if (pathname.startsWith("/auth/")) {
       const url = request.nextUrl.clone();
       url.pathname = pathname.replace(/^\/auth/, "");
-      return setupDevCookies(NextResponse.redirect(url));
+      return setupDevCookies(request, NextResponse.redirect(url));
     }
     const url = new URL(`/auth${pathname}`, request.url);
-    return setupDevCookies(NextResponse.rewrite(url));
+    return setupDevCookies(request, NextResponse.rewrite(url));
   }
 
   // Subdomínio do dashboard (app.)
@@ -228,9 +242,9 @@ export function middleware(request: NextRequest) {
     if (!pathname.startsWith("/dashboard")) {
       const url = request.nextUrl.clone();
       url.pathname = `/dashboard${pathname === "/" ? "" : pathname}`;
-      return setupDevCookies(NextResponse.rewrite(url));
+      return setupDevCookies(request, NextResponse.rewrite(url));
     }
-    return setupDevCookies(NextResponse.next());
+    return setupDevCookies(request, NextResponse.next());
   }
 
   // Log para desenvolvimento
@@ -251,13 +265,13 @@ export function middleware(request: NextRequest) {
   if (isDashboardRoute(pathname)) {
     // Rota do dashboard - manter como está
     const response = NextResponse.next();
-    return setupDevCookies(response);
+    return setupDevCookies(request, response);
   }
 
   if (isAuthRoute(pathname)) {
     // Rotas de autenticação - manter como estão
     const response = NextResponse.next();
-    return setupDevCookies(response);
+    return setupDevCookies(request, response);
   }
 
   if (isWebsiteRoute(pathname) || pathname === "/") {
@@ -279,12 +293,12 @@ export function middleware(request: NextRequest) {
     // Aplicar headers específicos do website
     const responseWithHeaders = applyWebsiteHeaders(response, pathname);
 
-    return setupDevCookies(responseWithHeaders);
+    return setupDevCookies(request, responseWithHeaders);
   }
 
   // Para rotas não reconhecidas, próximo
   const response = NextResponse.next();
-  return setupDevCookies(response);
+  return setupDevCookies(request, response);
 }
 
 /**

@@ -305,16 +305,7 @@ export function VagasDashboard({
 
   return (
     <div className={cn("min-h-full space-y-6", className)}>
-      <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 className="text-xl font-semibold tracking-tight text-gray-900">
-            Vagas publicadas
-          </h2>
-          <p className="text-sm text-gray-500">
-            Gerencie e acompanhe o desempenho das vagas ativas.
-          </p>
-        </div>
-
+      <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-end">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <ButtonCustom
             asChild

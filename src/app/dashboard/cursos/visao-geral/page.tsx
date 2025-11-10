@@ -6,7 +6,11 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { UserRole } from "@/config/roles";
 import { VisaoGeralDashboard } from "@/theme/dashboard/components/admin/visao-geral/VisaoGeralDashboard";
 
-const ADMIN_ROLES = new Set<UserRole>([UserRole.ADMIN, UserRole.MODERADOR]);
+const ALLOWED_ROLES = new Set<UserRole>([
+  UserRole.ADMIN,
+  UserRole.MODERADOR,
+  UserRole.PEDAGOGICO,
+]);
 
 export default function VisaoGeralCursosPage() {
   const role = useUserRole();
@@ -25,7 +29,7 @@ export default function VisaoGeralCursosPage() {
       );
     }
 
-    if (ADMIN_ROLES.has(role)) {
+    if (ALLOWED_ROLES.has(role)) {
       return <VisaoGeralDashboard />;
     }
 

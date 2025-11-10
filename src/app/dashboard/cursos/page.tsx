@@ -9,7 +9,11 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { UserRole } from "@/config/roles";
 import { CursosDashboard } from "@/theme/dashboard/components/admin";
 
-const ADMIN_ROLES = new Set<UserRole>([UserRole.ADMIN, UserRole.MODERADOR]);
+const ALLOWED_ROLES = new Set<UserRole>([
+  UserRole.ADMIN,
+  UserRole.MODERADOR,
+  UserRole.PEDAGOGICO,
+]);
 
 export default function DashboardCursosPage() {
   const role = useUserRole();
@@ -29,7 +33,7 @@ export default function DashboardCursosPage() {
       );
     }
 
-    if (ADMIN_ROLES.has(role)) {
+    if (ALLOWED_ROLES.has(role)) {
       return (
         <div className="space-y-8">
           <CursosDashboard />

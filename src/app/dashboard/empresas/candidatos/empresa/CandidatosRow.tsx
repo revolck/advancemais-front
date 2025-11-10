@@ -136,7 +136,7 @@ export function CandidatosRow({ candidato }: CandidatosRowProps) {
               className="h-8 w-8 rounded-full text-gray-500 hover:text-white hover:bg-[var(--primary-color)]"
               aria-label="Visualizar candidato"
             >
-              <Link href={`/dashboard/candidatos/${candidato.id}`}>
+              <Link href={`/dashboard/empresas/candidatos/${candidato.id}`}>
                 <ChevronRight className="h-4 w-4" />
               </Link>
             </Button>

@@ -128,7 +128,7 @@ export function CandidatosDashboard({
     "Pesquise por nome, email, CPF ou código interno (mínimo de 3 caracteres).";
 
   const handleViewDetails = (candidato: CandidatoOverview) => {
-    router.push(`/dashboard/candidatos/${candidato.id}`);
+    router.push(`/dashboard/empresas/candidatos/${candidato.id}`);
   };
 
   const handlePageChange = (page: number) => {

@@ -163,7 +163,7 @@ export function CandidaturasTab({
                       size="sm"
                       className="flex items-center gap-2"
                     >
-                      <Link href={`/dashboard/vagas/${candidatura.vaga.id}`}>
+                      <Link href={`/dashboard/empresas/vagas/${candidatura.vaga.id}`}>
                         <Eye className="h-4 w-4" />
                         Ver Vaga
                       </Link>

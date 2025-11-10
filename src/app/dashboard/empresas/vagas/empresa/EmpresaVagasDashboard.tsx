@@ -228,7 +228,7 @@ export function EmpresaVagasDashboard() {
               "md:self-center"
             )}
           >
-            <Link href="/dashboard/vagas/cadastrar">
+            <Link href="/dashboard/empresas/vagas/cadastrar">
               {hasReachedLimit ? "Limite atingido" : "Cadastrar vaga"}
             </Link>
           </ButtonCustom>

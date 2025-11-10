@@ -18,10 +18,14 @@ export const DASHBOARD_ROUTE_RULES: readonly RouteRule[] = Object.freeze([
     pattern: "/dashboard/admin{/*path}",
     roles: [UserRole.ADMIN, UserRole.MODERADOR],
   },
-  { pattern: "/config{/*path}", roles: [UserRole.ADMIN, UserRole.MODERADOR] },
+  // Regras específicas do dashboard (devem vir antes da regra genérica)
+  {
+    pattern: "/dashboard/usuarios{/*path}",
+    roles: [UserRole.ADMIN, UserRole.MODERADOR, UserRole.PEDAGOGICO],
+  },
   {
     pattern: "/dashboard/cursos{/*path}",
-    roles: [UserRole.ADMIN, UserRole.MODERADOR],
+    roles: [UserRole.ADMIN, UserRole.MODERADOR, UserRole.PEDAGOGICO],
   },
   {
     pattern: "/dashboard/vagas{/*path}",
@@ -42,6 +46,27 @@ export const DASHBOARD_ROUTE_RULES: readonly RouteRule[] = Object.freeze([
       UserRole.RECRUTADOR,
     ],
   },
+  // Regra genérica para visão geral do dashboard (deve vir depois das específicas)
+  {
+    pattern: "/dashboard{/*path}",
+    roles: [
+      UserRole.ADMIN,
+      UserRole.MODERADOR,
+      UserRole.PEDAGOGICO,
+      UserRole.EMPRESA,
+      UserRole.SETOR_DE_VAGAS,
+      UserRole.RECRUTADOR,
+      UserRole.INSTRUTOR,
+      UserRole.ALUNO_CANDIDATO,
+      UserRole.FINANCEIRO,
+    ],
+  },
+  // Regra específica para config/cursos (deve vir antes da regra genérica /config)
+  {
+    pattern: "/config/cursos{/*path}",
+    roles: [UserRole.ADMIN, UserRole.MODERADOR, UserRole.PEDAGOGICO],
+  },
+  { pattern: "/config{/*path}", roles: [UserRole.ADMIN, UserRole.MODERADOR] },
   { pattern: "/pedagogico{/*path}", roles: [UserRole.PEDAGOGICO] },
   { pattern: "/empresa{/*path}", roles: [UserRole.EMPRESA] },
   { pattern: "/setor-de-vagas{/*path}", roles: [UserRole.SETOR_DE_VAGAS] },

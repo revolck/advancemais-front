@@ -33,9 +33,9 @@ export function MenuList({
 
   return (
     <div className="space-y-2 transition-all duration-200">
-      {processedSections.map((section) => (
+      {processedSections.map((section, index) => (
         <MenuSection
-          key={section.title}
+          key={`${section.title}-${index}`}
           section={section}
           isCollapsed={isCollapsed}
           handleNavigation={handleNavigation}

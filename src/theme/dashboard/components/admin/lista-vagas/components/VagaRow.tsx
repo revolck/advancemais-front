@@ -177,7 +177,7 @@ export function VagaRow({ vaga }: VagaRowProps) {
               className="h-8 w-8 rounded-full text-gray-500 hover:text-white hover:bg-[var(--primary-color)]"
               aria-label="Visualizar vaga"
             >
-              <Link href={`/dashboard/vagas/${vaga.id}`}>
+              <Link href={`/dashboard/empresas/vagas/${vaga.id}`}>
                 <ChevronRight className="h-4 w-4" />
               </Link>
             </Button>

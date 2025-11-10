@@ -53,7 +53,7 @@ export function HeaderInfo({
     <div className="bg-white rounded-lg border border-gray-200 p-6">
       <div className="flex items-start justify-between">
         <div className="flex items-start gap-4">
-          <Link href="/dashboard/candidatos">
+          <Link href="/dashboard/empresas/candidatos">
             <Button
               variant="ghost"
               size="icon"
