@@ -17,7 +17,7 @@ import { UserRole } from "@/config/roles";
 const filterItemsByRole = (
   items: readonly MenuItem[],
   role: UserRole
-): MenuItem[] => {
+): readonly MenuItem[] => {
   return items
     .filter((item) => {
       // Se não tem permissões definidas, não mostra (segurança)
@@ -31,16 +31,16 @@ const filterItemsByRole = (
       ...item,
       submenu: item.submenu ? filterItemsByRole(item.submenu, role) : undefined,
     }))
-    .filter((item) => !item.submenu || item.submenu.length > 0);
+    .filter((item) => !item.submenu || item.submenu.length > 0) as readonly MenuItem[];
 };
 
 const mergeMenuItems = (
-  existingItems: MenuItem[],
-  newItems: MenuItem[],
+  existingItems: readonly MenuItem[],
+  newItems: readonly MenuItem[],
   role: UserRole
-): MenuItem[] => {
+): readonly MenuItem[] => {
   // Primeiro, filtra os itens existentes para garantir que todos têm permissão
-  const filteredExisting = existingItems.filter((item) => {
+  const filteredExisting = Array.from(existingItems).filter((item) => {
     if (!item.permissions || item.permissions.length === 0) return false;
     return item.permissions.includes(role);
   });
@@ -142,7 +142,7 @@ const mergeMenuItems = (
 
   // Converte o mapa de volta para array e filtra novamente para garantir segurança
   const merged = Array.from(itemsByLabel.values());
-  return filterItemsByRole(merged, role);
+  return filterItemsByRole(merged as readonly MenuItem[], role);
 };
 
 const filterSectionsByRole = (
@@ -150,19 +150,18 @@ const filterSectionsByRole = (
   role: UserRole
 ): MenuSection[] => {
   // Filtra seções por role - verifica cada item individualmente
-  const filteredSections = sections
-    .map((section) => {
-      const filteredItems = filterItemsByRole(section.items, role);
-      // Só retorna a seção se tiver itens após o filtro
-      if (filteredItems.length === 0) {
-        return null;
-      }
-      return {
-        ...section,
+  const filteredSections: MenuSection[] = [];
+  
+  for (const section of sections) {
+    const filteredItems = filterItemsByRole(section.items, role);
+    // Só adiciona a seção se tiver itens após o filtro
+    if (filteredItems.length > 0) {
+      filteredSections.push({
+        title: section.title,
         items: filteredItems,
-      };
-    })
-    .filter((section): section is MenuSection => section !== null);
+      });
+    }
+  }
 
   // Debug: Log das seções filtradas antes da mesclagem
   if (process.env.NODE_ENV === "development" && role === UserRole.PEDAGOGICO) {
