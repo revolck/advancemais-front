@@ -24,6 +24,7 @@ const SYSTEM_CONFIG = {
     "/projects",
     "/users",
     "/settings",
+    "/perfil",
   ],
 
   // Rotas que pertencem ao website
@@ -130,12 +131,16 @@ function setupDevCookies(
       response.cookies.set("user_role", UserRole.ADMIN, {
         path: "/",
         maxAge: 60 * 60 * 24 * 7,
+        httpOnly: false,
+        sameSite: "lax",
       });
     } else {
       // Preserva o cookie existente (importante para manter o role do login)
       response.cookies.set("user_role", existingRole, {
         path: "/",
         maxAge: 60 * 60 * 24 * 7,
+        httpOnly: false,
+        sameSite: "lax",
       });
     }
   }
@@ -239,7 +244,10 @@ export function middleware(request: NextRequest) {
       return NextResponse.redirect(loginUrl);
     }
 
-    if (!pathname.startsWith("/dashboard")) {
+    // Rotas que não precisam do prefixo /dashboard
+    const routesWithoutDashboardPrefix = ["/perfil"];
+    
+    if (!pathname.startsWith("/dashboard") && !routesWithoutDashboardPrefix.includes(pathname)) {
       const url = request.nextUrl.clone();
       url.pathname = `/dashboard${pathname === "/" ? "" : pathname}`;
       return setupDevCookies(request, NextResponse.rewrite(url));

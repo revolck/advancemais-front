@@ -23,6 +23,7 @@ import type {
   RevokeUsuarioBloqueioPayload,
 } from "@/api/usuarios/types";
 import { queryKeys } from "@/lib/react-query/queryKeys";
+import { invalidateUsuarios } from "@/lib/react-query/invalidation";
 import { HeaderInfo } from "./components";
 import {
   AboutTab,
@@ -95,6 +96,8 @@ export function UsuarioDetailsView({
       updateUsuario(usuarioId, payload),
     onSuccess: (response) => {
       queryClient.setQueryData(queryKey, response);
+      // Invalida listagens para refletir mudanças
+      invalidateUsuarios(queryClient);
     },
   });
 
@@ -103,6 +106,8 @@ export function UsuarioDetailsView({
       createUsuarioBloqueio(usuarioId, payload),
     onSuccess: () => {
       void invalidateUsuario();
+      // Invalida listagens para refletir mudanças de status
+      invalidateUsuarios(queryClient);
     },
   });
 
@@ -111,6 +116,8 @@ export function UsuarioDetailsView({
       revokeUsuarioBloqueio(usuarioId, payload),
     onSuccess: () => {
       void invalidateUsuario();
+      // Invalida listagens para refletir mudanças de status
+      invalidateUsuarios(queryClient);
     },
   });
 

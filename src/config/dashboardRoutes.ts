@@ -74,6 +74,21 @@ export const DASHBOARD_ROUTE_RULES: readonly RouteRule[] = Object.freeze([
   { pattern: "/aluno{/*path}", roles: [UserRole.ALUNO_CANDIDATO] },
   { pattern: "/recrutador{/*path}", roles: [UserRole.RECRUTADOR] },
   { pattern: "/financeiro{/*path}", roles: [UserRole.FINANCEIRO] },
+  // Rota de perfil - acessível para todos os usuários autenticados
+  {
+    pattern: "/perfil{/*path}",
+    roles: [
+      UserRole.ADMIN,
+      UserRole.MODERADOR,
+      UserRole.PEDAGOGICO,
+      UserRole.EMPRESA,
+      UserRole.SETOR_DE_VAGAS,
+      UserRole.RECRUTADOR,
+      UserRole.INSTRUTOR,
+      UserRole.ALUNO_CANDIDATO,
+      UserRole.FINANCEIRO,
+    ],
+  },
 ]);
 
 const matchers = DASHBOARD_ROUTE_RULES.map((rule) => ({

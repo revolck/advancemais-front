@@ -92,8 +92,14 @@ export function CreateCursoForm({ onSuccess, onCancel }: CreateCursoFormProps) {
         subcategoriaId: formData.subcategoriaId ? Number(formData.subcategoriaId) : undefined,
         estagioObrigatorio: formData.estagioObrigatorio || false,
         statusPadrao: (formData.statusPadrao || "PUBLICADO") as StatusPadrao,
-        imagemUrl: imagemUrl || undefined,
+        // Só inclui imagemUrl se tiver valor válido
+        ...(imagemUrl && imagemUrl.trim() !== "" ? { imagemUrl: imagemUrl.trim() } : {}),
       };
+
+      // Debug em desenvolvimento
+      if (process.env.NODE_ENV === "development") {
+        console.log("[CreateCursoForm] Payload sendo enviado:", payload);
+      }
 
       await createCurso(payload);
       

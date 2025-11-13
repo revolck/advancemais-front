@@ -90,12 +90,31 @@ export function dashboardMiddleware(request: NextRequest) {
       response.cookies.set("user_role", UserRole.ADMIN, {
         path: "/",
         maxAge: 60 * 60 * 24 * 7,
+        httpOnly: false,
+        sameSite: "lax",
       });
     } else {
       // Preserva o cookie existente (importante para testar roles diferentes)
       response.cookies.set("user_role", existingRole, {
         path: "/",
         maxAge: 60 * 60 * 24 * 7,
+        httpOnly: false,
+        sameSite: "lax",
+      });
+    }
+      response.cookies.set("user_role", UserRole.ADMIN, {
+        path: "/",
+        maxAge: 60 * 60 * 24 * 7,
+        httpOnly: false,
+        sameSite: "lax",
+      });
+    } else {
+      // Preserva o cookie existente (importante para testar roles diferentes)
+      response.cookies.set("user_role", existingRole, {
+        path: "/",
+        maxAge: 60 * 60 * 24 * 7,
+        httpOnly: false,
+        sameSite: "lax",
       });
     }
 

@@ -135,7 +135,14 @@ export function CreateCursoModal({
           : undefined,
         estagioObrigatorio: formData.estagioObrigatorio || false,
         statusPadrao: (formData.statusPadrao || "PUBLICADO") as StatusPadrao,
+        // Só inclui imagemUrl se tiver valor válido
+        ...(imagemUrl && imagemUrl.trim() !== "" ? { imagemUrl: imagemUrl.trim() } : {}),
       };
+
+      // Debug em desenvolvimento
+      if (process.env.NODE_ENV === "development") {
+        console.log("[CreateCursoModal] Payload sendo enviado:", payload);
+      }
 
       await createCurso(payload);
 

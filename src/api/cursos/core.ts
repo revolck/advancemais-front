@@ -103,29 +103,42 @@ function buildCursoRequest(
 
   const form = new FormData();
   
-  if ("nome" in payload && payload.nome !== undefined) {
-    form.append("nome", String(payload.nome));
+  // Campos obrigatórios
+  if ("nome" in payload && payload.nome !== undefined && payload.nome !== null && payload.nome.trim() !== "") {
+    form.append("nome", String(payload.nome).trim());
   }
-  if ("descricao" in payload && payload.descricao !== undefined) {
-    form.append("descricao", String(payload.descricao));
+  if ("descricao" in payload && payload.descricao !== undefined && payload.descricao !== null && payload.descricao.trim() !== "") {
+    form.append("descricao", String(payload.descricao).trim());
   }
-  if ("cargaHoraria" in payload && payload.cargaHoraria !== undefined) {
+  if ("cargaHoraria" in payload && payload.cargaHoraria !== undefined && payload.cargaHoraria !== null) {
     form.append("cargaHoraria", String(payload.cargaHoraria));
   }
-  if ("categoriaId" in payload && payload.categoriaId !== undefined) {
+  if ("categoriaId" in payload && payload.categoriaId !== undefined && payload.categoriaId !== null) {
     form.append("categoriaId", String(payload.categoriaId));
   }
-  if ("subcategoriaId" in payload && payload.subcategoriaId !== undefined) {
-    form.append("subcategoriaId", String(payload.subcategoriaId));
-  }
-  if ("estagioObrigatorio" in payload && payload.estagioObrigatorio !== undefined) {
-    form.append("estagioObrigatorio", String(payload.estagioObrigatorio));
-  }
-  if ("statusPadrao" in payload && payload.statusPadrao !== undefined) {
+  if ("statusPadrao" in payload && payload.statusPadrao !== undefined && payload.statusPadrao !== null) {
     form.append("statusPadrao", String(payload.statusPadrao));
   }
-  if (payload.imagemUrl !== undefined) {
-    form.append("imagemUrl", String(payload.imagemUrl));
+  
+  // Campos opcionais - só adiciona se tiver valor válido
+  if ("subcategoriaId" in payload && payload.subcategoriaId !== undefined && payload.subcategoriaId !== null) {
+    form.append("subcategoriaId", String(payload.subcategoriaId));
+  }
+  if ("estagioObrigatorio" in payload && payload.estagioObrigatorio !== undefined && payload.estagioObrigatorio !== null) {
+    form.append("estagioObrigatorio", String(payload.estagioObrigatorio));
+  }
+  if ("imagemUrl" in payload && payload.imagemUrl !== undefined && payload.imagemUrl !== null && payload.imagemUrl.trim() !== "") {
+    form.append("imagemUrl", String(payload.imagemUrl).trim());
+  }
+
+  // Debug em desenvolvimento - mostra o que está sendo enviado
+  if (process.env.NODE_ENV === "development") {
+    const formEntries: Record<string, string> = {};
+    for (const [key, value] of form.entries()) {
+      formEntries[key] = value instanceof File ? `[File: ${value.name}]` : String(value);
+    }
+    console.log("[buildCursoRequest] FormData sendo enviado:", formEntries);
+    console.log("[buildCursoRequest] Payload original:", payload);
   }
 
   return { body: form, headers: baseHeaders };
@@ -136,15 +149,58 @@ export async function createCurso(
   init?: RequestInit
 ): Promise<Curso> {
   const { body, headers } = buildCursoRequest(payload);
-  return apiFetch<Curso>(cursosRoutes.cursos.create(), {
-    init: {
-      method: "POST",
-      body,
-      headers: { ...headers, ...normalizeHeaders(init?.headers) },
-      ...init,
-    },
-    cache: "no-cache",
-  });
+  
+  try {
+    return await apiFetch<Curso>(cursosRoutes.cursos.create(), {
+      init: {
+        method: "POST",
+        body,
+        headers: { ...headers, ...normalizeHeaders(init?.headers) },
+        ...init,
+      },
+      cache: "no-cache",
+    });
+  } catch (error: any) {
+    // Melhora a mensagem de erro para 400 (Bad Request)
+    if (error?.status === 400) {
+      const details = error?.details;
+      let errorMessage = "Dados inválidos para criação do curso";
+      
+      // Se houver detalhes de validação, tenta extrair mensagens mais específicas
+      if (details) {
+        if (typeof details === "string") {
+          errorMessage = details;
+        } else if (details.message) {
+          errorMessage = details.message;
+        } else if (details.errors && Array.isArray(details.errors)) {
+          const validationErrors = details.errors
+            .map((err: any) => err.message || err.path)
+            .filter(Boolean)
+            .join(", ");
+          if (validationErrors) {
+            errorMessage = `Erros de validação: ${validationErrors}`;
+          }
+        } else if (details.issues && typeof details.issues === "object") {
+          const issues = Object.entries(details.issues)
+            .map(([field, messages]) => `${field}: ${Array.isArray(messages) ? messages.join(", ") : messages}`)
+            .join("; ");
+          if (issues) {
+            errorMessage = `Erros de validação: ${issues}`;
+          }
+        }
+      }
+      
+      const enhancedError = new Error(errorMessage) as Error & {
+        status?: number;
+        details?: any;
+      };
+      enhancedError.status = 400;
+      enhancedError.details = details;
+      throw enhancedError;
+    }
+    
+    throw error;
+  }
 }
 
 /**

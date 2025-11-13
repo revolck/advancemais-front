@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   BookOpen,
   Users,
@@ -12,6 +12,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { getPlataformaOverview } from "@/api/dashboard";
+import type { PlataformaOverviewData } from "@/api/dashboard/types";
 import { EmptyState } from "@/components/ui/custom";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CardsStatistics } from "@/components/ui/custom/cards-statistics";
@@ -20,28 +21,67 @@ import { PlataformaChartsSection } from "./components/PlataformaChartsSection";
 import { PlataformaQuickActions } from "./components/PlataformaQuickActions";
 
 export function PlataformaOverviewDashboard() {
+  const [cachedData, setCachedData] = useState<PlataformaOverviewData | null>(
+    null
+  );
   const {
     data: response,
     isLoading,
+    isFetching,
     error,
     refetch,
   } = useQuery({
     queryKey: ["plataforma-overview"],
-    queryFn: async () => {
-      const result = await getPlataformaOverview();
-      if (!result.success || !result.data) {
-        throw new Error("Resposta inválida da API");
+    queryFn: async (): Promise<PlataformaOverviewData> => {
+      try {
+        const result = await getPlataformaOverview();
+        if (!result.success || !result.data) {
+          console.error("[PlataformaOverviewDashboard] Resposta inválida:", result);
+          throw new Error("Resposta inválida da API");
+        }
+        console.log("[PlataformaOverviewDashboard] Dados recebidos:", result.data);
+        return result.data;
+      } catch (err) {
+        console.error("[PlataformaOverviewDashboard] Erro ao buscar dados:", err);
+        throw err;
       }
-      return result.data;
     },
     staleTime: 5 * 60 * 1000, // 5 minutos
     retry: 2,
   });
 
-  const primaryMetrics = useMemo((): StatisticCard[] => {
-    if (!response?.metricasGerais) return [];
+  const isInitialLoading = isLoading && !response;
 
-    const { metricasGerais } = response;
+  useEffect(() => {
+    if (response) {
+      setCachedData(response);
+    }
+  }, [response]);
+
+  const dataToDisplay = response ?? cachedData;
+  const showSkeleton = !dataToDisplay && isInitialLoading;
+
+  if (process.env.NODE_ENV === "development") {
+    console.log(
+      "[PlataformaOverviewDashboard] Estado da query:",
+      JSON.stringify(
+        {
+          isLoading,
+          isFetching,
+          isInitialLoading,
+          hasData: Boolean(response),
+          hasCachedData: Boolean(cachedData),
+        },
+        null,
+        2
+      )
+    );
+  }
+
+  const primaryMetrics = useMemo((): StatisticCard[] => {
+    if (!dataToDisplay?.metricasGerais) return [];
+
+    const { metricasGerais } = dataToDisplay;
 
     return [
       {
@@ -73,9 +113,9 @@ export function PlataformaOverviewDashboard() {
         cardBg: "bg-emerald-50/50",
       },
     ];
-  }, [response]);
+  }, [dataToDisplay]);
 
-  if (isLoading) {
+  if (showSkeleton) {
     return (
       <div className="space-y-8 pb-8">
         {/* Primary Metrics Skeleton */}
@@ -133,7 +173,13 @@ export function PlataformaOverviewDashboard() {
     );
   }
 
-  if (!response) {
+  if (!dataToDisplay) {
+    if (process.env.NODE_ENV === "development") {
+      console.log(
+        "[PlataformaOverviewDashboard] Sem dados após carregamento."
+      );
+    }
+
     return (
       <EmptyState
         title="Nenhum dado disponível"
@@ -154,7 +200,7 @@ export function PlataformaOverviewDashboard() {
       </div>
 
       {/* Faturamento Destaque */}
-      {response.metricasGerais.faturamentoMesAtual > 0 && (
+      {dataToDisplay.metricasGerais.faturamentoMesAtual > 0 && (
         <div className="bg-gradient-to-br from-emerald-50 via-green-50/30 to-emerald-50 rounded-xl p-6 border border-emerald-200/50">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -171,19 +217,19 @@ export function PlataformaOverviewDashboard() {
                     currency: "BRL",
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2,
-                  }).format(response.metricasGerais.faturamentoMesAtual)}
+                  }).format(dataToDisplay.metricasGerais.faturamentoMesAtual)}
                 </p>
               </div>
             </div>
-            {response.metricasGerais.faturamentoMesAnterior > 0 && (
+            {dataToDisplay.metricasGerais.faturamentoMesAnterior > 0 && (
               <div className="text-right">
                 <div className="flex items-center gap-2 text-emerald-600">
                   <TrendingUp className="size-4" />
                   <span className="text-sm font-medium">
                     {(
-                      ((response.metricasGerais.faturamentoMesAtual -
-                        response.metricasGerais.faturamentoMesAnterior) /
-                        response.metricasGerais.faturamentoMesAnterior) *
+                      ((dataToDisplay.metricasGerais.faturamentoMesAtual -
+                        dataToDisplay.metricasGerais.faturamentoMesAnterior) /
+                        dataToDisplay.metricasGerais.faturamentoMesAnterior) *
                       100
                     ).toFixed(1)}
                     % vs mês anterior
@@ -196,10 +242,10 @@ export function PlataformaOverviewDashboard() {
       )}
 
       {/* Quick Actions - Links Rápidos */}
-      <PlataformaQuickActions data={response} />
+      <PlataformaQuickActions data={dataToDisplay} />
 
       {/* Charts Section - Apenas os principais */}
-      <PlataformaChartsSection data={response} />
+      <PlataformaChartsSection data={dataToDisplay} />
     </div>
   );
 }

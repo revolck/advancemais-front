@@ -24,6 +24,7 @@ export const queryKeys = {
     list: createListKey<unknown>("admin-alunos-list"),
   },
   instrutores: {
+    list: createListKey<unknown>("admin-instrutores-list"),
     detail: createDetailKey("admin-instrutor-detail"),
   },
   cursos: {

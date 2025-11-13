@@ -6,8 +6,8 @@ import { ReactNode, useState } from "react";
 const queryClientConfig: QueryClientConfig = {
   defaultOptions: {
     queries: {
-      staleTime: 5 * 60 * 1000, // keep data fresh for 5 minutes
-      gcTime: 30 * 60 * 1000, // garbage collect unused queries after 30 minutes
+      staleTime: 30 * 1000, // 30 segundos (igual ao backend)
+      gcTime: 60 * 1000, // 1 minuto (garbage collect unused queries)
       retry: 2,
       refetchOnWindowFocus: false,
       refetchOnReconnect: true,

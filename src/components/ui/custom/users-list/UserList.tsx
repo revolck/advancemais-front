@@ -6,10 +6,10 @@ import { InputCustom } from "@/components/ui/custom/input";
 import { ButtonCustom } from "@/components/ui/custom/button";
 import { Table, TableBody, TableHeader, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/radix-checkbox";
-import { Loader2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { apiFetch } from "@/api/client";
-import { usuarioRoutes } from "@/api/routes";
+import { useUsers } from "@/hooks/usuarios";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import type { StatusUsuario, Role } from "@/api/usuarios/types";
 
 type Mode = "single" | "multiple";
 
@@ -31,17 +31,6 @@ export interface BackendUser {
   codUsuario?: string | number;
 }
 
-function buildHeaders() {
-  const headers: Record<string, string> = { Accept: "application/json" };
-  if (typeof document !== "undefined") {
-    const token = document.cookie
-      .split("; ")
-      .find((row) => row.startsWith("token="))
-      ?.split("=")[1];
-    if (token) headers.Authorization = `Bearer ${token}`;
-  }
-  return headers;
-}
 
 export function UserList({
   roles,
@@ -55,48 +44,58 @@ export function UserList({
 }: UserListProps) {
   const [search, setSearch] = React.useState("");
   const [page, setPage] = React.useState(1);
-  const [loading, setLoading] = React.useState(true);
-  const [items, setItems] = React.useState<BackendUser[]>([]);
-  const [total, setTotal] = React.useState<number | null>(null);
+  const debouncedSearch = useDebouncedValue(search, 300); // Debounce de 300ms
+  
   const selectedIds = React.useMemo<string[]>(() => {
     return Array.isArray(value) ? (value as string[]) : value ? [value as string] : [];
   }, [value]);
   const [selectedUsers, setSelectedUsers] = React.useState<Record<string, BackendUser>>({});
 
-  const fetchUsers = React.useCallback(async () => {
-    setLoading(true);
-    try {
-      const sp = new URLSearchParams();
-      sp.set("page", String(page));
-      sp.set("pageSize", String(pageSize));
-      if (search.trim()) sp.set("search", search.trim());
-      if (status) sp.set("status", status);
-      if (roles && roles.length > 0) roles.forEach((r) => sp.append("role", r));
-      const url = `${usuarioRoutes.admin.usuarios.list()}?${sp.toString()}`;
-      const res = await apiFetch<any>(url, { init: { method: "GET", headers: buildHeaders() }, cache: "no-cache" });
-      const data = Array.isArray(res) ? res : res?.data || [];
-      setItems(data);
-      const totalFromRes = (Array.isArray(res) ? null : res?.pagination?.total) ?? null;
-      if (typeof totalFromRes === "number") setTotal(totalFromRes);
-      // atualiza objetos selecionados presentes nesta página
-      const map = { ...selectedUsers };
-      data.forEach((u: BackendUser) => {
-        const id = String(u.id);
-        if (selectedIds.includes(id)) map[id] = u;
-      });
-      setSelectedUsers(map);
-      onSelectionChange?.(selectedIds.map((id) => map[id]).filter(Boolean) as BackendUser[]);
-    } catch {
-      setItems([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [page, pageSize, search, status, roles, selectedIds, onSelectionChange, selectedUsers]);
+  // Usa React Query com cache otimizado
+  const { data, isLoading, isFetching } = useUsers({
+    page,
+    limit: pageSize,
+    status: status as StatusUsuario,
+    role: roles && roles.length > 0 ? (roles[0] as Role) : undefined, // Por enquanto usa o primeiro role
+    search: debouncedSearch && debouncedSearch.length >= 3 ? debouncedSearch : undefined,
+    enabled: true,
+  });
 
+  // Extrai dados da resposta
+  const items = React.useMemo<BackendUser[]>(() => {
+    if (!data?.usuarios) return [];
+    return data.usuarios.map((u) => ({
+      id: u.id,
+      nome: u.nomeCompleto,
+      email: u.email,
+      codUsuario: u.codUsuario || u.id,
+    }));
+  }, [data]);
+
+  const total = data?.pagination?.total ?? null;
+  const loading = isLoading;
+
+  // Atualiza objetos selecionados quando os dados mudam
   React.useEffect(() => {
-    const t = setTimeout(fetchUsers, 200);
-    return () => clearTimeout(t);
-  }, [fetchUsers]);
+    if (items.length === 0) return;
+    
+    const map = { ...selectedUsers };
+    let hasChanges = false;
+    
+    items.forEach((u: BackendUser) => {
+      const id = String(u.id);
+      if (selectedIds.includes(id) && map[id]?.id !== u.id) {
+        map[id] = u;
+        hasChanges = true;
+      }
+    });
+    
+    if (hasChanges) {
+      setSelectedUsers(map);
+      const selected = selectedIds.map((id) => map[id]).filter(Boolean) as BackendUser[];
+      onSelectionChange?.(selected);
+    }
+  }, [items]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const totalPages = React.useMemo(() => {
     if (!total) return null;
@@ -208,7 +207,7 @@ export function UserList({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {loading && (
+              {(loading || isFetching) && (
                 <>
                   {Array.from({ length: Math.min(pageSize, 6) }).map((_, i) => (
                     <TableRow key={`sk-${i}`} className="border-gray-100 hover:bg-transparent">
@@ -231,12 +230,12 @@ export function UserList({
                   ))}
                 </>
               )}
-              {!loading && items.length === 0 && (
+              {!loading && !isFetching && items.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={5} className="text-center text-sm text-gray-500 py-10">Nenhum usuário encontrado</TableCell>
                 </TableRow>
               )}
-              {!loading && items.map((u) => {
+              {!loading && !isFetching && items.map((u) => {
                 const id = String(u.id);
                 const checked = selectedIds.includes(id);
                 return (

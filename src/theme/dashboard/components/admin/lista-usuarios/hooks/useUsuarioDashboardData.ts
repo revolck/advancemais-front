@@ -104,8 +104,8 @@ export function useUsuarioDashboardData(
       } satisfies UsuariosDashboardData;
     },
     placeholderData: keepPreviousData,
-    staleTime: 60 * 1000,
-    gcTime: 5 * 60 * 1000,
+    staleTime: 30 * 1000, // 30 segundos (igual ao backend)
+    gcTime: 60 * 1000, // 1 minuto
   });
 
   const updateFilters = useCallback(

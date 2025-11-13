@@ -24,7 +24,7 @@ export const MENU_UPGRADE: MenuItem[] = [
 ];
 
 export const MENU_ACCOUNT: MenuItem[] = [
-  { label: "Conta", href: "/conta", icon: BadgeCheckIcon },
+  { label: "Perfil", href: "/perfil", icon: BadgeCheckIcon },
   { label: "Pagamentos", href: "/pagamentos", icon: CreditCardIcon },
   { label: "Notificações", href: "/notificacoes", icon: BellIcon },
 ];
