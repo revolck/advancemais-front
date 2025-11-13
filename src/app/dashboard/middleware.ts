@@ -84,24 +84,9 @@ export function dashboardMiddleware(request: NextRequest) {
     // Isso permite que o usuário defina manualmente o cookie para testar diferentes roles
     const existingRole = request.cookies.get("user_role")?.value;
     const validRoles = Object.values(UserRole);
-    
+
     if (!existingRole || !validRoles.includes(existingRole as UserRole)) {
       // Só define como ADMIN se não houver cookie válido
-      response.cookies.set("user_role", UserRole.ADMIN, {
-        path: "/",
-        maxAge: 60 * 60 * 24 * 7,
-        httpOnly: false,
-        sameSite: "lax",
-      });
-    } else {
-      // Preserva o cookie existente (importante para testar roles diferentes)
-      response.cookies.set("user_role", existingRole, {
-        path: "/",
-        maxAge: 60 * 60 * 24 * 7,
-        httpOnly: false,
-        sameSite: "lax",
-      });
-    }
       response.cookies.set("user_role", UserRole.ADMIN, {
         path: "/",
         maxAge: 60 * 60 * 24 * 7,
