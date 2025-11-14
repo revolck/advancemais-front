@@ -216,18 +216,18 @@ export function middleware(request: NextRequest) {
       return NextResponse.redirect(appUrl);
     }
 
-    if (pathname === "/") {
-      const url = request.nextUrl.clone();
-      url.pathname = "/login";
-      return setupDevCookies(request, NextResponse.redirect(url));
+    const url = request.nextUrl.clone();
+    if (pathname === "/" || pathname === "") {
+      url.pathname = "/auth/login";
+      return setupDevCookies(request, NextResponse.rewrite(url));
     }
-    if (pathname.startsWith("/auth/")) {
-      const url = request.nextUrl.clone();
-      url.pathname = pathname.replace(/^\/auth/, "");
-      return setupDevCookies(request, NextResponse.redirect(url));
+
+    if (!pathname.startsWith("/auth/")) {
+      url.pathname = `/auth${pathname}`;
+      return setupDevCookies(request, NextResponse.rewrite(url));
     }
-    const url = new URL(`/auth${pathname}`, request.url);
-    return setupDevCookies(request, NextResponse.rewrite(url));
+
+    return setupDevCookies(request, NextResponse.next());
   }
 
   // Subdomínio do dashboard (app.)
@@ -246,8 +246,11 @@ export function middleware(request: NextRequest) {
 
     // Rotas que não precisam do prefixo /dashboard
     const routesWithoutDashboardPrefix = ["/perfil"];
-    
-    if (!pathname.startsWith("/dashboard") && !routesWithoutDashboardPrefix.includes(pathname)) {
+
+    if (
+      !pathname.startsWith("/dashboard") &&
+      !routesWithoutDashboardPrefix.includes(pathname)
+    ) {
       const url = request.nextUrl.clone();
       url.pathname = `/dashboard${pathname === "/" ? "" : pathname}`;
       return setupDevCookies(request, NextResponse.rewrite(url));
