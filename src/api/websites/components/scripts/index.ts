@@ -29,16 +29,20 @@ function buildQuery(params?: ScriptListParams): string {
 
 export async function listWebsiteScripts(
   params?: ScriptListParams,
-  init?: RequestInit,
+  init?: RequestInit
 ): Promise<ScriptResponse[]> {
   const query = buildQuery(params);
   return apiFetch<ScriptResponse[]>(`${websiteRoutes.scripts.list()}${query}`, {
     init: init ?? { headers: apiConfig.headers },
     cache: "no-cache",
+    retries: 1,
+    timeout: process.env.NODE_ENV === "production" ? 4000 : 7000,
   });
 }
 
-export async function getWebsiteScriptById(id: string): Promise<ScriptResponse> {
+export async function getWebsiteScriptById(
+  id: string
+): Promise<ScriptResponse> {
   return apiFetch<ScriptResponse>(websiteRoutes.scripts.get(id), {
     init: { headers: apiConfig.headers },
     cache: "no-cache",
@@ -46,7 +50,7 @@ export async function getWebsiteScriptById(id: string): Promise<ScriptResponse> 
 }
 
 export async function createWebsiteScript(
-  payload: CreateScriptPayload,
+  payload: CreateScriptPayload
 ): Promise<ScriptResponse> {
   return apiFetch<ScriptResponse>(websiteRoutes.scripts.create(), {
     init: {
@@ -64,7 +68,7 @@ export async function createWebsiteScript(
 
 export async function updateWebsiteScript(
   id: string,
-  payload: UpdateScriptPayload,
+  payload: UpdateScriptPayload
 ): Promise<ScriptResponse> {
   return apiFetch<ScriptResponse>(websiteRoutes.scripts.update(id), {
     init: {
