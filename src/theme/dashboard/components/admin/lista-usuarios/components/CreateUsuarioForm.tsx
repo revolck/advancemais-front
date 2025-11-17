@@ -10,7 +10,7 @@ import { createUsuario, type CreateUsuarioPayload, type Role, type TipoUsuario, 
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { Eye, EyeOff } from "lucide-react";
-import { queryKeys } from "@/lib/react-query/queryKeys";
+import { invalidateUsuarios } from "@/lib/react-query/invalidation";
 // Função simples para decodificar JWT sem biblioteca externa
 const decodeJWT = (token: string): any => {
   try {
@@ -225,7 +225,7 @@ export function CreateUsuarioForm({ onSuccess, onCancel }: CreateUsuarioFormProp
           title: "Sucesso!",
           description: "Usuário cadastrado com sucesso",
         });
-        queryClient.invalidateQueries({ queryKey: queryKeys.usuarios.list._def });
+        invalidateUsuarios(queryClient);
         onSuccess?.();
       }
     } catch (error: any) {
