@@ -221,8 +221,7 @@ export function CreateUsuarioForm({ onSuccess, onCancel }: CreateUsuarioFormProp
       const response = await createUsuario(payload);
 
       if (response.success) {
-        toastCustom({
-          type: "success",
+        toastCustom.success({
           title: "Sucesso!",
           description: "Usuário cadastrado com sucesso",
         });
@@ -234,14 +233,12 @@ export function CreateUsuarioForm({ onSuccess, onCancel }: CreateUsuarioFormProp
       
       // Tratamento de erros específicos
       if (error.code === "FORBIDDEN_ROLE") {
-        toastCustom({
-          type: "error",
+        toastCustom.error({
           title: "Permissão Negada",
           description: error.message || "Você não tem permissão para criar usuários com esta role",
         });
       } else if (error.code === "USER_ALREADY_EXISTS") {
-        toastCustom({
-          type: "error",
+        toastCustom.error({
           title: "Usuário Já Existe",
           description: "Email, CPF ou CNPJ já cadastrado no sistema",
         });
@@ -254,14 +251,12 @@ export function CreateUsuarioForm({ onSuccess, onCancel }: CreateUsuarioFormProp
           }
         });
         setErrors(fieldErrors);
-        toastCustom({
-          type: "error",
+        toastCustom.error({
           title: "Erro de Validação",
           description: "Verifique os campos do formulário",
         });
       } else {
-        toastCustom({
-          type: "error",
+        toastCustom.error({
           title: "Erro ao cadastrar",
           description: error.message || "Não foi possível cadastrar o usuário",
         });

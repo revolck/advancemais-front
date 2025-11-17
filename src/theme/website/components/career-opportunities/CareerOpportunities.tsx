@@ -200,19 +200,19 @@ const CareerOpportunities: React.FC<CareerOpportunitiesProps> = ({
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <Card className="border-2 border-red-100 bg-white rounded-2xl">
             <CardContent className="py-16 text-center space-y-4">
-              <ImageNotFound
-                size="lg"
-                variant="error"
-                message="Erro ao carregar vagas"
-                icon="AlertCircle"
+          <ImageNotFound
+            size="lg"
+            variant="error"
+            message="Erro ao carregar vagas"
+            icon="AlertCircle"
                 className="mx-auto mb-4"
-              />
+          />
               <h2 className="!mb-0">Não foi possível carregar as vagas</h2>
               <p className="text-gray-600 max-w-md mx-auto">
-                Não foi possível carregar as vagas disponíveis.
-                {error.includes("padrão") ? " Exibindo dados de exemplo." : ""}
-              </p>
-              {!error.includes("padrão") && (
+            Não foi possível carregar as vagas disponíveis.
+            {error.includes("padrão") ? " Exibindo dados de exemplo." : ""}
+          </p>
+          {!error.includes("padrão") && (
                 <ButtonCustom
                   onClick={refetch}
                   variant="default"
@@ -220,8 +220,8 @@ const CareerOpportunities: React.FC<CareerOpportunitiesProps> = ({
                   className="bg-[#1f8454] hover:bg-[#17623d]"
                 >
                   Tentar novamente
-                </ButtonCustom>
-              )}
+            </ButtonCustom>
+          )}
             </CardContent>
           </Card>
         </div>
@@ -268,10 +268,10 @@ const CareerOpportunities: React.FC<CareerOpportunitiesProps> = ({
               <div className="space-y-4">
                 {isLoading
                   ? Array.from({ length: 3 }).map((_, index) => (
-                      <div
+                        <div
                         key={`card-skeleton-${index}`}
                         className="bg-white border border-gray-200 rounded-2xl p-6 space-y-4 animate-pulse"
-                      >
+                        >
                         <div className="flex items-center gap-3">
                           <div className="h-12 w-12 rounded-2xl bg-gray-100" />
                           <div className="space-y-2">
@@ -283,19 +283,19 @@ const CareerOpportunities: React.FC<CareerOpportunitiesProps> = ({
                           <div className="h-4 w-full bg-gray-100 rounded" />
                           <div className="h-4 w-5/6 bg-gray-100 rounded" />
                           <div className="h-4 w-2/3 bg-gray-100 rounded" />
-                        </div>
+                    </div>
                         <div className="h-10 bg-gray-50 rounded-lg" />
-                      </div>
+                  </div>
                     ))
                   : filteredData.map((job, index) => (
-                      <JobCard
-                        key={job.id}
-                        job={job}
-                        index={index}
-                        onApply={handleApply}
-                        onViewDetails={handleViewDetails}
-                      />
-                    ))}
+                <JobCard
+                  key={job.id}
+                  job={job}
+                  index={index}
+                  onApply={handleApply}
+                  onViewDetails={handleViewDetails}
+                />
+              ))}
               </div>
 
               {filteredData.length === 0 && (
@@ -309,11 +309,11 @@ const CareerOpportunities: React.FC<CareerOpportunitiesProps> = ({
                       description="Ajuste os filtros ou limpe todos para visualizar mais oportunidades disponíveis."
                       actions={
                         <ButtonCustom
-                          variant="outline"
-                          onClick={clearAllFilters}
+                    variant="outline"
+                    onClick={clearAllFilters}
                           icon="RotateCcw"
-                        >
-                          Limpar filtros
+                  >
+                    Limpar filtros
                         </ButtonCustom>
                       }
                     />
@@ -351,16 +351,16 @@ const CareerOpportunities: React.FC<CareerOpportunitiesProps> = ({
                   )}
                 </div>
               )}
-            </div>
           </div>
         </div>
+      </div>
 
-        {error && data.length > 0 && (
+      {error && data.length > 0 && (
           <div className="text-center text-sm text-yellow-700 bg-yellow-50 border-t border-yellow-100 py-3 mt-8">
             Alguns dados podem estar indisponíveis no momento. Exibindo conteúdo
             em cache.
-          </div>
-        )}
+        </div>
+      )}
       </section>
     </div>
   );

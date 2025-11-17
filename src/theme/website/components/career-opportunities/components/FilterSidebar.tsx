@@ -66,17 +66,17 @@ export function FilterSidebar({
                   : "cursor-pointer"
               )}
             >
-              <Checkbox
-                id={`${key}-${item.nome}`}
-                checked={isActive}
+                <Checkbox
+                  id={`${key}-${item.nome}`}
+                  checked={isActive}
                 disabled={isOptionDisabled}
                 onCheckedChange={() => {
                   if (isOptionDisabled) return;
                   onToggleFilter(key, item.nome);
                 }}
-              />
-              <span className="text-sm font-medium text-gray-700">
-                {item.nome}
+                />
+                <span className="text-sm font-medium text-gray-700">
+                  {item.nome}
               </span>
             </label>
           );
