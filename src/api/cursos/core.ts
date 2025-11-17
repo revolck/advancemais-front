@@ -101,47 +101,70 @@ function buildCursoRequest(
     ...getAuthHeader(),
   };
 
-  const form = new FormData();
+  // Como não há arquivo (apenas imagemUrl como string), envia como JSON
+  const jsonPayload: Record<string, unknown> = {};
   
-  // Campos obrigatórios
-  if ("nome" in payload && payload.nome !== undefined && payload.nome !== null && payload.nome.trim() !== "") {
-    form.append("nome", String(payload.nome).trim());
+  // Campos obrigatórios - sempre envia (API valida)
+  if ("nome" in payload) {
+    jsonPayload.nome = payload.nome !== undefined && payload.nome !== null 
+      ? String(payload.nome).trim() 
+      : "";
   }
-  if ("descricao" in payload && payload.descricao !== undefined && payload.descricao !== null && payload.descricao.trim() !== "") {
-    form.append("descricao", String(payload.descricao).trim());
+  if ("descricao" in payload) {
+    jsonPayload.descricao = payload.descricao !== undefined && payload.descricao !== null 
+      ? String(payload.descricao).trim() 
+      : "";
   }
-  if ("cargaHoraria" in payload && payload.cargaHoraria !== undefined && payload.cargaHoraria !== null) {
-    form.append("cargaHoraria", String(payload.cargaHoraria));
+  if ("cargaHoraria" in payload) {
+    // Garante que cargaHoraria seja um número válido
+    if (payload.cargaHoraria !== undefined && payload.cargaHoraria !== null) {
+      const cargaHoraria = typeof payload.cargaHoraria === "number" 
+        ? payload.cargaHoraria 
+        : Number(payload.cargaHoraria);
+      // Sempre envia, mesmo que inválido (API valida)
+      jsonPayload.cargaHoraria = Number.isFinite(cargaHoraria) ? cargaHoraria : 0;
+    } else {
+      jsonPayload.cargaHoraria = 0;
+    }
   }
-  if ("categoriaId" in payload && payload.categoriaId !== undefined && payload.categoriaId !== null) {
-    form.append("categoriaId", String(payload.categoriaId));
+  if ("categoriaId" in payload) {
+    if (payload.categoriaId !== undefined && payload.categoriaId !== null) {
+      const categoriaId = typeof payload.categoriaId === "number" 
+        ? payload.categoriaId 
+        : Number(payload.categoriaId);
+      jsonPayload.categoriaId = categoriaId;
+    }
   }
-  if ("statusPadrao" in payload && payload.statusPadrao !== undefined && payload.statusPadrao !== null) {
-    form.append("statusPadrao", String(payload.statusPadrao));
+  if ("statusPadrao" in payload) {
+    jsonPayload.statusPadrao = payload.statusPadrao !== undefined && payload.statusPadrao !== null 
+      ? payload.statusPadrao 
+      : "PUBLICADO";
   }
   
   // Campos opcionais - só adiciona se tiver valor válido
   if ("subcategoriaId" in payload && payload.subcategoriaId !== undefined && payload.subcategoriaId !== null) {
-    form.append("subcategoriaId", String(payload.subcategoriaId));
+    const subcategoriaId = typeof payload.subcategoriaId === "number" 
+      ? payload.subcategoriaId 
+      : Number(payload.subcategoriaId);
+    jsonPayload.subcategoriaId = subcategoriaId;
   }
-  if ("estagioObrigatorio" in payload && payload.estagioObrigatorio !== undefined && payload.estagioObrigatorio !== null) {
-    form.append("estagioObrigatorio", String(payload.estagioObrigatorio));
+  if ("estagioObrigatorio" in payload && payload.estagioObrigatorio !== undefined) {
+    jsonPayload.estagioObrigatorio = payload.estagioObrigatorio;
   }
   if ("imagemUrl" in payload && payload.imagemUrl !== undefined && payload.imagemUrl !== null && payload.imagemUrl.trim() !== "") {
-    form.append("imagemUrl", String(payload.imagemUrl).trim());
+    jsonPayload.imagemUrl = payload.imagemUrl.trim();
   }
 
-  // Debug em desenvolvimento - mostra o que está sendo enviado
+  // Debug em desenvolvimento
   if (process.env.NODE_ENV === "development") {
-    const formEntries: Record<string, string> = {};
-    for (const [key, value] of form.entries()) {
-      formEntries[key] = value instanceof File ? `[File: ${value.name}]` : String(value);
-    }
-    console.log("[buildCursoRequest] FormData sendo enviado:", formEntries);
+    console.log("[buildCursoRequest] JSON sendo enviado:", jsonPayload);
     console.log("[buildCursoRequest] Payload original:", payload);
   }
 
-  return { body: form, headers: baseHeaders };
+  return {
+    body: JSON.stringify(jsonPayload),
+    headers: { "Content-Type": "application/json", ...baseHeaders },
+  };
 }
 
 export async function createCurso(
