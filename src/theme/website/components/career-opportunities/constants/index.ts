@@ -155,10 +155,12 @@ export const CAREER_CONFIG = {
   },
   sorting: {
     options: [
-      { value: "recent", label: "Mais Recente" },
-      { value: "relevance", label: "Relevância" },
-      { value: "alphabetical", label: "A-Z" },
-      { value: "salary", label: "Salário" },
+      { value: "recent", label: "Mais recente" },
+      { value: "relevance", label: "Mais relevante" },
+      { value: "salary_high", label: "Maior salário" },
+      { value: "salary_low", label: "Menor salário" },
+      { value: "name_az", label: "Nome (A-Z)" },
+      { value: "name_za", label: "Nome (Z-A)" },
     ],
   },
 } as const;

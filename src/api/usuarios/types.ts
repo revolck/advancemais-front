@@ -672,6 +672,53 @@ export interface UpdateUsuarioPayload {
   confirmarSenha?: string;
 }
 
+export interface CreateUsuarioPayload {
+  nomeCompleto: string;
+  email: string;
+  senha: string;
+  confirmarSenha: string;
+  telefone: string;
+  tipoUsuario: TipoUsuario;
+  role: Role;
+  cpf?: string;
+  cnpj?: string;
+  dataNascimento?: string;
+  genero?: string;
+  aceitarTermos?: boolean;
+  status?: StatusUsuario;
+  // Redes sociais
+  instagram?: string;
+  linkedin?: string;
+  facebook?: string;
+  youtube?: string;
+  twitter?: string;
+  tiktok?: string;
+}
+
+export interface CreateUsuarioResponse extends UsuarioResponseBase {
+  success: boolean;
+  message: string;
+  usuario: {
+    id: string;
+    email: string;
+    nomeCompleto: string;
+    tipoUsuario: TipoUsuario;
+    role: Role;
+    status: StatusUsuario;
+    criadoEm: string;
+    codUsuario: string;
+    emailVerificado: boolean;
+    emailVerificadoEm: string;
+    socialLinks?: UsuarioSocialLinks;
+  };
+  meta?: {
+    correlationId: string;
+    createdBy: string;
+    UsuariosVerificacaoEmailBypassed?: boolean;
+  };
+  correlationId: string;
+}
+
 // ============================================================================
 // USUARIOS GERAIS - BLOQUEIOS
 // ============================================================================

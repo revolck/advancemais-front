@@ -350,6 +350,14 @@ export const breadcrumbConfig: Record<string, BreadcrumbConfig> = {
       { label: "Usuários", icon: "Users" },
     ],
   },
+  "/dashboard/usuarios/cadastrar": {
+    title: "Cadastrar Usuário",
+    items: [
+      { label: "Dashboard", href: "/", icon: "Home" },
+      { label: "Usuários", href: "/dashboard/usuarios", icon: "Users" },
+      { label: "Cadastrar", icon: "Plus" },
+    ],
+  },
 };
 
 // Hook centralizado que consome a configuração acima

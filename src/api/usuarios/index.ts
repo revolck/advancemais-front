@@ -845,6 +845,34 @@ export async function updateUsuario(
 }
 
 /**
+ * POST /api/v1/usuarios/usuarios
+ * Cria um novo usuário no sistema (admin)
+ *
+ * @param payload - Dados do novo usuário
+ * @param token - Token JWT (opcional)
+ * @returns Dados do usuário criado
+ */
+export async function createUsuario(
+  payload: import("./types").CreateUsuarioPayload,
+  token?: string
+): Promise<import("./types").CreateUsuarioResponse> {
+  return apiFetch<import("./types").CreateUsuarioResponse>(
+    usuarioRoutes.admin.usuarios.create(),
+    {
+      init: {
+        method: "POST",
+        headers: {
+          ...buildAuthHeaders(token),
+          ...JSON_HEADERS,
+        },
+        body: JSON.stringify(payload),
+      },
+      cache: "no-cache",
+    }
+  );
+}
+
+/**
  * POST /api/v1/usuarios/usuarios/:userId/bloqueios
  * Aplica um bloqueio em um usuário
  *
@@ -1038,6 +1066,7 @@ export const usuarioApi = {
   // Admin - Usuarios Gerais
   listUsuarios,
   getUsuarioById,
+  createUsuario,
   updateUsuario,
   createUsuarioBloqueio,
   revokeUsuarioBloqueio,

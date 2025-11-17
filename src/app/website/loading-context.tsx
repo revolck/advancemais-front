@@ -1,8 +1,12 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
+import type { ReactNode } from "react";
 import { Loader } from "@/components/ui/custom/loader";
 import { apiKeepAlive } from "@/lib/api-keep-alive";
+
+const INTRO_STORAGE_KEY = "website_intro_seen";
+let introSeenInSession = false;
 
 interface SimpleLoadingContextValue {
   isReady: boolean;
@@ -20,12 +24,13 @@ const SimpleLoadingContext = createContext<SimpleLoadingContextValue>({
   setError: () => {},
 });
 
-export function LoadingProvider({ children }: { children: React.ReactNode }) {
+export function LoadingProvider({ children }: { children: ReactNode }) {
   const [isClient, setIsClient] = useState(false);
   const [loadingCount, setLoadingCount] = useState(0);
   const [minTimeElapsed, setMinTimeElapsed] = useState(false);
   const [isReady, setIsReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showIntroOverlay, setShowIntroOverlay] = useState(false);
 
   // Detecta se é cliente e inicia keep-alive
   useEffect(() => {
@@ -34,14 +39,32 @@ export function LoadingProvider({ children }: { children: React.ReactNode }) {
     // Inicia keep-alive da API
     apiKeepAlive.start();
 
-    // Garante um tempo mínimo de loading
-    const timer = setTimeout(() => {
-      console.log("✅ Loading mínimo de 3s cumprido");
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const hasSeenIntro =
+      introSeenInSession ||
+      (typeof window !== "undefined" &&
+        window.localStorage.getItem(INTRO_STORAGE_KEY) === "true");
+
+    if (hasSeenIntro) {
       setMinTimeElapsed(true);
-    }, 3000);
+      setShowIntroOverlay(false);
+      introSeenInSession = true;
+    } else {
+      setShowIntroOverlay(true);
+
+      timer = setTimeout(() => {
+        console.log("✅ Loading mínimo de 3s cumprido (primeiro acesso)");
+        setMinTimeElapsed(true);
+        setShowIntroOverlay(false);
+        introSeenInSession = true;
+        if (typeof window !== "undefined") {
+          window.localStorage.setItem(INTRO_STORAGE_KEY, "true");
+        }
+      }, 3000);
+    }
 
     return () => {
-      clearTimeout(timer);
+      if (timer) clearTimeout(timer);
       apiKeepAlive.stop();
     };
   }, []);
@@ -83,7 +106,7 @@ export function LoadingProvider({ children }: { children: React.ReactNode }) {
   return (
     <SimpleLoadingContext.Provider value={contextValue}>
       {/* Loading Screen */}
-      {!contextValue.isReady && !error && (
+      {showIntroOverlay && !error && (
         <Loader showOverlay={true} fullScreen={true} />
       )}
 

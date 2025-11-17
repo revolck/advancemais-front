@@ -335,16 +335,19 @@ export interface VagaPublicaItem {
   codigo: string;
   slug: string;
   titulo: string;
+  descricao?: string | null;
   status: string;
   modalidade: string;
   regimeDeTrabalho: string;
   senioridade: string;
+  inseridaEm?: string;
   inscricoesAte?: string | null;
   cidade?: string | null;
   estado?: string | null;
   empresa?: {
     nome?: string;
     logoUrl?: string | null;
+    avatarUrl?: string | null;
     modoAnonimo?: boolean;
   } | null;
 }

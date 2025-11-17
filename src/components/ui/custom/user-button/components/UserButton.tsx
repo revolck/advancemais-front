@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -39,6 +40,7 @@ const UserButtonSkeleton = () => (
 );
 
 export function UserButton({ className, onNavigate }: UserButtonProps) {
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -90,22 +92,6 @@ export function UserButton({ className, onNavigate }: UserButtonProps) {
 
   const menuItems = [
     { key: "profile", icon: "User" as const, label: "Perfil" },
-    { key: "community", icon: "Users" as const, label: "Comunidade" },
-    {
-      key: "billing",
-      icon: "Cog" as const,
-      label: "Assinatura",
-      badge:
-        user?.plan === "pro"
-          ? "PRO"
-          : user?.plan === "enterprise"
-          ? "ENT"
-          : null,
-      iconBg: "bg-emerald-100 group-hover:bg-emerald-200",
-      iconColor: "text-emerald-600 group-hover:text-emerald-700",
-    },
-    { key: "settings", icon: "Sliders" as const, label: "Configurações" },
-    { key: "help", icon: "HelpCircle" as const, label: "Ajuda" },
   ];
 
   const handleLogout = async () => {
@@ -125,9 +111,19 @@ export function UserButton({ className, onNavigate }: UserButtonProps) {
     }
   };
 
-  const displayName = user
-    ? `${user.firstName}${user.lastName ? ` ${user.lastName}` : ""}`
-    : "";
+  const handleMenuClick = (key: string) => {
+    setIsOpen(false);
+    if (onNavigate) {
+      onNavigate(key);
+    } else {
+      // Navegação padrão baseada na chave
+      if (key === "profile") {
+        router.push("/dashboard/perfil");
+      }
+    }
+  };
+
+  const displayName = user?.firstName ?? "";
 
   if (isLoading) {
     return (
@@ -144,21 +140,42 @@ export function UserButton({ className, onNavigate }: UserButtonProps) {
 
   if (!user) return null;
 
+  const handleOpenChange = (open: boolean) => {
+    setIsOpen(open);
+    // Previne scroll para o topo quando o dropdown abrir
+    if (open) {
+      const currentScroll = window.scrollY;
+      // Usa requestAnimationFrame para garantir que o scroll não seja alterado
+      requestAnimationFrame(() => {
+        if (window.scrollY !== currentScroll) {
+          window.scrollTo(0, currentScroll);
+        }
+      });
+    }
+  };
+
   return (
-    <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
+    <DropdownMenu open={isOpen} onOpenChange={handleOpenChange} modal={false}>
       <DropdownMenuTrigger asChild>
         <Button
+          type="button"
           variant="ghost"
           className={cn(
-            "group relative h-10 px-3 rounded-xl hover:bg-white/10 active:scale-95",
-            "transition-all duration-200",
-            "focus-visible:outline-none focus-visible:ring-0",
+            "group relative h-10 pl-2 pr-3 rounded-full active:scale-95",
+            "transition-all duration-200 text-left text-white",
+            "hover:bg-white/10 focus-visible:outline-none focus-visible:ring-0",
             className
           )}
         >
-          <div className="flex items-center justify-center gap-2">
-            <div className="relative">
-              <AvatarCustom name={displayName} size="sm" showStatus={false} />
+          <div className="flex items-center gap-2">
+            <AvatarCustom name={displayName} size="sm" showStatus={false} />
+            <div className="hidden md:flex flex-col leading-tight max-w-[160px] text-left">
+              <span className="text-sm font-semibold truncate text-[var(--secondary-color)]">
+                Bem-vindo(a), {displayName}
+              </span>
+              <span className="text-[11px] text-white/70 truncate">
+                {user.email}
+              </span>
             </div>
             <div
               className={cn(
@@ -173,101 +190,48 @@ export function UserButton({ className, onNavigate }: UserButtonProps) {
         </Button>
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent align="end" className="w-80 p-0" sideOffset={8}>
-        <div className="p-4 border-b border-gray-100">
-          <div className="flex items-center gap-3">
-            <div className="relative">
-              <AvatarCustom
-                name={displayName}
-                size="md"
-                showStatus={false}
-                className="ring-2 ring-pink-500"
-              />
-            </div>
-            <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-gray-900 text-base truncate">
-                {displayName}
-              </h3>
-              <div className="flex items-center gap-1 mt-0.5">
-                <Icon name="Mail" size={12} className="text-gray-400" />
-                <p className="text-sm text-gray-500 truncate">{user.email}</p>
-              </div>
-            </div>
-            {user.plan !== "free" && (
-              <div className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-2.5 py-1 rounded-full text-xs font-semibold">
-                {user.plan === "pro" ? "PRO" : "ENT"}
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="py-1.5">
+      <DropdownMenuContent
+        align="end"
+        sideOffset={8}
+        className="w-[230px] rounded-2xl border border-black/5 bg-white p-1 shadow-xl"
+      >
+        <div className="py-1">
           {menuItems.map((item) => (
             <DropdownMenuItem
               key={item.key}
-              className="px-3 py-2.5 cursor-pointer focus:bg-gray-50 hover:bg-gray-50 group"
-              onClick={() => onNavigate?.(item.key)}
+              className="px-3 py-2 cursor-pointer flex items-center gap-3 rounded-none hover:bg-gray-50 focus:bg-gray-50"
+              onClick={() => handleMenuClick(item.key)}
             >
-              <div className="flex items-center gap-2.5 w-full">
-                <div
-                  className={cn(
-                    "w-8 h-8 rounded-lg flex items-center justify-center transition-colors duration-150 shrink-0",
-                    item.iconBg || "bg-gray-100 group-hover:bg-gray-200"
-                  )}
-                >
-                  <Icon
-                    name={item.icon}
-                    size={16}
-                    className={cn(
-                      item.iconColor ||
-                        "text-gray-600 group-hover:text-gray-700"
-                    )}
-                  />
-                </div>
-                <p className="font-medium text-gray-900 text-sm flex-1">
-                  {item.label}
-                </p>
-                {item.badge && (
-                  <span className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-2 py-0.5 rounded-full text-xs font-semibold">
-                    {item.badge}
-                  </span>
-                )}
+              <div className="w-8 h-8 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center">
+                <Icon name={item.icon} size={16} />
               </div>
+              <span className="text-sm text-gray-900 font-medium">
+                {item.label}
+              </span>
             </DropdownMenuItem>
           ))}
         </div>
 
-        <DropdownMenuSeparator />
+        <DropdownMenuSeparator className="my-0" />
 
-        <div className="p-2">
-          <DropdownMenuItem
-            className="px-3 py-2.5 cursor-pointer text-red-600 focus:text-red-700 hover:bg-red-50 focus:bg-red-50 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
-            onClick={handleLogout}
-            disabled={isLoggingOut}
-          >
-            <div className="flex items-center gap-2.5 w-full">
-              <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center transition-colors duration-150 shrink-0">
-                {isLoggingOut ? (
-                  <Icon
-                    name="Loader2"
-                    size={16}
-                    className="text-red-600 animate-spin"
-                  />
-                ) : (
-                  <Icon name="LogOut" size={16} className="text-red-600" />
-                )}
-              </div>
-              <div className="flex-1 text-left">
-                <p className="font-medium text-red-600 text-sm">
-                  {isLoggingOut ? "Saindo..." : "Sair"}
-                </p>
-                <p className="text-xs text-red-400 mt-0.5">
-                  {isLoggingOut ? "Aguarde..." : "Sair da sua conta"}
-                </p>
-              </div>
+        <DropdownMenuItem
+          className="px-3 py-2 cursor-pointer text-red-600 focus:text-red-700 hover:bg-red-50 focus:bg-red-50"
+          onClick={handleLogout}
+          disabled={isLoggingOut}
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full bg-red-100 text-red-600 flex items-center justify-center">
+              {isLoggingOut ? (
+                <Icon name="Loader2" size={16} className="animate-spin" />
+              ) : (
+                <Icon name="LogOut" size={16} />
+              )}
             </div>
-          </DropdownMenuItem>
-        </div>
+            <span className="text-sm font-medium">
+              {isLoggingOut ? "Saindo..." : "Sair"}
+            </span>
+          </div>
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

@@ -7,7 +7,6 @@ import { listWebsiteScripts } from "@/api/websites/components/scripts";
 import { ScriptInjector } from "@/components/scripts/script-injector";
 import { loadPublishedScripts } from "@/lib/scripts/load-published-scripts";
 
-import { LoadingProvider } from "./loading-context";
 import LayoutClient from "./layout-client";
 
 export const metadata: Metadata = {
@@ -73,9 +72,9 @@ export default async function WebsiteLayout({
   const scripts = await fetchWebsiteScripts();
 
   return (
-    <LoadingProvider>
+    <>
       <ScriptInjector scripts={scripts} />
       <LayoutClient>{children}</LayoutClient>
-    </LoadingProvider>
+    </>
   );
 }

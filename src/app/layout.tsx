@@ -22,7 +22,7 @@ export const metadata: Metadata = {
   authors: [{ name: "Advance+" }],
   robots: "index, follow",
   metadataBase: new URL(
-    process.env.NEXT_PUBLIC_BASE_URL || "https://advancemais.com.br"
+    process.env.NEXT_PUBLIC_BASE_URL || "https://advancemais.com"
   ),
 };
 

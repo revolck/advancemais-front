@@ -1,10 +1,11 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { UsuarioTable } from "./components";
 import { useUsuarioDashboardData } from "./hooks";
 import { cn } from "@/lib/utils";
-import { AlertCircle, ChevronUp, ChevronDown } from "lucide-react";
+import { AlertCircle, ChevronUp, ChevronDown, Plus } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ButtonCustom, FilterBar, EmptyState } from "@/components/ui/custom";
 import {
@@ -35,6 +36,7 @@ export function UsuariosDashboard({
   className,
   filters: initialFilters,
 }: UsuarioDashboardProps) {
+  const router = useRouter();
   const { data, isLoading, isFetching, error, filters, updateFilters, loadPage } =
     useUsuarioDashboardData(initialFilters);
 
@@ -219,15 +221,26 @@ export function UsuariosDashboard({
               helperPlacement: "tooltip",
             }}
             rightActions={
-              <ButtonCustom
-                variant="primary"
-                size="lg"
-                onClick={() => handleSearchSubmit()}
-                disabled={isLoading || !isSearchInputValid}
-                className="md:w-full xl:w-auto"
-              >
-                Pesquisar
-              </ButtonCustom>
+              <div className="flex gap-2 flex-col md:flex-row md:w-full xl:w-auto">
+                <ButtonCustom
+                  variant="primary"
+                  size="lg"
+                  onClick={() => handleSearchSubmit()}
+                  disabled={isLoading || !isSearchInputValid}
+                  className="md:w-full xl:w-auto"
+                >
+                  Pesquisar
+                </ButtonCustom>
+                <ButtonCustom
+                  variant="primary"
+                  size="lg"
+                  onClick={() => router.push("/dashboard/usuarios/cadastrar")}
+                  className="md:w-full xl:w-auto"
+                >
+                  <Plus className="size-4 mr-2" />
+                  Adicionar usuário
+                </ButtonCustom>
+              </div>
             }
           />
         </div>

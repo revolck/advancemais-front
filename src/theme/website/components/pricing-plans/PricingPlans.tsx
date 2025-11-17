@@ -5,8 +5,6 @@
 import React, { useEffect } from "react";
 import { ButtonCustom } from "@/components/ui/custom/button";
 import { ImageNotFound } from "@/components/ui/custom/image-not-found";
-import { Loader } from "@/components/ui/custom/loader";
-import { env } from "@/lib/env";
 import { cn } from "@/lib/utils";
 import { PricingPlanCard } from "./components/PricingPlanCard";
 import { PRICING_CONFIG } from "./constants";
@@ -76,14 +74,6 @@ const PricingPlans: React.FC<PricingPlansProps> = ({
 
   // Estado de carregamento
   if (isLoading) {
-    if (env.apiFallback === "loading") {
-      return (
-        <div className={cn("py-24 flex justify-center", className)}>
-          <Loader />
-        </div>
-      );
-    }
-
     return (
       <div className={cn("container w-full mx-auto py-24", className)}>
         <div className="text-center animate-fade-in mb-12">

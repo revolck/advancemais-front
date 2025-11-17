@@ -59,7 +59,8 @@ export const env: AppConfig = {
   // Base da API. Quando vazio, usa o mesmo domínio do front com rewrites.
   apiBaseUrl: getEnvVar(
     process.env.NEXT_PUBLIC_API_BASE_URL,
-    "NEXT_PUBLIC_API_BASE_URL"
+    "NEXT_PUBLIC_API_BASE_URL",
+    NODE_ENV === "development" ? "http://localhost:3000" : ""
   ),
   apiVersion: getEnvVar(
     process.env.NEXT_PUBLIC_API_VERSION,
@@ -69,7 +70,7 @@ export const env: AppConfig = {
   baseUrl: getEnvVar(
     process.env.NEXT_PUBLIC_BASE_URL,
     "NEXT_PUBLIC_BASE_URL",
-    "https://advancemais.com.br"
+    "https://advancemais.com"
   ),
   apiFallback: getEnvVar(
     process.env.NEXT_PUBLIC_API_FALLBACK,

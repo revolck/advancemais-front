@@ -4,7 +4,8 @@
  * Interface para dados de vaga vindos da API
  */
 export interface JobData {
-  id: number;
+  id: string;
+  slug?: string;
   titulo: string;
   empresa: string;
   empresaLogo?: string;
@@ -16,6 +17,7 @@ export interface JobData {
   nivel: string;
   descricao: string;
   dataPublicacao: string;
+  inscricoesAte?: string;
   pcd: boolean;
   destaque: boolean;
   salario?: {
@@ -119,8 +121,8 @@ export interface CareerOpportunitiesProps {
 export interface JobCardProps {
   job: JobData;
   index: number;
-  onApply?: (jobId: number) => void;
-  onViewDetails?: (jobId: number) => void;
+  onApply?: (jobId: string) => void;
+  onViewDetails?: (job: JobData) => void;
 }
 
 export interface JobFiltersProps {
