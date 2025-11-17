@@ -9,7 +9,6 @@ import type {
   VagaPublicaItem 
 } from "@/api/candidatos/types";
 import type { JobData, JobFilters } from "../types";
-import { DEFAULT_JOBS_DATA } from "../constants";
 
 /**
  * Converte VagaPublicaItem da API para JobData do frontend
@@ -41,7 +40,7 @@ function mapVagaToJobData(
     beneficios: undefined,
     requisitos: undefined,
     vagasDisponiveis: undefined,
-    urlCandidatura: vaga.urlPublicaCandidatura || undefined,
+    urlCandidatura: undefined, // URL de candidatura não disponível na listagem
     isActive: vaga.status === "PUBLICADO",
     inscricoesAte: vaga.inscricoesAte || undefined,
   };
@@ -94,7 +93,7 @@ export function usePublicVagas(
 
   const fetchVagas = async () => {
     if (!enabled) {
-      setData(DEFAULT_JOBS_DATA);
+      setData([]);
       setIsLoading(false);
       return;
     }
@@ -119,8 +118,8 @@ export function usePublicVagas(
       setTotalPages(response.pagination.totalPages);
     } catch (err) {
       console.error("Erro ao buscar vagas públicas:", err);
-      setError("Erro ao carregar vagas. Exibindo dados de exemplo.");
-      setData(DEFAULT_JOBS_DATA);
+      setError("Erro ao carregar vagas.");
+      setData([]);
     } finally {
       setIsLoading(false);
     }

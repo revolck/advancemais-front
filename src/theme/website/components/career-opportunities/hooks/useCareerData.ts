@@ -4,23 +4,16 @@
 
 import { useState, useEffect, useMemo, useCallback } from "react";
 import type { JobData, JobFilters, CareerApiResponse } from "../types";
-import {
-  DEFAULT_JOBS_DATA,
-  DEFAULT_CATEGORIES,
-  DEFAULT_MODALITIES,
-  DEFAULT_CONTRACT_TYPES,
-  DEFAULT_LEVELS,
-  CAREER_CONFIG,
-} from "../constants";
+import { CAREER_CONFIG } from "../constants";
 
 interface UseCareerDataReturn {
   data: JobData[];
   filteredData: JobData[];
   filterCounts: {
-    categorias: typeof DEFAULT_CATEGORIES;
-    modalidades: typeof DEFAULT_MODALITIES;
-    tiposContrato: typeof DEFAULT_CONTRACT_TYPES;
-    niveis: typeof DEFAULT_LEVELS;
+    categorias: Array<{ nome: string; count: number }>;
+    modalidades: Array<{ nome: string; count: number; icon: string }>;
+    tiposContrato: Array<{ nome: string; count: number; icon: string }>;
+    niveis: Array<{ nome: string; count: number }>;
   };
   isLoading: boolean;
   error: string | null;
@@ -36,15 +29,15 @@ export function useCareerData(
   staticData?: JobData[],
   filters?: JobFilters
 ): UseCareerDataReturn {
-  const [data, setData] = useState<JobData[]>(staticData || DEFAULT_JOBS_DATA);
+  const [data, setData] = useState<JobData[]>(staticData || []);
   const [isLoading, setIsLoading] = useState(fetchFromApi);
   const [error, setError] = useState<string | null>(null);
 
   const filterCounts = {
-    categorias: DEFAULT_CATEGORIES,
-    modalidades: DEFAULT_MODALITIES,
-    tiposContrato: DEFAULT_CONTRACT_TYPES,
-    niveis: DEFAULT_LEVELS,
+    categorias: [],
+    modalidades: [],
+    tiposContrato: [],
+    niveis: [],
   };
 
   // Aplicar filtros aos dados
@@ -98,7 +91,7 @@ export function useCareerData(
 
   const fetchData = useCallback(async () => {
     if (!fetchFromApi) {
-      setData(staticData || DEFAULT_JOBS_DATA);
+      setData(staticData || []);
       setIsLoading(false);
       return;
     }
@@ -141,16 +134,15 @@ export function useCareerData(
 
       if (err instanceof Error) {
         if (err.name === "AbortError") {
-          setError("Tempo limite excedido. Usando dados padrão.");
+          setError("Tempo limite excedido.");
         } else {
-          setError(`Erro na API: ${err.message}. Usando dados padrão.`);
+          setError(`Erro na API: ${err.message}`);
         }
       } else {
-        setError("Erro desconhecido. Usando dados padrão.");
+        setError("Erro desconhecido.");
       }
 
-      // Fallback para dados padrão
-      setData(DEFAULT_JOBS_DATA);
+      setData([]);
     } finally {
       setIsLoading(false);
     }
