@@ -67,7 +67,8 @@ export function CreateCursoForm({ onSuccess, onCancel }: CreateCursoFormProps) {
     if (!formData.categoriaId) newErrors.categoriaId = "Selecione a categoria";
     if (!formData.subcategoriaId) newErrors.subcategoriaId = "Selecione a subcategoria";
     if (!formData.statusPadrao) newErrors.statusPadrao = "Selecione o status";
-    if (!imagemUrl) {
+    // Valida se há arquivo selecionado OU imagemUrl existente
+    if (!imagemFiles[0]?.file && !imagemUrl) {
       newErrors.imagemUrl = "Imagem do curso é obrigatória";
     }
     setErrors(newErrors);
@@ -83,7 +84,31 @@ export function CreateCursoForm({ onSuccess, onCancel }: CreateCursoFormProps) {
     e.preventDefault();
     if (!validateForm()) return;
     setIsLoading(true);
+    
+    let finalImageUrl = imagemUrl;
+    
     try {
+      // Faz upload da imagem se houver arquivo novo
+      const fileItem = imagemFiles[0];
+      if (fileItem?.file) {
+        try {
+          const uploadResult = await uploadImage(
+            fileItem.file,
+            "cursos",
+            imagemUrl || undefined
+          );
+          finalImageUrl = uploadResult.url;
+          setImagemUrl(finalImageUrl);
+        } catch (uploadError) {
+          toastCustom.error({
+            title: "Erro no upload",
+            description: "Não foi possível fazer upload da imagem. Tente novamente.",
+          });
+          setIsLoading(false);
+          return;
+        }
+      }
+
       const payload: CreateCursoPayload = {
         nome: formData.nome.trim(),
         descricao: formData.descricao.trim(),
@@ -92,13 +117,14 @@ export function CreateCursoForm({ onSuccess, onCancel }: CreateCursoFormProps) {
         subcategoriaId: formData.subcategoriaId ? Number(formData.subcategoriaId) : undefined,
         estagioObrigatorio: formData.estagioObrigatorio || false,
         statusPadrao: (formData.statusPadrao || "PUBLICADO") as StatusPadrao,
-        // Só inclui imagemUrl se tiver valor válido
-        ...(imagemUrl && imagemUrl.trim() !== "" ? { imagemUrl: imagemUrl.trim() } : {}),
+        // Sempre inclui imagemUrl se tiver valor válido
+        ...(finalImageUrl && finalImageUrl.trim() !== "" ? { imagemUrl: finalImageUrl.trim() } : {}),
       };
 
       // Debug em desenvolvimento
       if (process.env.NODE_ENV === "development") {
         console.log("[CreateCursoForm] Payload sendo enviado:", payload);
+        console.log("[CreateCursoForm] imagemUrl:", finalImageUrl);
       }
 
       await createCurso(payload);
@@ -154,7 +180,7 @@ export function CreateCursoForm({ onSuccess, onCancel }: CreateCursoFormProps) {
                   multiple={false}
                   showPreview
                   showProgress={false}
-                  autoUpload
+                  autoUpload={false}
                   onFilesChange={(files) => {
                     setImagemFiles(files);
                     if (errors.imagemUrl) {
@@ -169,18 +195,6 @@ export function CreateCursoForm({ onSuccess, onCancel }: CreateCursoFormProps) {
                     } 
                     setImagemUrl(null);
                     setImagemFiles([]);
-                  }}
-                  onUpload={async (file) => { 
-                    try { 
-                      const { url } = await uploadImage(file, "cursos", imagemUrl || undefined); 
-                      setImagemUrl(url);
-                      if (errors.imagemUrl) {
-                        setErrors((prev) => ({ ...prev, imagemUrl: undefined }));
-                      }
-                      return { url }; 
-                    } catch (e: any) { 
-                      return { error: e?.message || "Falha no upload" }; 
-                    } 
                   }}
                 />
                 {errors.imagemUrl && (

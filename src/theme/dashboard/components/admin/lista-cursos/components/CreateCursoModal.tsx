@@ -101,7 +101,8 @@ export function CreateCursoModal({
   };
 
   const validateImage = (): boolean => {
-    if (!imagemUrl) {
+    // Valida se há arquivo selecionado OU imagemUrl existente
+    if (!imagemFiles[0]?.file && !imagemUrl) {
       toastCustom.error({
         title: "Imagem obrigatória",
         description: "Por favor, adicione uma imagem para o curso.",
@@ -124,7 +125,31 @@ export function CreateCursoModal({
     if (!validateImage()) return;
 
     setIsLoading(true);
+    
+    let finalImageUrl = imagemUrl;
+    
     try {
+      // Faz upload da imagem se houver arquivo novo
+      const fileItem = imagemFiles[0];
+      if (fileItem?.file) {
+        try {
+          const uploadResult = await uploadImage(
+            fileItem.file,
+            "cursos",
+            imagemUrl || undefined
+          );
+          finalImageUrl = uploadResult.url;
+          setImagemUrl(finalImageUrl);
+        } catch (uploadError) {
+          toastCustom.error({
+            title: "Erro no upload",
+            description: "Não foi possível fazer upload da imagem. Tente novamente.",
+          });
+          setIsLoading(false);
+          return;
+        }
+      }
+
       const payload: CreateCursoPayload = {
         nome: formData.nome.trim(),
         descricao: formData.descricao.trim(),
@@ -135,13 +160,14 @@ export function CreateCursoModal({
           : undefined,
         estagioObrigatorio: formData.estagioObrigatorio || false,
         statusPadrao: (formData.statusPadrao || "PUBLICADO") as StatusPadrao,
-        // Só inclui imagemUrl se tiver valor válido
-        ...(imagemUrl && imagemUrl.trim() !== "" ? { imagemUrl: imagemUrl.trim() } : {}),
+        // Sempre inclui imagemUrl se tiver valor válido
+        ...(finalImageUrl && finalImageUrl.trim() !== "" ? { imagemUrl: finalImageUrl.trim() } : {}),
       };
 
       // Debug em desenvolvimento
       if (process.env.NODE_ENV === "development") {
         console.log("[CreateCursoModal] Payload sendo enviado:", payload);
+        console.log("[CreateCursoModal] imagemUrl:", finalImageUrl);
       }
 
       await createCurso(payload);
@@ -258,7 +284,7 @@ export function CreateCursoModal({
                     multiple={false}
                     showPreview
                     showProgress={false}
-                    autoUpload
+                    autoUpload={false}
                     onFilesChange={(files) => setImagemFiles(files)}
                     onFileRemove={async () => {
                       if (imagemUrl) {
@@ -267,19 +293,7 @@ export function CreateCursoModal({
                         } catch {}
                       }
                       setImagemUrl(null);
-                    }}
-                    onUpload={async (file) => {
-                      try {
-                        const { url } = await uploadImage(
-                          file,
-                          "cursos",
-                          imagemUrl || undefined
-                        );
-                        setImagemUrl(url);
-                        return { url };
-                      } catch (e: any) {
-                        return { error: e?.message || "Falha no upload" };
-                      }
+                      setImagemFiles([]);
                     }}
                   />
                 </div>
