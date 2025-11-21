@@ -37,6 +37,7 @@ const CareerOpportunities: React.FC<CareerOpportunitiesProps> = ({
 
   const [sortOrder, setSortOrder] = useState("recent");
   const [regionQuery, setRegionQuery] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
 
   // Hook condicional baseado em fetchFromApi
   const apiResult = fetchFromApi
@@ -58,6 +59,12 @@ const CareerOpportunities: React.FC<CareerOpportunitiesProps> = ({
   const currentPage = apiResult?.currentPage || 1;
   const totalPages = apiResult?.totalPages || 1;
   const setPage = apiResult?.setPage || (() => {});
+
+  // Controla quando mostrar skeleton durante busca manual
+  const showSkeleton = isLoading || isSearching;
+  
+  // Só mostra dados quando não está carregando e não está buscando
+  const shouldShowData = !isLoading && !isSearching && filteredData.length > 0;
 
   // Contadores de filtros (derivados dos dados carregados)
   const filterCounts = useMemo(() => {
@@ -229,6 +236,20 @@ const CareerOpportunities: React.FC<CareerOpportunitiesProps> = ({
     );
   }
 
+  const handleSearch = () => {
+    setIsSearching(true);
+    if (apiResult?.refetch) {
+      apiResult.refetch();
+    }
+  };
+
+  // Desativa isSearching quando a busca terminar
+  useEffect(() => {
+    if (!isLoading && isSearching) {
+      setIsSearching(false);
+    }
+  }, [isLoading, isSearching]);
+
   return (
     <div className={cn("bg-[#0a1f88]/5", className)}>
       <HeaderVagas
@@ -237,12 +258,14 @@ const CareerOpportunities: React.FC<CareerOpportunitiesProps> = ({
         regiao={regionQuery}
         onRegiaoChange={setRegionQuery}
         hasActiveFilters={hasActiveFilters}
+        onSearch={handleSearch}
+        isLoading={isLoading}
       />
 
       <section className="bg-[#f4f6f8] pb-16 pt-10">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 mt-4 space-y-8">
           <VagasListHeader
-            totalCount={totalCount}
+            totalCount={showSkeleton ? 0 : totalCount}
             sortOrder={sortOrder}
             onSortChange={setSortOrder}
             sortOptions={CAREER_CONFIG.sorting.options}
@@ -261,33 +284,42 @@ const CareerOpportunities: React.FC<CareerOpportunitiesProps> = ({
               hasActiveFilters={hasActiveFilters}
               activeFilterCount={activeFilterCount}
               onClearFilters={clearAllFilters}
-              isDisabled={isLoading}
+              isDisabled={showSkeleton}
             />
 
             <div className="space-y-6 flex-1">
               <div className="space-y-4">
-                {isLoading
+                {showSkeleton
                   ? Array.from({ length: 3 }).map((_, index) => (
                         <div
                         key={`card-skeleton-${index}`}
-                        className="bg-white border border-gray-200 rounded-2xl p-6 space-y-4 animate-pulse"
+                        className="bg-white border border-gray-200 rounded-2xl p-6 space-y-4 shadow-sm animate-pulse"
                         >
                         <div className="flex items-center gap-3">
-                          <div className="h-12 w-12 rounded-2xl bg-gray-100" />
-                          <div className="space-y-2">
-                            <div className="h-4 w-28 bg-gray-100 rounded" />
-                            <div className="h-6 w-48 bg-gray-100 rounded" />
+                          <div className="h-12 w-12 rounded-2xl bg-gray-200" />
+                          <div className="space-y-2 flex-1">
+                            <div className="h-4 w-28 bg-gray-200 rounded" />
+                            <div className="h-6 w-48 bg-gray-200 rounded" />
                           </div>
                         </div>
                         <div className="space-y-2">
-                          <div className="h-4 w-full bg-gray-100 rounded" />
-                          <div className="h-4 w-5/6 bg-gray-100 rounded" />
-                          <div className="h-4 w-2/3 bg-gray-100 rounded" />
+                          <div className="h-4 w-full bg-gray-200 rounded" />
+                          <div className="h-4 w-5/6 bg-gray-200 rounded" />
+                          <div className="h-4 w-2/3 bg-gray-200 rounded" />
                     </div>
-                        <div className="h-10 bg-gray-50 rounded-lg" />
+                        <div className="flex items-center gap-4 pt-2">
+                          <div className="h-4 w-20 bg-gray-200 rounded" />
+                          <div className="h-4 w-24 bg-gray-200 rounded" />
+                          <div className="h-4 w-16 bg-gray-200 rounded" />
+                  </div>
+                        <div className="flex gap-2 pt-2">
+                          <div className="h-10 flex-1 bg-gray-100 rounded-full" />
+                          <div className="h-10 flex-1 bg-gray-100 rounded-full" />
+                    </div>
                   </div>
                     ))
-                  : filteredData.map((job, index) => (
+                  : shouldShowData
+                  ? filteredData.map((job, index) => (
                 <JobCard
                   key={job.id}
                   job={job}
@@ -295,10 +327,11 @@ const CareerOpportunities: React.FC<CareerOpportunitiesProps> = ({
                   onApply={handleApply}
                   onViewDetails={handleViewDetails}
                 />
-              ))}
+              ))
+                  : null}
               </div>
 
-              {filteredData.length === 0 && (
+              {!showSkeleton && filteredData.length === 0 && (
                 <div className="bg-white border border-gray-200 rounded-2xl">
                   <div className="py-14 px-6">
                     <EmptyState
@@ -321,7 +354,7 @@ const CareerOpportunities: React.FC<CareerOpportunitiesProps> = ({
                 </div>
               )}
 
-              {filteredData.length > 0 && (
+              {shouldShowData && filteredData.length > 0 && (
                 <div className="pt-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div className="text-sm text-gray-500">
                     Mostrando {filteredData.length} de {totalCount} vagas
@@ -347,9 +380,9 @@ const CareerOpportunities: React.FC<CareerOpportunitiesProps> = ({
                       >
                         Próxima
                       </button>
-                    </div>
-                  )}
                 </div>
+              )}
+            </div>
               )}
           </div>
         </div>

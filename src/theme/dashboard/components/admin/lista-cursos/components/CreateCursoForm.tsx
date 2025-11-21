@@ -14,7 +14,10 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { BookOpen } from "lucide-react";
-import { FileUpload, type FileUploadItem } from "@/components/ui/custom/file-upload";
+import {
+  FileUpload,
+  type FileUploadItem,
+} from "@/components/ui/custom/file-upload";
 import { uploadImage, deleteImage } from "@/services/upload";
 import { queryKeys } from "@/lib/react-query/queryKeys";
 
@@ -49,23 +52,30 @@ export function CreateCursoForm({ onSuccess, onCancel }: CreateCursoFormProps) {
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [isLoading, setIsLoading] = useState(false);
-  const [errors, setErrors] = useState<Partial<Record<keyof FormData | "imagemUrl", string>>>({});
+  const [errors, setErrors] = useState<
+    Partial<Record<keyof FormData | "imagemUrl", string>>
+  >({});
   const [imagemFiles, setImagemFiles] = useState<FileUploadItem[]>([]);
   const [imagemUrl, setImagemUrl] = useState<string | null>(null);
 
-  const { categoriaOptions, isLoading: isLoadingCategorias } = useCursoCategorias();
-  const { subcategoriaOptions, isLoading: isLoadingSubcategorias } = useCursoSubcategorias(
-    formData.categoriaId ? Number(formData.categoriaId) : null,
-  );
+  const { categoriaOptions, isLoading: isLoadingCategorias } =
+    useCursoCategorias();
+  const { subcategoriaOptions, isLoading: isLoadingSubcategorias } =
+    useCursoSubcategorias(
+      formData.categoriaId ? Number(formData.categoriaId) : null
+    );
 
   const validateForm = (): boolean => {
     const newErrors: Partial<Record<keyof FormData | "imagemUrl", string>> = {};
     if (!formData.nome.trim()) newErrors.nome = "Nome é obrigatório";
-    if (!formData.descricao.trim()) newErrors.descricao = "Descrição é obrigatória";
+    if (formData.nome.trim().length > 200)
+      newErrors.nome = "Nome deve ter no máximo 200 caracteres";
+    if (!formData.descricao.trim())
+      newErrors.descricao = "Descrição é obrigatória";
     const carga = Number(formData.cargaHoraria);
-    if (!Number.isFinite(carga) || carga <= 0) newErrors.cargaHoraria = "Informe um número positivo";
+    if (!Number.isFinite(carga) || carga <= 0)
+      newErrors.cargaHoraria = "Informe um número positivo";
     if (!formData.categoriaId) newErrors.categoriaId = "Selecione a categoria";
-    if (!formData.subcategoriaId) newErrors.subcategoriaId = "Selecione a subcategoria";
     if (!formData.statusPadrao) newErrors.statusPadrao = "Selecione o status";
     // Valida se há arquivo selecionado OU imagemUrl existente
     if (!imagemFiles[0]?.file && !imagemUrl) {
@@ -84,9 +94,9 @@ export function CreateCursoForm({ onSuccess, onCancel }: CreateCursoFormProps) {
     e.preventDefault();
     if (!validateForm()) return;
     setIsLoading(true);
-    
+
     let finalImageUrl = imagemUrl;
-    
+
     try {
       // Faz upload da imagem se houver arquivo novo
       const fileItem = imagemFiles[0];
@@ -102,7 +112,8 @@ export function CreateCursoForm({ onSuccess, onCancel }: CreateCursoFormProps) {
         } catch (uploadError) {
           toastCustom.error({
             title: "Erro no upload",
-            description: "Não foi possível fazer upload da imagem. Tente novamente.",
+            description:
+              "Não foi possível fazer upload da imagem. Tente novamente.",
           });
           setIsLoading(false);
           return;
@@ -114,11 +125,15 @@ export function CreateCursoForm({ onSuccess, onCancel }: CreateCursoFormProps) {
         descricao: formData.descricao.trim(),
         cargaHoraria: Number(formData.cargaHoraria),
         categoriaId: Number(formData.categoriaId),
-        subcategoriaId: formData.subcategoriaId ? Number(formData.subcategoriaId) : undefined,
+        subcategoriaId: formData.subcategoriaId
+          ? Number(formData.subcategoriaId)
+          : undefined,
         estagioObrigatorio: formData.estagioObrigatorio || false,
         statusPadrao: (formData.statusPadrao || "PUBLICADO") as StatusPadrao,
         // Sempre inclui imagemUrl se tiver valor válido
-        ...(finalImageUrl && finalImageUrl.trim() !== "" ? { imagemUrl: finalImageUrl.trim() } : {}),
+        ...(finalImageUrl && finalImageUrl.trim() !== ""
+          ? { imagemUrl: finalImageUrl.trim() }
+          : {}),
       };
 
       // Debug em desenvolvimento
@@ -128,7 +143,7 @@ export function CreateCursoForm({ onSuccess, onCancel }: CreateCursoFormProps) {
       }
 
       await createCurso(payload);
-      
+
       // Invalida todas as queries de listagem de cursos para atualizar a lista
       await queryClient.invalidateQueries({
         predicate: (query) => {
@@ -136,15 +151,21 @@ export function CreateCursoForm({ onSuccess, onCancel }: CreateCursoFormProps) {
           return Array.isArray(key) && key[0] === "admin-cursos-list";
         },
       });
-      
-      toastCustom.success({ title: "Curso cadastrado com sucesso!", description: `O curso "${payload.nome}" foi criado.` });
+
+      toastCustom.success({
+        title: "Curso cadastrado com sucesso!",
+        description: `O curso "${payload.nome}" foi criado.`,
+      });
       setFormData(initialFormData);
       setImagemUrl(null);
       setImagemFiles([]);
       onSuccess?.();
     } catch (error: any) {
       const message = error?.message || "Não foi possível criar o curso.";
-      toastCustom.error({ title: "Erro ao cadastrar curso", description: message });
+      toastCustom.error({
+        title: "Erro ao cadastrar curso",
+        description: message,
+      });
     } finally {
       setIsLoading(false);
     }
@@ -160,11 +181,35 @@ export function CreateCursoForm({ onSuccess, onCancel }: CreateCursoFormProps) {
                 <div className="p-2 rounded-lg border bg-blue-50 text-blue-600 border-blue-200">
                   <BookOpen className="h-4 w-4" />
                 </div>
-                <span className="text-md font-medium text-foreground">Configurações do Curso</span>
+                <span className="text-md font-medium text-foreground">
+                  Configurações do Curso
+                </span>
               </div>
               <div className="flex items-center gap-3">
-                <Label htmlFor="statusPadrao" className={cn("text-xs font-medium px-2 py-1 rounded-full transition-colors", formData.statusPadrao === "PUBLICADO" ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700")}>{formData.statusPadrao === "PUBLICADO" ? "Publicado" : "Rascunho"}</Label>
-                <Switch id="statusPadrao" checked={formData.statusPadrao === "PUBLICADO"} onCheckedChange={(checked) => handleInputChange("statusPadrao", (checked ? "PUBLICADO" : "RASCUNHO") as StatusPadrao)} disabled={isLoading} />
+                <Label
+                  htmlFor="statusPadrao"
+                  className={cn(
+                    "text-xs font-medium px-2 py-1 rounded-full transition-colors",
+                    formData.statusPadrao === "PUBLICADO"
+                      ? "bg-emerald-100 text-emerald-700"
+                      : "bg-red-100 text-red-700"
+                  )}
+                >
+                  {formData.statusPadrao === "PUBLICADO"
+                    ? "Publicado"
+                    : "Rascunho"}
+                </Label>
+                <Switch
+                  id="statusPadrao"
+                  checked={formData.statusPadrao === "PUBLICADO"}
+                  onCheckedChange={(checked) =>
+                    handleInputChange(
+                      "statusPadrao",
+                      (checked ? "PUBLICADO" : "RASCUNHO") as StatusPadrao
+                    )
+                  }
+                  disabled={isLoading}
+                />
               </div>
             </div>
 
@@ -175,7 +220,11 @@ export function CreateCursoForm({ onSuccess, onCancel }: CreateCursoFormProps) {
                 </Label>
                 <FileUpload
                   files={imagemFiles}
-                  validation={{ maxSize: 5 * 1024 * 1024, accept: [".jpg", ".png", ".webp"], maxFiles: 1 }}
+                  validation={{
+                    maxSize: 5 * 1024 * 1024,
+                    accept: [".jpg", ".png", ".webp"],
+                    maxFiles: 1,
+                  }}
                   maxFiles={1}
                   multiple={false}
                   showPreview
@@ -187,34 +236,129 @@ export function CreateCursoForm({ onSuccess, onCancel }: CreateCursoFormProps) {
                       setErrors((prev) => ({ ...prev, imagemUrl: undefined }));
                     }
                   }}
-                  onFileRemove={async () => { 
-                    if (imagemUrl) { 
-                      try { 
-                        await deleteImage(imagemUrl); 
-                      } catch {} 
-                    } 
+                  onFileRemove={async () => {
+                    if (imagemUrl) {
+                      try {
+                        await deleteImage(imagemUrl);
+                      } catch {}
+                    }
                     setImagemUrl(null);
                     setImagemFiles([]);
                   }}
                 />
                 {errors.imagemUrl && (
-                  <p className="text-sm text-destructive mt-1">{errors.imagemUrl}</p>
+                  <p className="text-sm text-destructive mt-1">
+                    {errors.imagemUrl}
+                  </p>
                 )}
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="md:col-span-2">
-                  <InputCustom label="Nome do Curso" name="nome" value={formData.nome} onChange={(e) => handleInputChange("nome", e.target.value)} error={errors.nome} required placeholder="Ex.: Excel Avançado" />
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="md:col-span-2 lg:col-span-4">
+                  <InputCustom
+                    label="Nome do Curso"
+                    name="nome"
+                    value={formData.nome}
+                    onChange={(e) => handleInputChange("nome", e.target.value)}
+                    error={errors.nome}
+                    required
+                    placeholder="Ex.: Excel Avançado"
+                    maxLength={200}
+                  />
                 </div>
 
-                <SelectCustom label="Categoria" placeholder={isLoadingCategorias ? "Carregando..." : "Selecionar"} options={categoriaOptions} value={formData.categoriaId} onChange={(val) => handleInputChange("categoriaId", val)} error={errors.categoriaId} required />
-                <SelectCustom label="Subcategoria" placeholder={formData.categoriaId ? (isLoadingSubcategorias ? "Carregando..." : "Selecionar") : "Selecione uma categoria"} options={subcategoriaOptions} value={formData.subcategoriaId} onChange={(val) => handleInputChange("subcategoriaId", val)} disabled={!formData.categoriaId || isLoadingSubcategorias} error={errors.subcategoriaId} required />
+                <div className="md:col-span-2 lg:col-span-4">
+                  <div className="flex flex-col md:flex-row gap-4 w-full">
+                    <div className="flex-[0.35] min-w-0">
+                      <SelectCustom
+                        label="Categoria"
+                        placeholder={
+                          isLoadingCategorias ? "Carregando..." : "Selecionar"
+                        }
+                        options={categoriaOptions}
+                        value={formData.categoriaId}
+                        onChange={(val) =>
+                          handleInputChange("categoriaId", val)
+                        }
+                        error={errors.categoriaId}
+                        required
+                      />
+                    </div>
+                    <div className="flex-[0.35] min-w-0">
+                      <SelectCustom
+                        label="Subcategoria"
+                        placeholder={
+                          !formData.categoriaId
+                            ? "Selecione uma categoria"
+                            : isLoadingSubcategorias
+                            ? "Carregando..."
+                            : subcategoriaOptions.length === 0
+                            ? "Nenhuma subcategoria encontrada"
+                            : "Selecionar"
+                        }
+                        options={subcategoriaOptions}
+                        value={formData.subcategoriaId}
+                        onChange={(val) =>
+                          handleInputChange("subcategoriaId", val)
+                        }
+                        disabled={
+                          !formData.categoriaId ||
+                          isLoadingSubcategorias ||
+                          subcategoriaOptions.length === 0
+                        }
+                        error={errors.subcategoriaId}
+                      />
+                    </div>
+                    <div className="flex-[0.15] min-w-0">
+                      <InputCustom
+                        label="Carga horária"
+                        name="cargaHoraria"
+                        value={formData.cargaHoraria}
+                        onChange={(e) =>
+                          handleInputChange("cargaHoraria", e.target.value)
+                        }
+                        error={errors.cargaHoraria}
+                        required
+                        placeholder="40"
+                        type="number"
+                      />
+                    </div>
+                    <div className="flex-[0.15] min-w-0">
+                      <SelectCustom
+                        label="Estágio"
+                        options={[
+                          { value: "true", label: "Estágio obrigatório" },
+                          { value: "false", label: "Estágio não obrigatório" },
+                        ]}
+                        value={String(formData.estagioObrigatorio)}
+                        required
+                        onChange={(val) =>
+                          handleInputChange(
+                            "estagioObrigatorio",
+                            val === "true"
+                          )
+                        }
+                      />
+                    </div>
+                  </div>
+                </div>
 
-                <InputCustom label="Carga horária (horas)" name="cargaHoraria" value={formData.cargaHoraria} onChange={(e) => handleInputChange("cargaHoraria", e.target.value)} error={errors.cargaHoraria} required placeholder="40" type="number" />
-                <SelectCustom label="Estágio" options={[{ value: "true", label: "Estágio obrigatório" }, { value: "false", label: "Estágio não obrigatório" }]} value={String(formData.estagioObrigatorio)} required onChange={(val) => handleInputChange("estagioObrigatorio", val === "true")} />
-
-                <div className="md:col-span-2">
-                  <SimpleTextarea label="Descrição" placeholder="Descreva o conteúdo e objetivos do curso" value={formData.descricao} onChange={(e) => handleInputChange("descricao", (e.target as HTMLTextAreaElement).value)} maxLength={800} showCharCount error={errors.descricao} required />
+                <div className="md:col-span-2 lg:col-span-4">
+                  <SimpleTextarea
+                    label="Descrição"
+                    placeholder="Descreva o conteúdo e objetivos do curso"
+                    value={formData.descricao}
+                    onChange={(e) =>
+                      handleInputChange(
+                        "descricao",
+                        (e.target as HTMLTextAreaElement).value
+                      )
+                    }
+                    maxLength={800}
+                    showCharCount
+                    error={errors.descricao}
+                    required
+                  />
                 </div>
               </div>
             </div>
@@ -228,7 +372,14 @@ export function CreateCursoForm({ onSuccess, onCancel }: CreateCursoFormProps) {
               >
                 Cancelar
               </ButtonCustom>
-              <ButtonCustom type="submit" size="md" variant="primary" isLoading={isLoading}>{isLoading ? "Cadastrando..." : "Cadastrar"}</ButtonCustom>
+              <ButtonCustom
+                type="submit"
+                size="md"
+                variant="primary"
+                isLoading={isLoading}
+              >
+                {isLoading ? "Cadastrando..." : "Cadastrar"}
+              </ButtonCustom>
             </div>
           </fieldset>
         </form>

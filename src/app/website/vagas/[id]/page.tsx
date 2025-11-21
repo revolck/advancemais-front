@@ -137,9 +137,9 @@ async function fetchVagaByIdOrSlug(
     try {
       console.log("[vaga-detalhe][fetch] GET", url);
       const res = await fetch(url, {
-        cache: "no-store",
-        next: { revalidate: 0 },
-      });
+      cache: "no-store",
+      next: { revalidate: 0 },
+    });
       if (!res.ok) {
         console.log("[vaga-detalhe][fetch] FAIL", res.status, url);
         return null;
@@ -334,12 +334,12 @@ export default async function JobDetailsPage({
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-5">
         <header className="space-y-6 border-b border-gray-100 pb-8">
           <div className="flex items-center justify-between text-sm text-gray-500">
-            <Link
+        <Link
               href="/vagas"
               className="inline-flex items-center gap-2 font-semibold text-gray-700 hover:text-gray-900"
-            >
+        >
               <ArrowLeft className="w-4 h-4" /> Todas as vagas
-            </Link>
+        </Link>
           </div>
           <div className="flex flex-col gap-5">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -452,7 +452,7 @@ export default async function JobDetailsPage({
                         {value || "—"}
                       </dd>
                     </div>
-                  </div>
+              </div>
                 ))}
               </dl>
             </div>

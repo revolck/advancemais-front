@@ -168,7 +168,7 @@ export function UserButton({ className, onNavigate }: UserButtonProps) {
           )}
         >
           <div className="flex items-center gap-2">
-            <AvatarCustom name={displayName} size="sm" showStatus={false} />
+              <AvatarCustom name={displayName} size="sm" showStatus={false} />
             <div className="hidden md:flex flex-col leading-tight max-w-[160px] text-left">
               <span className="text-sm font-semibold truncate text-[var(--secondary-color)]">
                 Bem-vindo(a), {displayName}
@@ -214,24 +214,24 @@ export function UserButton({ className, onNavigate }: UserButtonProps) {
 
         <DropdownMenuSeparator className="my-0" />
 
-        <DropdownMenuItem
+          <DropdownMenuItem
           className="px-3 py-2 cursor-pointer text-red-600 focus:text-red-700 hover:bg-red-50 focus:bg-red-50"
-          onClick={handleLogout}
-          disabled={isLoggingOut}
-        >
+            onClick={handleLogout}
+            disabled={isLoggingOut}
+          >
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-full bg-red-100 text-red-600 flex items-center justify-center">
-              {isLoggingOut ? (
+                {isLoggingOut ? (
                 <Icon name="Loader2" size={16} className="animate-spin" />
-              ) : (
+                ) : (
                 <Icon name="LogOut" size={16} />
-              )}
-            </div>
+                )}
+              </div>
             <span className="text-sm font-medium">
-              {isLoggingOut ? "Saindo..." : "Sair"}
+                  {isLoggingOut ? "Saindo..." : "Sair"}
             </span>
-          </div>
-        </DropdownMenuItem>
+            </div>
+          </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

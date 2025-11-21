@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { Check } from "lucide-react";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
@@ -51,7 +52,7 @@ export const CardCustom = React.forwardRef<HTMLDivElement, CardCustomProps>(
         {...props}
       >
         {href ? (
-          <a href={href} className="absolute inset-0" aria-hidden />
+          <Link href={href} className="absolute inset-0 z-10" aria-hidden />
         ) : null}
 
         {/* Background */}

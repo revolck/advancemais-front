@@ -60,7 +60,7 @@ export function LoadingProvider({ children }: { children: ReactNode }) {
         if (typeof window !== "undefined") {
           window.localStorage.setItem(INTRO_STORAGE_KEY, "true");
         }
-      }, 3000);
+    }, 3000);
     }
 
     return () => {

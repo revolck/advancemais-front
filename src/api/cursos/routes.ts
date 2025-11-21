@@ -18,6 +18,12 @@ export const cursosRoutes = {
     get: (cursoId: number | string) => `${BASE}/${cursoId}`,
     update: (cursoId: number | string) => `${BASE}/${cursoId}`,
     delete: (cursoId: number | string) => `${BASE}/${cursoId}`,
+    inscricoes: {
+      list: (cursoId: number | string) => `${BASE}/${cursoId}/inscricoes`,
+    },
+    auditoria: {
+      list: (cursoId: number | string) => `${BASE}/${cursoId}/auditoria`,
+    },
     turmas: {
       list: (cursoId: number | string) => `${BASE}/${cursoId}/turmas`,
       create: (cursoId: number | string) => `${BASE}/${cursoId}/turmas`,

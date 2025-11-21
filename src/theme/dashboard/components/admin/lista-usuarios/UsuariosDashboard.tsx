@@ -5,14 +5,10 @@ import { useRouter } from "next/navigation";
 import { UsuarioTable } from "./components";
 import { useUsuarioDashboardData } from "./hooks";
 import { cn } from "@/lib/utils";
-import { AlertCircle, ChevronUp, ChevronDown, Plus } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ButtonCustom, FilterBar, EmptyState } from "@/components/ui/custom";
-import {
-  Tooltip,
-  TooltipTrigger,
-  TooltipContent,
-} from "@/components/ui/tooltip";
+import Link from "next/link";
 import type { UsuarioDashboardProps } from "./types";
 import type { FilterField } from "@/components/ui/custom/filters";
 import type { DateRange } from "@/components/ui/custom/date-picker";
@@ -37,8 +33,15 @@ export function UsuariosDashboard({
   filters: initialFilters,
 }: UsuarioDashboardProps) {
   const router = useRouter();
-  const { data, isLoading, isFetching, error, filters, updateFilters, loadPage } =
-    useUsuarioDashboardData(initialFilters);
+  const {
+    data,
+    isLoading,
+    isFetching,
+    error,
+    filters,
+    updateFilters,
+    loadPage,
+  } = useUsuarioDashboardData(initialFilters);
 
   const usuarios = useMemo(() => data?.usuarios ?? [], [data?.usuarios]);
   const pagination = data?.pagination;
@@ -199,6 +202,19 @@ export function UsuariosDashboard({
   return (
     <div className={cn("min-h-full space-y-6", className)}>
       {/* Barra de filtros */}
+
+      <div className="mb-4 flex flex-col items-stretch gap-3 sm:mb-2 sm:flex-row sm:items-center sm:justify-end">
+        <ButtonCustom
+          variant="primary"
+          size="md"
+          icon="Plus"
+          fullWidth
+          className="sm:w-auto"
+          asChild
+        >
+          <Link href="/dashboard/usuarios/cadastrar">Adicionar usuário</Link>
+        </ButtonCustom>
+      </div>
       <div className="border-b border-gray-200">
         <div className="py-4">
           <FilterBar
@@ -230,15 +246,6 @@ export function UsuariosDashboard({
                   className="md:w-full xl:w-auto"
                 >
                   Pesquisar
-                </ButtonCustom>
-                <ButtonCustom
-                  variant="primary"
-                  size="lg"
-                  onClick={() => router.push("/dashboard/usuarios/cadastrar")}
-                  className="md:w-full xl:w-auto"
-                >
-                  <Plus className="size-4 mr-2" />
-                  Adicionar usuário
                 </ButtonCustom>
               </div>
             }

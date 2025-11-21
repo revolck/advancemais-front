@@ -42,7 +42,7 @@ export const JobCard: React.FC<JobCardProps> = ({
       )}
       style={{ animationDelay: `${index * 60}ms` }}
     >
-      <CardContent className="p-6 space-y-5">
+      <CardContent className="p-6 py-2 space-y-5">
         <div className="flex items-start justify-between gap-4">
           <div className="flex gap-4">
             <div className="w-14 h-14 rounded-2xl bg-gray-50 border border-gray-200 flex items-center justify-center overflow-hidden">

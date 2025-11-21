@@ -131,8 +131,6 @@ export function EditCursoModal({
     }
 
     if (!formData.categoriaId) newErrors.categoriaId = "Selecione a categoria";
-    if (!formData.subcategoriaId)
-      newErrors.subcategoriaId = "Selecione a subcategoria";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -187,6 +185,11 @@ export function EditCursoModal({
             (key[0] === "admin-cursos-list" || key[0] === "admin-curso-detail")
           );
         },
+      });
+
+      // Invalida a query de auditoria do curso para atualizar o histórico
+      await queryClient.invalidateQueries({
+        queryKey: ["curso-auditoria", curso.id],
       });
 
       toastCustom.success({
@@ -291,18 +294,19 @@ export function EditCursoModal({
                 <SelectCustom
                   label="Subcategoria"
                   placeholder={
-                    formData.categoriaId
-                      ? isLoadingSubcategorias
-                        ? "Carregando..."
-                        : "Selecionar"
-                      : "Selecione uma categoria"
+                    !formData.categoriaId
+                      ? "Selecione uma categoria"
+                      : subcategoriaOptions.length === 0
+                      ? "Nenhuma subcategoria encontrada"
+                      : isLoadingSubcategorias
+                      ? "Carregando..."
+                      : "Selecionar (opcional)"
                   }
                   options={subcategoriaOptions}
                   value={formData.subcategoriaId}
                   onChange={(val) => handleInputChange("subcategoriaId", val)}
-                  disabled={!formData.categoriaId || isLoadingSubcategorias}
+                  disabled={!formData.categoriaId || isLoadingSubcategorias || subcategoriaOptions.length === 0}
                   error={errors.subcategoriaId}
-                  required
                 />
 
                 <InputCustom

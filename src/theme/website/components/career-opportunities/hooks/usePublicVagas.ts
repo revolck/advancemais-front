@@ -50,8 +50,12 @@ function mapVagaToJobData(
  * Converte filtros do frontend para filtros da API
  */
 function mapFiltersToApiParams(filters: JobFilters): VagaPublicaListFilters {
+  // Só envia busca se tiver 3 ou mais caracteres
+  const searchQuery = filters.busca?.trim();
+  const validSearch = searchQuery && searchQuery.length >= 3 ? searchQuery : undefined;
+
   return {
-    q: filters.busca || undefined,
+    q: validSearch,
     modalidade: filters.modalidades.length > 0 
       ? filters.modalidades.join(",") 
       : undefined,

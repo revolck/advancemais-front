@@ -102,9 +102,9 @@ export function CursosCardsGrid({
       case "populares":
         return cursosPopulares?.slice(0, 5) || [];
       case "mais-populares":
-        return cursosMaisPopulares || [];
+        return cursosMaisPopulares?.slice(0, 5) || [];
       case "taxa-conclusao":
-        return cursosTaxaConclusao || [];
+        return cursosTaxaConclusao?.slice(0, 5) || [];
       case "proximos":
         return cursosProximos?.slice(0, 5) || [];
       default:
@@ -123,7 +123,7 @@ export function CursosCardsGrid({
         id: turma.turmaId,
         title: turma.cursoNome,
         subtitle: `${turma.diasParaInicio} ${turma.diasParaInicio === 1 ? "dia" : "dias"} • ${formatDate(turma.dataInicio)}`,
-        href: `/dashboard/cursos/${turma.cursoId}/turmas/${turma.turmaId}`,
+        href: `/dashboard/cursos/${turma.cursoId}`,
         imageUrl: DEFAULT_IMAGE,
       };
     } else if (activeTab === "taxa-conclusao") {

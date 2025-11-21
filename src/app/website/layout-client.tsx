@@ -13,33 +13,33 @@ import { LoadingProvider } from "./loading-context";
 export default function LayoutClient({ children }: { children: ReactNode }) {
   return (
     <LoadingProvider>
-      <div className="min-h-screen bg-gray-50">
-        {/* Header responsivo com navegação */}
-        <HeaderWithBackground />
+    <div className="min-h-screen bg-gray-50">
+      {/* Header responsivo com navegação */}
+      <HeaderWithBackground />
 
-        {/* Conteúdo principal da aplicação */}
-        <main
-          id="main-content"
-          className="relative z-10 min-h-screen"
-          role="main"
-        >
-          {children}
-        </main>
+      {/* Conteúdo principal da aplicação */}
+      <main
+        id="main-content"
+        className="relative z-10 min-h-screen"
+        role="main"
+      >
+        {children}
+      </main>
 
-        {/* Footer do website */}
-        <WebsiteFooter />
+      {/* Footer do website */}
+      <WebsiteFooter />
 
-        {/* Sistema de notificações */}
-        <ToasterCustom
-          position="top-right"
-          theme="system"
-          richColors={true}
-          closeButton={false}
-          maxToasts={5}
-          gap={8}
-          defaultDuration={5000}
-        />
-      </div>
+      {/* Sistema de notificações */}
+      <ToasterCustom
+        position="top-right"
+        theme="system"
+        richColors={true}
+        closeButton={false}
+        maxToasts={5}
+        gap={8}
+        defaultDuration={5000}
+      />
+    </div>
     </LoadingProvider>
   );
 }

@@ -12,6 +12,7 @@ import { queryKeys } from "@/lib/react-query/queryKeys";
 import { HeaderInfo } from "./components/HeaderInfo";
 import { AboutTab } from "./tabs/AboutTab";
 import { TurmasTab } from "./tabs/TurmasTab";
+import { AlunosMatriculadosTab } from "./tabs/AlunosMatriculadosTab";
 import { HistoryTab } from "./tabs/HistoryTab";
 
 type CursoDetails = Curso & {
@@ -110,8 +111,22 @@ export function CursoDetailsView({
     <TurmasTab turmas={curso.turmas || []} cursoId={curso.id} />
   );
 
+  const alunosMatriculadosTabContent = (
+    <AlunosMatriculadosTab
+      cursoId={curso.id}
+      turmas={
+        curso.turmas?.map((turma) => ({
+          id: turma.id,
+          nome: turma.nome || "",
+          codigo: turma.codigo || "",
+        })) || []
+      }
+      isLoading={isReloading}
+    />
+  );
+
   const historyTabContent = (
-    <HistoryTab auditoria={auditoria} isLoading={isReloading} />
+    <HistoryTab cursoId={curso.id} isLoading={isReloading} />
   );
 
   const turmasCount = curso.turmasCount ?? curso.turmas?.length ?? 0;
@@ -129,6 +144,12 @@ export function CursoDetailsView({
       icon: "Users",
       content: turmasTabContent,
       badge: turmasCount > 0 ? <span>{turmasCount}</span> : null,
+    },
+    {
+      value: "alunos",
+      label: "Alunos Matriculados",
+      icon: "Users",
+      content: alunosMatriculadosTabContent,
     },
     {
       value: "historico",

@@ -686,6 +686,15 @@ export interface CreateUsuarioPayload {
   genero?: string;
   aceitarTermos?: boolean;
   status?: StatusUsuario;
+  endereco?: {
+    logradouro: string;
+    numero: string;
+    bairro: string;
+    cidade: string;
+    estado: string;
+    cep: string;
+    complemento?: string;
+  };
   // Redes sociais
   instagram?: string;
   linkedin?: string;

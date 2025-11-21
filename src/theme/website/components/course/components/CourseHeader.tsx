@@ -1,41 +1,32 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Search, MapPin, SlidersHorizontal } from "lucide-react";
+import { Search, SlidersHorizontal } from "lucide-react";
 import { ButtonCustom } from "@/components/ui/custom/button";
 
-interface HeaderVagasProps {
+interface CourseHeaderProps {
   busca: string;
   onBuscaChange: (value: string) => void;
-  regiao: string;
-  onRegiaoChange: (value: string) => void;
   onOpenMobileFilters?: () => void;
   hasActiveFilters?: boolean;
   onSearch?: () => void;
   isLoading?: boolean;
 }
 
-export function HeaderVagas({
+export function CourseHeader({
   busca,
   onBuscaChange,
-  regiao,
-  onRegiaoChange,
   onOpenMobileFilters,
   hasActiveFilters = false,
   onSearch,
   isLoading = false,
-}: HeaderVagasProps) {
+}: CourseHeaderProps) {
   const [localBusca, setLocalBusca] = useState(busca);
-  const [localRegiao, setLocalRegiao] = useState(regiao);
 
-  // Sincroniza o estado local quando os props mudam externamente
+  // Sincroniza o estado local quando o prop muda externamente
   useEffect(() => {
     setLocalBusca(busca);
   }, [busca]);
-
-  useEffect(() => {
-    setLocalRegiao(regiao);
-  }, [regiao]);
 
   const handleSearch = () => {
     // Validação: mínimo de 3 caracteres ou campo vazio (para buscar todos)
@@ -45,7 +36,6 @@ export function HeaderVagas({
     }
 
     onBuscaChange(trimmedBusca);
-    onRegiaoChange(localRegiao.trim());
     if (onSearch) {
       onSearch();
     }
@@ -65,7 +55,7 @@ export function HeaderVagas({
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6 text-center">
         <div className="space-y-2">
           <h2 className="text-3xl sm:text-4xl font-semibold text-white !mb-0">
-            Busque a oportunidade que combina com você
+            Busque o curso ideal para sua capacitação profissional
           </h2>
         </div>
 
@@ -76,19 +66,8 @@ export function HeaderVagas({
               value={localBusca}
               onChange={(e) => setLocalBusca(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder="Cargo ou função desejada"
+              placeholder="Nome do curso ou área de interesse"
               className="w-full bg-transparent text-base text-gray-900 placeholder:text-gray-400 focus:outline-none"
-            />
-          </div>
-          <div className="hidden sm:block w-px h-8 bg-gray-200/70" />
-          <div className="flex items-center flex-1 px-4">
-            <MapPin className="w-5 h-5 text-gray-400 mr-3" />
-            <input
-              value={localRegiao}
-              onChange={(e) => setLocalRegiao(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="Cidade ou região"
-              className="w-full bg-transparent text-base font-medium text-gray-900 placeholder:text-gray-400 focus:outline-none"
             />
           </div>
           <div className="flex items-center gap-3 sm:pl-3">

@@ -20,6 +20,10 @@ import type {
   CursoAlunoDetalhes,
   CursoAlunoDetalhesResponse,
   VisaoGeralResponse,
+  ListInscricoesCursoParams,
+  ListInscricoesCursoResponse,
+  ListCursoAuditoriaParams,
+  ListCursoAuditoriaResponse,
 } from "./types";
 
 function normalizeHeaders(headers?: HeadersInit): Record<string, string> {
@@ -592,6 +596,75 @@ export async function deleteInscricao(
       cache: "no-cache",
     }
   );
+}
+
+// Histórico de Inscrições por Curso
+export async function listInscricoesCurso(
+  cursoId: number | string,
+  params?: ListInscricoesCursoParams,
+  init?: RequestInit
+): Promise<ListInscricoesCursoResponse> {
+  const searchParams = new URLSearchParams();
+
+  if (params?.page) {
+    searchParams.append("page", String(params.page));
+  }
+  if (params?.pageSize) {
+    searchParams.append("pageSize", String(params.pageSize));
+  }
+  if (params?.status) {
+    const statusArray = Array.isArray(params.status)
+      ? params.status
+      : [params.status];
+    searchParams.append("status", statusArray.join(","));
+  }
+  if (params?.turmaId) {
+    searchParams.append("turmaId", params.turmaId);
+  }
+
+  const queryString = searchParams.toString();
+  const url = queryString
+    ? `${cursosRoutes.cursos.inscricoes.list(cursoId)}?${queryString}`
+    : cursosRoutes.cursos.inscricoes.list(cursoId);
+
+  return apiFetch<ListInscricoesCursoResponse>(url, {
+    init: {
+      method: "GET",
+      ...init,
+      headers: buildHeaders(init?.headers, true),
+    },
+    cache: "no-cache",
+  });
+}
+
+// Auditoria de Cursos
+export async function listCursoAuditoria(
+  cursoId: number | string,
+  params?: ListCursoAuditoriaParams,
+  init?: RequestInit
+): Promise<ListCursoAuditoriaResponse> {
+  const searchParams = new URLSearchParams();
+
+  if (params?.page) {
+    searchParams.append("page", String(params.page));
+  }
+  if (params?.pageSize) {
+    searchParams.append("pageSize", String(params.pageSize));
+  }
+
+  const queryString = searchParams.toString();
+  const url = queryString
+    ? `${cursosRoutes.cursos.auditoria.list(cursoId)}?${queryString}`
+    : cursosRoutes.cursos.auditoria.list(cursoId);
+
+  return apiFetch<ListCursoAuditoriaResponse>(url, {
+    init: {
+      method: "GET",
+      ...init,
+      headers: buildHeaders(init?.headers, true),
+    },
+    cache: "no-cache",
+  });
 }
 
 // Provas

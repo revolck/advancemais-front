@@ -120,6 +120,98 @@ export interface CreateInscricaoPayload {
   observacoes?: string;
 }
 
+// Histórico de Inscrições por Curso
+export type StatusInscricao =
+  | "INSCRITO"
+  | "EM_ANDAMENTO"
+  | "CONCLUIDO"
+  | "REPROVADO"
+  | "EM_ESTAGIO"
+  | "CANCELADO"
+  | "TRANCADO";
+
+export interface InscricaoCurso {
+  id: string;
+  statusInscricao: StatusInscricao;
+  criadoEm: string;
+  progresso: number;
+  aluno: {
+    id: string;
+    nomeCompleto: string;
+    email: string;
+    codigo: string;
+    cpf: string;
+    status: string;
+    cidade: string | null;
+    estado: string | null;
+  };
+  turma: {
+    id: string;
+    nome: string;
+    codigo: string;
+    status: string;
+    dataInicio: string | null;
+    dataFim: string | null;
+  };
+  curso: {
+    id: string;
+    nome: string;
+    codigo: string;
+    descricao: string | null;
+    cargaHoraria: number;
+    imagemUrl: string | null;
+  };
+}
+
+export interface ListInscricoesCursoParams {
+  page?: number;
+  pageSize?: number;
+  status?: string | string[];
+  turmaId?: string;
+}
+
+export interface ListInscricoesCursoResponse {
+  data: InscricaoCurso[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+// Auditoria de Cursos
+export interface CursoAuditoriaItem {
+  id: string;
+  campo: string | null;
+  valorAnterior: any;
+  valorNovo: any;
+  descricao: string;
+  criadoEm: string;
+  alteradoPor: {
+    id: string;
+    nomeCompleto: string;
+    email: string;
+    role: string;
+  };
+}
+
+export interface ListCursoAuditoriaParams {
+  page?: number;
+  pageSize?: number;
+}
+
+export interface ListCursoAuditoriaResponse {
+  success: boolean;
+  data: CursoAuditoriaItem[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
 // Alunos com inscrições (estrutura exata da API - atualizada 30/10/2025)
 export interface AlunoComInscricao {
   id: string;

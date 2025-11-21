@@ -215,7 +215,7 @@ export const breadcrumbConfig: Record<string, BreadcrumbConfig> = {
       { label: "Dashboard", href: "/", icon: "Home" },
       { label: "Empresas", href: "/dashboard/empresas", icon: "Building2" },
       { label: "Vagas", href: "/dashboard/empresas/vagas", icon: "Briefcase" },
-      { label: "Cadastrar", icon: "Plus" },
+      { label: "Cadastrar", icon: "FileText" },
     ],
   },
   "/dashboard/empresas/candidatos": {
@@ -255,7 +255,7 @@ export const breadcrumbConfig: Record<string, BreadcrumbConfig> = {
       { label: "Dashboard", href: "/", icon: "Home" },
       { label: "Cursos", href: "/dashboard/cursos", icon: "BookOpen" },
       { label: "Turmas", href: "/dashboard/cursos/turmas", icon: "Users" },
-      { label: "Cadastrar" },
+      { label: "Cadastrar", icon: "FileText" },
     ],
   },
   // Detalhes de turma: /dashboard/cursos/turmas/[turmaId]
@@ -355,7 +355,7 @@ export const breadcrumbConfig: Record<string, BreadcrumbConfig> = {
     items: [
       { label: "Dashboard", href: "/", icon: "Home" },
       { label: "Usuários", href: "/dashboard/usuarios", icon: "Users" },
-      { label: "Cadastrar", icon: "Plus" },
+      { label: "Cadastrar", icon: "FileText" },
     ],
   },
 };

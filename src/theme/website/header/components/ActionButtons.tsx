@@ -32,33 +32,33 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
         <UserButton className="text-white" />
       ) : (
         <>
-          <motion.div
-            className="bg-white px-4 py-1 rounded-md hidden md:inline-block"
-            whileHover={{ scale: 1.03, y: -1 }}
-            whileTap={{ scale: 0.97 }}
-            transition={{ type: "spring", stiffness: 400, damping: 15 }}
-          >
-            <NavLink
-              href="https://auth.advancemais.com/login"
-              className="text-base text-[var(--color-blue)] hover:text-[var(--color-blue)]"
-            >
-              Entrar
-            </NavLink>
-          </motion.div>
+      <motion.div
+        className="bg-white px-4 py-1 rounded-md hidden md:inline-block"
+        whileHover={{ scale: 1.03, y: -1 }}
+        whileTap={{ scale: 0.97 }}
+        transition={{ type: "spring", stiffness: 400, damping: 15 }}
+      >
+        <NavLink
+          href="https://auth.advancemais.com/login"
+          className="text-base text-[var(--color-blue)] hover:text-[var(--color-blue)]"
+        >
+          Entrar
+        </NavLink>
+      </motion.div>
 
-          <motion.div
-            className="bg-[var(--secondary-color)] px-4 py-1 rounded-md"
-            whileHover={{ scale: 1.03, y: -1 }}
-            whileTap={{ scale: 0.97 }}
-            transition={{ type: "spring", stiffness: 400, damping: 15 }}
-          >
-            <NavLink
-              href="https://auth.advancemais.com/register"
-              className="text-base text-white hover:text-white"
-            >
-              Cadastre-se
-            </NavLink>
-          </motion.div>
+      <motion.div
+        className="bg-[var(--secondary-color)] px-4 py-1 rounded-md"
+        whileHover={{ scale: 1.03, y: -1 }}
+        whileTap={{ scale: 0.97 }}
+        transition={{ type: "spring", stiffness: 400, damping: 15 }}
+      >
+        <NavLink
+          href="https://auth.advancemais.com/register"
+          className="text-base text-white hover:text-white"
+        >
+          Cadastre-se
+        </NavLink>
+      </motion.div>
         </>
       )}
 

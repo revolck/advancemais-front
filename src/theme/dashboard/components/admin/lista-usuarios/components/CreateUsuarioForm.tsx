@@ -5,12 +5,19 @@ import { useQueryClient } from "@tanstack/react-query";
 import { ButtonCustom } from "@/components/ui/custom";
 import { InputCustom } from "@/components/ui/custom/input";
 import { SelectCustom } from "@/components/ui/custom/select";
+import type { SelectOption } from "@/components/ui/custom/select/types";
 import { toastCustom } from "@/components/ui/custom";
-import { createUsuario, type CreateUsuarioPayload, type Role, type TipoUsuario, type StatusUsuario } from "@/api/usuarios";
-import { Label } from "@/components/ui/label";
-import { cn } from "@/lib/utils";
-import { Eye, EyeOff } from "lucide-react";
+import { DatePickerCustom } from "@/components/ui/custom/date-picker";
+import {
+  createUsuario,
+  type CreateUsuarioPayload,
+  type Role,
+  type TipoUsuario,
+  type StatusUsuario,
+} from "@/api/usuarios";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { invalidateUsuarios } from "@/lib/react-query/invalidation";
+import { lookupCep, normalizeCep } from "@/lib/cep";
 // Função simples para decodificar JWT sem biblioteca externa
 const decodeJWT = (token: string): any => {
   try {
@@ -41,7 +48,12 @@ interface FormData {
   cnpj: string;
   dataNascimento: string;
   genero: string;
-  status: StatusUsuario | null;
+  logradouro: string;
+  numeroEndereco: string;
+  bairro: string;
+  cidade: string;
+  estado: string;
+  cep: string;
 }
 
 const initialFormData: FormData = {
@@ -56,7 +68,12 @@ const initialFormData: FormData = {
   cnpj: "",
   dataNascimento: "",
   genero: "",
-  status: "ATIVO",
+  logradouro: "",
+  numeroEndereco: "",
+  bairro: "",
+  cidade: "",
+  estado: "",
+  cep: "",
 };
 
 export interface CreateUsuarioFormProps {
@@ -109,15 +126,28 @@ const getUserRole = (): string | null => {
   }
 };
 
-export function CreateUsuarioForm({ onSuccess, onCancel }: CreateUsuarioFormProps) {
+export function CreateUsuarioForm({
+  onSuccess,
+  onCancel,
+}: CreateUsuarioFormProps) {
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [isLoading, setIsLoading] = useState(false);
-  const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
+  const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>(
+    {}
+  );
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [availableRoles, setAvailableRoles] = useState<Role[]>([]);
+  const [isLoadingCep, setIsLoadingCep] = useState(false);
+  const [estadoOptions, setEstadoOptions] = useState<SelectOption[]>([]);
+  const [cidadesOptions, setCidadesOptions] = useState<SelectOption[]>([]);
+  const [citiesCache, setCitiesCache] = useState<
+    Record<string, SelectOption[]>
+  >({});
+  const [isLoadingEstados, setIsLoadingEstados] = useState(false);
+  const [isLoadingCidades, setIsLoadingCidades] = useState(false);
 
   useEffect(() => {
     const role = getUserRole();
@@ -127,9 +157,36 @@ export function CreateUsuarioForm({ onSuccess, onCancel }: CreateUsuarioFormProp
     }
   }, []);
 
+  useEffect(() => {
+    const fetchEstados = async () => {
+      setIsLoadingEstados(true);
+      try {
+        const response = await fetch(
+          "https://servicodados.ibge.gov.br/api/v1/localidades/estados?orderBy=nome"
+        );
+        if (!response.ok) {
+          throw new Error("Erro ao carregar estados");
+        }
+        const data: Array<{ sigla: string; nome: string }> =
+          await response.json();
+        const options = data.map((estado) => ({
+          value: estado.sigla,
+          label: estado.nome,
+        }));
+        setEstadoOptions(options);
+      } catch (error) {
+        console.error("Erro ao carregar estados do IBGE:", error);
+      } finally {
+        setIsLoadingEstados(false);
+      }
+    };
+
+    fetchEstados();
+  }, []);
+
   const tipoUsuarioOptions = [
-    { label: "Pessoa Física", value: "PESSOA_FISICA" },
-    { label: "Pessoa Jurídica", value: "PESSOA_JURIDICA" },
+    { label: "Pessoa Física", value: "PESSOA_FISICA" as TipoUsuario },
+    { label: "Pessoa Jurídica", value: "PESSOA_JURIDICA" as TipoUsuario },
   ];
 
   const roleOptions = availableRoles.map((role) => ({
@@ -144,38 +201,47 @@ export function CreateUsuarioForm({ onSuccess, onCancel }: CreateUsuarioFormProp
     { label: "Prefiro não informar", value: "PREFIRO_NAO_INFORMAR" },
   ];
 
-  const statusOptions = [
-    { label: "Ativo", value: "ATIVO" },
-    { label: "Inativo", value: "INATIVO" },
-    { label: "Suspenso", value: "SUSPENSO" },
-    { label: "Bloqueado", value: "BLOQUEADO" },
-  ];
-
   const validateForm = (): boolean => {
     const newErrors: Partial<Record<keyof FormData, string>> = {};
-    
-    if (!formData.nomeCompleto.trim()) newErrors.nomeCompleto = "Nome completo é obrigatório";
+
+    if (!formData.nomeCompleto.trim())
+      newErrors.nomeCompleto = "Nome completo é obrigatório";
     if (!formData.email.trim()) newErrors.email = "Email é obrigatório";
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) newErrors.email = "Email inválido";
-    
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email))
+      newErrors.email = "Email inválido";
+
     if (!formData.senha) newErrors.senha = "Senha é obrigatória";
-    else if (formData.senha.length < 8) newErrors.senha = "Senha deve ter no mínimo 8 caracteres";
-    
-    if (!formData.confirmarSenha) newErrors.confirmarSenha = "Confirmação de senha é obrigatória";
-    else if (formData.senha !== formData.confirmarSenha) newErrors.confirmarSenha = "Senhas não coincidem";
-    
-    if (!formData.telefone.trim()) newErrors.telefone = "Telefone é obrigatório";
-    if (!formData.tipoUsuario) newErrors.tipoUsuario = "Tipo de usuário é obrigatório";
+    else if (formData.senha.length < 8)
+      newErrors.senha = "Senha deve ter no mínimo 8 caracteres";
+
+    if (!formData.confirmarSenha)
+      newErrors.confirmarSenha = "Confirmação de senha é obrigatória";
+    else if (formData.senha !== formData.confirmarSenha)
+      newErrors.confirmarSenha = "Senhas não coincidem";
+
+    if (!formData.telefone.trim())
+      newErrors.telefone = "Telefone é obrigatório";
+    if (!formData.tipoUsuario)
+      newErrors.tipoUsuario = "Tipo de usuário é obrigatório";
     if (!formData.role) newErrors.role = "Role é obrigatória";
-    
+
     if (formData.tipoUsuario === "PESSOA_FISICA" && !formData.cpf.trim()) {
       newErrors.cpf = "CPF é obrigatório para pessoa física";
     }
-    
+
     if (formData.tipoUsuario === "PESSOA_JURIDICA" && !formData.cnpj.trim()) {
       newErrors.cnpj = "CNPJ é obrigatório para pessoa jurídica";
     }
-    
+
+    if (!formData.logradouro.trim())
+      newErrors.logradouro = "Logradouro é obrigatório";
+    if (!formData.numeroEndereco.trim())
+      newErrors.numeroEndereco = "Número é obrigatório";
+    if (!formData.bairro.trim()) newErrors.bairro = "Bairro é obrigatório";
+    if (!formData.cidade.trim()) newErrors.cidade = "Cidade é obrigatória";
+    if (!formData.estado.trim()) newErrors.estado = "Estado é obrigatório";
+    if (!formData.cep.trim()) newErrors.cep = "CEP é obrigatório";
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -183,6 +249,152 @@ export function CreateUsuarioForm({ onSuccess, onCancel }: CreateUsuarioFormProp
   const handleInputChange = (field: keyof FormData, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) setErrors((prev) => ({ ...prev, [field]: undefined }));
+  };
+
+  const handleTipoUsuarioChange = (value: TipoUsuario) => {
+    setFormData((prev) => ({
+      ...prev,
+      tipoUsuario: value,
+      cpf: value === "PESSOA_FISICA" ? prev.cpf : "",
+      cnpj: value === "PESSOA_JURIDICA" ? prev.cnpj : "",
+    }));
+    if (errors.tipoUsuario)
+      setErrors((prev) => ({ ...prev, tipoUsuario: undefined }));
+    if (value === "PESSOA_FISICA" && errors.cnpj) {
+      setErrors((prev) => ({ ...prev, cnpj: undefined }));
+    }
+    if (value === "PESSOA_JURIDICA" && errors.cpf) {
+      setErrors((prev) => ({ ...prev, cpf: undefined }));
+    }
+  };
+
+  const normalizeText = (text: string) =>
+    text
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase();
+
+  const applyCityFromOptions = (
+    options: SelectOption[],
+    cityToSelect?: string | null
+  ) => {
+    if (!cityToSelect) {
+      handleInputChange("cidade", "");
+      return;
+    }
+    const normalizedTarget = normalizeText(cityToSelect);
+    const foundOption =
+      options.find(
+        (option) => normalizeText(option.value) === normalizedTarget
+      ) || null;
+    handleInputChange("cidade", foundOption ? foundOption.value : "");
+  };
+
+  const fetchCitiesByUf = async (uf: string, cityToSelect?: string | null) => {
+    if (!uf) return;
+
+    const cached = citiesCache[uf];
+    if (cached) {
+      setCidadesOptions(cached);
+      applyCityFromOptions(cached, cityToSelect);
+      return;
+    }
+
+    setIsLoadingCidades(true);
+    try {
+      const response = await fetch(
+        `https://servicodados.ibge.gov.br/api/v1/localidades/estados/${uf}/municipios?orderBy=nome`
+      );
+      if (!response.ok) {
+        throw new Error("Erro ao carregar cidades");
+      }
+      const data: Array<{ nome: string }> = await response.json();
+      const options = data.map((city) => ({
+        value: city.nome,
+        label: city.nome,
+      }));
+      setCidadesOptions(options);
+      setCitiesCache((prev) => ({ ...prev, [uf]: options }));
+      applyCityFromOptions(options, cityToSelect);
+    } catch (error) {
+      console.error("Erro ao carregar cidades do estado:", uf, error);
+      setCidadesOptions([]);
+      if (cityToSelect) {
+        handleInputChange("cidade", "");
+      }
+    } finally {
+      setIsLoadingCidades(false);
+    }
+  };
+
+  const handleEstadoChange = (value: string | null) => {
+    const uf = value ?? "";
+    handleInputChange("estado", uf);
+    handleInputChange("cidade", "");
+
+    if (!uf) {
+      setCidadesOptions([]);
+      return;
+    }
+
+    setCidadesOptions([]);
+    fetchCitiesByUf(uf);
+  };
+
+  const handleCepChange = async (value: string) => {
+    const formattedCep = normalizeCep(value);
+    handleInputChange("cep", formattedCep);
+
+    if (errors.cep) {
+      setErrors((prev) => ({ ...prev, cep: undefined }));
+    }
+
+    const cleanCep = value.replace(/\D/g, "");
+    if (cleanCep.length !== 8) {
+      setIsLoadingCep(false);
+      return;
+    }
+
+    setIsLoadingCep(true);
+    try {
+      const result = await lookupCep(cleanCep);
+      if ("error" in result) {
+        setErrors((prev) => ({ ...prev, cep: result.error }));
+        return;
+      }
+
+      handleInputChange("cep", result.cep);
+
+      if (result.street) {
+        handleInputChange("logradouro", result.street);
+      }
+
+      if (result.neighborhood) {
+        handleInputChange("bairro", result.neighborhood);
+      }
+
+      setErrors((prev) => {
+        const updated = { ...prev, cep: undefined };
+        if (result.street) updated.logradouro = undefined;
+        if (result.neighborhood) updated.bairro = undefined;
+        return updated;
+      });
+
+      if (result.state) {
+        handleInputChange("estado", result.state);
+        await fetchCitiesByUf(result.state, result.city || undefined);
+      } else {
+        handleEstadoChange(null);
+      }
+    } catch (error) {
+      console.error("Erro ao buscar CEP:", error);
+      setErrors((prev) => ({
+        ...prev,
+        cep: "Erro ao buscar CEP. Tente novamente.",
+      }));
+    } finally {
+      setIsLoadingCep(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -199,7 +411,7 @@ export function CreateUsuarioForm({ onSuccess, onCancel }: CreateUsuarioFormProp
         tipoUsuario: formData.tipoUsuario!,
         role: formData.role!,
         aceitarTermos: true,
-        status: formData.status || "ATIVO",
+        status: "ATIVO" as StatusUsuario,
       };
 
       if (formData.tipoUsuario === "PESSOA_FISICA" && formData.cpf) {
@@ -218,6 +430,15 @@ export function CreateUsuarioForm({ onSuccess, onCancel }: CreateUsuarioFormProp
         payload.genero = formData.genero;
       }
 
+      payload.endereco = {
+        logradouro: formData.logradouro.trim(),
+        numero: formData.numeroEndereco.trim(),
+        bairro: formData.bairro.trim(),
+        cidade: formData.cidade.trim(),
+        estado: formData.estado.trim(),
+        cep: formData.cep.replace(/\D/g, ""),
+      };
+
       const response = await createUsuario(payload);
 
       if (response.success) {
@@ -230,12 +451,14 @@ export function CreateUsuarioForm({ onSuccess, onCancel }: CreateUsuarioFormProp
       }
     } catch (error: any) {
       console.error("Erro ao criar usuário:", error);
-      
+
       // Tratamento de erros específicos
       if (error.code === "FORBIDDEN_ROLE") {
         toastCustom.error({
           title: "Permissão Negada",
-          description: error.message || "Você não tem permissão para criar usuários com esta role",
+          description:
+            error.message ||
+            "Você não tem permissão para criar usuários com esta role",
         });
       } else if (error.code === "USER_ALREADY_EXISTS") {
         toastCustom.error({
@@ -269,16 +492,77 @@ export function CreateUsuarioForm({ onSuccess, onCancel }: CreateUsuarioFormProp
   return (
     <div className="w-full">
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="rounded-2xl bg-white p-6 shadow-sm border border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Informações Básicas</h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="rounded-3xl bg-white p-6 border border-gray-200 space-y-4">
+          <div className="grid grid-cols-1 md:[grid-template-columns:0.2fr_0.2fr_0.6fr] gap-4">
+            <SelectCustom
+              label="Tipo de usuário"
+              placeholder="Selecione o tipo"
+              options={tipoUsuarioOptions}
+              value={formData.tipoUsuario}
+              onChange={(value) =>
+                handleTipoUsuarioChange(value as TipoUsuario)
+              }
+              error={errors.tipoUsuario}
+              required
+            />
+
+            {formData.tipoUsuario === "PESSOA_FISICA" ? (
+              <InputCustom
+                label="CPF"
+                placeholder="000.000.000-00"
+                value={formData.cpf}
+                onChange={(e) => handleInputChange("cpf", e.target.value)}
+                error={errors.cpf}
+                required
+              />
+            ) : (
+              <InputCustom
+                label="CNPJ"
+                placeholder="00.000.000/0000-00"
+                value={formData.cnpj}
+                onChange={(e) => handleInputChange("cnpj", e.target.value)}
+                error={errors.cnpj}
+                required
+              />
+            )}
+
             <InputCustom
-              label="Nome Completo"
-              placeholder="Digite o nome completo"
+              label={
+                formData.tipoUsuario === "PESSOA_JURIDICA"
+                  ? "Razão Social"
+                  : "Nome Completo"
+              }
+              placeholder={
+                formData.tipoUsuario === "PESSOA_JURIDICA"
+                  ? "Digite a razão social"
+                  : "Digite o nome completo"
+              }
               value={formData.nomeCompleto}
-              onChange={(e) => handleInputChange("nomeCompleto", e.target.value)}
+              onChange={(e) =>
+                handleInputChange("nomeCompleto", e.target.value)
+              }
               error={errors.nomeCompleto}
+              required
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:[grid-template-columns:0.2fr_0.2fr_0.25fr_0.2fr_0.15fr] gap-4">
+            <SelectCustom
+              label="Função (Role)"
+              placeholder="Selecione a função"
+              options={roleOptions}
+              value={formData.role}
+              onChange={(value) => handleInputChange("role", value)}
+              error={errors.role}
+              required
+            />
+
+            <InputCustom
+              label="Telefone"
+              placeholder="(00) 00000-0000"
+              value={formData.telefone}
+              onChange={(e) => handleInputChange("telefone", e.target.value)}
+              error={errors.telefone}
               required
             />
 
@@ -292,77 +576,20 @@ export function CreateUsuarioForm({ onSuccess, onCancel }: CreateUsuarioFormProp
               required
             />
 
-            <InputCustom
-              label="Telefone"
-              placeholder="(00) 00000-0000"
-              value={formData.telefone}
-              onChange={(e) => handleInputChange("telefone", e.target.value)}
-              error={errors.telefone}
-              required
-            />
-
-            <SelectCustom
-              label="Tipo de Usuário"
-              placeholder="Selecione o tipo"
-              options={tipoUsuarioOptions}
-              value={formData.tipoUsuario}
-              onChange={(value) => handleInputChange("tipoUsuario", value)}
-              error={errors.tipoUsuario}
-              required
-            />
-
-            {formData.tipoUsuario === "PESSOA_FISICA" && (
-              <InputCustom
-                label="CPF"
-                placeholder="000.000.000-00"
-                value={formData.cpf}
-                onChange={(e) => handleInputChange("cpf", e.target.value)}
-                error={errors.cpf}
-                required
-              />
-            )}
-
-            {formData.tipoUsuario === "PESSOA_JURIDICA" && (
-              <InputCustom
-                label="CNPJ"
-                placeholder="00.000.000/0000-00"
-                value={formData.cnpj}
-                onChange={(e) => handleInputChange("cnpj", e.target.value)}
-                error={errors.cnpj}
-                required
-              />
-            )}
-
-            <SelectCustom
-              label="Função (Role)"
-              placeholder="Selecione a função"
-              options={roleOptions}
-              value={formData.role}
-              onChange={(value) => handleInputChange("role", value)}
-              error={errors.role}
-              required
-            />
-
-            <SelectCustom
-              label="Status"
-              placeholder="Selecione o status"
-              options={statusOptions}
-              value={formData.status}
-              onChange={(value) => handleInputChange("status", value)}
-              error={errors.status}
-            />
-          </div>
-        </div>
-
-        <div className="rounded-2xl bg-white p-6 shadow-sm border border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Informações Adicionais</h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <InputCustom
+            <DatePickerCustom
               label="Data de Nascimento"
-              type="date"
-              value={formData.dataNascimento}
-              onChange={(e) => handleInputChange("dataNascimento", e.target.value)}
+              value={
+                formData.dataNascimento
+                  ? new Date(`${formData.dataNascimento}T00:00:00`)
+                  : null
+              }
+              onChange={(date) =>
+                handleInputChange(
+                  "dataNascimento",
+                  date ? new Date(date).toISOString().slice(0, 10) : ""
+                )
+              }
+              format="dd/MM/yyyy"
               error={errors.dataNascimento}
             />
 
@@ -375,11 +602,98 @@ export function CreateUsuarioForm({ onSuccess, onCancel }: CreateUsuarioFormProp
               error={errors.genero}
             />
           </div>
-        </div>
 
-        <div className="rounded-2xl bg-white p-6 shadow-sm border border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Senha de Acesso</h2>
-          
+          <div className="grid grid-cols-1 md:[grid-template-columns:0.2fr_0.2fr_0.3fr_0.3fr] gap-4">
+            <div className="relative">
+              <InputCustom
+                label="CEP"
+                placeholder="00000-000"
+                value={formData.cep}
+                onChange={(e) => handleCepChange(e.target.value)}
+                error={errors.cep}
+                required
+                disabled={isLoadingCep}
+              />
+              {isLoadingCep && (
+                <Loader2 className="absolute right-3 top-9 h-5 w-5 animate-spin text-gray-400" />
+              )}
+            </div>
+
+            <div className="relative">
+              <SelectCustom
+                label="Estado"
+                placeholder={
+                  isLoadingEstados
+                    ? "Carregando estados..."
+                    : "Selecione o estado"
+                }
+                options={estadoOptions}
+                value={formData.estado || null}
+                onChange={(value) => handleEstadoChange(value)}
+                disabled={isLoadingEstados || estadoOptions.length === 0}
+                error={errors.estado}
+                required
+              />
+              {isLoadingEstados && (
+                <Loader2 className="absolute right-3 top-9 h-5 w-5 animate-spin text-gray-400" />
+              )}
+            </div>
+
+            <div className="relative">
+              <SelectCustom
+                label="Cidade"
+                placeholder={
+                  formData.estado
+                    ? "Selecione a cidade"
+                    : "Selecione um estado para listar as cidades"
+                }
+                options={cidadesOptions}
+                value={formData.cidade || null}
+                onChange={(value) => handleInputChange("cidade", value || "")}
+                disabled={
+                  !formData.estado ||
+                  isLoadingCidades ||
+                  cidadesOptions.length === 0
+                }
+                error={errors.cidade}
+                required
+              />
+              {isLoadingCidades && (
+                <Loader2 className="absolute right-3 top-9 h-5 w-5 animate-spin text-gray-400" />
+              )}
+            </div>
+
+            <InputCustom
+              label="Bairro"
+              placeholder="Informe o bairro"
+              value={formData.bairro}
+              onChange={(e) => handleInputChange("bairro", e.target.value)}
+              error={errors.bairro}
+              required
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:[grid-template-columns:0.2fr_0.8fr] gap-4">
+            <InputCustom
+              label="Número"
+              placeholder="Nº"
+              value={formData.numeroEndereco}
+              onChange={(e) =>
+                handleInputChange("numeroEndereco", e.target.value)
+              }
+              error={errors.numeroEndereco}
+              required
+            />
+            <InputCustom
+              label="Logradouro"
+              placeholder="Rua / Avenida"
+              value={formData.logradouro}
+              onChange={(e) => handleInputChange("logradouro", e.target.value)}
+              error={errors.logradouro}
+              required
+            />
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="relative">
               <InputCustom
@@ -396,7 +710,11 @@ export function CreateUsuarioForm({ onSuccess, onCancel }: CreateUsuarioFormProp
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-3 top-9 text-gray-400 hover:text-gray-600"
               >
-                {showPassword ? <EyeOff className="size-5" /> : <Eye className="size-5" />}
+                {showPassword ? (
+                  <EyeOff className="size-5" />
+                ) : (
+                  <Eye className="size-5" />
+                )}
               </button>
             </div>
 
@@ -406,7 +724,9 @@ export function CreateUsuarioForm({ onSuccess, onCancel }: CreateUsuarioFormProp
                 type={showConfirmPassword ? "text" : "password"}
                 placeholder="Digite a senha novamente"
                 value={formData.confirmarSenha}
-                onChange={(e) => handleInputChange("confirmarSenha", e.target.value)}
+                onChange={(e) =>
+                  handleInputChange("confirmarSenha", e.target.value)
+                }
                 error={errors.confirmarSenha}
                 required
               />
@@ -415,7 +735,11 @@ export function CreateUsuarioForm({ onSuccess, onCancel }: CreateUsuarioFormProp
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                 className="absolute right-3 top-9 text-gray-400 hover:text-gray-600"
               >
-                {showConfirmPassword ? <EyeOff className="size-5" /> : <Eye className="size-5" />}
+                {showConfirmPassword ? (
+                  <EyeOff className="size-5" />
+                ) : (
+                  <Eye className="size-5" />
+                )}
               </button>
             </div>
           </div>
@@ -442,4 +766,3 @@ export function CreateUsuarioForm({ onSuccess, onCancel }: CreateUsuarioFormProp
     </div>
   );
 }
-

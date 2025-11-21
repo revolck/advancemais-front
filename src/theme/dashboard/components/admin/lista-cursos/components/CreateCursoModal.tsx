@@ -82,6 +82,7 @@ export function CreateCursoModal({
 
     const nome = formData.nome.trim();
     if (!nome) newErrors.nome = "Nome é obrigatório";
+    if (nome.length > 200) newErrors.nome = "Nome deve ter no máximo 200 caracteres";
 
     const descricao = formData.descricao.trim();
     if (!descricao) newErrors.descricao = "Descrição é obrigatória";
@@ -92,8 +93,6 @@ export function CreateCursoModal({
     }
 
     if (!formData.categoriaId) newErrors.categoriaId = "Selecione a categoria";
-    if (!formData.subcategoriaId)
-      newErrors.subcategoriaId = "Selecione a subcategoria";
     if (!formData.statusPadrao) newErrors.statusPadrao = "Selecione o status";
 
     setErrors(newErrors);
@@ -298,9 +297,9 @@ export function CreateCursoModal({
                   />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   {/* Linha 1: Nome do Curso (ocupando a linha inteira) */}
-                  <div className="md:col-span-2">
+                  <div className="md:col-span-2 lg:col-span-4">
                     <InputCustom
                       label="Nome do Curso"
                       name="nome"
@@ -311,10 +310,14 @@ export function CreateCursoModal({
                       error={errors.nome}
                       required
                       placeholder="Ex.: Excel Avançado"
+                      maxLength={200}
                     />
                   </div>
 
-                  {/* Linha 2: Categoria e Subcategoria */}
+                  {/* Linha 2: Categoria, Subcategoria, Carga horária e Estágio */}
+                  <div className="md:col-span-2 lg:col-span-4">
+                    <div className="flex flex-col md:flex-row gap-4 w-full">
+                      <div className="flex-[0.35] min-w-0">
                   <SelectCustom
                     label="Categoria"
                     placeholder={
@@ -326,25 +329,27 @@ export function CreateCursoModal({
                     error={errors.categoriaId}
                     required
                   />
-
+                      </div>
+                      <div className="flex-[0.35] min-w-0">
                   <SelectCustom
-                    label="Subcategoria"
+                          label="Subcategoria (opcional)"
                     placeholder={
-                      formData.categoriaId
-                        ? isLoadingSubcategorias
+                            !formData.categoriaId
+                              ? "Selecione uma categoria"
+                              : isLoadingSubcategorias
                           ? "Carregando..."
+                              : subcategoriaOptions.length === 0
+                              ? "Nenhuma subcategoria encontrada"
                           : "Selecionar"
-                        : "Selecione uma categoria"
                     }
                     options={subcategoriaOptions}
                     value={formData.subcategoriaId}
                     onChange={(val) => handleInputChange("subcategoriaId", val)}
-                    disabled={!formData.categoriaId || isLoadingSubcategorias}
+                          disabled={!formData.categoriaId || isLoadingSubcategorias || subcategoriaOptions.length === 0}
                     error={errors.subcategoriaId}
-                    required
                   />
-
-                  {/* Linha 3: Carga horária e Estágio obrigatório */}
+                      </div>
+                      <div className="flex-[0.15] min-w-0">
                   <InputCustom
                     label="Carga horária (horas)"
                     name="cargaHoraria"
@@ -357,6 +362,8 @@ export function CreateCursoModal({
                     placeholder="40"
                     type="number"
                   />
+                      </div>
+                      <div className="flex-[0.15] min-w-0">
                   <SelectCustom
                     label="Estágio"
                     options={[
@@ -369,8 +376,11 @@ export function CreateCursoModal({
                       handleInputChange("estagioObrigatorio", val === "true")
                     }
                   />
+                      </div>
+                    </div>
+                  </div>
 
-                  <div className="md:col-span-2">
+                  <div className="md:col-span-2 lg:col-span-4">
                     <SimpleTextarea
                       label="Descrição"
                       placeholder="Descreva o conteúdo e objetivos do curso"
