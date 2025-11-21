@@ -384,7 +384,7 @@ export function HistoryTab({
     if (error) {
       return (
         <EmptyState
-          illustration="error"
+          illustration="fileNotFound"
           illustrationAlt="Erro ao carregar histórico"
           title="Erro ao carregar histórico"
           description="Não foi possível carregar o histórico de alterações. Tente novamente mais tarde."

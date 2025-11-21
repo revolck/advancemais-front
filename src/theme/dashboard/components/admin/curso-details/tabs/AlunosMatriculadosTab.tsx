@@ -242,7 +242,7 @@ export function AlunosMatriculadosTab({
     if (error) {
       return (
         <EmptyState
-          illustration="error"
+          illustration="fileNotFound"
           illustrationAlt="Erro ao carregar histórico"
           title="Erro ao carregar inscrições"
           description="Não foi possível carregar as inscrições do curso. Tente novamente mais tarde."
