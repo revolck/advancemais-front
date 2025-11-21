@@ -6,8 +6,9 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { AlertCircle, Loader2 } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Skeleton } from "@/components/ui/skeleton";
 import { HorizontalTabs } from "@/components/ui/custom";
 import type { HorizontalTabItem } from "@/components/ui/custom";
 import {
@@ -92,12 +93,26 @@ export function UsuarioDetailsView({
   const [isDesbloquearModalOpen, setIsDesbloquearModalOpen] = useState(false);
 
   const updateUsuarioMutation = useMutation({
-    mutationFn: (payload: UpdateUsuarioPayload) =>
-      updateUsuario(usuarioId, payload),
+    mutationFn: (payload: UpdateUsuarioPayload) => {
+      // Log para debug (apenas em desenvolvimento)
+      if (process.env.NODE_ENV === "development") {
+        console.log("📋 Mutation - Atualizando usuário:", {
+          usuarioId,
+          payload,
+        });
+      }
+      return updateUsuario(usuarioId, payload);
+    },
     onSuccess: (response) => {
+      // Atualiza os dados do usuário no cache
       queryClient.setQueryData(queryKey, response);
+      // Invalida a query do usuário para garantir dados frescos
+      void invalidateUsuario();
       // Invalida listagens para refletir mudanças
       invalidateUsuarios(queryClient);
+    },
+    onError: (error: any) => {
+      console.error("❌ Erro na mutation de atualização:", error);
     },
   });
 
@@ -172,10 +187,60 @@ export function UsuarioDetailsView({
 
   if (isReloading) {
     return (
-      <div className="flex items-center justify-center min-h-[320px]">
-        <div className="flex items-center gap-3 text-gray-600">
-          <Loader2 className="h-5 w-5 animate-spin" />
-          <span>Carregando dados do usuário...</span>
+      <div className="space-y-8">
+        {/* HeaderInfo Skeleton */}
+        <div className="rounded-3xl border border-gray-200 bg-white px-6 py-6 sm:px-8 sm:py-8">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex items-center gap-5">
+              <Skeleton className="h-20 w-20 rounded-full shrink-0" />
+              <div className="space-y-3">
+                <Skeleton className="h-6 w-48" />
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-3 w-24" />
+              </div>
+            </div>
+            <div className="flex w-full flex-col items-stretch gap-2 sm:w-auto sm:flex-row sm:items-center">
+              <Skeleton className="h-10 w-24 rounded-full" />
+              <Skeleton className="h-10 w-28 rounded-full" />
+            </div>
+          </div>
+        </div>
+
+        {/* Tabs Skeleton */}
+        <div className="space-y-6">
+          {/* Tab Headers */}
+          <div className="flex gap-4 border-b border-gray-200">
+            <Skeleton className="h-10 w-32" />
+            <Skeleton className="h-10 w-40" />
+            <Skeleton className="h-10 w-36" />
+          </div>
+
+          {/* Tab Content */}
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,_7fr)_minmax(0,_3fr)]">
+            <section className="rounded-2xl border border-gray-200/60 bg-white p-6">
+              <Skeleton className="h-4 w-full mb-2" />
+              <Skeleton className="h-4 w-3/4 mb-2" />
+              <Skeleton className="h-4 w-1/2 mb-4" />
+              <Skeleton className="h-4 w-full mb-2" />
+              <Skeleton className="h-4 w-5/6 mb-2" />
+              <Skeleton className="h-4 w-2/3" />
+            </section>
+            <aside className="space-y-4">
+              <div className="rounded-2xl border border-gray-200/60 bg-white p-6">
+                <div className="space-y-4">
+                  {Array.from({ length: 6 }, (_, i) => (
+                    <div key={i} className="flex items-start gap-3">
+                      <Skeleton className="h-9 w-9 rounded-full" />
+                      <div className="flex flex-1 flex-col space-y-2">
+                        <Skeleton className="h-3 w-24" />
+                        <Skeleton className="h-3 w-32" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </aside>
+          </div>
         </div>
       </div>
     );

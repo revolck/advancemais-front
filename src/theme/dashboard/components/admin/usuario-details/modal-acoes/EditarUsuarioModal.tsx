@@ -138,13 +138,12 @@ export function EditarUsuarioModal({
       });
       return;
     }
-    {
-      const digits = maskService.removeMask(telefoneSanitizado, "phone");
-      const currentDigits = (usuario.telefone || "").replace(/\D/g, "");
-      if (digits !== currentDigits) {
-        payload.telefone = digits;
-        hasChanges = true;
-      }
+    
+    const digits = maskService.removeMask(telefoneSanitizado, "phone");
+    const currentDigits = (usuario.telefone || "").replace(/\D/g, "");
+    if (digits !== currentDigits) {
+      payload.telefone = digits;
+      hasChanges = true;
     }
 
     const descricaoSanitizada = sanitize(formState.descricao);
@@ -222,17 +221,28 @@ export function EditarUsuarioModal({
 
     setIsSaving(true);
     try {
+      // Log para debug (apenas em desenvolvimento)
+      if (process.env.NODE_ENV === "development") {
+        console.log("📋 Atualizando usuário:", {
+          usuarioId: usuario.id,
+          payload,
+          hasChanges,
+        });
+      }
+      
       await onConfirm(payload);
+      
       toastCustom.success({
         title: "Dados atualizados",
         description: "As informações do usuario foram salvas com sucesso.",
       });
       handleClose();
-    } catch (error) {
-      console.error("Erro ao atualizar usuario", error);
+    } catch (error: any) {
+      console.error("❌ Erro ao atualizar usuario:", error);
+      const errorMessage = error?.message || "Não foi possível salvar as alterações agora.";
       toastCustom.error({
         title: "Erro ao salvar",
-        description: "Não foi possível salvar as alterações agora.",
+        description: errorMessage,
       });
     } finally {
       setIsSaving(false);

@@ -65,6 +65,19 @@ export function UsuariosDashboard({
     setPendingSearchTerm(filters.search ?? "");
   }, [filters.search]);
 
+  // Sincronizar estados locais com filtros quando filtros são limpos
+  useEffect(() => {
+    if (!filters.role) {
+      setSelectedRoles([]);
+    }
+    if (!filters.status) {
+      setSelectedStatuses([]);
+    }
+    if (!filters.cidade) {
+      setSelectedCidades([]);
+    }
+  }, [filters.role, filters.status, filters.cidade]);
+
   // Extrair cidades únicas dos usuários
   useEffect(() => {
     const cidades = Array.from(
@@ -143,15 +156,18 @@ export function UsuariosDashboard({
       if (key === "role") {
         const roles = (value as string[]) || [];
         setSelectedRoles(roles);
-        updateFilters({ role: roles[0] as any });
+        // Se não há seleção, remove o filtro (undefined para não enviar à API)
+        updateFilters({ role: roles.length > 0 ? (roles[0] as any) : undefined });
       } else if (key === "cidade") {
         const cidades = (value as string[]) || [];
         setSelectedCidades(cidades);
-        updateFilters({ cidade: cidades[0] });
+        // Se não há seleção, remove o filtro
+        updateFilters({ cidade: cidades.length > 0 ? cidades[0] : undefined });
       } else if (key === "status") {
         const statuses = (value as string[]) || [];
         setSelectedStatuses(statuses);
-        updateFilters({ status: statuses[0] });
+        // Se não há seleção, remove o filtro
+        updateFilters({ status: statuses.length > 0 ? statuses[0] : undefined });
       }
     },
     [updateFilters]

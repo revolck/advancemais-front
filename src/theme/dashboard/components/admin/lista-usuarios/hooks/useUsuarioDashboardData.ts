@@ -24,14 +24,14 @@ export function useUsuarioDashboardData(
 ): UseUsuarioDashboardDataReturn {
   const [filters, setFilters] = useState<UsuarioDashboardFilters>({
     page: 1,
-    pageSize: 10,
+    pageSize: 20, // Aumentado de 10 para 20 para mostrar mais resultados
     ...initialFilters,
   });
 
   const normalizedFilters = useMemo(() => {
     return {
       page: filters.page ?? 1,
-      pageSize: filters.pageSize ?? 10,
+      pageSize: filters.pageSize ?? 20, // Aumentado de 10 para 20
       status: filters.status ?? null,
       role: filters.role ?? null,
       search: filters.search ?? "",
@@ -47,19 +47,20 @@ export function useUsuarioDashboardData(
         limit: currentFilters.pageSize,
       };
 
-      if (currentFilters.status) {
+      // Apenas adiciona filtros se tiverem valores válidos
+      if (currentFilters.status && currentFilters.status !== null) {
         params.status = currentFilters.status as any;
       }
-      if (currentFilters.role) {
+      if (currentFilters.role && currentFilters.role !== null) {
         params.role = currentFilters.role as UserRole;
       }
       if (currentFilters.search && currentFilters.search.length >= 3) {
         params.search = currentFilters.search;
       }
-      if (currentFilters.cidade) {
+      if (currentFilters.cidade && currentFilters.cidade !== null) {
         params.cidade = currentFilters.cidade;
       }
-      if (currentFilters.estado) {
+      if (currentFilters.estado && currentFilters.estado !== null) {
         params.estado = currentFilters.estado;
       }
 
@@ -71,7 +72,26 @@ export function useUsuarioDashboardData(
   const usuariosQuery = useQuery({
     queryKey: queryKeys.usuarios.list(normalizedFilters),
     queryFn: async () => {
-      const response = await listUsuarios(buildParams(normalizedFilters));
+      const params = buildParams(normalizedFilters);
+      
+      // Log para debug (apenas em desenvolvimento)
+      if (process.env.NODE_ENV === "development") {
+        console.log("📋 Buscando usuários com parâmetros:", {
+          params,
+          normalizedFilters,
+        });
+      }
+      
+      const response = await listUsuarios(params);
+      
+      // Log para debug (apenas em desenvolvimento)
+      if (process.env.NODE_ENV === "development") {
+        console.log("✅ Usuários retornados:", {
+          total: response.pagination?.total,
+          usuarios: response.usuarios?.length,
+          pagination: response.pagination,
+        });
+      }
       const usuarios: UsuarioOverview[] = (response.usuarios || []).map(
         (u) => ({
           id: u.id,

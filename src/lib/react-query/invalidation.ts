@@ -25,12 +25,15 @@ import { queryKeys } from "./queryKeys";
  * ```
  */
 export function invalidateUsuarios(queryClient: QueryClient): void {
-  queryClient.invalidateQueries({
-    queryKey: queryKeys.usuarios.list({}),
-  });
+  // Invalida todas as queries que começam com "admin-usuarios-list"
+  // Isso inclui todas as listagens com diferentes filtros
   queryClient.invalidateQueries({
     queryKey: ["admin-usuarios-list"],
+    exact: false, // Invalida todas as queries que começam com essa chave
   });
+  
+  // Também invalida a query de detalhes se necessário
+  // (mas isso é feito individualmente quando necessário)
 }
 
 /**
