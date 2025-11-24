@@ -75,8 +75,10 @@ export const PricingPlanCard: React.FC<PricingPlanCardProps> = ({
         </div>
       </div>
 
-      {/* Descrição rápida */}
-      <div className="text-sm text-gray-500 mb-6">{plan.description}</div>
+      {/* Descrição rápida - só renderiza se houver descrição válida */}
+      {plan.description && plan.description.trim() && (
+        <div className="text-sm text-gray-500 mb-6">{plan.description}</div>
+      )}
 
       {/* Botão de ação */}
       <Button

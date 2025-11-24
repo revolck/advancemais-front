@@ -43,6 +43,7 @@ export interface RichTextareaProps
   autoFocus?: boolean;
   // Event handlers compatíveis com textarea
   onChange?: (event: React.ChangeEvent<HTMLTextAreaElement>) => void;
+  onHtmlChange?: (html: string) => void; // Callback opcional para capturar HTML formatado
   onKeyDown?: (event: React.KeyboardEvent<HTMLDivElement>) => void;
   onPaste?: (event: React.ClipboardEvent<HTMLDivElement>) => void;
   onFocus?: (event: React.FocusEvent<HTMLDivElement>) => void;

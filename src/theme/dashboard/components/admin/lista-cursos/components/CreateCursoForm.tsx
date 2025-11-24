@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { ButtonCustom } from "@/components/ui/custom";
 import { InputCustom } from "@/components/ui/custom/input";
-import { SimpleTextarea } from "@/components/ui/custom/text-area";
+import { RichTextarea } from "@/components/ui/custom/text-area";
 import { SelectCustom } from "@/components/ui/custom/select";
 import { toastCustom } from "@/components/ui/custom";
 import { createCurso, type CreateCursoPayload } from "@/api/cursos";
@@ -26,6 +26,7 @@ type StatusPadrao = "PUBLICADO" | "RASCUNHO";
 interface FormData {
   nome: string;
   descricao: string;
+  descricaoHtml?: string; // HTML formatado da descrição
   cargaHoraria: string;
   categoriaId: string | null;
   subcategoriaId: string | null;
@@ -95,34 +96,66 @@ export function CreateCursoForm({ onSuccess, onCancel }: CreateCursoFormProps) {
     if (!validateForm()) return;
     setIsLoading(true);
 
-    let finalImageUrl = imagemUrl;
+    let finalImageUrl: string | null = imagemUrl;
 
     try {
-      // Faz upload da imagem se houver arquivo novo
+      // PASSO 1: Faz upload da imagem PRIMEIRO se houver arquivo novo
       const fileItem = imagemFiles[0];
       if (fileItem?.file) {
         try {
+          if (process.env.NODE_ENV === "development") {
+            console.log("[CreateCursoForm] Iniciando upload da imagem...");
+          }
+
           const uploadResult = await uploadImage(
             fileItem.file,
             "cursos",
             imagemUrl || undefined
           );
-          finalImageUrl = uploadResult.url;
+
+          if (!uploadResult?.url || uploadResult.url.trim() === "") {
+            throw new Error("URL da imagem não foi retornada pelo servidor");
+          }
+
+          finalImageUrl = uploadResult.url.trim();
           setImagemUrl(finalImageUrl);
-        } catch (uploadError) {
+
+          if (process.env.NODE_ENV === "development") {
+            console.log("[CreateCursoForm] Upload concluído. URL:", finalImageUrl);
+          }
+        } catch (uploadError: any) {
+          const errorMessage =
+            uploadError?.message ||
+            "Não foi possível fazer upload da imagem. Tente novamente.";
+          
+          if (process.env.NODE_ENV === "development") {
+            console.error("[CreateCursoForm] Erro no upload:", uploadError);
+          }
+
           toastCustom.error({
             title: "Erro no upload",
-            description:
-              "Não foi possível fazer upload da imagem. Tente novamente.",
+            description: errorMessage,
           });
           setIsLoading(false);
           return;
         }
       }
 
+      // Valida se temos uma URL válida antes de continuar
+      if (!finalImageUrl || finalImageUrl.trim() === "") {
+        toastCustom.error({
+          title: "Imagem obrigatória",
+          description: "Por favor, adicione uma imagem para o curso.",
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      // PASSO 2: Constrói o payload com a URL da imagem garantida
+      // Usa descricaoHtml se disponível (com formatação), senão usa descricao (texto plano)
       const payload: CreateCursoPayload = {
         nome: formData.nome.trim(),
-        descricao: formData.descricao.trim(),
+        descricao: formData.descricaoHtml?.trim() || formData.descricao.trim(),
         cargaHoraria: Number(formData.cargaHoraria),
         categoriaId: Number(formData.categoriaId),
         subcategoriaId: formData.subcategoriaId
@@ -130,18 +163,17 @@ export function CreateCursoForm({ onSuccess, onCancel }: CreateCursoFormProps) {
           : undefined,
         estagioObrigatorio: formData.estagioObrigatorio || false,
         statusPadrao: (formData.statusPadrao || "PUBLICADO") as StatusPadrao,
-        // Sempre inclui imagemUrl se tiver valor válido
-        ...(finalImageUrl && finalImageUrl.trim() !== ""
-          ? { imagemUrl: finalImageUrl.trim() }
-          : {}),
+        // Garante que imagemUrl sempre seja incluída se tiver valor válido
+        imagemUrl: finalImageUrl.trim(),
       };
 
       // Debug em desenvolvimento
       if (process.env.NODE_ENV === "development") {
-        console.log("[CreateCursoForm] Payload sendo enviado:", payload);
-        console.log("[CreateCursoForm] imagemUrl:", finalImageUrl);
+        console.log("[CreateCursoForm] Payload completo sendo enviado:", payload);
+        console.log("[CreateCursoForm] imagemUrl no payload:", payload.imagemUrl);
       }
 
+      // PASSO 3: Envia o payload completo para a API
       await createCurso(payload);
 
       // Invalida todas as queries de listagem de cursos para atualizar a lista
@@ -344,7 +376,7 @@ export function CreateCursoForm({ onSuccess, onCancel }: CreateCursoFormProps) {
                 </div>
 
                 <div className="md:col-span-2 lg:col-span-4">
-                  <SimpleTextarea
+                  <RichTextarea
                     label="Descrição"
                     placeholder="Descreva o conteúdo e objetivos do curso"
                     value={formData.descricao}
@@ -354,6 +386,9 @@ export function CreateCursoForm({ onSuccess, onCancel }: CreateCursoFormProps) {
                         (e.target as HTMLTextAreaElement).value
                       )
                     }
+                    onHtmlChange={(html) => {
+                      setFormData((prev) => ({ ...prev, descricaoHtml: html }));
+                    }}
                     maxLength={800}
                     showCharCount
                     error={errors.descricao}

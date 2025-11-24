@@ -183,6 +183,46 @@
   outline: none !important;
   /* Remove a modificação webkit que estava causando problemas */
   -webkit-user-modify: read-write !important;
+  /* Garante que quebras de linha funcionem */
+  display: block !important;
+  /* Permite múltiplas linhas */
+  line-height: 1.5 !important;
+}
+
+/* Garante que <br> e quebras de linha sejam renderizadas */
+.rich-textarea-content br {
+  display: block !important;
+  content: "" !important;
+  margin: 0 !important;
+}
+
+/* Garante que divs criados pelo Enter funcionem */
+.rich-textarea-content div {
+  min-height: 1.5em !important;
+}
+
+/* Estilos para links no rich textarea */
+.rich-textarea-content a.rich-textarea-link {
+  color: #2563eb !important;
+  text-decoration: underline !important;
+  text-decoration-color: #2563eb !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+}
+
+.rich-textarea-content a.rich-textarea-link:hover {
+  color: #1d4ed8 !important;
+  text-decoration-color: #1d4ed8 !important;
+  text-decoration-thickness: 2px !important;
+}
+
+.rich-textarea-content a.rich-textarea-link:visited {
+  color: #7c3aed !important;
+  text-decoration-color: #7c3aed !important;
+}
+
+.rich-textarea-content a.rich-textarea-link:active {
+  color: #1e40af !important;
 }
 
 /* Removedores de resize para ambos os componentes */
@@ -198,14 +238,8 @@
   -moz-resize: none !important;
 }
 
-/* Estilos para placeholder no contentEditable */
-.rich-textarea-content[data-placeholder]:empty::before {
-  content: attr(data-placeholder);
-  color: rgb(107 114 128); /* text-gray-500 */
-  pointer-events: none;
-  position: absolute;
-  opacity: 0.7;
-}
+/* Estilos para placeholder no contentEditable - REMOVIDO pois agora usamos elemento separado */
+/* O placeholder agora é renderizado como elemento separado para não acompanhar o scroll */
 
 /* Estilos para formatação rica */
 .rich-textarea-content strong {

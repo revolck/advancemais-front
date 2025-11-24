@@ -27,10 +27,20 @@ export function useProcessData(): UseProcessDataReturn {
       setError(null);
 
       const result = await listSistema();
-      const first = result?.[0];
+      
+      // Verificar se o resultado é um array válido e não vazio
+      if (!Array.isArray(result) || result.length === 0) {
+        setError("Nenhum dado encontrado.");
+        setData(null);
+        return;
+      }
+
+      const first = result[0];
 
       if (!first) {
-        throw new Error("Dados inexistentes");
+        setError("Dados incompletos.");
+        setData(null);
+        return;
       }
 
       const processData: ProcessSectionData = {
@@ -70,6 +80,7 @@ export function useProcessData(): UseProcessDataReturn {
     } catch (err) {
       console.error("Erro ao buscar dados das etapas do processo:", err);
       setError("Não foi possível carregar os dados.");
+      setData(null);
     } finally {
       setIsLoading(false);
     }

@@ -8,7 +8,7 @@ export interface PricingPlanData {
   title: string;
   iconName: string; // Nome do ícone Lucide (ex: "Briefcase")
   price: string;
-  description: string;
+  description: string | null; // Descrição opcional - pode ser null se não preenchida
   features: string[];
   isPopular: boolean;
   isActive: boolean;

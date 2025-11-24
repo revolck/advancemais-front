@@ -157,7 +157,7 @@ function mapPlanoEmpresarialToPricingData(
     title: plan.nome,
     iconName: plan.icon || PRICING_CONFIG.icons.fallbackIcon,
     price: formatCurrencyValue(plan.valor),
-    description: plan.descricao,
+    description: (plan.descricao && plan.descricao.trim()) || null, // Converte string vazia, null ou undefined para null
     features: buildFeatureList(plan),
     isPopular:
       (Number(plan.quantidadeVagas) || 0) === highestVacancyCount &&

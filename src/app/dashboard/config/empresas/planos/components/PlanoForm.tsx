@@ -23,13 +23,14 @@ const planoFormSchema = z.object({
   nome: z.string().min(1, "Nome é obrigatório"),
   descricao: z
     .string()
-    .min(1, "Descrição é obrigatória")
-    .max(150, "Descrição deve ter no máximo 150 caracteres"),
+    .max(150, "Descrição deve ter no máximo 150 caracteres")
+    .optional(),
   valor: z.string().min(1, "Valor é obrigatório"),
   desconto: z
     .number()
     .min(0, "Desconto deve ser maior ou igual a 0")
-    .max(100, "Desconto deve ser menor ou igual a 100"),
+    .max(100, "Desconto deve ser menor ou igual a 100")
+    .optional(),
   quantidadeVagas: z
     .number()
     .min(1, "Quantidade de vagas deve ser maior que 0")
@@ -77,7 +78,7 @@ export function PlanoForm({
   const handleSubmit = async (data: PlanoFormData) => {
     try {
       // Validação adicional antes de enviar
-      if (!data.icon || !data.nome || !data.descricao || !data.valor) {
+      if (!data.icon || !data.nome || !data.valor) {
         throw new Error("Todos os campos obrigatórios devem ser preenchidos.");
       }
 
@@ -277,7 +278,6 @@ export function PlanoForm({
                       e.preventDefault();
                     }
                   }}
-                    required
                     disabled={isDisabled}
                   />
                 </FormControl>
@@ -478,7 +478,6 @@ export function PlanoForm({
                   {...field}
                   placeholder="Descreva os benefícios e características do plano"
                   rows={2}
-                  required
                   label="Descrição"
                   maxLength={150}
                   showCharCount={true}
