@@ -26,6 +26,7 @@ import { getUsuarioById } from "@/api/usuarios";
 import { toastCustom } from "@/components/ui/custom/toast";
 import { ViewCurriculoModal } from "../modal-acoes/ViewCurriculoModal";
 import type { Curriculo } from "@/api/candidatos/types";
+import type { UsuarioCurriculo } from "@/api/usuarios/types";
 import { generateCurriculoPdf } from "../utils/generateCurriculoPdf";
 
 interface CurriculosTabProps {
@@ -37,6 +38,12 @@ export function CurriculosTab({
   aluno,
   isLoading = false,
 }: CurriculosTabProps) {
+  const isCurriculoDetalhado = (
+    curriculo: Curriculo | UsuarioCurriculo
+  ): curriculo is Curriculo => {
+    return "objetivo" in curriculo || "resumo" in curriculo;
+  };
+
   const [loadingStates, setLoadingStates] = useState<Record<string, boolean>>(
     {}
   );
@@ -84,7 +91,10 @@ export function CurriculosTab({
     }
   };
 
-  const handleDownloadPDF = async (curriculo: Curriculo, e?: React.MouseEvent) => {
+  const handleDownloadPDF = async (
+    curriculo: Curriculo | UsuarioCurriculo,
+    e?: React.MouseEvent
+  ) => {
     if (e) {
       e.stopPropagation();
       e.preventDefault();
@@ -98,8 +108,8 @@ export function CurriculosTab({
     setLoadingDownload((prev) => ({ ...prev, [curriculo.id]: true }));
     try {
       // Buscar o currículo completo se necessário
-      const curriculoCompleto = curriculo.experiencias 
-        ? curriculo 
+      const curriculoCompleto = isCurriculoDetalhado(curriculo)
+        ? curriculo
         : await getCurriculo(curriculo.id);
       
       await generateCurriculoPdf(
