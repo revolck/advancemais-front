@@ -2,12 +2,14 @@
 
 import { useState, useMemo, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { EmptyState } from "@/components/ui/custom";
+import { EmptyState, FilterBar } from "@/components/ui/custom";
 import { ButtonCustom } from "@/components/ui/custom/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Label } from "@/components/ui/label";
 import { MultiSelectFilter } from "@/components/ui/custom/filters/MultiSelectFilter";
 import { SelectCustom } from "@/components/ui/custom/select";
+import type { FilterField } from "@/components/ui/custom/filters";
+import type { SelectOption } from "@/components/ui/custom/select";
 import {
   Table,
   TableHeader,
@@ -17,6 +19,12 @@ import {
   TableCell,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import {
   User,
@@ -25,6 +33,7 @@ import {
   MapPin,
   GraduationCap,
   ExternalLink,
+  ChevronRight,
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -44,7 +53,20 @@ export interface AlunosMatriculadosTabProps {
 interface FilterValues {
   status: string[];
   turmaId: string | null;
+  cidade: string[];
 }
+
+const MIN_SEARCH_LENGTH = 3;
+const SEARCH_HELPER_TEXT = "Pesquise por nome, CPF ou código da inscrição.";
+
+const getSearchValidationMessage = (value: string): string | null => {
+  const trimmed = value.trim();
+  if (trimmed.length === 0) return null;
+  if (trimmed.length < MIN_SEARCH_LENGTH) {
+    return `Informe pelo menos ${MIN_SEARCH_LENGTH} caracteres para pesquisar.`;
+  }
+  return null;
+};
 
 const STATUS_OPTIONS: Array<{ value: StatusInscricao; label: string }> = [
   { value: "INSCRITO", label: "Inscrito" },
@@ -69,12 +91,6 @@ const getStatusBadgeColor = (status: StatusInscricao): string => {
   return colorMap[status] || "bg-gray-50 text-gray-700 border-gray-200";
 };
 
-const getProgressColor = (progresso: number): string => {
-  if (progresso <= 30) return "bg-red-500";
-  if (progresso <= 70) return "bg-amber-500";
-  return "bg-emerald-500";
-};
-
 const formatDate = (dateString: string): string => {
   try {
     const date = new Date(dateString);
@@ -90,12 +106,28 @@ const formatDateRange = (
 ): string => {
   if (!dataInicio && !dataFim) return "—";
   try {
-    const inicio = dataInicio ? format(new Date(dataInicio), "dd/MM/yyyy", { locale: ptBR }) : "—";
-    const fim = dataFim ? format(new Date(dataFim), "dd/MM/yyyy", { locale: ptBR }) : "—";
+    const inicio = dataInicio
+      ? format(new Date(dataInicio), "dd/MM/yyyy", { locale: ptBR })
+      : "—";
+    const fim = dataFim
+      ? format(new Date(dataFim), "dd/MM/yyyy", { locale: ptBR })
+      : "—";
     return `${inicio} - ${fim}`;
   } catch {
     return "—";
   }
+};
+
+const formatCPF = (cpf: string): string => {
+  if (!cpf) return "—";
+  // Remove caracteres não numéricos
+  const numbers = cpf.replace(/\D/g, "");
+  // Aplica máscara: XXX.XXX.XXX-XX
+  if (numbers.length === 11) {
+    return numbers.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
+  }
+  // Se não tiver 11 dígitos, retorna o original
+  return cpf;
 };
 
 export function AlunosMatriculadosTab({
@@ -106,7 +138,10 @@ export function AlunosMatriculadosTab({
   const [filters, setFilters] = useState<FilterValues>({
     status: [],
     turmaId: null,
+    cidade: [],
   });
+  const [pendingSearchTerm, setPendingSearchTerm] = useState("");
+  const [appliedSearchTerm, setAppliedSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
 
@@ -115,13 +150,30 @@ export function AlunosMatriculadosTab({
     isLoading: isLoadingInscricoes,
     error,
   } = useQuery({
-    queryKey: ["curso-inscricoes", cursoId, currentPage, itemsPerPage, filters],
+    queryKey: [
+      "curso-inscricoes",
+      cursoId,
+      currentPage,
+      itemsPerPage,
+      filters,
+      appliedSearchTerm,
+    ],
     queryFn: async () => {
       const result = await listInscricoesCurso(cursoId, {
         page: currentPage,
         pageSize: itemsPerPage,
         status: filters.status.length > 0 ? filters.status : undefined,
         turmaId: filters.turmaId || undefined,
+        search:
+          appliedSearchTerm.length >= MIN_SEARCH_LENGTH
+            ? appliedSearchTerm
+            : undefined,
+        cidade:
+          filters.cidade.length > 0
+            ? filters.cidade.length === 1
+              ? filters.cidade[0]
+              : filters.cidade
+            : undefined,
       });
       return result;
     },
@@ -141,6 +193,33 @@ export function AlunosMatriculadosTab({
     }));
   }, [turmas]);
 
+  // Opções de cidades baseadas nas inscrições
+  const cidadesOptions: SelectOption[] = useMemo(() => {
+    const cidades = new Set<string>();
+    inscricoes.forEach((inscricao) => {
+      if (inscricao.aluno.cidade) {
+        cidades.add(inscricao.aluno.cidade);
+      }
+    });
+    return Array.from(cidades)
+      .sort()
+      .map((cidade) => ({ value: cidade, label: cidade }));
+  }, [inscricoes]);
+
+  const searchValidationMessage = useMemo(
+    () => getSearchValidationMessage(pendingSearchTerm),
+    [pendingSearchTerm]
+  );
+  const isSearchInputValid = !searchValidationMessage;
+
+  const handleSearchSubmit = useCallback(() => {
+    const validationMessage = getSearchValidationMessage(pendingSearchTerm);
+    if (validationMessage) return;
+    const trimmedValue = pendingSearchTerm.trim();
+    setAppliedSearchTerm(trimmedValue);
+    setCurrentPage(1);
+  }, [pendingSearchTerm]);
+
   // Função para mudar filtros
   const handleFilterChange = useCallback(
     (key: keyof FilterValues, value: string | string[] | null) => {
@@ -158,7 +237,10 @@ export function AlunosMatriculadosTab({
     setFilters({
       status: [],
       turmaId: null,
+      cidade: [],
     });
+    setPendingSearchTerm("");
+    setAppliedSearchTerm("");
     setCurrentPage(1);
   }, []);
 
@@ -173,9 +255,7 @@ export function AlunosMatriculadosTab({
 
     if (filters.status.length > 0) {
       const statusLabels = filters.status
-        .map(
-          (s) => STATUS_OPTIONS.find((opt) => opt.value === s)?.label || s
-        )
+        .map((s) => STATUS_OPTIONS.find((opt) => opt.value === s)?.label || s)
         .join(", ");
       chips.push({ key: "status", label: `Status: ${statusLabels}` });
     }
@@ -188,8 +268,20 @@ export function AlunosMatriculadosTab({
       });
     }
 
+    if (filters.cidade.length > 0) {
+      const cidadeLabels = filters.cidade.join(", ");
+      chips.push({ key: "cidade", label: `Localização: ${cidadeLabels}` });
+    }
+
+    if (appliedSearchTerm) {
+      chips.push({
+        key: "search",
+        label: `Pesquisa: ${appliedSearchTerm}`,
+      });
+    }
+
     return chips;
-  }, [filters, turmas]);
+  }, [filters, turmas, appliedSearchTerm]);
 
   // Calcular páginas visíveis
   const visiblePages = useMemo(() => {
@@ -270,19 +362,30 @@ export function AlunosMatriculadosTab({
         <Table>
           <TableHeader>
             <TableRow className="border-gray-100 bg-gray-50/50">
-              <TableHead className="font-semibold text-gray-700">Aluno</TableHead>
-              <TableHead className="font-semibold text-gray-700">Email</TableHead>
+              <TableHead className="font-semibold text-gray-700">
+                Aluno
+              </TableHead>
+              <TableHead className="font-semibold text-gray-700">
+                Email
+              </TableHead>
               <TableHead className="font-semibold text-gray-700">
                 Localização
               </TableHead>
-              <TableHead className="font-semibold text-gray-700">Turma</TableHead>
-              <TableHead className="font-semibold text-gray-700">Status</TableHead>
-              <TableHead className="font-semibold text-gray-700">Progresso</TableHead>
+              <TableHead className="font-semibold text-gray-700">
+                Turma
+              </TableHead>
+              <TableHead className="font-semibold text-gray-700">
+                Status
+              </TableHead>
               <TableHead className="font-semibold text-gray-700">
                 Data de Inscrição
               </TableHead>
-              <TableHead className="font-semibold text-gray-700">Período</TableHead>
-              <TableHead className="font-semibold text-gray-700">Ações</TableHead>
+              <TableHead className="font-semibold text-gray-700">
+                Período
+              </TableHead>
+              <TableHead className="font-semibold text-gray-700">
+                Ações
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -296,15 +399,17 @@ export function AlunosMatriculadosTab({
                     <div className="flex-shrink-0 w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
                       <User className="h-5 w-5 text-blue-600" />
                     </div>
-                    <div className="min-w-0">
-                      <div className="text-sm font-medium text-gray-900">
-                        {inscricao.aluno.nomeCompleto}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <div className="text-sm font-medium text-gray-900">
+                          {inscricao.aluno.nomeCompleto}
+                        </div>
+                        <code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded font-mono text-gray-500 flex-shrink-0">
+                          {inscricao.aluno.codigo}
+                        </code>
                       </div>
-                      <div className="text-xs text-gray-500">
-                        {inscricao.aluno.codigo}
-                      </div>
-                      <div className="text-xs text-gray-400">
-                        {inscricao.aluno.cpf}
+                      <div className="text-xs text-gray-500 font-mono truncate max-w-[220px] mt-1">
+                        {formatCPF(inscricao.aluno.cpf)}
                       </div>
                     </div>
                   </div>
@@ -320,10 +425,7 @@ export function AlunosMatriculadosTab({
                     <div className="flex items-center gap-2 text-sm text-gray-600">
                       <MapPin className="h-4 w-4 text-gray-400" />
                       <span>
-                        {[
-                          inscricao.aluno.cidade,
-                          inscricao.aluno.estado,
-                        ]
+                        {[inscricao.aluno.cidade, inscricao.aluno.estado]
                           .filter(Boolean)
                           .join(", ")}
                       </span>
@@ -358,22 +460,6 @@ export function AlunosMatriculadosTab({
                   </Badge>
                 </TableCell>
                 <TableCell className="py-4">
-                  <div className="flex items-center gap-2 min-w-[120px]">
-                    <div className="flex-1 relative h-2 bg-gray-200 rounded-full overflow-hidden">
-                      <div
-                        className={cn(
-                          "h-full transition-all",
-                          getProgressColor(inscricao.progresso)
-                        )}
-                        style={{ width: `${inscricao.progresso}%` }}
-                      />
-                    </div>
-                    <span className="text-xs font-medium text-gray-600 min-w-[35px]">
-                      {inscricao.progresso}%
-                    </span>
-                  </div>
-                </TableCell>
-                <TableCell className="py-4">
                   <div className="flex items-center gap-2 text-sm text-gray-600">
                     <Calendar className="h-4 w-4 text-gray-400" />
                     {formatDate(inscricao.criadoEm)}
@@ -386,13 +472,26 @@ export function AlunosMatriculadosTab({
                   )}
                 </TableCell>
                 <TableCell className="py-4">
-                  <Link
-                    href={`/dashboard/usuarios/${inscricao.aluno.id}`}
-                    className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 transition-colors"
-                  >
-                    Ver perfil
-                    <ExternalLink className="h-3 w-3" />
-                  </Link>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        asChild
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 rounded-full text-gray-500 hover:text-white hover:bg-[var(--primary-color)]"
+                        aria-label="Visualizar aluno"
+                      >
+                        <Link
+                          href={`/dashboard/cursos/alunos/${inscricao.aluno.id}`}
+                        >
+                          <ChevronRight className="h-4 w-4" />
+                        </Link>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent sideOffset={8}>
+                      Visualizar aluno
+                    </TooltipContent>
+                  </Tooltip>
                 </TableCell>
               </TableRow>
             ))}
@@ -406,10 +505,7 @@ export function AlunosMatriculadosTab({
     if (!pagination || pagination.totalPages <= 1) return null;
 
     const startIndex = (currentPage - 1) * itemsPerPage + 1;
-    const endIndex = Math.min(
-      currentPage * itemsPerPage,
-      pagination.total
-    );
+    const endIndex = Math.min(currentPage * itemsPerPage, pagination.total);
 
     return (
       <div className="flex items-center justify-between mt-6 px-4 py-3">
@@ -490,77 +586,97 @@ export function AlunosMatriculadosTab({
     );
   };
 
+  const filterFields: FilterField[] = useMemo(
+    () => [
+      {
+        key: "status",
+        label: "Status",
+        mode: "multiple",
+        options: STATUS_OPTIONS.map((opt) => ({
+          value: opt.value,
+          label: opt.label,
+        })),
+        placeholder: "Selecionar status",
+      },
+      {
+        key: "turma",
+        label: "Turma",
+        options: turmaOptions,
+        placeholder: "Todas as turmas",
+        disabled: turmaOptions.length === 0,
+      },
+      {
+        key: "cidade",
+        label: "Localização",
+        mode: "multiple",
+        options: cidadesOptions,
+        placeholder: "Selecionar localização",
+      },
+    ],
+    [STATUS_OPTIONS, turmaOptions, cidadesOptions]
+  );
+
+  const filterValues = useMemo(
+    () => ({
+      status: filters.status,
+      turma: filters.turmaId,
+      cidade: filters.cidade,
+    }),
+    [filters]
+  );
+
   return (
     <div className="space-y-6">
       {/* Filtros */}
-      <div className="rounded-xl border border-gray-200 bg-white p-6 space-y-6">
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          {/* Filtro de Status */}
-          <div className="space-y-2">
-            <Label className="text-sm font-semibold text-gray-700">Status</Label>
-            <MultiSelectFilter
-              title="Status"
-              placeholder="Selecionar status"
-              options={STATUS_OPTIONS}
-              selectedValues={filters.status}
-              onSelectionChange={(val) => handleFilterChange("status", val)}
-              showApplyButton
-              className="w-full"
-            />
-          </div>
-
-          {/* Filtro de Turma */}
-          {turmaOptions.length > 0 && (
-            <div className="space-y-2">
-              <Label className="text-sm font-semibold text-gray-700">Turma</Label>
-              <SelectCustom
-                placeholder="Todas as turmas"
-                options={turmaOptions}
-                value={filters.turmaId}
-                onChange={(val) => handleFilterChange("turmaId", val)}
-              />
-            </div>
-          )}
+      <div className="border-b border-gray-200">
+        <div className="py-4">
+          <FilterBar
+            className="[&>div]:lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.6fr)_minmax(0,1.2fr)_minmax(0,1fr)_auto]"
+            fields={filterFields}
+            values={filterValues}
+            onChange={(key, value) => {
+              if (key === "status") {
+                handleFilterChange(
+                  "status",
+                  Array.isArray(value) ? (value as string[]) : []
+                );
+              } else if (key === "turma") {
+                handleFilterChange("turmaId", (value as string) || null);
+              } else if (key === "cidade") {
+                handleFilterChange(
+                  "cidade",
+                  Array.isArray(value) ? (value as string[]) : []
+                );
+              }
+            }}
+            onClearAll={handleClearFilters}
+            search={{
+              label: "Pesquisar",
+              value: pendingSearchTerm,
+              onChange: (value) => setPendingSearchTerm(value),
+              placeholder: "Nome, CPF ou código da inscrição...",
+              onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleSearchSubmit();
+                }
+              },
+              error: searchValidationMessage,
+              helperText: SEARCH_HELPER_TEXT,
+              helperPlacement: "tooltip",
+            }}
+            rightActions={
+              <ButtonCustom
+                variant="primary"
+                size="lg"
+                onClick={handleSearchSubmit}
+                disabled={!isSearchInputValid}
+              >
+                Pesquisar
+              </ButtonCustom>
+            }
+          />
         </div>
-
-        {/* Chips de Filtros Ativos */}
-        {activeChips.length > 0 && (
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex flex-wrap items-center gap-2">
-              {activeChips.map((chip) => (
-                <span
-                  key={chip.key}
-                  className="inline-flex items-center gap-1 rounded-full border border-gray-300 bg-gray-50 px-3 py-1.5 text-sm text-gray-700"
-                >
-                  {chip.label}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (chip.key === "status") {
-                        handleFilterChange("status", []);
-                      } else {
-                        handleFilterChange(chip.key as keyof FilterValues, null);
-                      }
-                    }}
-                    className="ml-1 rounded-full p-0.5 text-gray-500 hover:text-gray-700 cursor-pointer"
-                    aria-label={`Limpar ${chip.key}`}
-                  >
-                    <span className="sr-only">Remover filtro</span>
-                    ×
-                  </button>
-                </span>
-              ))}
-            </div>
-            <ButtonCustom
-              variant="outline"
-              size="sm"
-              onClick={handleClearFilters}
-              className="text-sm"
-            >
-              Limpar todos
-            </ButtonCustom>
-          </div>
-        )}
       </div>
 
       {/* Tabela */}

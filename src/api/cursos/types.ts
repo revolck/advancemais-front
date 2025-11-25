@@ -168,6 +168,8 @@ export interface ListInscricoesCursoParams {
   pageSize?: number;
   status?: string | string[];
   turmaId?: string;
+  search?: string;
+  cidade?: string | string[];
 }
 
 export interface ListInscricoesCursoResponse {

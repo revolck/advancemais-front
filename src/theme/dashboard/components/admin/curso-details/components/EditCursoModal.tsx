@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   ModalCustom,
@@ -23,7 +23,7 @@ import {
   FileUpload,
   type FileUploadItem,
 } from "@/components/ui/custom/file-upload";
-import { deleteImage } from "@/services/upload";
+import { uploadImage, deleteImage } from "@/services/upload";
 import { Switch } from "@/components/ui/switch";
 import { queryKeys } from "@/lib/react-query/queryKeys";
 
@@ -72,6 +72,8 @@ export function EditCursoModal({
   );
   const [imagemFiles, setImagemFiles] = useState<FileUploadItem[]>([]);
   const [imagemUrl, setImagemUrl] = useState<string | null>(null);
+  // Guarda a URL atual para só remover do Blob após submit se necessário
+  const [oldImageUrl, setOldImageUrl] = useState<string | undefined>(undefined);
 
   const { categoriaOptions, isLoading: isLoadingCategorias } =
     useCursoCategorias();
@@ -97,20 +99,25 @@ export function EditCursoModal({
       // Carregar imagem existente se houver
       if (curso.imagemUrl) {
         setImagemUrl(curso.imagemUrl);
+        setOldImageUrl(curso.imagemUrl);
+        // Extrair nome do arquivo da URL para exibição
+        const fileName = curso.imagemUrl.split("/").pop() || "Imagem atual";
         setImagemFiles([
           {
             id: "existing-image",
-            name: "Imagem atual",
+            name: fileName,
             size: 0,
             type: "image/*",
             status: "completed" as const,
             progress: 100,
             uploadDate: new Date(),
             uploadedUrl: curso.imagemUrl,
+            previewUrl: curso.imagemUrl, // URL para preview da imagem existente
           },
         ]);
       } else {
         setImagemUrl(null);
+        setOldImageUrl(undefined);
         setImagemFiles([]);
       }
     }
@@ -137,7 +144,8 @@ export function EditCursoModal({
   };
 
   const validateImage = (): boolean => {
-    if (!imagemUrl) {
+    // Valida se há arquivo selecionado OU imagemUrl existente
+    if (!imagemFiles[0]?.file && !imagemUrl && imagemFiles.length === 0) {
       toastCustom.error({
         title: "Imagem obrigatória",
         description: "Por favor, adicione uma imagem para o curso.",
@@ -154,13 +162,78 @@ export function EditCursoModal({
     }
   };
 
+  // Handler para mudanças nos arquivos
+  const handleFilesChange = useCallback((files: FileUploadItem[]) => {
+    setImagemFiles(files);
+
+    // Se há uma imagem existente (com uploadedUrl), mantém a URL
+    // Se não há arquivos, limpa a URL
+    const latestFile = files[files.length - 1];
+    if (latestFile?.uploadedUrl) {
+      // Imagem existente carregada do backend
+      setImagemUrl(latestFile.uploadedUrl);
+      setErrors((prev) => ({ ...prev, imagemUrl: undefined }));
+    } else if (files.length === 0) {
+      // Se todos os arquivos foram removidos, limpa a URL
+      setImagemUrl(null);
+    }
+    // Se há um arquivo novo (sem uploadedUrl ainda), não atualiza imagemUrl
+    // O upload será feito no submit
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Proteção contra múltiplos submits
+    if (isLoading) {
+      return;
+    }
+    
     if (!validateForm()) return;
     if (!validateImage()) return;
 
     setIsLoading(true);
+    
     try {
+      // Estratégia igual ao SliderForm: só deletar/upload NO SUBMIT
+      let finalImageUrl = imagemUrl || "";
+      let uploadResult: { url: string; title: string } | undefined;
+      const latest = imagemFiles[imagemFiles.length - 1];
+      const previousUrl = oldImageUrl;
+
+      if (latest?.file) {
+        // Substituição: sobe novo e remove o antigo via uploadService
+        uploadResult = await uploadImage(
+          latest.file,
+          "website/curso/imagem",
+          previousUrl
+        );
+        finalImageUrl = uploadResult.url;
+        setImagemUrl(finalImageUrl);
+        setOldImageUrl(finalImageUrl);
+      } else if (!latest && !finalImageUrl && previousUrl) {
+        // Usuário removeu a imagem e não enviou outra: remove do Blob ao confirmar
+        await deleteImage(previousUrl);
+        setOldImageUrl(undefined);
+      } else if (previousUrl && !finalImageUrl) {
+        // Nenhum arquivo novo e form indica vazio: mantém estado vazio
+        // (sem upload nem alteração de URL)
+      } else if (previousUrl) {
+        // Mantém a imagem existente
+        finalImageUrl = previousUrl;
+      }
+
+      // Valida se temos uma URL válida antes de continuar
+      if (!finalImageUrl || finalImageUrl.trim() === "") {
+        toastCustom.error({
+          title: "Imagem obrigatória",
+          description: "Por favor, adicione uma imagem para o curso.",
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      // Constrói o payload com a URL da imagem garantida
       const payload: UpdateCursoPayload = {
         nome: formData.nome.trim(),
         descricao: formData.descricao.trim(),
@@ -171,9 +244,16 @@ export function EditCursoModal({
           : undefined,
         estagioObrigatorio: formData.estagioObrigatorio || false,
         statusPadrao: (formData.statusPadrao || "PUBLICADO") as StatusPadrao,
-        imagemUrl: imagemUrl || undefined,
+        imagemUrl: finalImageUrl.trim(),
       };
 
+      // Debug em desenvolvimento
+      if (process.env.NODE_ENV === "development") {
+        console.log("[EditCursoModal] Payload completo sendo enviado:", payload);
+        console.log("[EditCursoModal] imagemUrl no payload:", payload.imagemUrl);
+      }
+
+      // Envia o payload completo para a API
       await updateCurso(curso.id, payload);
 
       // Invalida todas as queries de listagem de cursos e detalhes para atualizar
@@ -246,22 +326,9 @@ export function EditCursoModal({
                   multiple={false}
                   showPreview
                   showProgress={false}
-                  autoUpload
-                  publicUrl="website/curso/imagem"
-                  onFilesChange={(files) => setImagemFiles(files)}
-                  onFileRemove={async () => {
-                    if (imagemUrl) {
-                      try {
-                        await deleteImage(imagemUrl);
-                      } catch {}
-                    }
-                    setImagemUrl(null);
-                  }}
-                  onUploadComplete={async (file) => {
-                    if (file?.uploadedUrl) {
-                      setImagemUrl(file.uploadedUrl);
-                    }
-                  }}
+                  autoUpload={false}
+                  deleteOnRemove={false}
+                  onFilesChange={handleFilesChange}
                   disabled={isLoading}
                 />
               </div>
@@ -394,7 +461,11 @@ export function EditCursoModal({
             >
               Cancelar
             </ButtonCustom>
-            <ButtonCustom type="submit" isLoading={isLoading}>
+            <ButtonCustom 
+              type="submit" 
+              isLoading={isLoading}
+              disabled={isLoading}
+            >
               Salvar Alterações
             </ButtonCustom>
           </ModalFooter>

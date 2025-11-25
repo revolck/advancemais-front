@@ -20,7 +20,7 @@ import {
   revokeAlunoBloqueio,
 } from "@/api/usuarios";
 import { HeaderInfo } from "./components";
-import { AboutTab, CursosTurmasTab } from "./tabs";
+import { AboutTab, CursosTurmasTab, CurriculosTab, CandidaturasTab } from "./tabs";
 import {
   BloquearAlunoModal,
   DesbloquearAlunoModal,
@@ -185,6 +185,22 @@ export function AlunoDetailsView({
           inscricoes={inscricoes}
           isLoading={isReloading}
         />
+      ),
+    },
+    {
+      value: "curriculos",
+      label: "Currículos",
+      icon: "FileText",
+      content: (
+        <CurriculosTab aluno={alunoData} isLoading={isReloading} />
+      ),
+    },
+    {
+      value: "candidaturas",
+      label: "Candidaturas",
+      icon: "Briefcase",
+      content: (
+        <CandidaturasTab aluno={alunoData} isLoading={isReloading} />
       ),
     },
   ];

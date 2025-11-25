@@ -155,14 +155,22 @@ function buildCursoRequest(
   if ("estagioObrigatorio" in payload && payload.estagioObrigatorio !== undefined) {
     jsonPayload.estagioObrigatorio = payload.estagioObrigatorio;
   }
-  if ("imagemUrl" in payload && payload.imagemUrl !== undefined && payload.imagemUrl !== null && payload.imagemUrl.trim() !== "") {
-    jsonPayload.imagemUrl = payload.imagemUrl.trim();
+  // imagemUrl: sempre envia se estiver presente no payload e tiver valor válido
+  if ("imagemUrl" in payload && payload.imagemUrl !== undefined && payload.imagemUrl !== null) {
+    const trimmedUrl = String(payload.imagemUrl).trim();
+    if (trimmedUrl !== "") {
+      jsonPayload.imagemUrl = trimmedUrl;
+    }
+    // Se for string vazia após trim, não inclui no JSON (API não atualiza o campo)
   }
 
   // Debug em desenvolvimento
   if (process.env.NODE_ENV === "development") {
     console.log("[buildCursoRequest] JSON sendo enviado:", jsonPayload);
     console.log("[buildCursoRequest] Payload original:", payload);
+    console.log("[buildCursoRequest] imagemUrl no payload original:", payload.imagemUrl);
+    console.log("[buildCursoRequest] imagemUrl no JSON final:", jsonPayload.imagemUrl);
+    console.log("[buildCursoRequest] JSON stringificado:", JSON.stringify(jsonPayload));
   }
 
   return {
@@ -620,6 +628,16 @@ export async function listInscricoesCurso(
   }
   if (params?.turmaId) {
     searchParams.append("turmaId", params.turmaId);
+  }
+  if (params?.search) {
+    searchParams.append("search", params.search);
+  }
+  if (params?.cidade) {
+    if (Array.isArray(params.cidade)) {
+      params.cidade.forEach((cidade) => searchParams.append("cidade", cidade));
+    } else {
+      searchParams.append("cidade", params.cidade);
+    }
   }
 
   const queryString = searchParams.toString();
