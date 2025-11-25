@@ -41,12 +41,11 @@ import {
   listCursoAuditoria,
   type CursoAuditoriaItem,
 } from "@/api/cursos";
-import {
-  listCategorias,
-  listSubcategorias,
-  type CategoriaCurso,
-  type SubcategoriaCurso,
-} from "@/api/cursos/categorias";
+import { listCategorias, listSubcategorias } from "@/api/cursos/categorias";
+import type {
+  CategoriaCurso,
+  SubcategoriaCurso,
+} from "@/api/cursos/categorias/types";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
