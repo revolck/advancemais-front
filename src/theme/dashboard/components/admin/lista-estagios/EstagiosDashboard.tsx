@@ -67,7 +67,6 @@ export function EstagiosDashboard({ className }: EstagiosDashboardProps) {
                 nome: inscricao.aluno.nome,
                 email: inscricao.aluno.email,
                 telefone: inscricao.aluno.telefone,
-                avatarUrl: inscricao.aluno.avatarUrl,
               }
             : inscricao?.alunoId
             ? { id: String(inscricao.alunoId) }
