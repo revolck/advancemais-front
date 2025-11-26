@@ -163,20 +163,20 @@ export function EditarCandidatoModal({
     // Redes sociais (opcionais)
     const instagramSanitizado = sanitize(formState.instagram);
     const linkedinSanitizado = sanitize(formState.linkedin);
-    const currentInstagram = candidato.socialLinks?.instagram ?? undefined;
-    const currentLinkedin = candidato.socialLinks?.linkedin ?? undefined;
+    const currentInstagram = candidato.socialLinks?.instagram ?? null;
+    const currentLinkedin = candidato.socialLinks?.linkedin ?? null;
 
     let nextSocial: CandidatoDetailsData["socialLinks"] | undefined = undefined;
     if (instagramSanitizado !== currentInstagram) {
       nextSocial = {
         ...(nextSocial ?? candidato.socialLinks),
-        instagram: instagramSanitizado ?? undefined,
+        instagram: instagramSanitizado ?? null,
       };
     }
     if (linkedinSanitizado !== currentLinkedin) {
       nextSocial = {
         ...(nextSocial ?? candidato.socialLinks),
-        linkedin: linkedinSanitizado ?? undefined,
+        linkedin: linkedinSanitizado ?? null,
       };
     }
     if (nextSocial) {
