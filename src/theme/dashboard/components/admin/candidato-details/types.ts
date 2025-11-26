@@ -26,6 +26,8 @@ export interface HorizontalTabItem {
 export interface HeaderInfoProps {
   candidato: CandidatoDetailsData;
   onEditCandidato?: () => void;
+  onEditEndereco?: () => void;
+  onResetSenha?: () => void;
   onBloquearCandidato?: () => void;
   onDesbloquearCandidato?: () => void;
   onUpdateStatus?: (candidaturaId: string, status: string) => void;
@@ -51,6 +53,12 @@ export interface CurriculosTabProps {
 
 export interface ContatoTabProps {
   candidato: CandidatoDetailsData;
+  isLoading?: boolean;
+}
+
+export interface CursosTurmasTabProps {
+  candidato: CandidatoDetailsData;
+  inscricoes?: any[];
   isLoading?: boolean;
 }
 

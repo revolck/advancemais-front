@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Icon } from "@/components/ui/custom";
@@ -11,9 +13,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Loader2 } from "lucide-react";
 
 interface InstrutorRowProps {
   instrutor: Instrutor;
@@ -77,6 +78,21 @@ const getInitials = (nome: string) => {
 };
 
 export function InstrutorRow({ instrutor }: InstrutorRowProps) {
+  const router = useRouter();
+  const [isNavigating, setIsNavigating] = useState(false);
+
+  const handleNavigate = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    if (isNavigating) return;
+    
+    setIsNavigating(true);
+    router.push(`/dashboard/cursos/instrutores/${encodeURIComponent(instrutor.id)}`);
+    
+    setTimeout(() => {
+      setIsNavigating(false);
+    }, 5000);
+  };
+
   return (
     <TableRow className="border-gray-100 hover:bg-gray-50/50 transition-colors">
       <TableCell className="py-4">
@@ -158,22 +174,23 @@ export function InstrutorRow({ instrutor }: InstrutorRowProps) {
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
-              asChild
               variant="ghost"
               size="icon"
-              className="h-8 w-8 rounded-full text-gray-500 hover:text-white hover:bg-[var(--primary-color)]"
+              onClick={handleNavigate}
+              disabled={isNavigating}
+              className="h-8 w-8 rounded-full text-gray-500 hover:text-white hover:bg-[var(--primary-color)] disabled:opacity-50 disabled:cursor-wait cursor-pointer"
               aria-label="Visualizar instrutor"
             >
-              <Link
-                href={`/dashboard/cursos/instrutores/${encodeURIComponent(
-                  instrutor.id
-                )}`}
-              >
+              {isNavigating ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
                 <ChevronRight className="h-4 w-4" />
-              </Link>
+              )}
             </Button>
           </TooltipTrigger>
-          <TooltipContent sideOffset={8}>Visualizar instrutor</TooltipContent>
+          <TooltipContent sideOffset={8}>
+            {isNavigating ? "Carregando..." : "Visualizar instrutor"}
+          </TooltipContent>
         </Tooltip>
       </TableCell>
     </TableRow>

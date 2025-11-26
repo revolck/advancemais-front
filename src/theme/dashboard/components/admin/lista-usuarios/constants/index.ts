@@ -8,8 +8,6 @@ export const STATUS_OPTIONS = [
 export const ROLE_OPTIONS = [
   { value: "ADMIN", label: "Administrador" },
   { value: "MODERADOR", label: "Moderador" },
-  { value: "EDITOR", label: "Editor" },
-  { value: "VIEWER", label: "Visualizador" },
   { value: "EMPRESA", label: "Empresa" },
   { value: "CANDIDATO", label: "Candidato" },
   { value: "INSTRUTOR", label: "Instrutor" },

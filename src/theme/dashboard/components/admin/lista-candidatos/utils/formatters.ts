@@ -82,6 +82,21 @@ export function formatContato(candidato: any): string {
   return email || telefone || "Não informado";
 }
 
+export function formatTelefone(telefone?: string | null): string {
+  if (!telefone) return "—";
+  const digits = telefone.replace(/\D/g, "");
+
+  if (digits.length === 10) {
+    return digits.replace(/(\d{2})(\d{4})(\d{4})/, "($1) $2-$3");
+  }
+
+  if (digits.length === 11) {
+    return digits.replace(/(\d{2})(\d{5})(\d{4})/, "($1) $2-$3");
+  }
+
+  return telefone;
+}
+
 export function getCandidatoInitials(nome: string): string {
   if (!nome) return "??";
 

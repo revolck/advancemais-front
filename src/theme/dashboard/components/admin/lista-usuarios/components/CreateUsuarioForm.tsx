@@ -743,24 +743,27 @@ export function CreateUsuarioForm({
               </button>
             </div>
           </div>
-        </div>
 
-        <div className="flex justify-end gap-3">
-          <ButtonCustom
-            type="button"
-            variant="secondary"
-            onClick={onCancel}
-            disabled={isLoading}
-          >
-            Cancelar
-          </ButtonCustom>
-          <ButtonCustom
-            type="submit"
-            isLoading={isLoading}
-            disabled={isLoading}
-          >
-            Cadastrar Usuário
-          </ButtonCustom>
+          <div className="flex items-center justify-end gap-2 mt-10">
+            <ButtonCustom
+              type="button"
+              size="md"
+              variant="outline"
+              onClick={onCancel}
+              disabled={isLoading}
+            >
+              Cancelar
+            </ButtonCustom>
+            <ButtonCustom
+              type="submit"
+              size="md"
+              variant="primary"
+              isLoading={isLoading}
+              disabled={isLoading}
+            >
+              {isLoading ? "Cadastrando..." : "Cadastrar Usuário"}
+            </ButtonCustom>
+          </div>
         </div>
       </form>
     </div>

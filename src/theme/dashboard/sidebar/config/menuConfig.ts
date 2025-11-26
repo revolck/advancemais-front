@@ -20,7 +20,10 @@ const SETOR_DE_VAGAS_PERMISSIONS = getRoutePermissions("/setor-de-vagas");
 const INSTRUTOR_PERMISSIONS = getRoutePermissions("/instrutor");
 const ALUNO_PERMISSIONS = getRoutePermissions("/aluno");
 const RECRUTADOR_PERMISSIONS = getRoutePermissions("/recrutador");
-const FINANCEIRO_PERMISSIONS = getRoutePermissions("/financeiro");
+const FINANCEIRO_PERMISSIONS = getRoutePermissions("/dashboard/financeiro")
+  .length
+  ? getRoutePermissions("/dashboard/financeiro")
+  : getRoutePermissions("/financeiro");
 
 /**
  * Congela recursivamente um objeto, garantindo sua imutabilidade.
@@ -120,12 +123,6 @@ const rawMenuSections: MenuSection[] = [
         ],
       },
       {
-        icon: "Users",
-        label: "Usuários",
-        route: "/dashboard/usuarios",
-        permissions: [UserRole.ADMIN, UserRole.MODERADOR],
-      },
-      {
         icon: "Building2",
         label: "Empresas",
         permissions: [UserRole.ADMIN, UserRole.MODERADOR],
@@ -149,12 +146,6 @@ const rawMenuSections: MenuSection[] = [
             permissions: [UserRole.ADMIN, UserRole.MODERADOR],
           },
         ],
-      },
-      {
-        icon: "Wallet",
-        label: "Financeiro",
-        route: "/admin/financeiro",
-        permissions: [UserRole.ADMIN],
       },
       {
         icon: "FileSearch",
@@ -192,6 +183,18 @@ const rawMenuSections: MenuSection[] = [
             permissions: [UserRole.ADMIN],
           },
         ],
+      },
+      {
+        icon: "Users",
+        label: "Usuários",
+        route: "/dashboard/usuarios",
+        permissions: [UserRole.ADMIN, UserRole.MODERADOR],
+      },
+      {
+        icon: "Wallet",
+        label: "Financeiro",
+        route: "/dashboard/financeiro",
+        permissions: FINANCEIRO_PERMISSIONS,
       },
       {
         icon: "Settings",
@@ -276,55 +279,91 @@ const rawMenuSections: MenuSection[] = [
             icon: null,
             label: "Visão geral",
             route: "/dashboard/cursos/visao-geral",
-            permissions: [UserRole.ADMIN, UserRole.MODERADOR, UserRole.PEDAGOGICO],
+            permissions: [
+              UserRole.ADMIN,
+              UserRole.MODERADOR,
+              UserRole.PEDAGOGICO,
+            ],
           },
           {
             icon: null,
             label: "Cursos",
             route: "/dashboard/cursos",
-            permissions: [UserRole.ADMIN, UserRole.MODERADOR, UserRole.PEDAGOGICO],
+            permissions: [
+              UserRole.ADMIN,
+              UserRole.MODERADOR,
+              UserRole.PEDAGOGICO,
+            ],
           },
           {
             icon: null,
             label: "Turmas",
             route: "/dashboard/cursos/turmas",
-            permissions: [UserRole.ADMIN, UserRole.MODERADOR, UserRole.PEDAGOGICO],
+            permissions: [
+              UserRole.ADMIN,
+              UserRole.MODERADOR,
+              UserRole.PEDAGOGICO,
+            ],
           },
           {
             icon: null,
             label: "Alunos",
             route: "/dashboard/cursos/alunos",
-            permissions: [UserRole.ADMIN, UserRole.MODERADOR, UserRole.PEDAGOGICO],
+            permissions: [
+              UserRole.ADMIN,
+              UserRole.MODERADOR,
+              UserRole.PEDAGOGICO,
+            ],
           },
           {
             icon: null,
             label: "Instrutores",
             route: "/dashboard/cursos/instrutores",
-            permissions: [UserRole.ADMIN, UserRole.MODERADOR, UserRole.PEDAGOGICO],
+            permissions: [
+              UserRole.ADMIN,
+              UserRole.MODERADOR,
+              UserRole.PEDAGOGICO,
+            ],
           },
           {
             icon: null,
             label: "Provas",
             route: "/dashboard/cursos/provas",
-            permissions: [UserRole.ADMIN, UserRole.MODERADOR, UserRole.PEDAGOGICO],
+            permissions: [
+              UserRole.ADMIN,
+              UserRole.MODERADOR,
+              UserRole.PEDAGOGICO,
+            ],
           },
           {
             icon: null,
             label: "Certificados",
             route: "/dashboard/cursos/certificados",
-            permissions: [UserRole.ADMIN, UserRole.MODERADOR, UserRole.PEDAGOGICO],
+            permissions: [
+              UserRole.ADMIN,
+              UserRole.MODERADOR,
+              UserRole.PEDAGOGICO,
+            ],
           },
           {
             icon: null,
             label: "Estágios",
             route: "/dashboard/cursos/estagios",
-            permissions: [UserRole.ADMIN, UserRole.MODERADOR, UserRole.PEDAGOGICO],
+            permissions: [
+              UserRole.ADMIN,
+              UserRole.MODERADOR,
+              UserRole.PEDAGOGICO,
+            ],
           },
           {
             icon: null,
             label: "Agenda",
             route: "/dashboard/cursos/agenda",
-            permissions: [UserRole.ADMIN, UserRole.MODERADOR, UserRole.PEDAGOGICO],
+            permissions: [
+              UserRole.ADMIN,
+              UserRole.MODERADOR,
+              UserRole.PEDAGOGICO,
+            ],
           },
         ],
       },
@@ -343,7 +382,11 @@ const rawMenuSections: MenuSection[] = [
             icon: null,
             label: "Cursos",
             route: "/config/cursos",
-            permissions: [UserRole.ADMIN, UserRole.MODERADOR, UserRole.PEDAGOGICO],
+            permissions: [
+              UserRole.ADMIN,
+              UserRole.MODERADOR,
+              UserRole.PEDAGOGICO,
+            ],
           },
         ],
       },
@@ -504,17 +547,6 @@ const rawMenuSections: MenuSection[] = [
         label: "Relatórios",
         route: "/recrutador/reports",
         permissions: RECRUTADOR_PERMISSIONS,
-      },
-    ],
-  },
-  {
-    title: "DASHBOARD",
-    items: [
-      {
-        icon: "Wallet",
-        label: "Financeiro",
-        route: "/financeiro/overview",
-        permissions: FINANCEIRO_PERMISSIONS,
       },
     ],
   },

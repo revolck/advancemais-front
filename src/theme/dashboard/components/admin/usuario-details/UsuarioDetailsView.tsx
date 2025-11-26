@@ -149,26 +149,40 @@ export function UsuarioDetailsView({
       },
     ];
 
-    // Adicionar tabs específicas por role
-    if (usuarioData.role === "ALUNO_CANDIDATO") {
-      baseTabs.push(
-        {
+    // Verificar se o usuário tem vínculos (cursos ou currículos)
+    const hasCursos = (usuarioData.cursosInscricoes?.length ?? 0) > 0;
+    const hasCurriculos = (usuarioData.curriculos?.length ?? 0) > 0;
+    const hasVinculos = hasCursos || hasCurriculos;
+
+    // Adicionar tabs específicas por role apenas se tiver vínculos
+    if (usuarioData.role === "ALUNO_CANDIDATO" && hasVinculos) {
+      // Adicionar tab de currículos apenas se tiver currículos
+      if (hasCurriculos) {
+        baseTabs.push({
           value: "curriculos",
           label: "Currículos",
           icon: "FileText",
           content: (
             <CurriculosTab usuario={usuarioData} isLoading={isReloading} />
           ),
-        },
-        {
+        });
+      }
+
+      // Adicionar tab de candidaturas apenas se tiver currículos (candidato)
+      if (hasCurriculos) {
+        baseTabs.push({
           value: "candidaturas",
           label: "Candidaturas",
           icon: "Briefcase",
           content: (
             <CandidaturasTab usuario={usuarioData} isLoading={isReloading} />
           ),
-        },
-        {
+        });
+      }
+
+      // Adicionar tab de cursos apenas se tiver cursos
+      if (hasCursos) {
+        baseTabs.push({
           value: "cursos",
           label: "Inscrições em Cursos",
           icon: "GraduationCap",
@@ -178,8 +192,8 @@ export function UsuarioDetailsView({
               isLoading={isReloading}
             />
           ),
+        });
         }
-      );
     }
 
     return baseTabs;

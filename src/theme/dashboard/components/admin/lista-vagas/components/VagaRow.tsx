@@ -1,17 +1,17 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { ChevronRight, MapPin, Calendar, Clock } from "lucide-react";
+import { ChevronRight, MapPin, Calendar, Clock, Loader2 } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import Link from "next/link";
 import { cn } from "@/lib/utils";
 import type { VagaListItem } from "@/api/vagas";
 
@@ -71,6 +71,21 @@ const formatDate = (dateString: string) => {
 };
 
 export function VagaRow({ vaga }: VagaRowProps) {
+  const router = useRouter();
+  const [isNavigating, setIsNavigating] = useState(false);
+
+  const handleNavigate = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (isNavigating) return;
+    
+    setIsNavigating(true);
+    router.push(`/dashboard/empresas/vagas/${vaga.id}`);
+    
+    setTimeout(() => {
+      setIsNavigating(false);
+    }, 5000);
+  };
+
   return (
     <TableRow className="border-gray-100 hover:bg-gray-50/50 transition-colors">
       <TableCell className="py-4">
@@ -171,18 +186,23 @@ export function VagaRow({ vaga }: VagaRowProps) {
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
-              asChild
               variant="ghost"
               size="icon"
-              className="h-8 w-8 rounded-full text-gray-500 hover:text-white hover:bg-[var(--primary-color)]"
+              onClick={handleNavigate}
+              disabled={isNavigating}
+              className="h-8 w-8 rounded-full text-gray-500 hover:text-white hover:bg-[var(--primary-color)] disabled:opacity-50 disabled:cursor-wait cursor-pointer"
               aria-label="Visualizar vaga"
             >
-              <Link href={`/dashboard/empresas/vagas/${vaga.id}`}>
+              {isNavigating ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
                 <ChevronRight className="h-4 w-4" />
-              </Link>
+              )}
             </Button>
           </TooltipTrigger>
-          <TooltipContent sideOffset={8}>Visualizar vaga</TooltipContent>
+          <TooltipContent sideOffset={8}>
+            {isNavigating ? "Carregando..." : "Visualizar vaga"}
+          </TooltipContent>
         </Tooltip>
       </TableCell>
     </TableRow>

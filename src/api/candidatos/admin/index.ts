@@ -157,25 +157,53 @@ export async function buscarCandidatoPorId(
 ): Promise<CandidatoOverview | null> {
   try {
     // Usar a API existente de overview com filtro específico
+    // Adicionar onlyWithCandidaturas=false para garantir que retorne mesmo sem candidaturas
+    // Mas não filtrar por empresa para retornar todas as candidaturas do candidato
+    const url = `${CANDIDATOS_ROUTES.OVERVIEW}?search=${encodeURIComponent(
+      id
+    )}&pageSize=10`;
+    
+    console.log("🔍 Buscando candidato na API:", url);
+    
     const response = await apiFetch<{
       data: CandidatoOverview[];
       pagination: any;
-    }>(
-      `${CANDIDATOS_ROUTES.OVERVIEW}?search=${encodeURIComponent(
-        id
-      )}&pageSize=1`,
-      {
+    }>(url, {
         init: {
           method: "GET",
           ...init,
           headers: buildAuthHeaders(init?.headers),
         },
-      }
-    );
+    });
 
-    return response.data.find((candidato) => candidato.id === id) || null;
+    console.log("📦 Resposta da API:", {
+      total: response.data.length,
+      candidatos: response.data.map((c) => ({
+        id: c.id,
+        nome: c.nomeCompleto,
+        candidaturas: c.candidaturas?.length || 0,
+      })),
+    });
+
+    // Buscar o candidato exato pelo ID
+    const candidato = response.data.find((candidato) => candidato.id === id);
+    
+    if (candidato) {
+      console.log("✅ Candidato encontrado:", {
+        id: candidato.id,
+        nome: candidato.nomeCompleto,
+        totalCandidaturas: candidato.candidaturas?.length || 0,
+      });
+    } else {
+      console.warn("⚠️ Candidato não encontrado na resposta:", {
+        buscado: id,
+        encontrados: response.data.map((c) => c.id),
+      });
+    }
+
+    return candidato || null;
   } catch (error) {
-    console.error("Erro ao buscar candidato:", error);
+    console.error("❌ Erro ao buscar candidato:", error);
     return null;
   }
 }

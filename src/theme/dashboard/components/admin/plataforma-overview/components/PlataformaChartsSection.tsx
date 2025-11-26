@@ -221,10 +221,7 @@ export function PlataformaChartsSection({
         {usuariosPorTipoDonutData.length > 0 && (
           <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-6">
             <div className="flex items-center gap-3 mb-6">
-              <div className="flex items-center justify-center size-10 rounded-lg bg-blue-100 text-blue-600 shrink-0">
-                <Users className="size-5" />
-              </div>
-              <div className="mt-5">
+              <div className="mt-0">
                 <h4 className="!mb-0">Usuários por Tipo</h4>
                 <p className="!text-sm">
                   Distribuição de usuários na plataforma
@@ -365,10 +362,7 @@ export function PlataformaChartsSection({
         {hasStatusData && (
           <div className="bg-white rounded-xl border border-gray-200 p-4 md:p-6">
             <div className="flex items-center gap-3 mb-4">
-              <div className="flex items-center justify-center size-10 rounded-lg bg-indigo-100 text-indigo-600 shrink-0">
-                <BarChart3 className="size-5" />
-              </div>
-              <div className="mt-5">
+              <div className="mt-0">
                 <h4 className="!mb-0">Status por Categoria</h4>
                 <p className="!text-sm">Distribuição de status por categoria</p>
               </div>

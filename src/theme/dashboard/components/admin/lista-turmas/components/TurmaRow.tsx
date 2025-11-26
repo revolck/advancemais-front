@@ -1,10 +1,10 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, User, Users, BookOpen, ChevronRight, Sun, Moon, Clock } from "lucide-react";
-import Link from "next/link";
+import { Calendar, User, Users, BookOpen, ChevronRight, Sun, Moon, Clock, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -153,7 +153,21 @@ const getMetodoBadgeColor = (metodo?: string) => {
 };
 
 export function TurmaRow({ turma, showCurso = false }: TurmaRowProps) {
+  const router = useRouter();
+  const [isNavigating, setIsNavigating] = useState(false);
   const turmaComCurso = turma as TurmaComCurso;
+
+  const handleNavigate = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (isNavigating) return;
+    
+    setIsNavigating(true);
+    router.push(`/dashboard/cursos/turmas/${turma.id}`);
+    
+    setTimeout(() => {
+      setIsNavigating(false);
+    }, 5000);
+  };
   
   return (
     <TableRow className="border-gray-100 hover:bg-gray-50/50 transition-colors">
@@ -232,18 +246,23 @@ export function TurmaRow({ turma, showCurso = false }: TurmaRowProps) {
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
-              asChild
               variant="ghost"
               size="icon"
-              className="h-8 w-8 rounded-full text-gray-500 hover:text-white hover:bg-[var(--primary-color)]"
+              onClick={handleNavigate}
+              disabled={isNavigating}
+              className="h-8 w-8 rounded-full text-gray-500 hover:text-white hover:bg-[var(--primary-color)] disabled:opacity-50 disabled:cursor-wait cursor-pointer"
               aria-label="Visualizar turma"
             >
-              <Link href={`/dashboard/cursos/turmas/${turma.id}`}>
+              {isNavigating ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
                 <ChevronRight className="h-4 w-4" />
-              </Link>
+              )}
             </Button>
           </TooltipTrigger>
-          <TooltipContent sideOffset={8}>Visualizar turma</TooltipContent>
+          <TooltipContent sideOffset={8}>
+            {isNavigating ? "Carregando..." : "Visualizar turma"}
+          </TooltipContent>
         </Tooltip>
       </TableCell>
     </TableRow>

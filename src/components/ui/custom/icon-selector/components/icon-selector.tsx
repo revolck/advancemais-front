@@ -410,7 +410,7 @@ export function IconSelector({
       return allLucideIcons;
     }
     return allLucideIcons.filter((iconName) =>
-      iconName.toLowerCase().includes(searchLower)
+          iconName.toLowerCase().includes(searchLower)
     );
   }, [searchTerm, allLucideIcons]);
 

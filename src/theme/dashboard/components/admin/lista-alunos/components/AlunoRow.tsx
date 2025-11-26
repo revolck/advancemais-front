@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Icon } from "@/components/ui/custom";
@@ -11,9 +13,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Loader2 } from "lucide-react";
 
 interface AlunoRowProps {
   aluno: AlunoComInscricao;
@@ -131,10 +132,25 @@ const getTipoLabel = (tipo: string) => {
 };
 
 export function AlunoRow({ aluno, cursoFiltradoId }: AlunoRowProps) {
+  const router = useRouter();
+  const [isNavigating, setIsNavigating] = useState(false);
   const ultimaTurma = getUltimaTurma(aluno.ultimoCurso, cursoFiltradoId);
 
   const cursoNome = ultimaTurma?.curso?.nome;
   const turmaNome = ultimaTurma?.turma?.nome;
+
+  const handleNavigate = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (isNavigating) return; // Prevenir múltiplos cliques
+    
+    setIsNavigating(true);
+    router.push(`/dashboard/cursos/alunos/${encodeURIComponent(aluno.id)}`);
+    
+    // Timeout de segurança para resetar o estado caso a navegação falhe
+    setTimeout(() => {
+      setIsNavigating(false);
+    }, 5000);
+  };
 
   return (
     <TableRow className="border-gray-100 hover:bg-gray-50/50 transition-colors">
@@ -264,22 +280,23 @@ export function AlunoRow({ aluno, cursoFiltradoId }: AlunoRowProps) {
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
-              asChild
               variant="ghost"
               size="icon"
-              className="h-8 w-8 rounded-full text-gray-500 hover:text-white hover:bg-[var(--primary-color)]"
+              onClick={handleNavigate}
+              disabled={isNavigating}
+              className="h-8 w-8 rounded-full text-gray-500 hover:text-white hover:bg-[var(--primary-color)] disabled:opacity-50 disabled:cursor-wait cursor-pointer"
               aria-label="Visualizar aluno"
             >
-              <Link
-                href={`/dashboard/cursos/alunos/${encodeURIComponent(
-                  aluno.id
-                )}`}
-              >
+              {isNavigating ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
                 <ChevronRight className="h-4 w-4" />
-              </Link>
+              )}
             </Button>
           </TooltipTrigger>
-          <TooltipContent sideOffset={8}>Visualizar aluno</TooltipContent>
+          <TooltipContent sideOffset={8}>
+            {isNavigating ? "Carregando..." : "Visualizar aluno"}
+          </TooltipContent>
         </Tooltip>
       </TableCell>
     </TableRow>

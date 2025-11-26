@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TableRow, TableCell } from "@/components/ui/table";
@@ -8,15 +9,13 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { EyeOff, Eye, Edit, Trash2, Loader2, RefreshCw } from "lucide-react";
+import { EyeOff, ChevronRight, Trash2, Loader2, RefreshCw } from "lucide-react";
 import type { AdminCompanyVagaItem } from "@/api/empresas/admin/types";
 import { DeleteConfirmModal } from "@/components/ui/custom/list-manager/components/DeleteConfirmModal";
 import { UserAvatars } from "@/components/ui/custom/users-avatars";
 
 interface VacancyRowProps {
   vacancy: AdminCompanyVagaItem;
-  onView: (vacancy: AdminCompanyVagaItem) => void;
-  onEdit: (vacancy: AdminCompanyVagaItem) => void;
   onDelete?: (vacancy: AdminCompanyVagaItem) => void;
   index?: number;
   isDeleting?: boolean;
@@ -63,8 +62,6 @@ function getStatusBadge(status?: string | null) {
 
 export function VacancyRow({
   vacancy,
-  onView,
-  onEdit,
   onDelete,
   index = 0,
   isDeleting: externalIsDeleting = false,
@@ -72,6 +69,8 @@ export function VacancyRow({
   candidateError,
   onLoadCandidates,
 }: VacancyRowProps) {
+  const router = useRouter();
+  const [isNavigating, setIsNavigating] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const handleDeleteClick = () => {
@@ -116,6 +115,18 @@ export function VacancyRow({
     </div>
   );
 
+  const handleNavigate = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    if (isNavigating) return;
+    
+    setIsNavigating(true);
+    router.push(`/dashboard/empresas/vagas/${encodeURIComponent(vacancy.id)}`);
+    
+    setTimeout(() => {
+      setIsNavigating(false);
+    }, 5000);
+  };
+
   const code = vacancy.codigo ?? vacancy.id;
   const title = vacancy.titulo ?? `Vaga ${code}`;
   const numberOfVacancies = vacancy.numeroVagas || 0;
@@ -134,23 +145,23 @@ export function VacancyRow({
       <TableRow className="border-gray-200 hover:bg-gray-50">
         {/* Vaga */}
         <TableCell className="py-4">
-          <div className="flex flex-col">
-            <div className="flex items-center gap-2">
-              <span className="font-medium text-gray-900">{title}</span>
-              {vacancy.modoAnonimo && (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <EyeOff className="h-4 w-4 text-gray-400" />
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Publicado em modo anônimo</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              )}
-            </div>
-            <span className="text-xs text-gray-500">#{code}</span>
+          <div className="flex items-center gap-2">
+            <span className="font-medium text-gray-900">{title}</span>
+            <code className="text-xs font-mono bg-gray-50 text-gray-600 border border-gray-200 px-2 py-0.5 rounded-md flex-shrink-0">
+              {code}
+            </code>
+            {vacancy.modoAnonimo && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <EyeOff className="h-4 w-4 text-gray-400" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Publicado em modo anônimo</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
           </div>
         </TableCell>
 
@@ -259,36 +270,6 @@ export function VacancyRow({
         {/* Ações */}
         <TableCell className="text-right w-16">
           <div className="flex items-center gap-1">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => onView(vacancy)}
-                  className="h-8 w-8 rounded-full text-gray-500 hover:text-white hover:bg-[var(--primary-color)] cursor-pointer"
-                  aria-label="Ver vaga"
-                >
-                  <Eye className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent sideOffset={8}>Ver vaga</TooltipContent>
-            </Tooltip>
-
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => onEdit(vacancy)}
-                  className="h-8 w-8 rounded-full text-gray-500 hover:text-white hover:bg-[var(--primary-color)] cursor-pointer"
-                  aria-label="Editar vaga"
-                >
-                  <Edit className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent sideOffset={8}>Editar vaga</TooltipContent>
-            </Tooltip>
-
             {onDelete && (
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -312,6 +293,28 @@ export function VacancyRow({
                 </TooltipContent>
               </Tooltip>
             )}
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleNavigate}
+                  disabled={isNavigating}
+                  className="h-8 w-8 rounded-full text-gray-500 hover:text-white hover:bg-[var(--primary-color)] disabled:opacity-50 disabled:cursor-wait cursor-pointer"
+                  aria-label="Visualizar vaga"
+                >
+                  {isNavigating ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4" />
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent sideOffset={8}>
+                {isNavigating ? "Carregando..." : "Visualizar vaga"}
+              </TooltipContent>
+            </Tooltip>
           </div>
         </TableCell>
       </TableRow>

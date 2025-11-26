@@ -614,14 +614,24 @@ export interface UsuarioCandidatura {
 
 export interface UsuarioCursoInscricao {
   id: string;
-  status: string;
-  turma?: {
+  statusInscricao: string; // ✅ CORRIGIDO: Era "status", agora é "statusInscricao"
+  progresso: number; // ✅ NOVO: Progresso do aluno (0-100)
+  criadoEm: string; // ✅ NOVO: Data de criação (ISO string)
+  turma: {
     id: string;
     nome: string;
-    curso?: {
-      id: number;
-      nome: string;
-    };
+    codigo: string; // ✅ NOVO: Código da turma
+    dataInicio: string | null; // ✅ NOVO: Data de início (ISO string)
+    dataFim: string | null; // ✅ NOVO: Data de fim (ISO string)
+    status: string; // ✅ NOVO: Status da turma
+  };
+  curso: {
+    id: string; // ✅ CORRIGIDO: Agora é string (UUID), não number
+    nome: string;
+    codigo: string; // ✅ NOVO: Código do curso
+    descricao: string | null; // ✅ NOVO: Descrição do curso
+    cargaHoraria: number; // ✅ NOVO: Carga horária do curso
+    imagemUrl: string | null; // ✅ NOVO: URL da imagem do curso
   };
 }
 
@@ -636,6 +646,7 @@ export interface UsuarioVaga {
 export interface ListUsuariosParams {
   page?: number;
   limit?: number;
+  pageSize?: number;
   status?: StatusUsuario;
   role?: Role;
   tipoUsuario?: TipoUsuario;

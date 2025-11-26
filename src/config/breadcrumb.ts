@@ -350,6 +350,13 @@ export const breadcrumbConfig: Record<string, BreadcrumbConfig> = {
       { label: "Usuários", icon: "Users" },
     ],
   },
+  "/dashboard/financeiro": {
+    title: "Financeiro",
+    items: [
+      { label: "Dashboard", href: "/", icon: "Home" },
+      { label: "Financeiro", icon: "Briefcase" },
+    ],
+  },
   "/dashboard/usuarios/cadastrar": {
     title: "Cadastrar Usuário",
     items: [

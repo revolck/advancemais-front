@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import React, { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { UsuarioTable } from "./components";
 import { useUsuarioDashboardData } from "./hooks";
 import { cn } from "@/lib/utils";
@@ -32,7 +31,6 @@ export function UsuariosDashboard({
   className,
   filters: initialFilters,
 }: UsuarioDashboardProps) {
-  const router = useRouter();
   const {
     data,
     isLoading,
@@ -45,6 +43,33 @@ export function UsuariosDashboard({
 
   const usuarios = useMemo(() => data?.usuarios ?? [], [data?.usuarios]);
   const pagination = data?.pagination;
+
+  // Estado para controlar loading imediato quando filtros mudam
+  const [isFiltering, setIsFiltering] = useState(false);
+  const prevFiltersRef = useRef(filters);
+
+  // Detectar mudanças nos filtros para mostrar skeleton imediatamente
+  useEffect(() => {
+    const filtersChanged = 
+      prevFiltersRef.current.search !== filters.search ||
+      prevFiltersRef.current.role !== filters.role ||
+      prevFiltersRef.current.status !== filters.status ||
+      prevFiltersRef.current.cidade !== filters.cidade ||
+      prevFiltersRef.current.estado !== filters.estado ||
+      prevFiltersRef.current.page !== filters.page;
+
+    if (filtersChanged) {
+      setIsFiltering(true);
+      prevFiltersRef.current = filters;
+    }
+  }, [filters]);
+
+  // Resetar isFiltering quando os dados terminarem de carregar
+  useEffect(() => {
+    if (!isFetching && !isLoading) {
+      setIsFiltering(false);
+    }
+  }, [isFetching, isLoading]);
 
   // Estado de ordenação
   type SortDirection = "asc" | "desc";
@@ -107,6 +132,7 @@ export function UsuariosDashboard({
       const validationMessage = getSearchValidationMessage(value);
       if (validationMessage) return;
       const trimmedValue = value.trim();
+      setIsFiltering(true); // Ativar loading imediatamente
       updateFilters({ search: trimmedValue });
     },
     [pendingSearchTerm, updateFilters]
@@ -153,6 +179,7 @@ export function UsuariosDashboard({
 
   const handleFilterChange = useCallback(
     (key: string, value: string | string[] | DateRange | null) => {
+      setIsFiltering(true); // Ativar loading imediatamente
       if (key === "role") {
         const roles = (value as string[]) || [];
         setSelectedRoles(roles);
@@ -176,6 +203,7 @@ export function UsuariosDashboard({
   const handlePageChange = useCallback(
     (page: number) => {
       if (page < 1 || (pagination && page > pagination.totalPages)) return;
+      setIsFiltering(true); // Ativar loading imediatamente
       loadPage(page);
     },
     [loadPage, pagination]
@@ -196,7 +224,9 @@ export function UsuariosDashboard({
     return sorted;
   }, [usuarios, sortDirection]);
 
-  const showEmptyState = !isLoading && !isFetching && usuarios.length === 0;
+  // Mostrar skeleton quando está carregando inicialmente OU quando está filtrando
+  const showLoading = isLoading || (isFiltering && isFetching);
+  const showEmptyState = !showLoading && !isFetching && usuarios.length === 0;
   const currentPage = pagination?.page ?? 1;
   const totalPages = pagination?.totalPages ?? 1;
   const totalItems = pagination?.total ?? 0;
@@ -281,7 +311,7 @@ export function UsuariosDashboard({
       {!showEmptyState && (
         <UsuarioTable
           usuarios={sortedUsuarios}
-          isLoading={isLoading}
+          isLoading={showLoading}
           pageSize={pageSize}
           sortDirection={sortDirection}
           onSortChange={setSortDirection}

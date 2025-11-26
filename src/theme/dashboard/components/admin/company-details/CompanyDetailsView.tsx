@@ -19,8 +19,6 @@ import {
   EditarAssinaturaModal,
   AdicionarAssinaturaModal,
   ResetarSenhaModal,
-  ViewVacancyModal,
-  EditVacancyModal,
 } from "./modals";
 import { DesbloquearEmpresaModal } from "./modal-acoes/DesbloquearEmpresaModal";
 import type { CompanyDetailsViewProps } from "./types";
@@ -168,14 +166,6 @@ export function CompanyDetailsView({
   const isCompanyActive = companyData.status === "ATIVO" || companyData.ativa;
   const isReloading = isFetching;
 
-  const [viewVacancy, setViewVacancy] = useState<AdminCompanyVagaItem | null>(
-    null
-  );
-  const [isViewVacancyOpen, setIsViewVacancyOpen] = useState(false);
-  const [editVacancy, setEditVacancy] = useState<AdminCompanyVagaItem | null>(
-    null
-  );
-  const [isEditVacancyOpen, setIsEditVacancyOpen] = useState(false);
   const [isEditCompanyOpen, setIsEditCompanyOpen] = useState(false);
   const [isEditAddressOpen, setIsEditAddressOpen] = useState(false);
   const [isBanCompanyOpen, setIsBanCompanyOpen] = useState(false);
@@ -209,19 +199,6 @@ export function CompanyDetailsView({
     }
   }, [hasPlan]);
 
-  const handleViewVacancyDialogChange = (open: boolean) => {
-    setIsViewVacancyOpen(open);
-    if (!open) {
-      setViewVacancy(null);
-    }
-  };
-
-  const handleEditVacancyDialogChange = (open: boolean) => {
-    setIsEditVacancyOpen(open);
-    if (!open) {
-      setEditVacancy(null);
-    }
-  };
 
   const tabs: HorizontalTabItem[] = [
     {
@@ -253,14 +230,6 @@ export function CompanyDetailsView({
           vacancies={allVacancies}
           publishedVacancies={publishedVacancies}
           totalVacancies={totalVacancies}
-          onViewVacancy={(vacancy) => {
-            setViewVacancy(vacancy);
-            setIsViewVacancyOpen(true);
-          }}
-          onEditVacancy={(vacancy) => {
-            setEditVacancy(vacancy);
-            setIsEditVacancyOpen(true);
-          }}
         />
       ),
       badge: relevantVacanciesCount ? <span>{relevantVacanciesCount}</span> : null,
@@ -334,20 +303,6 @@ export function CompanyDetailsView({
         onOpenChange={setIsResetPasswordOpen}
         companyId={companyData.id}
         email={companyData.email}
-      />
-
-      <ViewVacancyModal
-        isOpen={isViewVacancyOpen}
-        onOpenChange={handleViewVacancyDialogChange}
-        vacancy={viewVacancy}
-        company={companyData}
-      />
-
-      <EditVacancyModal
-        isOpen={isEditVacancyOpen}
-        onOpenChange={handleEditVacancyDialogChange}
-        vacancy={editVacancy}
-        onVacancyUpdated={reloadCompanyData}
       />
     </div>
   );

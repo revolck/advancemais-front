@@ -1,14 +1,98 @@
 "use client";
 
-import React from "react";
-import { Briefcase, Calendar, MapPin, Clock, Eye } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useMemo, useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { EmptyState } from "@/components/ui/custom";
 import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import { InputCustom } from "@/components/ui/custom/input";
+import { SelectCustom } from "@/components/ui/custom/select";
+import {
+  DatePickerRangeCustom,
+  type DateRange,
+} from "@/components/ui/custom/date-picker";
+import { ButtonCustom } from "@/components/ui/custom";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ChevronRight, Calendar } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import Link from "next/link";
-import { formatDate, getStatusBadge } from "../utils/formatters";
+import { cn } from "@/lib/utils";
 import type { CandidaturasTabProps } from "../types";
+import { formatDate } from "../utils/formatters";
+import { buscarCandidatoPorId } from "@/api/candidatos/admin";
 import type { Candidatura } from "@/api/candidatos/types";
+
+// Função para formatar CNPJ
+const formatCnpj = (cnpj?: string | null): string => {
+  if (!cnpj) return "—";
+  const digits = cnpj.replace(/\D/g, "");
+  if (digits.length !== 14) return cnpj;
+  return digits.replace(
+    /(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/,
+    "$1.$2.$3/$4-$5"
+  );
+};
+
+// Função para obter iniciais da empresa
+const getEmpresaInitials = (nome?: string | null): string => {
+  if (!nome) return "—";
+  const words = nome.trim().split(" ");
+  if (words.length === 1) {
+    return words[0].substring(0, 2).toUpperCase();
+  }
+  return `${words[0][0]}${words[words.length - 1][0]}`.toUpperCase();
+};
+
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case "CONTRATADO":
+      return "bg-emerald-100 text-emerald-700 border-emerald-200";
+    case "ENTREVISTA":
+      return "bg-blue-100 text-blue-700 border-blue-200";
+    case "EM_ANALISE":
+      return "bg-amber-100 text-amber-700 border-amber-200";
+    case "RECUSADO":
+      return "bg-red-100 text-red-700 border-red-200";
+    case "DESISTIU":
+      return "bg-gray-100 text-gray-700 border-gray-200";
+    case "APROVADO":
+      return "bg-green-100 text-green-700 border-green-200";
+    default:
+      return "bg-gray-100 text-gray-700 border-gray-200";
+  }
+};
+
+const getStatusLabel = (status: string) => {
+  switch (status) {
+    case "CONTRATADO":
+      return "Contratado";
+    case "ENTREVISTA":
+      return "Em Entrevista";
+    case "EM_ANALISE":
+      return "Em Análise";
+    case "RECUSADO":
+      return "Recusado";
+    case "DESISTIU":
+      return "Desistiu";
+    case "APROVADO":
+      return "Aprovado";
+    default:
+      return status;
+  }
+};
 
 export function CandidaturasTab({
   candidato,
@@ -16,164 +100,671 @@ export function CandidaturasTab({
   onUpdateStatus,
   isLoading = false,
 }: CandidaturasTabProps) {
-  const candidaturasData =
-    candidaturas.length > 0 ? candidaturas : candidato.candidaturas || [];
+  // Estados de filtros (pendentes)
+  const [pendingSearchTerm, setPendingSearchTerm] = useState("");
+  const [pendingStatus, setPendingStatus] = useState<string | null>(null);
+  const [pendingEmpresa, setPendingEmpresa] = useState<string | null>(null);
+  const [pendingDateRange, setPendingDateRange] = useState<DateRange>({
+    from: null,
+    to: null,
+  });
 
-  if (candidaturasData.length === 0) {
+  // Estados de filtros (aplicados)
+  const [appliedSearchTerm, setAppliedSearchTerm] = useState("");
+  const [appliedStatus, setAppliedStatus] = useState<string | null>(null);
+  const [appliedEmpresa, setAppliedEmpresa] = useState<string | null>(null);
+  const [appliedDateRange, setAppliedDateRange] = useState<DateRange>({
+    from: null,
+    to: null,
+  });
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  const {
+    data: candidatoData,
+    isLoading: isLoadingCandidato,
+    error,
+  } = useQuery({
+    queryKey: ["candidato-candidaturas", candidato.id],
+    queryFn: async () => {
+      try {
+        console.log("🔍 Buscando candidaturas para candidato:", candidato.id);
+        const candidatoCompleto = await buscarCandidatoPorId(candidato.id);
+
+        if (!candidatoCompleto) {
+          console.warn("⚠️ Candidato não encontrado para ID:", candidato.id);
+          return null;
+        }
+
+        console.log("✅ Candidato encontrado:", {
+          id: candidatoCompleto.id,
+          nome: candidatoCompleto.nomeCompleto,
+          totalCandidaturas: candidatoCompleto.candidaturas?.length || 0,
+          candidaturas: candidatoCompleto.candidaturas?.map((c) => ({
+            id: c.id,
+            vagaTitulo: c.vaga?.titulo,
+            empresaNome: c.empresa?.nome,
+            empresaId: c.empresa?.id,
+            empresaCnpj: c.empresa?.cnpj,
+            empresaLogoUrl: c.empresa?.logoUrl,
+          })),
+        });
+
+        return candidatoCompleto;
+      } catch (error) {
+        console.error("❌ Erro ao buscar candidaturas do candidato:", error);
+        return null;
+      }
+    },
+    enabled: !!candidato.id,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const todasCandidaturas: Candidatura[] = candidatoData?.candidaturas || [];
+
+  // Sincronizar estados pending com applied quando os dados mudarem
+  useEffect(() => {
+    if (appliedStatus !== pendingStatus) {
+      setPendingStatus(appliedStatus);
+    }
+    if (appliedEmpresa !== pendingEmpresa) {
+      setPendingEmpresa(appliedEmpresa);
+    }
+    if (
+      appliedDateRange.from !== pendingDateRange.from ||
+      appliedDateRange.to !== pendingDateRange.to
+    ) {
+      setPendingDateRange(appliedDateRange);
+    }
+  }, [appliedStatus, appliedEmpresa, appliedDateRange]);
+
+  // Opções de status únicos
+  const statusOptions = useMemo(() => {
+    const statuses = new Set<string>();
+    todasCandidaturas.forEach((c) => {
+      if (c.status) statuses.add(c.status);
+    });
+    return Array.from(statuses)
+      .sort()
+      .map((status) => ({
+        value: status,
+        label: getStatusLabel(status),
+      }));
+  }, [todasCandidaturas]);
+
+  // Opções de empresas únicas
+  const empresaOptions = useMemo(() => {
+    const empresas = new Map<string, string>();
+    todasCandidaturas.forEach((c) => {
+      const empresaNome = c.empresa?.nomeCompleto || c.empresa?.nome;
+      if (empresaNome && c.empresa?.id) {
+        empresas.set(c.empresa.id, empresaNome);
+      }
+    });
+    return Array.from(empresas.entries())
+      .sort((a, b) => a[1].localeCompare(b[1]))
+      .map(([id, nome]) => ({
+        value: id,
+        label: nome,
+      }));
+  }, [todasCandidaturas]);
+
+  // Função para aplicar apenas o filtro de pesquisa (nome/código)
+  const handleSearch = () => {
+    // Se o campo de pesquisa estiver vazio e não houver outros filtros, limpar tudo
+    if (
+      !pendingSearchTerm.trim() &&
+      !appliedStatus &&
+      !appliedEmpresa &&
+      !appliedDateRange.from &&
+      !appliedDateRange.to
+    ) {
+      setAppliedSearchTerm("");
+      setCurrentPage(1);
+    } else {
+      setAppliedSearchTerm(pendingSearchTerm);
+      setCurrentPage(1);
+    }
+  };
+
+  // Aplicar filtro de data automaticamente
+  const handleDateRangeChange = (value: {
+    from: Date | null;
+    to: Date | null;
+  }) => {
+    const newValue = {
+      from: value.from,
+      to: value.to,
+    };
+    setPendingDateRange(newValue);
+    setAppliedDateRange(newValue);
+    setCurrentPage(1);
+  };
+
+  // Aplicar filtro de status automaticamente
+  const handleStatusChange = (value: string | null) => {
+    setPendingStatus(value);
+    setAppliedStatus(value);
+    setCurrentPage(1);
+  };
+
+  // Aplicar filtro de empresa automaticamente
+  const handleEmpresaChange = (value: string | null) => {
+    setPendingEmpresa(value);
+    setAppliedEmpresa(value);
+    setCurrentPage(1);
+  };
+
+  // Aplicar filtros
+  const candidaturasFiltradas = useMemo(() => {
+    return todasCandidaturas.filter((candidatura) => {
+      // Filtro por nome da vaga ou código
+      if (appliedSearchTerm) {
+        const vagaTitulo = candidatura.vaga?.titulo?.toLowerCase() || "";
+        const vagaCodigo = candidatura.vaga?.codigo?.toLowerCase() || "";
+        const searchLower = appliedSearchTerm.toLowerCase();
+        if (
+          !vagaTitulo.includes(searchLower) &&
+          !vagaCodigo.includes(searchLower)
+        ) {
+          return false;
+        }
+      }
+
+      // Filtro por status
+      if (appliedStatus && candidatura.status !== appliedStatus) {
+        return false;
+      }
+
+      // Filtro por empresa
+      if (appliedEmpresa && candidatura.empresa?.id !== appliedEmpresa) {
+        return false;
+      }
+
+      // Filtro por data de aplicação
+      if (appliedDateRange.from || appliedDateRange.to) {
+        const aplicadaEm = new Date(candidatura.aplicadaEm);
+        if (
+          appliedDateRange.from &&
+          aplicadaEm < new Date(appliedDateRange.from)
+        ) {
+          return false;
+        }
+        if (appliedDateRange.to) {
+          const toDate = new Date(appliedDateRange.to);
+          toDate.setHours(23, 59, 59, 999);
+          if (aplicadaEm > toDate) {
+            return false;
+          }
+        }
+      }
+
+      return true;
+    });
+  }, [
+    todasCandidaturas,
+    appliedSearchTerm,
+    appliedStatus,
+    appliedEmpresa,
+    appliedDateRange,
+  ]);
+
+  // Paginação
+  const totalPages = Math.ceil(candidaturasFiltradas.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const candidaturasPaginadas = candidaturasFiltradas.slice(startIndex, endIndex);
+
+  // Verificar se há filtros aplicados
+  const hasActiveFilters =
+    appliedSearchTerm ||
+    appliedStatus ||
+    appliedEmpresa ||
+    appliedDateRange.from ||
+    appliedDateRange.to;
+
+  // Verificar se há mudanças pendentes apenas no campo de pesquisa
+  const hasPendingSearchChanges = pendingSearchTerm !== appliedSearchTerm;
+
+  if (isLoading || isLoadingCandidato) {
     return (
-      <div className="text-center py-12">
-        <Briefcase className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-        <h3 className="text-lg font-medium text-gray-900 mb-2">
-          Nenhuma candidatura encontrada
-        </h3>
-        <p className="text-gray-500">
-          Este candidato ainda não se candidatou a nenhuma vaga.
-        </p>
+      <div className="space-y-4">
+        {/* Filtros com skeleton */}
+        <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <div className="flex flex-col sm:flex-row flex-wrap items-end gap-3">
+            {/* Skeleton do campo de pesquisa */}
+            <div className="w-full sm:w-full md:w-[480px] lg:w-[480px] flex-1 min-w-0">
+              <Skeleton className="h-10 w-full bg-gray-200 rounded-md" />
+            </div>
+
+            {/* Skeleton do filtro de data */}
+            <div className="w-full sm:w-full md:w-[280px] lg:w-[280px] flex-shrink-0">
+              <Skeleton className="h-10 w-full bg-gray-200 rounded-md" />
+            </div>
+
+            {/* Skeleton do filtro de status */}
+            <div className="w-full sm:w-[calc(50%-0.375rem)] md:w-[220px] lg:w-[220px] flex-shrink-0">
+              <Skeleton className="h-10 w-full bg-gray-200 rounded-md" />
+            </div>
+
+            {/* Skeleton do filtro de empresa */}
+            <div className="w-full sm:w-[calc(50%-0.375rem)] md:w-[300px] lg:w-[300px] flex-shrink-0">
+              <Skeleton className="h-10 w-full bg-gray-200 rounded-md" />
+            </div>
+
+            {/* Skeleton do botão pesquisar */}
+            <div className="w-full sm:w-full md:w-auto lg:w-auto flex-shrink-0">
+              <Skeleton className="h-10 w-full sm:w-full md:w-32 lg:w-32 bg-gray-200 rounded-md" />
+            </div>
+          </div>
+        </div>
+
+        {/* Tabela com skeleton */}
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="border-gray-200 bg-gray-50/50">
+                  <TableHead className="font-medium text-gray-700 py-4">
+                    Vaga
+                  </TableHead>
+                  <TableHead className="font-medium text-gray-700">
+                    Empresa
+                  </TableHead>
+                  <TableHead className="font-medium text-gray-700">
+                    Aplicada em
+                  </TableHead>
+                  <TableHead className="font-medium text-gray-700">
+                    Status
+                  </TableHead>
+                  <TableHead className="w-16" />
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {[1, 2, 3].map((i) => (
+                  <TableRow key={i} className="border-gray-100">
+                    <TableCell className="py-4">
+                      <Skeleton className="h-5 w-48 bg-gray-200" />
+                    </TableCell>
+                    <TableCell className="py-4">
+                      <div className="flex items-center gap-3">
+                        <Skeleton className="h-8 w-8 rounded-full bg-gray-200" />
+                        <div className="flex flex-col gap-1">
+                          <Skeleton className="h-4 w-32 bg-gray-200" />
+                          <Skeleton className="h-3 w-24 bg-gray-200" />
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="py-4">
+                      <Skeleton className="h-4 w-24 bg-gray-200" />
+                    </TableCell>
+                    <TableCell className="py-4">
+                      <Skeleton className="h-6 w-20 rounded-full bg-gray-200" />
+                    </TableCell>
+                    <TableCell className="py-4">
+                      <Skeleton className="h-8 w-8 rounded-full bg-gray-200" />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
       </div>
     );
   }
 
+  if (error) {
+    return (
+      <div className="bg-white rounded-xl border border-red-200 p-6">
+        <div className="text-center">
+          <p className="text-red-600 font-medium mb-2">
+            Erro ao carregar candidaturas
+          </p>
+          <p className="text-sm text-gray-600">
+            Não foi possível buscar as candidaturas. Tente novamente.
+          </p>
+          <p className="text-xs text-gray-500 mt-2">
+            {error instanceof Error ? error.message : "Erro desconhecido"}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Se não há candidaturas totais (sem filtros), mostrar EmptyState
+  if (todasCandidaturas.length === 0) {
+    return (
+      <EmptyState
+        illustration="fileNotFound"
+        illustrationAlt="Nenhuma candidatura"
+        title="Nenhuma candidatura encontrada"
+        description="Este candidato ainda não se candidatou a nenhuma vaga."
+        maxContentWidth="md"
+      />
+    );
+  }
+
   return (
-    <div className="space-y-6">
-      {/* Resumo das Candidaturas */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Briefcase className="h-5 w-5" />
-            Resumo das Candidaturas
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="text-center">
-              <div className="text-2xl font-semibold text-blue-600">
-                {candidaturasData.length}
-              </div>
-              <div className="text-sm text-gray-600">Total</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-semibold text-green-600">
-                {
-                  candidaturasData.filter(
-                    (c: Candidatura) =>
-                      ![
-                        "RECUSADO",
-                        "DESISTIU",
-                        "NAO_COMPARECEU",
-                        "ARQUIVADO",
-                        "CANCELADO",
-                      ].includes(c.status)
-                  ).length
+    <div className="space-y-4">
+      {/* Filtros */}
+      <div className="bg-white rounded-xl border border-gray-200 p-4">
+        <div className="flex flex-col sm:flex-row flex-wrap items-end gap-3">
+          {/* Busca por nome da vaga ou código */}
+          <div className="w-full sm:w-full md:w-[480px] lg:w-[480px] flex-1 min-w-0">
+            <InputCustom
+              type="text"
+              placeholder="Pesquisar por nome da vaga ou código..."
+              value={pendingSearchTerm}
+              onChange={(e) => setPendingSearchTerm(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  // Se o campo estiver vazio e não houver outros filtros, limpar tudo
+                  if (
+                    !pendingSearchTerm.trim() &&
+                    !appliedStatus &&
+                    !appliedEmpresa &&
+                    !appliedDateRange.from &&
+                    !appliedDateRange.to
+                  ) {
+                    setAppliedSearchTerm("");
+                    setAppliedStatus(null);
+                    setAppliedEmpresa(null);
+                    setAppliedDateRange({ from: null, to: null });
+                    setPendingStatus(null);
+                    setPendingEmpresa(null);
+                    setPendingDateRange({ from: null, to: null });
+                    setCurrentPage(1);
+                  } else {
+                    handleSearch();
+                  }
                 }
-              </div>
-              <div className="text-sm text-gray-600">Ativas</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-semibold text-purple-600">
-                {
-                  candidaturasData.filter((c: Candidatura) => c.status === "ENTREVISTA")
-                    .length
+              }}
+              size="md"
+              fullWidth
+              rightIcon={pendingSearchTerm ? "X" : undefined}
+              onRightIconClick={() => {
+                setPendingSearchTerm("");
+                // Se não houver outros filtros aplicados, limpar tudo
+                if (
+                  !appliedStatus &&
+                  !appliedEmpresa &&
+                  !appliedDateRange.from &&
+                  !appliedDateRange.to
+                ) {
+                  setAppliedSearchTerm("");
+                  setAppliedStatus(null);
+                  setAppliedEmpresa(null);
+                  setAppliedDateRange({ from: null, to: null });
+                  setPendingStatus(null);
+                  setPendingEmpresa(null);
+                  setPendingDateRange({ from: null, to: null });
+                  setCurrentPage(1);
+                } else {
+                  // Apenas limpar o campo de pesquisa
+                  setAppliedSearchTerm("");
+                  setCurrentPage(1);
                 }
-              </div>
-              <div className="text-sm text-gray-600">Entrevistas</div>
+              }}
+            />
+          </div>
+
+          {/* Filtro por data */}
+          <div className="w-full sm:w-full md:w-[280px] lg:w-[280px] flex-shrink-0">
+            <DatePickerRangeCustom
+              value={appliedDateRange}
+              onChange={handleDateRangeChange}
+              placeholder="Filtrar por data"
+              size="md"
+              clearable={true}
+              format="dd/MM/yyyy"
+            />
+          </div>
+
+          {/* Filtro por status */}
+          <div className="w-full sm:w-[calc(50%-0.375rem)] md:w-[220px] lg:w-[220px] flex-shrink-0">
+            <SelectCustom
+              mode="single"
+              options={statusOptions}
+              value={appliedStatus}
+              onChange={handleStatusChange}
+              placeholder="Filtrar por status"
+              size="md"
+              fullWidth
+            />
+          </div>
+
+          {/* Filtro por empresa */}
+          <div className="w-full sm:w-[calc(50%-0.375rem)] md:w-[300px] lg:w-[300px] flex-shrink-0">
+            <SelectCustom
+              mode="single"
+              options={empresaOptions}
+              value={appliedEmpresa}
+              onChange={handleEmpresaChange}
+              placeholder="Filtrar por empresa"
+              size="md"
+              fullWidth
+            />
+          </div>
+
+          {/* Botão pesquisar */}
+          <div className="w-full sm:w-full md:w-auto lg:w-auto flex-shrink-0">
+            <ButtonCustom
+              variant="primary"
+              size="lg"
+              icon="Search"
+              onClick={handleSearch}
+              className="w-full sm:w-full md:w-auto"
+            >
+              Pesquisar
+            </ButtonCustom>
+          </div>
+        </div>
+      </div>
+
+      {/* Tabela */}
+      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow className="border-gray-200 bg-gray-50/50">
+                <TableHead className="font-medium text-gray-700 py-4">
+                  Vaga
+                </TableHead>
+                <TableHead className="font-medium text-gray-700">
+                  Empresa
+                </TableHead>
+                <TableHead className="font-medium text-gray-700">
+                  Aplicada em
+                </TableHead>
+                <TableHead className="font-medium text-gray-700">
+                  Status
+                </TableHead>
+                <TableHead className="w-16" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {candidaturasPaginadas.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="py-8 text-center">
+                    <p className="text-gray-500">
+                      {hasActiveFilters
+                        ? "Nenhuma candidatura encontrada com os filtros aplicados."
+                        : "Nenhuma candidatura encontrada."}
+                    </p>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                candidaturasPaginadas.map((candidatura) => {
+                  const vaga = candidatura.vaga;
+                  const vagaTitulo = vaga?.titulo || "Vaga sem título";
+                  const vagaId = vaga?.id || candidatura.vagaId;
+                  const status = candidatura.status;
+                  const empresa = candidatura.empresa;
+                  const empresaNome =
+                    empresa?.nomeCompleto || empresa?.nome || "—";
+
+                  return (
+                    <TableRow
+                      key={candidatura.id}
+                      className="border-gray-100 hover:bg-gray-50/50 transition-colors"
+                    >
+                      <TableCell className="py-4">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <div className="font-medium text-gray-900">
+                            {vagaTitulo}
+                          </div>
+                          {vaga?.codigo && (
+                            <code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded font-mono text-gray-500 flex-shrink-0">
+                              {vaga.codigo}
+                            </code>
+                          )}
+                        </div>
+                      </TableCell>
+
+                      <TableCell className="py-4">
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-8 w-8 flex-shrink-0">
+                            <AvatarImage
+                              src={empresa?.logoUrl || undefined}
+                              alt={empresaNome}
+                            />
+                            <AvatarFallback className="bg-gray-100 text-gray-600 text-xs">
+                              {getEmpresaInitials(empresaNome)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex flex-col min-w-0">
+                            <span className="text-sm font-medium text-gray-900 truncate">
+                              {empresaNome}
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              {formatCnpj(empresa?.cnpj)}
+                            </span>
+                          </div>
+                        </div>
+                      </TableCell>
+
+                      <TableCell className="py-4">
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <Calendar className="h-4 w-4 flex-shrink-0 text-gray-400" />
+                          <span>{formatDate(candidatura.aplicadaEm)}</span>
+                        </div>
+                      </TableCell>
+
+                      <TableCell className="py-4">
+                        {status ? (
+                          <Badge
+                            variant="outline"
+                            className={cn(
+                              "text-xs font-medium",
+                              getStatusColor(status)
+                            )}
+                          >
+                            {getStatusLabel(status)}
+                          </Badge>
+                        ) : (
+                          <span className="text-sm text-gray-400">—</span>
+                        )}
+                      </TableCell>
+
+                      <TableCell className="py-4">
+                        {vagaId && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                asChild
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 rounded-full text-gray-500 hover:text-white hover:bg-[var(--primary-color)] cursor-pointer"
+                                aria-label="Visualizar vaga"
+                              >
+                                <Link
+                                  href={`/dashboard/empresas/vagas/${vagaId}`}
+                                >
+                                  <ChevronRight className="h-4 w-4" />
+                                </Link>
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent sideOffset={8}>
+                              Visualizar vaga
+                            </TooltipContent>
+                          </Tooltip>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              )}
+            </TableBody>
+          </Table>
+        </div>
+
+        {/* Paginação */}
+        {totalPages > 1 && (
+          <div className="flex flex-col gap-4 px-6 py-4 border-t border-gray-200 bg-gray-50/30 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-2 text-sm text-gray-600">
+              <span>
+                Mostrando{" "}
+                {Math.min(startIndex + 1, candidaturasFiltradas.length)} a{" "}
+                {Math.min(endIndex, candidaturasFiltradas.length)} de{" "}
+                {candidaturasFiltradas.length}
+              </span>
             </div>
-            <div className="text-center">
-              <div className="text-2xl font-semibold text-green-600">
-                {
-                  candidaturasData.filter((c: Candidatura) => c.status === "CONTRATADO")
-                    .length
-                }
+
+            <div className="flex items-center gap-2">
+              <ButtonCustom
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                className="h-8 px-3"
+              >
+                Anterior
+              </ButtonCustom>
+
+              <div className="flex items-center gap-1">
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let pageNum: number;
+                  if (totalPages <= 5) {
+                    pageNum = i + 1;
+                  } else if (currentPage <= 3) {
+                    pageNum = i + 1;
+                  } else if (currentPage >= totalPages - 2) {
+                    pageNum = totalPages - 4 + i;
+                  } else {
+                    pageNum = currentPage - 2 + i;
+                  }
+
+                  return (
+                    <ButtonCustom
+                      key={pageNum}
+                      variant={currentPage === pageNum ? "primary" : "outline"}
+                      size="sm"
+                      onClick={() => setCurrentPage(pageNum)}
+                      className="h-8 w-8 p-0"
+                    >
+                      {pageNum}
+                    </ButtonCustom>
+                  );
+                })}
               </div>
-              <div className="text-sm text-gray-600">Contratados</div>
+
+              <ButtonCustom
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+                }
+                disabled={currentPage === totalPages}
+                className="h-8 px-3"
+              >
+                Próxima
+              </ButtonCustom>
             </div>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Lista de Candidaturas */}
-      <div className="space-y-4">
-        {candidaturasData.map((candidatura) => (
-          <Card
-            key={candidatura.id}
-            className="hover:shadow-md transition-shadow"
-          >
-            <CardContent className="p-6">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-3">
-                    <h3 className="text-lg font-semibold text-gray-900">
-                      {candidatura.vaga?.titulo || "Vaga não encontrada"}
-                    </h3>
-                    {getStatusBadge(candidatura.status)}
-                  </div>
-
-                  {candidatura.vaga && (
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <Briefcase className="h-4 w-4" />
-                        <span>
-                          {candidatura.vaga.empresa?.nome ||
-                            "Empresa não informada"}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <MapPin className="h-4 w-4" />
-                        <span>
-                          {candidatura.vaga.modalidade === "REMOTO"
-                            ? "Remoto"
-                            : candidatura.vaga.modalidade === "PRESENCIAL"
-                            ? "Presencial"
-                            : candidatura.vaga.modalidade === "HIBRIDO"
-                            ? "Híbrido"
-                            : candidatura.vaga.modalidade}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <Calendar className="h-4 w-4" />
-                        <span>{formatDate(candidatura.aplicadaEm)}</span>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="flex items-center gap-4 text-sm text-gray-500">
-                    <div className="flex items-center gap-1">
-                      <Clock className="h-4 w-4" />
-                      <span>
-                        Aplicada em {formatDate(candidatura.aplicadaEm)}
-                      </span>
-                    </div>
-                    {candidatura.atualizadaEm !== candidatura.aplicadaEm && (
-                      <div className="flex items-center gap-1">
-                        <Clock className="h-4 w-4" />
-                        <span>
-                          Atualizada em {formatDate(candidatura.atualizadaEm)}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 ml-4">
-                  {candidatura.vaga && (
-                    <Button
-                      asChild
-                      variant="outline"
-                      size="sm"
-                      className="flex items-center gap-2"
-                    >
-                      <Link href={`/dashboard/empresas/vagas/${candidatura.vaga.id}`}>
-                        <Eye className="h-4 w-4" />
-                        Ver Vaga
-                      </Link>
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+        )}
       </div>
     </div>
   );

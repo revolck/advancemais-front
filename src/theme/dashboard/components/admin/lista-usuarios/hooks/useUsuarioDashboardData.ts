@@ -24,14 +24,14 @@ export function useUsuarioDashboardData(
 ): UseUsuarioDashboardDataReturn {
   const [filters, setFilters] = useState<UsuarioDashboardFilters>({
     page: 1,
-    pageSize: 20, // Aumentado de 10 para 20 para mostrar mais resultados
+    pageSize: 10,
     ...initialFilters,
   });
 
   const normalizedFilters = useMemo(() => {
     return {
       page: filters.page ?? 1,
-      pageSize: filters.pageSize ?? 20, // Aumentado de 10 para 20
+      pageSize: filters.pageSize ?? 10,
       status: filters.status ?? null,
       role: filters.role ?? null,
       search: filters.search ?? "",
@@ -45,6 +45,7 @@ export function useUsuarioDashboardData(
       const params: ListUsuariosParams = {
         page: currentFilters.page,
         limit: currentFilters.pageSize,
+        pageSize: currentFilters.pageSize,
       };
 
       // Apenas adiciona filtros se tiverem valores válidos
@@ -91,6 +92,22 @@ export function useUsuarioDashboardData(
           usuarios: response.usuarios?.length,
           pagination: response.pagination,
         });
+        
+        // Log detalhado para verificar vínculos de ALUNO_CANDIDATO
+        const alunosCandidatos = (response.usuarios || []).filter(
+          (u) => u.role === "ALUNO_CANDIDATO"
+        );
+        
+        if (alunosCandidatos.length > 0) {
+          console.log("🎓 Alunos/Candidatos encontrados:", alunosCandidatos.map((u) => ({
+            id: u.id,
+            nome: u.nomeCompleto,
+            role: u.role,
+            curriculos: u.curriculos?.length ?? 0,
+            cursosInscricoes: u.cursosInscricoes?.length ?? 0,
+            temVinculos: (u.curriculos?.length ?? 0) > 0 || (u.cursosInscricoes?.length ?? 0) > 0,
+          })));
+        }
       }
       const usuarios: UsuarioOverview[] = (response.usuarios || []).map(
         (u) => ({
@@ -110,6 +127,10 @@ export function useUsuarioDashboardData(
           criadoEm: u.criadoEm,
           atualizadoEm: u.atualizadoEm,
           ultimoAcesso: u.ultimoLogin ?? undefined,
+          // Mapear informações de vínculos (apenas IDs, conforme nova API)
+          // A API retorna Array<{ id: string }> apenas para ALUNO_CANDIDATO
+          curriculos: u.curriculos,
+          cursosInscricoes: u.cursosInscricoes,
         })
       );
 
@@ -124,8 +145,10 @@ export function useUsuarioDashboardData(
       } satisfies UsuariosDashboardData;
     },
     placeholderData: keepPreviousData,
-    staleTime: 30 * 1000, // 30 segundos (igual ao backend)
-    gcTime: 60 * 1000, // 1 minuto
+    staleTime: 0, // Sempre considerar os dados como stale para forçar refetch
+    gcTime: 5 * 60 * 1000, // 5 minutos
+    refetchOnMount: 'always', // Sempre refetch quando o componente é montado
+    refetchOnWindowFocus: false, // Não refetch ao focar na janela (evita refetch desnecessário)
   });
 
   const updateFilters = useCallback(

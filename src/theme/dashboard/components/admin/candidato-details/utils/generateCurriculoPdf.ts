@@ -1,6 +1,6 @@
 import type { Curriculo } from "@/api/candidatos/types";
 import type { UsuarioGenerico } from "@/api/usuarios/types";
-import { formatTelefone, getAlunoInitials } from "./formatters";
+import { formatTelefone, getCandidatoInitials } from "./formatters";
 
 type ContactItem = {
   icon: string;
@@ -487,7 +487,7 @@ export async function generateCurriculoPdf(
     const email = usuarioData?.email;
     const telefone = usuarioData?.telefone || usuarioData?.celular;
     const socialLinks = usuarioData?.socialLinks;
-    const initials = getAlunoInitials(usuarioNome);
+    const initials = getCandidatoInitials(usuarioNome);
 
     // Buscar avatar como dataUrl se existir
     let avatarDisplay: string | null = null;

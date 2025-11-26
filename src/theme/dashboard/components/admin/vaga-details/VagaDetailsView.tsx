@@ -5,10 +5,11 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { AlertCircle, Loader2 } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { HorizontalTabs } from "@/components/ui/custom";
 import type { HorizontalTabItem } from "@/components/ui/custom";
+import { Skeleton } from "@/components/ui/skeleton";
 import { getVagaById } from "@/api/vagas/admin";
 import type { VagaDetail } from "@/api/vagas/admin/types";
 import { queryKeys } from "@/lib/react-query/queryKeys";
@@ -103,10 +104,75 @@ export function VagaDetailsView({
 
   if (isPending) {
     return (
-      <div className="flex min-h-[320px] items-center justify-center">
-        <div className="flex items-center gap-3 text-gray-600">
-          <Loader2 className="h-5 w-5 animate-spin" />
-          <span>Carregando dados da vaga...</span>
+      <div className="space-y-8">
+        {/* Skeleton do HeaderInfo */}
+        <section className="relative overflow-hidden rounded-3xl bg-white">
+          <div className="relative flex flex-col gap-6 px-6 py-6 sm:px-8 sm:py-8 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex items-center gap-5">
+              <div className="relative">
+                <Skeleton className="h-20 w-20 rounded-full bg-gray-200" />
+                <Skeleton className="absolute bottom-1 right-1 h-4 w-4 rounded-full bg-gray-200 border-2 border-white" />
+              </div>
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <Skeleton className="h-7 w-64 bg-gray-200" />
+                  <Skeleton className="h-6 w-24 rounded-full bg-gray-200" />
+                  <Skeleton className="h-6 w-6 rounded-full bg-gray-200" />
+                </div>
+                <Skeleton className="h-4 w-48 bg-gray-200" />
+              </div>
+            </div>
+            <div className="flex w-full flex-col items-stretch gap-2 sm:w-auto sm:flex-row sm:items-center">
+              <Skeleton className="h-10 w-32 rounded-full bg-gray-200" />
+              <Skeleton className="h-10 w-24 rounded-full bg-gray-200" />
+            </div>
+          </div>
+        </section>
+
+        {/* Skeleton das Tabs */}
+        <div className="bg-white rounded-3xl border border-gray-200 overflow-hidden">
+          <div className="border-b border-gray-200">
+            <div className="flex items-center gap-1 overflow-x-auto px-6">
+              {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+                <div key={i} className="flex items-center gap-2 px-4 py-4 border-b-2 border-transparent">
+                  <Skeleton className="h-4 w-4 bg-gray-200" />
+                  <Skeleton className="h-4 w-20 bg-gray-200" />
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="p-6">
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Coluna esquerda - Conteúdo principal */}
+                <div className="lg:col-span-2 space-y-4">
+                  <div>
+                    <Skeleton className="h-6 w-32 bg-gray-200 mb-3" />
+                    <Skeleton className="h-4 w-full bg-gray-200 mb-2" />
+                    <Skeleton className="h-4 w-full bg-gray-200 mb-2" />
+                    <Skeleton className="h-4 w-3/4 bg-gray-200" />
+                  </div>
+                </div>
+                {/* Coluna direita - Informações */}
+                <div className="lg:col-span-1 space-y-4">
+                  <div>
+                    <Skeleton className="h-6 w-40 bg-gray-200 mb-4" />
+                    <div className="space-y-3">
+                      {[1, 2, 3, 4, 5, 6].map((i) => (
+                        <div key={i} className="flex items-center gap-3">
+                          <Skeleton className="h-4 w-4 bg-gray-200" />
+                          <div className="flex-1 space-y-1">
+                            <Skeleton className="h-3 w-24 bg-gray-200" />
+                            <Skeleton className="h-4 w-32 bg-gray-200" />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );

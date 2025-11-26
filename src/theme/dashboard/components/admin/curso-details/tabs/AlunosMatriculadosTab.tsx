@@ -401,11 +401,11 @@ export function AlunosMatriculadosTab({
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <div className="text-sm font-medium text-gray-900">
-                          {inscricao.aluno.nomeCompleto}
-                        </div>
+                      <div className="text-sm font-medium text-gray-900">
+                        {inscricao.aluno.nomeCompleto}
+                      </div>
                         <code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded font-mono text-gray-500 flex-shrink-0">
-                          {inscricao.aluno.codigo}
+                        {inscricao.aluno.codigo}
                         </code>
                       </div>
                       <div className="text-xs text-gray-500 font-mono truncate max-w-[220px] mt-1">
@@ -481,11 +481,11 @@ export function AlunosMatriculadosTab({
                         className="h-8 w-8 rounded-full text-gray-500 hover:text-white hover:bg-[var(--primary-color)]"
                         aria-label="Visualizar aluno"
                       >
-                        <Link
+                  <Link
                           href={`/dashboard/cursos/alunos/${inscricao.aluno.id}`}
-                        >
+                  >
                           <ChevronRight className="h-4 w-4" />
-                        </Link>
+                  </Link>
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent sideOffset={8}>
@@ -659,24 +659,24 @@ export function AlunosMatriculadosTab({
                 if (e.key === "Enter") {
                   e.preventDefault();
                   handleSearchSubmit();
-                }
+                      }
               },
               error: searchValidationMessage,
               helperText: SEARCH_HELPER_TEXT,
               helperPlacement: "tooltip",
             }}
             rightActions={
-              <ButtonCustom
+            <ButtonCustom
                 variant="primary"
                 size="lg"
                 onClick={handleSearchSubmit}
                 disabled={!isSearchInputValid}
-              >
+            >
                 Pesquisar
-              </ButtonCustom>
+            </ButtonCustom>
             }
           />
-        </div>
+          </div>
       </div>
 
       {/* Tabela */}

@@ -2448,7 +2448,9 @@ export function BuilderManager({
               selected?.kind === "item"
                 ? modules
                     .flatMap((m) => m.items)
-                    .find((i) => i.id === selected.id) || null
+                    .find((i) => i.id === selected.id) ||
+                  standaloneItems.find((i) => i.id === selected.id) ||
+                  null
                 : null
             }
             modules={modules}
@@ -2456,15 +2458,31 @@ export function BuilderManager({
             instructorOptions={instructorOptions}
             onSave={(updates) => {
               if (selected?.kind === "item") {
-                onChange({
-                  ...value,
-                  modules: modules.map((m) => ({
-                    ...m,
-                    items: m.items.map((x) =>
+                // Verificar se o item está em um módulo ou é standalone
+                const isStandalone = standaloneItems.some(
+                  (i) => i.id === selected.id
+                );
+
+                if (isStandalone) {
+                  // Atualizar standaloneItems
+                  onChange({
+                    ...value,
+                    standaloneItems: standaloneItems.map((x) =>
                       x.id === selected.id ? { ...x, ...updates } : x
                     ),
-                  })),
-                });
+                  });
+                } else {
+                  // Atualizar item dentro de módulo
+                  onChange({
+                    ...value,
+                    modules: modules.map((m) => ({
+                      ...m,
+                      items: m.items.map((x) =>
+                        x.id === selected.id ? { ...x, ...updates } : x
+                      ),
+                    })),
+                  });
+                }
                 toastCustom.success({
                   description: "Alterações salvas com sucesso!",
                 });

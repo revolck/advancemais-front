@@ -578,7 +578,7 @@ export function CompanyDashboard({
             rightActions={
               shouldFetch ? (
                 <ButtonCustom
-                  variant="ghost"
+                  variant="primary"
                   size="lg"
                   onClick={() => handleSearchSubmit()}
                   disabled={

@@ -27,6 +27,7 @@ import type { CandidatoRowProps } from "../types";
 import {
   formatDate,
   formatLocalizacao,
+  formatTelefone,
   getCandidatoInitials,
 } from "../utils/formatters";
 import type { Candidatura } from "@/api/candidatos/types";
@@ -247,7 +248,7 @@ export function CandidatoRow({ candidato, onViewDetails }: CandidatoRowProps) {
           {candidato.telefone ? (
             <div className="flex items-center gap-2">
               <Phone className="h-4 w-4 flex-shrink-0 text-gray-400" />
-              <span className="truncate">{candidato.telefone}</span>
+              <span className="truncate">{formatTelefone(candidato.telefone)}</span>
             </div>
           ) : null}
 

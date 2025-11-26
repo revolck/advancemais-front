@@ -97,9 +97,10 @@ export async function listCursos(
   });
 }
 
-function buildCursoRequest(
-  payload: CreateCursoPayload | UpdateCursoPayload
-): { body: BodyInit; headers: Record<string, string> } {
+function buildCursoRequest(payload: CreateCursoPayload | UpdateCursoPayload): {
+  body: BodyInit;
+  headers: Record<string, string>;
+} {
   const baseHeaders = {
     Accept: apiConfig.headers.Accept,
     ...getAuthHeader(),
@@ -107,56 +108,75 @@ function buildCursoRequest(
 
   // Como não há arquivo (apenas imagemUrl como string), envia como JSON
   const jsonPayload: Record<string, unknown> = {};
-  
+
   // Campos obrigatórios - sempre envia (API valida)
   if ("nome" in payload) {
-    jsonPayload.nome = payload.nome !== undefined && payload.nome !== null 
-      ? String(payload.nome).trim() 
-      : "";
+    jsonPayload.nome =
+      payload.nome !== undefined && payload.nome !== null
+        ? String(payload.nome).trim()
+        : "";
   }
   if ("descricao" in payload) {
-    jsonPayload.descricao = payload.descricao !== undefined && payload.descricao !== null 
-      ? String(payload.descricao).trim() 
-      : "";
+    jsonPayload.descricao =
+      payload.descricao !== undefined && payload.descricao !== null
+        ? String(payload.descricao).trim()
+        : "";
   }
   if ("cargaHoraria" in payload) {
     // Garante que cargaHoraria seja um número válido
     if (payload.cargaHoraria !== undefined && payload.cargaHoraria !== null) {
-      const cargaHoraria = typeof payload.cargaHoraria === "number" 
-        ? payload.cargaHoraria 
-        : Number(payload.cargaHoraria);
+      const cargaHoraria =
+        typeof payload.cargaHoraria === "number"
+          ? payload.cargaHoraria
+          : Number(payload.cargaHoraria);
       // Sempre envia, mesmo que inválido (API valida)
-      jsonPayload.cargaHoraria = Number.isFinite(cargaHoraria) ? cargaHoraria : 0;
+      jsonPayload.cargaHoraria = Number.isFinite(cargaHoraria)
+        ? cargaHoraria
+        : 0;
     } else {
       jsonPayload.cargaHoraria = 0;
     }
   }
   if ("categoriaId" in payload) {
     if (payload.categoriaId !== undefined && payload.categoriaId !== null) {
-      const categoriaId = typeof payload.categoriaId === "number" 
-        ? payload.categoriaId 
-        : Number(payload.categoriaId);
+      const categoriaId =
+        typeof payload.categoriaId === "number"
+          ? payload.categoriaId
+          : Number(payload.categoriaId);
       jsonPayload.categoriaId = categoriaId;
     }
   }
   if ("statusPadrao" in payload) {
-    jsonPayload.statusPadrao = payload.statusPadrao !== undefined && payload.statusPadrao !== null 
-      ? payload.statusPadrao 
-      : "PUBLICADO";
+    jsonPayload.statusPadrao =
+      payload.statusPadrao !== undefined && payload.statusPadrao !== null
+        ? payload.statusPadrao
+        : "PUBLICADO";
   }
-  
+
   // Campos opcionais - só adiciona se tiver valor válido
-  if ("subcategoriaId" in payload && payload.subcategoriaId !== undefined && payload.subcategoriaId !== null) {
-    const subcategoriaId = typeof payload.subcategoriaId === "number" 
-      ? payload.subcategoriaId 
-      : Number(payload.subcategoriaId);
+  if (
+    "subcategoriaId" in payload &&
+    payload.subcategoriaId !== undefined &&
+    payload.subcategoriaId !== null
+  ) {
+    const subcategoriaId =
+      typeof payload.subcategoriaId === "number"
+        ? payload.subcategoriaId
+        : Number(payload.subcategoriaId);
     jsonPayload.subcategoriaId = subcategoriaId;
   }
-  if ("estagioObrigatorio" in payload && payload.estagioObrigatorio !== undefined) {
+  if (
+    "estagioObrigatorio" in payload &&
+    payload.estagioObrigatorio !== undefined
+  ) {
     jsonPayload.estagioObrigatorio = payload.estagioObrigatorio;
   }
   // imagemUrl: sempre envia se estiver presente no payload e tiver valor válido
-  if ("imagemUrl" in payload && payload.imagemUrl !== undefined && payload.imagemUrl !== null) {
+  if (
+    "imagemUrl" in payload &&
+    payload.imagemUrl !== undefined &&
+    payload.imagemUrl !== null
+  ) {
     const trimmedUrl = String(payload.imagemUrl).trim();
     if (trimmedUrl !== "") {
       jsonPayload.imagemUrl = trimmedUrl;
@@ -168,9 +188,18 @@ function buildCursoRequest(
   if (process.env.NODE_ENV === "development") {
     console.log("[buildCursoRequest] JSON sendo enviado:", jsonPayload);
     console.log("[buildCursoRequest] Payload original:", payload);
-    console.log("[buildCursoRequest] imagemUrl no payload original:", payload.imagemUrl);
-    console.log("[buildCursoRequest] imagemUrl no JSON final:", jsonPayload.imagemUrl);
-    console.log("[buildCursoRequest] JSON stringificado:", JSON.stringify(jsonPayload));
+    console.log(
+      "[buildCursoRequest] imagemUrl no payload original:",
+      payload.imagemUrl
+    );
+    console.log(
+      "[buildCursoRequest] imagemUrl no JSON final:",
+      jsonPayload.imagemUrl
+    );
+    console.log(
+      "[buildCursoRequest] JSON stringificado:",
+      JSON.stringify(jsonPayload)
+    );
   }
 
   return {
@@ -184,7 +213,7 @@ export async function createCurso(
   init?: RequestInit
 ): Promise<Curso> {
   const { body, headers } = buildCursoRequest(payload);
-  
+
   try {
     return await apiFetch<Curso>(cursosRoutes.cursos.create(), {
       init: {
@@ -200,7 +229,7 @@ export async function createCurso(
     if (error?.status === 400) {
       const details = error?.details;
       let errorMessage = "Dados inválidos para criação do curso";
-      
+
       // Se houver detalhes de validação, tenta extrair mensagens mais específicas
       if (details) {
         if (typeof details === "string") {
@@ -217,14 +246,19 @@ export async function createCurso(
           }
         } else if (details.issues && typeof details.issues === "object") {
           const issues = Object.entries(details.issues)
-            .map(([field, messages]) => `${field}: ${Array.isArray(messages) ? messages.join(", ") : messages}`)
+            .map(
+              ([field, messages]) =>
+                `${field}: ${
+                  Array.isArray(messages) ? messages.join(", ") : messages
+                }`
+            )
             .join("; ");
           if (issues) {
             errorMessage = `Erros de validação: ${issues}`;
           }
         }
       }
-      
+
       const enhancedError = new Error(errorMessage) as Error & {
         status?: number;
         details?: any;
@@ -233,7 +267,7 @@ export async function createCurso(
       enhancedError.details = details;
       throw enhancedError;
     }
-    
+
     throw error;
   }
 }
@@ -732,7 +766,7 @@ export async function listAlunosComInscricao(
 
   if (params?.page) queryParams.set("page", String(params.page));
   if (params?.limit) queryParams.set("limit", String(params.limit));
-  
+
   // Suporte para múltiplos status
   if (params?.status) {
     if (Array.isArray(params.status)) {
@@ -741,9 +775,9 @@ export async function listAlunosComInscricao(
       queryParams.set("status", params.status);
     }
   }
-  
+
   if (params?.search) queryParams.set("search", params.search);
-  
+
   // Suporte para múltiplos cursoIds
   if (params?.cursoId) {
     if (Array.isArray(params.cursoId)) {
@@ -752,7 +786,7 @@ export async function listAlunosComInscricao(
       queryParams.set("cursoId", params.cursoId);
     }
   }
-  
+
   // Suporte para múltiplos turmaIds
   if (params?.turmaId) {
     if (Array.isArray(params.turmaId)) {
@@ -761,7 +795,7 @@ export async function listAlunosComInscricao(
       queryParams.set("turmaId", params.turmaId);
     }
   }
-  
+
   // Suporte para múltiplas cidades
   if (params?.cidade) {
     if (Array.isArray(params.cidade)) {

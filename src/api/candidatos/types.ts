@@ -139,7 +139,8 @@ export interface VagaInfo {
 
 export interface EmpresaInfo {
   id: string;
-  nome: string;
+  nome?: string; // Mantido para compatibilidade
+  nomeCompleto?: string; // Campo retornado pela API
   cnpj: string;
   descricao: string | null;
   website: string | null;

@@ -4,3 +4,4 @@
  */
 
 export * from "./faturamento";
+export * from "./financeiro";

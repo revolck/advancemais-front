@@ -10,8 +10,6 @@ export function VacancyTab({
   vacancies,
   publishedVacancies,
   totalVacancies,
-  onViewVacancy,
-  onEditVacancy,
 }: VacancyTabProps) {
   // Usar o hook para gerenciar candidatos
   const {
@@ -79,8 +77,6 @@ export function VacancyTab({
     <section className="rounded-3xl border border-slate-200/80 bg-white p-2">
       <VacancyTable
         vacancies={relevantVacancies}
-        onView={onViewVacancy}
-        onEdit={onEditVacancy}
         loadingStates={loadingStates}
         errorStates={errorStates}
         onLoadCandidates={loadVacancyCandidates}

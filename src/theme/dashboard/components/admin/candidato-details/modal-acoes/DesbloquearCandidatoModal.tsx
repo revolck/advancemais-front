@@ -1,19 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { Shield, Loader2 } from "lucide-react";
+import { ButtonCustom } from "@/components/ui/custom/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+  ModalCustom,
+  ModalContentWrapper,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  ModalTitle,
+} from "@/components/ui/custom/modal";
 
 interface DesbloquearCandidatoModalProps {
   isOpen: boolean;
@@ -28,101 +24,70 @@ export function DesbloquearCandidatoModal({
   candidatoNome,
   onConfirm,
 }: DesbloquearCandidatoModalProps) {
-  const [observacoes, setObservacoes] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    setIsLoading(true);
-    setError(null);
-
+  const handleDesbloquear = async () => {
     try {
-      await onConfirm(observacoes.trim() || undefined);
-
-      // Reset form
-      setObservacoes("");
+      setIsLoading(true);
+      await onConfirm();
       onOpenChange(false);
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Erro ao desbloquear candidato"
-      );
+    } catch (error) {
+      console.error("Erro ao desbloquear candidato", error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleCancel = () => {
-    setObservacoes("");
-    setError(null);
-    onOpenChange(false);
+  const handleClose = () => {
+    if (!isLoading) onOpenChange(false);
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-green-600">
-            <Shield className="h-5 w-5" />
-            Desbloquear Candidato
-          </DialogTitle>
-          <DialogDescription>
-            Você está prestes a desbloquear o candidato{" "}
-            <strong>{candidatoNome}</strong>. Esta ação restaurará o acesso dele
-            ao sistema.
-          </DialogDescription>
-        </DialogHeader>
+    <ModalCustom
+      isOpen={isOpen}
+      onOpenChange={onOpenChange}
+      size="xl"
+      backdrop="blur"
+      scrollBehavior="inside"
+      isDismissable={!isLoading}
+      isKeyboardDismissDisabled={isLoading}
+    >
+      <ModalContentWrapper>
+        <ModalHeader>
+          <ModalTitle>Desbloquear candidato</ModalTitle>
+        </ModalHeader>
 
-        {error && (
-          <Alert variant="destructive">
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
+        <ModalBody>
+          <p>
+            Deseja desbloquear o candidato{" "}
+            <strong className="text-[var(--secondary-color)]">{candidatoNome}</strong>
+            ? O candidato terá acesso completo ao sistema novamente.
+          </p>
+        </ModalBody>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="observacoes">Observações (opcional)</Label>
-            <Textarea
-              id="observacoes"
-              value={observacoes}
-              onChange={(e) => setObservacoes(e.target.value)}
-              placeholder="Motivo do desbloqueio ou observações adicionais..."
-              rows={3}
-            />
-          </div>
-
-          <DialogFooter>
-            <Button
-              type="button"
+        <ModalFooter>
+          <div className="flex items-center justify-end gap-3">
+            <ButtonCustom
               variant="outline"
-              onClick={handleCancel}
+              size="md"
+              onClick={handleClose}
               disabled={isLoading}
             >
               Cancelar
-            </Button>
-            <Button
-              type="submit"
-              variant="default"
+            </ButtonCustom>
+            <ButtonCustom
+              variant="primary"
+              size="md"
+              onClick={handleDesbloquear}
+              isLoading={isLoading}
+              loadingText="Desbloqueando..."
               disabled={isLoading}
-              className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
             >
-              {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
-              Desbloquear Candidato
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+              Sim, desbloquear candidato
+            </ButtonCustom>
+          </div>
+        </ModalFooter>
+      </ModalContentWrapper>
+    </ModalCustom>
   );
 }
-
-
-
-
-
-
-
-
-
-

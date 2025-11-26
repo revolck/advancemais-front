@@ -26,8 +26,6 @@ export interface VacancyTabProps {
   vacancies: AdminCompanyVagaItem[];
   publishedVacancies: number;
   totalVacancies: number;
-  onViewVacancy: (vacancy: AdminCompanyVagaItem) => void;
-  onEditVacancy: (vacancy: AdminCompanyVagaItem) => void;
 }
 
 export interface PlanTabProps {

@@ -138,17 +138,17 @@ export function CandidatosDashboard({
   const filterFields: FilterField[] = useMemo(
     () => [
       {
-        key: "dateRange",
-        label: "Data de criação",
-        type: "date-range",
-        placeholder: "Selecionar período",
-      },
-      {
         key: "location",
         label: "Localização",
         mode: "multiple",
         options: locationOptions,
         placeholder: "Selecionar localização",
+      },
+      {
+        key: "dateRange",
+        label: "Data de atividade",
+        type: "date-range",
+        placeholder: "Selecionar período",
       },
     ],
     [locationOptions] // Depend on the entire array
@@ -320,61 +320,59 @@ export function CandidatosDashboard({
         </Alert>
       )}
 
-      <div className="border-b border-gray-200">
-        <div className="py-4">
-          <FilterBar
-            fields={filterFields}
-            values={filterValues}
-            onChange={(key, value) => {
-              if (key === "dateRange") {
-                const range = value
-                  ? cloneDateRange(value as DateRange)
-                  : createEmptyDateRange();
-                setPendingDateRange(range);
-                setAppliedDateRange(range);
-                updateFilters({
-                  criadoDe: range.from
-                    ? new Date(range.from).toISOString()
-                    : undefined,
-                  criadoAte: range.to
-                    ? new Date(range.to).toISOString()
-                    : undefined,
-                  page: 1,
-                });
-              } else if (key === "location") {
-                setSelectedLocations(Array.isArray(value) ? value : []);
-              }
-            }}
-            onClearAll={handleClearAll}
-            search={{
-              label: "Pesquisar candidato",
-              value: pendingSearchTerm,
-              onChange: (value) => setPendingSearchTerm(value),
-              placeholder: "Buscar por nome, email, CPF ou código...",
-              onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  handleSearchSubmit((e.target as HTMLInputElement).value);
-                }
-              },
-              error: searchValidationMessage,
-              helperText: searchHelperText,
-              helperPlacement: "tooltip",
-            }}
-            rightActions={
-              <ButtonCustom
-                variant="ghost"
-                size="lg"
-                onClick={() => handleSearchSubmit()}
-                disabled={isLoading || !isSearchInputValid}
-                className="md:w-full xl:w-auto"
-              >
-                Pesquisar
-              </ButtonCustom>
+      <FilterBar
+        className="w-full lg:grid-cols-[minmax(0,2.5fr)_minmax(0,1.5fr)_minmax(0,1.5fr)_auto]"
+        fields={filterFields}
+        values={filterValues}
+          onChange={(key, value) => {
+            if (key === "dateRange") {
+              const range = value
+                ? cloneDateRange(value as DateRange)
+                : createEmptyDateRange();
+              setPendingDateRange(range);
+              setAppliedDateRange(range);
+              updateFilters({
+                criadoDe: range.from
+                  ? new Date(range.from).toISOString()
+                  : undefined,
+                criadoAte: range.to
+                  ? new Date(range.to).toISOString()
+                  : undefined,
+                page: 1,
+              });
+            } else if (key === "location") {
+              setSelectedLocations(Array.isArray(value) ? value : []);
             }
-          />
-        </div>
-      </div>
+          }}
+          onClearAll={handleClearAll}
+          search={{
+            label: "Pesquisar candidato",
+            value: pendingSearchTerm,
+            onChange: (value) => setPendingSearchTerm(value),
+            placeholder: "Buscar por nome, email, CPF ou código...",
+            onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                handleSearchSubmit((e.target as HTMLInputElement).value);
+              }
+            },
+            error: searchValidationMessage,
+            helperText: searchHelperText,
+            helperPlacement: "tooltip",
+          }}
+          rightActions={
+            <ButtonCustom
+              variant="primary"
+              size="lg"
+              onClick={() => handleSearchSubmit()}
+              disabled={isLoading || !isSearchInputValid}
+              fullWidth
+              className="md:w-full xl:w-auto"
+            >
+              Pesquisar
+            </ButtonCustom>
+          }
+        />
 
       {!isLoading && filteredCandidatos.length === 0 ? (
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">

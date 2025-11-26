@@ -1,12 +1,15 @@
-import React from "react";
+"use client";
+
+import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   MapPin,
   ChevronRight,
   ShieldAlert,
   Calendar,
   Clock,
+  Loader2,
 } from "lucide-react";
-import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -181,6 +184,8 @@ function getCompanyStatusBadges(partnership: Partnership) {
 }
 
 export const CompanyRow: React.FC<CompanyRowProps> = ({ partnership }) => {
+  const router = useRouter();
+  const [isNavigating, setIsNavigating] = useState(false);
   const formattedCnpj = formatCnpj(partnership.empresa.cnpj);
   const planName = partnership.plano?.nome?.trim() ?? "";
   const hasPlanInfo = planName.length > 0;
@@ -195,6 +200,18 @@ export const CompanyRow: React.FC<CompanyRowProps> = ({ partnership }) => {
   const hasLocation = locationParts.length > 0;
   const locationDisplay = hasLocation ? locationParts.join("/") : "—";
   const companyBadges = getCompanyStatusBadges(partnership);
+
+  const handleNavigate = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (isNavigating) return;
+    
+    setIsNavigating(true);
+    router.push(`/dashboard/empresas/${encodeURIComponent(partnership.empresa.id)}`);
+    
+    setTimeout(() => {
+      setIsNavigating(false);
+    }, 5000);
+  };
 
   return (
     <TableRow className="border-gray-100 hover:bg-gray-50/50 transition-colors">
@@ -288,18 +305,23 @@ export const CompanyRow: React.FC<CompanyRowProps> = ({ partnership }) => {
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
-              asChild
               variant="ghost"
               size="icon"
-              className="h-8 w-8 rounded-full text-gray-500 hover:text-white hover:bg-[var(--primary-color)]"
+              onClick={handleNavigate}
+              disabled={isNavigating}
+              className="h-8 w-8 rounded-full text-gray-500 hover:text-white hover:bg-[var(--primary-color)] disabled:opacity-50 disabled:cursor-wait cursor-pointer"
               aria-label="Visualizar empresa"
             >
-              <Link href={`/empresas/${partnership.empresa.id}`}>
+              {isNavigating ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
                 <ChevronRight className="h-4 w-4" />
-              </Link>
+              )}
             </Button>
           </TooltipTrigger>
-          <TooltipContent sideOffset={8}>Visualizar empresa</TooltipContent>
+          <TooltipContent sideOffset={8}>
+            {isNavigating ? "Carregando..." : "Visualizar empresa"}
+          </TooltipContent>
         </Tooltip>
       </TableCell>
     </TableRow>

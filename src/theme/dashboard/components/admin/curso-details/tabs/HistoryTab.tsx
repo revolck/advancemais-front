@@ -353,19 +353,19 @@ export function HistoryTab({
             seenByCompositeKey.add(compositeKey);
             
             return true;
-          });
-          
-          // Log para debug (apenas em desenvolvimento)
-          if (process.env.NODE_ENV === "development") {
+        });
+        
+        // Log para debug (apenas em desenvolvimento)
+        if (process.env.NODE_ENV === "development") {
             const finalLength = result.data.length;
             const duplicatasRemovidas = originalLength - finalLength;
             if (duplicatasRemovidas > 0) {
               console.log("🔍 Auditoria - Duplicatas removidas:", {
-                cursoId,
+            cursoId,
                 totalOriginal: originalLength,
                 totalAposDedup: finalLength,
                 duplicatasRemovidas,
-              });
+          });
             }
           }
         }

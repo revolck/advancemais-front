@@ -11,8 +11,6 @@ import { VacancyRow } from "./VacancyRow";
 
 interface VacancyTableProps {
   vacancies: AdminCompanyVagaItem[];
-  onView: (vacancy: AdminCompanyVagaItem) => void;
-  onEdit: (vacancy: AdminCompanyVagaItem) => void;
   onDelete?: (vacancy: AdminCompanyVagaItem) => void;
   isDeleting?: boolean;
   loadingStates?: Record<string, boolean>;
@@ -22,8 +20,6 @@ interface VacancyTableProps {
 
 export function VacancyTable({
   vacancies,
-  onView,
-  onEdit,
   onDelete,
   isDeleting,
   loadingStates = {},
@@ -57,8 +53,6 @@ export function VacancyTable({
             <VacancyRow
               key={vacancy.id}
               vacancy={vacancy}
-              onView={onView}
-              onEdit={onEdit}
               onDelete={onDelete}
               index={index}
               isDeleting={isDeleting}

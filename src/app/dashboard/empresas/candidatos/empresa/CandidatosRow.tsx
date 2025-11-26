@@ -1,6 +1,7 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -13,13 +14,13 @@ import {
   Mail,
   Phone,
   Briefcase,
+  Loader2,
 } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import Link from "next/link";
 import { cn } from "@/lib/utils";
 import type { CandidatoOverview, Candidatura } from "@/api/candidatos/types";
 import {
@@ -35,6 +36,9 @@ interface CandidatosRowProps {
 }
 
 export function CandidatosRow({ candidato }: CandidatosRowProps) {
+  const router = useRouter();
+  const [isNavigating, setIsNavigating] = useState(false);
+  
   // Para empresas, mostrar apenas candidaturas relacionadas às vagas da empresa
   const candidaturasEmpresa: Candidatura[] =
     candidato.candidaturas?.filter(
@@ -44,6 +48,18 @@ export function CandidatosRow({ candidato }: CandidatosRowProps) {
   const statusInfo = getStatusInfo(
     candidaturasEmpresa?.[0]?.status || "RECEBIDA"
   );
+
+  const handleNavigate = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    if (isNavigating) return;
+    
+    setIsNavigating(true);
+    router.push(`/dashboard/empresas/candidatos/${encodeURIComponent(candidato.id)}`);
+    
+    setTimeout(() => {
+      setIsNavigating(false);
+    }, 5000);
+  };
 
   return (
     <TableRow className="border-gray-100 hover:bg-gray-50/50 transition-colors">
@@ -130,18 +146,23 @@ export function CandidatosRow({ candidato }: CandidatosRowProps) {
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
-              asChild
               variant="ghost"
               size="icon"
-              className="h-8 w-8 rounded-full text-gray-500 hover:text-white hover:bg-[var(--primary-color)]"
+              onClick={handleNavigate}
+              disabled={isNavigating}
+              className="h-8 w-8 rounded-full text-gray-500 hover:text-white hover:bg-[var(--primary-color)] disabled:opacity-50 disabled:cursor-wait cursor-pointer"
               aria-label="Visualizar candidato"
             >
-              <Link href={`/dashboard/empresas/candidatos/${candidato.id}`}>
+              {isNavigating ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
                 <ChevronRight className="h-4 w-4" />
-              </Link>
+              )}
             </Button>
           </TooltipTrigger>
-          <TooltipContent sideOffset={8}>Visualizar candidato</TooltipContent>
+          <TooltipContent sideOffset={8}>
+            {isNavigating ? "Carregando..." : "Visualizar candidato"}
+          </TooltipContent>
         </Tooltip>
       </TableCell>
     </TableRow>

@@ -69,22 +69,25 @@ export function CursosInscricoesTab({
                 <div className="flex items-center gap-2">
                   <BookOpen className="h-5 w-5 text-blue-600" />
                   <h3 className="text-lg font-semibold text-gray-900">
-                    {inscricao.turma?.curso?.nome || "Curso sem nome"}
+                    {inscricao.curso?.nome || "Curso sem nome"}
                   </h3>
                 </div>
                 {inscricao.turma?.nome && (
                   <div className="flex items-center gap-2 text-gray-600">
                     <Users className="h-4 w-4" />
-                    <span className="text-sm">{inscricao.turma.nome}</span>
+                    <span className="text-sm">
+                      {inscricao.turma.nome}
+                      {inscricao.turma.codigo && ` (${inscricao.turma.codigo})`}
+                    </span>
                   </div>
                 )}
               </div>
             </div>
             <Badge
               variant="outline"
-              className={getStatusColor(inscricao.status)}
+              className={getStatusColor(inscricao.statusInscricao)}
             >
-              {inscricao.status}
+              {inscricao.statusInscricao}
             </Badge>
           </div>
         </div>

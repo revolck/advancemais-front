@@ -17,6 +17,9 @@ export interface UsuarioOverview {
   criadoEm: string;
   atualizadoEm?: string;
   ultimoAcesso?: string;
+  // Informações para determinar se é aluno ou candidato
+  curriculos?: Array<{ id: string }>;
+  cursosInscricoes?: Array<{ id: string }>;
 }
 
 export interface UsuarioDashboardFilters {

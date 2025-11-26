@@ -1,27 +1,38 @@
 "use client";
 
-import { useState } from "react";
-import { AlertTriangle, Loader2 } from "lucide-react";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type ChangeEvent,
+} from "react";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+  ModalCustom,
+  ModalContentWrapper,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  ModalTitle,
+} from "@/components/ui/custom/modal";
+import { ButtonCustom } from "@/components/ui/custom/button";
+import { SimpleTextarea } from "@/components/ui/custom/text-area";
+import { SelectCustom } from "@/components/ui/custom/select";
+import { InputCustom } from "@/components/ui/custom/input";
+import { toastCustom } from "@/components/ui/custom/toast";
+
+const BAN_TYPE_OPTIONS = [
+  { label: "Temporário", value: "TEMPORARIO" },
+  { label: "Permanente", value: "PERMANENTE" },
+];
+
+const BAN_REASON_OPTIONS = [
+  { label: "Spam", value: "SPAM" },
+  { label: "Violação de políticas", value: "VIOLACAO_POLITICAS" },
+  { label: "Fraude", value: "FRAUDE" },
+  { label: "Abuso de recursos", value: "ABUSO_DE_RECURSOS" },
+  { label: "Outros", value: "OUTROS" },
+];
 
 interface BloquearCandidatoModalProps {
   isOpen: boolean;
@@ -30,9 +41,10 @@ interface BloquearCandidatoModalProps {
   onConfirm: (data: BloquearCandidatoData) => Promise<void>;
 }
 
-interface BloquearCandidatoData {
+export interface BloquearCandidatoData {
+  tipo: "TEMPORARIO" | "PERMANENTE";
   motivo: string;
-  duracao?: number;
+  dias?: number;
   observacoes?: string;
 }
 
@@ -42,152 +54,262 @@ export function BloquearCandidatoModal({
   candidatoNome,
   onConfirm,
 }: BloquearCandidatoModalProps) {
-  const [motivo, setMotivo] = useState("");
-  const [duracao, setDuracao] = useState<string>("");
-  const [observacoes, setObservacoes] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const initialState = useMemo(
+    () => ({
+      tipo: "TEMPORARIO",
+      motivo: "VIOLACAO_POLITICAS",
+      dias: "30",
+      observacoes: "",
+    }),
+    []
+  );
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const [state, setState] = useState(initialState);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-    if (!motivo.trim()) {
-      setError("O motivo do bloqueio é obrigatório");
+  useEffect(() => {
+    if (isOpen) {
+      setState(initialState);
+      setIsSubmitting(false);
+    }
+  }, [initialState, isOpen]);
+
+  const handleTypeChange = useCallback((value: string | null) => {
+    setState((prev) => ({ ...prev, tipo: value || "TEMPORARIO" }));
+  }, []);
+
+  const handleReasonChange = useCallback((value: string | null) => {
+    setState((prev) => ({ ...prev, motivo: value || "VIOLACAO_POLITICAS" }));
+  }, []);
+
+  const handleDaysKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLInputElement>) => {
+      const allowedKeys = [
+        "Backspace",
+        "Delete",
+        "Tab",
+        "Escape",
+        "Enter",
+        "ArrowLeft",
+        "ArrowRight",
+        "ArrowUp",
+        "ArrowDown",
+      ];
+      if (allowedKeys.includes(event.key)) return;
+      if (!/^[0-9]$/.test(event.key)) {
+        event.preventDefault();
+        return;
+      }
+      if (state.dias.length >= 4) {
+        event.preventDefault();
+      }
+    },
+    [state.dias.length]
+  );
+
+  const handleDaysChange = useCallback(
+    (event: ChangeEvent<HTMLInputElement>) => {
+      const value = event.target.value;
+
+      if (state.tipo !== "TEMPORARIO") {
+        setState((prev) => ({ ...prev, dias: "" }));
+        return;
+      }
+
+      const numericValue = value.replace(/[^\d]/g, "").slice(0, 4);
+      if (numericValue === "0") {
+        setState((prev) => ({ ...prev, dias: "" }));
+        return;
+      }
+      if (!numericValue) {
+        setState((prev) => ({ ...prev, dias: "" }));
+        return;
+      }
+      const numValue = parseInt(numericValue, 10);
+      if (numValue >= 1 && numValue <= 9999) {
+        setState((prev) => ({ ...prev, dias: numericValue }));
+      } else if (numericValue.length === 4 && numValue > 9999) {
+        setState((prev) => ({ ...prev, dias: "9999" }));
+      } else {
+        setState((prev) => ({ ...prev, dias: numericValue }));
+      }
+    },
+    [state.tipo]
+  );
+
+  const handleObservationsChange = useCallback(
+    (event: ChangeEvent<HTMLTextAreaElement>) => {
+      const nextValue = event.target.value.slice(0, 250);
+      setState((prev) => ({ ...prev, observacoes: nextValue }));
+    },
+    []
+  );
+
+  const handleClose = useCallback(() => {
+    onOpenChange(false);
+  }, [onOpenChange]);
+
+  const handleSubmit = useCallback(async () => {
+    if (isSubmitting) return;
+
+    const trimmedObservations = state.observacoes.trim();
+    if (!trimmedObservations) {
+      toastCustom.error({
+        title: "Informe as observações",
+        description:
+          "Descreva as observações do bloqueio (máximo 250 caracteres).",
+      });
       return;
     }
 
-    setIsLoading(true);
-    setError(null);
+    if (state.tipo === "TEMPORARIO" && !state.dias) {
+      toastCustom.error({
+        title: "Informe a duração",
+        description: "Defina a quantidade de dias para bloqueio temporário.",
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
 
     try {
-      const data: BloquearCandidatoData = {
-        motivo: motivo.trim(),
-        duracao: duracao ? parseInt(duracao) : undefined,
-        observacoes: observacoes.trim() || undefined,
+      const payload: BloquearCandidatoData = {
+        tipo: state.tipo as "TEMPORARIO" | "PERMANENTE",
+        motivo: state.motivo,
+        dias: state.tipo === "TEMPORARIO" ? Number(state.dias) : undefined,
+        observacoes: trimmedObservations,
       };
 
-      await onConfirm(data);
+      await onConfirm(payload);
 
-      // Reset form
-      setMotivo("");
-      setDuracao("");
-      setObservacoes("");
-      onOpenChange(false);
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Erro ao bloquear candidato"
-      );
+      toastCustom.success({
+        title: "Candidato bloqueado",
+        description:
+          "O acesso do candidato foi bloqueado e o período selecionado está ativo.",
+      });
+
+      handleClose();
+    } catch (error) {
+      console.error("Erro ao bloquear candidato", error);
+      toastCustom.error({
+        title: "Erro ao aplicar bloqueio",
+        description:
+          "Não foi possível bloquear o candidato agora. Tente novamente em instantes.",
+      });
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
-  };
-
-  const handleCancel = () => {
-    setMotivo("");
-    setDuracao("");
-    setObservacoes("");
-    setError(null);
-    onOpenChange(false);
-  };
+  }, [
+    handleClose,
+    isSubmitting,
+    onConfirm,
+    state.dias,
+    state.motivo,
+    state.observacoes,
+    state.tipo,
+  ]);
 
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-red-600">
-            <AlertTriangle className="h-5 w-5" />
-            Bloquear Candidato
-          </DialogTitle>
-          <DialogDescription>
-            Você está prestes a bloquear o candidato{" "}
-            <strong>{candidatoNome}</strong>. Esta ação impedirá que ele acesse
-            o sistema.
-          </DialogDescription>
-        </DialogHeader>
+    <ModalCustom
+      isOpen={isOpen}
+      onOpenChange={onOpenChange}
+      size="2xl"
+      backdrop="blur"
+      scrollBehavior="inside"
+    >
+      <ModalContentWrapper>
+        <ModalHeader>
+          <ModalTitle>Bloquear candidato</ModalTitle>
+        </ModalHeader>
 
-        {error && (
-          <Alert variant="destructive">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
+        <ModalBody className="space-y-8 p-1">
+          <div className="grid gap-6 sm:grid-cols-2">
+            <div className="space-y-3">
+              <SelectCustom
+                mode="single"
+                label="Tipo"
+                required
+                options={BAN_TYPE_OPTIONS}
+                value={state.tipo}
+                onChange={handleTypeChange}
+                placeholder="Selecione o tipo"
+                disabled={isSubmitting}
+                size="sm"
+                fullWidth
+              />
+            </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="motivo">
-              Motivo do Bloqueio <span className="text-red-500">*</span>
-            </Label>
-            <Input
-              id="motivo"
-              value={motivo}
-              onChange={(e) => setMotivo(e.target.value)}
-              placeholder="Ex: Violação dos termos de uso"
+            <div className="space-y-3">
+              <SelectCustom
+                mode="single"
+                label="Motivo"
+                required
+                options={BAN_REASON_OPTIONS}
+                value={state.motivo}
+                onChange={handleReasonChange}
+                placeholder="Selecione o motivo"
+                disabled={isSubmitting}
+                size="sm"
+                fullWidth
+              />
+            </div>
+          </div>
+
+          {state.tipo === "TEMPORARIO" && (
+            <div className="space-y-3">
+              <InputCustom
+                type="text"
+                label="Duração (dias)"
+                required
+                value={state.dias}
+                onChange={handleDaysChange}
+                onKeyDown={handleDaysKeyDown}
+                placeholder="Digite a quantidade de dias (1-9999)"
+                disabled={isSubmitting}
+                size="sm"
+                fullWidth
+                maxLength={4}
+              />
+            </div>
+          )}
+
+          <div className="space-y-3">
+            <SimpleTextarea
+              label={`Observações detalhadas`}
               required
+              value={state.observacoes}
+              maxLength={250}
+              showCharCount
+              onChange={handleObservationsChange}
+              disabled={isSubmitting}
+              placeholder="Descreva detalhadamente as observações que justificam o bloqueio de acesso do candidato..."
+              className="min-h-[120px] resize-none"
             />
           </div>
+        </ModalBody>
 
-          <div className="space-y-2">
-            <Label htmlFor="duracao">Duração do Bloqueio</Label>
-            <Select value={duracao} onValueChange={setDuracao}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione a duração (opcional)" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="1">1 dia</SelectItem>
-                <SelectItem value="7">7 dias</SelectItem>
-                <SelectItem value="15">15 dias</SelectItem>
-                <SelectItem value="30">30 dias</SelectItem>
-                <SelectItem value="90">90 dias</SelectItem>
-                <SelectItem value="permanente">Permanente</SelectItem>
-              </SelectContent>
-            </Select>
-            <p className="text-sm text-gray-500">
-              Se não selecionado, o bloqueio será permanente
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="observacoes">Observações Adicionais</Label>
-            <Textarea
-              id="observacoes"
-              value={observacoes}
-              onChange={(e) => setObservacoes(e.target.value)}
-              placeholder="Informações adicionais sobre o bloqueio..."
-              rows={3}
-            />
-          </div>
-
-          <DialogFooter>
-            <Button
-              type="button"
+        <ModalFooter className="py-2">
+          <div className="flex w-full justify-end gap-3">
+            <ButtonCustom
               variant="outline"
-              onClick={handleCancel}
-              disabled={isLoading}
+              onClick={handleClose}
+              disabled={isSubmitting}
+              size="md"
             >
               Cancelar
-            </Button>
-            <Button
-              type="submit"
-              variant="destructive"
-              disabled={isLoading}
-              className="flex items-center gap-2"
+            </ButtonCustom>
+            <ButtonCustom
+              variant="danger"
+              onClick={handleSubmit}
+              isLoading={isSubmitting}
+              loadingText="Aplicando bloqueio..."
+              size="md"
             >
-              {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
-              Bloquear Candidato
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+              Bloquear candidato
+            </ButtonCustom>
+          </div>
+        </ModalFooter>
+      </ModalContentWrapper>
+    </ModalCustom>
   );
 }
-
-
-
-
-
-
-
-
-
-

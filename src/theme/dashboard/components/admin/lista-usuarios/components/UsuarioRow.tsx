@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -9,7 +10,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { ChevronRight, Mail, MapPin, Calendar } from "lucide-react";
+import { ChevronRight, Mail, MapPin, Calendar, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Icon } from "@/components/ui/custom";
@@ -23,6 +24,7 @@ import {
   getStatusLabel,
   formatDateTime,
   formatCpf,
+  formatCnpj,
 } from "../utils/formatters";
 
 interface UsuarioRowProps {
@@ -31,20 +33,41 @@ interface UsuarioRowProps {
 
 export function UsuarioRow({ usuario }: UsuarioRowProps) {
   const router = useRouter();
+  const [isNavigating, setIsNavigating] = useState(false);
 
-  const handleClick = () => {
+  // Verificar se é ALUNO_CANDIDATO e se tem vínculos (cursos ou currículos)
+  const isAlunoCandidato = usuario.role === UserRole.ALUNO_CANDIDATO;
+  const hasCursos = isAlunoCandidato && (usuario.cursosInscricoes?.length ?? 0) > 0;
+  const hasCurriculos = isAlunoCandidato && (usuario.curriculos?.length ?? 0) > 0;
+  const hasVinculos = hasCursos || hasCurriculos;
+  const showSemVinculosBadge = isAlunoCandidato && !hasVinculos;
+
+  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    if (isNavigating) return;
+    
+    setIsNavigating(true);
+    
     // Redirecionar empresas para o módulo específico
     if (usuario.tipoUsuario === "PESSOA_JURIDICA") {
-      router.push(`/dashboard/empresas/${usuario.id}`);
+      router.push(`/dashboard/empresas/${encodeURIComponent(usuario.id)}`);
     }
     // Redirecionar instrutores para o módulo específico
     else if (usuario.role === UserRole.INSTRUTOR) {
-      router.push(`/dashboard/cursos/instrutores/${usuario.id}`);
+      router.push(`/dashboard/cursos/instrutores/${encodeURIComponent(usuario.id)}`);
+    }
+    // Se for ALUNO_CANDIDATO com vínculos, redirecionar para página de alunos
+    else if (isAlunoCandidato && hasVinculos) {
+      router.push(`/dashboard/cursos/alunos/${encodeURIComponent(usuario.id)}`);
     }
     // Outros usuários vão para a página genérica
     else {
-      router.push(`/dashboard/usuarios/${usuario.id}`);
+      router.push(`/dashboard/usuarios/${encodeURIComponent(usuario.id)}`);
     }
+    
+    setTimeout(() => {
+      setIsNavigating(false);
+    }, 5000);
   };
 
   return (
@@ -70,10 +93,23 @@ export function UsuarioRow({ usuario }: UsuarioRowProps) {
                   {usuario.codUsuario}
                 </code>
               )}
+              {showSemVinculosBadge && (
+                <Badge
+                  variant="outline"
+                  className="text-xs font-medium bg-gray-50 text-gray-600 border-gray-200 flex-shrink-0"
+                >
+                  Sem vínculos
+                </Badge>
+              )}
             </div>
             {usuario.cpf && (
               <div className="text-xs text-gray-500 font-mono truncate max-w-[220px]">
                 {formatCpf(usuario.cpf)}
+              </div>
+            )}
+            {usuario.cnpj && usuario.tipoUsuario === "PESSOA_JURIDICA" && (
+              <div className="text-xs text-gray-500 font-mono truncate max-w-[220px]">
+                {formatCnpj(usuario.cnpj)}
               </div>
             )}
           </div>
@@ -141,14 +177,21 @@ export function UsuarioRow({ usuario }: UsuarioRowProps) {
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 rounded-full text-gray-500 hover:text-white hover:bg-[var(--primary-color)] cursor-pointer"
-              aria-label="Visualizar usuário"
               onClick={handleClick}
+              disabled={isNavigating}
+              className="h-8 w-8 rounded-full text-gray-500 hover:text-white hover:bg-[var(--primary-color)] disabled:opacity-50 disabled:cursor-wait cursor-pointer"
+              aria-label="Visualizar usuário"
             >
+              {isNavigating ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
               <ChevronRight className="h-4 w-4" />
+              )}
             </Button>
           </TooltipTrigger>
-          <TooltipContent sideOffset={8}>Visualizar usuário</TooltipContent>
+          <TooltipContent sideOffset={8}>
+            {isNavigating ? "Carregando..." : "Visualizar usuário"}
+          </TooltipContent>
         </Tooltip>
       </TableCell>
     </TableRow>
