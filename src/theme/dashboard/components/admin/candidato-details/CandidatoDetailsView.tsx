@@ -12,6 +12,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { HorizontalTabs } from "@/components/ui/custom";
 import type { HorizontalTabItem } from "@/components/ui/custom";
+import { useUserRole } from "@/hooks/useUserRole";
+import { UserRole } from "@/config/roles";
 import {
   getAdminCandidatoConsolidated,
   atualizarStatusCandidatura,
@@ -48,6 +50,7 @@ export function CandidatoDetailsView({
   candidatoId,
   initialConsolidated,
 }: CandidatoDetailsViewProps) {
+  const userRole = useUserRole();
   const queryClient = useQueryClient();
   const queryKey = useMemo(
     () => queryKeys.candidatos.detail(candidatoId),
@@ -289,6 +292,9 @@ export function CandidatoDetailsView({
     );
   }
 
+  // Verifica se o usuário é SETOR_DE_VAGAS para ocultar a aba de cursos
+  const isSetorDeVagas = userRole === UserRole.SETOR_DE_VAGAS;
+
   const tabs: HorizontalTabItem[] = [
     {
       value: "sobre",
@@ -321,18 +327,23 @@ export function CandidatoDetailsView({
         />
       ),
     },
-    {
-      value: "cursos-turmas",
-      label: "Cursos/Turmas",
-      icon: "Layers",
-      content: (
-        <CursosTurmasTab
-          candidato={candidatoData}
-          inscricoes={[]}
-          isLoading={isReloading}
-        />
-      ),
-    },
+    // Oculta a aba de cursos/turmas para SETOR_DE_VAGAS
+    ...(!isSetorDeVagas
+      ? [
+          {
+            value: "cursos-turmas",
+            label: "Cursos/Turmas",
+            icon: "Layers",
+            content: (
+              <CursosTurmasTab
+                candidato={candidatoData}
+                inscricoes={[]}
+                isLoading={isReloading}
+              />
+            ),
+          } as HorizontalTabItem,
+        ]
+      : []),
   ];
 
   return (

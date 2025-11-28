@@ -7,8 +7,6 @@ import { UserRole } from "@/config/roles";
  * Permissões compartilhadas por itens administrativos.
  * Definidas como somente leitura para evitar mutações acidentais.
  */
-const ADMIN_PERMISSIONS = getRoutePermissions("/admin");
-const ADMIN_ONLY_PERMISSIONS = getRoutePermissions("/admin/financeiro");
 const PEDAGOGICO_PERMISSIONS = getRoutePermissions("/pedagogico");
 const EMPRESA_PERMISSIONS = (() => {
   const dashboardPermissions = getRoutePermissions("/dashboard/empresa");
@@ -20,10 +18,6 @@ const SETOR_DE_VAGAS_PERMISSIONS = getRoutePermissions("/setor-de-vagas");
 const INSTRUTOR_PERMISSIONS = getRoutePermissions("/instrutor");
 const ALUNO_PERMISSIONS = getRoutePermissions("/aluno");
 const RECRUTADOR_PERMISSIONS = getRoutePermissions("/recrutador");
-const FINANCEIRO_PERMISSIONS = getRoutePermissions("/dashboard/financeiro")
-  .length
-  ? getRoutePermissions("/dashboard/financeiro")
-  : getRoutePermissions("/financeiro");
 
 /**
  * Congela recursivamente um objeto, garantindo sua imutabilidade.
@@ -59,7 +53,7 @@ const rawMenuSections: MenuSection[] = [
         icon: "LayoutDashboard",
         label: "Visão geral",
         route: "/dashboard",
-        permissions: [UserRole.ADMIN, UserRole.MODERADOR],
+        permissions: [UserRole.ADMIN, UserRole.MODERADOR, UserRole.SETOR_DE_VAGAS],
       },
       {
         icon: "BookOpen",
@@ -194,7 +188,7 @@ const rawMenuSections: MenuSection[] = [
         icon: "Wallet",
         label: "Financeiro",
         route: "/dashboard/financeiro",
-        permissions: FINANCEIRO_PERMISSIONS,
+        permissions: [UserRole.ADMIN, UserRole.FINANCEIRO],
       },
       {
         icon: "Settings",
@@ -396,27 +390,27 @@ const rawMenuSections: MenuSection[] = [
     title: "DASHBOARD",
     items: [
       {
-        icon: "LayoutDashboard",
-        label: "Visão Geral",
-        route: "/setor-de-vagas/overview",
+        icon: "ClipboardList",
+        label: "Solicitações",
+        route: "/dashboard/empresas/solicitacoes",
+        permissions: SETOR_DE_VAGAS_PERMISSIONS,
+      },
+      {
+        icon: "Building2",
+        label: "Empresas",
+        route: "/dashboard/empresas",
         permissions: SETOR_DE_VAGAS_PERMISSIONS,
       },
       {
         icon: "Briefcase",
-        label: "Vagas Pendentes",
-        route: "/setor-de-vagas/jobs",
+        label: "Vagas",
+        route: "/dashboard/empresas/vagas",
         permissions: SETOR_DE_VAGAS_PERMISSIONS,
       },
       {
         icon: "Users",
         label: "Candidatos",
-        route: "/setor-de-vagas/candidates",
-        permissions: SETOR_DE_VAGAS_PERMISSIONS,
-      },
-      {
-        icon: "Calendar",
-        label: "Agenda",
-        route: "/setor-de-vagas/agenda",
+        route: "/dashboard/empresas/candidatos",
         permissions: SETOR_DE_VAGAS_PERMISSIONS,
       },
       {
@@ -426,9 +420,9 @@ const rawMenuSections: MenuSection[] = [
         permissions: SETOR_DE_VAGAS_PERMISSIONS,
       },
       {
-        icon: "Settings",
-        label: "Configurações",
-        route: "/setor-de-vagas/settings",
+        icon: "Calendar",
+        label: "Agenda",
+        route: "/setor-de-vagas/agenda",
         permissions: SETOR_DE_VAGAS_PERMISSIONS,
       },
     ],

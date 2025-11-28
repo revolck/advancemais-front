@@ -101,7 +101,6 @@ export function AboutTab({ candidato, isLoading = false }: AboutTabProps) {
       })(),
       icon: MapPin,
     },
-    { label: "Criado em", value: formatDateTime(candidato.criadoEm), icon: Clock },
     { label: "Último login", value: formatDateTime(candidato.ultimoLogin), icon: Clock },
   ];
 

@@ -30,6 +30,7 @@ export { ProvasDashboard } from "./lista-provas/ProvasDashboard";
 export { CertificadosDashboard } from "./lista-certificados/CertificadosDashboard";
 export { EstagiosDashboard } from "./lista-estagios/EstagiosDashboard";
 export { AgendaDashboard } from "./lista-agenda/AgendaDashboard";
+export { SolicitacoesDashboard } from "./lista-solicitacoes/SolicitacoesDashboard";
 
 // Candidato Details
 export {

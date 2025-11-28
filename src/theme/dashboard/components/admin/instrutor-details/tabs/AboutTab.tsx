@@ -99,11 +99,7 @@ export function AboutTab({ instrutor, isLoading = false }: AboutTabProps) {
   }> = [
     {
       label: "Código",
-      value: instrutor.codigo || instrutor.codUsuario ? (
-        <code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded font-mono text-gray-500">
-          {instrutor.codigo || instrutor.codUsuario}
-        </code>
-      ) : null,
+      value: instrutor.codigo || instrutor.codUsuario || null,
       icon: Hash,
     },
     {
@@ -184,19 +180,9 @@ export function AboutTab({ instrutor, isLoading = false }: AboutTabProps) {
     );
   }
 
-  const instrutorCodigo = instrutor.codigo || instrutor.codUsuario;
-
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,_7fr)_minmax(0,_3fr)]">
       <section className="rounded-2xl border border-gray-200/60 bg-white p-6">
-        {instrutorCodigo && (
-          <div className="mb-4 flex items-center gap-2">
-            <span className="text-sm font-medium text-gray-600">Código:</span>
-            <code className="text-sm bg-gray-100 px-2 py-1 rounded font-mono text-gray-700">
-              {instrutorCodigo}
-            </code>
-          </div>
-        )}
         {aboutDescription ? (
           <p className="mt-4 whitespace-pre-line !leading-relaxed text-muted-foreground">
             {aboutDescription}

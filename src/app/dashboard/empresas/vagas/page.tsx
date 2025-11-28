@@ -12,6 +12,11 @@ import { VagasDashboard } from "@/theme/dashboard/components/admin";
 import { EmpresaVagasDashboard } from "./empresa/EmpresaVagasDashboard";
 
 const ADMIN_ROLES = new Set<UserRole>([UserRole.ADMIN, UserRole.MODERADOR]);
+const ADMIN_AND_SETOR_DE_VAGAS = new Set<UserRole>([
+  UserRole.ADMIN,
+  UserRole.MODERADOR,
+  UserRole.SETOR_DE_VAGAS,
+]);
 
 export default function DashboardVagasPage() {
   const role = useUserRole();
@@ -31,7 +36,7 @@ export default function DashboardVagasPage() {
       );
     }
 
-    if (ADMIN_ROLES.has(role)) {
+    if (ADMIN_AND_SETOR_DE_VAGAS.has(role)) {
       return (
         <div className="space-y-8">
           <VagasDashboard />

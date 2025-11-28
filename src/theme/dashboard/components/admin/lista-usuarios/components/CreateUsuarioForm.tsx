@@ -18,6 +18,37 @@ import {
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { invalidateUsuarios } from "@/lib/react-query/invalidation";
 import { lookupCep, normalizeCep } from "@/lib/cep";
+
+// Funções de formatação com máscaras
+const formatCPF = (value: string): string => {
+  const digits = value.replace(/\D/g, "").slice(0, 11);
+  return digits
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+};
+
+const formatCNPJ = (value: string): string => {
+  const digits = value.replace(/\D/g, "").slice(0, 14);
+  return digits
+    .replace(/(\d{2})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d)/, "$1/$2")
+    .replace(/(\d{4})(\d{1,2})$/, "$1-$2");
+};
+
+const formatPhone = (value: string): string => {
+  const digits = value.replace(/\D/g, "").slice(0, 11);
+  if (digits.length <= 10) {
+    return digits
+      .replace(/(\d{2})(\d)/, "($1) $2")
+      .replace(/(\d{4})(\d{1,4})$/, "$1-$2");
+  }
+  return digits
+    .replace(/(\d{2})(\d)/, "($1) $2")
+    .replace(/(\d{5})(\d{1,4})$/, "$1-$2");
+};
+
 // Função simples para decodificar JWT sem biblioteca externa
 const decodeJWT = (token: string): any => {
   try {
@@ -511,8 +542,9 @@ export function CreateUsuarioForm({
                 label="CPF"
                 placeholder="000.000.000-00"
                 value={formData.cpf}
-                onChange={(e) => handleInputChange("cpf", e.target.value)}
+                onChange={(e) => handleInputChange("cpf", formatCPF(e.target.value))}
                 error={errors.cpf}
+                maxLength={14}
                 required
               />
             ) : (
@@ -520,8 +552,9 @@ export function CreateUsuarioForm({
                 label="CNPJ"
                 placeholder="00.000.000/0000-00"
                 value={formData.cnpj}
-                onChange={(e) => handleInputChange("cnpj", e.target.value)}
+                onChange={(e) => handleInputChange("cnpj", formatCNPJ(e.target.value))}
                 error={errors.cnpj}
+                maxLength={18}
                 required
               />
             )}
@@ -561,8 +594,9 @@ export function CreateUsuarioForm({
               label="Telefone"
               placeholder="(00) 00000-0000"
               value={formData.telefone}
-              onChange={(e) => handleInputChange("telefone", e.target.value)}
+              onChange={(e) => handleInputChange("telefone", formatPhone(e.target.value))}
               error={errors.telefone}
+              maxLength={15}
               required
             />
 
