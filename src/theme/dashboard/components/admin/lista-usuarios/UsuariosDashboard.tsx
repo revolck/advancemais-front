@@ -75,6 +75,13 @@ export function UsuariosDashboard({
   type SortDirection = "asc" | "desc";
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
 
+  // Estado de navegação global
+  const [isNavigating, setIsNavigating] = useState(false);
+  const handleNavigateStart = useCallback(() => {
+    setIsNavigating(true);
+    setTimeout(() => setIsNavigating(false), 5000);
+  }, []);
+
   const [pendingSearchTerm, setPendingSearchTerm] = useState(
     filters.search ?? ""
   );
@@ -327,6 +334,8 @@ export function UsuariosDashboard({
           }
           onPageChange={handlePageChange}
           visiblePages={visiblePages}
+          isNavigating={isNavigating}
+          onNavigateStart={handleNavigateStart}
         />
       )}
 

@@ -1,56 +1,37 @@
 "use client";
 
 import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Building2, Briefcase, Users, ClipboardList } from "lucide-react";
 import { EmptyState } from "@/components/ui/custom";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CardsStatistics } from "@/components/ui/custom/cards-statistics";
 import type { StatisticCard } from "@/components/ui/custom/cards-statistics";
-import {
-  QuickActionsSetorDeVagas,
-  type SetorDeVagasMetricasGerais,
-} from "./components/QuickActionsSetorDeVagas";
-
-// Dados mockados (posteriormente serão substituídos por chamadas à API)
-const mockMetricasGerais: SetorDeVagasMetricasGerais = {
-  // Empresas
-  totalEmpresas: 45,
-  empresasAtivas: 38,
-  novasEmpresasSemana: 3,
-  // Vagas
-  totalVagas: 127,
-  vagasAbertas: 42,
-  vagasPendentes: 8,
-  vagasEncerradas: 77,
-  // Candidatos
-  totalCandidatos: 892,
-  candidatosEmProcesso: 156,
-  candidatosContratados: 234,
-  // Solicitações
-  solicitacoesPendentes: 8,
-  solicitacoesAprovadasHoje: 5,
-  solicitacoesRejeitadasHoje: 2,
-};
+import { QuickActionsSetorDeVagas } from "./components/QuickActionsSetorDeVagas";
+import { getSetorDeVagasMetricas } from "@/api/vagas/solicitacoes";
+import type { SetorDeVagasMetricas } from "@/api/vagas/solicitacoes/types";
 
 /**
  * Visão geral para o Setor de Vagas
  * Inclui: empresas, vagas, candidatos e solicitações de aprovação
  */
 export function VisaoGeralSetorDeVagas() {
-  // TODO: Substituir por chamada à API quando disponível
-  // const { data, isLoading, error, refetch } = useQuery({
-  //   queryKey: ["setor-de-vagas-overview"],
-  //   queryFn: getSetorDeVagasOverview,
-  // });
+  const {
+    data: metricsData,
+    isLoading,
+    error,
+    refetch,
+  } = useQuery({
+    queryKey: ["setor-de-vagas-metricas"],
+    queryFn: () => getSetorDeVagasMetricas(),
+    staleTime: 1000 * 60 * 5, // 5 minutos
+    refetchOnWindowFocus: false,
+  });
 
-  // TODO: Substituir por useQuery quando a API estiver disponível
-  const isLoading = false;
-  const dataToDisplay = { metricasGerais: mockMetricasGerais };
+  const metricasGerais = metricsData?.metricasGerais;
 
   const primaryMetrics = useMemo((): StatisticCard[] => {
-    if (!dataToDisplay?.metricasGerais) return [];
-
-    const { metricasGerais } = dataToDisplay;
+    if (!metricasGerais) return [];
 
     return [
       {
@@ -82,7 +63,17 @@ export function VisaoGeralSetorDeVagas() {
         cardBg: "bg-purple-50/50",
       },
     ];
-  }, [dataToDisplay]);
+  }, [metricasGerais]);
+
+  const dataForQuickActions = useMemo(() => {
+    if (!metricasGerais) return null;
+    return {
+      metricasGerais: {
+        ...metricasGerais,
+        novasEmpresasSemana: 0, // Campo extra para compatibilidade
+      },
+    };
+  }, [metricasGerais]);
 
   if (isLoading) {
     return (
@@ -124,12 +115,20 @@ export function VisaoGeralSetorDeVagas() {
     );
   }
 
-  if (!dataToDisplay) {
+  if (error || !metricasGerais) {
     return (
       <EmptyState
-        title="Nenhum dado disponível"
-        description="Não foi possível carregar os dados da visão geral."
+        title="Erro ao carregar dados"
+        description="Não foi possível carregar os dados da visão geral. Tente novamente."
         illustration="fileNotFound"
+        actions={
+          <button
+            onClick={() => refetch()}
+            className="text-sm font-semibold text-[var(--primary-color)] hover:underline"
+          >
+            Tentar novamente
+          </button>
+        }
       />
     );
   }
@@ -145,7 +144,9 @@ export function VisaoGeralSetorDeVagas() {
       </div>
 
       {/* Quick Actions - Links Rápidos */}
-      <QuickActionsSetorDeVagas data={dataToDisplay} />
+      {dataForQuickActions && (
+        <QuickActionsSetorDeVagas data={dataForQuickActions} />
+      )}
     </div>
   );
 }

@@ -26,6 +26,7 @@ export async function listDepoimentos(
   return apiFetch<DepoimentoBackendResponse[]>(url, {
     init: init ?? { headers: apiConfig.headers },
     cache: "no-cache",
+    skipLogoutOn401: true, // Permite acesso público sem autenticação
   });
 }
 
@@ -33,6 +34,7 @@ export async function getDepoimentoById(id: string): Promise<DepoimentoBackendRe
   return apiFetch<DepoimentoBackendResponse>(websiteRoutes.depoimentos.get(id), {
     init: { headers: apiConfig.headers },
     cache: "no-cache",
+    skipLogoutOn401: true, // Permite acesso público sem autenticação
   });
 }
 

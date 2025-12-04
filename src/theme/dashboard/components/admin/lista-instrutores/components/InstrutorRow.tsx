@@ -18,6 +18,8 @@ import { ChevronRight, Loader2 } from "lucide-react";
 
 interface InstrutorRowProps {
   instrutor: Instrutor;
+  isDisabled?: boolean;
+  onNavigateStart?: () => void;
 }
 
 const getStatusColor = (status: string) => {
@@ -77,15 +79,21 @@ const getInitials = (nome: string) => {
   return `${words[0][0]}${words[words.length - 1][0]}`.toUpperCase();
 };
 
-export function InstrutorRow({ instrutor }: InstrutorRowProps) {
+export function InstrutorRow({ 
+  instrutor,
+  isDisabled = false,
+  onNavigateStart,
+}: InstrutorRowProps) {
   const router = useRouter();
   const [isNavigating, setIsNavigating] = useState(false);
+  const isRowDisabled = isDisabled || isNavigating;
 
   const handleNavigate = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
-    if (isNavigating) return;
+    if (isRowDisabled) return;
     
     setIsNavigating(true);
+    onNavigateStart?.();
     router.push(`/dashboard/cursos/instrutores/${encodeURIComponent(instrutor.id)}`);
     
     setTimeout(() => {
@@ -94,7 +102,15 @@ export function InstrutorRow({ instrutor }: InstrutorRowProps) {
   };
 
   return (
-    <TableRow className="border-gray-100 hover:bg-gray-50/50 transition-colors">
+    <TableRow 
+      className={cn(
+        "border-gray-100 transition-colors",
+        isRowDisabled 
+          ? "opacity-50 pointer-events-none" 
+          : "hover:bg-gray-50/50",
+        isNavigating && "bg-blue-50/50"
+      )}
+    >
       <TableCell className="py-4">
         <div className="flex items-center gap-3">
           <Avatar className="h-8 w-8 flex-shrink-0">
@@ -177,8 +193,14 @@ export function InstrutorRow({ instrutor }: InstrutorRowProps) {
               variant="ghost"
               size="icon"
               onClick={handleNavigate}
-              disabled={isNavigating}
-              className="h-8 w-8 rounded-full text-gray-500 hover:text-white hover:bg-[var(--primary-color)] disabled:opacity-50 disabled:cursor-wait cursor-pointer"
+              disabled={isRowDisabled}
+              className={cn(
+                "h-8 w-8 rounded-full cursor-pointer",
+                isNavigating 
+                  ? "text-blue-600 bg-blue-100" 
+                  : "text-gray-500 hover:text-white hover:bg-[var(--primary-color)]",
+                "disabled:opacity-50 disabled:cursor-wait"
+              )}
               aria-label="Visualizar instrutor"
             >
               {isNavigating ? (

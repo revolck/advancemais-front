@@ -73,6 +73,7 @@ export async function listAbout(
 ): Promise<AboutBackendResponse[]> {
   return apiFetch<AboutBackendResponse[]>(websiteRoutes.about.list(), {
     init: init ?? { headers: apiConfig.headers },
+    skipLogoutOn401: true, // Permite acesso público sem autenticação
   });
 }
 
@@ -81,7 +82,10 @@ export async function getAboutById(
 ): Promise<AboutBackendResponse> {
   return apiFetch<AboutBackendResponse>(
     websiteRoutes.about.get(id),
-    { init: { headers: apiConfig.headers } },
+    { 
+      init: { headers: apiConfig.headers },
+      skipLogoutOn401: true, // Permite acesso público sem autenticação
+    },
   );
 }
 

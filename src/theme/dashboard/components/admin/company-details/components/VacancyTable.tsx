@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useCallback } from "react";
 import {
   Table,
   TableBody,
@@ -26,6 +26,12 @@ export function VacancyTable({
   errorStates = {},
   onLoadCandidates,
 }: VacancyTableProps) {
+  const [isNavigating, setIsNavigating] = useState(false);
+
+  const handleNavigateStart = useCallback(() => {
+    setIsNavigating(true);
+    setTimeout(() => setIsNavigating(false), 5000);
+  }, []);
   return (
     <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
       <Table>
@@ -59,6 +65,8 @@ export function VacancyTable({
               isLoadingCandidates={loadingStates[vacancy.id] || false}
               candidateError={errorStates[vacancy.id]}
               onLoadCandidates={onLoadCandidates}
+              isDisabled={isNavigating}
+              onNavigateStart={handleNavigateStart}
             />
           ))}
         </TableBody>

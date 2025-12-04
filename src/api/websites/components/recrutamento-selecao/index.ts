@@ -23,6 +23,7 @@ export async function listRecrutamentoSelecao(
     websiteRoutes.recrutamentoSelecao.list(),
     {
       init: init ?? { headers: apiConfig.headers },
+      skipLogoutOn401: true, // Permite acesso público sem autenticação
     },
   );
 }
@@ -32,7 +33,10 @@ export async function getRecrutamentoSelecaoById(
 ): Promise<RecrutamentoSelecaoBackendResponse> {
   return apiFetch<RecrutamentoSelecaoBackendResponse>(
     websiteRoutes.recrutamentoSelecao.get(id),
-    { init: { headers: apiConfig.headers } },
+    { 
+      init: { headers: apiConfig.headers },
+      skipLogoutOn401: true, // Permite acesso público sem autenticação
+    },
   );
 }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ButtonCustom, EmptyState, FilterBar } from "@/components/ui/custom";
 import {
@@ -56,6 +56,12 @@ export function VagasDashboard({
   const [selectedStatuses, setSelectedStatuses] = useState<VagaStatus[]>([]);
   const [selectedCompanies, setSelectedCompanies] = useState<string[]>([]);
   const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
+  const [isNavigating, setIsNavigating] = useState(false);
+
+  const handleNavigateStart = useCallback(() => {
+    setIsNavigating(true);
+    setTimeout(() => setIsNavigating(false), 5000);
+  }, []);
 
   const shouldFetch = fetchFromApi && !vagasProp;
 
@@ -390,22 +396,28 @@ export function VagasDashboard({
             <Table className="min-w-[900px]">
               <TableHeader>
                 <TableRow className="border-gray-200 bg-gray-50/50">
-                  <TableHead className="font-medium text-gray-700 py-4">
+                  <TableHead className="font-medium text-gray-700 py-4 min-w-[220px]">
                     Vaga
                   </TableHead>
-                  <TableHead className="font-medium text-gray-700">
+                  <TableHead className="font-medium text-gray-700 min-w-[180px]">
                     Empresa
                   </TableHead>
-                  <TableHead className="font-medium text-gray-700">
+                  <TableHead className="font-medium text-gray-700 min-w-[140px]">
                     Localização
                   </TableHead>
-                  <TableHead className="font-medium text-gray-700">
-                    Publicada em
-                  </TableHead>
-                  <TableHead className="font-medium text-gray-700">
+                  <TableHead className="font-medium text-gray-700 min-w-[100px]">
                     Status
                   </TableHead>
-                  <TableHead className="w-16" />
+                  <TableHead className="font-medium text-gray-700 min-w-[120px]">
+                    Publicada em
+                  </TableHead>
+                  <TableHead className="font-medium text-gray-700 min-w-[120px]">
+                    Inscrições até
+                  </TableHead>
+                  <TableHead className="font-medium text-gray-700 min-w-[100px]">
+                    Nº de vagas
+                  </TableHead>
+                  <TableHead className="w-12" />
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -431,7 +443,7 @@ export function VagasDashboard({
             <Table className="min-w-[900px]">
               <TableHeader>
                 <TableRow className="border-gray-200 bg-gray-50/50">
-                  <TableHead className="font-medium text-gray-700 py-4">
+                  <TableHead className="font-medium text-gray-700 py-4 min-w-[220px]">
                     <div className="flex items-center gap-1">
                       <span>Vaga</span>
                       <div className="ml-1 flex flex-col -space-y-1.5 items-center leading-none">
@@ -478,13 +490,16 @@ export function VagasDashboard({
                       </div>
                     </div>
                   </TableHead>
-                  <TableHead className="font-medium text-gray-700">
+                  <TableHead className="font-medium text-gray-700 min-w-[180px]">
                     Empresa
                   </TableHead>
-                  <TableHead className="font-medium text-gray-700">
+                  <TableHead className="font-medium text-gray-700 min-w-[140px]">
                     Localização
                   </TableHead>
-                  <TableHead className="font-medium text-gray-700">
+                  <TableHead className="font-medium text-gray-700 min-w-[100px]">
+                    Status
+                  </TableHead>
+                  <TableHead className="font-medium text-gray-700 min-w-[120px]">
                     <div className="flex items-center gap-1">
                       <span>Publicada em</span>
                       <button
@@ -501,17 +516,27 @@ export function VagasDashboard({
                       </button>
                     </div>
                   </TableHead>
-                  <TableHead className="font-medium text-gray-700">
-                    Status
+                  <TableHead className="font-medium text-gray-700 min-w-[120px]">
+                    Inscrições até
                   </TableHead>
-                  <TableHead className="w-16" />
+                  <TableHead className="font-medium text-gray-700 min-w-[100px]">
+                    Nº de vagas
+                  </TableHead>
+                  <TableHead className="w-12" />
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isFetching && fetchedVagas.length === 0 ? (
                   <VagaTableSkeleton rows={8} />
                 ) : (
-                  sortedVagas.map((vaga) => <VagaRow key={vaga.id} vaga={vaga} />)
+                  sortedVagas.map((vaga) => (
+                    <VagaRow 
+                      key={vaga.id} 
+                      vaga={vaga}
+                      isDisabled={isNavigating}
+                      onNavigateStart={handleNavigateStart}
+                    />
+                  ))
                 )}
               </TableBody>
             </Table>

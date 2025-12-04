@@ -17,6 +17,8 @@ import type { VagaListItem } from "@/api/vagas";
 
 interface VagaRowProps {
   vaga: VagaListItem;
+  isDisabled?: boolean;
+  onNavigateStart?: () => void;
 }
 
 const getStatusColor = (status: string) => {
@@ -70,15 +72,21 @@ const formatDate = (dateString: string) => {
   });
 };
 
-export function VagaRow({ vaga }: VagaRowProps) {
+export function VagaRow({ 
+  vaga,
+  isDisabled = false,
+  onNavigateStart,
+}: VagaRowProps) {
   const router = useRouter();
   const [isNavigating, setIsNavigating] = useState(false);
+  const isRowDisabled = isDisabled || isNavigating;
 
   const handleNavigate = (e: React.MouseEvent) => {
     e.preventDefault();
-    if (isNavigating) return;
+    if (isRowDisabled) return;
     
     setIsNavigating(true);
+    onNavigateStart?.();
     router.push(`/dashboard/empresas/vagas/${vaga.id}`);
     
     setTimeout(() => {
@@ -87,8 +95,16 @@ export function VagaRow({ vaga }: VagaRowProps) {
   };
 
   return (
-    <TableRow className="border-gray-100 hover:bg-gray-50/50 transition-colors">
-      <TableCell className="py-4">
+    <TableRow 
+      className={cn(
+        "border-gray-100 transition-colors",
+        isRowDisabled 
+          ? "opacity-50 pointer-events-none" 
+          : "hover:bg-gray-50/50",
+        isNavigating && "bg-blue-50/50"
+      )}
+    >
+      <TableCell className="py-4 min-w-[220px]">
         <div className="flex items-center gap-3">
           <div className="font-medium text-gray-900">{vaga.titulo}</div>
           <Badge
@@ -100,7 +116,7 @@ export function VagaRow({ vaga }: VagaRowProps) {
         </div>
       </TableCell>
 
-      <TableCell className="py-4">
+      <TableCell className="py-4 min-w-[180px]">
         <div className="flex items-center gap-3">
           <Avatar className="h-8 w-8">
             <AvatarImage src={vaga.empresa.avatarUrl} />
@@ -117,7 +133,7 @@ export function VagaRow({ vaga }: VagaRowProps) {
         </div>
       </TableCell>
 
-      <TableCell className="py-4">
+      <TableCell className="py-4 min-w-[140px]">
         <div className="flex items-start gap-2">
           <MapPin className="h-4 w-4 flex-shrink-0 text-gray-400 mt-0.5" />
           <div className="flex flex-col">
@@ -138,7 +154,7 @@ export function VagaRow({ vaga }: VagaRowProps) {
         </div>
       </TableCell>
 
-      <TableCell className="py-4">
+      <TableCell className="py-4 min-w-[100px]">
         <Badge
           variant="outline"
           className={cn("text-xs font-medium", getStatusColor(vaga.status))}
@@ -147,27 +163,27 @@ export function VagaRow({ vaga }: VagaRowProps) {
         </Badge>
       </TableCell>
 
-      <TableCell className="py-4">
-        <div className="flex items-center justify-center gap-2 text-sm text-gray-600">
+      <TableCell className="py-4 min-w-[120px]">
+        <div className="flex items-center gap-2 text-sm text-gray-600">
           <Calendar className="h-4 w-4 flex-shrink-0 text-gray-400" />
-          <span className="truncate">{formatDate(vaga.inseridaEm)}</span>
+          <span>{formatDate(vaga.inseridaEm)}</span>
         </div>
       </TableCell>
 
-      <TableCell className="py-4">
+      <TableCell className="py-4 min-w-[120px]">
         {vaga.inscricoesAte ? (
-          <div className="flex items-center justify-center gap-2 text-sm text-gray-600">
+          <div className="flex items-center gap-2 text-sm text-gray-600">
             <Clock className="h-4 w-4 flex-shrink-0 text-gray-400" />
-            <span className="truncate">{formatDate(vaga.inscricoesAte)}</span>
+            <span>{formatDate(vaga.inscricoesAte)}</span>
           </div>
         ) : (
-          <div className="flex items-center justify-center text-sm text-gray-500">
+          <div className="flex items-center text-sm text-gray-500">
             —
           </div>
         )}
       </TableCell>
 
-      <TableCell className="py-4">
+      <TableCell className="py-4 min-w-[100px]">
         <div className="flex items-center gap-2">
           <div className="flex items-center justify-center w-6 h-6 bg-blue-100 rounded-full">
             <span className="text-xs font-medium text-blue-600">
@@ -177,20 +193,26 @@ export function VagaRow({ vaga }: VagaRowProps) {
           <span className="text-sm text-gray-900">
             {vaga.numeroVagas
               ? `vaga${vaga.numeroVagas > 1 ? "s" : ""}`
-              : "Não informado"}
+              : "—"}
           </span>
         </div>
       </TableCell>
 
-      <TableCell className="py-4">
+      <TableCell className="py-4 w-12">
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
               variant="ghost"
               size="icon"
               onClick={handleNavigate}
-              disabled={isNavigating}
-              className="h-8 w-8 rounded-full text-gray-500 hover:text-white hover:bg-[var(--primary-color)] disabled:opacity-50 disabled:cursor-wait cursor-pointer"
+              disabled={isRowDisabled}
+              className={cn(
+                "h-8 w-8 rounded-full cursor-pointer",
+                isNavigating 
+                  ? "text-blue-600 bg-blue-100" 
+                  : "text-gray-500 hover:text-white hover:bg-[var(--primary-color)]",
+                "disabled:opacity-50 disabled:cursor-wait"
+              )}
               aria-label="Visualizar vaga"
             >
               {isNavigating ? (

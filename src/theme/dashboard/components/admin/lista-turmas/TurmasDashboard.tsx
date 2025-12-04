@@ -58,6 +58,12 @@ export function TurmasDashboard({ className }: { className?: string }) {
   const [selectedTurnos, setSelectedTurnos] = useState<string[]>([]);
   const [selectedMetodos, setSelectedMetodos] = useState<string[]>([]);
   const [selectedInstrutorId, setSelectedInstrutorId] = useState<string | null>(null);
+  const [isNavigating, setIsNavigating] = useState(false);
+
+  const handleNavigateStart = useCallback(() => {
+    setIsNavigating(true);
+    setTimeout(() => setIsNavigating(false), 5000);
+  }, []);
   
   // Pagination
   const [pageSize] = useState(10);
@@ -560,7 +566,13 @@ export function TurmasDashboard({ className }: { className?: string }) {
                   <TurmaTableSkeleton rows={8} />
                 ) : (
                   paginatedTurmas.map((t) => (
-                    <TurmaRow key={t.id} turma={t} showCurso={!selectedCourseId} />
+                    <TurmaRow 
+                      key={t.id} 
+                      turma={t} 
+                      showCurso={!selectedCourseId}
+                      isDisabled={isNavigating}
+                      onNavigateStart={handleNavigateStart}
+                    />
                   ))
                 )}
               </TableBody>

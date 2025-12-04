@@ -56,6 +56,7 @@ export function CursosDashboard({
   const [pendingSearchTerm, setPendingSearchTerm] = useState("");
   const [appliedSearchTerm, setAppliedSearchTerm] = useState("");
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
+  const [isNavigating, setIsNavigating] = useState(false);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(
     null
   );
@@ -70,6 +71,11 @@ export function CursosDashboard({
   type SortDirection = "asc" | "desc";
   const [sortField, setSortField] = useState<SortField>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
+
+  const handleNavigateStart = useCallback(() => {
+    setIsNavigating(true);
+    setTimeout(() => setIsNavigating(false), 5000);
+  }, []);
 
   const searchValidationMessage = useMemo(
     () => getSearchValidationMessage(pendingSearchTerm),
@@ -855,6 +861,8 @@ export function CursosDashboard({
                           ? subcategoriaNameById[curso.subcategoriaId]
                           : null
                       }
+                      isDisabled={isNavigating}
+                      onNavigateStart={handleNavigateStart}
                     />
                     ))
                   )}

@@ -148,20 +148,32 @@ function mapPlanoEmpresarialToPricingData(
     return [];
   }
 
-  const highestVacancyCount = Math.max(
-    ...plans.map((plan) => Number(plan.quantidadeVagas) || 0)
-  );
+  // Verifica se algum plano tem vagaEmDestaque (indica o plano mais popular/vendido)
+  const hasPopularPlan = plans.some((plan) => plan.vagaEmDestaque);
+  
+  // Se nenhum plano tem destaque, usa o plano intermediário (segundo mais barato)
+  // Ordenamos por valor para encontrar o plano do "meio"
+  let popularPlanId: string | null = null;
+  if (!hasPopularPlan && plans.length > 1) {
+    const sortedByPrice = [...plans].sort((a, b) => {
+      const priceA = parseFloat(a.valor.replace(/[^\d.,]/g, "").replace(",", ".")) || 0;
+      const priceB = parseFloat(b.valor.replace(/[^\d.,]/g, "").replace(",", ".")) || 0;
+      return priceA - priceB;
+    });
+    // Pega o segundo plano (índice 1) ou o do meio se houver muitos
+    const middleIndex = Math.min(1, Math.floor(sortedByPrice.length / 2));
+    popularPlanId = sortedByPrice[middleIndex]?.id ?? null;
+  }
 
   return plans.map((plan, index) => ({
     id: plan.id,
     title: plan.nome,
     iconName: plan.icon || PRICING_CONFIG.icons.fallbackIcon,
     price: formatCurrencyValue(plan.valor),
-    description: (plan.descricao && plan.descricao.trim()) || null, // Converte string vazia, null ou undefined para null
+    description: (plan.descricao && plan.descricao.trim()) || null,
     features: buildFeatureList(plan),
-    isPopular:
-      (Number(plan.quantidadeVagas) || 0) === highestVacancyCount &&
-      highestVacancyCount > 0,
+    // Usa vagaEmDestaque como indicador de popularidade, ou fallback para plano intermediário
+    isPopular: hasPopularPlan ? plan.vagaEmDestaque : plan.id === popularPlanId,
     isActive: true,
     order: index,
     buttonText: PRICING_CONFIG.defaults.buttonText,

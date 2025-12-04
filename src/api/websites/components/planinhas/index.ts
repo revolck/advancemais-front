@@ -16,6 +16,7 @@ export async function listPlaninhas(
 ): Promise<PlaninhasBackendResponse[]> {
   return apiFetch<PlaninhasBackendResponse[]>(websiteRoutes.planinhas.list(), {
     init: init ?? { headers: apiConfig.headers },
+    skipLogoutOn401: true, // Permite acesso público sem autenticação
   });
 }
 
@@ -24,6 +25,7 @@ export async function getPlaninhasById(
 ): Promise<PlaninhasBackendResponse> {
   return apiFetch<PlaninhasBackendResponse>(websiteRoutes.planinhas.get(id), {
     init: { headers: apiConfig.headers },
+    skipLogoutOn401: true, // Permite acesso público sem autenticação
   });
 }
 

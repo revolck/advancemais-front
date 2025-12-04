@@ -59,6 +59,7 @@ export async function getConsultoriaDataClient(): Promise<ConsultoriaApiResponse
 export async function listConsultoria(init?: RequestInit): Promise<ConsultoriaBackendResponse[]> {
   return apiFetch<ConsultoriaBackendResponse[]>(websiteRoutes.consultoria.list(), {
     init: init ?? { headers: apiConfig.headers },
+    skipLogoutOn401: true, // Permite acesso público sem autenticação
   });
 }
 

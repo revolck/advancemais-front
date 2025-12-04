@@ -1,12 +1,17 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
-import type { ReactNode } from "react";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useRef,
+  type ReactNode,
+} from "react";
 import { Loader } from "@/components/ui/custom/loader";
 import { apiKeepAlive } from "@/lib/api-keep-alive";
 
 const INTRO_STORAGE_KEY = "website_intro_seen";
-let introSeenInSession = false;
 
 interface SimpleLoadingContextValue {
   isReady: boolean;
@@ -24,79 +29,78 @@ const SimpleLoadingContext = createContext<SimpleLoadingContextValue>({
   setError: () => {},
 });
 
+/**
+ * LoadingProvider - Gerencia estado de carregamento do website
+ *
+ * Este componente foi otimizado para evitar erros de hidratação SSR/CSR.
+ * O estado inicial é definido de forma segura e os efeitos colaterais
+ * só são executados no cliente.
+ */
 export function LoadingProvider({ children }: { children: ReactNode }) {
-  const [isClient, setIsClient] = useState(false);
+  // Ref para rastrear se a intro já foi vista (evita re-renders)
+  const introSeenRef = React.useRef(false);
+
+  // Estados do loading
   const [loadingCount, setLoadingCount] = useState(0);
   const [minTimeElapsed, setMinTimeElapsed] = useState(false);
-  const [isReady, setIsReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showIntroOverlay, setShowIntroOverlay] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
 
-  // Detecta se é cliente e inicia keep-alive
+  // Efeito de montagem - só executa no cliente
   useEffect(() => {
-    setIsClient(true);
+    setIsMounted(true);
 
     // Inicia keep-alive da API
     apiKeepAlive.start();
 
-    let timer: ReturnType<typeof setTimeout> | null = null;
+    // Verifica se já viu a intro
     const hasSeenIntro =
-      introSeenInSession ||
-      (typeof window !== "undefined" &&
-        window.localStorage.getItem(INTRO_STORAGE_KEY) === "true");
+      introSeenRef.current ||
+      window.localStorage.getItem(INTRO_STORAGE_KEY) === "true";
 
     if (hasSeenIntro) {
       setMinTimeElapsed(true);
       setShowIntroOverlay(false);
-      introSeenInSession = true;
+      introSeenRef.current = true;
     } else {
       setShowIntroOverlay(true);
 
-      timer = setTimeout(() => {
-        console.log("✅ Loading mínimo de 3s cumprido (primeiro acesso)");
+      const timer = setTimeout(() => {
         setMinTimeElapsed(true);
         setShowIntroOverlay(false);
-        introSeenInSession = true;
-        if (typeof window !== "undefined") {
+        introSeenRef.current = true;
           window.localStorage.setItem(INTRO_STORAGE_KEY, "true");
-        }
     }, 3000);
+
+      return () => {
+        clearTimeout(timer);
+        apiKeepAlive.stop();
+      };
     }
 
     return () => {
-      if (timer) clearTimeout(timer);
       apiKeepAlive.stop();
     };
   }, []);
 
-  // Atualiza status de pronto quando todos os carregamentos finalizam
-  useEffect(() => {
-    const ready = loadingCount === 0 && minTimeElapsed && !error;
-    console.log(`📊 Loading status: ${ready ? "PRONTO" : "CARREGANDO"}`);
-    setIsReady(ready);
-  }, [loadingCount, minTimeElapsed, error]);
+  // Calcula se está pronto
+  const isReady = isMounted && loadingCount === 0 && minTimeElapsed && !error;
 
-  const startLoading = () =>
-    setLoadingCount((prev) => {
-      const next = prev + 1;
-      console.log(`🔄 Loading iniciado (${next})`);
-      return next;
-    });
+  const startLoading = () => {
+    setLoadingCount((prev) => prev + 1);
+  };
 
-  const finishLoading = () =>
-    setLoadingCount((prev) => {
-      const next = Math.max(0, prev - 1);
-      console.log(`✅ Loading concluído (${next})`);
-      return next;
-    });
+  const finishLoading = () => {
+    setLoadingCount((prev) => Math.max(0, prev - 1));
+  };
 
   const setErrorCallback = (newError: string | null) => {
-    console.log(newError ? `❌ Erro: ${newError}` : "✅ Erro limpo");
     setError(newError);
   };
 
   const contextValue: SimpleLoadingContextValue = {
-    isReady: isClient && isReady,
+    isReady,
     startLoading,
     finishLoading,
     error,
@@ -105,8 +109,8 @@ export function LoadingProvider({ children }: { children: ReactNode }) {
 
   return (
     <SimpleLoadingContext.Provider value={contextValue}>
-      {/* Loading Screen */}
-      {showIntroOverlay && !error && (
+      {/* Loading Screen - só mostra após montagem */}
+      {isMounted && showIntroOverlay && !error && (
         <Loader showOverlay={true} fullScreen={true} />
       )}
 

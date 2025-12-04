@@ -18,6 +18,11 @@ interface FetchOptions<T> {
    * Útil para endpoints que podem não existir ou retornar 404 quando não há dados.
    */
   silence404?: boolean;
+  /**
+   * Silencia erros 403 (não loga como erro em desenvolvimento).
+   * Útil para endpoints que podem retornar 403 quando o usuário não tem permissão.
+   */
+  silence403?: boolean;
 }
 
 // Cache em memória simples
@@ -47,6 +52,7 @@ export async function apiFetch<T = unknown>(
     timeout = 15000,
     skipLogoutOn401 = false,
     silence404 = false,
+    silence403 = false,
   }: FetchOptions<T> = {}
 ): Promise<T> {
   const url = endpoint.startsWith("http") ? endpoint : buildApiUrl(endpoint);
@@ -123,10 +129,12 @@ export async function apiFetch<T = unknown>(
           errorObj.details = errorDetails;
         }
         
-        // Silencia 404 se a opção estiver ativada (não loga como erro)
+        // Silencia 403/404 se a opção estiver ativada (não loga como erro)
         if (env.isDevelopment) {
           if (res.status === 404 && silence404) {
             console.warn(`API 404 (silenciado) (${endpoint}): Endpoint não encontrado ou recurso não existe`);
+          } else if (res.status === 403 && silence403) {
+            console.warn(`API 403 (silenciado) (${endpoint}): Sem permissão para acessar este recurso`);
           } else {
             console.error(`API Error ${res.status} (${endpoint}):`, {
               status: res.status,
@@ -140,6 +148,11 @@ export async function apiFetch<T = unknown>(
         if (res.status === 401 && !skipLogoutOn401) {
           logoutUser();
         }
+        
+        // Marca o erro para não fazer retry em casos específicos
+        (errorObj as any).noRetry = res.status === 401 || res.status === 403 || res.status === 404;
+        (errorObj as any).silenced = (res.status === 403 && silence403) || (res.status === 404 && silence404);
+        
         throw errorObj;
       }
 
@@ -165,12 +178,13 @@ export async function apiFetch<T = unknown>(
     } catch (error) {
       lastError = error as Error;
 
-      // Não loga AbortError (requisição cancelada intencionalmente)
-      if ((error as any)?.name !== "AbortError") {
+      // Não loga AbortError (requisição cancelada intencionalmente) ou erros silenciados
+      if ((error as any)?.name !== "AbortError" && !(error as any)?.silenced) {
         console.warn(`⚠️ API Error [${attempt}/${retries}]:`, error);
       }
 
-      if ((error as any).status === 401) {
+      // Não faz retry para erros 401, 403, 404 (não vai mudar com retry)
+      if ((error as any).noRetry) {
         break;
       }
 
@@ -181,6 +195,11 @@ export async function apiFetch<T = unknown>(
       }
     }
   }
+  // Se o erro foi silenciado (403/404 com silence ativo), não loga como falha
+  if (lastError && (lastError as any)?.silenced) {
+    throw lastError;
+  }
+  
   if (lastError && (lastError as any)?.status === 401) {
     throw lastError;
   }
@@ -194,10 +213,13 @@ export async function apiFetch<T = unknown>(
   }
 
   // Se chegou aqui, todas as tentativas falharam
-  if (process.env.NODE_ENV === "development") {
-    console.warn(`❌ API Failed após ${retries} tentativas:`, lastError!);
-  } else {
-    console.error(`❌ API Failed após ${retries} tentativas:`, lastError!);
+  // Não loga se o erro foi silenciado
+  if (!(lastError as any)?.silenced) {
+    if (process.env.NODE_ENV === "development") {
+      console.warn(`❌ API Failed após ${retries} tentativas:`, lastError!);
+    } else {
+      console.error(`❌ API Failed após ${retries} tentativas:`, lastError!);
+    }
   }
 
   // Tenta retornar dados em cache expirados como fallback

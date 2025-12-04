@@ -3,6 +3,15 @@ import { mercadoPagoRoutes } from "@/api/routes";
 import { apiConfig } from "@/lib/env";
 
 import type {
+  // Pagamentos Únicos
+  SinglePaymentIntent,
+  SinglePaymentResponse,
+  PaymentDetails,
+  PaymentListParams,
+  PaymentListResponse,
+  RefundPayload,
+  RefundResponse,
+  // Assinaturas
   CheckoutIntent,
   CheckoutResponse,
   CancelSubscriptionPayload,
@@ -17,6 +26,7 @@ import type {
   SyncPlanPayload,
   SyncPlanResponse,
   SyncPlansResponse,
+  // Logs
   LogsListParams,
   LogsListResponse,
   LogPagamento,
@@ -39,6 +49,100 @@ function authHeaders(token?: string) {
     ? { ...ACCEPT_HEADER, Authorization: `Bearer ${cookieToken}` }
     : ACCEPT_HEADER;
 }
+
+// =============================================
+// PAGAMENTOS ÚNICOS (Checkout Pro)
+// =============================================
+
+/**
+ * Cria uma preferência de pagamento único no Mercado Pago.
+ * Retorna a URL do Checkout Pro para redirecionar o usuário.
+ */
+export async function createSinglePayment(
+  intent: SinglePaymentIntent,
+  token?: string,
+): Promise<SinglePaymentResponse> {
+  return apiFetch<SinglePaymentResponse>(
+    mercadoPagoRoutes.pagamentos.checkout(),
+    {
+      init: {
+        method: "POST",
+        headers: token
+          ? { ...JSON_HEADERS, Authorization: `Bearer ${token}` }
+          : JSON_HEADERS,
+        body: JSON.stringify(intent),
+      },
+      cache: "no-cache",
+    },
+  );
+}
+
+/**
+ * Busca detalhes de um pagamento pelo ID.
+ */
+export async function getPayment(
+  paymentId: string,
+  token?: string,
+): Promise<PaymentDetails> {
+  return apiFetch<PaymentDetails>(mercadoPagoRoutes.pagamentos.get(paymentId), {
+    init: { method: "GET", headers: authHeaders(token) },
+    cache: "no-cache",
+  });
+}
+
+/**
+ * Lista pagamentos com filtros opcionais.
+ */
+export async function listPayments(
+  params?: PaymentListParams,
+  token?: string,
+): Promise<PaymentListResponse> {
+  const sp = new URLSearchParams();
+  if (params) {
+    if (params.usuarioId) sp.set("usuarioId", params.usuarioId);
+    if (params.status) sp.set("status", params.status);
+    if (params.externalReference)
+      sp.set("externalReference", params.externalReference);
+    if (params.startDate) sp.set("startDate", params.startDate);
+    if (params.endDate) sp.set("endDate", params.endDate);
+    if (params.page) sp.set("page", String(params.page));
+    if (params.pageSize) sp.set("pageSize", String(params.pageSize));
+  }
+  const url = sp.toString()
+    ? `${mercadoPagoRoutes.pagamentos.list()}?${sp.toString()}`
+    : mercadoPagoRoutes.pagamentos.list();
+  return apiFetch<PaymentListResponse>(url, {
+    init: { method: "GET", headers: authHeaders(token) },
+    cache: "no-cache",
+  });
+}
+
+/**
+ * Reembolsa um pagamento (total ou parcial).
+ */
+export async function refundPayment(
+  paymentId: string,
+  payload?: RefundPayload,
+  token?: string,
+): Promise<RefundResponse> {
+  return apiFetch<RefundResponse>(
+    mercadoPagoRoutes.pagamentos.refund(paymentId),
+    {
+      init: {
+        method: "POST",
+        headers: token
+          ? { ...JSON_HEADERS, Authorization: `Bearer ${token}` }
+          : JSON_HEADERS,
+        body: payload ? JSON.stringify(payload) : undefined,
+      },
+      cache: "no-cache",
+    },
+  );
+}
+
+// =============================================
+// LOGS
+// =============================================
 
 // ---------------------------------------------
 // Logs
@@ -83,11 +187,21 @@ export async function startCheckout(
   intent: CheckoutIntent,
   token?: string,
 ): Promise<CheckoutResponse> {
+  // Obtém o token do cookie se não fornecido
+  const authToken =
+    token ||
+    (typeof document !== "undefined"
+      ? document.cookie
+          .split("; ")
+          .find((row) => row.startsWith("token="))
+          ?.split("=")[1]
+      : undefined);
+
   return apiFetch<CheckoutResponse>(mercadoPagoRoutes.assinaturas.checkout(), {
     init: {
       method: "POST",
-      headers: token
-        ? { ...JSON_HEADERS, Authorization: `Bearer ${token}` }
+      headers: authToken
+        ? { ...JSON_HEADERS, Authorization: `Bearer ${authToken}` }
         : JSON_HEADERS,
       body: JSON.stringify(intent),
     },

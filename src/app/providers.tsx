@@ -2,6 +2,7 @@
 
 import { QueryClient, QueryClientConfig, QueryClientProvider } from "@tanstack/react-query";
 import { ReactNode, useState } from "react";
+import { MercadoPagoProvider } from "@/lib/mercadopago";
 
 const queryClientConfig: QueryClientConfig = {
   defaultOptions: {
@@ -21,6 +22,12 @@ const queryClientConfig: QueryClientConfig = {
 export function AppProviders({ children }: { children: ReactNode }) {
   const [queryClient] = useState(() => new QueryClient(queryClientConfig));
 
-  return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+  return (
+    <QueryClientProvider client={queryClient}>
+      <MercadoPagoProvider>
+        {children}
+      </MercadoPagoProvider>
+    </QueryClientProvider>
+  );
 }
 

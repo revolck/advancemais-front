@@ -24,6 +24,8 @@ export function CandidatoTable({
   sortDirection,
   onToggleSortName,
   onSetSortName,
+  isNavigating = false,
+  onNavigateStart,
 }: CandidatoTableProps) {
   const columnClassName: Record<string, string> = {
     candidato: "",
@@ -155,6 +157,8 @@ export function CandidatoTable({
             key={candidato.id}
             candidato={candidato}
             onViewDetails={onViewDetails}
+            isDisabled={isNavigating}
+            onNavigateStart={onNavigateStart}
           />
         ))}
       </TableBody>

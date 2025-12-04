@@ -86,6 +86,13 @@ export function CompanyDashboard({
     createEmptyDateRange()
   );
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
+
+  const handleNavigateStart = useCallback(() => {
+    setIsNavigating(true);
+    // Reset after navigation timeout
+    setTimeout(() => setIsNavigating(false), 5000);
+  }, []);
 
   const searchValidationMessage = useMemo(
     () => getSearchValidationMessage(pendingSearchTerm),
@@ -813,6 +820,8 @@ export function CompanyDashboard({
                     <CompanyRow
                       key={partnership.id}
                       partnership={partnership}
+                      isDisabled={isNavigating}
+                      onNavigateStart={handleNavigateStart}
                     />
                   ))
                 )}

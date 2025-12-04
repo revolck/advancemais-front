@@ -458,6 +458,26 @@ export const mercadoPagoRoutes = {
     list: () => `${prefix}/mercadopago/logs`,
     get: (id: string) => `${prefix}/mercadopago/logs/${encodeURIComponent(id)}`,
   },
+  // ========================================
+  // Pagamentos Únicos (Checkout Pro)
+  // ========================================
+  pagamentos: {
+    /** Cria uma preferência de pagamento único (Checkout Pro) */
+    checkout: () => `${prefix}/mercadopago/pagamentos/checkout`,
+    /** Consulta status de um pagamento */
+    get: (paymentId: string) =>
+      `${prefix}/mercadopago/pagamentos/${encodeURIComponent(paymentId)}`,
+    /** Lista pagamentos de um usuário */
+    list: () => `${prefix}/mercadopago/pagamentos`,
+    /** Reembolsa um pagamento */
+    refund: (paymentId: string) =>
+      `${prefix}/mercadopago/pagamentos/${encodeURIComponent(paymentId)}/refund`,
+    /** Webhook para notificações de pagamento */
+    webhook: () => `${prefix}/mercadopago/pagamentos/webhook`,
+  },
+  // ========================================
+  // Assinaturas (Pagamentos Recorrentes)
+  // ========================================
   assinaturas: {
     checkout: () => `${prefix}/mercadopago/assinaturas/checkout`,
     cancelar: () => `${prefix}/mercadopago/assinaturas/cancelar`,
@@ -466,6 +486,9 @@ export const mercadoPagoRoutes = {
     remindPayment: () => `${prefix}/mercadopago/assinaturas/remind-payment`,
     reconcile: () => `${prefix}/mercadopago/assinaturas/reconcile`,
     webhook: () => `${prefix}/mercadopago/assinaturas/webhook`,
+    /** Consulta status de uma assinatura */
+    get: (subscriptionId: string) =>
+      `${prefix}/mercadopago/assinaturas/${encodeURIComponent(subscriptionId)}`,
     admin: {
       remindPayment: () =>
         `${prefix}/mercadopago/assinaturas/admin/remind-payment`,

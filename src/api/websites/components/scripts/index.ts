@@ -37,6 +37,7 @@ export async function listWebsiteScripts(
     cache: "no-cache",
     retries: 1,
     timeout: process.env.NODE_ENV === "production" ? 4000 : 7000,
+    skipLogoutOn401: true, // Permite acesso público sem autenticação
   });
 }
 
@@ -46,6 +47,7 @@ export async function getWebsiteScriptById(
   return apiFetch<ScriptResponse>(websiteRoutes.scripts.get(id), {
     init: { headers: apiConfig.headers },
     cache: "no-cache",
+    skipLogoutOn401: true, // Permite acesso público sem autenticação
   });
 }
 

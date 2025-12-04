@@ -9,8 +9,10 @@ import {
   Eye,
   Download,
   Edit,
+  Loader2,
   type LucideIcon,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { formatDate } from "../utils";
 import {
   Table,
@@ -281,10 +283,14 @@ export function CandidatosTab({ vaga }: AboutTabProps) {
   // Detalhes do candidato
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [detailsCandidato, setDetailsCandidato] = useState<CandidatoItem | null>(null);
+  const [loadingCandidatoId, setLoadingCandidatoId] = useState<string | null>(null);
 
   const handleViewDetails = (candidato: CandidatoItem) => {
+    setLoadingCandidatoId(candidato.id);
     setDetailsCandidato(candidato);
     setIsDetailsOpen(true);
+    // Reset loading after modal opens
+    setTimeout(() => setLoadingCandidatoId(null), 500);
   };
 
   // Lógica para páginas visíveis (mesmo padrão do CompanyDashboard)
@@ -346,8 +352,8 @@ export function CandidatosTab({ vaga }: AboutTabProps) {
   const renderCandidatoItem = (
     candidato: CandidatoItem,
     onView: (item: CandidatoItem) => void,
-    onDelete: (id: string) => void,
-    isDeleting?: boolean
+    isRowLoading: boolean,
+    isDisabled: boolean
   ) => {
     return (
       <>
@@ -426,13 +432,26 @@ export function CandidatosTab({ vaga }: AboutTabProps) {
                   variant="ghost"
                   size="icon"
                   onClick={() => onView(candidato)}
-                  className="h-8 w-8 rounded-full text-gray-500 hover:text-white hover:bg-[var(--primary-color)] cursor-pointer"
+                  disabled={isDisabled}
+                  className={cn(
+                    "h-8 w-8 rounded-full cursor-pointer",
+                    isRowLoading 
+                      ? "text-blue-600 bg-blue-100" 
+                      : "text-gray-500 hover:text-white hover:bg-[var(--primary-color)]",
+                    "disabled:opacity-50 disabled:cursor-wait"
+                  )}
                   aria-label="Ver detalhes"
                 >
+                  {isRowLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
                   <Eye className="h-4 w-4" />
+                  )}
                 </Button>
               </TooltipTrigger>
-              <TooltipContent sideOffset={8}>Ver detalhes</TooltipContent>
+              <TooltipContent sideOffset={8}>
+                {isRowLoading ? "Carregando..." : "Ver detalhes"}
+              </TooltipContent>
             </Tooltip>
 
             <Tooltip>
@@ -441,7 +460,8 @@ export function CandidatosTab({ vaga }: AboutTabProps) {
                   variant="ghost"
                   size="icon"
                   onClick={() => handleEditStatus(candidato)}
-                  className="h-8 w-8 rounded-full text-gray-500 hover:text-white hover:bg-[var(--primary-color)] cursor-pointer"
+                  disabled={isDisabled}
+                  className="h-8 w-8 rounded-full text-gray-500 hover:text-white hover:bg-[var(--primary-color)] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   aria-label="Editar status"
                 >
                   <Edit className="h-4 w-4" />
@@ -455,7 +475,8 @@ export function CandidatosTab({ vaga }: AboutTabProps) {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8 rounded-full text-gray-500 hover:text-white hover:bg-[var(--primary-color)] cursor-pointer"
+                  disabled={isDisabled}
+                  className="h-8 w-8 rounded-full text-gray-500 hover:text-white hover:bg-[var(--primary-color)] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   aria-label="Baixar currículo"
                 >
                   <Download className="h-4 w-4" />
@@ -531,14 +552,24 @@ export function CandidatosTab({ vaga }: AboutTabProps) {
                       </td>
                     </TableRow>
                   )}
-                  {!isLoading && !error && paginatedCandidatos.map((candidato) => (
+                  {!isLoading && !error && paginatedCandidatos.map((candidato) => {
+                    const isRowLoading = loadingCandidatoId === candidato.id;
+                    const isDisabled = loadingCandidatoId !== null && !isRowLoading;
+                    return (
                     <TableRow
                       key={candidato.id}
-                      className="border-gray-100 hover:bg-gray-50/50 transition-colors"
+                        className={cn(
+                          "border-gray-100 transition-colors",
+                          isDisabled 
+                            ? "opacity-50 pointer-events-none" 
+                            : "hover:bg-gray-50/50",
+                          isRowLoading && "bg-blue-50/50"
+                        )}
                     >
-                      {renderCandidatoItem(candidato, handleViewDetails, () => {}, false)}
+                        {renderCandidatoItem(candidato, handleViewDetails, isRowLoading, isDisabled)}
                     </TableRow>
-                  ))}
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>

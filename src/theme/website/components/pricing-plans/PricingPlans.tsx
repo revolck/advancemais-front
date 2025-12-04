@@ -9,11 +9,18 @@ import { cn } from "@/lib/utils";
 import { PricingPlanCard } from "./components/PricingPlanCard";
 import { PRICING_CONFIG } from "./constants";
 import { usePricingData } from "./hooks/usePricingData";
+import { usePricingActions } from "./hooks/usePricingActions";
 import type { PricingPlansProps } from "./types";
 
 /**
  * Componente PricingPlans
  * Exibe tabela de preços com planos organizados
+ *
+ * Funcionalidades:
+ * - ROLE EMPRESA: Pode comprar/fazer upgrade/downgrade de planos
+ * - Outras ROLES: Mostra botão "Falar com especialista" (WhatsApp)
+ * - Visitantes: Mostra botão de compra, mas redireciona para login
+ * - Empresa com plano ativo: Botão do plano atual é desabilitado
  *
  * @example
  * ```tsx
@@ -44,17 +51,30 @@ const PricingPlans: React.FC<PricingPlansProps> = ({
   onError,
   onPlanSelect,
 }) => {
-  const { data, isLoading, error, refetch } = usePricingData(
-    fetchFromApi,
-    staticData
-  );
+  const {
+    data,
+    isLoading: isDataLoading,
+    error,
+    refetch,
+  } = usePricingData(fetchFromApi, staticData);
+
+  const {
+    isLoading: isActionsLoading,
+    getButtonState,
+    handlePlanClick,
+    isCompanyRole,
+    currentPlanosEmpresariaisId,
+    whatsappLink,
+  } = usePricingActions();
+
+  const isLoading = isDataLoading || isActionsLoading;
 
   // Callbacks quando dados são carregados ou há erro
   useEffect(() => {
-    if (data && data.length > 0 && !isLoading) {
+    if (data && data.length > 0 && !isDataLoading) {
       onDataLoaded?.(data);
     }
-  }, [data, isLoading, onDataLoaded]);
+  }, [data, isDataLoading, onDataLoaded]);
 
   useEffect(() => {
     if (error) {
@@ -63,12 +83,11 @@ const PricingPlans: React.FC<PricingPlansProps> = ({
   }, [error, onError]);
 
   // Handler para seleção de plano
-  const handlePlanSelect = (plan: any) => {
-    onPlanSelect?.(plan);
-
-    // Navegação padrão se não houver callback customizado
-    if (!onPlanSelect) {
-      window.location.href = plan.buttonUrl;
+  const handlePlanSelectInternal = (plan: any) => {
+    if (onPlanSelect) {
+      onPlanSelect(plan);
+    } else {
+      handlePlanClick(plan);
     }
   };
 
@@ -82,25 +101,30 @@ const PricingPlans: React.FC<PricingPlansProps> = ({
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {Array.from({ length: PRICING_CONFIG.grid.desktop }).map((_, index) => (
-            <div
-              key={index}
-              className="rounded-lg p-6 bg-white shadow-medium border border-gray-200"
-            >
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 bg-gray-200 rounded animate-pulse" />
-                <div className="h-5 bg-gray-200 rounded w-20 animate-pulse" />
+          {Array.from({ length: PRICING_CONFIG.grid.desktop }).map(
+            (_, index) => (
+              <div
+                key={index}
+                className="rounded-lg p-6 bg-white shadow-medium border border-gray-200"
+              >
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-8 h-8 bg-gray-200 rounded animate-pulse" />
+                  <div className="h-5 bg-gray-200 rounded w-20 animate-pulse" />
+                </div>
+                <div className="h-12 bg-gray-200 rounded mb-4 animate-pulse" />
+                <div className="h-4 bg-gray-200 rounded mb-6 animate-pulse" />
+                <div className="h-10 bg-gray-200 rounded mb-6 animate-pulse" />
+                <div className="space-y-3">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <div
+                      key={i}
+                      className="h-4 bg-gray-200 rounded animate-pulse"
+                    />
+                  ))}
+                </div>
               </div>
-              <div className="h-12 bg-gray-200 rounded mb-4 animate-pulse" />
-              <div className="h-4 bg-gray-200 rounded mb-6 animate-pulse" />
-              <div className="h-10 bg-gray-200 rounded mb-6 animate-pulse" />
-              <div className="space-y-3">
-                {Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} className="h-4 bg-gray-200 rounded animate-pulse" />
-                ))}
-              </div>
-            </div>
-          ))}
+            )
+          )}
         </div>
       </div>
     );
@@ -118,9 +142,7 @@ const PricingPlans: React.FC<PricingPlansProps> = ({
             icon="AlertCircle"
             className="mx-auto mb-6"
           />
-          <p className="text-gray-600 mb-4 max-w-md mx-auto">
-            {error}
-          </p>
+          <p className="text-gray-600 mb-4 max-w-md mx-auto">{error}</p>
           <ButtonCustom onClick={refetch} variant="default" icon="RefreshCw">
             Tentar Novamente
           </ButtonCustom>
@@ -148,18 +170,20 @@ const PricingPlans: React.FC<PricingPlansProps> = ({
     );
   }
 
+  // Gera subtítulo dinâmico se empresa tem plano
+  const dynamicSubtitle =
+    isCompanyRole && currentPlanosEmpresariaisId
+      ? "Você já possui um plano ativo. Faça upgrade para mais recursos!"
+      : subtitle;
+
   // Estado normal com dados
   return (
-    <div
-      className={cn("container w-full mx-auto py-24", className)}
-    >
+    <div className={cn("container w-full mx-auto py-24", className)}>
       {/* Header da seção */}
       <div className="text-center animate-fade-in mb-12">
-        <h2 className="text-4xl font-bold text-gray-900 mb-4">
-          {title}
-        </h2>
+        <h2 className="text-4xl font-bold text-gray-900 mb-4">{title}</h2>
         <p className="text-lg text-gray-600 leading-relaxed max-w-2xl mx-auto">
-          {subtitle}
+          {dynamicSubtitle}
         </p>
       </div>
 
@@ -170,7 +194,10 @@ const PricingPlans: React.FC<PricingPlansProps> = ({
             key={plan.id}
             plan={plan}
             index={index}
-            onSelect={handlePlanSelect}
+            onSelect={handlePlanSelectInternal}
+            buttonState={getButtonState(plan)}
+            onButtonClick={() => handlePlanClick(plan)}
+            whatsappLink={whatsappLink}
           />
         ))}
       </div>

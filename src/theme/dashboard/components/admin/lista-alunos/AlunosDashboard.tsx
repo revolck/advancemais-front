@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ButtonCustom, FilterBar, EmptyState } from "@/components/ui/custom";
 import {
@@ -47,6 +47,12 @@ export function AlunosDashboard({ className }: { className?: string }) {
   const [selectedCidades, setSelectedCidades] = useState<string[]>([]);
   const pageSize = defaultPageSize;
   const [currentPage, setCurrentPage] = useState(1);
+  const [isNavigating, setIsNavigating] = useState(false);
+
+  const handleNavigateStart = useCallback(() => {
+    setIsNavigating(true);
+    setTimeout(() => setIsNavigating(false), 5000);
+  }, []);
 
   // Estados de ordenação
   type SortDirection = "asc" | "desc";
@@ -575,6 +581,8 @@ export function AlunosDashboard({ className }: { className?: string }) {
                       key={aluno.id}
                       aluno={aluno}
                       cursoFiltradoId={cursoFiltradoId}
+                      isDisabled={isNavigating}
+                      onNavigateStart={handleNavigateStart}
                     />
                   ))
                 )}

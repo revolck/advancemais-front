@@ -1,36 +1,15 @@
-export type SolicitacaoStatus = "PENDENTE" | "APROVADA" | "REJEITADA" | "CANCELADA";
-
-export interface SolicitacaoVaga {
-  id: string;
-  codigo: string;
-  vaga: {
-    id: string;
-    titulo: string;
-    codigo?: string;
-  };
-  empresa: {
-    id: string;
-    nome: string;
-    codigo?: string;
-  };
-  solicitante?: {
-    id: string;
-    nome: string;
-  };
-  status: SolicitacaoStatus;
-  dataSolicitacao: string;
-  dataResposta?: string;
-  motivoRejeicao?: string;
-  observacoes?: string;
-}
+// Re-exporta tipos da API
+export type {
+  SolicitacaoVaga,
+  SolicitacaoStatus,
+} from "@/api/vagas/solicitacoes/types";
 
 export interface SolicitacaoDashboardProps {
   className?: string;
-  solicitacoes?: SolicitacaoVaga[];
+  solicitacoes?: import("@/api/vagas/solicitacoes/types").SolicitacaoVaga[];
   fetchFromApi?: boolean;
   itemsPerPage?: number;
   pageSize?: number;
-  onDataLoaded?: (data: SolicitacaoVaga[]) => void;
+  onDataLoaded?: (data: import("@/api/vagas/solicitacoes/types").SolicitacaoVaga[]) => void;
   onError?: (error: Error) => void;
 }
-

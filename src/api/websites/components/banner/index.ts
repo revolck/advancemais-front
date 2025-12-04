@@ -73,6 +73,7 @@ export async function listBanners(init?: RequestInit): Promise<BannerBackendResp
   return apiFetch<BannerBackendResponse[]>(websiteRoutes.banner.list(), {
     init: init ?? { headers: apiConfig.headers },
     cache: "no-cache",
+    skipLogoutOn401: true, // Permite acesso público sem autenticação
   });
 }
 
@@ -80,6 +81,7 @@ export async function getBannerById(orderId: string): Promise<BannerBackendRespo
   // API de consulta usa ID da ordem
   return apiFetch<BannerBackendResponse>(websiteRoutes.banner.get(orderId), {
     init: { headers: apiConfig.headers },
+    skipLogoutOn401: true, // Permite acesso público sem autenticação
   });
 }
 

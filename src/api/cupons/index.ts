@@ -13,6 +13,8 @@ import type {
   CupomDetailApiResponse,
   CupomCreateApiResponse,
   CuponsListParams,
+  ValidateCupomPayload,
+  ValidateCupomResponse,
 } from "./types";
 
 // ============================================================================
@@ -199,6 +201,30 @@ export async function deleteCupom(
         Accept: "application/json",
         ...init?.headers,
       }),
+    },
+    cache: "no-cache",
+  });
+}
+
+/**
+ * Valida um cupom de desconto para uso no checkout
+ */
+export async function validateCupom(
+  data: ValidateCupomPayload,
+  init?: RequestInit
+): Promise<ValidateCupomResponse> {
+  const endpoint = cuponsRoutes.validate();
+
+  return apiFetch<ValidateCupomResponse>(endpoint, {
+    init: {
+      method: "POST",
+      ...init,
+      headers: buildAuthHeaders({
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        ...init?.headers,
+      }),
+      body: init?.body ?? JSON.stringify(data),
     },
     cache: "no-cache",
   });

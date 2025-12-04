@@ -44,7 +44,10 @@ function mapRecrutamentoSelecao(
 async function fetchRecrutamentoSelecao(): Promise<ServiceBenefitsData[]> {
   const res = await apiFetch<RecrutamentoSelecaoBackendResponse[]>(
     websiteRoutes.recrutamentoSelecao.list(),
-    { init: { headers: apiConfig.headers } },
+    { 
+      init: { headers: apiConfig.headers },
+      skipLogoutOn401: true, // Permite acesso público sem autenticação
+    },
   );
   return mapRecrutamentoSelecao(res);
 }
@@ -85,7 +88,10 @@ function mapTreinamentoCompany(
 async function fetchTreinamentoCompany(): Promise<ServiceBenefitsData[]> {
   const res = await apiFetch<TreinamentoCompanyBackendResponse[]>(
     websiteRoutes.treinamentoCompany.list(),
-    { init: { headers: apiConfig.headers } },
+    { 
+      init: { headers: apiConfig.headers },
+      skipLogoutOn401: true, // Permite acesso público sem autenticação
+    },
   );
   return mapTreinamentoCompany(res);
 }

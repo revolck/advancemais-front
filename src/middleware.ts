@@ -41,6 +41,8 @@ const SYSTEM_CONFIG = {
     "/termos",
     "/cookies",
     "/components",
+    "/checkout",
+    "/planos",
   ],
 
   // Rotas de autenticação (neutras)
@@ -60,6 +62,7 @@ const SYSTEM_CONFIG = {
     "/termos-servico": "/termos",
     "/ajuda": "/suporte",
     "/help": "/suporte",
+    "/planos": "/recrutamento",
   },
 };
 

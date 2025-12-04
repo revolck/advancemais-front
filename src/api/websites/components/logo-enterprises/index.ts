@@ -53,6 +53,7 @@ export async function listLogoEnterprises(
     {
       init: init ?? { headers: apiConfig.headers },
       cache: "no-cache",
+      skipLogoutOn401: true, // Permite acesso público sem autenticação
     }
   );
 }
@@ -62,7 +63,11 @@ export async function getLogoEnterpriseById(
 ): Promise<LogoEnterpriseBackendResponse> {
   return apiFetch<LogoEnterpriseBackendResponse>(
     websiteRoutes.logoEnterprises.get(orderId),
-    { init: { headers: apiConfig.headers }, cache: "no-cache" }
+    { 
+      init: { headers: apiConfig.headers }, 
+      cache: "no-cache",
+      skipLogoutOn401: true, // Permite acesso público sem autenticação
+    }
   );
 }
 

@@ -21,7 +21,10 @@ export async function listInformacoesGerais(
 ): Promise<InformacoesGeraisBackendResponse[]> {
   return apiFetch<InformacoesGeraisBackendResponse[]>(
     websiteRoutes.informacoesGerais.list(),
-    { init: init ?? { headers: apiConfig.headers } },
+    { 
+      init: init ?? { headers: apiConfig.headers },
+      skipLogoutOn401: true, // Permite acesso público sem autenticação
+    },
   );
 }
 

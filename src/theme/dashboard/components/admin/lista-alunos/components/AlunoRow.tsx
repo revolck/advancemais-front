@@ -19,6 +19,8 @@ import { ChevronRight, Loader2 } from "lucide-react";
 interface AlunoRowProps {
   aluno: AlunoComInscricao;
   cursoFiltradoId?: string | null; // UUID (string) - alterado de number para string
+  isDisabled?: boolean;
+  onNavigateStart?: () => void;
 }
 
 const getStatusColor = (status?: string) => {
@@ -131,29 +133,43 @@ const getTipoLabel = (tipo: string) => {
   }
 };
 
-export function AlunoRow({ aluno, cursoFiltradoId }: AlunoRowProps) {
+export function AlunoRow({ 
+  aluno, 
+  cursoFiltradoId,
+  isDisabled = false,
+  onNavigateStart,
+}: AlunoRowProps) {
   const router = useRouter();
   const [isNavigating, setIsNavigating] = useState(false);
   const ultimaTurma = getUltimaTurma(aluno.ultimoCurso, cursoFiltradoId);
+  const isRowDisabled = isDisabled || isNavigating;
 
   const cursoNome = ultimaTurma?.curso?.nome;
   const turmaNome = ultimaTurma?.turma?.nome;
 
   const handleNavigate = (e: React.MouseEvent) => {
     e.preventDefault();
-    if (isNavigating) return; // Prevenir múltiplos cliques
+    if (isRowDisabled) return;
     
     setIsNavigating(true);
+    onNavigateStart?.();
     router.push(`/dashboard/cursos/alunos/${encodeURIComponent(aluno.id)}`);
     
-    // Timeout de segurança para resetar o estado caso a navegação falhe
     setTimeout(() => {
       setIsNavigating(false);
     }, 5000);
   };
 
   return (
-    <TableRow className="border-gray-100 hover:bg-gray-50/50 transition-colors">
+    <TableRow 
+      className={cn(
+        "border-gray-100 transition-colors",
+        isRowDisabled 
+          ? "opacity-50 pointer-events-none" 
+          : "hover:bg-gray-50/50",
+        isNavigating && "bg-blue-50/50"
+      )}
+    >
       <TableCell className="py-4">
         <div className="flex items-center gap-3">
           <Avatar className="h-8 w-8 flex-shrink-0">
@@ -283,8 +299,14 @@ export function AlunoRow({ aluno, cursoFiltradoId }: AlunoRowProps) {
               variant="ghost"
               size="icon"
               onClick={handleNavigate}
-              disabled={isNavigating}
-              className="h-8 w-8 rounded-full text-gray-500 hover:text-white hover:bg-[var(--primary-color)] disabled:opacity-50 disabled:cursor-wait cursor-pointer"
+              disabled={isRowDisabled}
+              className={cn(
+                "h-8 w-8 rounded-full cursor-pointer",
+                isNavigating 
+                  ? "text-blue-600 bg-blue-100" 
+                  : "text-gray-500 hover:text-white hover:bg-[var(--primary-color)]",
+                "disabled:opacity-50 disabled:cursor-wait"
+              )}
               aria-label="Visualizar aluno"
             >
               {isNavigating ? (

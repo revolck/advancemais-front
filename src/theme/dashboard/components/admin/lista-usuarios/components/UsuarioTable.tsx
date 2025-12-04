@@ -34,6 +34,9 @@ interface UsuarioTableProps {
   };
   onPageChange?: (page: number) => void;
   visiblePages?: number[];
+  // Props para estado de navegação global
+  isNavigating?: boolean;
+  onNavigateStart?: () => void;
 }
 
 export function UsuarioTable({
@@ -45,6 +48,8 @@ export function UsuarioTable({
   pagination,
   onPageChange,
   visiblePages = [],
+  isNavigating = false,
+  onNavigateStart,
 }: UsuarioTableProps) {
   return (
     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
@@ -123,7 +128,12 @@ export function UsuarioTable({
             {isLoading && <UsuarioTableSkeleton rows={pageSize} />}
             {!isLoading &&
               usuarios.map((usuario) => (
-                <UsuarioRow key={usuario.id} usuario={usuario} />
+                <UsuarioRow 
+                  key={usuario.id} 
+                  usuario={usuario}
+                  isDisabled={isNavigating}
+                  onNavigateStart={onNavigateStart}
+                />
               ))}
           </TableBody>
         </Table>

@@ -22,3 +22,24 @@ export type {
   VagaForbiddenError,
   VagaLimitReachedError,
 } from "./admin/types";
+
+// Solicitações de Publicação
+export {
+  listSolicitacoes,
+  getSolicitacaoById,
+  aprovarSolicitacao,
+  rejeitarSolicitacao,
+  getSetorDeVagasMetricas,
+} from "./solicitacoes";
+
+export type {
+  SolicitacaoVaga,
+  SolicitacaoStatus,
+  SolicitacoesListParams,
+  SolicitacoesListResponse,
+  AprovarSolicitacaoPayload,
+  RejeitarSolicitacaoPayload,
+  SolicitacaoActionResponse,
+  SetorDeVagasMetricas,
+  SetorDeVagasMetricasResponse,
+} from "./solicitacoes/types";

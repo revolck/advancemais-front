@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useCallback } from "react";
+import React, { useMemo, useCallback, useState } from "react";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -17,7 +17,9 @@ import {
   AlertCircle,
   XCircle,
   Clock3,
+  Loader2,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import {
   Tooltip,
   TooltipContent,
@@ -40,7 +42,15 @@ const INACTIVE_CANDIDATURA_STATUSES: Candidatura["status"][] = [
   "CANCELADO",
 ];
 
-export function CandidatoRow({ candidato, onViewDetails }: CandidatoRowProps) {
+export function CandidatoRow({ 
+  candidato, 
+  onViewDetails,
+  isDisabled = false,
+  onNavigateStart,
+}: CandidatoRowProps) {
+  const [isNavigating, setIsNavigating] = useState(false);
+  const isRowDisabled = isDisabled || isNavigating;
+
   const candidaturas = useMemo(
     () => candidato.candidaturas ?? [],
     [candidato.candidaturas]
@@ -96,8 +106,16 @@ export function CandidatoRow({ candidato, onViewDetails }: CandidatoRowProps) {
   }, []);
 
   const handleViewDetails = useCallback(() => {
+    if (isRowDisabled) return;
+    
+    setIsNavigating(true);
+    onNavigateStart?.();
     onViewDetails(candidato);
-  }, [onViewDetails, candidato]);
+    
+    setTimeout(() => {
+      setIsNavigating(false);
+    }, 5000);
+  }, [onViewDetails, candidato, isRowDisabled, onNavigateStart]);
 
   const getStatusConfig = (status: string) => {
     switch (status) {
@@ -211,7 +229,15 @@ export function CandidatoRow({ candidato, onViewDetails }: CandidatoRowProps) {
   ) : null;
 
   return (
-    <TableRow className="border-gray-100 hover:bg-gray-50/50 transition-colors">
+    <TableRow 
+      className={cn(
+        "border-gray-100 transition-colors",
+        isRowDisabled 
+          ? "opacity-50 pointer-events-none" 
+          : "hover:bg-gray-50/50",
+        isNavigating && "bg-blue-50/50"
+      )}
+    >
       <TableCell className="py-4">
         <div className="flex items-start gap-3">
           <Avatar className="h-10 w-10">
@@ -313,14 +339,27 @@ export function CandidatoRow({ candidato, onViewDetails }: CandidatoRowProps) {
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 rounded-full text-gray-500 hover:text-white hover:bg-[var(--primary-color)] cursor-pointer"
+                disabled={isRowDisabled}
+                className={cn(
+                  "h-8 w-8 rounded-full cursor-pointer",
+                  isNavigating 
+                    ? "text-blue-600 bg-blue-100" 
+                    : "text-gray-500 hover:text-white hover:bg-[var(--primary-color)]",
+                  "disabled:opacity-50 disabled:cursor-wait"
+                )}
                 aria-label="Visualizar candidato"
                 onClick={handleViewDetails}
               >
+                {isNavigating ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
                 <ChevronRight className="h-4 w-4" />
+                )}
               </Button>
             </TooltipTrigger>
-            <TooltipContent sideOffset={8}>Visualizar candidato</TooltipContent>
+            <TooltipContent sideOffset={8}>
+              {isNavigating ? "Carregando..." : "Visualizar candidato"}
+            </TooltipContent>
           </Tooltip>
         </div>
       </TableCell>

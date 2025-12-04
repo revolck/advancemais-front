@@ -43,6 +43,8 @@ export interface CandidatoDashboardData {
 export interface CandidatoRowProps {
   candidato: CandidatoTypes.CandidatoOverview;
   onViewDetails: (candidato: CandidatoTypes.CandidatoOverview) => void;
+  isDisabled?: boolean;
+  onNavigateStart?: () => void;
 }
 
 export type CandidatoSortField = "name" | null;
@@ -56,6 +58,8 @@ export interface CandidatoTableProps {
   sortDirection: CandidatoSortDirection;
   onToggleSortName: () => void;
   onSetSortName: (direction: CandidatoSortDirection) => void;
+  isNavigating?: boolean;
+  onNavigateStart?: () => void;
 }
 
 export interface CandidatoDashboardProps {

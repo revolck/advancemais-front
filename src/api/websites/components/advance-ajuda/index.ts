@@ -81,6 +81,7 @@ export async function listAdvanceAjuda(
 ): Promise<AdvanceAjudaBackendResponse[]> {
   return apiFetch<AdvanceAjudaBackendResponse[]>(websiteRoutes.advanceAjuda.list(), {
     init: init ?? { headers: apiConfig.headers },
+    skipLogoutOn401: true, // Permite acesso público sem autenticação
   });
 }
 
@@ -89,6 +90,7 @@ export async function getAdvanceAjudaById(
 ): Promise<AdvanceAjudaBackendResponse> {
   return apiFetch<AdvanceAjudaBackendResponse>(websiteRoutes.advanceAjuda.get(id), {
     init: { headers: apiConfig.headers },
+    skipLogoutOn401: true, // Permite acesso público sem autenticação
   });
 }
 

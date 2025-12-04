@@ -7,8 +7,9 @@ export { default as PricingPlans } from "./PricingPlans";
 // Componentes individuais
 export { PricingPlanCard } from "./components/PricingPlanCard";
 
-// Hook
+// Hooks
 export { usePricingData } from "./hooks/usePricingData";
+export { usePricingActions } from "./hooks/usePricingActions";
 
 // Tipos e constantes
 export type {
@@ -16,4 +17,9 @@ export type {
   PricingPlansProps,
   PricingPlanCardProps,
 } from "./types";
+export type {
+  PlanButtonAction,
+  PlanButtonState,
+  UsePricingActionsReturn,
+} from "./hooks/usePricingActions";
 export { PRICING_CONFIG } from "./constants";

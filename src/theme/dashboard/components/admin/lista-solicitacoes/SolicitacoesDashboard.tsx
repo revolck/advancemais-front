@@ -1,6 +1,9 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { ButtonCustom, EmptyState, FilterBar } from "@/components/ui/custom";
 import {
@@ -17,8 +20,14 @@ import {
   TooltipContent,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { SolicitacaoRow, SolicitacaoTableSkeleton } from "./components";
-import type { SolicitacaoDashboardProps, SolicitacaoVaga, SolicitacaoStatus } from "./types";
+import {
+  SolicitacaoRow,
+  SolicitacaoTableSkeleton,
+  RejeitarVagaModal,
+  VisualizarVagaModal,
+  ConfirmarAprovacaoModal,
+} from "./components";
+import type { SolicitacaoDashboardProps } from "./types";
 import type { FilterField } from "@/components/ui/custom/filters";
 import type { DateRange } from "@/components/ui/custom/date-picker";
 import {
@@ -26,6 +35,15 @@ import {
   getNormalizedSearchOrUndefined,
   getSearchValidationMessage,
 } from "../shared/filterUtils";
+import {
+  listSolicitacoes,
+  aprovarSolicitacao,
+  rejeitarSolicitacao,
+} from "@/api/vagas/solicitacoes";
+import type {
+  SolicitacaoVaga,
+  SolicitacaoStatus,
+} from "@/api/vagas/solicitacoes/types";
 
 const SEARCH_HELPER_TEXT = "Pesquise por título da vaga ou nome da empresa.";
 
@@ -46,58 +64,6 @@ const STATUS_FILTER_OPTIONS: { value: SolicitacaoStatus; label: string }[] = [
   { value: "CANCELADA", label: "Cancelada" },
 ];
 
-// Dados mockados para demonstração
-const MOCK_SOLICITACOES: SolicitacaoVaga[] = [
-  {
-    id: "1",
-    codigo: "SOL-001",
-    vaga: { id: "v1", titulo: "Desenvolvedor Full Stack", codigo: "V95825" },
-    empresa: { id: "e1", nome: "Tech Innovations LTDA", codigo: "EMP-81765" },
-    solicitante: { id: "u1", nome: "Maria Silva" },
-    status: "PENDENTE",
-    dataSolicitacao: "2025-11-28T10:30:00Z",
-  },
-  {
-    id: "2",
-    codigo: "SOL-002",
-    vaga: { id: "v2", titulo: "Analista de RH", codigo: "V95826" },
-    empresa: { id: "e2", nome: "Consultoria RH Plus", codigo: "EMP-16951" },
-    solicitante: { id: "u2", nome: "João Santos" },
-    status: "PENDENTE",
-    dataSolicitacao: "2025-11-28T09:15:00Z",
-  },
-  {
-    id: "3",
-    codigo: "SOL-003",
-    vaga: { id: "v3", titulo: "Designer UX/UI", codigo: "V95599" },
-    empresa: { id: "e1", nome: "Tech Innovations LTDA", codigo: "EMP-81765" },
-    solicitante: { id: "u1", nome: "Maria Silva" },
-    status: "APROVADA",
-    dataSolicitacao: "2025-11-27T14:00:00Z",
-    dataResposta: "2025-11-27T16:30:00Z",
-  },
-  {
-    id: "4",
-    codigo: "SOL-004",
-    vaga: { id: "v4", titulo: "Vendedor Externo", codigo: "V95673" },
-    empresa: { id: "e2", nome: "Consultoria RH Plus", codigo: "EMP-16951" },
-    solicitante: { id: "u2", nome: "João Santos" },
-    status: "REJEITADA",
-    dataSolicitacao: "2025-11-26T11:00:00Z",
-    dataResposta: "2025-11-26T15:00:00Z",
-    motivoRejeicao: "Vaga não atende aos requisitos mínimos",
-  },
-  {
-    id: "5",
-    codigo: "SOL-005",
-    vaga: { id: "v5", titulo: "Motorista Entregador", codigo: "V95451" },
-    empresa: { id: "e3", nome: "Logística Express", codigo: "EMP-55432" },
-    solicitante: { id: "u3", nome: "Pedro Costa" },
-    status: "PENDENTE",
-    dataSolicitacao: "2025-11-28T08:00:00Z",
-  },
-];
-
 type SortField = "vaga" | "empresa" | "dataSolicitacao" | null;
 type SortDirection = "asc" | "desc";
 
@@ -110,6 +76,8 @@ export function SolicitacoesDashboard({
   onDataLoaded,
   onError,
 }: SolicitacaoDashboardProps) {
+  const queryClient = useQueryClient();
+  const router = useRouter();
   const defaultPageSize = pageSizeProp ?? itemsPerPageProp ?? 10;
   const shouldFetch = fetchFromApi && !solicitacoesProp;
 
@@ -117,13 +85,40 @@ export function SolicitacoesDashboard({
   const [currentPage, setCurrentPage] = useState(1);
   const [pendingSearchTerm, setPendingSearchTerm] = useState("");
   const [appliedSearchTerm, setAppliedSearchTerm] = useState("");
-  const [selectedStatuses, setSelectedStatuses] = useState<SolicitacaoStatus[]>(["PENDENTE"]);
-  const [pendingDateRange, setPendingDateRange] = useState<DateRange>(() => createEmptyDateRange());
-  const [appliedDateRange, setAppliedDateRange] = useState<DateRange>(() => createEmptyDateRange());
+  const [selectedStatuses, setSelectedStatuses] = useState<SolicitacaoStatus[]>(
+    ["PENDENTE"]
+  );
+  const [pendingDateRange, setPendingDateRange] = useState<DateRange>(() =>
+    createEmptyDateRange()
+  );
+  const [appliedDateRange, setAppliedDateRange] = useState<DateRange>(() =>
+    createEmptyDateRange()
+  );
 
-  // Sorting
+  // Sorting (client-side)
   const [sortField, setSortField] = useState<SortField>("dataSolicitacao");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+
+  // Estado para modal de rejeição
+  const [solicitacaoParaRejeitar, setSolicitacaoParaRejeitar] =
+    useState<SolicitacaoVaga | null>(null);
+
+  // Estado para modal de visualização
+  const [solicitacaoParaVisualizar, setSolicitacaoParaVisualizar] =
+    useState<SolicitacaoVaga | null>(null);
+
+  // Estado para modal de aprovação
+  const [solicitacaoParaAprovar, setSolicitacaoParaAprovar] =
+    useState<SolicitacaoVaga | null>(null);
+
+  // Estado para controlar se há alguma ação em andamento (desabilita todos os botões)
+  const [isProcessingAction, setIsProcessingAction] = useState(false);
+
+  // Estado para rastrear qual ação está sendo processada (para mostrar o loading)
+  const [actionInProgress, setActionInProgress] = useState<{
+    type: "visualizar" | "empresa" | "aprovar" | "rejeitar" | null;
+    solicitacaoId: string | null;
+  }>({ type: null, solicitacaoId: null });
 
   const searchValidationMessage = useMemo(
     () => getSearchValidationMessage(pendingSearchTerm),
@@ -132,14 +127,130 @@ export function SolicitacoesDashboard({
   const isSearchInputValid = !searchValidationMessage;
 
   const normalizedSearch = useMemo(
-    () => getNormalizedSearchOrUndefined(appliedSearchTerm, DEFAULT_SEARCH_MIN_LENGTH),
+    () =>
+      getNormalizedSearchOrUndefined(
+        appliedSearchTerm,
+        DEFAULT_SEARCH_MIN_LENGTH
+      ),
     [appliedSearchTerm]
   );
 
-  // TODO: Substituir por chamada à API quando disponível
-  const isLoading = false;
-  const isFetching = false;
-  const solicitacoes = solicitacoesProp ?? MOCK_SOLICITACOES;
+  // Query para buscar solicitações
+  const {
+    data: queryData,
+    isLoading,
+    isFetching,
+    error: queryError,
+    refetch,
+  } = useQuery({
+    queryKey: [
+      "solicitacoes",
+      currentPage,
+      pageSize,
+      selectedStatuses,
+      normalizedSearch,
+      appliedDateRange.from,
+      appliedDateRange.to,
+    ],
+    queryFn: async () => {
+      const params: any = {
+        page: currentPage,
+        pageSize,
+      };
+
+      // Só passa status se houver filtro selecionado
+      if (selectedStatuses.length > 0) {
+        params.status = selectedStatuses;
+      }
+
+      // Só passa search se houver texto válido
+      if (normalizedSearch) {
+        params.search = normalizedSearch;
+      }
+
+      // Só passa datas se houver filtro
+      if (appliedDateRange.from) {
+        params.criadoDe = appliedDateRange.from.toISOString();
+      }
+      if (appliedDateRange.to) {
+        params.criadoAte = appliedDateRange.to.toISOString();
+      }
+
+      console.log("📋 Parâmetros da busca:", params);
+      const result = await listSolicitacoes(params);
+      console.log("✅ Resultado da busca:", {
+        total: result.pagination?.total,
+        items: result.data?.length,
+        page: result.pagination?.page,
+      });
+      return result;
+    },
+    enabled: shouldFetch,
+    staleTime: 1000 * 60, // 1 minuto
+  });
+
+  // Mutation para aprovar
+  const aprovarMutation = useMutation({
+    mutationFn: (id: string) => aprovarSolicitacao(id),
+    onSuccess: () => {
+      toast.success("Solicitação aprovada com sucesso!");
+      queryClient.invalidateQueries({ queryKey: ["solicitacoes"] });
+      queryClient.invalidateQueries({ queryKey: ["setor-de-vagas-metricas"] });
+    },
+    onError: (error: any) => {
+      toast.error(error?.message || "Erro ao aprovar solicitação");
+    },
+  });
+
+  // Mutation para rejeitar
+  const rejeitarMutation = useMutation({
+    mutationFn: ({
+      id,
+      motivoRejeicao,
+    }: {
+      id: string;
+      motivoRejeicao: string;
+    }) => rejeitarSolicitacao(id, { motivoRejeicao }),
+    onSuccess: () => {
+      toast.success("Solicitação rejeitada!");
+      setSolicitacaoParaRejeitar(null);
+      queryClient.invalidateQueries({ queryKey: ["solicitacoes"] });
+      queryClient.invalidateQueries({ queryKey: ["setor-de-vagas-metricas"] });
+    },
+    onError: (error: any) => {
+      toast.error(error?.message || "Erro ao rejeitar solicitação");
+    },
+  });
+
+  // Dados da API ou props
+  const solicitacoes = useMemo(() => {
+    if (solicitacoesProp) return solicitacoesProp;
+    return queryData?.data || [];
+  }, [solicitacoesProp, queryData]);
+
+  const pagination = useMemo(() => {
+    if (queryData?.pagination) return queryData.pagination;
+    return {
+      page: currentPage,
+      pageSize,
+      total: solicitacoes.length,
+      totalPages: Math.max(1, Math.ceil(solicitacoes.length / pageSize)),
+    };
+  }, [queryData, currentPage, pageSize, solicitacoes.length]);
+
+  // Notificar quando dados carregarem
+  useEffect(() => {
+    if (queryData && onDataLoaded) {
+      onDataLoaded(queryData.data);
+    }
+  }, [queryData, onDataLoaded]);
+
+  // Notificar erros
+  useEffect(() => {
+    if (queryError && onError) {
+      onError(queryError as Error);
+    }
+  }, [queryError, onError]);
 
   const setSort = (field: SortField, direction: SortDirection) => {
     setSortField(field);
@@ -173,8 +284,12 @@ export function SolicitacoesDashboard({
           const bName = b.empresa.nome?.toLowerCase() ?? "";
           cmp = aName.localeCompare(bName, "pt-BR", { sensitivity: "base" });
         } else if (sortField === "dataSolicitacao") {
-          const aTime = a.dataSolicitacao ? new Date(a.dataSolicitacao).getTime() : 0;
-          const bTime = b.dataSolicitacao ? new Date(b.dataSolicitacao).getTime() : 0;
+          const aTime = a.dataSolicitacao
+            ? new Date(a.dataSolicitacao).getTime()
+            : 0;
+          const bTime = b.dataSolicitacao
+            ? new Date(b.dataSolicitacao).getTime()
+            : 0;
           cmp = aTime - bTime;
         }
         return sortDirection === "asc" ? cmp : -cmp;
@@ -184,63 +299,20 @@ export function SolicitacoesDashboard({
     [sortDirection, sortField]
   );
 
-  // Filtrar solicitações
-  const filteredSolicitacoes = useMemo(() => {
-    const query = (normalizedSearch ?? "").toLowerCase();
-
-    return solicitacoes.filter((solicitacao) => {
-      const matchesSearch =
-        query.length === 0 ||
-        solicitacao.vaga.titulo.toLowerCase().includes(query) ||
-        solicitacao.empresa.nome.toLowerCase().includes(query) ||
-        solicitacao.vaga.codigo?.toLowerCase().includes(query);
-
-      const matchesStatus =
-        selectedStatuses.length === 0 || selectedStatuses.includes(solicitacao.status);
-
-      // Filtro por data
-      const matchesDateRange = (() => {
-        if (!appliedDateRange.from && !appliedDateRange.to) return true;
-
-        const solicitacaoDate = new Date(solicitacao.dataSolicitacao);
-        const fromDate = appliedDateRange.from ? new Date(appliedDateRange.from) : null;
-        const toDate = appliedDateRange.to ? new Date(appliedDateRange.to) : null;
-
-        if (fromDate && toDate) {
-          return solicitacaoDate >= fromDate && solicitacaoDate <= toDate;
-        } else if (fromDate) {
-          return solicitacaoDate >= fromDate;
-        } else if (toDate) {
-          return solicitacaoDate <= toDate;
-        }
-
-        return true;
-      })();
-
-      return matchesSearch && matchesStatus && matchesDateRange;
-    });
-  }, [solicitacoes, normalizedSearch, selectedStatuses, appliedDateRange]);
-
+  // Solicitações ordenadas (ordenação client-side)
   const displayedSolicitacoes = useMemo(() => {
-    const sorted = sortList(filteredSolicitacoes);
-    const start = (currentPage - 1) * pageSize;
-    const end = start + pageSize;
-    return sorted.slice(start, end);
-  }, [filteredSolicitacoes, currentPage, pageSize, sortList]);
+    return sortList(solicitacoes);
+  }, [solicitacoes, sortList]);
 
-  const totalItems = filteredSolicitacoes.length;
-  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
-  const currentPageValue = Math.min(currentPage, totalPages);
+  const totalItems = pagination.total;
+  const totalPages = pagination.totalPages;
+  const currentPageValue = pagination.page;
 
   useEffect(() => {
-    if (currentPage > totalPages) {
+    if (currentPage > totalPages && totalPages > 0) {
       setCurrentPage(Math.max(1, totalPages));
     }
   }, [currentPage, totalPages]);
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [selectedStatuses, appliedDateRange, normalizedSearch]);
 
   const handleSearchSubmit = useCallback(
     (rawValue?: string) => {
@@ -265,15 +337,130 @@ export function SolicitacoesDashboard({
     [totalPages]
   );
 
-  const handleAprovar = (id: string) => {
-    // TODO: Implementar aprovação via API
-    console.log("Aprovar solicitação:", id);
-  };
+  // Abre modal de aprovação
+  const handleAprovar = useCallback(
+    (id: string) => {
+      const solicitacao = solicitacoes.find((s) => s.id === id);
+      if (!solicitacao) return;
+      setIsProcessingAction(true);
+      setActionInProgress({ type: "aprovar", solicitacaoId: id });
+      setSolicitacaoParaAprovar(solicitacao);
+    },
+    [solicitacoes]
+  );
 
-  const handleRejeitar = (id: string) => {
-    // TODO: Implementar rejeição via API
-    console.log("Rejeitar solicitação:", id);
-  };
+  const handleCloseAprovarModal = useCallback(() => {
+    if (!aprovarMutation.isPending) {
+      setSolicitacaoParaAprovar(null);
+      setIsProcessingAction(false);
+      setActionInProgress({ type: null, solicitacaoId: null });
+    }
+  }, [aprovarMutation.isPending]);
+
+  const handleConfirmarAprovacao = useCallback(() => {
+    if (!solicitacaoParaAprovar) return;
+    aprovarMutation.mutate(solicitacaoParaAprovar.id, {
+      onSuccess: () => {
+        setSolicitacaoParaVisualizar(null);
+      },
+      onSettled: () => {
+        setSolicitacaoParaAprovar(null);
+        setIsProcessingAction(false);
+        setActionInProgress({ type: null, solicitacaoId: null });
+      },
+    });
+  }, [aprovarMutation, solicitacaoParaAprovar]);
+
+  // Abre a modal de rejeição
+  const handleRejeitar = useCallback(
+    (id: string) => {
+      setIsProcessingAction(true);
+      setActionInProgress({ type: "rejeitar", solicitacaoId: id });
+      const solicitacao = solicitacoes.find((s) => s.id === id);
+      if (solicitacao) {
+        setSolicitacaoParaRejeitar(solicitacao);
+      }
+      // Reset após a modal abrir
+      setTimeout(() => {
+        setIsProcessingAction(false);
+        setActionInProgress({ type: null, solicitacaoId: null });
+      }, 300);
+    },
+    [solicitacoes]
+  );
+
+  // Fecha a modal de rejeição
+  const handleCloseRejeitarModal = useCallback(() => {
+    if (!rejeitarMutation.isPending) {
+      setSolicitacaoParaRejeitar(null);
+    }
+  }, [rejeitarMutation.isPending]);
+
+  // Confirma a rejeição com o motivo
+  const handleConfirmRejeitar = useCallback(
+    (motivoRejeicao: string) => {
+      if (solicitacaoParaRejeitar) {
+        rejeitarMutation.mutate({
+          id: solicitacaoParaRejeitar.id,
+          motivoRejeicao,
+        });
+      }
+    },
+    [solicitacaoParaRejeitar, rejeitarMutation]
+  );
+
+  // Abre a modal de visualização
+  const handleVisualizar = useCallback((solicitacao: SolicitacaoVaga) => {
+    setIsProcessingAction(true);
+    setActionInProgress({ type: "visualizar", solicitacaoId: solicitacao.id });
+    setSolicitacaoParaVisualizar(solicitacao);
+    // Reset após a modal abrir
+    setTimeout(() => {
+      setIsProcessingAction(false);
+      setActionInProgress({ type: null, solicitacaoId: null });
+    }, 300);
+  }, []);
+
+  // Fecha a modal de visualização
+  const handleCloseVisualizarModal = useCallback(() => {
+    setSolicitacaoParaVisualizar(null);
+  }, []);
+
+  // Navegar para empresa
+  const handleVerEmpresa = useCallback(
+    (empresaId: string, solicitacaoId: string) => {
+      setIsProcessingAction(true);
+      setActionInProgress({ type: "empresa", solicitacaoId });
+      router.push(`/dashboard/empresas/${empresaId}`);
+      // Não resetamos manualmente: ao navegar, o componente é desmontado.
+    },
+    [router]
+  );
+
+  // Aprovar da modal de visualização
+  const handleAprovarFromModal = useCallback(
+    (id: string) => {
+      const solicitacao = solicitacoes.find((s) => s.id === id);
+      if (!solicitacao) return;
+      setSolicitacaoParaVisualizar(null);
+      setIsProcessingAction(true);
+      setActionInProgress({ type: "aprovar", solicitacaoId: id });
+      setSolicitacaoParaAprovar(solicitacao);
+    },
+    [solicitacoes]
+  );
+
+  // Rejeitar da modal de visualização (abre a modal de rejeição)
+  const handleRejeitarFromModal = useCallback(
+    (id: string) => {
+      const solicitacao = solicitacoes.find((s) => s.id === id);
+      if (solicitacao) {
+        setSolicitacaoParaVisualizar(null); // Fecha a modal de visualização
+        setSolicitacaoParaRejeitar(solicitacao); // Abre a modal de rejeição
+      }
+    },
+    [solicitacoes]
+  );
 
   const filterFields: FilterField[] = useMemo(
     () => [
@@ -323,7 +510,8 @@ export function SolicitacoesDashboard({
   }, [currentPageValue, totalPages]);
 
   const showEmptyState = !isLoading && !isFetching && totalItems === 0;
-  const shouldShowSkeleton = isLoading || (isFetching && solicitacoes.length === 0);
+  const shouldShowSkeleton =
+    isLoading || (isFetching && solicitacoes.length === 0);
 
   return (
     <div className={cn("min-h-full", className)}>
@@ -335,11 +523,15 @@ export function SolicitacoesDashboard({
             className="lg:grid-cols-[minmax(0,2fr)_minmax(0,1.5fr)_minmax(0,1.5fr)_auto]"
             onChange={(key, value) => {
               if (key === "status") {
-                const values = Array.isArray(value) ? (value as SolicitacaoStatus[]) : [];
+                const values = Array.isArray(value)
+                  ? (value as SolicitacaoStatus[])
+                  : [];
                 setSelectedStatuses(values);
                 setCurrentPage(1);
               } else if (key === "dateRange") {
-                const range = value ? cloneDateRange(value as DateRange) : createEmptyDateRange();
+                const range = value
+                  ? cloneDateRange(value as DateRange)
+                  : createEmptyDateRange();
                 setPendingDateRange(range);
                 setAppliedDateRange(range);
                 setCurrentPage(1);
@@ -447,7 +639,9 @@ export function SolicitacoesDashboard({
                                 />
                               </button>
                             </TooltipTrigger>
-                            <TooltipContent sideOffset={6}>A → Z</TooltipContent>
+                            <TooltipContent sideOffset={6}>
+                              A → Z
+                            </TooltipContent>
                           </Tooltip>
                           <Tooltip>
                             <TooltipTrigger asChild>
@@ -470,7 +664,9 @@ export function SolicitacoesDashboard({
                                 />
                               </button>
                             </TooltipTrigger>
-                            <TooltipContent sideOffset={6}>Z → A</TooltipContent>
+                            <TooltipContent sideOffset={6}>
+                              Z → A
+                            </TooltipContent>
                           </Tooltip>
                         </div>
                       </div>
@@ -531,7 +727,9 @@ export function SolicitacoesDashboard({
                                 />
                               </button>
                             </TooltipTrigger>
-                            <TooltipContent sideOffset={6}>A → Z</TooltipContent>
+                            <TooltipContent sideOffset={6}>
+                              A → Z
+                            </TooltipContent>
                           </Tooltip>
                           <Tooltip>
                             <TooltipTrigger asChild>
@@ -554,7 +752,9 @@ export function SolicitacoesDashboard({
                                 />
                               </button>
                             </TooltipTrigger>
-                            <TooltipContent sideOffset={6}>Z → A</TooltipContent>
+                            <TooltipContent sideOffset={6}>
+                              Z → A
+                            </TooltipContent>
                           </Tooltip>
                         </div>
                       </div>
@@ -582,7 +782,8 @@ export function SolicitacoesDashboard({
                               onClick={() => toggleSort("dataSolicitacao")}
                               className={cn(
                                 "inline-flex items-center gap-1 px-2 py-1 cursor-pointer transition-colors bg-transparent",
-                                sortField === "dataSolicitacao" && "text-gray-900"
+                                sortField === "dataSolicitacao" &&
+                                  "text-gray-900"
                               )}
                             >
                               Data da solicitação
@@ -652,9 +853,7 @@ export function SolicitacoesDashboard({
                       </div>
                     </TableHead>
 
-                    <TableHead className="font-medium text-gray-700 text-right pr-4">
-                      Ações
-                    </TableHead>
+                    <TableHead className="font-medium text-gray-700 text-right pr-4"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -667,6 +866,14 @@ export function SolicitacoesDashboard({
                         solicitacao={solicitacao}
                         onAprovar={handleAprovar}
                         onRejeitar={handleRejeitar}
+                        onVisualizar={handleVisualizar}
+                        onVerEmpresa={handleVerEmpresa}
+                        isDisabled={isProcessingAction}
+                        loadingAction={
+                          actionInProgress.solicitacaoId === solicitacao.id
+                            ? actionInProgress.type
+                            : null
+                        }
                       />
                     ))
                   )}
@@ -678,8 +885,13 @@ export function SolicitacoesDashboard({
               <div className="flex flex-col gap-4 px-6 py-4 border-t border-gray-200 bg-gray-50/30 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-2 text-sm text-gray-600">
                   <span>
-                    Mostrando {Math.min((currentPageValue - 1) * pageSize + 1, totalItems)} a{" "}
-                    {Math.min(currentPageValue * pageSize, totalItems)} de {totalItems}{" "}
+                    Mostrando{" "}
+                    {Math.min(
+                      (currentPageValue - 1) * pageSize + 1,
+                      totalItems
+                    )}{" "}
+                    a {Math.min(currentPageValue * pageSize, totalItems)} de{" "}
+                    {totalItems}{" "}
                     {totalItems === 1 ? "solicitação" : "solicitações"}
                   </span>
                 </div>
@@ -699,21 +911,27 @@ export function SolicitacoesDashboard({
                     {visiblePages[0] > 1 && (
                       <>
                         <ButtonCustom
-                          variant={currentPageValue === 1 ? "primary" : "outline"}
+                          variant={
+                            currentPageValue === 1 ? "primary" : "outline"
+                          }
                           size="sm"
                           onClick={() => handlePageChange(1)}
                           className="h-8 w-8 p-0"
                         >
                           1
                         </ButtonCustom>
-                        {visiblePages[0] > 2 && <span className="text-gray-400">...</span>}
+                        {visiblePages[0] > 2 && (
+                          <span className="text-gray-400">...</span>
+                        )}
                       </>
                     )}
 
                     {visiblePages.map((page) => (
                       <ButtonCustom
                         key={page}
-                        variant={currentPageValue === page ? "primary" : "outline"}
+                        variant={
+                          currentPageValue === page ? "primary" : "outline"
+                        }
                         size="sm"
                         onClick={() => handlePageChange(page)}
                         className="h-8 w-8 p-0"
@@ -724,11 +942,16 @@ export function SolicitacoesDashboard({
 
                     {visiblePages[visiblePages.length - 1] < totalPages && (
                       <>
-                        {visiblePages[visiblePages.length - 1] < totalPages - 1 && (
+                        {visiblePages[visiblePages.length - 1] <
+                          totalPages - 1 && (
                           <span className="text-gray-400">...</span>
                         )}
                         <ButtonCustom
-                          variant={currentPageValue === totalPages ? "primary" : "outline"}
+                          variant={
+                            currentPageValue === totalPages
+                              ? "primary"
+                              : "outline"
+                          }
                           size="sm"
                           onClick={() => handlePageChange(totalPages)}
                           className="h-8 w-8 p-0"
@@ -767,6 +990,36 @@ export function SolicitacoesDashboard({
           </div>
         )}
       </div>
+
+      {/* Modal de Rejeição */}
+      <RejeitarVagaModal
+        isOpen={!!solicitacaoParaRejeitar}
+        onClose={handleCloseRejeitarModal}
+        onConfirm={handleConfirmRejeitar}
+        vagaTitulo={solicitacaoParaRejeitar?.vaga.titulo || ""}
+        empresaNome={solicitacaoParaRejeitar?.empresa.nome}
+        isLoading={rejeitarMutation.isPending}
+      />
+
+      {/* Modal de Aprovação */}
+      <ConfirmarAprovacaoModal
+        isOpen={!!solicitacaoParaAprovar}
+        onClose={handleCloseAprovarModal}
+        onConfirm={handleConfirmarAprovacao}
+        vagaTitulo={solicitacaoParaAprovar?.vaga.titulo || ""}
+        empresaNome={solicitacaoParaAprovar?.empresa.nome}
+        isLoading={aprovarMutation.isPending}
+      />
+
+      {/* Modal de Visualização */}
+      <VisualizarVagaModal
+        isOpen={!!solicitacaoParaVisualizar}
+        onClose={handleCloseVisualizarModal}
+        solicitacao={solicitacaoParaVisualizar}
+        onAprovar={handleAprovarFromModal}
+        onRejeitar={handleRejeitarFromModal}
+        isAprovando={aprovarMutation.isPending}
+      />
     </div>
   );
 }

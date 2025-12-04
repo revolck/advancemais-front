@@ -30,6 +30,8 @@ import { cn } from "@/lib/utils";
 import type { AdminCompanyDetail } from "@/api/empresas/admin/types";
 import { formatCnpj } from "../utils";
 import { getInitials } from "../utils/formatters";
+import { useUserRole } from "@/hooks/useUserRole";
+import { UserRole } from "@/config/roles";
 
 interface HeaderInfoProps {
   company: AdminCompanyDetail;
@@ -51,6 +53,10 @@ export function HeaderInfo({
   onResetPassword,
 }: HeaderInfoProps) {
   const [isActionsOpen, setIsActionsOpen] = useState(false);
+  const userRole = useUserRole();
+
+  // Setor de vagas não pode editar assinatura
+  const canEditSubscription = userRole !== UserRole.SETOR_DE_VAGAS;
 
   const isCompanyActive = company.status === "ATIVO" || company.ativa;
   const formattedCnpj = formatCnpj(company.cnpj);
@@ -187,6 +193,7 @@ export function HeaderInfo({
                 <MapPin className="h-4 w-4 text-gray-500" />
                 <span>Editar endereço</span>
               </DropdownMenuItem>
+              {canEditSubscription && (
               <DropdownMenuItem
                 onSelect={onEditSubscription}
                 className="cursor-pointer"
@@ -194,6 +201,7 @@ export function HeaderInfo({
                 <CreditCard className="h-4 w-4 text-gray-500" />
                 <span>{subscriptionActionText}</span>
               </DropdownMenuItem>
+              )}
               <DropdownMenuItem
                 onSelect={isCompanyBlocked ? onUnbanCompany : onBanCompany}
                 className="cursor-pointer"

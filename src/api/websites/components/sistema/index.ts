@@ -19,12 +19,14 @@ function getAuthHeader(): Record<string, string> {
 export async function listSistema(init?: RequestInit): Promise<SistemaBackendResponse[]> {
   return apiFetch<SistemaBackendResponse[]>(websiteRoutes.sistema.list(), {
     init: init ?? { headers: apiConfig.headers },
+    skipLogoutOn401: true, // Permite acesso público sem autenticação
   });
 }
 
 export async function getSistemaById(id: string): Promise<SistemaBackendResponse> {
   return apiFetch<SistemaBackendResponse>(websiteRoutes.sistema.get(id), {
     init: { headers: apiConfig.headers },
+    skipLogoutOn401: true, // Permite acesso público sem autenticação
   });
 }
 

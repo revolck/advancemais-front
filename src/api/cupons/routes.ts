@@ -11,4 +11,6 @@ export const cuponsRoutes = {
   create: () => `${BASE_PATH}`,
   update: (id: string) => `${BASE_PATH}/${id}`,
   delete: (id: string) => `${BASE_PATH}/${id}`,
+  // Validação de cupom
+  validate: () => `${BASE_PATH}/validar`,
 } as const;

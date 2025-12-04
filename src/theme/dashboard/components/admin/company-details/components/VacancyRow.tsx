@@ -10,6 +10,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { EyeOff, ChevronRight, Trash2, Loader2, RefreshCw } from "lucide-react";
+import { cn } from "@/lib/utils";
 import type { AdminCompanyVagaItem } from "@/api/empresas/admin/types";
 import { DeleteConfirmModal } from "@/components/ui/custom/list-manager/components/DeleteConfirmModal";
 import { UserAvatars } from "@/components/ui/custom/users-avatars";
@@ -22,6 +23,8 @@ interface VacancyRowProps {
   isLoadingCandidates?: boolean;
   candidateError?: string;
   onLoadCandidates?: (vacancyId: string) => void;
+  isDisabled?: boolean;
+  onNavigateStart?: () => void;
 }
 
 function formatDate(value?: string | null): string {
@@ -68,10 +71,13 @@ export function VacancyRow({
   isLoadingCandidates = false,
   candidateError,
   onLoadCandidates,
+  isDisabled = false,
+  onNavigateStart,
 }: VacancyRowProps) {
   const router = useRouter();
   const [isNavigating, setIsNavigating] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const isRowDisabled = isDisabled || isNavigating;
 
   const handleDeleteClick = () => {
     setShowDeleteModal(true);
@@ -117,9 +123,10 @@ export function VacancyRow({
 
   const handleNavigate = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
-    if (isNavigating) return;
+    if (isRowDisabled) return;
     
     setIsNavigating(true);
+    onNavigateStart?.();
     router.push(`/dashboard/empresas/vagas/${encodeURIComponent(vacancy.id)}`);
     
     setTimeout(() => {
@@ -142,7 +149,15 @@ export function VacancyRow({
 
   return (
     <>
-      <TableRow className="border-gray-200 hover:bg-gray-50">
+      <TableRow 
+        className={cn(
+          "border-gray-200 transition-colors",
+          isRowDisabled 
+            ? "opacity-50 pointer-events-none" 
+            : "hover:bg-gray-50",
+          isNavigating && "bg-blue-50/50"
+        )}
+      >
         {/* Vaga */}
         <TableCell className="py-4">
           <div className="flex items-center gap-2">
@@ -300,8 +315,14 @@ export function VacancyRow({
                   variant="ghost"
                   size="icon"
                   onClick={handleNavigate}
-                  disabled={isNavigating}
-                  className="h-8 w-8 rounded-full text-gray-500 hover:text-white hover:bg-[var(--primary-color)] disabled:opacity-50 disabled:cursor-wait cursor-pointer"
+                  disabled={isRowDisabled}
+                  className={cn(
+                    "h-8 w-8 rounded-full cursor-pointer",
+                    isNavigating 
+                      ? "text-blue-600 bg-blue-100" 
+                      : "text-gray-500 hover:text-white hover:bg-[var(--primary-color)]",
+                    "disabled:opacity-50 disabled:cursor-wait"
+                  )}
                   aria-label="Visualizar vaga"
                 >
                   {isNavigating ? (

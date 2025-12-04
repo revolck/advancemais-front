@@ -20,6 +20,9 @@ interface AppConfig {
   readonly appName: string;
   readonly supportPhone: string;
 
+  // Mercado Pago
+  readonly mercadoPagoPublicKey: string;
+
   // Environment
   readonly nodeEnv: Environment;
   readonly isDevelopment: boolean;
@@ -88,6 +91,13 @@ export const env: AppConfig = {
     process.env.NEXT_PUBLIC_SUPPORT_PHONE,
     "NEXT_PUBLIC_SUPPORT_PHONE",
     "82994360962"
+  ),
+
+  // Mercado Pago
+  mercadoPagoPublicKey: getEnvVar(
+    process.env.NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY,
+    "NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY",
+    "TEST-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
   ),
 
   // Environment

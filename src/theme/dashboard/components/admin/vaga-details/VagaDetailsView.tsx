@@ -11,8 +11,11 @@ import { HorizontalTabs } from "@/components/ui/custom";
 import type { HorizontalTabItem } from "@/components/ui/custom";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getVagaById } from "@/api/vagas/admin";
+import { getSolicitacaoById } from "@/api/vagas/solicitacoes";
 import type { VagaDetail } from "@/api/vagas/admin/types";
 import { queryKeys } from "@/lib/react-query/queryKeys";
+import { useUserRole } from "@/hooks/useUserRole";
+import { UserRole } from "@/config/roles";
 import { HeaderInfo } from "./components/HeaderInfo";
 import { AboutTab } from "./tabs/AboutTab";
 import { RequisitosTab } from "./tabs/RequisitosTab";
@@ -31,6 +34,10 @@ export function VagaDetailsView({
 }: VagaDetailsViewProps) {
   const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
+  const userRole = useUserRole();
+
+  // SETOR_DE_VAGAS usa endpoint de solicitações que retorna todos os status
+  const isSetorDeVagas = userRole === UserRole.SETOR_DE_VAGAS;
 
   const queryKey = useMemo(
     () => queryKeys.vagas.detail(vagaId),
@@ -50,12 +57,20 @@ export function VagaDetailsView({
   } = useQuery<VagaDetail>({
     queryKey,
     queryFn: async () => {
+      // SETOR_DE_VAGAS usa endpoint de solicitações que retorna todos os status
+      if (isSetorDeVagas) {
+        const response = await getSolicitacaoById(vagaId);
+        // O endpoint de solicitações pode retornar a vaga diretamente ou dentro de "data"
+        return "data" in response ? response.data : response;
+      }
+      // ADMIN e MODERADOR usam endpoint padrão
       const response = await getVagaById(vagaId);
       return "data" in response ? response.data : response;
     },
     initialData: initialQueryData,
     staleTime: 5 * 60 * 1000,
     gcTime: 30 * 60 * 1000,
+    enabled: !!userRole, // Só executa quando a role estiver carregada
   });
 
   const errorMessage =

@@ -127,6 +127,13 @@ export function CandidatosDashboard({
   const searchHelperText =
     "Pesquise por nome, email, CPF ou código interno (mínimo de 3 caracteres).";
 
+  const [isNavigating, setIsNavigating] = useState(false);
+
+  const handleNavigateStart = useCallback(() => {
+    setIsNavigating(true);
+    setTimeout(() => setIsNavigating(false), 5000);
+  }, []);
+
   const handleViewDetails = (candidato: CandidatoOverview) => {
     router.push(`/dashboard/empresas/candidatos/${candidato.id}`);
   };
@@ -384,6 +391,8 @@ export function CandidatosDashboard({
             sortDirection={sortDirection}
             onToggleSortName={toggleSortByName}
             onSetSortName={setSortByName}
+            isNavigating={isNavigating}
+            onNavigateStart={handleNavigateStart}
           />
         </div>
       ) : (
@@ -397,6 +406,8 @@ export function CandidatosDashboard({
             sortDirection={sortDirection}
             onToggleSortName={toggleSortByName}
             onSetSortName={setSortByName}
+            isNavigating={isNavigating}
+            onNavigateStart={handleNavigateStart}
           />
         </div>
 

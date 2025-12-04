@@ -19,6 +19,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 import type { Partnership } from "../types";
 import { TRIAL_PARTNERSHIP_TYPES } from "../constants";
 
@@ -32,6 +33,8 @@ const PAYMENT_STATUS_CLASSES: Record<string, string> = {
 
 interface CompanyRowProps {
   partnership: Partnership;
+  isDisabled?: boolean;
+  onNavigateStart?: () => void;
 }
 
 function formatCnpj(value?: string | null): string | null {
@@ -183,9 +186,14 @@ function getCompanyStatusBadges(partnership: Partnership) {
   return badges;
 }
 
-export const CompanyRow: React.FC<CompanyRowProps> = ({ partnership }) => {
+export const CompanyRow: React.FC<CompanyRowProps> = ({ 
+  partnership,
+  isDisabled = false,
+  onNavigateStart,
+}) => {
   const router = useRouter();
   const [isNavigating, setIsNavigating] = useState(false);
+  const isRowDisabled = isDisabled || isNavigating;
   const formattedCnpj = formatCnpj(partnership.empresa.cnpj);
   const planName = partnership.plano?.nome?.trim() ?? "";
   const hasPlanInfo = planName.length > 0;
@@ -203,9 +211,10 @@ export const CompanyRow: React.FC<CompanyRowProps> = ({ partnership }) => {
 
   const handleNavigate = (e: React.MouseEvent) => {
     e.preventDefault();
-    if (isNavigating) return;
+    if (isRowDisabled) return;
     
     setIsNavigating(true);
+    onNavigateStart?.();
     router.push(`/dashboard/empresas/${encodeURIComponent(partnership.empresa.id)}`);
     
     setTimeout(() => {
@@ -214,7 +223,15 @@ export const CompanyRow: React.FC<CompanyRowProps> = ({ partnership }) => {
   };
 
   return (
-    <TableRow className="border-gray-100 hover:bg-gray-50/50 transition-colors">
+    <TableRow 
+      className={cn(
+        "border-gray-100 transition-colors",
+        isRowDisabled 
+          ? "opacity-50 pointer-events-none" 
+          : "hover:bg-gray-50/50",
+        isNavigating && "bg-blue-50/50"
+      )}
+    >
       <TableCell className="py-4 min-w-[280px] max-w-[320px]">
         <div className="flex items-center gap-3">
           <Avatar className="h-8 w-8 flex-shrink-0">
@@ -308,8 +325,14 @@ export const CompanyRow: React.FC<CompanyRowProps> = ({ partnership }) => {
               variant="ghost"
               size="icon"
               onClick={handleNavigate}
-              disabled={isNavigating}
-              className="h-8 w-8 rounded-full text-gray-500 hover:text-white hover:bg-[var(--primary-color)] disabled:opacity-50 disabled:cursor-wait cursor-pointer"
+              disabled={isRowDisabled}
+              className={cn(
+                "h-8 w-8 rounded-full cursor-pointer",
+                isNavigating 
+                  ? "text-blue-600 bg-blue-100" 
+                  : "text-gray-500 hover:text-white hover:bg-[var(--primary-color)]",
+                "disabled:opacity-50 disabled:cursor-wait"
+              )}
               aria-label="Visualizar empresa"
             >
               {isNavigating ? (

@@ -29,11 +29,18 @@ import {
 
 interface UsuarioRowProps {
   usuario: UsuarioOverview;
+  isDisabled?: boolean;
+  onNavigateStart?: () => void;
 }
 
-export function UsuarioRow({ usuario }: UsuarioRowProps) {
+export function UsuarioRow({ 
+  usuario,
+  isDisabled = false,
+  onNavigateStart,
+}: UsuarioRowProps) {
   const router = useRouter();
   const [isNavigating, setIsNavigating] = useState(false);
+  const isRowDisabled = isDisabled || isNavigating;
 
   // Verificar se é ALUNO_CANDIDATO e se tem vínculos (cursos ou currículos)
   const isAlunoCandidato = usuario.role === UserRole.ALUNO_CANDIDATO;
@@ -44,9 +51,10 @@ export function UsuarioRow({ usuario }: UsuarioRowProps) {
 
   const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
-    if (isNavigating) return;
+    if (isRowDisabled) return;
     
     setIsNavigating(true);
+    onNavigateStart?.();
     
     // Redirecionar empresas para o módulo específico
     if (usuario.tipoUsuario === "PESSOA_JURIDICA") {
@@ -71,7 +79,15 @@ export function UsuarioRow({ usuario }: UsuarioRowProps) {
   };
 
   return (
-    <TableRow className="border-gray-100 hover:bg-gray-50/50 transition-colors">
+    <TableRow 
+      className={cn(
+        "border-gray-100 transition-colors",
+        isRowDisabled 
+          ? "opacity-50 pointer-events-none" 
+          : "hover:bg-gray-50/50",
+        isNavigating && "bg-blue-50/50"
+      )}
+    >
       <TableCell className="py-4">
         <div className="flex items-center gap-3">
           <Avatar className="h-8 w-8 flex-shrink-0">
@@ -178,8 +194,14 @@ export function UsuarioRow({ usuario }: UsuarioRowProps) {
               variant="ghost"
               size="icon"
               onClick={handleClick}
-              disabled={isNavigating}
-              className="h-8 w-8 rounded-full text-gray-500 hover:text-white hover:bg-[var(--primary-color)] disabled:opacity-50 disabled:cursor-wait cursor-pointer"
+              disabled={isRowDisabled}
+              className={cn(
+                "h-8 w-8 rounded-full cursor-pointer",
+                isNavigating 
+                  ? "text-blue-600 bg-blue-100" 
+                  : "text-gray-500 hover:text-white hover:bg-[var(--primary-color)]",
+                "disabled:opacity-50 disabled:cursor-wait"
+              )}
               aria-label="Visualizar usuário"
             >
               {isNavigating ? (

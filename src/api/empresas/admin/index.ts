@@ -312,6 +312,9 @@ export async function getAdminCompanyById(
       headers: buildAuthHeaders(init?.headers),
     },
     cache: "no-cache",
+    skipLogoutOn401: true, // Permite que empresas vejam o erro sem logout
+    silence404: true, // Silencia 404 para não poluir logs
+    silence403: true, // Silencia 403 para não poluir logs quando empresa tenta acessar
   });
 }
 

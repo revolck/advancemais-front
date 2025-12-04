@@ -199,3 +199,44 @@ export const PERIODO_TIPO_OPCOES = [
   { value: "ILIMITADO", label: "Sempre Ativo" },
   { value: "PERIODO", label: "Período Específico" },
 ] as const;
+
+// ============================================================================
+// VALIDAÇÃO DE CUPOM (Checkout)
+// ============================================================================
+
+export interface ValidateCupomPayload {
+  codigo: string;
+  planosEmpresariaisId?: string;
+}
+
+export interface ValidateCupomSuccessResponse {
+  success: true;
+  valido: true;
+  cupom: {
+    id: string;
+    codigo: string;
+    descricao?: string;
+    tipoDesconto: "PORCENTAGEM" | "VALOR_FIXO";
+    valorPercentual: number | null;
+    valorFixo: number | null;
+    aplicarEm: "TODA_PLATAFORMA" | "APENAS_ASSINATURA" | "APENAS_CURSOS";
+  };
+}
+
+export interface ValidateCupomErrorResponse {
+  success: false;
+  code:
+    | "CUPOM_NAO_ENCONTRADO"
+    | "CUPOM_INATIVO"
+    | "CUPOM_AINDA_NAO_VALIDO"
+    | "CUPOM_EXPIRADO"
+    | "CUPOM_ESGOTADO"
+    | "CUPOM_NAO_APLICAVEL"
+    | "CUPOM_NAO_APLICAVEL_PLANO"
+    | "CUPOM_APENAS_PRIMEIRA_COMPRA";
+  message: string;
+}
+
+export type ValidateCupomResponse =
+  | ValidateCupomSuccessResponse
+  | ValidateCupomErrorResponse;

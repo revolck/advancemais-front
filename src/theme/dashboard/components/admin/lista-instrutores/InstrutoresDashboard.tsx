@@ -48,6 +48,12 @@ const getSearchValidationMessage = (value: string): string | null => {
 export function InstrutoresDashboard({ className }: { className?: string }) {
   const [pendingSearchTerm, setPendingSearchTerm] = useState("");
   const [appliedSearchTerm, setAppliedSearchTerm] = useState("");
+  const [isNavigating, setIsNavigating] = useState(false);
+
+  const handleNavigateStart = useCallback(() => {
+    setIsNavigating(true);
+    setTimeout(() => setIsNavigating(false), 5000);
+  }, []);
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
   const [selectedCidades, setSelectedCidades] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -493,7 +499,12 @@ export function InstrutoresDashboard({ className }: { className?: string }) {
               </TableHeader>
               <TableBody>
                 {sortedInstrutores.map((instrutor) => (
-                  <InstrutorRow key={instrutor.id} instrutor={instrutor} />
+                  <InstrutorRow 
+                    key={instrutor.id} 
+                    instrutor={instrutor}
+                    isDisabled={isNavigating}
+                    onNavigateStart={handleNavigateStart}
+                  />
                 ))}
               </TableBody>
             </Table>

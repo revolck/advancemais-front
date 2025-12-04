@@ -59,13 +59,17 @@ export async function getRecrutamentoDataClient(): Promise<RecrutamentoApiRespon
 export async function listRecrutamento(init?: RequestInit): Promise<RecrutamentoBackendResponse[]> {
   return apiFetch<RecrutamentoBackendResponse[]>(websiteRoutes.recrutamento.list(), {
     init: init ?? { headers: apiConfig.headers },
+    skipLogoutOn401: true, // Permite acesso público sem autenticação
   });
 }
 
 export async function getRecrutamentoById(id: string): Promise<RecrutamentoBackendResponse> {
   return apiFetch<RecrutamentoBackendResponse>(
     websiteRoutes.recrutamento.get(id),
-    { init: { headers: apiConfig.headers } },
+    { 
+      init: { headers: apiConfig.headers },
+      skipLogoutOn401: true, // Permite acesso público sem autenticação
+    },
   );
 }
 
