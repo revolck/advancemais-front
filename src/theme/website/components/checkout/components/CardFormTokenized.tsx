@@ -17,11 +17,7 @@ import React, { useState, useCallback, useEffect } from "react";
 import { InputCustom } from "@/components/ui/custom/input";
 import { CardBrandIcon } from "./CardBrandIcon";
 import { detectCardBrand } from "../utils/card-brand";
-import {
-  formatCardNumber,
-  formatExpiry,
-  formatCVV,
-} from "../utils/formatters";
+import { formatCardNumber, formatExpiry, formatCVV } from "../utils/formatters";
 import { Separator } from "@/components/ui/separator";
 import { AlertCircle, Lock } from "lucide-react";
 import { useCardToken } from "@/lib/mercadopago";
@@ -116,7 +112,10 @@ export const CardFormTokenized: React.FC<CardFormTokenizedProps> = ({
   // Função de tokenização - retorna resultado completo para uso externo
   const handleTokenize = useCallback(async (): Promise<TokenizeResult> => {
     if (!validateFields()) {
-      return { success: false, error: "Preencha os dados do cartão corretamente" };
+      return {
+        success: false,
+        error: "Preencha os dados do cartão corretamente",
+      };
     }
 
     const [month, year] = cardExpiry.split("/");
@@ -136,9 +135,9 @@ export const CardFormTokenized: React.FC<CardFormTokenizedProps> = ({
     if (result.success && result.token) {
       const lastFour = result.lastFourDigits || cardNumber.slice(-4);
       const brand = result.cardBrand || detectCardBrand(cardNumber);
-      
+
       onTokenGenerated(result.token, lastFour, brand);
-      
+
       return {
         success: true,
         token: result.token,
@@ -267,7 +266,7 @@ export const CardFormTokenized: React.FC<CardFormTokenizedProps> = ({
           setCardHolder(e.target.value.toUpperCase());
           clearFieldError("cardHolder");
         }}
-        placeholder="NOME COMO ESTÁ NO CARTÃO"
+        placeholder="Ex: João da Silva"
         size="md"
         required
         disabled={disabled || isTokenizing}
@@ -275,7 +274,7 @@ export const CardFormTokenized: React.FC<CardFormTokenizedProps> = ({
       />
 
       {/* Info de segurança */}
-      <p className="text-xs text-zinc-400 text-center">
+      <p className="!text-xs !text-zinc-400 !text-center">
         Seus dados são criptografados e processados de forma segura pelo Mercado
         Pago.
       </p>

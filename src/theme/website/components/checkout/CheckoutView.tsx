@@ -759,15 +759,9 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
   const isFormValid = () => {
     if (!payerEmail || !payerDocument) return false;
 
-    // Para cartão em ambiente HTTPS, precisa de token
-    if (
-      (paymentMethod === "credit" || paymentMethod === "debit") &&
-      canUseDirectTokenization
-    ) {
-      return !!cardToken;
-    }
-
-    // Para cartão em HTTP (redirect), não precisa de token
+    // Para cartão: a tokenização acontece no momento do clique em "Pagar"
+    // Não precisamos validar o token aqui, apenas garantir que os dados
+    // do pagador estão preenchidos
 
     // Validação de endereço para boleto
     if (paymentMethod === "boleto") {
