@@ -3,10 +3,13 @@ import type { VagaListItem } from "@/api/vagas";
 // Interface para candidato
 export interface CandidatoItem {
   id: string;
+  codUsuario?: string;
   candidaturaId?: string;
+  curriculoId?: string;
   nome: string;
   email: string;
   telefone?: string;
+  avatarUrl?: string | null;
   dataInscricao: string;
   status: "pendente" | "aprovado" | "rejeitado" | "em_analise";
   experiencia?: string;

@@ -28,7 +28,7 @@ function buildContactItems(
 
   if (email) {
     items.push({
-      icon: "Mail",
+      icon: "✉",
       label: "Email",
       content: email,
       href: `mailto:${email}`,
@@ -37,7 +37,7 @@ function buildContactItems(
 
   if (telefone) {
     items.push({
-      icon: "Phone",
+      icon: "📱",
       label: "Telefone",
       content: formatTelefone(telefone),
       href: `tel:${telefone}`,
@@ -46,20 +46,10 @@ function buildContactItems(
 
   if (socialLinks?.linkedin) {
     items.push({
-      icon: "Linkedin",
+      icon: "💼",
       label: "LinkedIn",
-      content: socialLinks.linkedin,
+      content: socialLinks.linkedin.replace(/https?:\/\/(www\.)?linkedin\.com\/in\//, ""),
       href: socialLinks.linkedin,
-      external: true,
-    });
-  }
-
-  if (socialLinks?.instagram) {
-    items.push({
-      icon: "Instagram",
-      label: "Instagram",
-      content: socialLinks.instagram,
-      href: socialLinks.instagram,
       external: true,
     });
   }
@@ -94,36 +84,44 @@ function createPdfElement(
     position: absolute;
     top: -10000px;
     left: -10000px;
-    width: 794px;
-    padding: 48px;
+    width: 210mm;
     background-color: #ffffff;
     color: #1f2937;
-    font-family: 'Nunito', Arial, sans-serif;
+    font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
     line-height: 1.6;
+    font-size: 13px;
   `;
 
+  // ==================== HEADER COM BACKGROUND ELEGANTE ====================
   const header = document.createElement("div");
   header.style.cssText = `
+    background: linear-gradient(135deg, #001a57 0%, #002d8f 100%);
+    color: #ffffff;
+    padding: 40px 48px;
     display: flex;
-    gap: 24px;
-    border-bottom: 1px solid #e5e7eb;
-    padding-bottom: 32px;
+    gap: 28px;
     align-items: center;
+    box-shadow: 0 4px 20px rgba(0, 26, 87, 0.15);
+    page-break-inside: avoid;
   `;
 
+  // Avatar
   const avatarContainer = document.createElement("div");
   avatarContainer.style.cssText = `
-    width: 110px;
-    height: 110px;
-    border-radius: 16px;
+    min-width: 120px;
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
     overflow: hidden;
-    background-color: #001a57;
-    color: #ffffff;
+    background: linear-gradient(135deg, #ffffff 0%, #e0e7ff 100%);
+    color: #001a57;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 32px;
+    font-size: 42px;
     font-weight: 700;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+    border: 5px solid rgba(255, 255, 255, 0.2);
   `;
 
   if (avatarDisplay) {
@@ -131,41 +129,66 @@ function createPdfElement(
     img.src = avatarDisplay;
     img.alt = usuarioNome;
     img.style.cssText = "width: 100%; height: 100%; object-fit: cover;";
+    img.crossOrigin = "anonymous";
     avatarContainer.appendChild(img);
   } else {
     avatarContainer.textContent = initials;
   }
 
+  // Info Container
   const infoContainer = document.createElement("div");
   infoContainer.style.flex = "1";
 
   const name = document.createElement("h1");
-  name.style.cssText = "margin: 0; font-size: 28px; font-weight: 700;";
+  name.style.cssText = `
+    margin: 0 0 6px 0;
+    font-size: 34px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  `;
   name.textContent = usuarioNome;
-
   infoContainer.appendChild(name);
 
   if (curriculo.titulo) {
     const title = document.createElement("p");
-    title.style.cssText = "margin: 4px 0 16px; color: #6b7280;";
+    title.style.cssText = `
+      margin: 0 0 20px 0;
+      font-size: 16px;
+      color: #e0e7ff;
+      font-weight: 500;
+    `;
     title.textContent = curriculo.titulo;
     infoContainer.appendChild(title);
   }
 
+  // Contact Info com ícones
   const contactContainer = document.createElement("div");
   contactContainer.style.cssText = `
     display: flex;
     flex-wrap: wrap;
-    gap: 12px;
-    font-size: 12px;
-    color: #374151;
+    gap: 20px;
+    margin-top: 16px;
   `;
 
   contactItems.forEach((item) => {
-    const span = document.createElement("span");
-    span.style.cssText = "display: flex; gap: 4px; align-items: center;";
-    span.innerHTML = `<strong>${item.label}:</strong> <span>${item.content}</span>`;
-    contactContainer.appendChild(span);
+    const contactItem = document.createElement("div");
+    contactItem.style.cssText = `
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: #ffffff;
+      background: rgba(255, 255, 255, 0.15);
+      padding: 6px 14px;
+      border-radius: 20px;
+      backdrop-filter: blur(10px);
+    `;
+    contactItem.innerHTML = `
+      <span style="font-size: 16px;">${item.icon}</span>
+      <span style="font-weight: 500;">${item.content}</span>
+    `;
+    contactContainer.appendChild(contactItem);
   });
 
   infoContainer.appendChild(contactContainer);
@@ -173,159 +196,277 @@ function createPdfElement(
   header.appendChild(infoContainer);
   container.appendChild(header);
 
+  // ==================== CONTENT ====================
   const content = document.createElement("div");
   content.style.cssText = `
+    padding: 48px;
     display: flex;
     flex-direction: column;
-    gap: 24px;
-    padding-top: 24px;
+    gap: 32px;
   `;
+
+  // Helper para criar seção
+  const createSection = (title: string, icon: string) => {
+    const section = document.createElement("section");
+    section.style.cssText = `
+      page-break-inside: avoid;
+      margin-bottom: 8px;
+    `;
+
+    const titleContainer = document.createElement("div");
+    titleContainer.style.cssText = `
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 3px solid #001a57;
+    `;
+
+    const iconSpan = document.createElement("span");
+    iconSpan.style.cssText = `
+      font-size: 24px;
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, #001a57 0%, #002d8f 100%);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 26, 87, 0.2);
+    `;
+    iconSpan.textContent = icon;
+
+    const h2 = document.createElement("h2");
+    h2.style.cssText = `
+      margin: 0;
+      font-size: 20px;
+      font-weight: 700;
+      color: #001a57;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    `;
+    h2.textContent = title;
+
+    titleContainer.appendChild(iconSpan);
+    titleContainer.appendChild(h2);
+    section.appendChild(titleContainer);
+
+    return section;
+  };
 
   // Objetivo
   if (curriculo.objetivo) {
-    const section = document.createElement("section");
-    const h2 = document.createElement("h2");
-    h2.style.cssText = "font-size: 12px; letter-spacing: 0.1em;";
-    h2.textContent = "OBJETIVO";
-    const p = document.createElement("p");
-    p.style.marginTop = "8px";
-    p.textContent = curriculo.objetivo;
-    section.appendChild(h2);
-    section.appendChild(p);
+    const section = createSection("Objetivo Profissional", "🎯");
+    const box = document.createElement("div");
+    box.style.cssText = `
+      background: linear-gradient(135deg, #f8faff 0%, #eef2ff 100%);
+      padding: 20px;
+      border-radius: 12px;
+      border-left: 4px solid #001a57;
+      font-size: 14px;
+      line-height: 1.8;
+      color: #374151;
+    `;
+    box.textContent = curriculo.objetivo;
+    section.appendChild(box);
     content.appendChild(section);
   }
 
   // Resumo
   if (curriculo.resumo) {
-    const section = document.createElement("section");
-    const h2 = document.createElement("h2");
-    h2.style.cssText = "font-size: 12px; letter-spacing: 0.1em;";
-    h2.textContent = "SOBRE";
-    const p = document.createElement("p");
-    p.style.marginTop = "8px";
-    p.textContent = curriculo.resumo;
-    section.appendChild(h2);
-    section.appendChild(p);
-    content.appendChild(section);
-  }
-
-  // Preferências
-  if (pdfPreferences.length > 0) {
-    const section = document.createElement("section");
-    const h2 = document.createElement("h2");
-    h2.style.cssText = "font-size: 12px; letter-spacing: 0.1em;";
-    h2.textContent = "PREFERÊNCIAS";
-    const p = document.createElement("p");
-    p.style.marginTop = "8px";
-    p.textContent = pdfPreferences.join(" • ");
-    section.appendChild(h2);
-    section.appendChild(p);
+    const section = createSection("Sobre Mim", "👤");
+    const box = document.createElement("div");
+    box.style.cssText = `
+      background: #ffffff;
+      padding: 20px;
+      border-radius: 12px;
+      border: 2px solid #e5e7eb;
+      font-size: 14px;
+      line-height: 1.8;
+      color: #374151;
+    `;
+    box.textContent = curriculo.resumo;
+    section.appendChild(box);
     content.appendChild(section);
   }
 
   // Experiências
   if (curriculo.experiencias && curriculo.experiencias.length > 0) {
-    const section = document.createElement("section");
-    const h2 = document.createElement("h2");
-    h2.style.cssText = "font-size: 12px; letter-spacing: 0.1em;";
-    h2.textContent = "EXPERIÊNCIA";
-    const div = document.createElement("div");
-    div.style.cssText = `
-      margin-top: 12px;
+    const section = createSection("Experiência Profissional", "💼");
+    const timeline = document.createElement("div");
+    timeline.style.cssText = `
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 24px;
     `;
 
-    curriculo.experiencias.forEach((exp) => {
-      const expDiv = document.createElement("div");
+    curriculo.experiencias.forEach((exp, index) => {
+      const expItem = document.createElement("div");
+      expItem.style.cssText = `
+        position: relative;
+        padding: 20px;
+        background: ${index % 2 === 0 ? "#ffffff" : "#f9fafb"};
+        border-radius: 12px;
+        border: 1px solid #e5e7eb;
+        page-break-inside: avoid;
+        transition: all 0.3s ease;
+      `;
+
       const headerDiv = document.createElement("div");
       headerDiv.style.cssText = `
         display: flex;
         justify-content: space-between;
-        font-weight: 600;
+        align-items: start;
+        margin-bottom: 8px;
       `;
-      const cargo = document.createElement("span");
-      cargo.textContent = exp.cargo;
-      const periodo = document.createElement("span");
-      periodo.style.cssText = "font-size: 11px; color: #6b7280;";
-      periodo.textContent = exp.periodo;
-      headerDiv.appendChild(cargo);
-      headerDiv.appendChild(periodo);
-      expDiv.appendChild(headerDiv);
+
+      const leftHeader = document.createElement("div");
+      leftHeader.style.flex = "1";
+
+      const cargo = document.createElement("div");
+      cargo.style.cssText = `
+        font-size: 16px;
+        font-weight: 700;
+        color: #001a57;
+        margin-bottom: 4px;
+      `;
+      cargo.textContent = exp.cargo || "Cargo não informado";
+      leftHeader.appendChild(cargo);
 
       if (exp.empresa) {
-        const empresa = document.createElement("p");
-        empresa.style.cssText = "margin: 2px 0; color: #6b7280;";
+        const empresa = document.createElement("div");
+        empresa.style.cssText = `
+          font-size: 14px;
+          color: #6b7280;
+          font-weight: 500;
+        `;
         empresa.textContent = exp.empresa;
-        expDiv.appendChild(empresa);
+        leftHeader.appendChild(empresa);
       }
+
+      const periodo = document.createElement("div");
+      periodo.style.cssText = `
+        font-size: 12px;
+        color: #ffffff;
+        background: linear-gradient(135deg, #001a57 0%, #002d8f 100%);
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-weight: 600;
+        white-space: nowrap;
+      `;
+      periodo.textContent = exp.periodo || "Período não informado";
+
+      headerDiv.appendChild(leftHeader);
+      headerDiv.appendChild(periodo);
+      expItem.appendChild(headerDiv);
 
       if (exp.descricao) {
-        const desc = document.createElement("p");
-        desc.style.margin = "0";
+        const desc = document.createElement("div");
+        desc.style.cssText = `
+          margin-top: 12px;
+          font-size: 13px;
+          line-height: 1.7;
+          color: #4b5563;
+          padding-left: 12px;
+          border-left: 3px solid #e0e7ff;
+        `;
         desc.textContent = exp.descricao;
-        expDiv.appendChild(desc);
+        expItem.appendChild(desc);
       }
 
-      div.appendChild(expDiv);
+      timeline.appendChild(expItem);
     });
 
-    section.appendChild(h2);
-    section.appendChild(div);
+    section.appendChild(timeline);
     content.appendChild(section);
   }
 
   // Formação
   if (curriculo.formacao && curriculo.formacao.length > 0) {
-    const section = document.createElement("section");
-    const h2 = document.createElement("h2");
-    h2.style.cssText = "font-size: 12px; letter-spacing: 0.1em;";
-    h2.textContent = "FORMAÇÃO";
-    const div = document.createElement("div");
-    div.style.cssText = `
-      margin-top: 12px;
+    const section = createSection("Formação Acadêmica", "🎓");
+    const formacaoList = document.createElement("div");
+    formacaoList.style.cssText = `
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 20px;
     `;
 
-    curriculo.formacao.forEach((form) => {
-      const formDiv = document.createElement("div");
+    curriculo.formacao.forEach((form, index) => {
+      const formItem = document.createElement("div");
+      formItem.style.cssText = `
+        padding: 20px;
+        background: ${index % 2 === 0 ? "#f9fafb" : "#ffffff"};
+        border-radius: 12px;
+        border: 1px solid #e5e7eb;
+        page-break-inside: avoid;
+      `;
+
       const headerDiv = document.createElement("div");
       headerDiv.style.cssText = `
         display: flex;
         justify-content: space-between;
-        font-weight: 600;
+        align-items: start;
+        margin-bottom: 6px;
       `;
-      const curso = document.createElement("span");
-      curso.textContent = form.curso;
-      const periodo = document.createElement("span");
-      periodo.style.cssText = "font-size: 11px; color: #6b7280;";
-      periodo.textContent = form.periodo;
-      headerDiv.appendChild(curso);
-      headerDiv.appendChild(periodo);
-      formDiv.appendChild(headerDiv);
+
+      const leftHeader = document.createElement("div");
+      leftHeader.style.flex = "1";
+
+      const curso = document.createElement("div");
+      curso.style.cssText = `
+        font-size: 16px;
+        font-weight: 700;
+        color: #001a57;
+        margin-bottom: 4px;
+      `;
+      curso.textContent = form.curso || "Curso não informado";
+      leftHeader.appendChild(curso);
 
       if (form.instituicao) {
-        const instituicao = document.createElement("p");
-        instituicao.style.cssText = "margin: 2px 0; color: #6b7280;";
+        const instituicao = document.createElement("div");
+        instituicao.style.cssText = `
+          font-size: 14px;
+          color: #6b7280;
+          font-weight: 500;
+        `;
         instituicao.textContent = form.instituicao;
-        formDiv.appendChild(instituicao);
+        leftHeader.appendChild(instituicao);
       }
+
+      const periodo = document.createElement("div");
+      periodo.style.cssText = `
+        font-size: 12px;
+        color: #001a57;
+        background: #e0e7ff;
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-weight: 600;
+        white-space: nowrap;
+      `;
+      periodo.textContent = form.periodo || "Período não informado";
+
+      headerDiv.appendChild(leftHeader);
+      headerDiv.appendChild(periodo);
+      formItem.appendChild(headerDiv);
 
       if (form.descricao) {
-        const desc = document.createElement("p");
-        desc.style.margin = "0";
+        const desc = document.createElement("div");
+        desc.style.cssText = `
+          margin-top: 12px;
+          font-size: 13px;
+          line-height: 1.7;
+          color: #4b5563;
+        `;
         desc.textContent = form.descricao;
-        formDiv.appendChild(desc);
+        formItem.appendChild(desc);
       }
 
-      div.appendChild(formDiv);
+      formacaoList.appendChild(formItem);
     });
 
-    section.appendChild(h2);
-    section.appendChild(div);
+    section.appendChild(formacaoList);
     content.appendChild(section);
   }
 
@@ -334,44 +475,59 @@ function createPdfElement(
     curriculo.cursosCertificacoes &&
     curriculo.cursosCertificacoes.length > 0
   ) {
-    const section = document.createElement("section");
-    const h2 = document.createElement("h2");
-    h2.style.cssText = "font-size: 12px; letter-spacing: 0.1em;";
-    h2.textContent = "CURSOS E CERTIFICAÇÕES";
-    const div = document.createElement("div");
-    div.style.cssText = `
-      margin-top: 12px;
-      display: flex;
-      flex-direction: column;
+    const section = createSection("Cursos & Certificações", "📜");
+    const cursosList = document.createElement("div");
+    cursosList.style.cssText = `
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
       gap: 16px;
     `;
 
     curriculo.cursosCertificacoes.forEach((curso) => {
-      const cursoDiv = document.createElement("div");
+      const cursoItem = document.createElement("div");
+      cursoItem.style.cssText = `
+        padding: 16px;
+        background: #ffffff;
+        border-radius: 10px;
+        border: 1px solid #e5e7eb;
+        page-break-inside: avoid;
+      `;
+
       const titulo = document.createElement("div");
-      titulo.style.fontWeight = "600";
+      titulo.style.cssText = `
+        font-weight: 600;
+        font-size: 13px;
+        color: #001a57;
+        margin-bottom: 6px;
+      `;
       titulo.textContent = curso.titulo;
-      cursoDiv.appendChild(titulo);
+      cursoItem.appendChild(titulo);
 
       if (curso.instituicao) {
-        const instituicao = document.createElement("p");
-        instituicao.style.cssText = "margin: 2px 0; color: #6b7280;";
+        const instituicao = document.createElement("div");
+        instituicao.style.cssText = `
+          font-size: 12px;
+          color: #6b7280;
+          margin-bottom: 4px;
+        `;
         instituicao.textContent = curso.instituicao;
-        cursoDiv.appendChild(instituicao);
+        cursoItem.appendChild(instituicao);
       }
 
       if (curso.periodo) {
-        const periodo = document.createElement("p");
-        periodo.style.cssText = "margin: 0; font-size: 12px; color: #6b7280;";
+        const periodo = document.createElement("div");
+        periodo.style.cssText = `
+          font-size: 11px;
+          color: #9ca3af;
+        `;
         periodo.textContent = curso.periodo;
-        cursoDiv.appendChild(periodo);
+        cursoItem.appendChild(periodo);
       }
 
-      div.appendChild(cursoDiv);
+      cursosList.appendChild(cursoItem);
     });
 
-    section.appendChild(h2);
-    section.appendChild(div);
+    section.appendChild(cursosList);
     content.appendChild(section);
   }
 
@@ -380,51 +536,83 @@ function createPdfElement(
     curriculo.habilidades?.tecnicas &&
     curriculo.habilidades.tecnicas.length > 0
   ) {
-    const section = document.createElement("section");
-    const h2 = document.createElement("h2");
-    h2.style.cssText = "font-size: 12px; letter-spacing: 0.1em;";
-    h2.textContent = "HABILIDADES TÉCNICAS";
-    const p = document.createElement("p");
-    p.style.marginTop = "8px";
-    p.textContent = curriculo.habilidades.tecnicas.join(" • ");
-    section.appendChild(h2);
-    section.appendChild(p);
+    const section = createSection("Habilidades Técnicas", "⚡");
+    const skillsContainer = document.createElement("div");
+    skillsContainer.style.cssText = `
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      page-break-inside: avoid;
+    `;
+
+    curriculo.habilidades.tecnicas.forEach((skill) => {
+      const badge = document.createElement("span");
+      badge.style.cssText = `
+        display: inline-block;
+        padding: 8px 16px;
+        background: linear-gradient(135deg, #001a57 0%, #002d8f 100%);
+        color: #ffffff;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        box-shadow: 0 2px 8px rgba(0, 26, 87, 0.2);
+      `;
+      badge.textContent = skill;
+      skillsContainer.appendChild(badge);
+    });
+
+    section.appendChild(skillsContainer);
     content.appendChild(section);
-}
+  }
 
   // Idiomas
   if (curriculo.idiomas && curriculo.idiomas.length > 0) {
-    const section = document.createElement("section");
-    const h2 = document.createElement("h2");
-    h2.style.cssText = "font-size: 12px; letter-spacing: 0.1em;";
-    h2.textContent = "IDIOMAS";
-    const div = document.createElement("div");
-    div.style.cssText = `
-      margin-top: 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
+    const section = createSection("Idiomas", "🌍");
+    const idiomasGrid = document.createElement("div");
+    idiomasGrid.style.cssText = `
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+      page-break-inside: avoid;
     `;
 
     curriculo.idiomas.forEach((idioma) => {
-      const langDiv = document.createElement("div");
-      langDiv.style.cssText = `
+      const idiomaItem = document.createElement("div");
+      idiomaItem.style.cssText = `
         display: flex;
         justify-content: space-between;
-        font-size: 13px;
+        align-items: center;
+        padding: 14px 18px;
+        background: #f9fafb;
+        border-radius: 10px;
+        border: 1px solid #e5e7eb;
       `;
+
       const lang = document.createElement("span");
-      lang.textContent = idioma.idioma;
+      lang.style.cssText = `
+        font-weight: 600;
+        font-size: 14px;
+        color: #1f2937;
+      `;
+      lang.textContent = idioma.idioma || "Idioma";
+
       const nivel = document.createElement("span");
-      nivel.style.color = "#6b7280";
-      nivel.textContent = idioma.nivel;
-      langDiv.appendChild(lang);
-      langDiv.appendChild(nivel);
-      div.appendChild(langDiv);
+      nivel.style.cssText = `
+        font-size: 12px;
+        color: #ffffff;
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-weight: 600;
+      `;
+      nivel.textContent = idioma.nivel || "Nível";
+
+      idiomaItem.appendChild(lang);
+      idiomaItem.appendChild(nivel);
+      idiomasGrid.appendChild(idiomaItem);
     });
 
-    section.appendChild(h2);
-    section.appendChild(div);
+    section.appendChild(idiomasGrid);
     content.appendChild(section);
   }
 
@@ -433,41 +621,99 @@ function createPdfElement(
     curriculo.premiosPublicacoes &&
     curriculo.premiosPublicacoes.length > 0
   ) {
-    const section = document.createElement("section");
-    const h2 = document.createElement("h2");
-    h2.style.cssText = "font-size: 12px; letter-spacing: 0.1em;";
-    h2.textContent = "PRÊMIOS E PUBLICAÇÕES";
-    const div = document.createElement("div");
-    div.style.cssText = `
-      margin-top: 12px;
+    const section = createSection("Prêmios & Publicações", "🏆");
+    const premiosList = document.createElement("div");
+    premiosList.style.cssText = `
       display: flex;
       flex-direction: column;
       gap: 16px;
     `;
 
     curriculo.premiosPublicacoes.forEach((premio) => {
-      const premioDiv = document.createElement("div");
+      const premioItem = document.createElement("div");
+      premioItem.style.cssText = `
+        padding: 16px;
+        background: #fffbeb;
+        border-radius: 10px;
+        border-left: 4px solid #f59e0b;
+        page-break-inside: avoid;
+      `;
+
       if (premio.titulo) {
-        const titulo = document.createElement("p");
-        titulo.style.cssText = "margin: 0; font-weight: 600;";
+        const titulo = document.createElement("div");
+        titulo.style.cssText = `
+          font-weight: 600;
+          font-size: 14px;
+          color: #92400e;
+          margin-bottom: 6px;
+        `;
         titulo.textContent = premio.titulo;
-        premioDiv.appendChild(titulo);
+        premioItem.appendChild(titulo);
       }
+
       if (premio.descricao) {
-        const desc = document.createElement("p");
-        desc.style.cssText = "margin: 4px 0 0;";
+        const desc = document.createElement("div");
+        desc.style.cssText = `
+          font-size: 13px;
+          line-height: 1.6;
+          color: #78350f;
+        `;
         desc.textContent = premio.descricao;
-        premioDiv.appendChild(desc);
+        premioItem.appendChild(desc);
       }
-      div.appendChild(premioDiv);
+
+      premiosList.appendChild(premioItem);
     });
 
-    section.appendChild(h2);
-    section.appendChild(div);
+    section.appendChild(premiosList);
+    content.appendChild(section);
+  }
+
+  // Preferências (se houver)
+  if (pdfPreferences.length > 0) {
+    const section = createSection("Preferências", "⚙️");
+    const prefsContainer = document.createElement("div");
+    prefsContainer.style.cssText = `
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      page-break-inside: avoid;
+    `;
+
+    pdfPreferences.forEach((pref) => {
+      const badge = document.createElement("span");
+      badge.style.cssText = `
+        display: inline-block;
+        padding: 8px 16px;
+        background: #e0e7ff;
+        color: #001a57;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+      `;
+      badge.textContent = pref;
+      prefsContainer.appendChild(badge);
+    });
+
+    section.appendChild(prefsContainer);
     content.appendChild(section);
   }
 
   container.appendChild(content);
+
+  // Footer
+  const footer = document.createElement("div");
+  footer.style.cssText = `
+    text-align: center;
+    padding: 24px;
+    color: #9ca3af;
+    font-size: 11px;
+    border-top: 1px solid #e5e7eb;
+    margin-top: 32px;
+  `;
+  footer.textContent = `Currículo gerado via Advance+ • ${new Date().toLocaleDateString("pt-BR")}`;
+  container.appendChild(footer);
+
   return container;
 }
 
@@ -522,49 +768,58 @@ export async function generateCurriculoPdf(
     // Adicionar ao DOM temporariamente
     document.body.appendChild(pdfElement);
 
-    await new Promise((resolve) => requestAnimationFrame(resolve));
+    // Aguardar renderização
+    await new Promise((resolve) => setTimeout(resolve, 100));
 
-    // Gerar canvas
+    // Gerar canvas com alta qualidade
     const canvas = await html2canvas(pdfElement, {
-      scale: 2,
+      scale: 2.5, // Maior qualidade
       useCORS: true,
       allowTaint: true,
       backgroundColor: "#ffffff",
+      logging: false,
+      imageTimeout: 0,
     });
 
     // Remover elemento do DOM
     document.body.removeChild(pdfElement);
 
-    // Gerar PDF
-    const imgData = canvas.toDataURL("image/png");
-    const pdf = new jsPDF("p", "pt", "a4");
+    // Configuração do PDF
+    const pdf = new jsPDF("p", "mm", "a4");
     const pdfWidth = pdf.internal.pageSize.getWidth();
     const pdfHeight = pdf.internal.pageSize.getHeight();
-
+    
+    const imgData = canvas.toDataURL("image/jpeg", 0.95);
     const imgWidth = pdfWidth;
     const imgHeight = (canvas.height * pdfWidth) / canvas.width;
 
-    const totalPages = Math.ceil(imgHeight / pdfHeight);
+    // Adicionar páginas com quebra inteligente
+    let heightLeft = imgHeight;
+    let position = 0;
+    let page = 0;
 
-    for (let i = 0; i < totalPages; i++) {
-      if (i > 0) {
+    while (heightLeft > 0) {
+      if (page > 0) {
         pdf.addPage();
       }
 
-      const positionY = -i * pdfHeight;
-
       pdf.addImage(
         imgData,
-        "PNG",
+        "JPEG",
         0,
-        positionY,
+        position,
         imgWidth,
         imgHeight,
         undefined,
         "FAST"
       );
+
+      heightLeft -= pdfHeight;
+      position -= pdfHeight;
+      page++;
     }
 
+    // Salvar com nome formatado
     const fileName =
       slugify(usuarioNome || "curriculo") || "curriculo-profissional";
     pdf.save(`${fileName}.pdf`);
@@ -573,4 +828,3 @@ export async function generateCurriculoPdf(
     throw error;
   }
 }
-

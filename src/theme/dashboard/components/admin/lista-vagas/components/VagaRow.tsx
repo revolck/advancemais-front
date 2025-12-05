@@ -72,6 +72,13 @@ const formatDate = (dateString: string) => {
   });
 };
 
+const formatCnpj = (value?: string | null): string => {
+  if (!value) return "";
+  const digits = value.replace(/\D/g, "");
+  if (digits.length !== 14) return value;
+  return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8, 12)}-${digits.slice(12)}`;
+};
+
 export function VagaRow({ 
   vaga,
   isDisabled = false,
@@ -116,19 +123,30 @@ export function VagaRow({
         </div>
       </TableCell>
 
-      <TableCell className="py-4 min-w-[180px]">
+      <TableCell className="py-4 min-w-[200px] max-w-[250px]">
         <div className="flex items-center gap-3">
-          <Avatar className="h-8 w-8">
+          <Avatar className="h-8 w-8 flex-shrink-0">
             <AvatarImage src={vaga.empresa.avatarUrl} />
-            <AvatarFallback>
-              {vaga.empresa.nome.charAt(0).toUpperCase()}
+            <AvatarFallback className="bg-purple-100 text-purple-600 text-xs font-medium">
+              {vaga.empresa.nome.substring(0, 2).toUpperCase()}
             </AvatarFallback>
           </Avatar>
-          <div className="flex flex-col">
-            <div className="font-medium text-gray-900">{vaga.empresa.nome}</div>
-            <div className="text-sm text-gray-500">
-              {vaga.empresa.codUsuario}
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2 mb-1">
+              <div className="font-medium text-gray-900 truncate text-sm">
+                {vaga.empresa.nome}
+              </div>
+              {vaga.empresa.codUsuario && (
+                <code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded font-mono text-gray-500 flex-shrink-0">
+                  {vaga.empresa.codUsuario}
+                </code>
+              )}
             </div>
+            {vaga.empresa.cnpj && (
+              <div className="text-xs text-gray-500 font-mono truncate">
+                {formatCnpj(vaga.empresa.cnpj)}
+              </div>
+            )}
           </div>
         </div>
       </TableCell>

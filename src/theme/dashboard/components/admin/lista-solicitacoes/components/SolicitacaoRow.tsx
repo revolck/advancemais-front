@@ -29,7 +29,7 @@ const STATUS_CONFIG: Record<
   { label: string; className: string }
 > = {
   PENDENTE: {
-    label: "PENDENTE",
+    label: "EM ANÁLISE",
     className: "bg-amber-100 text-amber-800 border-amber-200",
   },
   APROVADA: {

@@ -20,10 +20,11 @@ import { FileText, Star, Calendar, Eye, Download, Loader2 } from "lucide-react";
 import type { UsuarioDetailsData } from "../types";
 import { formatDate, formatRelativeTime } from "../utils/formatters";
 import { cn } from "@/lib/utils";
-import { getCurriculo, downloadCurriculoPDF } from "@/api/candidatos";
+import { getCurriculo } from "@/api/candidatos";
 import { toastCustom } from "@/components/ui/custom/toast";
 import { ViewCurriculoModal } from "../modal-acoes/ViewCurriculoModal";
 import type { Curriculo } from "@/api/candidatos/types";
+import { generateCurriculoPdf } from "../../candidato-details/utils/generateCurriculoPdf";
 
 interface CurriculosTabProps {
   usuario: UsuarioDetailsData;
@@ -63,28 +64,36 @@ export function CurriculosTab({
     }
   };
 
-  const handleDownloadPDF = async (curriculoId: string, titulo: string) => {
+  const handleDownloadPDF = async (curriculoId: string) => {
     setLoadingDownload((prev) => ({ ...prev, [curriculoId]: true }));
     try {
-      const blob = await downloadCurriculoPDF(curriculoId);
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `${titulo}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
+      // Busca os dados completos do currículo
+      const curriculo = await getCurriculo(curriculoId);
+      
+      // Monta os dados do usuário para o PDF
+      const usuarioData = {
+        email: usuario.email,
+        telefone: usuario.telefone,
+        avatarUrl: usuario.avatarUrl,
+        socialLinks: usuario.socialLinks,
+      };
+      
+      // Gera o PDF no frontend
+      await generateCurriculoPdf(
+        curriculo as Curriculo,
+        usuario.nomeCompleto,
+        usuarioData as Parameters<typeof generateCurriculoPdf>[2]
+      );
 
       toastCustom.success({
-        title: "Download concluído",
-        description: "PDF baixado com sucesso!",
+        title: "Download iniciado",
+        description: "O currículo está sendo baixado em PDF.",
       });
     } catch (error) {
-      console.error("Erro ao baixar PDF:", error);
+      console.error("Erro ao gerar PDF:", error);
       toastCustom.error({
-        title: "Erro ao baixar PDF",
-        description: "Não foi possível baixar o currículo em PDF.",
+        title: "Erro ao gerar PDF",
+        description: "Não foi possível gerar o currículo em PDF.",
       });
     } finally {
       setLoadingDownload((prev) => ({ ...prev, [curriculoId]: false }));
@@ -219,7 +228,7 @@ export function CurriculosTab({
                           size="icon"
                           className="h-8 w-8 rounded-full text-gray-500 hover:text-white hover:bg-[var(--primary-color)] cursor-pointer"
                           onClick={() =>
-                            handleDownloadPDF(curriculo.id, curriculo.titulo)
+                            handleDownloadPDF(curriculo.id)
                           }
                           disabled={loadingDownload[curriculo.id]}
                         >

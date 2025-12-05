@@ -9,7 +9,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -23,14 +22,28 @@ import {
   Edit,
   Eye,
   EyeOff,
-  Trash2,
   Accessibility,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { VagaHeaderInfoProps } from "../types";
 import { formatVagaStatus, getVagaStatusBadgeClasses } from "../utils";
 import { getInitials } from "../utils/formatters";
-import { DespublicarVagaModal, DeletarVagaModal } from "../modal-acoes";
+import { DespublicarVagaModal } from "../modal-acoes";
+
+// Função para formatar CNPJ com máscara
+function formatCNPJ(cnpj?: string): string {
+  if (!cnpj) return "";
+  // Remove caracteres não numéricos
+  const cleaned = cnpj.replace(/\D/g, "");
+  // Aplica máscara: XX.XXX.XXX/XXXX-XX
+  if (cleaned.length === 14) {
+    return cleaned.replace(
+      /^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/,
+      "$1.$2.$3/$4-$5"
+    );
+  }
+  return cnpj;
+}
 
 export function HeaderInfo({
   vaga,
@@ -41,7 +54,6 @@ export function HeaderInfo({
 }: VagaHeaderInfoProps) {
   const [isActionsOpen, setIsActionsOpen] = useState(false);
   const [isUnpublishModalOpen, setIsUnpublishModalOpen] = useState(false);
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   const isVagaPublished = vaga.status === "PUBLICADO";
   const statusColor = isVagaPublished ? "bg-emerald-500" : "bg-amber-500";
@@ -77,14 +89,19 @@ export function HeaderInfo({
     await onUnpublishVaga?.();
   };
 
-  const handleDeleteClick = () => {
-    setIsDeleteModalOpen(true);
-    setIsActionsOpen(false);
-  };
+  // Debug: Verificar estrutura da empresa
+  if (process.env.NODE_ENV === "development") {
+    console.log("[HeaderInfo] Vaga empresa data:", {
+      empresa: vaga.empresa,
+      hasNome: !!vaga.empresa?.nome,
+      hasCnpj: !!vaga.empresa?.cnpj,
+      empresaKeys: vaga.empresa ? Object.keys(vaga.empresa) : [],
+    });
+  }
 
-  const handleDeleteConfirm = async () => {
-    await onDeleteVaga?.();
-  };
+  // Fallback seguro para nome da empresa
+  const empresaNome = vaga.empresa?.nome || "Empresa não informada";
+  const empresaCnpj = vaga.empresa?.cnpj;
 
   return (
     <section className="relative overflow-hidden rounded-3xl bg-white">
@@ -93,11 +110,11 @@ export function HeaderInfo({
           <div className="relative">
             <Avatar className="h-20 w-20 shrink-0 text-base">
               <AvatarImage
-                src={vaga.empresa.avatarUrl || undefined}
-                alt={vaga.empresa.nome}
+                src={vaga.empresa?.avatarUrl || undefined}
+                alt={empresaNome}
               />
               <AvatarFallback className="bg-primary/10 text-primary/80 text-base font-semibold">
-                {getInitials(vaga.empresa.nome)}
+                {getInitials(empresaNome)}
               </AvatarFallback>
             </Avatar>
             <Tooltip>
@@ -115,14 +132,20 @@ export function HeaderInfo({
               <TooltipContent>{statusLabel}</TooltipContent>
             </Tooltip>
           </div>
-          <div className="space-y-0">
+          <div className="space-y-1">
             <div className="flex items-center gap-3">
               <h3 className="font-semibold !mb-0">{vaga.titulo}</h3>
               {statusBadge}
               {pcdIcon}
             </div>
             <div className="flex flex-wrap items-center gap-2 text-xs text-gray-400 font-mono">
-              <span>{vaga.empresa.nome}</span>
+              <span>{empresaNome}</span>
+              {empresaCnpj && (
+                <>
+                  <span>|</span>
+                  <span>CNPJ: {formatCNPJ(empresaCnpj)}</span>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -170,14 +193,6 @@ export function HeaderInfo({
                   </>
                 )}
               </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onSelect={handleDeleteClick}
-                className="cursor-pointer text-red-600 focus:text-red-600"
-              >
-                <Trash2 className="h-4 w-4" />
-                <span>Excluir vaga</span>
-              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
           <Button
@@ -198,14 +213,6 @@ export function HeaderInfo({
         isOpen={isUnpublishModalOpen}
         onOpenChange={setIsUnpublishModalOpen}
         onConfirmUnpublish={handleUnpublishConfirm}
-        vaga={vaga}
-      />
-
-      {/* Modal de Exclusão */}
-      <DeletarVagaModal
-        isOpen={isDeleteModalOpen}
-        onOpenChange={setIsDeleteModalOpen}
-        onConfirmDelete={handleDeleteConfirm}
         vaga={vaga}
       />
     </section>

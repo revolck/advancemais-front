@@ -58,7 +58,7 @@ const cloneDateRange = (range: DateRange): DateRange => ({
 });
 
 const STATUS_FILTER_OPTIONS: { value: SolicitacaoStatus; label: string }[] = [
-  { value: "PENDENTE", label: "Pendente" },
+  { value: "PENDENTE", label: "Em Análise" },
   { value: "APROVADA", label: "Aprovada" },
   { value: "REJEITADA", label: "Rejeitada" },
   { value: "CANCELADA", label: "Cancelada" },

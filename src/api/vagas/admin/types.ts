@@ -94,6 +94,7 @@ export interface VagaEmpresa {
   descricao?: string;
   socialLinks?: VagaEmpresaSocialLinks;
   codUsuario: string;
+  cnpj?: string;
   informacoes?: VagaEmpresaInformacoes;
 }
 

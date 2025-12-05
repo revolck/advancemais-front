@@ -1,6 +1,6 @@
 "use client";
 
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 
 import {
   listVagas,
@@ -8,7 +8,8 @@ import {
   type VagaListParams,
   type VagaStatus,
 } from "@/api/vagas";
-import { queryKeys } from "@/lib/react-query/queryKeys";
+import { useUserRole } from "@/hooks/useUserRole";
+import { UserRole } from "@/config/roles";
 
 export interface NormalizedVagaFilters {
   page: number;
@@ -29,15 +30,49 @@ export interface VagasQueryResult {
   };
 }
 
-function buildParams(filters: NormalizedVagaFilters): VagaListParams {
+// Todos os status disponíveis - usado quando não há filtro específico
+const ALL_STATUSES: VagaStatus[] = [
+  "RASCUNHO",
+  "EM_ANALISE",
+  "PUBLICADO",
+  "DESPUBLICADA",
+  "PAUSADA",
+  "ENCERRADA",
+  "EXPIRADO",
+];
+
+// Status disponíveis para SETOR_DE_VAGAS (sem RASCUNHO)
+const SETOR_DE_VAGAS_STATUSES: VagaStatus[] = [
+  "EM_ANALISE",
+  "PUBLICADO",
+  "DESPUBLICADA",
+  "PAUSADA",
+  "ENCERRADA",
+  "EXPIRADO",
+];
+
+function buildParams(
+  filters: NormalizedVagaFilters,
+  userRole: UserRole | null
+): VagaListParams {
   const params: VagaListParams = {
     page: filters.page,
     pageSize: filters.pageSize,
   };
 
-  if (filters.statuses.length === 1) {
+  // Se não há status selecionado, enviar TODOS os status (API retorna PUBLICADO por padrão)
+  // Se há status selecionado, enviar o(s) status para filtrar
+  if (filters.statuses.length === 0) {
+    // SETOR_DE_VAGAS não pode ver RASCUNHO
+    // Apenas EMPRESA pode ver seus próprios rascunhos (API já faz essa validação)
+    const statusList = userRole === UserRole.SETOR_DE_VAGAS 
+      ? SETOR_DE_VAGAS_STATUSES 
+      : ALL_STATUSES;
+    
+    params.status = statusList;
+  } else if (filters.statuses.length === 1) {
     params.status = filters.statuses[0];
-  } else if (filters.statuses.length > 1) {
+  } else {
     params.status = filters.statuses;
   }
 
@@ -46,13 +81,19 @@ function buildParams(filters: NormalizedVagaFilters): VagaListParams {
 
 function applyClientFilters(
   vagas: VagaListItem[],
-  filters: NormalizedVagaFilters
+  filters: NormalizedVagaFilters,
+  userRole: UserRole | null
 ): VagaListItem[] {
   const searchTerm = filters.search?.toLowerCase();
   const locationTerm = filters.location?.toLowerCase();
   const companyTerm = filters.company?.toLowerCase();
 
   return vagas.filter((vaga) => {
+    // SETOR_DE_VAGAS não pode ver vagas RASCUNHO
+    if (userRole === UserRole.SETOR_DE_VAGAS && vaga.status === "RASCUNHO") {
+      return false;
+    }
+
     const matchesStatus =
       filters.statuses.length === 0 || filters.statuses.includes(vaga.status);
 
@@ -83,10 +124,23 @@ export function useVagasDashboardQuery(
   filters: NormalizedVagaFilters,
   enabled: boolean
 ) {
+  const userRole = useUserRole();
+
+  // Serializa os filtros para garantir que a queryKey seja diferente quando os valores mudam
+  const serializedFilters = JSON.stringify({
+    page: filters.page,
+    pageSize: filters.pageSize,
+    statuses: filters.statuses,
+    company: filters.company,
+    location: filters.location,
+    search: filters.search,
+    userRole, // Incluir role na queryKey para re-fetch quando mudar
+  });
+
   return useQuery<VagasQueryResult, Error>({
-    queryKey: queryKeys.vagas.list(filters),
+    queryKey: ["admin-vagas-list", serializedFilters],
     queryFn: async () => {
-      const params = buildParams(filters);
+      const params = buildParams(filters, userRole);
       const response = await listVagas(params);
 
       let vagas: VagaListItem[] = [];
@@ -116,7 +170,7 @@ export function useVagasDashboardQuery(
         };
       }
 
-      const filtered = applyClientFilters(vagas, filters);
+      const filtered = applyClientFilters(vagas, filters, userRole);
       const total = filtered.length;
       const totalPages = Math.max(1, Math.ceil(total / filters.pageSize));
 
@@ -146,8 +200,8 @@ export function useVagasDashboardQuery(
       } satisfies VagasQueryResult;
     },
     enabled,
-    placeholderData: keepPreviousData,
-    staleTime: 60 * 1000,
+    // Remover placeholderData para forçar re-render quando filtros mudam
+    staleTime: 0, // Sempre buscar dados frescos quando filtros mudam
     gcTime: 5 * 60 * 1000,
   });
 }

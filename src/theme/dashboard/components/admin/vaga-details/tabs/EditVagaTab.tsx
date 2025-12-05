@@ -101,7 +101,7 @@ function vagaToFormState(vaga: VagaDetail): FormState {
 
 export function EditVagaTab({ vaga, onSuccess, onCancel }: EditVagaTabProps) {
   const [formData, setFormData] = useState<FormState>(() =>
-    vagaToFormState(vaga)
+    vagaToFormState(vaga),
   );
   const [errors, setErrors] = useState<FormErrors>({});
   const [currentStep, setCurrentStep] = useState(0);
@@ -124,7 +124,7 @@ export function EditVagaTab({ vaga, onSuccess, onCancel }: EditVagaTabProps) {
 
   const subcategoriaOptions = useMemo(
     () => getSubcategoriasOptions(formData.areaInteresseId || null),
-    [formData.areaInteresseId, getSubcategoriasOptions]
+    [formData.areaInteresseId, getSubcategoriasOptions],
   );
 
   // Hook para gerenciar mudanças não salvas
@@ -142,7 +142,7 @@ export function EditVagaTab({ vaga, onSuccess, onCancel }: EditVagaTabProps) {
   useEffect(() => {
     if (formData.subareaInteresseId.length > 0) {
       const validIds = formData.subareaInteresseId.filter((id) =>
-        subcategoriaOptions.some((option) => option.value === id)
+        subcategoriaOptions.some((option) => option.value === id),
       );
 
       if (validIds.length !== formData.subareaInteresseId.length) {
@@ -378,7 +378,10 @@ export function EditVagaTab({ vaga, onSuccess, onCancel }: EditVagaTabProps) {
     // Limpar erro do campo quando o usuário começar a digitar
     if (errors[field as string]) {
       setErrors((prev) => {
-        const { [field as string]: _omit, ...rest } = prev as Record<string, string>;
+        const { [field as string]: _omit, ...rest } = prev as Record<
+          string,
+          string
+        >;
         return rest as FormErrors;
       });
     }
@@ -386,7 +389,7 @@ export function EditVagaTab({ vaga, onSuccess, onCancel }: EditVagaTabProps) {
 
   const handleLocalizacaoChange = (
     field: keyof FormState["localizacao"],
-    value: string
+    value: string,
   ) => {
     setFormData((prev) => ({
       ...prev,

@@ -1,10 +1,7 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
-import {
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { HorizontalTabs } from "@/components/ui/custom";
@@ -28,10 +25,7 @@ import { CandidatosTab } from "./tabs/CandidatosTab";
 import { EditVagaTab } from "./tabs/EditVagaTab";
 import type { VagaDetailsViewProps } from "./types";
 
-export function VagaDetailsView({
-  vagaId,
-  initialData,
-}: VagaDetailsViewProps) {
+export function VagaDetailsView({ vagaId, initialData }: VagaDetailsViewProps) {
   const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
   const userRole = useUserRole();
@@ -39,10 +33,7 @@ export function VagaDetailsView({
   // SETOR_DE_VAGAS usa endpoint de solicitações que retorna todos os status
   const isSetorDeVagas = userRole === UserRole.SETOR_DE_VAGAS;
 
-  const queryKey = useMemo(
-    () => queryKeys.vagas.detail(vagaId),
-    [vagaId]
-  );
+  const queryKey = useMemo(() => queryKeys.vagas.detail(vagaId), [vagaId]);
 
   const initialQueryData = useMemo<VagaDetail | undefined>(
     () => (initialData ? initialData : undefined),
@@ -149,7 +140,10 @@ export function VagaDetailsView({
           <div className="border-b border-gray-200">
             <div className="flex items-center gap-1 overflow-x-auto px-6">
               {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-                <div key={i} className="flex items-center gap-2 px-4 py-4 border-b-2 border-transparent">
+                <div
+                  key={i}
+                  className="flex items-center gap-2 px-4 py-4 border-b-2 border-transparent"
+                >
                   <Skeleton className="h-4 w-4 bg-gray-200" />
                   <Skeleton className="h-4 w-20 bg-gray-200" />
                 </div>

@@ -17,9 +17,9 @@ import {
   Target,
   CalendarDays,
 } from "lucide-react";
+import type { StatisticCard } from "@/components/ui/custom/cards-statistics/types";
 
 export function LocalizacaoTab({ vaga }: AboutTabProps) {
-  // Verificar se há informações de localização
   const hasLocationInfo =
     vaga.localizacao ||
     vaga.modalidade ||
@@ -33,21 +33,20 @@ export function LocalizacaoTab({ vaga }: AboutTabProps) {
         <EmptyState
           illustration="companyDetails"
           illustrationAlt="Ilustração de localização vazia"
-          title="Informações de localização não definidas"
-          description="Esta vaga ainda não possui informações de localização definidas."
+          title="Informações não definidas"
+          description="Esta vaga ainda não possui informações de localização e modalidade."
           maxContentWidth="md"
         />
       </div>
     );
   }
 
-  // Métricas KPI no formato do CardsStatistics
-  const getKPIMetrics = () => {
+  const getKPIMetrics = (): StatisticCard[] => {
     return [
       {
         icon: MapPin,
-        iconBg:
-          "bg-blue-50 border-blue-200/20 text-blue-600 dark:bg-blue-950 dark:border-blue-800/20 dark:text-blue-400",
+        iconBg: "bg-blue-100 text-blue-600",
+        cardBg: "bg-blue-50/50",
         value: vaga.localizacao
           ? formatLocation(vaga.localizacao)
           : "Não informado",
@@ -55,8 +54,8 @@ export function LocalizacaoTab({ vaga }: AboutTabProps) {
       },
       {
         icon: Building2,
-        iconBg:
-          "bg-green-50 border-green-200/20 text-green-600 dark:bg-green-950 dark:border-green-800/20 dark:text-green-400",
+        iconBg: "bg-emerald-100 text-emerald-600",
+        cardBg: "bg-emerald-50/50",
         value: vaga.modalidade
           ? formatModalidade(vaga.modalidade)
           : "Não informado",
@@ -64,15 +63,15 @@ export function LocalizacaoTab({ vaga }: AboutTabProps) {
       },
       {
         icon: Clock,
-        iconBg:
-          "bg-orange-50 border-orange-200/20 text-orange-600 dark:bg-orange-950 dark:border-orange-800/20 dark:text-orange-400",
+        iconBg: "bg-amber-100 text-amber-600",
+        cardBg: "bg-amber-50/50",
         value: vaga.jornada ? formatJornada(vaga.jornada) : "Não informado",
         label: "Jornada",
       },
       {
         icon: Briefcase,
-        iconBg:
-          "bg-purple-50 border-purple-200/20 text-purple-600 dark:bg-purple-950 dark:border-purple-800/20 dark:text-purple-400",
+        iconBg: "bg-violet-100 text-violet-600",
+        cardBg: "bg-violet-50/50",
         value: vaga.regimeDeTrabalho
           ? formatRegimeTrabalho(vaga.regimeDeTrabalho)
           : "Não informado",
@@ -80,8 +79,8 @@ export function LocalizacaoTab({ vaga }: AboutTabProps) {
       },
       {
         icon: Target,
-        iconBg:
-          "bg-indigo-50 border-indigo-200/20 text-indigo-600 dark:bg-indigo-950 dark:border-indigo-800/20 dark:text-indigo-400",
+        iconBg: "bg-indigo-100 text-indigo-600",
+        cardBg: "bg-indigo-50/50",
         value: vaga.senioridade
           ? formatSenioridade(vaga.senioridade)
           : "Não informado",
@@ -89,8 +88,8 @@ export function LocalizacaoTab({ vaga }: AboutTabProps) {
       },
       {
         icon: CalendarDays,
-        iconBg:
-          "bg-gray-50 border-gray-200/20 text-gray-600 dark:bg-gray-950 dark:border-gray-800/20 dark:text-gray-400",
+        iconBg: "bg-slate-100 text-slate-600",
+        cardBg: "bg-slate-50/50",
         value: vaga.inseridaEm
           ? new Date(vaga.inseridaEm).toLocaleDateString("pt-BR")
           : "Não informado",
@@ -99,20 +98,11 @@ export function LocalizacaoTab({ vaga }: AboutTabProps) {
     ];
   };
 
-  const kpiMetrics = getKPIMetrics();
-
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h5 className="!mb-0">Localização & Modalidade</h5>
-        <p>
-          Informações sobre localização, modalidade de trabalho e requisitos
-        </p>
-      </div>
-
-      {/* KPI Cards Row */}
-      <CardsStatistics cards={kpiMetrics} />
-    </div>
+    <CardsStatistics
+      cards={getKPIMetrics()}
+      showBadges={false}
+      gridClassName="grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+    />
   );
 }

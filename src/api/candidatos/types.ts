@@ -244,8 +244,10 @@ export interface CandidatosFilters {
   status?: CandidaturaStatus[];
   search?: string;
   onlyWithCandidaturas?: boolean;
-  criadoDe?: string;
-  criadoAte?: string;
+  /** Data inicial da candidatura (YYYY-MM-DD ou ISO) - filtra por aplicadaEm */
+  aplicadaDe?: string;
+  /** Data final da candidatura (YYYY-MM-DD ou ISO) - filtra por aplicadaEm */
+  aplicadaAte?: string;
 }
 
 export interface CandidaturasFilters {
@@ -380,39 +382,159 @@ export interface CandidatosModuleInfoResponse {
 // DETALHE DE CANDIDATURA
 // ========================
 
+export interface CandidaturaDetalheExperiencia {
+  empresa?: string;
+  cargo?: string;
+  periodo?: string;
+  descricao?: string;
+  dataInicio?: string;
+  dataFim?: string;
+  atual?: boolean;
+  localizacao?: string;
+}
+
+export interface CandidaturaDetalheFormacao {
+  curso?: string;
+  instituicao?: string;
+  periodo?: string;
+  nivel?: string;
+  dataInicio?: string;
+  dataFim?: string;
+  concluido?: boolean;
+  descricao?: string;
+}
+
+export interface CandidaturaDetalheHabilidades {
+  tecnicas?: string[];
+  comportamentais?: string[];
+  ferramentas?: string[];
+}
+
+export interface CandidaturaDetalheIdioma {
+  idioma?: string;
+  nivel?: string;
+  certificacao?: string;
+}
+
+export interface CandidaturaDetalheCurriculo {
+  id: string;
+  usuarioId?: string;
+  titulo: string | null;
+  resumo?: string | null;
+  objetivo?: string | null;
+  principal?: boolean;
+  areasInteresse?: object | null;
+  preferencias?: object | null;
+  habilidades?: CandidaturaDetalheHabilidades | null;
+  idiomas?: CandidaturaDetalheIdioma[] | null;
+  experiencias?: CandidaturaDetalheExperiencia[] | null;
+  formacao?: CandidaturaDetalheFormacao[] | null;
+  cursosCertificacoes?: object | null;
+  premiosPublicacoes?: object | null;
+  acessibilidade?: object | null;
+  consentimentos?: object | null;
+  ultimaAtualizacao?: string;
+  criadoEm?: string;
+  atualizadoEm?: string;
+}
+
+export interface CandidaturaDetalheCandidato {
+  id: string;
+  nome: string;
+  nomeCompleto?: string;
+  email: string;
+  cpf?: string | null;
+  telefone?: string | null;
+  genero?: string | null;
+  dataNasc?: string | null;
+  avatarUrl?: string | null;
+  descricao?: string | null;
+  cidade?: string | null;
+  estado?: string | null;
+  status?: string;
+  role?: string;
+  tipoUsuario?: string;
+  criadoEm?: string;
+  atualizadoEm?: string;
+}
+
+export interface CandidaturaDetalheVaga {
+  id: string;
+  codigo?: string;
+  titulo: string;
+  slug?: string;
+  status?: string;
+  descricao?: string | null;
+  localizacao?: {
+    cidade?: string;
+    estado?: string;
+    logradouro?: string;
+    bairro?: string;
+    cep?: string;
+  } | null;
+  modalidade?: string | null;
+  regimeDeTrabalho?: string | null;
+  senioridade?: string | null;
+  inseridaEm?: string;
+  empresa?: {
+    id: string;
+    nome: string;
+    avatarUrl?: string | null;
+  } | null;
+}
+
 export interface CandidaturaDetalhe {
   id: string;
   vagaId: string;
-  vaga: {
-    titulo: string;
-    empresa?: string;
-    localizacao?: string;
-    descricao?: string;
-  };
-  candidato: {
+  candidatoId?: string;
+  curriculoId?: string | null;
+  empresaUsuarioId?: string;
+  statusId?: string;
+  status: CandidaturaStatus | string;
+  status_processo?: {
     id: string;
     nome: string;
-    email: string;
-    telefone?: string;
+    descricao?: string | null;
+    ativo?: boolean;
+    isDefault?: boolean;
   };
-  curriculo?: {
-    id: string;
-    titulo: string;
-    resumo?: string;
-    experiencias?: Array<{ empresa: string; cargo: string; periodo: string; descricao?: string }>;
-    formacoes?: Array<{ curso: string; instituicao: string; periodo: string }>;
-  };
-  status: CandidaturaStatus;
   origem: string;
+  aplicadaEm: string;
+  atualizadaEm: string;
+  consentimentos?: object | null;
+  candidato: CandidaturaDetalheCandidato | null;
+  vaga: CandidaturaDetalheVaga | null;
+  curriculo: CandidaturaDetalheCurriculo | null;
+  // Campos legados para compatibilidade
   cartaApresentacao?: string;
   observacoes?: string;
-  criadoEm: string;
-  atualizadoEm: string;
+  criadoEm?: string;
 }
 
+export interface CandidaturaDetalheResponse {
+  success: boolean;
+  candidatura: CandidaturaDetalhe;
+}
 
+// Status disponíveis para candidatura
+export interface StatusCandidaturaDisponivel {
+  id: string;
+  nome: string;
+  descricao: string | null;
+  ativo: boolean;
+  isDefault: boolean;
+}
 
+export interface StatusCandidaturaDisponivelResponse {
+  success: boolean;
+  data: StatusCandidaturaDisponivel[];
+}
 
+// Resposta de atualização de candidatura
+export interface AtualizarCandidaturaResponse {
+  success: boolean;
+  candidatura: CandidaturaDetalhe;
+}
 
 
 

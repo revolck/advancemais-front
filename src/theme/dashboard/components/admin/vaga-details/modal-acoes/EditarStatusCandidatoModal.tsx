@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   ModalCustom,
   ModalContentWrapper,
@@ -11,59 +12,81 @@ import {
 } from "@/components/ui/custom/modal";
 import { ButtonCustom } from "@/components/ui/custom/button";
 import { SelectCustom } from "@/components/ui/custom/select";
-import { Users } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { CandidatoItem } from "../types";
+import { getInitials } from "../utils/formatters";
+import { listarStatusCandidatura } from "@/api/candidatos";
+import { queryKeys } from "@/lib/react-query/queryKeys";
 
 interface EditarStatusCandidatoModalProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   candidato: CandidatoItem | null;
-  onSaveStatus: (
-    candidatoId: string,
-    newStatus: CandidatoItem["status"]
-  ) => void;
+  currentStatusId?: string;
+  onSaveStatus: (candidaturaId: string, statusId: string) => Promise<void>;
+  isSaving?: boolean;
 }
-
-// Opções de status para o select
-const STATUS_OPTIONS = [
-  {
-    label: "Pendente",
-    value: "pendente" as const,
-  },
-  {
-    label: "Aprovado",
-    value: "aprovado" as const,
-  },
-  {
-    label: "Rejeitado",
-    value: "rejeitado" as const,
-  },
-  {
-    label: "Em Análise",
-    value: "em_analise" as const,
-  },
-];
 
 export function EditarStatusCandidatoModal({
   isOpen,
   onOpenChange,
   candidato,
+  currentStatusId,
   onSaveStatus,
+  isSaving = false,
 }: EditarStatusCandidatoModalProps) {
-  const [newStatus, setNewStatus] =
-    useState<CandidatoItem["status"]>("pendente");
+  const [selectedStatusId, setSelectedStatusId] = useState<string>("");
 
-  // Atualizar o status quando o candidato mudar
-  React.useEffect(() => {
-    if (candidato) {
-      setNewStatus(candidato.status);
+  // Buscar status disponíveis da API
+  const {
+    data: statusResponse,
+    isLoading: isLoadingStatus,
+    error: statusError,
+  } = useQuery({
+    queryKey: queryKeys.statusCandidatura.list(),
+    queryFn: () => listarStatusCandidatura(),
+    enabled: isOpen,
+    staleTime: 5 * 60 * 1000, // Cache de 5 minutos
+  });
+
+  const statusList = statusResponse?.data ?? [];
+
+  // Converter lista de status para opções do select
+  const statusOptions = statusList.map((status) => ({
+    label: status.nome.replace(/_/g, " "),
+    value: status.id,
+    description: status.descricao || undefined,
+  }));
+
+  // Atualizar o status selecionado quando o candidato mudar ou os status carregarem
+  useEffect(() => {
+    if (candidato && statusList.length > 0) {
+      // Tentar encontrar o status atual pelo ID ou pelo nome
+      let initialStatusId = currentStatusId;
+      
+      if (!initialStatusId && candidato.status) {
+        // Tentar encontrar pelo nome do status
+        const statusNome = String(candidato.status).toUpperCase().replace(/ /g, "_");
+        const foundStatus = statusList.find(
+          (s) => s.nome.toUpperCase() === statusNome || s.nome === candidato.status
+        );
+        initialStatusId = foundStatus?.id;
+      }
+      
+      // Se ainda não encontrou, usar o status padrão
+      if (!initialStatusId) {
+        const defaultStatus = statusList.find((s) => s.isDefault);
+        initialStatusId = defaultStatus?.id || statusList[0]?.id;
+      }
+      
+      setSelectedStatusId(initialStatusId || "");
     }
-  }, [candidato]);
+  }, [candidato, currentStatusId, statusList]);
 
-  const handleSave = () => {
-    if (candidato) {
-      onSaveStatus(candidato.id, newStatus);
-      onOpenChange(false);
+  const handleSave = async () => {
+    if (candidato?.candidaturaId && selectedStatusId) {
+      await onSaveStatus(candidato.candidaturaId, selectedStatusId);
     }
   };
 
@@ -72,6 +95,10 @@ export function EditarStatusCandidatoModal({
   };
 
   if (!candidato) return null;
+
+  // Encontrar o nome do status selecionado para exibição
+  const selectedStatus = statusList.find((s) => s.id === selectedStatusId);
+  const hasChanges = selectedStatusId !== currentStatusId;
 
   return (
     <ModalCustom
@@ -90,38 +117,62 @@ export function EditarStatusCandidatoModal({
           {/* Informações do Candidato */}
           <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-3 border border-blue-100">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-blue-600">
-                <Users className="h-5 w-5" />
-              </div>
+              <Avatar className="h-10 w-10 shrink-0">
+                <AvatarImage
+                  src={candidato.avatarUrl || undefined}
+                  alt={candidato.nome}
+                />
+                <AvatarFallback className="bg-primary/10 text-primary/80 text-xs font-semibold">
+                  {getInitials(candidato.nome)}
+                </AvatarFallback>
+              </Avatar>
               <div className="flex-1">
                 <div className="font-semibold text-gray-900 text-sm !mb-0">
                   {candidato.nome}
                 </div>
-                <div className="text-[11px] text-gray-600">
-                  Código:{" "}
-                  <span className="font-mono px-2 py-1 rounded">
-                    {candidato.id}
-                  </span>
-                </div>
+                {candidato.codUsuario && (
+                  <div className="text-[11px] text-gray-600">
+                    Código:{" "}
+                    <code className="font-mono bg-gray-100 px-1.5 py-0.5 rounded text-gray-600">
+                      {candidato.codUsuario}
+                    </code>
+                  </div>
+                )}
               </div>
             </div>
           </div>
 
           {/* Seleção de Status */}
           <div className="space-y-4">
-            <SelectCustom
-              mode="single"
-              label="Novo Status"
-              required
-              options={STATUS_OPTIONS}
-              value={newStatus}
-              onChange={(value) =>
-                setNewStatus(value as CandidatoItem["status"])
-              }
-              placeholder="Selecione o novo status"
-              size="md"
-              fullWidth
-            />
+            {isLoadingStatus ? (
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+            ) : statusError ? (
+              <div className="text-red-500 text-sm p-3 bg-red-50 rounded-lg">
+                Erro ao carregar status disponíveis. Tente novamente.
+              </div>
+            ) : (
+              <SelectCustom
+                mode="single"
+                label="Novo Status"
+                required
+                options={statusOptions}
+                value={selectedStatusId}
+                onChange={(value) => setSelectedStatusId(value as string)}
+                placeholder="Selecione o novo status"
+                size="md"
+                fullWidth
+              />
+            )}
+
+            {/* Info sobre o status atual */}
+            {selectedStatus?.descricao && (
+              <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded-lg">
+                <strong>Descrição:</strong> {selectedStatus.descricao}
+              </div>
+            )}
           </div>
         </ModalBody>
 
@@ -132,6 +183,7 @@ export function EditarStatusCandidatoModal({
               size="md"
               onClick={handleCancel}
               className="px-6"
+              disabled={isSaving}
             >
               Cancelar
             </ButtonCustom>
@@ -140,6 +192,9 @@ export function EditarStatusCandidatoModal({
               size="md"
               onClick={handleSave}
               className="px-6"
+              disabled={isSaving || isLoadingStatus || !selectedStatusId}
+              isLoading={isSaving}
+              loadingText="Salvando..."
             >
               Salvar Alterações
             </ButtonCustom>

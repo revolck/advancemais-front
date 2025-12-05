@@ -1,8 +1,7 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import {
-  Users,
   Mail,
   Phone,
   CalendarDays,
@@ -10,119 +9,101 @@ import {
   Download,
   Edit,
   Loader2,
-  type LucideIcon,
 } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { formatDate } from "../utils";
+import { getInitials } from "../utils/formatters";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Table,
   TableHeader,
   TableBody,
   TableHead,
   TableRow,
+  TableCell,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { ButtonCustom } from "@/components/ui/custom/button";
+import { FilterBar } from "@/components/ui/custom";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/custom/empty-state";
 import { EditarStatusCandidatoModal } from "../modal-acoes";
 import { VerCandidatoDetalheModal } from "../modal-acoes";
 import type { CandidatoItem, AboutTabProps } from "../types";
-import { listarCandidatosOverview } from "@/api/candidatos";
-import type { CandidatoOverview, Candidatura } from "@/api/candidatos/types";
+import {
+  listarCandidatosOverview,
+  getCandidaturaDetalhe,
+  atualizarStatusCandidaturaById,
+} from "@/api/candidatos";
+import type {
+  CandidatoOverview,
+  Candidatura,
+  CandidatosFilters,
+  Curriculo,
+} from "@/api/candidatos/types";
+import { generateCurriculoPdf } from "../../candidato-details/utils/generateCurriculoPdf";
+import { queryKeys } from "@/lib/react-query/queryKeys";
+import { toastCustom } from "@/components/ui/custom/toast";
+import type { FilterField } from "@/components/ui/custom/filters";
+import type { DateRange } from "@/components/ui/custom/date-picker";
+import {
+  DEFAULT_SEARCH_MIN_LENGTH,
+  getNormalizedSearchOrUndefined,
+  getSearchValidationMessage,
+} from "../../shared/filterUtils";
 
-// Dados simulados de candidatos (fallback apenas se API falhar)
-const getCandidatosSimulados = (): CandidatoItem[] => {
-  const candidatos: CandidatoItem[] = [];
-  const nomes = [
-    "Ana Silva Santos",
-    "Carlos Eduardo Lima",
-    "Maria Fernanda Costa",
-    "João Pedro Oliveira",
-    "Juliana Rodrigues",
-    "Rafael Mendes",
-    "Camila Alves",
-    "Diego Souza",
-    "Larissa Ferreira",
-    "Bruno Carvalho",
-    "Patricia Gomes",
-    "Felipe Santos",
-    "Amanda Ribeiro",
-    "Lucas Pereira",
-    "Carla Mendes",
-    "Thiago Silva",
-    "Fernanda Lima",
-    "Marcos Oliveira",
-    "Beatriz Costa",
-    "André Rodrigues",
-    "Gabriela Alves",
-    "Rodrigo Souza",
-    "Isabela Ferreira",
-    "Vinícius Carvalho",
-    "Natália Gomes",
-    "Gustavo Santos",
-    "Luciana Ribeiro",
-    "Henrique Pereira",
-    "Vanessa Mendes",
-    "Leandro Silva",
-  ];
+const ITEMS_PER_PAGE = 10;
+const SEARCH_HELPER_TEXT = "Pesquise por nome, email ou código do candidato.";
 
-  const statusOptions: Array<CandidatoItem["status"]> = [
-    "pendente",
-    "aprovado",
-    "rejeitado",
-    "em_analise",
-  ];
-  const experiencias = ["Júnior", "Pleno", "Sênior", "Especialista"];
-  const formacoes = [
-    "Ensino Médio",
-    "Técnico",
-    "Superior",
-    "Pós-graduação",
-    "Mestrado",
-  ];
+// Helpers para DateRange
+const createEmptyDateRange = (): DateRange => ({
+  from: null,
+  to: null,
+});
 
-  for (let i = 0; i < 25; i++) {
-    const nome = nomes[i % nomes.length];
-    const email = nome.toLowerCase().replace(/\s+/g, ".") + "@email.com";
-    const telefone = `(11) 9${Math.floor(Math.random() * 9000) + 1000}-${
-      Math.floor(Math.random() * 9000) + 1000
-    }`;
-    const dataInscricao = new Date(
-      2024,
-      8,
-      Math.floor(Math.random() * 30) + 1
-    ).toISOString();
-    const status =
-      statusOptions[Math.floor(Math.random() * statusOptions.length)];
-    const experiencia =
-      experiencias[Math.floor(Math.random() * experiencias.length)];
-    const formacao = formacoes[Math.floor(Math.random() * formacoes.length)];
+const cloneDateRange = (range: DateRange): DateRange => ({
+  from: range.from ?? null,
+  to: range.to ?? null,
+});
 
-    candidatos.push({
-      id: `candidato-${i + 1}`,
-      nome,
-      email,
-      telefone,
-      dataInscricao,
-      status,
-      experiencia,
-      formacao,
-      createdAt: dataInscricao,
-    });
+// Formata telefone com máscara brasileira
+function formatPhone(phone?: string | null): string {
+  if (!phone) return "";
+
+  // Remove tudo que não é número
+  const cleaned = phone.replace(/\D/g, "");
+
+  // Celular com 11 dígitos: (XX) 9XXXX-XXXX
+  if (cleaned.length === 11) {
+    return cleaned.replace(/^(\d{2})(\d{5})(\d{4})$/, "($1) $2-$3");
   }
 
-  return candidatos.sort(
-    (a, b) =>
-      new Date(b.dataInscricao).getTime() - new Date(a.dataInscricao).getTime()
-  );
-};
+  // Telefone fixo com 10 dígitos: (XX) XXXX-XXXX
+  if (cleaned.length === 10) {
+    return cleaned.replace(/^(\d{2})(\d{4})(\d{4})$/, "($1) $2-$3");
+  }
+
+  // Se não encaixa, retorna como veio
+  return phone;
+}
+
+// Verifica se um valor parece ser um UUID
+function isUUID(value: string): boolean {
+  const uuidRegex =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(value);
+}
 
 // Mapeia status do backend para o enum local exibido
-function mapBackendStatusToUi(status?: Candidatura["status"]): CandidatoItem["status"] {
+function mapBackendStatusToUi(
+  status?: Candidatura["status"],
+): CandidatoItem["status"] {
   switch (status) {
     case "CONTRATADO":
       return "aprovado";
@@ -174,85 +155,314 @@ const getStatusLabel = (status: CandidatoItem["status"]) => {
   }
 };
 
+// Extrai resumo de experiência do currículo
+function getExperienciaSummary(candidato: CandidatoOverview): string {
+  const curriculos = candidato.curriculos || [];
+  // Pega o currículo principal ou o primeiro disponível
+  const curriculo = curriculos.find((c) => c.principal) || curriculos[0];
+
+  if (
+    !curriculo ||
+    !curriculo.experiencias ||
+    curriculo.experiencias.length === 0
+  ) {
+    return "—";
+  }
+
+  const experiencias = curriculo.experiencias;
+  const totalExp = experiencias.length;
+
+  if (totalExp === 1) {
+    const exp = experiencias[0];
+    // Se tem cargo, mostra o cargo
+    if (exp?.cargo) {
+      return exp.cargo;
+    }
+    return "1 experiência";
+  }
+
+  return `${totalExp} experiências`;
+}
+
+// Extrai resumo de formação do currículo
+function getFormacaoSummary(candidato: CandidatoOverview): string {
+  const curriculos = candidato.curriculos || [];
+  // Pega o currículo principal ou o primeiro disponível
+  const curriculo = curriculos.find((c) => c.principal) || curriculos[0];
+
+  if (!curriculo || !curriculo.formacao || curriculo.formacao.length === 0) {
+    return "—";
+  }
+
+  const formacoes = curriculo.formacao;
+  const totalForm = formacoes.length;
+
+  if (totalForm === 1) {
+    const form = formacoes[0];
+    // Se tem curso, mostra o curso
+    if (form?.curso) {
+      return form.curso;
+    }
+    return "1 formação";
+  }
+
+  return `${totalForm} formações`;
+}
+
+// Skeleton para a tabela de candidatos
+function CandidatosTableSkeleton() {
+  return (
+    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <Table>
+        <TableHeader>
+          <TableRow className="border-gray-100 bg-gray-50/50">
+            <TableHead className="min-w-[200px]">
+              <Skeleton className="h-4 w-24" />
+            </TableHead>
+            <TableHead className="min-w-[180px]">
+              <Skeleton className="h-4 w-16" />
+            </TableHead>
+            <TableHead className="min-w-[120px]">
+              <Skeleton className="h-4 w-20" />
+            </TableHead>
+            <TableHead className="min-w-[120px]">
+              <Skeleton className="h-4 w-20" />
+            </TableHead>
+            <TableHead className="min-w-[120px]">
+              <Skeleton className="h-4 w-16" />
+            </TableHead>
+            <TableHead className="min-w-[140px]">
+              <Skeleton className="h-4 w-28" />
+            </TableHead>
+            <TableHead className="w-16" />
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {[...Array(5)].map((_, index) => (
+            <TableRow key={index} className="border-gray-100">
+              <TableCell className="px-4 py-3">
+                <div className="flex items-center gap-3">
+                  <Skeleton className="h-10 w-10 rounded-full" />
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-3 w-48" />
+                  </div>
+                </div>
+              </TableCell>
+              <TableCell className="px-4 py-3">
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-36" />
+                  <Skeleton className="h-3 w-28" />
+                </div>
+              </TableCell>
+              <TableCell className="px-4 py-3">
+                <Skeleton className="h-4 w-16" />
+              </TableCell>
+              <TableCell className="px-4 py-3">
+                <Skeleton className="h-4 w-20" />
+              </TableCell>
+              <TableCell className="px-4 py-3">
+                <Skeleton className="h-6 w-20 rounded-full" />
+              </TableCell>
+              <TableCell className="px-4 py-3">
+                <Skeleton className="h-4 w-24" />
+              </TableCell>
+              <TableCell className="px-4 py-3">
+                <div className="flex items-center justify-end gap-1">
+                  <Skeleton className="h-8 w-8 rounded-full" />
+                  <Skeleton className="h-8 w-8 rounded-full" />
+                  <Skeleton className="h-8 w-8 rounded-full" />
+                </div>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
 export function CandidatosTab({ vaga }: AboutTabProps) {
+  // Estados de paginação
   const [currentPage, setCurrentPage] = useState(1);
-  const [candidatosData, setCandidatosData] = useState<CandidatoItem[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+
+  // Estados de busca (pendente vs aplicada)
+  const [pendingSearchTerm, setPendingSearchTerm] = useState("");
+  const [appliedSearchTerm, setAppliedSearchTerm] = useState("");
+
+  // Estados de filtro de data
+  const [pendingDateRange, setPendingDateRange] = useState<DateRange>(() =>
+    createEmptyDateRange(),
+  );
+  const [appliedDateRange, setAppliedDateRange] = useState<DateRange>(() =>
+    createEmptyDateRange(),
+  );
+
+  // Query client para invalidação
+  const queryClient = useQueryClient();
+
+  // Estados dos modais
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedCandidato, setSelectedCandidato] =
     useState<CandidatoItem | null>(null);
-  const itemsPerPage = 8;
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [detailsCandidato, setDetailsCandidato] =
+    useState<CandidatoItem | null>(null);
+  const [loadingCandidatoId, setLoadingCandidatoId] = useState<string | null>(
+    null,
+  );
+  const [downloadingCurriculoId, setDownloadingCurriculoId] = useState<
+    string | null
+  >(null);
+  const [isSavingStatus, setIsSavingStatus] = useState(false);
 
-  // Buscar candidatos reais da vaga
-  useEffect(() => {
-    let isMounted = true;
-    async function fetchData() {
-      try {
-        setIsLoading(true);
-        setError(null);
-        const resp = await listarCandidatosOverview({ vagaId: vaga.id, page: 1, pageSize: 100 });
-        const data = resp?.data ?? [];
+  // Validação do campo de busca
+  const searchValidationMessage = useMemo(
+    () => getSearchValidationMessage(pendingSearchTerm),
+    [pendingSearchTerm],
+  );
+  const isSearchInputValid = !searchValidationMessage;
 
-        // Mapear para o formato local
-        const mapped: CandidatoItem[] = data.map((cand: CandidatoOverview) => {
-          const candidatura = (cand.candidaturas || []).find(
-            (c) => c.vagaId === vaga.id
-          );
-          const statusUI = mapBackendStatusToUi(candidatura?.status);
-          const aplicadaEm = candidatura?.aplicadaEm || cand.criadoEm;
-          return {
-            id: cand.id,
-            nome: cand.nomeCompleto,
-            email: cand.email,
-            telefone: cand.telefone ?? undefined,
-            dataInscricao: aplicadaEm,
-            status: statusUI,
-            experiencia: "—",
-            formacao: "—",
-            createdAt: aplicadaEm,
-            candidaturaId: candidatura?.id,
-          } satisfies CandidatoItem;
-        });
+  // Normaliza busca para API
+  const normalizedSearch = useMemo(
+    () =>
+      getNormalizedSearchOrUndefined(
+        appliedSearchTerm,
+        DEFAULT_SEARCH_MIN_LENGTH,
+      ),
+    [appliedSearchTerm],
+  );
 
-        if (isMounted) {
-          setCandidatosData(mapped);
-        }
-      } catch (err) {
-        console.error("Erro ao carregar candidatos da vaga:", err);
-        if (isMounted) {
-          setError("Não foi possível carregar candidatos da vaga.");
-          // fallback para mock se necessário
-          setCandidatosData(getCandidatosSimulados());
-        }
-      } finally {
-        if (isMounted) setIsLoading(false);
-      }
-    }
-    fetchData();
-    return () => {
-      isMounted = false;
+  // Filtros normalizados para a query
+  const normalizedFilters = useMemo<CandidatosFilters>(() => {
+    const filters: CandidatosFilters = {
+      vagaId: vaga.id,
+      page: currentPage,
+      pageSize: ITEMS_PER_PAGE,
     };
-  }, [vaga.id]);
 
-  // Cálculos de paginação
-  const totalPages = Math.ceil(candidatosData.length / itemsPerPage) || 1;
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const paginatedCandidatos = candidatosData.slice(startIndex, endIndex);
+    if (normalizedSearch) {
+      filters.search = normalizedSearch;
+    }
 
-  // Funções de navegação
-  const goToPage = (page: number) => {
-    setCurrentPage(Math.max(1, Math.min(page, totalPages)));
+    // Filtro de período de inscrição (aplicadaEm)
+    if (appliedDateRange.from) {
+      filters.aplicadaDe = appliedDateRange.from.toISOString().split("T")[0];
+    }
+    if (appliedDateRange.to) {
+      filters.aplicadaAte = appliedDateRange.to.toISOString().split("T")[0];
+    }
+
+    return filters;
+  }, [vaga.id, currentPage, normalizedSearch, appliedDateRange]);
+
+  // React Query para buscar candidatos
+  const {
+    data: queryResult,
+    isLoading,
+    isFetching,
+    error,
+    refetch,
+  } = useQuery({
+    queryKey: queryKeys.candidatos.byVagaFiltered(vaga.id, normalizedFilters),
+    queryFn: async () => {
+      const resp = await listarCandidatosOverview(normalizedFilters);
+      const data = resp?.data ?? [];
+      const pagination = resp?.pagination ?? {
+        page: normalizedFilters.page ?? 1,
+        pageSize: normalizedFilters.pageSize ?? ITEMS_PER_PAGE,
+        total: data.length,
+        totalPages: Math.max(1, Math.ceil(data.length / ITEMS_PER_PAGE)),
+      };
+
+      // Mapear para o formato local
+      const mapped: CandidatoItem[] = data.map((cand: CandidatoOverview) => {
+        const candidatura = (cand.candidaturas || []).find(
+          (c) => c.vagaId === vaga.id,
+        );
+        const statusUI = mapBackendStatusToUi(candidatura?.status);
+        const aplicadaEm = candidatura?.aplicadaEm || cand.criadoEm;
+
+        // Fallback seguro para o nome: se vier vazio ou for UUID, mostra email
+        let nome = cand.nomeCompleto;
+        if (!nome || isUUID(nome)) {
+          // Extrai parte do email antes do @ como fallback
+          nome = cand.email?.split("@")[0] || "Candidato";
+        }
+
+        // Extrai experiência e formação do currículo
+        const experiencia = getExperienciaSummary(cand);
+        const formacao = getFormacaoSummary(cand);
+
+        // Pega o curriculoId da candidatura ou do currículo principal do candidato
+        const curriculos = cand.curriculos || [];
+        const curriculoPrincipal =
+          curriculos.find((c) => c.principal) || curriculos[0];
+        const curriculoId = candidatura?.curriculoId || curriculoPrincipal?.id;
+
+        return {
+          id: cand.id,
+          codUsuario: cand.codUsuario,
+          nome,
+          email: cand.email,
+          telefone: cand.telefone ?? undefined,
+          avatarUrl: cand.avatarUrl,
+          dataInscricao: aplicadaEm,
+          status: statusUI,
+          experiencia,
+          formacao,
+          createdAt: aplicadaEm,
+          candidaturaId: candidatura?.id,
+          curriculoId,
+        } satisfies CandidatoItem;
+      });
+
+      return {
+        candidatos: mapped,
+        pagination,
+      };
+    },
+    staleTime: 2 * 60 * 1000, // 2 minutos
+    gcTime: 10 * 60 * 1000, // 10 minutos
+  });
+
+  const candidatosData = queryResult?.candidatos ?? [];
+  const pagination = queryResult?.pagination ?? {
+    page: currentPage,
+    pageSize: ITEMS_PER_PAGE,
+    total: 0,
+    totalPages: 1,
   };
 
-  const goToPreviousPage = () => {
-    setCurrentPage((prev) => Math.max(1, prev - 1));
-  };
+  const totalPages = pagination.totalPages;
+  const totalItems = pagination.total;
 
-  const goToNextPage = () => {
-    setCurrentPage((prev) => Math.min(totalPages, prev + 1));
-  };
+  // Handle de submit da pesquisa (só busca ao clicar)
+  const handleSearchSubmit = useCallback(
+    (rawValue?: string) => {
+      const value = rawValue ?? pendingSearchTerm;
+      const validationMessage = getSearchValidationMessage(value);
+      if (validationMessage) {
+        return;
+      }
+
+      const trimmedValue = value.trim();
+      setPendingSearchTerm(trimmedValue);
+      setAppliedSearchTerm(trimmedValue);
+      setAppliedDateRange(cloneDateRange(pendingDateRange));
+      setCurrentPage(1);
+    },
+    [pendingSearchTerm, pendingDateRange],
+  );
+
+  // Funções de navegação de página
+  const handlePageChange = useCallback(
+    (page: number) => {
+      const nextPage = Math.max(1, Math.min(page, totalPages));
+      setCurrentPage(nextPage);
+    },
+    [totalPages],
+  );
 
   // Funções para editar status do candidato
   const handleEditStatus = (candidato: CandidatoItem) => {
@@ -260,30 +470,10 @@ export function CandidatosTab({ vaga }: AboutTabProps) {
     setIsEditModalOpen(true);
   };
 
-  const handleSaveStatus = (
-    candidatoId: string,
-    newStatus: CandidatoItem["status"]
-  ) => {
-    setCandidatosData((prev) =>
-      prev.map((candidato) =>
-        candidato.id === candidatoId
-          ? { ...candidato, status: newStatus }
-          : candidato
-      )
-    );
-    setIsEditModalOpen(false);
-    setSelectedCandidato(null);
-  };
-
   const handleCancelEdit = () => {
     setIsEditModalOpen(false);
     setSelectedCandidato(null);
   };
-
-  // Detalhes do candidato
-  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-  const [detailsCandidato, setDetailsCandidato] = useState<CandidatoItem | null>(null);
-  const [loadingCandidatoId, setLoadingCandidatoId] = useState<string | null>(null);
 
   const handleViewDetails = (candidato: CandidatoItem) => {
     setLoadingCandidatoId(candidato.id);
@@ -293,7 +483,99 @@ export function CandidatosTab({ vaga }: AboutTabProps) {
     setTimeout(() => setLoadingCandidatoId(null), 500);
   };
 
-  // Lógica para páginas visíveis (mesmo padrão do CompanyDashboard)
+  // Download do currículo - gera PDF no frontend usando a função existente
+  const handleDownloadCurriculo = async (candidato: CandidatoItem) => {
+    if (!candidato.candidaturaId) {
+      toastCustom.error({
+        title: "Currículo não disponível",
+        description: "Este candidato não possui candidatura válida.",
+      });
+      return;
+    }
+
+    setDownloadingCurriculoId(candidato.id);
+    try {
+      // Busca os detalhes da candidatura (que inclui o currículo completo)
+      const response = await getCandidaturaDetalhe(candidato.candidaturaId);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const responseAny = response as any;
+      const candidaturaData = responseAny?.candidatura ?? responseAny;
+      const curriculo = candidaturaData?.curriculo;
+
+      if (!curriculo) {
+        toastCustom.error({
+          title: "Currículo não disponível",
+          description: "Este candidato não possui currículo cadastrado.",
+        });
+        return;
+      }
+
+      // Monta os dados do usuário para o PDF (usa dados da candidatura se disponíveis)
+      const candidatoData = candidaturaData?.candidato;
+      const usuarioData = {
+        email: candidatoData?.email || candidato.email,
+        telefone: candidatoData?.telefone || candidato.telefone,
+        avatarUrl: candidatoData?.avatarUrl || candidato.avatarUrl,
+      };
+
+      // Gera o PDF no frontend
+      await generateCurriculoPdf(
+        curriculo as Curriculo,
+        candidatoData?.nome || candidatoData?.nomeCompleto || candidato.nome,
+        usuarioData as Parameters<typeof generateCurriculoPdf>[2],
+      );
+
+      toastCustom.success({
+        title: "Download iniciado",
+        description: "O currículo está sendo baixado em PDF.",
+      });
+    } catch (error) {
+      console.error("Erro ao gerar PDF do currículo:", error);
+      toastCustom.error({
+        title: "Erro ao gerar PDF",
+        description:
+          "Não foi possível gerar o currículo em PDF. Tente novamente.",
+      });
+    } finally {
+      setDownloadingCurriculoId(null);
+    }
+  };
+
+  // Salvar status da candidatura - chama a API
+  const handleSaveStatus = async (candidaturaId: string, statusId: string) => {
+    setIsSavingStatus(true);
+    try {
+      await atualizarStatusCandidaturaById(candidaturaId, statusId);
+
+      toastCustom.success({
+        title: "Status atualizado",
+        description: "O status do candidato foi atualizado com sucesso.",
+      });
+
+      // Invalidar queries para atualizar a lista
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.candidatos.byVagaFiltered(
+          vaga.id,
+          normalizedFilters,
+        ),
+      });
+
+      // Fechar modal e limpar seleção
+      setIsEditModalOpen(false);
+      setSelectedCandidato(null);
+    } catch (error) {
+      console.error("Erro ao atualizar status:", error);
+      toastCustom.error({
+        title: "Erro ao atualizar",
+        description: "Não foi possível atualizar o status. Tente novamente.",
+      });
+      throw error; // Re-throw para o modal saber que falhou
+    } finally {
+      setIsSavingStatus(false);
+    }
+  };
+
+  // Lógica para páginas visíveis
   const visiblePages = useMemo(() => {
     const pages: number[] = [];
     if (totalPages <= 5) {
@@ -313,6 +595,36 @@ export function CandidatosTab({ vaga }: AboutTabProps) {
 
     return pages;
   }, [currentPage, totalPages]);
+
+  // Campos de filtro
+  const filterFields: FilterField[] = useMemo(
+    () => [
+      {
+        key: "dateRange",
+        label: "Período de inscrição",
+        type: "date-range",
+        placeholder: "Selecionar período",
+      },
+    ],
+    [],
+  );
+
+  const filterValues = useMemo(
+    () => ({
+      dateRange: pendingDateRange,
+    }),
+    [pendingDateRange],
+  );
+
+  // Limpar todos os filtros
+  const handleClearAll = useCallback(() => {
+    setPendingSearchTerm("");
+    setAppliedSearchTerm("");
+    const resetRange = createEmptyDateRange();
+    setPendingDateRange(resetRange);
+    setAppliedDateRange(resetRange);
+    setCurrentPage(1);
+  }, []);
 
   // Colunas da tabela
   const tableColumns = [
@@ -353,24 +665,32 @@ export function CandidatosTab({ vaga }: AboutTabProps) {
     candidato: CandidatoItem,
     onView: (item: CandidatoItem) => void,
     isRowLoading: boolean,
-    isDisabled: boolean
+    isDisabled: boolean,
   ) => {
     return (
       <>
         {/* Nome do Candidato */}
         <td className="px-4 py-3">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-blue-600">
-              <Users className="h-5 w-5" />
-            </div>
+            <Avatar className="h-10 w-10 shrink-0">
+              <AvatarImage
+                src={candidato.avatarUrl || undefined}
+                alt={candidato.nome}
+              />
+              <AvatarFallback className="bg-primary/10 text-primary/80 text-xs font-semibold">
+                {getInitials(candidato.nome)}
+              </AvatarFallback>
+            </Avatar>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 mb-1">
                 <div className="font-bold text-gray-900 truncate text-sm">
                   {candidato.nome}
                 </div>
-                <code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded font-mono text-gray-500 flex-shrink-0">
-                  {candidato.id}
-                </code>
+                {candidato.codUsuario && (
+                  <code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded font-mono text-gray-500 flex-shrink-0">
+                    {candidato.codUsuario}
+                  </code>
+                )}
               </div>
             </div>
           </div>
@@ -386,7 +706,9 @@ export function CandidatosTab({ vaga }: AboutTabProps) {
             {candidato.telefone && (
               <div className="flex items-center gap-2 text-sm">
                 <Phone className="h-4 w-4 text-gray-400" />
-                <span className="text-gray-600">{candidato.telefone}</span>
+                <span className="text-gray-600">
+                  {formatPhone(candidato.telefone)}
+                </span>
               </div>
             )}
           </div>
@@ -408,7 +730,7 @@ export function CandidatosTab({ vaga }: AboutTabProps) {
         <td className="px-4 py-3">
           <span
             className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(
-              candidato.status
+              candidato.status,
             )}`}
           >
             {getStatusLabel(candidato.status)}
@@ -435,17 +757,17 @@ export function CandidatosTab({ vaga }: AboutTabProps) {
                   disabled={isDisabled}
                   className={cn(
                     "h-8 w-8 rounded-full cursor-pointer",
-                    isRowLoading 
-                      ? "text-blue-600 bg-blue-100" 
+                    isRowLoading
+                      ? "text-blue-600 bg-blue-100"
                       : "text-gray-500 hover:text-white hover:bg-[var(--primary-color)]",
-                    "disabled:opacity-50 disabled:cursor-wait"
+                    "disabled:opacity-50 disabled:cursor-wait",
                   )}
                   aria-label="Ver detalhes"
                 >
                   {isRowLoading ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
-                  <Eye className="h-4 w-4" />
+                    <Eye className="h-4 w-4" />
                   )}
                 </Button>
               </TooltipTrigger>
@@ -475,20 +797,42 @@ export function CandidatosTab({ vaga }: AboutTabProps) {
                 <Button
                   variant="ghost"
                   size="icon"
-                  disabled={isDisabled}
-                  className="h-8 w-8 rounded-full text-gray-500 hover:text-white hover:bg-[var(--primary-color)] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={
+                    isDisabled || downloadingCurriculoId === candidato.id
+                  }
+                  onClick={() => handleDownloadCurriculo(candidato)}
+                  className={cn(
+                    "h-8 w-8 rounded-full cursor-pointer",
+                    downloadingCurriculoId === candidato.id
+                      ? "text-green-600 bg-green-100"
+                      : "text-gray-500 hover:text-white hover:bg-[var(--primary-color)]",
+                    "disabled:opacity-50 disabled:cursor-not-allowed",
+                  )}
                   aria-label="Baixar currículo"
                 >
-                  <Download className="h-4 w-4" />
+                  {downloadingCurriculoId === candidato.id ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Download className="h-4 w-4" />
+                  )}
                 </Button>
               </TooltipTrigger>
-              <TooltipContent sideOffset={8}>Baixar currículo</TooltipContent>
+              <TooltipContent sideOffset={8}>
+                {downloadingCurriculoId === candidato.id
+                  ? "Baixando..."
+                  : "Baixar currículo"}
+              </TooltipContent>
             </Tooltip>
           </div>
         </td>
       </>
     );
   };
+
+  const shouldShowSkeleton =
+    isLoading || (isFetching && candidatosData.length === 0);
+  const showEmptyState = !isLoading && !isFetching && totalItems === 0;
+  const errorMessage = error ? "Erro ao carregar candidatos." : null;
 
   return (
     <div className="space-y-6">
@@ -498,174 +842,228 @@ export function CandidatosTab({ vaga }: AboutTabProps) {
         <p>Lista de todos os candidatos que se inscreveram nesta vaga</p>
       </div>
 
+      {/* Barra de Filtros */}
+      <div className="border-b border-gray-200 pb-4">
+        <FilterBar
+          className="lg:grid-cols-[minmax(0,3fr)_minmax(0,1fr)_auto]"
+          fields={filterFields}
+          values={filterValues}
+          onChange={(key, value) => {
+            if (key === "dateRange") {
+              const range = value
+                ? cloneDateRange(value as DateRange)
+                : createEmptyDateRange();
+              setPendingDateRange(range);
+              // Aplica o filtro de data automaticamente (sem precisar do botão Pesquisar)
+              setAppliedDateRange(range);
+              setCurrentPage(1);
+            }
+          }}
+          onClearAll={handleClearAll}
+          search={{
+            label: "Pesquisar candidato",
+            value: pendingSearchTerm,
+            onChange: (value) => setPendingSearchTerm(value),
+            placeholder: "Buscar por nome, email ou código...",
+            onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                handleSearchSubmit((e.target as HTMLInputElement).value);
+              }
+            },
+            error: searchValidationMessage,
+            helperText: SEARCH_HELPER_TEXT,
+            helperPlacement: "tooltip",
+          }}
+          rightActions={
+            <ButtonCustom
+              variant="primary"
+              size="lg"
+              onClick={() => handleSearchSubmit()}
+              disabled={isLoading || isFetching || !isSearchInputValid}
+              fullWidth
+              className="md:w-full xl:w-auto"
+            >
+              Pesquisar
+            </ButtonCustom>
+          }
+        />
+
+        {errorMessage && (
+          <div className="mt-3 text-sm text-red-600 flex items-center gap-2 px-1">
+            <span>{errorMessage}</span>
+            <Button
+              variant="link"
+              size="sm"
+              onClick={() => refetch()}
+              className="p-0 h-auto"
+              disabled={isLoading}
+            >
+              Tentar novamente
+            </Button>
+          </div>
+        )}
+      </div>
+
       {/* Lista de Candidatos */}
       <div className="w-full max-w-none">
-        {candidatosData.length === 0 ? (
-          <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
-            <div className="flex flex-col items-center gap-4">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gray-100">
-                <Users className="h-8 w-8 text-gray-400" />
-              </div>
-              <div className="space-y-2">
-                <h3 className="text-lg font-medium text-gray-900">
-                  Nenhum candidato encontrado
-                </h3>
-                <p className="text-gray-500">
-                  Ainda não há candidatos inscritos nesta vaga.
-                </p>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <>
-            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow className="border-gray-100 bg-gray-50/50">
-                    {tableColumns.map((column) => (
-                      <TableHead
-                        key={column.key}
-                        className={
-                          column.className || "min-w-[120px] max-w-[150px]"
-                        }
-                      >
-                        <span className="text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                          {column.label}
-                        </span>
-                      </TableHead>
-                    ))}
-                    <TableHead className="text-right w-16"></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {isLoading && (
-                    <TableRow>
-                      <td className="px-4 py-6 text-sm text-gray-500" colSpan={tableColumns.length + 1}>
-                        Carregando candidatos...
-                      </td>
-                    </TableRow>
-                  )}
-                  {!isLoading && error && (
-                    <TableRow>
-                      <td className="px-4 py-6 text-sm text-red-600" colSpan={tableColumns.length + 1}>
-                        {error}
-                      </td>
-                    </TableRow>
-                  )}
-                  {!isLoading && !error && paginatedCandidatos.map((candidato) => {
-                    const isRowLoading = loadingCandidatoId === candidato.id;
-                    const isDisabled = loadingCandidatoId !== null && !isRowLoading;
-                    return (
-                    <TableRow
-                      key={candidato.id}
-                        className={cn(
-                          "border-gray-100 transition-colors",
-                          isDisabled 
-                            ? "opacity-50 pointer-events-none" 
-                            : "hover:bg-gray-50/50",
-                          isRowLoading && "bg-blue-50/50"
-                        )}
-                    >
-                        {renderCandidatoItem(candidato, handleViewDetails, isRowLoading, isDisabled)}
-                    </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </div>
+        {/* Loading State com Skeleton */}
+        {shouldShowSkeleton && <CandidatosTableSkeleton />}
 
-            {/* Controles de Paginação */}
-            {totalPages > 1 && (
+        {/* Empty State */}
+        {showEmptyState && (
+          <EmptyState
+            illustration="userProfiles"
+            title="Nenhum candidato encontrado"
+            description={
+              appliedSearchTerm || appliedDateRange.from || appliedDateRange.to
+                ? "Nenhum candidato corresponde aos filtros aplicados. Tente ajustar sua busca."
+                : "Ainda não há candidatos inscritos nesta vaga. Quando os candidatos se inscreverem, eles aparecerão aqui."
+            }
+            size="md"
+          />
+        )}
+
+        {/* Data State */}
+        {!shouldShowSkeleton &&
+          !showEmptyState &&
+          candidatosData.length > 0 && (
+            <>
+              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="border-gray-100 bg-gray-50/50">
+                      {tableColumns.map((column) => (
+                        <TableHead
+                          key={column.key}
+                          className={
+                            column.className || "min-w-[120px] max-w-[150px]"
+                          }
+                        >
+                          <span className="text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                            {column.label}
+                          </span>
+                        </TableHead>
+                      ))}
+                      <TableHead className="text-right w-16"></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {candidatosData.map((candidato) => {
+                      const isRowLoading = loadingCandidatoId === candidato.id;
+                      const isDisabled =
+                        loadingCandidatoId !== null && !isRowLoading;
+                      return (
+                        <TableRow
+                          key={candidato.id}
+                          className={cn(
+                            "border-gray-100 transition-colors",
+                            isDisabled
+                              ? "opacity-50 pointer-events-none"
+                              : "hover:bg-gray-50/50",
+                            isRowLoading && "bg-blue-50/50",
+                          )}
+                        >
+                          {renderCandidatoItem(
+                            candidato,
+                            handleViewDetails,
+                            isRowLoading,
+                            isDisabled,
+                          )}
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Controles de Paginação */}
               <div className="flex flex-col gap-4 px-1 py-6 border-t border-gray-200 bg-gray-50/30 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-2 text-sm text-gray-600">
                   <span>
                     Mostrando{" "}
                     {Math.min(
-                      (currentPage - 1) * itemsPerPage + 1,
-                      candidatosData.length
+                      (currentPage - 1) * ITEMS_PER_PAGE + 1,
+                      totalItems,
                     )}{" "}
-                    a{" "}
-                    {Math.min(
-                      currentPage * itemsPerPage,
-                      candidatosData.length
-                    )}{" "}
-                    de {candidatosData.length}{" "}
-                    {candidatosData.length === 1 ? "candidato" : "candidatos"}
+                    a {Math.min(currentPage * ITEMS_PER_PAGE, totalItems)} de{" "}
+                    {totalItems} {totalItems === 1 ? "candidato" : "candidatos"}
                   </span>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <ButtonCustom
-                    variant="outline"
-                    size="sm"
-                    onClick={goToPreviousPage}
-                    disabled={currentPage === 1}
-                    className="h-8 px-3"
-                  >
-                    Anterior
-                  </ButtonCustom>
-
-                  {visiblePages[0] > 1 && (
-                    <>
-                      <ButtonCustom
-                        variant={currentPage === 1 ? "primary" : "outline"}
-                        size="sm"
-                        onClick={() => goToPage(1)}
-                        className="h-8 w-8 p-0"
-                      >
-                        1
-                      </ButtonCustom>
-                      {visiblePages[0] > 2 && (
-                        <span className="text-gray-400">...</span>
-                      )}
-                    </>
-                  )}
-
-                  {visiblePages.map((page) => (
+                {totalPages > 1 && (
+                  <div className="flex items-center gap-2">
                     <ButtonCustom
-                      key={page}
-                      variant={currentPage === page ? "primary" : "outline"}
+                      variant="outline"
                       size="sm"
-                      onClick={() => goToPage(page)}
-                      className="h-8 w-8 p-0"
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={currentPage === 1}
+                      className="h-8 px-3"
                     >
-                      {page}
+                      Anterior
                     </ButtonCustom>
-                  ))}
 
-                  {visiblePages[visiblePages.length - 1] < totalPages && (
-                    <>
-                      {visiblePages[visiblePages.length - 1] <
-                        totalPages - 1 && (
-                        <span className="text-gray-400">...</span>
-                      )}
+                    {visiblePages[0] > 1 && (
+                      <>
+                        <ButtonCustom
+                          variant={currentPage === 1 ? "primary" : "outline"}
+                          size="sm"
+                          onClick={() => handlePageChange(1)}
+                          className="h-8 w-8 p-0"
+                        >
+                          1
+                        </ButtonCustom>
+                        {visiblePages[0] > 2 && (
+                          <span className="text-gray-400">...</span>
+                        )}
+                      </>
+                    )}
+
+                    {visiblePages.map((page) => (
                       <ButtonCustom
-                        variant={
-                          currentPage === totalPages ? "primary" : "outline"
-                        }
+                        key={page}
+                        variant={currentPage === page ? "primary" : "outline"}
                         size="sm"
-                        onClick={() => goToPage(totalPages)}
+                        onClick={() => handlePageChange(page)}
                         className="h-8 w-8 p-0"
                       >
-                        {totalPages}
+                        {page}
                       </ButtonCustom>
-                    </>
-                  )}
+                    ))}
 
-                  <ButtonCustom
-                    variant="outline"
-                    size="sm"
-                    onClick={goToNextPage}
-                    disabled={currentPage === totalPages}
-                    className="h-8 px-3"
-                  >
-                    Próxima
-                  </ButtonCustom>
-                </div>
+                    {visiblePages[visiblePages.length - 1] < totalPages && (
+                      <>
+                        {visiblePages[visiblePages.length - 1] <
+                          totalPages - 1 && (
+                          <span className="text-gray-400">...</span>
+                        )}
+                        <ButtonCustom
+                          variant={
+                            currentPage === totalPages ? "primary" : "outline"
+                          }
+                          size="sm"
+                          onClick={() => handlePageChange(totalPages)}
+                          className="h-8 w-8 p-0"
+                        >
+                          {totalPages}
+                        </ButtonCustom>
+                      </>
+                    )}
+
+                    <ButtonCustom
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                      className="h-8 px-3"
+                    >
+                      Próxima
+                    </ButtonCustom>
+                  </div>
+                )}
               </div>
-            )}
-          </>
-        )}
+            </>
+          )}
       </div>
 
       {/* Modal de Edição de Status */}
@@ -674,6 +1072,7 @@ export function CandidatosTab({ vaga }: AboutTabProps) {
         onOpenChange={setIsEditModalOpen}
         candidato={selectedCandidato}
         onSaveStatus={handleSaveStatus}
+        isSaving={isSavingStatus}
       />
 
       {/* Modal de Detalhes do Candidato */}
@@ -688,6 +1087,7 @@ export function CandidatosTab({ vaga }: AboutTabProps) {
                 email: detailsCandidato.email,
                 telefone: detailsCandidato.telefone,
                 dataInscricao: detailsCandidato.dataInscricao,
+                avatarUrl: detailsCandidato.avatarUrl,
               }
             : undefined
         }

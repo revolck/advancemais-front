@@ -53,7 +53,7 @@ export function VagasDashboard({
 
   const [pendingSearchTerm, setPendingSearchTerm] = useState("");
   const [appliedSearchTerm, setAppliedSearchTerm] = useState("");
-  const [selectedStatuses, setSelectedStatuses] = useState<VagaStatus[]>([]);
+  const [selectedStatuses, setSelectedStatuses] = useState<VagaStatus[]>(["PUBLICADO"]);
   const [selectedCompanies, setSelectedCompanies] = useState<string[]>([]);
   const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
   const [isNavigating, setIsNavigating] = useState(false);

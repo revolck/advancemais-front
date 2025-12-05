@@ -25,6 +25,9 @@ import type {
   VagaPublicaListFilters,
   VagasPublicasListResponse,
   CandidaturaDetalhe,
+  // Status de candidatura
+  StatusCandidaturaDisponivelResponse,
+  AtualizarCandidaturaResponse,
 } from "./types";
 
 function normalizeHeaders(headers?: HeadersInit): Record<string, string> {
@@ -173,12 +176,12 @@ export async function listarCandidatosOverview(
     );
   }
 
-  if (filters?.criadoDe) {
-    searchParams.append("criadoDe", filters.criadoDe);
+  if (filters?.aplicadaDe) {
+    searchParams.append("aplicadaDe", filters.aplicadaDe);
   }
 
-  if (filters?.criadoAte) {
-    searchParams.append("criadoAte", filters.criadoAte);
+  if (filters?.aplicadaAte) {
+    searchParams.append("aplicadaAte", filters.aplicadaAte);
   }
 
   const url = `${CANDIDATOS_ROUTES.OVERVIEW}${
@@ -379,29 +382,8 @@ export async function getCurriculo(id: string, init?: RequestInit) {
   });
 }
 
-export async function downloadCurriculoPDF(
-  id: string,
-  init?: RequestInit
-): Promise<Blob> {
-  const endpoint = CANDIDATOS_ROUTES.CURRICULO_PDF(id);
-  const url = buildApiUrl(endpoint);
-
-  const response = await fetch(url, {
-    method: "GET",
-    ...init,
-    headers: {
-      ...buildAuthHeaders(init?.headers),
-      Accept: "application/pdf",
-    },
-    credentials: "include",
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to download PDF: ${response.statusText}`);
-  }
-
-  return response.blob();
-}
+// NOTA: downloadCurriculoPDF foi removido pois o endpoint /pdf não existe no backend
+// Use generateCurriculoPdf de candidato-details/utils/generateCurriculoPdf.ts para gerar PDFs no frontend
 
 export async function createCurriculo(
   data: CreateCurriculoPayload,
@@ -651,4 +633,55 @@ export async function listarVagasPublicas(
       headers: { Accept: apiConfig.headers.Accept, ...(init?.headers as any) },
     },
   });
+}
+
+// ========================================
+// Status de Candidatura
+// ========================================
+
+/**
+ * Lista status disponíveis para candidatura
+ * GET /api/v1/candidatos/candidaturas/status-disponiveis
+ */
+export async function listarStatusCandidatura(
+  init?: RequestInit
+): Promise<StatusCandidaturaDisponivelResponse> {
+  return apiFetch<StatusCandidaturaDisponivelResponse>(
+    CANDIDATOS_ROUTES.STATUS_DISPONIVEIS,
+    {
+      init: {
+        method: "GET",
+        ...init,
+        headers: buildAuthHeaders(init?.headers),
+      },
+    }
+  );
+}
+
+/**
+ * Atualiza status de uma candidatura
+ * PUT /api/v1/candidatos/candidaturas/{candidaturaId}
+ * 
+ * @param candidaturaId - ID da candidatura
+ * @param statusId - UUID do status (não o nome!)
+ */
+export async function atualizarStatusCandidaturaById(
+  candidaturaId: string,
+  statusId: string,
+  init?: RequestInit
+): Promise<AtualizarCandidaturaResponse> {
+  return apiFetch<AtualizarCandidaturaResponse>(
+    CANDIDATOS_ROUTES.CANDIDATURA(candidaturaId),
+    {
+      init: {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          ...buildAuthHeaders(init?.headers),
+        },
+        body: JSON.stringify({ status: statusId }), // Enviar UUID, não o nome!
+        ...init,
+      },
+    }
+  );
 }

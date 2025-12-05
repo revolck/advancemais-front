@@ -45,6 +45,9 @@ export const queryKeys = {
   candidatos: {
     detail: createDetailKey("admin-candidato-consolidated"),
     list: createListKey<unknown>("admin-candidatos-list"),
+    byVaga: (vagaId: string) => ["admin-candidatos-by-vaga", vagaId] as const,
+    byVagaFiltered: (vagaId: string, filters: unknown) =>
+      ["admin-candidatos-by-vaga", vagaId, filters] as const,
   },
   empresas: {
     list: createListKey<unknown>("admin-empresas-list"),
@@ -53,5 +56,11 @@ export const queryKeys = {
   vagas: {
     list: createListKey<unknown>("admin-vagas-list"),
     detail: createDetailKey("admin-vaga-detail"),
+  },
+  statusCandidatura: {
+    list: () => ["status-candidatura-list"] as const,
+  },
+  candidaturas: {
+    detalhe: createDetailKey("candidatura-detalhe"),
   },
 };
