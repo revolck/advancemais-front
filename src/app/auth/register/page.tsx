@@ -11,10 +11,15 @@ import {
 } from "@/components/ui/custom";
 import TermsOfUseModal from "@/components/partials/auth/register/terms-of-use-modal";
 import PrivacyPolicyModal from "@/components/partials/auth/register/privacy-policy-modal";
+import { DocumentValidationModal } from "@/theme/website/components/checkout/components/DocumentValidationModal";
 import { GraduationCap, User, Building } from "lucide-react";
 import { registerUser } from "@/api/usuarios";
 import type { UsuarioRegisterPayload } from "@/api/usuarios";
 import { MaskService } from "@/services";
+import {
+  validateDocument,
+  sanitizeDocument,
+} from "@/theme/website/components/checkout/utils/formatters";
 import Image from "next/image";
 
 type SelectedType = "student" | "candidate" | "company" | null;
@@ -72,6 +77,12 @@ const RegisterPage = () => {
   );
   const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
   const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
+
+  // Modal de validação de documento (CPF/CNPJ)
+  const [isDocumentModalOpen, setIsDocumentModalOpen] = useState(false);
+  const [invalidDocumentType, setInvalidDocumentType] = useState<
+    "CPF" | "CNPJ"
+  >("CPF");
 
   useEffect(() => {
     const savedForm = localStorage.getItem("registerFormData");
@@ -302,6 +313,24 @@ const RegisterPage = () => {
       toastCustom.error("Selecione o tipo de conta para continuar.");
       return;
     }
+
+    // ✅ Validação matemática do documento ANTES de enviar
+    const isCompanyType = selectedType === "company";
+    const expectedType = isCompanyType ? "CNPJ" : "CPF";
+    const documentClean = sanitizeDocument(formData.document);
+    const validation = validateDocument(documentClean);
+
+    // Verifica se o tipo do documento corresponde ao esperado
+    const documentTypeMismatch = validation.type !== expectedType;
+    const documentInvalid = !validation.valid || documentTypeMismatch;
+
+    if (documentInvalid) {
+      // Mostra modal de erro com o tipo correto
+      setInvalidDocumentType(expectedType);
+      setIsDocumentModalOpen(true);
+      return;
+    }
+
     startTransition(async () => {
       const documentoLimpo = maskService.removeMask(
         formData.document,
@@ -619,9 +648,8 @@ const RegisterPage = () => {
           <ButtonCustom
             type="submit"
             fullWidth
-            size="md"
+            size="lg"
             variant="primary"
-            className="h-10 sm:h-11 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer text-sm"
             disabled={!isFormValid() || isPending}
             isLoading={isPending}
             loadingText={`Criando conta ${
@@ -819,6 +847,12 @@ const RegisterPage = () => {
       <PrivacyPolicyModal
         isOpen={isPrivacyModalOpen}
         onOpenChange={setIsPrivacyModalOpen}
+      />
+      <DocumentValidationModal
+        isOpen={isDocumentModalOpen}
+        onClose={() => setIsDocumentModalOpen(false)}
+        documentType={invalidDocumentType}
+        documentValue={formData.document}
       />
       <OfflineModal />
     </div>

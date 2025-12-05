@@ -35,7 +35,7 @@ export const DocumentValidationModal: React.FC<
   DocumentValidationModalProps
 > = ({ isOpen, onClose, documentType }) => {
   return (
-    <ModalCustom isOpen={isOpen} onClose={onClose} size="sm">
+    <ModalCustom isOpen={isOpen} onClose={onClose} size="sm" backdrop="blur">
       <ModalContentWrapper hideCloseButton={false}>
         <ModalHeader className="pb-0">
           <div className="flex flex-col items-center text-center gap-3">

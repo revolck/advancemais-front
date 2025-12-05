@@ -186,7 +186,10 @@ export const BoletoSuccessScreen: React.FC<BoletoSuccessScreenProps> = ({
                     variant="primary"
                     size="md"
                     onClick={copyBoletoCode}
-                    className={cn("h-8 text-xs cursor-pointer", codeCopied && "text-emerald-600")}
+                    className={cn(
+                      "h-8 text-xs cursor-pointer",
+                      codeCopied && "text-emerald-600"
+                    )}
                   >
                     {codeCopied ? (
                       <>
@@ -232,7 +235,7 @@ export const BoletoSuccessScreen: React.FC<BoletoSuccessScreenProps> = ({
                   <p className="!text-sm !font-medium !text-amber-800 !mb-0">
                     Pague até {formattedExpiryDate}
                   </p>
-                  <p className="!text-xs !text-amber-600 !mt-1 !mb-0">
+                  <p className="!text-xs !text-amber-600">
                     O boleto vence em 3 dias úteis
                   </p>
                 </div>
@@ -245,8 +248,9 @@ export const BoletoSuccessScreen: React.FC<BoletoSuccessScreenProps> = ({
                   <p className="!text-sm !font-medium !text-blue-800 !mb-0">
                     Confirmação por e-mail
                   </p>
-                  <p className="!text-xs !text-blue-600 !mt-1 !mb-0">
-                    Após a compensação (até 3 dias úteis), seu plano será ativado
+                  <p className="!text-xs !text-blue-600">
+                    Após a compensação (até 3 dias úteis), seu plano será
+                    ativado
                   </p>
                 </div>
               </div>
@@ -258,7 +262,7 @@ export const BoletoSuccessScreen: React.FC<BoletoSuccessScreenProps> = ({
                   <p className="!text-sm !font-medium !text-zinc-700 !mb-0">
                     Prazo de compensação
                   </p>
-                  <p className="!text-xs !text-zinc-500 !mt-1 !mb-0">
+                  <p className="!text-xs !text-zinc-500">
                     O pagamento pode levar até 3 dias úteis para ser processado
                   </p>
                 </div>
@@ -272,7 +276,7 @@ export const BoletoSuccessScreen: React.FC<BoletoSuccessScreenProps> = ({
           <div className="lg:sticky lg:top-24 space-y-6">
             {/* Resumo */}
             <div className="bg-white rounded-2xl p-6">
-              <h3 className="text-lg font-semibold text-zinc-900 mb-4">
+              <h3 className="!text-lg !font-semibold !text-zinc-900 !mb-4">
                 Resumo do pedido
               </h3>
 
@@ -313,7 +317,7 @@ export const BoletoSuccessScreen: React.FC<BoletoSuccessScreenProps> = ({
                 <p className="!text-sm !font-medium !text-emerald-800 !mb-0">
                   Pagamento 100% seguro
                 </p>
-                <p className="!text-xs !text-emerald-600 !mt-1 !mb-0">
+                <p className="!text-xs !text-emerald-600">
                   Processado pelo Mercado Pago com criptografia de ponta a ponta
                 </p>
               </div>

@@ -17,6 +17,10 @@ const SignInPageDemo = () => {
   const [isRecoveryOpen, setIsRecoveryOpen] = useState(false);
   const searchParams = useSearchParams();
 
+  // Estado para manter o formulário bloqueado durante redirect
+  // Importante: não deve ser resetado após sucesso
+  const [isRedirecting, setIsRedirecting] = useState(false);
+
   useEffect(() => {
     const storedName = localStorage.getItem("userName");
     if (storedName) {
@@ -28,7 +32,7 @@ const SignInPageDemo = () => {
     const error = searchParams?.get("error");
     if (error === "unauthorized") {
       toastCustom.error(
-        "Você não tem autorização para acessar como visitante. Por favor realize seu cadastro."
+        "Você não tem autorização para acessar como visitante. Por favor realize seu cadastro.",
       );
     }
   }, [searchParams]);
@@ -51,7 +55,7 @@ const SignInPageDemo = () => {
     startTransition(async () => {
       const formData = new FormData(formElement);
       const { documento, senha, rememberMe } = Object.fromEntries(
-        formData.entries()
+        formData.entries(),
       ) as {
         documento: string;
         senha: string;
@@ -72,6 +76,10 @@ const SignInPageDemo = () => {
           throw new Error(res.message || "Login falhou");
         }
 
+        // ✅ Login bem-sucedido - marca como redirecionando
+        // Isso mantém o formulário bloqueado até o redirect acontecer
+        setIsRedirecting(true);
+
         let userRole: UserRole | undefined;
         // Busca nome e role do usuário para saudar em futuros logins
         try {
@@ -85,10 +93,10 @@ const SignInPageDemo = () => {
               localStorage.setItem("userName", firstName);
             }
             const candidateRoles = [profile.usuario.role].filter(
-              Boolean
+              Boolean,
             ) as string[];
             userRole = candidateRoles.find((roleCandidate) =>
-              ALL_ROLES.includes(roleCandidate as UserRole)
+              ALL_ROLES.includes(roleCandidate as UserRole),
             ) as UserRole | undefined;
           }
         } catch (profileError) {
@@ -113,12 +121,16 @@ const SignInPageDemo = () => {
         const protocol = window.location.protocol;
         const port = window.location.port ? `:${window.location.port}` : "";
         toastCustom.success("Login realizado com sucesso!");
+
+        // Redirect após delay - formulário permanece bloqueado
         setTimeout(() => {
           window.location.href = isLocalhost
             ? "/"
             : `${protocol}//app.${baseDomain}${port}/`;
         }, 1000);
       } catch (error) {
+        // ❌ Erro no login - formulário será desbloqueado
+        // (isRedirecting permanece false, isPending voltará a false)
         console.error("Erro ao fazer login:", error);
         const status = (error as any)?.status as number | undefined;
         let message =
@@ -145,6 +157,9 @@ const SignInPageDemo = () => {
     window.location.href = "https://auth.advancemais.com/register";
   };
 
+  // Formulário bloqueado se: carregando requisição OU aguardando redirect
+  const isFormLocked = isPending || isRedirecting;
+
   return (
     <div className="bg-background text-foreground">
       <SignInPage
@@ -153,7 +168,7 @@ const SignInPageDemo = () => {
         onSignIn={handleSignIn}
         onResetPassword={handleResetPassword}
         onCreateAccount={handleCreateAccount}
-        isLoading={isPending}
+        isLoading={isFormLocked}
         title={
           userName
             ? `Olá ${userName}, bem vindo de volta!`

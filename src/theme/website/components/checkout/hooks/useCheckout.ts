@@ -289,7 +289,7 @@ export function useCheckout(
         aceitouTermos: true,
         aceitouTermosUserAgent: typeof navigator !== "undefined" ? navigator.userAgent : "",
         successUrl: `${baseUrl}/checkout/sucesso`,
-        failureUrl: `${baseUrl}/checkout/falha`,
+        failureUrl: `${baseUrl}/checkout/falha?plan_id=${encodeURIComponent(plan.id)}&plan_name=${encodeURIComponent(plan.nome)}&plan_price=${plan.valorNumerico}`,
         pendingUrl: `${baseUrl}/checkout/pendente`,
       };
 

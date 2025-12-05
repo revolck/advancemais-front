@@ -11,6 +11,7 @@ import { toastCustom } from "@/components/ui/custom/toast";
 import {
   validateCheckoutSession,
   validateSecurityToken,
+  registerConfirmedPayment,
   type CheckoutSession,
 } from "@/lib/checkout-session";
 import { startCheckout } from "@/api/mercadopago";
@@ -104,6 +105,18 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
   const [cardToken, setCardToken] = useState<string | null>(null);
   const [cardLastFour, setCardLastFour] = useState<string | null>(null);
   const [cardBrand, setCardBrand] = useState<string | null>(null);
+
+  // Ref para tokenização do cartão (chamada quando clica em Pagar)
+  const cardTokenizeRef = React.useRef<
+    | (() => Promise<{
+        success: boolean;
+        token?: string;
+        lastFourDigits?: string;
+        cardBrand?: string;
+        error?: string;
+      }>)
+    | null
+  >(null);
 
   // Determina se pode usar tokenização direta (apenas HTTPS real)
   // Em localhost (HTTP), SEMPRE usa redirect para Mercado Pago
@@ -275,9 +288,15 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
         // 🔐 ACEITE DE TERMOS (para auditoria)
         aceitouTermosUserAgent: navigator.userAgent,
 
-        // URLs de retorno
+        // URLs de retorno (inclui dados do plano para retry em caso de falha)
         successUrl: `${window.location.origin}/checkout/sucesso`,
-        failureUrl: `${window.location.origin}/checkout/erro`,
+        failureUrl: `${
+          window.location.origin
+        }/checkout/falha?plan_id=${encodeURIComponent(
+          session.productId
+        )}&plan_name=${encodeURIComponent(session.productName)}&plan_price=${
+          session.productPrice
+        }`,
         pendingUrl: `${window.location.origin}/checkout/pendente`,
       };
 
@@ -327,25 +346,48 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
           last_name: cardHolder.split(" ").slice(1).join(" ") || undefined,
         };
 
-        // Se tem token (HTTPS), envia para processamento direto
-        // Caso contrário, o backend usará Checkout Pro (redirect)
-        if (cardToken && canUseDirectTokenization) {
-          checkoutIntent.card = {
-            token: cardToken,
-            installments: 1,
-          };
+        // Em HTTPS, faz tokenização no momento do pagamento
+        if (canUseDirectTokenization) {
+          // Se ainda não tem token, tenta tokenizar agora
+          let tokenToUse = cardToken;
+
+          if (!tokenToUse && cardTokenizeRef.current) {
+            const tokenResult = await cardTokenizeRef.current();
+
+            if (!tokenResult.success || !tokenResult.token) {
+              // Tokenização falhou - erros já exibidos pelo componente
+              setIsProcessing(false);
+              return;
+            }
+
+            // Usa o token retornado diretamente
+            tokenToUse = tokenResult.token;
+
+            // Atualiza state para manter consistência
+            setCardToken(tokenResult.token);
+            setCardLastFour(tokenResult.lastFourDigits || null);
+            setCardBrand(tokenResult.cardBrand || null);
+          }
+
+          // Envia para processamento direto com o token
+          if (tokenToUse) {
+            checkoutIntent.card = {
+              token: tokenToUse,
+              installments: 1,
+            };
+          } else {
+            // Não conseguiu obter token
+            toastCustom.error({
+              title: "Erro no cartão",
+              description:
+                "Não foi possível processar os dados do cartão. Verifique as informações.",
+            });
+            setIsProcessing(false);
+            return;
+          }
         }
-        // Se não tem token E deveria ter (HTTPS), mostra erro
-        else if (canUseDirectTokenization && !cardToken) {
-          toastCustom.warning({
-            title: "Cartão não validado",
-            description:
-              "Por favor, valide os dados do cartão antes de continuar.",
-          });
-          setIsProcessing(false);
-          return;
-        }
-        // Se não é HTTPS, vai usar redirect (não precisa de token)
+        // Se não estamos em HTTPS (desenvolvimento), vai usar redirect do Mercado Pago
+        // Não precisa de token local - o backend gerencia isso
       }
 
       // Adiciona cupom se houver
@@ -462,12 +504,38 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
         result.pagamento?.status === "approved" ||
         result.status === "approved"
       ) {
-        router.push("/checkout/sucesso");
+        // Registra o pagamento para permitir acesso à página de sucesso
+        const paymentId =
+          result.pagamento?.paymentId || result.paymentId || "internal";
+        registerConfirmedPayment(
+          String(paymentId),
+          "approved",
+          session?.sessionId,
+          session?.productName
+        );
+        router.push(
+          `/checkout/sucesso${
+            paymentId !== "internal" ? `?payment_id=${paymentId}` : ""
+          }`
+        );
       } else if (
         result.pagamento?.status === "pending" ||
         result.status === "pending"
       ) {
-        router.push("/checkout/pendente");
+        // Registra o pagamento para permitir acesso à página de pendente
+        const paymentId =
+          result.pagamento?.paymentId || result.paymentId || "internal";
+        registerConfirmedPayment(
+          String(paymentId),
+          "pending",
+          session?.sessionId,
+          session?.productName
+        );
+        router.push(
+          `/checkout/pendente${
+            paymentId !== "internal" ? `?payment_id=${paymentId}` : ""
+          }`
+        );
       } else if (
         result.pagamento?.status === "rejected" ||
         result.status === "rejected"
@@ -480,7 +548,22 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
       }
       // Assinatura autorizada
       else if (result.assinatura?.status === "authorized") {
-        router.push("/checkout/sucesso");
+        // Registra a assinatura para permitir acesso à página de sucesso
+        const subscriptionId =
+          result.assinatura?.preapprovalId || "subscription";
+        registerConfirmedPayment(
+          String(subscriptionId),
+          "approved",
+          session?.sessionId,
+          session?.productName
+        );
+        router.push(
+          `/checkout/sucesso${
+            subscriptionId !== "subscription"
+              ? `?payment_id=${subscriptionId}`
+              : ""
+          }`
+        );
       }
     } catch (error) {
       console.error("Payment error:", error);
@@ -639,8 +722,15 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
 
   // Callback para quando o pagamento for confirmado
   const handlePaymentConfirmed = useCallback(() => {
+    // Registra o pagamento para permitir acesso à página de sucesso
+    registerConfirmedPayment(
+      "manual-confirmation",
+      "approved",
+      session?.sessionId,
+      session?.productName
+    );
     router.push("/checkout/sucesso");
-  }, [router]);
+  }, [router, session?.sessionId, session?.productName]);
 
   // Callback para ir para a página inicial
   const handleGoHome = useCallback(() => {
@@ -800,14 +890,11 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
                     documentType={getDocumentType(payerDocument)}
                     documentNumber={payerDocument}
                     disabled={isProcessing}
+                    tokenizeRef={cardTokenizeRef}
                     onTokenGenerated={(token, lastFour, brand) => {
                       setCardToken(token);
                       setCardLastFour(lastFour);
                       setCardBrand(brand);
-                      toastCustom.success({
-                        title: "Cartão validado",
-                        description: "Seu cartão foi validado com sucesso!",
-                      });
                     }}
                     onError={(error) => {
                       setCardToken(null);
@@ -816,8 +903,6 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
                         description: error,
                       });
                     }}
-                    showSubmitButton={true}
-                    submitButtonText="Validar Cartão"
                   />
                 )}
 
@@ -861,38 +946,6 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
                       <span className="text-xs text-amber-600">
                         PIX e Boleto funcionam normalmente em desenvolvimento
                       </span>
-                    </div>
-                  </div>
-                )}
-
-                {/* Cartão validado com sucesso (HTTPS) */}
-                {cardToken && canUseDirectTokenization && (
-                  <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-start gap-3">
-                    <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <svg
-                        className="w-3 h-3 text-white"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={3}
-                          d="M5 13l4 4L19 7"
-                        />
-                      </svg>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-green-800">
-                        Cartão validado
-                      </p>
-                      <p className="text-sm text-green-600">
-                        {cardBrand && (
-                          <span className="capitalize">{cardBrand}</span>
-                        )}
-                        {cardLastFour && <span> •••• {cardLastFour}</span>}
-                      </p>
                     </div>
                   </div>
                 )}

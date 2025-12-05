@@ -4,10 +4,10 @@
 
 /**
  * CardForm com Tokenização do Mercado Pago
- * 
+ *
  * Este componente coleta os dados do cartão e gera um token
  * via SDK do Mercado Pago para pagamento seguro.
- * 
+ *
  * Uso:
  * - Assinaturas de empresas
  * - Pagamentos únicos de cursos (futuro)
@@ -15,19 +15,34 @@
 
 import React, { useState, useCallback, useEffect } from "react";
 import { InputCustom } from "@/components/ui/custom/input";
-import { ButtonCustom } from "@/components/ui/custom/button";
 import { CardBrandIcon } from "./CardBrandIcon";
 import { detectCardBrand } from "../utils/card-brand";
-import { formatCardNumber, formatExpiry, formatCVV } from "../utils/formatters";
+import {
+  formatCardNumber,
+  formatExpiry,
+  formatCVV,
+} from "../utils/formatters";
 import { Separator } from "@/components/ui/separator";
-import { AlertCircle, CheckCircle2, Loader2, Lock } from "lucide-react";
+import { AlertCircle, Lock } from "lucide-react";
 import { useCardToken } from "@/lib/mercadopago";
 import type { CardData } from "@/lib/mercadopago";
 import { cn } from "@/lib/utils";
 
+export interface TokenizeResult {
+  success: boolean;
+  token?: string;
+  lastFourDigits?: string;
+  cardBrand?: string;
+  error?: string;
+}
+
 interface CardFormTokenizedProps {
   /** Callback quando token é gerado com sucesso */
-  onTokenGenerated: (token: string, lastFourDigits: string, cardBrand: string) => void;
+  onTokenGenerated: (
+    token: string,
+    lastFourDigits: string,
+    cardBrand: string
+  ) => void;
   /** Callback em caso de erro */
   onError?: (error: string) => void;
   /** Tipo de documento do pagador */
@@ -38,12 +53,8 @@ interface CardFormTokenizedProps {
   disabled?: boolean;
   /** Classe CSS adicional */
   className?: string;
-  /** Texto do botão de submit */
-  submitButtonText?: string;
-  /** Se deve mostrar o botão de submit (false para integração manual) */
-  showSubmitButton?: boolean;
-  /** Ref para expor método de tokenização externamente */
-  tokenizeRef?: React.MutableRefObject<(() => Promise<boolean>) | null>;
+  /** Ref para expor método de tokenização externamente - retorna resultado completo */
+  tokenizeRef?: React.MutableRefObject<(() => Promise<TokenizeResult>) | null>;
 }
 
 export const CardFormTokenized: React.FC<CardFormTokenizedProps> = ({
@@ -53,8 +64,6 @@ export const CardFormTokenized: React.FC<CardFormTokenizedProps> = ({
   documentNumber,
   disabled = false,
   className,
-  submitButtonText = "Validar Cartão",
-  showSubmitButton = true,
   tokenizeRef,
 }) => {
   // Estado dos campos
@@ -62,17 +71,16 @@ export const CardFormTokenized: React.FC<CardFormTokenizedProps> = ({
   const [cardExpiry, setCardExpiry] = useState("");
   const [cardCVV, setCardCVV] = useState("");
   const [cardHolder, setCardHolder] = useState("");
-  
+
   // Estado de validação visual
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-  const [isTokenized, setIsTokenized] = useState(false);
 
   // Hook de tokenização
   const { tokenize, isTokenizing, error: tokenError } = useCardToken();
 
   // Limpa erro de campo quando usuário digita
   const clearFieldError = useCallback((field: string) => {
-    setFieldErrors(prev => {
+    setFieldErrors((prev) => {
       const next = { ...prev };
       delete next[field];
       return next;
@@ -82,7 +90,7 @@ export const CardFormTokenized: React.FC<CardFormTokenizedProps> = ({
   // Valida campos antes de tokenizar
   const validateFields = useCallback((): boolean => {
     const errors: Record<string, string> = {};
-    
+
     const cleanCardNumber = cardNumber.replace(/\s/g, "");
     if (!cleanCardNumber || cleanCardNumber.length < 13) {
       errors.cardNumber = "Número do cartão inválido";
@@ -105,14 +113,14 @@ export const CardFormTokenized: React.FC<CardFormTokenizedProps> = ({
     return Object.keys(errors).length === 0;
   }, [cardNumber, cardHolder, cardExpiry, cardCVV]);
 
-  // Função de tokenização
-  const handleTokenize = useCallback(async (): Promise<boolean> => {
+  // Função de tokenização - retorna resultado completo para uso externo
+  const handleTokenize = useCallback(async (): Promise<TokenizeResult> => {
     if (!validateFields()) {
-      return false;
+      return { success: false, error: "Preencha os dados do cartão corretamente" };
     }
 
     const [month, year] = cardExpiry.split("/");
-    
+
     const cardData: CardData = {
       cardNumber: cardNumber.replace(/\s/g, ""),
       cardholderName: cardHolder,
@@ -126,28 +134,33 @@ export const CardFormTokenized: React.FC<CardFormTokenizedProps> = ({
     const result = await tokenize(cardData);
 
     if (result.success && result.token) {
-      setIsTokenized(true);
-      onTokenGenerated(
-        result.token, 
-        result.lastFourDigits || cardNumber.slice(-4),
-        result.cardBrand || detectCardBrand(cardNumber)
-      );
-      return true;
+      const lastFour = result.lastFourDigits || cardNumber.slice(-4);
+      const brand = result.cardBrand || detectCardBrand(cardNumber);
+      
+      onTokenGenerated(result.token, lastFour, brand);
+      
+      return {
+        success: true,
+        token: result.token,
+        lastFourDigits: lastFour,
+        cardBrand: brand,
+      };
     } else {
-      onError?.(result.error || "Erro ao processar cartão");
-      return false;
+      const errorMsg = result.error || "Erro ao processar cartão";
+      onError?.(errorMsg);
+      return { success: false, error: errorMsg };
     }
   }, [
-    validateFields, 
-    cardExpiry, 
-    cardNumber, 
-    cardHolder, 
-    cardCVV, 
-    documentType, 
-    documentNumber, 
-    tokenize, 
-    onTokenGenerated, 
-    onError
+    validateFields,
+    cardExpiry,
+    cardNumber,
+    cardHolder,
+    cardCVV,
+    documentType,
+    documentNumber,
+    tokenize,
+    onTokenGenerated,
+    onError,
   ]);
 
   // Expõe método de tokenização via ref
@@ -157,16 +170,16 @@ export const CardFormTokenized: React.FC<CardFormTokenizedProps> = ({
     }
   }, [tokenizeRef, handleTokenize]);
 
-  // Reseta estado de tokenizado se dados mudarem
-  useEffect(() => {
-    if (isTokenized) {
-      setIsTokenized(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cardNumber, cardExpiry, cardCVV, cardHolder]);
+  // Detecta a bandeira do cartão
+  const cardBrand = detectCardBrand(cardNumber);
 
   return (
-    <div className={cn("bg-white rounded-2xl border border-zinc-200 p-6 space-y-4", className)}>
+    <div
+      className={cn(
+        "bg-white rounded-2xl border border-zinc-200 p-6 space-y-4",
+        className
+      )}
+    >
       <div className="flex items-center justify-between">
         <h5 className="!mb-0">Dados do cartão</h5>
         <div className="flex items-center gap-1.5 text-xs text-zinc-500">
@@ -176,29 +189,23 @@ export const CardFormTokenized: React.FC<CardFormTokenizedProps> = ({
       </div>
       <Separator className="!bg-zinc-200/30" />
 
-      {/* Indicador de tokenização */}
-      {isTokenized && (
-        <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm">
-          <CheckCircle2 className="h-4 w-4" />
-          <span>Cartão validado com sucesso</span>
-        </div>
-      )}
-
       {/* Erro de tokenização */}
-      {tokenError && !isTokenized && (
+      {tokenError && (
         <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-          <AlertCircle className="h-4 w-4" />
+          <AlertCircle className="h-4 w-4 flex-shrink-0" />
           <span>{tokenError}</span>
         </div>
       )}
 
       {/* Campo de número do cartão */}
       <div className="space-y-2">
+        <label className="text-sm font-medium text-zinc-700">
+          Número do cartão <span className="text-red-500">*</span>
+        </label>
         <div className="relative">
           <InputCustom
             name="cardNumber"
             value={cardNumber}
-            label="Número do cartão"
             onChange={(e) => {
               setCardNumber(formatCardNumber(e.target.value));
               clearFieldError("cardNumber");
@@ -206,13 +213,13 @@ export const CardFormTokenized: React.FC<CardFormTokenizedProps> = ({
             placeholder="0000 0000 0000 0000"
             maxLength={19}
             size="md"
-            required
             disabled={disabled || isTokenizing}
             error={fieldErrors.cardNumber}
             className="pr-14"
           />
-          <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-            <CardBrandIcon brand={detectCardBrand(cardNumber)} />
+          {/* Ícone da bandeira do cartão - alinhado verticalmente ao centro do input */}
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none flex items-center justify-center">
+            <CardBrandIcon brand={cardBrand} className="w-10 h-6" />
           </div>
         </div>
       </div>
@@ -267,38 +274,13 @@ export const CardFormTokenized: React.FC<CardFormTokenizedProps> = ({
         error={fieldErrors.cardHolder}
       />
 
-      {/* Botão de validação */}
-      {showSubmitButton && (
-        <ButtonCustom
-          type="button"
-          variant={isTokenized ? "secondary" : "primary"}
-          onClick={handleTokenize}
-          disabled={disabled || isTokenizing || isTokenized}
-          className="w-full mt-2"
-        >
-          {isTokenizing ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              Validando...
-            </>
-          ) : isTokenized ? (
-            <>
-              <CheckCircle2 className="h-4 w-4 mr-2" />
-              Cartão Validado
-            </>
-          ) : (
-            submitButtonText
-          )}
-        </ButtonCustom>
-      )}
-
       {/* Info de segurança */}
       <p className="text-xs text-zinc-400 text-center">
-        Seus dados são criptografados e processados de forma segura pelo Mercado Pago.
+        Seus dados são criptografados e processados de forma segura pelo Mercado
+        Pago.
       </p>
     </div>
   );
 };
 
 export default CardFormTokenized;
-

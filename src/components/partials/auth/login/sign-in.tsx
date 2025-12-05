@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Label } from "@/components/ui/label";
 import { InputCustom, ButtonCustom } from "@/components/ui/custom";
 import { Checkbox } from "@/components/ui/radix-checkbox";
@@ -40,14 +40,10 @@ export const SignInPage: React.FC<SignInPageProps> = ({
   const [documento, setDocumento] = useState("");
   const [senha, setSenha] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Quando o carregamento externo terminar, liberamos o formulário para novos envios
-  useEffect(() => {
-    if (!isLoading) {
-      setIsSubmitting(false);
-    }
-  }, [isLoading]);
+  // Estado interno de submissão - controlado pelo componente pai via isLoading
+  // Não resetamos automaticamente aqui - o pai controla quando desbloquear
+  const isSubmitting = isLoading;
 
   // Determina se é CPF (11 dígitos) ou CNPJ (14 dígitos)
   const documentoDigits = documento.replace(/\D/g, "");
@@ -88,7 +84,6 @@ export const SignInPage: React.FC<SignInPageProps> = ({
               className="space-y-5"
               onSubmit={(e) => {
                 e.preventDefault();
-                setIsSubmitting(true);
                 onSignIn?.(e);
               }}
             >
@@ -175,11 +170,9 @@ export const SignInPage: React.FC<SignInPageProps> = ({
                 isLoading={isLoading || isSubmitting}
                 disabled={!isFormValid || isSubmitting || isLoading}
                 fullWidth
+                size="lg"
+                variant="primary"
                 withAnimation
-                className={[
-                  "animate-element animate-delay-600 rounded-2xl bg-[var(--color-blue)] text-white py-6 font-medium",
-                  "hover:bg-[var(--color-blue)]/90 transition-colors disabled:opacity-70",
-                ].join(" ")}
               >
                 Entrar
               </ButtonCustom>
