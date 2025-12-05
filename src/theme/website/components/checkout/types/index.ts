@@ -51,3 +51,34 @@ export interface AppliedCoupon {
   discountType: CouponDiscountType;
   discountValue: number; // Valor original (% ou R$)
 }
+
+// Tipo de plano no checkout
+export interface CheckoutPlan {
+  id: string;
+  nome: string;
+  valor: string;
+  valorNumerico: number;
+  descricao?: string;
+  icon?: string;
+}
+
+// Estado do checkout
+export interface CheckoutState {
+  step: "select_payment" | "processing" | "complete" | "error";
+  selectedMethod: PaymentMethod | null;
+  isLoading: boolean;
+  error: string | null;
+}
+
+// Tipo de ação no checkout
+export type CheckoutAction = "compra" | "upgrade" | "alteracao";
+
+// Resultado do checkout
+export interface CheckoutResult {
+  success: boolean;
+  status: "approved" | "pending" | "rejected";
+  message: string;
+  redirectUrl?: string;
+  preferenceId?: string;
+  paymentId?: string;
+}

@@ -39,26 +39,20 @@ const CareerOpportunities: React.FC<CareerOpportunitiesProps> = ({
   const [regionQuery, setRegionQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
 
-  // Hook condicional baseado em fetchFromApi
-  const apiResult = fetchFromApi
-    ? usePublicVagas(filters, itemsPerPage, true)
-    : null;
+  // Sempre chamar os hooks (não condicionalmente)
+  const apiResult = usePublicVagas(filters, itemsPerPage, fetchFromApi);
+  const mockResult = useCareerData(!fetchFromApi, staticData, filters);
 
-  const mockResult = !fetchFromApi
-    ? useCareerData(false, staticData, filters)
-    : null;
-
-  // Unificar resultados
-  const data = apiResult?.data || mockResult?.data || [];
-  const filteredData =
-    apiResult?.filteredData || mockResult?.filteredData || [];
-  const isLoading = apiResult?.isLoading || mockResult?.isLoading || false;
-  const error = apiResult?.error || mockResult?.error || null;
-  const totalCount = apiResult?.totalCount || mockResult?.totalCount || 0;
-  const refetch = apiResult?.refetch || mockResult?.refetch || (() => {});
-  const currentPage = apiResult?.currentPage || 1;
-  const totalPages = apiResult?.totalPages || 1;
-  const setPage = apiResult?.setPage || (() => {});
+  // Unificar resultados baseado em fetchFromApi
+  const data = fetchFromApi ? apiResult.data : mockResult.data;
+  const filteredData = fetchFromApi ? apiResult.filteredData : mockResult.filteredData;
+  const isLoading = fetchFromApi ? apiResult.isLoading : mockResult.isLoading;
+  const error = fetchFromApi ? apiResult.error : mockResult.error;
+  const totalCount = fetchFromApi ? apiResult.totalCount : mockResult.totalCount;
+  const refetch = fetchFromApi ? apiResult.refetch : mockResult.refetch;
+  const currentPage = fetchFromApi ? apiResult.currentPage : 1;
+  const totalPages = fetchFromApi ? apiResult.totalPages : 1;
+  const setPage = fetchFromApi ? apiResult.setPage : (() => {});
 
   // Controla quando mostrar skeleton durante busca manual
   const showSkeleton = isLoading || isSearching;
@@ -200,6 +194,20 @@ const CareerOpportunities: React.FC<CareerOpportunitiesProps> = ({
 
   // Estado de carregamento agora é tratado localmente na lista/filters (sem tela inteira)
 
+  const handleSearch = () => {
+    setIsSearching(true);
+    if (fetchFromApi && apiResult.refetch) {
+      apiResult.refetch();
+    }
+  };
+
+  // Desativa isSearching quando a busca terminar
+  useEffect(() => {
+    if (!isLoading && isSearching) {
+      setIsSearching(false);
+    }
+  }, [isLoading, isSearching]);
+
   // Estado de erro
   if (error && (!data || data.length === 0)) {
     return (
@@ -235,20 +243,6 @@ const CareerOpportunities: React.FC<CareerOpportunitiesProps> = ({
       </div>
     );
   }
-
-  const handleSearch = () => {
-    setIsSearching(true);
-    if (apiResult?.refetch) {
-      apiResult.refetch();
-    }
-  };
-
-  // Desativa isSearching quando a busca terminar
-  useEffect(() => {
-    if (!isLoading && isSearching) {
-      setIsSearching(false);
-    }
-  }, [isLoading, isSearching]);
 
   return (
     <div className={cn("bg-[#0a1f88]/5", className)}>

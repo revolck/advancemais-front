@@ -361,7 +361,7 @@ export const breadcrumbConfig: Record<string, BreadcrumbConfig> = {
     title: "Notificações",
     items: [
       { label: "Dashboard", href: "/", icon: "Home" },
-      { label: "Notificações", icon: "Bell" },
+      { label: "Notificações" },
     ],
   },
   "/dashboard/usuarios/cadastrar": {

@@ -61,7 +61,8 @@ export function useMarkNotificationsAsRead() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: marcarNotificacoesComoLidas,
+    mutationFn: (payload: Parameters<typeof marcarNotificacoesComoLidas>[0]) =>
+      marcarNotificacoesComoLidas(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [NOTIFICATIONS_QUERY_KEY] });
       queryClient.invalidateQueries({ queryKey: [NOTIFICATIONS_COUNTER_KEY] });
@@ -85,7 +86,8 @@ export function useArchiveNotifications() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: arquivarNotificacoes,
+    mutationFn: (payload: Parameters<typeof arquivarNotificacoes>[0]) =>
+      arquivarNotificacoes(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [NOTIFICATIONS_QUERY_KEY] });
       queryClient.invalidateQueries({ queryKey: [NOTIFICATIONS_COUNTER_KEY] });

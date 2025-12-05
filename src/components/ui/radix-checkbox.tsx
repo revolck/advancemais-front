@@ -63,14 +63,14 @@ const Checkbox = React.forwardRef<HTMLButtonElement, CheckboxProps>(
         data-state={isChecked ? "checked" : "unchecked"}
         disabled={disabled}
         onClick={handleClick}
-          className={cn(
-            "peer size-5 flex items-center justify-center shrink-0 rounded-sm bg-muted transition-colors duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-[var(--primary-color)] data-[state=checked]:text-white",
+        className={cn(
+          "peer size-5 flex items-center justify-center shrink-0 rounded-sm bg-muted transition-colors duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-[var(--primary-color)] data-[state=checked]:text-white",
           className
-          )}
+        )}
         whileTap={!disabled ? { scale: 0.95 } : undefined}
         whileHover={!disabled ? { scale: 1.05 } : undefined}
-        {...rest}
-        >
+        {...(rest as any)}
+      >
           <motion.svg
             xmlns="http://www.w3.org/2000/svg"
             fill="none"

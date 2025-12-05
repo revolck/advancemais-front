@@ -29,18 +29,17 @@ export function CourseCatalog({
   const [sortOrder, setSortOrder] = useState("recent");
   const [isSearching, setIsSearching] = useState(false);
 
-  const apiResult = fetchFromApi
-    ? usePublicCursos(filters, itemsPerPage, true)
-    : null;
+  // Sempre chamar o hook (não condicionalmente)
+  const apiResult = usePublicCursos(filters, itemsPerPage, fetchFromApi);
 
-  const data = apiResult?.data || [];
-  const filteredData = apiResult?.filteredData || [];
-  const isLoading = apiResult?.isLoading || false;
-  const error = apiResult?.error || null;
-  const totalCount = apiResult?.totalCount || 0;
-  const currentPage = apiResult?.currentPage || 1;
-  const totalPages = apiResult?.totalPages || 1;
-  const setPage = apiResult?.setPage || (() => {});
+  const data = apiResult.data;
+  const filteredData = apiResult.filteredData;
+  const isLoading = apiResult.isLoading;
+  const error = apiResult.error;
+  const totalCount = apiResult.totalCount;
+  const currentPage = apiResult.currentPage;
+  const totalPages = apiResult.totalPages;
+  const setPage = apiResult.setPage;
 
   // Controla quando mostrar skeleton durante busca manual
   const showSkeleton = isLoading || isSearching;

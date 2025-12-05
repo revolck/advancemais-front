@@ -582,7 +582,6 @@ const RegisterPage = () => {
             id="terms"
             checked={acceptTerms}
             onCheckedChange={(v) => setAcceptTerms(!!v)}
-            required
           />
           <Label
             htmlFor="terms"

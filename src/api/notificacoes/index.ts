@@ -82,7 +82,7 @@ export async function listNotificacoes(
       }),
     },
     cache: "no-cache",
-    maxRetries: 1, // Não fazer muitos retries para listar notificações
+    retries: 1, // Não fazer muitos retries para listar notificações
   });
 }
 
@@ -101,7 +101,7 @@ export async function getNotificacoesContador(
       }),
     },
     cache: "no-cache",
-    maxRetries: 1, // Não fazer muitos retries para contador
+    retries: 1, // Não fazer muitos retries para contador
   });
 }
 

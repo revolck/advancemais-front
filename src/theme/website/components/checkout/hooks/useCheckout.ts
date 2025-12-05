@@ -227,8 +227,8 @@ export function useCheckout(
       const paymentMethodMap: Record<PaymentMethod, "pix" | "card" | "boleto"> = {
         pix: "pix",
         boleto: "boleto",
-        cartao_credito: "card",
-        cartao_debito: "card",
+        credit: "card",
+        debit: "card",
       };
 
       const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
@@ -286,6 +286,8 @@ export function useCheckout(
         planosEmpresariaisId: plan.id,
         metodo: "assinatura",
         pagamento: paymentMethodMap[state.selectedMethod],
+        aceitouTermos: true,
+        aceitouTermosUserAgent: typeof navigator !== "undefined" ? navigator.userAgent : "",
         successUrl: `${baseUrl}/checkout/sucesso`,
         failureUrl: `${baseUrl}/checkout/falha`,
         pendingUrl: `${baseUrl}/checkout/pendente`,
