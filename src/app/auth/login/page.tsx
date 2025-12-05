@@ -32,7 +32,7 @@ const SignInPageDemo = () => {
     const error = searchParams?.get("error");
     if (error === "unauthorized") {
       toastCustom.error(
-        "Você não tem autorização para acessar como visitante. Por favor realize seu cadastro.",
+        "Você não tem autorização para acessar como visitante. Por favor realize seu cadastro."
       );
     }
   }, [searchParams]);
@@ -55,7 +55,7 @@ const SignInPageDemo = () => {
     startTransition(async () => {
       const formData = new FormData(formElement);
       const { documento, senha, rememberMe } = Object.fromEntries(
-        formData.entries(),
+        formData.entries()
       ) as {
         documento: string;
         senha: string;
@@ -93,10 +93,10 @@ const SignInPageDemo = () => {
               localStorage.setItem("userName", firstName);
             }
             const candidateRoles = [profile.usuario.role].filter(
-              Boolean,
+              Boolean
             ) as string[];
             userRole = candidateRoles.find((roleCandidate) =>
-              ALL_ROLES.includes(roleCandidate as UserRole),
+              ALL_ROLES.includes(roleCandidate as UserRole)
             ) as UserRole | undefined;
           }
         } catch (profileError) {
