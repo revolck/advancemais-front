@@ -44,9 +44,8 @@ export function SalarioVagasTab({ vaga }: AboutTabProps) {
       salarioLabel = "Salário";
     }
 
-    // Total de candidaturas (usa dados reais se disponível)
-    const totalCandidaturas =
-      vaga.candidaturasResumo?.total ?? vaga.candidaturas?.length ?? 0;
+    // Total de candidaturas (não disponível em VagaListItem, usando valor padrão)
+    const totalCandidaturas = 0;
 
     return [
       {
@@ -97,7 +96,7 @@ export function SalarioVagasTab({ vaga }: AboutTabProps) {
 
   // Dados para gráfico de candidaturas por faixa etária
   const getAgeRangeData = () => {
-    const totalCandidates = vaga.candidaturasResumo?.total || 100;
+    const totalCandidates = 100; // Valor padrão para simulação
 
     return [
       {
