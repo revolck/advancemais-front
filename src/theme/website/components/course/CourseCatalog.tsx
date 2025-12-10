@@ -43,7 +43,7 @@ export function CourseCatalog({
 
   // Controla quando mostrar skeleton durante busca manual
   const showSkeleton = isLoading || isSearching;
-  
+
   // Só mostra dados quando não está carregando e não está buscando
   const shouldShowData = !isLoading && !isSearching && filteredData.length > 0;
 
@@ -52,7 +52,10 @@ export function CourseCatalog({
     const categorias = new Map<string, number>();
 
     data.forEach((course) => {
-      categorias.set(course.categoria, (categorias.get(course.categoria) || 0) + 1);
+      categorias.set(
+        course.categoria,
+        (categorias.get(course.categoria) || 0) + 1,
+      );
     });
 
     return {
@@ -70,7 +73,7 @@ export function CourseCatalog({
 
   const toggleArrayFilter = (
     filterType: keyof Pick<CourseFilters, "categorias">,
-    value: string
+    value: string,
   ) => {
     const currentArray = filters[filterType];
     const newArray = currentArray.includes(value)
@@ -94,7 +97,8 @@ export function CourseCatalog({
     filters.categorias.length > 0 ||
     filters.apenasComVagas;
 
-  const activeFilterCount = filters.categorias.length + (filters.apenasComVagas ? 1 : 0);
+  const activeFilterCount =
+    filters.categorias.length + (filters.apenasComVagas ? 1 : 0);
 
   const handleViewDetails = (course: CourseData) => {
     if (typeof window === "undefined") return;
@@ -175,15 +179,15 @@ export function CourseCatalog({
                       </div>
                     ))
                   : shouldShowData
-                  ? filteredData.map((course, index) => (
-                      <CourseCard
-                        key={course.id}
-                        course={course}
-                        index={index}
-                        onViewDetails={handleViewDetails}
-                      />
-                    ))
-                  : null}
+                    ? filteredData.map((course, index) => (
+                        <CourseCard
+                          key={course.id}
+                          course={course}
+                          index={index}
+                          onViewDetails={handleViewDetails}
+                        />
+                      ))
+                    : null}
               </div>
 
               {!showSkeleton && filteredData.length === 0 && (
@@ -248,4 +252,3 @@ export function CourseCatalog({
 }
 
 export default CourseCatalog;
-

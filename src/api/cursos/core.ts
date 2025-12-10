@@ -44,7 +44,7 @@ function getAuthHeader(): Record<string, string> {
 
 function buildHeaders(
   additional?: HeadersInit,
-  auth = false
+  auth = false,
 ): Record<string, string> {
   return {
     Accept: apiConfig.headers.Accept,
@@ -54,7 +54,7 @@ function buildHeaders(
 }
 
 export async function getCursosMeta(
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<CursosModuleMeta> {
   return apiFetch<CursosModuleMeta>(cursosRoutes.meta(), {
     init: {
@@ -68,7 +68,7 @@ export async function getCursosMeta(
 
 export async function listCursos(
   params?: CursosListParams,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<CursosListResponse> {
   const sp = new URLSearchParams();
   if (params) {
@@ -86,7 +86,8 @@ export async function listCursos(
   const url = sp.toString()
     ? `${cursosRoutes.cursos.list()}?${sp.toString()}`
     : cursosRoutes.cursos.list();
-  return apiFetch<CursosListResponse>(url, {
+
+  const response = await apiFetch<CursosListResponse>(url, {
     init: {
       method: "GET",
       ...init,
@@ -95,6 +96,22 @@ export async function listCursos(
     cache: "short", // Usa cache de 5 minutos para lista de cursos
     retries: 1, // Reduz retries para listagens
   });
+
+  // Mapeia os campos de precificação para garantir valores padrão
+  const cursosNormalizados: Curso[] = (response.data ?? []).map((curso) => ({
+    ...curso,
+    valor: Number(curso.valor ?? 0),
+    valorPromocional:
+      curso.valorPromocional != null
+        ? Number(curso.valorPromocional)
+        : undefined,
+    gratuito: Boolean(curso.gratuito ?? false),
+  }));
+
+  return {
+    ...response,
+    data: cursosNormalizados,
+  };
 }
 
 function buildCursoRequest(payload: CreateCursoPayload | UpdateCursoPayload): {
@@ -184,21 +201,57 @@ function buildCursoRequest(payload: CreateCursoPayload | UpdateCursoPayload): {
     // Se for string vazia após trim, não inclui no JSON (API não atualiza o campo)
   }
 
+  // ========== CAMPOS DE PRECIFICAÇÃO (adicionados em 10/12/2025) ==========
+
+  // valor: obrigatório (exceto se gratuito)
+  if ("valor" in payload && payload.valor !== undefined) {
+    const valor =
+      typeof payload.valor === "number" ? payload.valor : Number(payload.valor);
+    jsonPayload.valor = Number.isFinite(valor) ? valor : 0;
+  }
+
+  // valorPromocional: opcional
+  if (
+    "valorPromocional" in payload &&
+    payload.valorPromocional !== undefined &&
+    payload.valorPromocional !== null
+  ) {
+    const valorPromocional =
+      typeof payload.valorPromocional === "number"
+        ? payload.valorPromocional
+        : Number(payload.valorPromocional);
+    if (Number.isFinite(valorPromocional) && valorPromocional > 0) {
+      jsonPayload.valorPromocional = valorPromocional;
+    }
+  }
+
+  // Nota: Campos removidos por serem redundantes ou gerenciados pelo Mercado Pago:
+  // - descontoPercentual (redundante com valorPromocional)
+  // - aceitaPagamentoUnico, aceitaParcelamento, maxParcelas (Mercado Pago)
+  // - disponivel (redundante com statusPadrao: "PUBLICADO" = disponível)
+
+  // gratuito: opcional (padrão: false)
+  if ("gratuito" in payload && payload.gratuito !== undefined) {
+    jsonPayload.gratuito = Boolean(payload.gratuito);
+  }
+
+  // ========== FIM CAMPOS DE PRECIFICAÇÃO ==========
+
   // Debug em desenvolvimento
   if (process.env.NODE_ENV === "development") {
     console.log("[buildCursoRequest] JSON sendo enviado:", jsonPayload);
     console.log("[buildCursoRequest] Payload original:", payload);
     console.log(
       "[buildCursoRequest] imagemUrl no payload original:",
-      payload.imagemUrl
+      payload.imagemUrl,
     );
     console.log(
       "[buildCursoRequest] imagemUrl no JSON final:",
-      jsonPayload.imagemUrl
+      jsonPayload.imagemUrl,
     );
     console.log(
       "[buildCursoRequest] JSON stringificado:",
-      JSON.stringify(jsonPayload)
+      JSON.stringify(jsonPayload),
     );
   }
 
@@ -210,7 +263,7 @@ function buildCursoRequest(payload: CreateCursoPayload | UpdateCursoPayload): {
 
 export async function createCurso(
   payload: CreateCursoPayload,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<Curso> {
   const { body, headers } = buildCursoRequest(payload);
 
@@ -250,7 +303,7 @@ export async function createCurso(
               ([field, messages]) =>
                 `${field}: ${
                   Array.isArray(messages) ? messages.join(", ") : messages
-                }`
+                }`,
             )
             .join("; ");
           if (issues) {
@@ -315,7 +368,7 @@ function normalizeTurma(turma: any): CursoTurma {
 
 export async function getCursoById(
   cursoId: number | string,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<Curso & { turmas?: CursoTurma[]; turmasCount?: number }> {
   try {
     const response = await apiFetch<any>(cursosRoutes.cursos.get(cursoId), {
@@ -343,6 +396,15 @@ export async function getCursoById(
         response.subcategoriaId != null
           ? Number(response.subcategoriaId)
           : undefined,
+      // Campos de precificação
+      valor: Number(response.valor ?? 0),
+      valorPromocional:
+        response.valorPromocional != null
+          ? Number(response.valorPromocional)
+          : undefined,
+      gratuito: Boolean(response.gratuito ?? false),
+      // Nota: Métodos de pagamento são gerenciados pelo Mercado Pago
+      // Nota: Disponibilidade é definida por statusPadrao ("PUBLICADO" = disponível)
     };
 
     // Normaliza turmas se existirem
@@ -375,7 +437,7 @@ export async function getCursoById(
         message: "A resposta da API pode estar em formato inválido",
       });
       throw new Error(
-        "Erro ao processar resposta da API. Verifique se a API está retornando dados válidos."
+        "Erro ao processar resposta da API. Verifique se a API está retornando dados válidos.",
       );
     }
     throw error;
@@ -385,7 +447,7 @@ export async function getCursoById(
 export async function updateCurso(
   cursoId: number | string,
   payload: UpdateCursoPayload,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<Curso> {
   const { body, headers } = buildCursoRequest(payload);
   return apiFetch<Curso>(cursosRoutes.cursos.update(cursoId), {
@@ -401,7 +463,7 @@ export async function updateCurso(
 
 export async function despublicarCurso(
   cursoId: number | string,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<void> {
   return apiFetch<void>(cursosRoutes.cursos.delete(cursoId), {
     init: {
@@ -416,7 +478,7 @@ export async function despublicarCurso(
 // Turmas
 export async function listTurmas(
   cursoId: number | string,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<CursoTurma[]> {
   const url = cursosRoutes.cursos.turmas.list(cursoId);
   const res = await apiFetch<any>(url, {
@@ -432,8 +494,8 @@ export async function listTurmas(
   const turmas: CursoTurma[] = Array.isArray(res)
     ? (res as CursoTurma[])
     : Array.isArray(res?.data)
-    ? (res.data as CursoTurma[])
-    : [];
+      ? (res.data as CursoTurma[])
+      : [];
 
   return turmas;
 }
@@ -441,7 +503,7 @@ export async function listTurmas(
 export async function getTurmaById(
   cursoId: number | string,
   turmaId: string,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<CursoTurma> {
   try {
     const response = await apiFetch<any>(
@@ -453,7 +515,7 @@ export async function getTurmaById(
           headers: buildHeaders(init?.headers, true),
         },
         cache: "no-cache",
-      }
+      },
     );
 
     // Normaliza a turma usando a mesma função de normalização
@@ -476,7 +538,7 @@ export async function getTurmaById(
         message: "A resposta da API pode estar em formato inválido",
       });
       const parsingError = new Error(
-        "Erro ao processar resposta da API. Verifique se a API está retornando dados válidos."
+        "Erro ao processar resposta da API. Verifique se a API está retornando dados válidos.",
       ) as Error & { status?: number };
       if (status) parsingError.status = status;
       throw parsingError;
@@ -494,14 +556,14 @@ export async function getTurmaById(
 export async function createTurma(
   cursoId: number | string,
   payload: CreateTurmaPayload,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<CursoTurma> {
   return apiFetch<CursoTurma>(cursosRoutes.cursos.turmas.create(cursoId), {
     init: {
       method: "POST",
       headers: buildHeaders(
         { "Content-Type": "application/json", ...init?.headers },
-        true
+        true,
       ),
       body: JSON.stringify(payload),
       ...init,
@@ -514,7 +576,7 @@ export async function createTurma(
 export async function listInscricoes(
   cursoId: number | string,
   turmaId: string,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<TurmaInscricao[]> {
   try {
     // A API pode retornar {success: true, count: X, data: [...]} ou diretamente o array
@@ -577,7 +639,7 @@ export async function listInscricoes(
     // Isso pode acontecer se o endpoint não existe ou se não há inscrições
     if (apiError?.status === 404) {
       console.warn(
-        `Endpoint de inscrições não encontrado ou turma sem inscrições: ${cursoId}/${turmaId}`
+        `Endpoint de inscrições não encontrado ou turma sem inscrições: ${cursoId}/${turmaId}`,
       );
       return [];
     }
@@ -602,7 +664,7 @@ export async function createInscricao(
   cursoId: number | string,
   turmaId: string,
   payload: CreateInscricaoPayload,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<TurmaInscricao> {
   return apiFetch<TurmaInscricao>(
     cursosRoutes.cursos.turmas.inscricoes.create(cursoId, turmaId),
@@ -611,13 +673,13 @@ export async function createInscricao(
         method: "POST",
         headers: buildHeaders(
           { "Content-Type": "application/json", ...init?.headers },
-          true
+          true,
         ),
         body: JSON.stringify(payload),
         ...init,
       },
       cache: "no-cache",
-    }
+    },
   );
 }
 
@@ -625,7 +687,7 @@ export async function deleteInscricao(
   cursoId: number | string,
   turmaId: string,
   alunoId: string,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<void> {
   return apiFetch<void>(
     cursosRoutes.cursos.turmas.inscricoes.delete(cursoId, turmaId, alunoId),
@@ -636,7 +698,7 @@ export async function deleteInscricao(
         headers: buildHeaders(init?.headers, true),
       },
       cache: "no-cache",
-    }
+    },
   );
 }
 
@@ -644,7 +706,7 @@ export async function deleteInscricao(
 export async function listInscricoesCurso(
   cursoId: number | string,
   params?: ListInscricoesCursoParams,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<ListInscricoesCursoResponse> {
   const searchParams = new URLSearchParams();
 
@@ -693,7 +755,7 @@ export async function listInscricoesCurso(
 export async function listCursoAuditoria(
   cursoId: number | string,
   params?: ListCursoAuditoriaParams,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<ListCursoAuditoriaResponse> {
   const searchParams = new URLSearchParams();
 
@@ -723,7 +785,7 @@ export async function listCursoAuditoria(
 export async function listProvas(
   cursoId: number | string,
   turmaId: string,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<TurmaProva[]> {
   return apiFetch<TurmaProva[]>(
     cursosRoutes.cursos.turmas.provas.list(cursoId, turmaId),
@@ -734,7 +796,7 @@ export async function listProvas(
         headers: buildHeaders(init?.headers, true),
       },
       cache: "no-cache",
-    }
+    },
   );
 }
 
@@ -742,7 +804,7 @@ export async function listProvas(
 export async function listCertificados(
   cursoId: number | string,
   turmaId: string,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<TurmaCertificado[]> {
   return apiFetch<TurmaCertificado[]>(
     cursosRoutes.cursos.turmas.certificados.list(cursoId, turmaId),
@@ -753,14 +815,14 @@ export async function listCertificados(
         headers: buildHeaders(init?.headers, true),
       },
       cache: "no-cache",
-    }
+    },
   );
 }
 
 // Admin - Alunos com inscrições
 export async function listAlunosComInscricao(
   params?: ListAlunosComInscricaoParams,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<ListAlunosComInscricaoResponse> {
   const queryParams = new URLSearchParams();
 
@@ -847,7 +909,7 @@ export async function listAlunosComInscricao(
 
 export async function getCursoAlunoDetalhes(
   alunoId: string,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<CursoAlunoDetalhesResponse> {
   // Preferir as rotas unificadas do módulo de Cursos
   const url = cursosRoutes.alunos.get(alunoId);
@@ -862,7 +924,7 @@ export async function getCursoAlunoDetalhes(
 }
 
 export async function getVisaoGeral(
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<VisaoGeralResponse> {
   return apiFetch<VisaoGeralResponse>(cursosRoutes.visaoGeral(), {
     init: {
@@ -878,7 +940,7 @@ export async function getVisaoGeral(
 export async function updateCursoAluno(
   alunoId: string,
   payload: Partial<CursoAlunoDetalhes>,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<CursoAlunoDetalhesResponse> {
   const url = cursosRoutes.alunos.update(alunoId);
   return apiFetch<CursoAlunoDetalhesResponse>(url, {
@@ -887,7 +949,7 @@ export async function updateCursoAluno(
       ...init,
       headers: buildHeaders(
         { "Content-Type": "application/json", ...(init?.headers || {}) },
-        true
+        true,
       ),
       body: JSON.stringify(payload),
     },

@@ -19,7 +19,7 @@ import {
 import { ChevronDown, ChevronLeft, Edit } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Curso } from "@/api/cursos";
-import { EditCursoModal } from "./EditCursoModal";
+import { useRouter } from "next/navigation";
 import { formatCursoStatus, getCursoStatusBadgeClasses } from "../utils";
 
 interface HeaderInfoProps {
@@ -39,20 +39,16 @@ function getInitials(name: string): string {
 }
 
 export function HeaderInfo({ curso, onEditCurso }: HeaderInfoProps) {
+  const router = useRouter();
   const [isActionsOpen, setIsActionsOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   const isPublished = curso.statusPadrao === "PUBLICADO";
   const statusColor = isPublished ? "bg-emerald-500" : "bg-gray-400";
   const statusLabel = isPublished ? "Curso publicado" : "Curso em rascunho";
 
   const handleEditClick = () => {
-    setIsEditModalOpen(true);
+    router.push(`/dashboard/cursos/${curso.id}/editar`);
     setIsActionsOpen(false);
-  };
-
-  const handleEditSuccess = () => {
-    onEditCurso?.();
   };
 
   const formatDate = (dateString: string) => {
@@ -68,7 +64,7 @@ export function HeaderInfo({ curso, onEditCurso }: HeaderInfoProps) {
     <Badge
       className={cn(
         "inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-wide",
-        getCursoStatusBadgeClasses(curso.statusPadrao)
+        getCursoStatusBadgeClasses(curso.statusPadrao),
       )}
     >
       {formatCursoStatus(curso.statusPadrao)}
@@ -90,7 +86,7 @@ export function HeaderInfo({ curso, onEditCurso }: HeaderInfoProps) {
                 <span
                   className={cn(
                     "absolute bottom-1 right-1 inline-flex size-4 items-center justify-center rounded-full border-2 border-white cursor-pointer",
-                    statusColor
+                    statusColor,
                   )}
                   aria-label={statusLabel}
                 >
@@ -119,7 +115,7 @@ export function HeaderInfo({ curso, onEditCurso }: HeaderInfoProps) {
                 <ChevronDown
                   className={cn(
                     "h-4 w-4 transition-transform duration-200",
-                    isActionsOpen ? "rotate-180" : "rotate-0"
+                    isActionsOpen ? "rotate-180" : "rotate-0",
                   )}
                   aria-hidden="true"
                 />
@@ -147,13 +143,6 @@ export function HeaderInfo({ curso, onEditCurso }: HeaderInfoProps) {
           </Button>
         </div>
       </div>
-
-      <EditCursoModal
-        isOpen={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
-        onSuccess={handleEditSuccess}
-        curso={curso}
-      />
     </section>
   );
 }

@@ -2,8 +2,16 @@
 
 import React from "react";
 import { motion } from "framer-motion";
-import { Clock, Award, ArrowRight } from "lucide-react";
+import {
+  Clock,
+  Award,
+  ArrowRight,
+  DollarSign,
+  Gift,
+  Percent,
+} from "lucide-react";
 import { ButtonCustom } from "@/components/ui/custom/button";
+import { Badge } from "@/components/ui/badge";
 import type { CourseCardProps } from "../types";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
@@ -73,7 +81,7 @@ const getCategoryColor = (categoria: string) => {
 
 // Função para gerar cor padrão baseada no nome da categoria (tons pastéis refinados)
 const getDefaultColor = (
-  categoria: string
+  categoria: string,
 ): { bg: string; text: string; border: string } => {
   const colors = [
     { bg: "bg-blue-50", text: "text-blue-600", border: "border-blue-200" },
@@ -113,6 +121,31 @@ const getDefaultColor = (
 
 export function CourseCard({ course, index, onViewDetails }: CourseCardProps) {
   const categoryColor = getCategoryColor(course.categoria);
+
+  // Formatar valor para exibição
+  const formatCurrency = (value: number): string => {
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    }).format(value);
+  };
+
+  // Calcular desconto se houver valor promocional
+  const calcularDesconto = (): number | null => {
+    if (
+      course.valorPromocional &&
+      course.valor > 0 &&
+      course.valorPromocional < course.valor
+    ) {
+      return ((course.valor - course.valorPromocional) / course.valor) * 100;
+    }
+    return null;
+  };
+
+  const desconto = calcularDesconto();
+  const isPlaceholderImage =
+    course.imagemUrl?.includes("via.placeholder.com") || false;
+
   return (
     <motion.article
       initial={{ opacity: 0, y: 20 }}
@@ -120,19 +153,29 @@ export function CourseCard({ course, index, onViewDetails }: CourseCardProps) {
       transition={{ duration: 0.3, delay: index * 0.05 }}
       className={cn(
         "group border border-gray-200 bg-white rounded-2xl transition-all duration-200 overflow-hidden",
-        "hover:border-[var(--primary-color)]/30"
+        "hover:border-[var(--primary-color)]/30",
       )}
     >
       {/* Imagem do curso */}
       <div className="relative h-56 w-full overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200">
         {course.imagemUrl ? (
-          <Image
-            src={course.imagemUrl}
-            alt={course.nome}
-            fill
-            className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.02]"
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 50vw"
-          />
+          isPlaceholderImage ? (
+            // Para imagens placeholder, usa img normal sem otimização
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={course.imagemUrl}
+              alt={course.nome}
+              className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.02]"
+            />
+          ) : (
+            <Image
+              src={course.imagemUrl}
+              alt={course.nome}
+              fill
+              className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.02]"
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 50vw"
+            />
+          )
         ) : (
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="w-20 h-20 rounded-full bg-[var(--primary-color)]/10 flex items-center justify-center">
@@ -149,7 +192,7 @@ export function CourseCard({ course, index, onViewDetails }: CourseCardProps) {
               "border transition-all duration-200",
               categoryColor.bg,
               categoryColor.text,
-              categoryColor.border
+              categoryColor.border,
             )}
           >
             {course.categoria}
@@ -179,7 +222,7 @@ export function CourseCard({ course, index, onViewDetails }: CourseCardProps) {
           </p>
         </div>
 
-        {/* Informações - Minimalista */}
+        {/* Informações - Carga Horária e Preço */}
         <div className="flex items-center justify-between pt-3 border-t border-gray-100">
           <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
             <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-[var(--primary-color)]/10">
@@ -187,6 +230,47 @@ export function CourseCard({ course, index, onViewDetails }: CourseCardProps) {
             </div>
             <span className="font-semibold">{course.cargaHoraria}h</span>
             <span className="text-gray-400">de conteúdo</span>
+          </div>
+
+          {/* Preço */}
+          <div className="flex items-center gap-2">
+            {course.gratuito ? (
+              <Badge
+                variant="outline"
+                className="bg-emerald-50 text-emerald-700 border-emerald-200 font-semibold"
+              >
+                <Gift className="h-3 w-3 mr-1" />
+                Gratuito
+              </Badge>
+            ) : course.valor > 0 ? (
+              <div className="flex flex-col items-end gap-0.5">
+                {course.valorPromocional &&
+                course.valorPromocional < course.valor ? (
+                  <>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs line-through text-gray-400">
+                        {formatCurrency(course.valor)}
+                      </span>
+                      {desconto && (
+                        <Badge
+                          variant="outline"
+                          className="bg-red-50 text-red-700 border-red-200 text-[10px] px-1.5 py-0"
+                        >
+                          {desconto.toFixed(0)}% OFF
+                        </Badge>
+                      )}
+                    </div>
+                    <span className="text-lg font-bold text-emerald-600">
+                      {formatCurrency(course.valorPromocional)}
+                    </span>
+                  </>
+                ) : (
+                  <span className="text-lg font-bold text-gray-900">
+                    {formatCurrency(course.valor)}
+                  </span>
+                )}
+              </div>
+            ) : null}
           </div>
         </div>
 

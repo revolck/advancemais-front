@@ -53,7 +53,7 @@ export function CourseListHeader({
               <ChevronDown
                 className={cn(
                   "h-4 w-4 text-gray-400 transition-transform",
-                  open && "rotate-180"
+                  open && "rotate-180",
                 )}
               />
             </button>
@@ -77,7 +77,7 @@ export function CourseListHeader({
                       "flex w-full items-center justify-between rounded-xl px-3 py-2 text-sm font-medium transition-colors",
                       isActive
                         ? "bg-[#1f8454]/10 text-[#1f8454]"
-                        : "text-gray-700 hover:bg-gray-100"
+                        : "text-gray-700 hover:bg-gray-100",
                     )}
                   >
                     <span>{option.label}</span>

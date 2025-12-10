@@ -1,0 +1,1 @@
+export { EditCursoView } from "./EditCursoView";

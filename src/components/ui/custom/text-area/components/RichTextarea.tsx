@@ -32,6 +32,7 @@ const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
       size,
       style,
       onHtmlChange,
+      required,
       ...props
     },
     ref
@@ -1086,6 +1087,7 @@ const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
           <div className="flex items-center gap-2">
             <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
               {label}
+              {required && <span className="text-destructive ml-1">*</span>}
             </label>
             {showInfo && (
               <Button

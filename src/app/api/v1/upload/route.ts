@@ -43,11 +43,21 @@ export async function DELETE(req: NextRequest) {
   }
 
   try {
+    // Verifica se a URL é do Vercel Blob Storage
+    if (!url.includes("blob.vercel-storage.com") && !url.includes("public.blob.vercel-storage.com")) {
+      // URL externa (ex: via.placeholder.com) - não precisa deletar
+      if (env.isDevelopment) {
+        console.log("/upload DELETE: URL externa ignorada:", url);
+      }
+      return new Response(null, { status: 204 });
+    }
+
     if (!serverEnv.blobToken) {
       const msg = "Blob token não configurado";
       if (env.isDevelopment) console.error("/upload DELETE:", msg);
       return NextResponse.json({ error: msg }, { status: 500 });
     }
+    
     await del(url, { token: serverEnv.blobToken });
     return new Response(null, { status: 204 });
   } catch (err: unknown) {

@@ -526,9 +526,21 @@ export function useBreadcrumb(): BreadcrumbConfig {
     return {
       title: "Detalhes da Turma",
       items: [
-        { label: "Dashboard", href: "/", icon: "Home" },
+        { label: "Dashboard", href: "/dashboard", icon: "Home" },
         { label: "Cursos", href: "/dashboard/cursos", icon: "BookOpen" },
         { label: "Turma", icon: "Users" },
+      ],
+    };
+  }
+
+  // Edição de curso: /dashboard/cursos/[id]/editar (deve vir antes dos detalhes do curso)
+  if (cleanPathname.match(/^\/dashboard\/cursos\/[^/]+\/editar$/)) {
+    return {
+      title: "Editar Curso",
+      items: [
+        { label: "Dashboard", href: "/dashboard", icon: "Home" },
+        { label: "Cursos", href: "/dashboard/cursos", icon: "BookOpen" },
+        { label: "Editar Curso", icon: "Edit" },
       ],
     };
   }
@@ -539,7 +551,7 @@ export function useBreadcrumb(): BreadcrumbConfig {
     return {
       title: "Detalhes do Curso",
       items: [
-        { label: "Dashboard", href: "/", icon: "Home" },
+        { label: "Dashboard", href: "/dashboard", icon: "Home" },
         { label: "Cursos", href: "/dashboard/cursos", icon: "BookOpen" },
         { label: "Detalhes do Curso", icon: "Eye" },
       ],

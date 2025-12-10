@@ -5,11 +5,7 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { listCursos, type Curso, type CursosListParams } from "@/api/cursos";
 import { queryKeys } from "@/lib/react-query/queryKeys";
 
-import type { 
-  Pagination, 
-  Filters, 
-  Meta 
-} from "@/api/cursos/types";
+import type { Pagination, Filters, Meta } from "@/api/cursos/types";
 
 export interface NormalizedCursosFilters {
   page: number;
@@ -54,7 +50,7 @@ function buildParams(filters: NormalizedCursosFilters): CursosListParams {
 
 export function useCursosDashboardQuery(
   filters: NormalizedCursosFilters,
-  enabled: boolean
+  enabled: boolean,
 ) {
   return useQuery<CursosQueryResult, Error>({
     queryKey: queryKeys.cursos.list(filters),
@@ -63,7 +59,7 @@ export function useCursosDashboardQuery(
       const response = await listCursos(params);
 
       const cursos = response.data ?? [];
-      
+
       // Usa a paginação completa da API ou cria fallback
       const pagination: Pagination = response.pagination ?? {
         requestedPage: filters.page,
@@ -73,10 +69,7 @@ export function useCursosDashboardQuery(
         hasPrevious: false,
         pageSize: filters.pageSize,
         total: cursos.length,
-        totalPages: Math.max(
-          1,
-          Math.ceil(cursos.length / filters.pageSize)
-        ),
+        totalPages: Math.max(1, Math.ceil(cursos.length / filters.pageSize)),
       };
 
       return {

@@ -39,6 +39,7 @@ interface EditCursoModalProps {
 }
 
 type StatusPadrao = "PUBLICADO" | "RASCUNHO";
+type TipoCurso = "PAGO" | "GRATUITO";
 
 interface FormData {
   nome: string;
@@ -48,6 +49,10 @@ interface FormData {
   subcategoriaId: string | null;
   estagioObrigatorio: boolean;
   statusPadrao: StatusPadrao | null;
+  // Campos de precificação
+  tipoCurso: TipoCurso;
+  valor: string;
+  valorPromocional: string;
 }
 
 export function EditCursoModal({
@@ -65,10 +70,14 @@ export function EditCursoModal({
     subcategoriaId: null,
     estagioObrigatorio: false,
     statusPadrao: null,
+    // Valores padrão de precificação
+    tipoCurso: "PAGO",
+    valor: "",
+    valorPromocional: "",
   });
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>(
-    {}
+    {},
   );
   const [imagemFiles, setImagemFiles] = useState<FileUploadItem[]>([]);
   const [imagemUrl, setImagemUrl] = useState<string | null>(null);
@@ -79,12 +88,17 @@ export function EditCursoModal({
     useCursoCategorias();
   const { subcategoriaOptions, isLoading: isLoadingSubcategorias } =
     useCursoSubcategorias(
-      formData.categoriaId ? Number(formData.categoriaId) : null
+      formData.categoriaId ? Number(formData.categoriaId) : null,
     );
 
   // Preencher formulário com dados do curso
   useEffect(() => {
     if (curso && isOpen) {
+      // Determinar tipo de curso
+      const isGratuito =
+        curso.gratuito || (curso.valor === 0 && !curso.gratuito);
+      const tipoCurso: TipoCurso = isGratuito ? "GRATUITO" : "PAGO";
+
       setFormData({
         nome: curso.nome || "",
         descricao: curso.descricao || "",
@@ -93,6 +107,12 @@ export function EditCursoModal({
         subcategoriaId: curso.subcategoriaId?.toString() || null,
         estagioObrigatorio: curso.estagioObrigatorio || false,
         statusPadrao: (curso.statusPadrao as StatusPadrao) || "PUBLICADO",
+        // Campos de precificação
+        tipoCurso,
+        valor: curso.valor > 0 ? curso.valor.toString() : "",
+        valorPromocional: curso.valorPromocional
+          ? curso.valorPromocional.toString()
+          : "",
       });
       setErrors({});
 
@@ -123,6 +143,14 @@ export function EditCursoModal({
     }
   }, [curso, isOpen]);
 
+  // Helper para converter valores monetários
+  const parseCurrencyToNumber = (value: string): number => {
+    if (!value || value.trim() === "") return 0;
+    const cleanValue = value.replace(/[^\d,.-]/g, "").replace(",", ".");
+    const numValue = parseFloat(cleanValue);
+    return isNaN(numValue) ? 0 : numValue;
+  };
+
   const validateForm = (): boolean => {
     const newErrors: Partial<Record<keyof FormData, string>> = {};
 
@@ -138,6 +166,23 @@ export function EditCursoModal({
     }
 
     if (!formData.categoriaId) newErrors.categoriaId = "Selecione a categoria";
+
+    // Validação de precificação
+    const isGratuito = formData.tipoCurso === "GRATUITO";
+    if (!isGratuito) {
+      const valorNum = parseCurrencyToNumber(formData.valor);
+      if (valorNum <= 0) {
+        newErrors.valor = "Valor deve ser maior que zero";
+      }
+
+      if (formData.valorPromocional) {
+        const valorPromoNum = parseCurrencyToNumber(formData.valorPromocional);
+        if (valorPromoNum > 0 && valorPromoNum >= valorNum) {
+          newErrors.valorPromocional =
+            "Valor promocional deve ser menor que o valor normal";
+        }
+      }
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -183,17 +228,17 @@ export function EditCursoModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Proteção contra múltiplos submits
     if (isLoading) {
       return;
     }
-    
+
     if (!validateForm()) return;
     if (!validateImage()) return;
 
     setIsLoading(true);
-    
+
     try {
       // Estratégia igual ao SliderForm: só deletar/upload NO SUBMIT
       let finalImageUrl = imagemUrl || "";
@@ -206,7 +251,7 @@ export function EditCursoModal({
         uploadResult = await uploadImage(
           latest.file,
           "website/curso/imagem",
-          previousUrl
+          previousUrl,
         );
         finalImageUrl = uploadResult.url;
         setImagemUrl(finalImageUrl);
@@ -233,6 +278,13 @@ export function EditCursoModal({
         return;
       }
 
+      // Campos de precificação
+      const isGratuito = formData.tipoCurso === "GRATUITO";
+      const valorNum = isGratuito ? 0 : parseCurrencyToNumber(formData.valor);
+      const valorPromoNum = isGratuito
+        ? undefined
+        : parseCurrencyToNumber(formData.valorPromocional);
+
       // Constrói o payload com a URL da imagem garantida
       const payload: UpdateCursoPayload = {
         nome: formData.nome.trim(),
@@ -245,12 +297,23 @@ export function EditCursoModal({
         estagioObrigatorio: formData.estagioObrigatorio || false,
         statusPadrao: (formData.statusPadrao || "PUBLICADO") as StatusPadrao,
         imagemUrl: finalImageUrl.trim(),
+        // Campos de precificação
+        valor: valorNum,
+        valorPromocional:
+          valorPromoNum && valorPromoNum > 0 ? valorPromoNum : undefined,
+        gratuito: isGratuito,
       };
 
       // Debug em desenvolvimento
       if (process.env.NODE_ENV === "development") {
-        console.log("[EditCursoModal] Payload completo sendo enviado:", payload);
-        console.log("[EditCursoModal] imagemUrl no payload:", payload.imagemUrl);
+        console.log(
+          "[EditCursoModal] Payload completo sendo enviado:",
+          payload,
+        );
+        console.log(
+          "[EditCursoModal] imagemUrl no payload:",
+          payload.imagemUrl,
+        );
       }
 
       // Envia o payload completo para a API
@@ -364,15 +427,19 @@ export function EditCursoModal({
                     !formData.categoriaId
                       ? "Selecione uma categoria"
                       : subcategoriaOptions.length === 0
-                      ? "Nenhuma subcategoria encontrada"
-                      : isLoadingSubcategorias
-                      ? "Carregando..."
-                      : "Selecionar (opcional)"
+                        ? "Nenhuma subcategoria encontrada"
+                        : isLoadingSubcategorias
+                          ? "Carregando..."
+                          : "Selecionar (opcional)"
                   }
                   options={subcategoriaOptions}
                   value={formData.subcategoriaId}
                   onChange={(val) => handleInputChange("subcategoriaId", val)}
-                  disabled={!formData.categoriaId || isLoadingSubcategorias || subcategoriaOptions.length === 0}
+                  disabled={
+                    !formData.categoriaId ||
+                    isLoadingSubcategorias ||
+                    subcategoriaOptions.length === 0
+                  }
                   error={errors.subcategoriaId}
                 />
 
@@ -403,6 +470,61 @@ export function EditCursoModal({
                   }
                 />
 
+                {/* Linha de Precificação */}
+                <div className="md:col-span-2">
+                  <div className="flex flex-col md:flex-row gap-4 w-full">
+                    <div className="flex-[0.25] min-w-0">
+                      <SelectCustom
+                        label="Tipo de Curso"
+                        options={[
+                          { value: "PAGO", label: "💰 Curso Pago" },
+                          { value: "GRATUITO", label: "🎁 Curso Gratuito" },
+                        ]}
+                        value={formData.tipoCurso}
+                        onChange={(val) => {
+                          handleInputChange("tipoCurso", val);
+                          if (val === "GRATUITO") {
+                            handleInputChange("valor", "");
+                            handleInputChange("valorPromocional", "");
+                          }
+                        }}
+                        required
+                      />
+                    </div>
+                    <div className="flex-[0.375] min-w-0">
+                      <InputCustom
+                        label="Valor do Curso (R$)"
+                        name="valor"
+                        value={
+                          formData.tipoCurso === "GRATUITO"
+                            ? "0"
+                            : formData.valor
+                        }
+                        onChange={(e) =>
+                          handleInputChange("valor", e.target.value)
+                        }
+                        error={errors.valor}
+                        required={formData.tipoCurso !== "GRATUITO"}
+                        mask="money"
+                        disabled={formData.tipoCurso === "GRATUITO"}
+                      />
+                    </div>
+                    <div className="flex-[0.375] min-w-0">
+                      <InputCustom
+                        label="Valor Promocional (R$)"
+                        name="valorPromocional"
+                        value={formData.valorPromocional}
+                        onChange={(e) =>
+                          handleInputChange("valorPromocional", e.target.value)
+                        }
+                        error={errors.valorPromocional}
+                        mask="money"
+                        disabled={formData.tipoCurso === "GRATUITO"}
+                      />
+                    </div>
+                  </div>
+                </div>
+
                 <div className="md:col-span-2">
                   <SimpleTextarea
                     label="Descrição"
@@ -411,7 +533,7 @@ export function EditCursoModal({
                     onChange={(e) =>
                       handleInputChange(
                         "descricao",
-                        (e.target as HTMLTextAreaElement).value
+                        (e.target as HTMLTextAreaElement).value,
                       )
                     }
                     maxLength={800}
@@ -444,7 +566,7 @@ export function EditCursoModal({
                   onCheckedChange={(checked) =>
                     handleInputChange(
                       "statusPadrao",
-                      checked ? "PUBLICADO" : "RASCUNHO"
+                      checked ? "PUBLICADO" : "RASCUNHO",
                     )
                   }
                   className="cursor-pointer"
@@ -461,8 +583,8 @@ export function EditCursoModal({
             >
               Cancelar
             </ButtonCustom>
-            <ButtonCustom 
-              type="submit" 
+            <ButtonCustom
+              type="submit"
               isLoading={isLoading}
               disabled={isLoading}
             >

@@ -18,6 +18,13 @@ function mapCursoToData(curso: any): CourseData {
     totalTurmas: curso.totalTurmas || curso._count?.turmas || 0,
     totalAlunos: curso.totalAlunos || 0,
     criadoEm: curso.criadoEm || new Date().toISOString(),
+    // Campos de precificação
+    valor: Number(curso.valor ?? 0),
+    valorPromocional:
+      curso.valorPromocional != null
+        ? Number(curso.valorPromocional)
+        : undefined,
+    gratuito: Boolean(curso.gratuito ?? false),
   };
 }
 
@@ -36,7 +43,7 @@ interface UsePublicCursosReturn {
 export function usePublicCursos(
   filters: CourseFilters,
   pageSize: number = 12,
-  enabled: boolean = true
+  enabled: boolean = true,
 ): UsePublicCursosReturn {
   const [data, setData] = useState<CourseData[]>([]);
   const [isLoading, setIsLoading] = useState(enabled);
@@ -58,7 +65,8 @@ export function usePublicCursos(
 
       // Só envia busca se tiver 3 ou mais caracteres
       const searchQuery = filters.busca?.trim();
-      const validSearch = searchQuery && searchQuery.length >= 3 ? searchQuery : undefined;
+      const validSearch =
+        searchQuery && searchQuery.length >= 3 ? searchQuery : undefined;
 
       const response = await listCursos(
         {
@@ -67,7 +75,7 @@ export function usePublicCursos(
           search: validSearch,
           statusPadrao: "PUBLICADO",
         },
-        { cache: "no-store" }
+        { cache: "no-store" },
       );
 
       const mappedData = (response.data || []).map(mapCursoToData);
@@ -95,7 +103,9 @@ export function usePublicCursos(
         filters.categorias.length === 0 ||
         filters.categorias.includes(course.categoria);
 
-      const matchVagas = !filters.apenasComVagas || (course.totalTurmas && course.totalTurmas > 0);
+      const matchVagas =
+        !filters.apenasComVagas ||
+        (course.totalTurmas && course.totalTurmas > 0);
 
       return matchCategoria && matchVagas;
     });
@@ -113,4 +123,3 @@ export function usePublicCursos(
     setPage: setCurrentPage,
   };
 }
-

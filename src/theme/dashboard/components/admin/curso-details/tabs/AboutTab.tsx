@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import { EmptyState } from "@/components/ui/custom";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -10,9 +11,13 @@ import {
   Tag,
   Layers,
   Briefcase,
+  DollarSign,
+  Gift,
+  Percent,
   type LucideIcon,
 } from "lucide-react";
 import type { Curso } from "@/api/cursos";
+import { Badge } from "@/components/ui/badge";
 
 interface AboutTabProps {
   curso: Curso & {
@@ -25,7 +30,15 @@ interface AboutTabProps {
 }
 
 export function AboutTab({ curso, isLoading = false }: AboutTabProps) {
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
   const aboutDescription = curso.descricao?.trim();
+  const isPlaceholderImage =
+    curso.imagemUrl?.includes("via.placeholder.com") || false;
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return "—";
@@ -52,6 +65,27 @@ export function AboutTab({ curso, isLoading = false }: AboutTabProps) {
     return `${dateStr} às ${timeStr}`;
   };
 
+  const formatCurrency = (value: number): string => {
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    }).format(value);
+  };
+
+  // Calcular desconto se houver valor promocional
+  const calcularDesconto = (): number | null => {
+    if (
+      curso.valorPromocional &&
+      curso.valor > 0 &&
+      curso.valorPromocional < curso.valor
+    ) {
+      return ((curso.valor - curso.valorPromocional) / curso.valor) * 100;
+    }
+    return null;
+  };
+
+  const desconto = calcularDesconto();
+
   const aboutSidebar: Array<{
     label: string;
     value: React.ReactNode | null;
@@ -66,6 +100,62 @@ export function AboutTab({ curso, isLoading = false }: AboutTabProps) {
       label: "Subcategoria",
       value: curso.subcategoria?.nome ?? "—",
       icon: BookOpen,
+    },
+    {
+      label: "Tipo de curso",
+      value: curso.gratuito ? (
+        <Badge
+          variant="outline"
+          className="bg-emerald-50 text-emerald-700 border-emerald-200"
+        >
+          <Gift className="h-3 w-3 mr-1" />
+          Gratuito
+        </Badge>
+      ) : (
+        <Badge
+          variant="outline"
+          className="bg-blue-50 text-blue-700 border-blue-200"
+        >
+          <DollarSign className="h-3 w-3 mr-1" />
+          Pago
+        </Badge>
+      ),
+      icon: curso.gratuito ? Gift : DollarSign,
+    },
+    {
+      label: "Valor do curso",
+      value:
+        !curso.gratuito && curso.valor > 0 ? (
+          <div className="flex flex-col gap-1">
+            {curso.valorPromocional && curso.valorPromocional < curso.valor ? (
+              <>
+                <span className="text-xs line-through text-gray-400">
+                  {formatCurrency(curso.valor)}
+                </span>
+                <span className="text-sm font-semibold text-emerald-600">
+                  {formatCurrency(curso.valorPromocional)}
+                </span>
+              </>
+            ) : (
+              <span className="font-semibold">
+                {formatCurrency(curso.valor)}
+              </span>
+            )}
+          </div>
+        ) : null, // Não mostra se for gratuito
+      icon: DollarSign,
+    },
+    {
+      label: "Desconto",
+      value: desconto ? (
+        <Badge
+          variant="outline"
+          className="bg-red-50 text-red-700 border-red-200"
+        >
+          {desconto.toFixed(0)}% OFF
+        </Badge>
+      ) : null,
+      icon: Percent,
     },
     {
       label: "Carga horária",
@@ -156,16 +246,31 @@ export function AboutTab({ curso, isLoading = false }: AboutTabProps) {
 
       <aside className="space-y-4">
         {/* Imagem do curso */}
-        {curso.imagemUrl && (
+        {curso.imagemUrl && isClient && (
           <div className="rounded-2xl border border-gray-200/60 bg-white p-6">
-            <div className="relative aspect-video w-full overflow-hidden rounded-lg">
-              <Image
-                src={curso.imagemUrl}
-                alt={curso.nome}
-                fill
-                className="object-cover"
-                sizes="(max-width: 768px) 100vw, 400px"
-              />
+            <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-gray-100">
+              {isPlaceholderImage ? (
+                // Para imagens placeholder, usa img normal sem otimização
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={curso.imagemUrl}
+                  alt={curso.nome}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = "none";
+                  }}
+                />
+              ) : (
+                // Para imagens do Blob Storage, usa Image otimizado
+                <Image
+                  src={curso.imagemUrl}
+                  alt={curso.nome}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 100vw, 400px"
+                />
+              )}
             </div>
           </div>
         )}
@@ -177,7 +282,10 @@ export function AboutTab({ curso, isLoading = false }: AboutTabProps) {
                 // Mostrar categoria sempre, mesmo se não tiver valor
                 if (info.label === "Categoria") return true;
                 // Para subcategoria, mostrar apenas se tiver valor (não for "—")
-                if (info.label === "Subcategoria") return info.value !== null && info.value !== "—";
+                if (info.label === "Subcategoria")
+                  return info.value !== null && info.value !== "—";
+                // Para desconto, mostrar apenas se houver desconto
+                if (info.label === "Desconto") return info.value !== null;
                 // Para outros campos, mostrar apenas se tiver valor
                 return info.value !== null && info.value !== "—";
               })

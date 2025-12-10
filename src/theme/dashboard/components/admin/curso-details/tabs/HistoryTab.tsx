@@ -37,10 +37,7 @@ import {
   Eye,
   X,
 } from "lucide-react";
-import {
-  listCursoAuditoria,
-  type CursoAuditoriaItem,
-} from "@/api/cursos";
+import { listCursoAuditoria, type CursoAuditoriaItem } from "@/api/cursos";
 import { listCategorias, listSubcategorias } from "@/api/cursos/categorias";
 import type {
   CategoriaCurso,
@@ -98,7 +95,10 @@ const getRoleIcon = (role: string) => {
 const formatValue = (
   campo: string | null,
   value: any,
-  categoriasMap?: { categorias: Map<number, string>; subcategorias: Map<number, string> }
+  categoriasMap?: {
+    categorias: Map<number, string>;
+    subcategorias: Map<number, string>;
+  },
 ): string => {
   if (value === null || value === undefined || value === "") {
     return "(vazio)";
@@ -165,7 +165,7 @@ const formatRelativeTime = (dateString: string): string => {
   const date = new Date(dateString);
   const now = new Date();
   const diffInMinutes = Math.floor(
-    (now.getTime() - date.getTime()) / (1000 * 60)
+    (now.getTime() - date.getTime()) / (1000 * 60),
   );
 
   if (diffInMinutes < 1) return "Agora";
@@ -223,42 +223,57 @@ export function HistoryTab({
 
   // Buscar subcategorias de todas as categorias para garantir mapeamento completo
   const { data: allSubcategorias } = useQuery({
-    queryKey: ["subcategorias-cursos", categoriasData?.map(c => c.id)],
+    queryKey: ["subcategorias-cursos", categoriasData?.map((c) => c.id)],
     queryFn: async () => {
-      if (!categoriasData || !Array.isArray(categoriasData) || categoriasData.length === 0) {
+      if (
+        !categoriasData ||
+        !Array.isArray(categoriasData) ||
+        categoriasData.length === 0
+      ) {
         return [];
       }
-      
+
       try {
         // Buscar subcategorias de todas as categorias
         const subcategoriasPromises = categoriasData
-          .filter((cat: CategoriaCurso) => cat && typeof cat === 'object' && 'id' in cat)
+          .filter(
+            (cat: CategoriaCurso) =>
+              cat && typeof cat === "object" && "id" in cat,
+          )
           .map((cat: CategoriaCurso) =>
             listSubcategorias(cat.id, { pageSize: 1000 })
               .then((result) => {
                 // Garantir que o resultado é um array válido
                 if (Array.isArray(result)) {
-                  return result.filter((sub: SubcategoriaCurso) => 
-                    sub && typeof sub === 'object' && 'id' in sub && 'nome' in sub
+                  return result.filter(
+                    (sub: SubcategoriaCurso) =>
+                      sub &&
+                      typeof sub === "object" &&
+                      "id" in sub &&
+                      "nome" in sub,
                   );
                 }
                 return [];
               })
-              .catch(() => [])
+              .catch(() => []),
           );
         const allSubs = await Promise.all(subcategoriasPromises);
         // Filtrar elementos undefined/null e garantir estrutura válida
         return allSubs
           .flat()
-          .filter((sub: SubcategoriaCurso) => 
-            sub && typeof sub === 'object' && 'id' in sub && 'nome' in sub
+          .filter(
+            (sub: SubcategoriaCurso) =>
+              sub && typeof sub === "object" && "id" in sub && "nome" in sub,
           );
       } catch (err) {
         console.error("❌ Erro ao buscar subcategorias:", err);
         return [];
       }
     },
-    enabled: !!categoriasData && Array.isArray(categoriasData) && categoriasData.length > 0,
+    enabled:
+      !!categoriasData &&
+      Array.isArray(categoriasData) &&
+      categoriasData.length > 0,
     staleTime: 5 * 60 * 1000, // Cache por 5 minutos
   });
 
@@ -266,17 +281,22 @@ export function HistoryTab({
   const categoriasMap = useMemo(() => {
     const catMap = new Map<number, string>();
     const subMap = new Map<number, string>();
-    
+
     if (categoriasData && Array.isArray(categoriasData)) {
       categoriasData.forEach((cat: CategoriaCurso) => {
         // Verificar se cat existe e tem id e nome antes de adicionar ao mapa
-        if (cat && typeof cat === 'object' && 'id' in cat && 'nome' in cat) {
+        if (cat && typeof cat === "object" && "id" in cat && "nome" in cat) {
           catMap.set(cat.id, cat.nome);
           // Mapear subcategorias que vêm dentro da categoria
           if (cat.subcategorias && Array.isArray(cat.subcategorias)) {
             cat.subcategorias.forEach((sub: SubcategoriaCurso) => {
               // Verificar se sub existe e tem id e nome antes de adicionar ao mapa
-              if (sub && typeof sub === 'object' && 'id' in sub && 'nome' in sub) {
+              if (
+                sub &&
+                typeof sub === "object" &&
+                "id" in sub &&
+                "nome" in sub
+              ) {
                 subMap.set(sub.id, sub.nome);
               }
             });
@@ -284,17 +304,17 @@ export function HistoryTab({
         }
       });
     }
-    
+
     // Adicionar subcategorias buscadas separadamente
     if (allSubcategorias && Array.isArray(allSubcategorias)) {
       allSubcategorias.forEach((sub: SubcategoriaCurso) => {
         // Verificar se sub existe e tem id e nome antes de adicionar ao mapa
-        if (sub && typeof sub === 'object' && 'id' in sub && 'nome' in sub) {
+        if (sub && typeof sub === "object" && "id" in sub && "nome" in sub) {
           subMap.set(sub.id, sub.nome);
         }
       });
     }
-    
+
     return { categorias: catMap, subcategorias: subMap };
   }, [categoriasData, allSubcategorias]);
 
@@ -310,66 +330,68 @@ export function HistoryTab({
           page: currentPage,
           pageSize: itemsPerPage,
         });
-        
+
         // Remover duplicatas usando uma chave composta mais robusta
         // Considera: campo, valorAnterior, valorNovo, criadoEm (até o segundo), e alteradoPor.id
         if (result?.data && Array.isArray(result.data)) {
           const originalLength = result.data.length;
           const seen = new Set<string>();
           const seenByCompositeKey = new Set<string>();
-          
+
           result.data = result.data.filter((item) => {
             // Primeiro, verificar duplicata por ID (caso a API retorne o mesmo ID duas vezes)
             if (seen.has(item.id)) {
               return false; // Duplicata por ID, remover
             }
             seen.add(item.id);
-            
+
             // Criar chave composta para identificar alterações duplicadas mesmo com IDs diferentes
             // Normalizar data para segundo (ignorar milissegundos) para agrupar alterações no mesmo segundo
-            const dataNormalizada = item.criadoEm 
+            const dataNormalizada = item.criadoEm
               ? new Date(item.criadoEm).toISOString().substring(0, 19) // YYYY-MM-DDTHH:mm:ss
-              : '';
-            
-            const valorAnteriorStr = item.valorAnterior !== null && item.valorAnterior !== undefined
-              ? String(item.valorAnterior)
-              : 'null';
-            const valorNovoStr = item.valorNovo !== null && item.valorNovo !== undefined
-              ? String(item.valorNovo)
-              : 'null';
-            
+              : "";
+
+            const valorAnteriorStr =
+              item.valorAnterior !== null && item.valorAnterior !== undefined
+                ? String(item.valorAnterior)
+                : "null";
+            const valorNovoStr =
+              item.valorNovo !== null && item.valorNovo !== undefined
+                ? String(item.valorNovo)
+                : "null";
+
             const compositeKey = [
-              item.campo || 'null',
+              item.campo || "null",
               valorAnteriorStr,
               valorNovoStr,
               dataNormalizada,
-              item.alteradoPor?.id || 'null',
-            ].join('|');
-            
+              item.alteradoPor?.id || "null",
+            ].join("|");
+
             // Se já vimos esta combinação, é duplicata
             if (seenByCompositeKey.has(compositeKey)) {
               return false; // Duplicata por chave composta, remover
             }
             seenByCompositeKey.add(compositeKey);
-            
+
             return true;
-        });
-        
-        // Log para debug (apenas em desenvolvimento)
-        if (process.env.NODE_ENV === "development") {
+          });
+
+          // Log para debug (apenas em desenvolvimento)
+          if (process.env.NODE_ENV === "development") {
             const finalLength = result.data.length;
             const duplicatasRemovidas = originalLength - finalLength;
             if (duplicatasRemovidas > 0) {
               console.log("🔍 Auditoria - Duplicatas removidas:", {
-            cursoId,
+                cursoId,
                 totalOriginal: originalLength,
                 totalAposDedup: finalLength,
                 duplicatasRemovidas,
-          });
+              });
             }
           }
         }
-        
+
         return result;
       } catch (err) {
         console.error("❌ Erro ao buscar auditoria:", err);
@@ -402,24 +424,27 @@ export function HistoryTab({
       // Filtro por período
       const itemDate = new Date(item.criadoEm);
       const periodo = filters.periodo || { from: null, to: null };
-      
+
       // Normalizar datas para comparação (considerar apenas o dia, ignorar horário)
       const normalizeDate = (date: Date) => {
         const normalized = new Date(date);
         normalized.setHours(0, 0, 0, 0);
         return normalized;
       };
-      
+
       const itemDateNormalized = normalizeDate(itemDate);
-      
-      const matchesDataInicio = !periodo.from || itemDateNormalized >= normalizeDate(periodo.from);
-      
+
+      const matchesDataInicio =
+        !periodo.from || itemDateNormalized >= normalizeDate(periodo.from);
+
       // Para a data final, considerar o fim do dia (23:59:59.999)
-      const matchesDataFim = !periodo.to || (() => {
-        const endDate = new Date(periodo.to);
-        endDate.setHours(23, 59, 59, 999);
-        return itemDate <= endDate;
-      })();
+      const matchesDataFim =
+        !periodo.to ||
+        (() => {
+          const endDate = new Date(periodo.to);
+          endDate.setHours(23, 59, 59, 999);
+          return itemDate <= endDate;
+        })();
 
       return (
         matchesCampo &&
@@ -473,7 +498,7 @@ export function HistoryTab({
       });
       setCurrentPage(1);
     },
-    []
+    [],
   );
 
   const handleClearAll = useCallback(() => {
@@ -507,8 +532,7 @@ export function HistoryTab({
     if (periodo.from || periodo.to) {
       const dataInicioFormatada =
         periodo.from?.toLocaleDateString("pt-BR") || "...";
-      const dataFimFormatada =
-        periodo.to?.toLocaleDateString("pt-BR") || "...";
+      const dataFimFormatada = periodo.to?.toLocaleDateString("pt-BR") || "...";
       chips.push({
         key: "periodo",
         label: `Período: ${dataInicioFormatada} - ${dataFimFormatada}`,
@@ -595,11 +619,15 @@ export function HistoryTab({
         <Table>
           <TableHeader>
             <TableRow className="border-gray-100 bg-gray-50/50">
-              <TableHead className="font-semibold text-gray-700">Data</TableHead>
+              <TableHead className="font-semibold text-gray-700">
+                Data
+              </TableHead>
               <TableHead className="font-semibold text-gray-700">
                 Alterado Por
               </TableHead>
-              <TableHead className="font-semibold text-gray-700">Campo</TableHead>
+              <TableHead className="font-semibold text-gray-700">
+                Campo
+              </TableHead>
               <TableHead className="font-semibold text-gray-700">
                 Valor Anterior
               </TableHead>
@@ -641,7 +669,7 @@ export function HistoryTab({
                       <Badge
                         className={cn(
                           "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md border text-xs font-medium",
-                          getRoleBadgeColor(item.alteradoPor.role)
+                          getRoleBadgeColor(item.alteradoPor.role),
                         )}
                       >
                         {getRoleIcon(item.alteradoPor.role)}
@@ -770,7 +798,9 @@ export function HistoryTab({
           <ButtonCustom
             variant="outline"
             size="sm"
-            onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+            onClick={() =>
+              setCurrentPage(Math.min(totalPages, currentPage + 1))
+            }
             disabled={currentPage === totalPages}
             className="h-8 px-3"
           >
@@ -810,7 +840,9 @@ export function HistoryTab({
               placeholder="Selecionar usuários"
               options={alteradoPorOptions}
               selectedValues={filters.alteradoPor}
-              onSelectionChange={(val) => handleFilterChange("alteradoPor", val)}
+              onSelectionChange={(val) =>
+                handleFilterChange("alteradoPor", val)
+              }
               showApplyButton
               className="w-full"
             />

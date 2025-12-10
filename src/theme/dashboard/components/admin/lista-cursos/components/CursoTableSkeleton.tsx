@@ -32,6 +32,11 @@ export function CursoTableSkeleton({ rows }: CursoTableSkeletonProps) {
             <Skeleton className="h-4 w-20" />
           </TableCell>
 
+          {/* Coluna de Preço */}
+          <TableCell className="py-4">
+            <Skeleton className="h-5 w-20" />
+          </TableCell>
+
           <TableCell className="py-4">
             <Skeleton className="h-6 w-20 rounded-full" />
           </TableCell>

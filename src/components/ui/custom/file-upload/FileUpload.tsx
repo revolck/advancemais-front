@@ -253,6 +253,7 @@ const FileUploadItemComponent: React.FC<FileUploadItemProps> = ({
         {/* Retry Button */}
         {allowRetry && file.status === "failed" && onRetry && (
           <button
+            type="button"
             onClick={onRetry}
             className={cn(fileActionVariants({ variant: "ghost" }))}
             title={DEFAULT_UI_TEXTS.retry}
@@ -264,6 +265,7 @@ const FileUploadItemComponent: React.FC<FileUploadItemProps> = ({
         {/* Cancel Button */}
         {allowCancel && file.status === "uploading" && onCancel && (
           <button
+            type="button"
             onClick={onCancel}
             className={cn(fileActionVariants({ variant: "ghost" }))}
             title={DEFAULT_UI_TEXTS.cancel}
@@ -275,6 +277,7 @@ const FileUploadItemComponent: React.FC<FileUploadItemProps> = ({
         {/* Remove Button */}
         {onRemove && (
           <button
+            type="button"
             onClick={onRemove}
             className={cn(
               fileActionVariants({ variant: "ghost" }),
@@ -949,6 +952,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           {hasMoreFiles && (
             <div className="text-center pt-2">
               <button
+                type="button"
                 onClick={() => setShowAllFiles(!showAllFiles)}
                 className="text-sm text-primary hover:underline"
               >

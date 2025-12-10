@@ -20,6 +20,13 @@ export interface Curso {
   atualizadoEm: string;
   imagemUrl?: string;
   subcategoriaId?: number;
+
+  // Campos de precificação (adicionados em 10/12/2025)
+  valor: number; // Valor do curso em reais (ex: 299.90)
+  valorPromocional?: number; // Valor promocional (opcional)
+  gratuito: boolean; // É um curso gratuito
+  // Nota: Métodos de pagamento são gerenciados pelo Mercado Pago
+  // Nota: Disponibilidade é definida por statusPadrao ("PUBLICADO" = disponível)
 }
 
 export interface CursosListParams {
@@ -444,6 +451,13 @@ export interface CreateCursoPayload {
   estagioObrigatorio?: boolean;
   statusPadrao: "PUBLICADO" | "RASCUNHO";
   imagemUrl?: string;
+
+  // Campos de precificação (adicionados em 10/12/2025)
+  valor: number; // Valor do curso em reais (obrigatório exceto se gratuito)
+  valorPromocional?: number; // Valor promocional (opcional)
+  gratuito?: boolean; // É um curso gratuito (padrão: false)
+  // Nota: Métodos de pagamento são gerenciados pelo Mercado Pago
+  // Nota: Disponibilidade é definida por statusPadrao ("PUBLICADO" = disponível)
 }
 
 export type UpdateCursoPayload = Partial<CreateCursoPayload>;

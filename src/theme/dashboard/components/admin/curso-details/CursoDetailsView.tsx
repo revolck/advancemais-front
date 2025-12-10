@@ -39,10 +39,7 @@ export function CursoDetailsView({
   auditoria = [],
 }: CursoDetailsViewProps) {
   const queryClient = useQueryClient();
-  const queryKey = useMemo(
-    () => queryKeys.cursos.detail(cursoId),
-    [cursoId]
-  );
+  const queryKey = useMemo(() => queryKeys.cursos.detail(cursoId), [cursoId]);
 
   const {
     data: cursoData,
@@ -69,7 +66,9 @@ export function CursoDetailsView({
   const isReloading = isFetching && status === "success";
   const queryErrorMessage =
     status === "error" || initialError
-      ? error?.message ?? initialError?.message ?? "Erro ao carregar detalhes do curso."
+      ? (error?.message ??
+        initialError?.message ??
+        "Erro ao carregar detalhes do curso.")
       : null;
 
   // Se há erro inicial e não há curso, mostra erro imediatamente

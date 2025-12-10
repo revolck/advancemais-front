@@ -13,6 +13,10 @@ export interface CourseData {
   totalTurmas?: number;
   totalAlunos?: number;
   criadoEm: string;
+  // Campos de precificação
+  valor: number;
+  valorPromocional?: number;
+  gratuito: boolean;
 }
 
 export interface CourseFilters {
@@ -34,4 +38,3 @@ export interface CourseCardProps {
   index: number;
   onViewDetails?: (course: CourseData) => void;
 }
-

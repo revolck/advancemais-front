@@ -4,4 +4,3 @@ export {
   useCursoSubcategorias,
   useAllSubcategorias,
 } from "./useCursoCategorias";
-

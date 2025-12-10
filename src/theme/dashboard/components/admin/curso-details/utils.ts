@@ -45,6 +45,3 @@ export function getCursoStatusBadgeClasses(status?: string | null): string {
       return "bg-gray-100 text-gray-800 border-gray-200";
   }
 }
-
-
-

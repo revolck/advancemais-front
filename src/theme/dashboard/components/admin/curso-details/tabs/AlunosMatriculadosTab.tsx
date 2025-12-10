@@ -102,7 +102,7 @@ const formatDate = (dateString: string): string => {
 
 const formatDateRange = (
   dataInicio: string | null,
-  dataFim: string | null
+  dataFim: string | null,
 ): string => {
   if (!dataInicio && !dataFim) return "—";
   try {
@@ -208,7 +208,7 @@ export function AlunosMatriculadosTab({
 
   const searchValidationMessage = useMemo(
     () => getSearchValidationMessage(pendingSearchTerm),
-    [pendingSearchTerm]
+    [pendingSearchTerm],
   );
   const isSearchInputValid = !searchValidationMessage;
 
@@ -229,7 +229,7 @@ export function AlunosMatriculadosTab({
       }));
       setCurrentPage(1);
     },
-    []
+    [],
   );
 
   // Função para limpar filtros
@@ -401,11 +401,11 @@ export function AlunosMatriculadosTab({
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
-                      <div className="text-sm font-medium text-gray-900">
-                        {inscricao.aluno.nomeCompleto}
-                      </div>
+                        <div className="text-sm font-medium text-gray-900">
+                          {inscricao.aluno.nomeCompleto}
+                        </div>
                         <code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded font-mono text-gray-500 flex-shrink-0">
-                        {inscricao.aluno.codigo}
+                          {inscricao.aluno.codigo}
                         </code>
                       </div>
                       <div className="text-xs text-gray-500 font-mono truncate max-w-[220px] mt-1">
@@ -451,11 +451,11 @@ export function AlunosMatriculadosTab({
                   <Badge
                     className={cn(
                       "border font-medium",
-                      getStatusBadgeColor(inscricao.statusInscricao)
+                      getStatusBadgeColor(inscricao.statusInscricao),
                     )}
                   >
                     {STATUS_OPTIONS.find(
-                      (opt) => opt.value === inscricao.statusInscricao
+                      (opt) => opt.value === inscricao.statusInscricao,
                     )?.label || inscricao.statusInscricao}
                   </Badge>
                 </TableCell>
@@ -468,7 +468,7 @@ export function AlunosMatriculadosTab({
                 <TableCell className="py-4 text-sm text-gray-600">
                   {formatDateRange(
                     inscricao.turma.dataInicio,
-                    inscricao.turma.dataFim
+                    inscricao.turma.dataFim,
                   )}
                 </TableCell>
                 <TableCell className="py-4">
@@ -481,11 +481,11 @@ export function AlunosMatriculadosTab({
                         className="h-8 w-8 rounded-full text-gray-500 hover:text-white hover:bg-[var(--primary-color)]"
                         aria-label="Visualizar aluno"
                       >
-                  <Link
+                        <Link
                           href={`/dashboard/cursos/alunos/${inscricao.aluno.id}`}
-                  >
+                        >
                           <ChevronRight className="h-4 w-4" />
-                  </Link>
+                        </Link>
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent sideOffset={8}>
@@ -613,7 +613,7 @@ export function AlunosMatriculadosTab({
         placeholder: "Selecionar localização",
       },
     ],
-    [STATUS_OPTIONS, turmaOptions, cidadesOptions]
+    [STATUS_OPTIONS, turmaOptions, cidadesOptions],
   );
 
   const filterValues = useMemo(
@@ -622,7 +622,7 @@ export function AlunosMatriculadosTab({
       turma: filters.turmaId,
       cidade: filters.cidade,
     }),
-    [filters]
+    [filters],
   );
 
   return (
@@ -638,14 +638,14 @@ export function AlunosMatriculadosTab({
               if (key === "status") {
                 handleFilterChange(
                   "status",
-                  Array.isArray(value) ? (value as string[]) : []
+                  Array.isArray(value) ? (value as string[]) : [],
                 );
               } else if (key === "turma") {
                 handleFilterChange("turmaId", (value as string) || null);
               } else if (key === "cidade") {
                 handleFilterChange(
                   "cidade",
-                  Array.isArray(value) ? (value as string[]) : []
+                  Array.isArray(value) ? (value as string[]) : [],
                 );
               }
             }}
@@ -659,24 +659,24 @@ export function AlunosMatriculadosTab({
                 if (e.key === "Enter") {
                   e.preventDefault();
                   handleSearchSubmit();
-                      }
+                }
               },
               error: searchValidationMessage,
               helperText: SEARCH_HELPER_TEXT,
               helperPlacement: "tooltip",
             }}
             rightActions={
-            <ButtonCustom
+              <ButtonCustom
                 variant="primary"
                 size="lg"
                 onClick={handleSearchSubmit}
                 disabled={!isSearchInputValid}
-            >
+              >
                 Pesquisar
-            </ButtonCustom>
+              </ButtonCustom>
             }
           />
-          </div>
+        </div>
       </div>
 
       {/* Tabela */}

@@ -65,7 +65,7 @@ function getAuthHeader(): Record<string, string> {
  * Constrói headers padrão para requisições autenticadas
  */
 function buildAuthHeaders(
-  additionalHeaders?: HeadersInit
+  additionalHeaders?: HeadersInit,
 ): Record<string, string> {
   return {
     ...apiConfig.headers,
@@ -83,7 +83,7 @@ function buildAuthHeaders(
  */
 export async function listCategorias(
   params?: CategoriasListParams,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<CategoriasListApiResponse> {
   const endpoint = categoriasRoutes.list();
   const searchParams = new URLSearchParams();
@@ -117,7 +117,7 @@ export async function listCategorias(
  */
 export async function getCategoria(
   id: number,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<CategoriaDetailApiResponse> {
   const endpoint = categoriasRoutes.detail(id);
 
@@ -139,7 +139,7 @@ export async function getCategoria(
  */
 export async function createCategoria(
   data: CreateCategoriaPayload,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<CategoriaCreateApiResponse> {
   const endpoint = categoriasRoutes.create();
 
@@ -164,7 +164,7 @@ export async function createCategoria(
 export async function updateCategoria(
   id: number,
   data: UpdateCategoriaPayload,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<CategoriaDetailApiResponse> {
   const endpoint = categoriasRoutes.update(id);
 
@@ -188,7 +188,7 @@ export async function updateCategoria(
  */
 export async function deleteCategoria(
   id: number,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<void> {
   const endpoint = categoriasRoutes.delete(id);
 
@@ -215,7 +215,7 @@ export async function deleteCategoria(
 export async function listSubcategorias(
   categoriaId: number,
   params?: SubcategoriasListParams,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<SubcategoriaCurso[]> {
   const endpoint = categoriasRoutes.subcategorias.list(categoriaId);
   const searchParams = new URLSearchParams();
@@ -251,7 +251,7 @@ export async function listSubcategorias(
  */
 export async function getSubcategoria(
   id: number,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<SubcategoriaDetailApiResponse> {
   const endpoint = categoriasRoutes.subcategorias.detail(id);
 
@@ -274,7 +274,7 @@ export async function getSubcategoria(
 export async function createSubcategoria(
   categoriaId: number,
   data: CreateSubcategoriaPayload,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<SubcategoriaCreateApiResponse> {
   const endpoint = categoriasRoutes.subcategorias.create(categoriaId);
 
@@ -299,7 +299,7 @@ export async function createSubcategoria(
 export async function updateSubcategoria(
   id: number,
   data: UpdateSubcategoriaPayload,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<SubcategoriaDetailApiResponse> {
   const endpoint = categoriasRoutes.subcategorias.update(id);
 
@@ -323,7 +323,7 @@ export async function updateSubcategoria(
  */
 export async function deleteSubcategoria(
   id: number,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<void> {
   const endpoint = categoriasRoutes.subcategorias.delete(id);
 

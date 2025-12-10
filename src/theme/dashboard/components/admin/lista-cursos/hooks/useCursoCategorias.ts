@@ -14,9 +14,7 @@ type NormalizedCategoria = CategoriaCurso & {
   subcategorias?: SubcategoriaCurso[];
 };
 
-function extractCategorias(
-  response: unknown
-): NormalizedCategoria[] {
+function extractCategorias(response: unknown): NormalizedCategoria[] {
   if (!response) return [];
 
   if (
@@ -35,9 +33,7 @@ function extractCategorias(
   return [];
 }
 
-function extractSubcategorias(
-  response: unknown
-): SubcategoriaCurso[] {
+function extractSubcategorias(response: unknown): SubcategoriaCurso[] {
   if (!response) return [];
   if (
     typeof response === "object" &&
@@ -81,14 +77,15 @@ export function useCursoCategorias() {
         value: String(categoria.id),
         label: categoria.nome ?? `Categoria ${categoria.id}`,
       })),
-    [categorias]
+    [categorias],
   );
 
   const categoriaNameById = useMemo(() => {
     const map: Record<number, string> = {};
     categorias.forEach((categoria) => {
       if (categoria?.id != null) {
-        map[Number(categoria.id)] = categoria.nome ?? `Categoria ${categoria.id}`;
+        map[Number(categoria.id)] =
+          categoria.nome ?? `Categoria ${categoria.id}`;
       }
     });
     return map;
@@ -107,7 +104,10 @@ export function useCursoCategorias() {
 
 export function useCursoSubcategorias(categoriaId: number | null) {
   const categoriasQuery = useCursoCategoriasData();
-  const categorias = useMemo(() => categoriasQuery.data ?? [], [categoriasQuery.data]);
+  const categorias = useMemo(
+    () => categoriasQuery.data ?? [],
+    [categoriasQuery.data],
+  );
 
   // Sempre chama useQuery, mesmo quando não há categoriaId
   // Isso garante que o hook seja sempre chamado na mesma ordem
@@ -115,15 +115,15 @@ export function useCursoSubcategorias(categoriaId: number | null) {
     () =>
       categoriaId
         ? categorias.find(
-            (categoria) => Number(categoria.id) === Number(categoriaId)
+            (categoria) => Number(categoria.id) === Number(categoriaId),
           )
         : null,
-    [categorias, categoriaId]
+    [categorias, categoriaId],
   );
 
   const inlineSubcategorias = useMemo(
     () => categoriaSelecionada?.subcategorias ?? [],
-    [categoriaSelecionada]
+    [categoriaSelecionada],
   );
 
   const needsFallback = useMemo(
@@ -131,7 +131,7 @@ export function useCursoSubcategorias(categoriaId: number | null) {
       !!categoriaId &&
       inlineSubcategorias.length === 0 &&
       categoriasQuery.isSuccess,
-    [categoriaId, inlineSubcategorias.length, categoriasQuery.isSuccess]
+    [categoriaId, inlineSubcategorias.length, categoriasQuery.isSuccess],
   );
 
   // Sempre chama useQuery, mas desabilita quando não há categoriaId
@@ -156,7 +156,7 @@ export function useCursoSubcategorias(categoriaId: number | null) {
     if (!categoriaId) return [];
     return inlineSubcategorias.length > 0
       ? inlineSubcategorias
-      : fallbackQuery.data ?? [];
+      : (fallbackQuery.data ?? []);
   }, [categoriaId, inlineSubcategorias, fallbackQuery.data]);
 
   const subcategoriaOptions = useMemo(
@@ -166,13 +166,11 @@ export function useCursoSubcategorias(categoriaId: number | null) {
         label:
           subcategoria.nome ?? `Subcategoria ${String(subcategoria.id ?? "")}`,
       })),
-    [subcategorias]
+    [subcategorias],
   );
 
   const error =
-    categoriasQuery.error?.message ||
-    fallbackQuery.error?.message ||
-    null;
+    categoriasQuery.error?.message || fallbackQuery.error?.message || null;
 
   return {
     subcategoriaOptions,
@@ -184,7 +182,10 @@ export function useCursoSubcategorias(categoriaId: number | null) {
 
 export function useAllSubcategorias() {
   const categoriasQuery = useCursoCategoriasData();
-  const categorias = useMemo(() => categoriasQuery.data ?? [], [categoriasQuery.data]);
+  const categorias = useMemo(
+    () => categoriasQuery.data ?? [],
+    [categoriasQuery.data],
+  );
 
   const inlineSubcategorias = useMemo(() => {
     const subs: SubcategoriaCurso[] = [];
@@ -203,7 +204,7 @@ export function useAllSubcategorias() {
       categoriasQuery.isSuccess &&
       inlineSubcategorias.length === 0 &&
       categorias.length > 0,
-    [categoriasQuery.isSuccess, inlineSubcategorias.length, categorias.length]
+    [categoriasQuery.isSuccess, inlineSubcategorias.length, categorias.length],
   );
 
   const fallbackQuery = useQuery({
@@ -225,11 +226,11 @@ export function useAllSubcategorias() {
             }
             console.warn(
               `Erro ao carregar subcategorias da categoria ${categoria.id}:`,
-              error
+              error,
             );
             return [];
           }
-        })
+        }),
       );
 
       return results.flat();
@@ -244,7 +245,7 @@ export function useAllSubcategorias() {
   const subcategoriasCompletas = useMemo(() => {
     return inlineSubcategorias.length > 0
       ? inlineSubcategorias
-      : fallbackQuery.data ?? [];
+      : (fallbackQuery.data ?? []);
   }, [inlineSubcategorias, fallbackQuery.data]);
 
   const subcategoriaNameById = useMemo(() => {
@@ -259,9 +260,7 @@ export function useAllSubcategorias() {
   }, [subcategoriasCompletas]);
 
   const error =
-    categoriasQuery.error?.message ||
-    fallbackQuery.error?.message ||
-    null;
+    categoriasQuery.error?.message || fallbackQuery.error?.message || null;
 
   return {
     subcategoriaNameById,
@@ -270,4 +269,3 @@ export function useAllSubcategorias() {
     error,
   };
 }
-

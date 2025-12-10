@@ -19,4 +19,3 @@ export const COURSE_CONFIG = {
     ],
   },
 } as const;
-

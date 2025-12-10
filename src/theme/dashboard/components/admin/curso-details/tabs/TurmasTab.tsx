@@ -35,9 +35,9 @@ interface TurmasTabProps {
 
 const getStatusColor = (status?: string) => {
   if (!status) return "bg-gray-100 text-gray-800 border-gray-200";
-  
+
   const normalized = status.toUpperCase().replace(/_/g, "");
-  
+
   switch (normalized) {
     case "RASCUNHO":
       return "bg-gray-100 text-gray-800 border-gray-200";
@@ -92,9 +92,9 @@ const getTurnoLabel = (turno?: string) => {
 
 const getStatusLabel = (status?: string) => {
   if (!status) return "—";
-  
+
   const normalized = status.toUpperCase().replace(/_/g, "_");
-  
+
   // Mapeamento direto dos status da API
   const statusMap: Record<string, string> = {
     RASCUNHO: "Rascunho",
@@ -106,12 +106,12 @@ const getStatusLabel = (status?: string) => {
     SUSPENSO: "Suspenso",
     CANCELADO: "Cancelado",
   };
-  
+
   // Retorna o label mapeado ou formata o status
   if (statusMap[normalized]) {
     return statusMap[normalized];
   }
-  
+
   // Fallback: formatação genérica
   return status
     .replace(/_/g, " ")
@@ -127,8 +127,7 @@ export function TurmasTab({ turmas, cursoId }: TurmasTabProps) {
     if (turma.vagasTotais == null) return "—";
 
     // Usa vagasOcupadas (ou inscricoesCount como fallback) que vem calculado da API
-    const vagasOcupadas =
-      turma.vagasOcupadas ?? turma.inscricoesCount ?? 0;
+    const vagasOcupadas = turma.vagasOcupadas ?? turma.inscricoesCount ?? 0;
 
     return `${vagasOcupadas}/${turma.vagasTotais}`;
   };
@@ -225,7 +224,7 @@ export function TurmasTab({ turmas, cursoId }: TurmasTabProps) {
                     variant="outline"
                     className={cn(
                       "text-xs font-medium",
-                      getStatusColor(turma.status)
+                      getStatusColor(turma.status),
                     )}
                   >
                     {getStatusLabel(turma.status)}
@@ -235,19 +234,21 @@ export function TurmasTab({ turmas, cursoId }: TurmasTabProps) {
                 <TableCell className="py-4">
                   <Tooltip>
                     <TooltipTrigger asChild>
-                  <Button
-                    asChild
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 rounded-full text-gray-500 hover:text-white hover:bg-[var(--primary-color)]"
+                      <Button
+                        asChild
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 rounded-full text-gray-500 hover:text-white hover:bg-[var(--primary-color)]"
                         aria-label="Visualizar turma"
-                  >
+                      >
                         <Link href={`/dashboard/cursos/turmas/${turma.id}`}>
-                      <ChevronRight className="h-4 w-4" />
-                    </Link>
-                  </Button>
+                          <ChevronRight className="h-4 w-4" />
+                        </Link>
+                      </Button>
                     </TooltipTrigger>
-                    <TooltipContent sideOffset={8}>Visualizar turma</TooltipContent>
+                    <TooltipContent sideOffset={8}>
+                      Visualizar turma
+                    </TooltipContent>
                   </Tooltip>
                 </TableCell>
               </TableRow>

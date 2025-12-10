@@ -58,14 +58,14 @@ export function CursosDashboard({
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
   const [isNavigating, setIsNavigating] = useState(false);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(
-    null
+    null,
   );
   const [selectedSubcategoryId, setSelectedSubcategoryId] = useState<
     string | null
   >(null);
   // Estado para controlar inicialização dos filtros (deve estar com os outros useState)
   const [filtersInitialized, setFiltersInitialized] = useState(false);
-  
+
   // Sorting - todos os useState devem estar no topo
   type SortField = "nome" | "criadoEm" | null;
   type SortDirection = "asc" | "desc";
@@ -79,7 +79,7 @@ export function CursosDashboard({
 
   const searchValidationMessage = useMemo(
     () => getSearchValidationMessage(pendingSearchTerm),
-    [pendingSearchTerm]
+    [pendingSearchTerm],
   );
   const isSearchInputValid = !searchValidationMessage;
   const searchHelperText = SEARCH_HELPER_TEXT;
@@ -88,16 +88,16 @@ export function CursosDashboard({
     () =>
       getNormalizedSearchOrUndefined(
         appliedSearchTerm,
-        DEFAULT_SEARCH_MIN_LENGTH
+        DEFAULT_SEARCH_MIN_LENGTH,
       ),
-    [appliedSearchTerm]
+    [appliedSearchTerm],
   );
 
   const { categoriaNameById, categoriaOptions } = useCursoCategorias();
   const { subcategoriaOptions, isLoading: isLoadingSubcategorias } =
     useCursoSubcategorias(
-    selectedCategoryId ? Number(selectedCategoryId) : null
-  );
+      selectedCategoryId ? Number(selectedCategoryId) : null,
+    );
   const { subcategoriaNameById } = useAllSubcategorias();
 
   useEffect(() => {
@@ -122,7 +122,7 @@ export function CursosDashboard({
       normalizedSearch,
       selectedCategoryId,
       selectedSubcategoryId,
-    ]
+    ],
   );
 
   const {
@@ -155,7 +155,7 @@ export function CursosDashboard({
   useEffect(() => {
     if (!shouldFetch || !queryData?.pagination) return;
     const { pagination } = queryData;
-    
+
     // Se a página foi ajustada pelo servidor, reposiciona a UI
     if (pagination.isPageAdjusted && pagination.page !== currentPage) {
       setCurrentPage(pagination.page);
@@ -182,13 +182,13 @@ export function CursosDashboard({
       return;
 
     const applied = queryData.filters.applied;
-    
+
     // Restaura search
     if (applied.search) {
       setAppliedSearchTerm(applied.search);
       setPendingSearchTerm(applied.search);
     }
-    
+
     // Restaura status a partir de filters.applied.statusPadrao
     if (
       applied.statusPadrao &&
@@ -197,7 +197,7 @@ export function CursosDashboard({
     ) {
       setSelectedStatuses(applied.statusPadrao);
     }
-    
+
     // Restaura categoria (apenas se não for null/undefined)
     if (applied.categoriaId != null) {
       setSelectedCategoryId(String(applied.categoriaId));
@@ -205,7 +205,7 @@ export function CursosDashboard({
       // Se o backend retornou null/undefined, limpa o estado
       setSelectedCategoryId(null);
     }
-    
+
     // Restaura subcategoria (apenas se não for null/undefined)
     if (applied.subcategoriaId != null) {
       setSelectedSubcategoryId(String(applied.subcategoriaId));
@@ -213,7 +213,7 @@ export function CursosDashboard({
       // Se o backend retornou null/undefined, limpa o estado
       setSelectedSubcategoryId(null);
     }
-    
+
     setFiltersInitialized(true);
   }, [shouldFetch, queryData?.filters?.applied, filtersInitialized]);
 
@@ -230,7 +230,7 @@ export function CursosDashboard({
   const fetchedCursos = queryData?.cursos ?? [];
   const remoteTotalPages = Math.max(
     1,
-    Math.ceil(fetchedCursos.length / normalizedFilters.pageSize)
+    Math.ceil(fetchedCursos.length / normalizedFilters.pageSize),
   );
   const remotePagination = queryData?.pagination ?? {
     requestedPage: normalizedFilters.page,
@@ -282,7 +282,7 @@ export function CursosDashboard({
     try {
       localStorage.setItem(
         "cursoList.sort",
-        JSON.stringify({ field: sortField, dir: sortDirection })
+        JSON.stringify({ field: sortField, dir: sortDirection }),
       );
     } catch {}
   }, [sortField, sortDirection]);
@@ -307,7 +307,7 @@ export function CursosDashboard({
       });
       return arr;
     },
-    [sortDirection, sortField]
+    [sortDirection, sortField],
   );
 
   // Quando shouldFetch é true, a API já faz a filtragem, não precisa filtrar localmente
@@ -316,7 +316,7 @@ export function CursosDashboard({
       // API já filtra, retorna os cursos como vêm
       return cursos;
     }
-    
+
     // Filtragem local apenas quando não está usando API
     const query = (normalizedSearch ?? "").toLowerCase();
     return cursos.filter((curso) => {
@@ -366,7 +366,7 @@ export function CursosDashboard({
 
   const localTotalPages = useMemo(
     () => Math.max(1, Math.ceil(filteredCursos.length / pageSize)),
-    [filteredCursos.length, pageSize]
+    [filteredCursos.length, pageSize],
   );
 
   const pagination = shouldFetch
@@ -405,8 +405,8 @@ export function CursosDashboard({
 
   const errorMessage =
     shouldFetch && queryError
-    ? queryError.message || "Erro ao carregar cursos"
-    : null;
+      ? queryError.message || "Erro ao carregar cursos"
+      : null;
 
   // Mostra skeleton quando:
   // 1. Está carregando pela primeira vez
@@ -483,10 +483,10 @@ export function CursosDashboard({
         placeholder: !selectedCategoryId
           ? "Selecione uma categoria primeiro"
           : isLoadingSubcategorias
-          ? "Carregando subcategorias..."
-          : subcategoriaOptions.length === 0
-          ? "Nenhuma subcategoria encontrada"
-          : "Selecione uma subcategoria",
+            ? "Carregando subcategorias..."
+            : subcategoriaOptions.length === 0
+              ? "Nenhuma subcategoria encontrada"
+              : "Selecione uma subcategoria",
         disabled:
           !selectedCategoryId ||
           isLoadingSubcategorias ||
@@ -500,7 +500,7 @@ export function CursosDashboard({
       selectedCategoryId,
       isLoadingSubcategorias,
       statusFilterOptions,
-    ]
+    ],
   );
 
   const filterValues = useMemo(
@@ -509,7 +509,7 @@ export function CursosDashboard({
       category: selectedCategoryId ?? null, // Garante que undefined vira null
       subcategory: selectedSubcategoryId ?? null, // Garante que undefined vira null
     }),
-    [selectedStatuses, selectedCategoryId, selectedSubcategoryId]
+    [selectedStatuses, selectedCategoryId, selectedSubcategoryId],
   );
 
   const handleSearchSubmit = useCallback(
@@ -522,14 +522,14 @@ export function CursosDashboard({
       setAppliedSearchTerm(trimmedValue);
       setCurrentPage(1);
     },
-    [pendingSearchTerm]
+    [pendingSearchTerm],
   );
 
   const handlePageSizeChange = useCallback((value: string) => {
-      const numericValue = Number(value);
-      if (!Number.isFinite(numericValue) || numericValue <= 0) return;
-      setPageSize(numericValue);
-        setCurrentPage(1);
+    const numericValue = Number(value);
+    if (!Number.isFinite(numericValue) || numericValue <= 0) return;
+    setPageSize(numericValue);
+    setCurrentPage(1);
   }, []);
 
   const handlePageChange = useCallback(
@@ -537,7 +537,7 @@ export function CursosDashboard({
       const nextPage = Math.max(1, Math.min(page, totalPages));
       setCurrentPage(nextPage);
     },
-    [totalPages]
+    [totalPages],
   );
 
   const handleRetry = useCallback(() => {
@@ -578,7 +578,7 @@ export function CursosDashboard({
             onChange={(key, value) => {
               if (key === "status") {
                 setSelectedStatuses(
-                  value === null ? [] : (value as string[]) || []
+                  value === null ? [] : (value as string[]) || [],
                 );
                 setCurrentPage(1);
               } else if (key === "category") {
@@ -620,10 +620,10 @@ export function CursosDashboard({
                 disabled={Boolean(
                   (shouldFetch &&
                     (isLoadingData || (isFetchingData && hasActiveFilters))) ||
-                  !isSearchInputValid
+                  !isSearchInputValid,
                 )}
                 isLoading={Boolean(
-                  shouldFetch && isFetchingData && hasActiveFilters
+                  shouldFetch && isFetchingData && hasActiveFilters,
                 )}
                 className="md:w-full xl:w-auto"
               >
@@ -653,336 +653,336 @@ export function CursosDashboard({
 
       <div className="py-6">
         {!showEmptyState && (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <div className="overflow-x-auto">
-            <Table className="min-w-[800px]">
-              <TableHeader>
-                <TableRow className="border-gray-200 bg-gray-50/50">
-                  <TableHead
-                    className="font-medium text-gray-700 py-4"
-                    aria-sort={
-                      sortField === "nome"
-                        ? sortDirection === "asc"
-                          ? "ascending"
-                          : "descending"
-                        : "none"
-                    }
-                  >
-                    <div className="inline-flex items-center gap-1">
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <button
-                            type="button"
-                            onClick={() => toggleSort("nome")}
-                            className={cn(
-                              "inline-flex items-center gap-1 px-2 py-1 cursor-pointer transition-colors bg-transparent",
-                              sortField === "nome" && "text-gray-900"
-                            )}
-                          >
-                            Curso
-                          </button>
-                        </TooltipTrigger>
-                        <TooltipContent sideOffset={6}>
-                          {sortField === "nome"
-                            ? sortDirection === "asc"
-                              ? "A → Z"
-                              : "Z → A"
-                            : "Ordenar por nome"}
-                        </TooltipContent>
-                      </Tooltip>
-
-                      <div className="ml-1 flex flex-col -space-y-1.5 items-center leading-none">
+          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div className="overflow-x-auto">
+              <Table className="min-w-[800px]">
+                <TableHeader>
+                  <TableRow className="border-gray-200 bg-gray-50/50">
+                    <TableHead
+                      className="font-medium text-gray-700 py-4"
+                      aria-sort={
+                        sortField === "nome"
+                          ? sortDirection === "asc"
+                            ? "ascending"
+                            : "descending"
+                          : "none"
+                      }
+                    >
+                      <div className="inline-flex items-center gap-1">
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <button
                               type="button"
-                              className="rounded p-0.5 cursor-pointer bg-transparent hover:bg-transparent"
-                              aria-label="Ordenar A → Z"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSort("nome", "asc");
-                              }}
+                              onClick={() => toggleSort("nome")}
+                              className={cn(
+                                "inline-flex items-center gap-1 px-2 py-1 cursor-pointer transition-colors bg-transparent",
+                                sortField === "nome" && "text-gray-900",
+                              )}
                             >
-                              <ChevronUp
-                                className={cn(
-                                  "h-3 w-3 text-gray-400",
-                                  sortField === "nome" &&
-                                    sortDirection === "asc" &&
-                                    "text-[var(--primary-color)]"
-                                )}
-                              />
+                              Curso
                             </button>
                           </TooltipTrigger>
+                          <TooltipContent sideOffset={6}>
+                            {sortField === "nome"
+                              ? sortDirection === "asc"
+                                ? "A → Z"
+                                : "Z → A"
+                              : "Ordenar por nome"}
+                          </TooltipContent>
+                        </Tooltip>
+
+                        <div className="ml-1 flex flex-col -space-y-1.5 items-center leading-none">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button
+                                type="button"
+                                className="rounded p-0.5 cursor-pointer bg-transparent hover:bg-transparent"
+                                aria-label="Ordenar A → Z"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSort("nome", "asc");
+                                }}
+                              >
+                                <ChevronUp
+                                  className={cn(
+                                    "h-3 w-3 text-gray-400",
+                                    sortField === "nome" &&
+                                      sortDirection === "asc" &&
+                                      "text-[var(--primary-color)]",
+                                  )}
+                                />
+                              </button>
+                            </TooltipTrigger>
                             <TooltipContent sideOffset={6}>
                               A → Z
                             </TooltipContent>
-                        </Tooltip>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <button
-                              type="button"
-                              className="rounded p-0.5 cursor-pointer bg-transparent hover:bg-transparent"
-                              aria-label="Ordenar Z → A"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSort("nome", "desc");
-                              }}
-                            >
-                              <ChevronDown
-                                className={cn(
-                                  "h-3 w-3 text-gray-400 -mt-0.5",
-                                  sortField === "nome" &&
-                                    sortDirection === "desc" &&
-                                    "text-[var(--primary-color)]"
-                                )}
-                              />
-                            </button>
-                          </TooltipTrigger>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button
+                                type="button"
+                                className="rounded p-0.5 cursor-pointer bg-transparent hover:bg-transparent"
+                                aria-label="Ordenar Z → A"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSort("nome", "desc");
+                                }}
+                              >
+                                <ChevronDown
+                                  className={cn(
+                                    "h-3 w-3 text-gray-400 -mt-0.5",
+                                    sortField === "nome" &&
+                                      sortDirection === "desc" &&
+                                      "text-[var(--primary-color)]",
+                                  )}
+                                />
+                              </button>
+                            </TooltipTrigger>
                             <TooltipContent sideOffset={6}>
                               Z → A
                             </TooltipContent>
-                        </Tooltip>
+                          </Tooltip>
+                        </div>
                       </div>
-                    </div>
-                  </TableHead>
-                  <TableHead className="font-medium text-gray-700">
-                    Categoria
-                  </TableHead>
-                  <TableHead className="font-medium text-gray-700">
-                    Subcategoria
-                  </TableHead>
-                  <TableHead className="font-medium text-gray-700">
-                    Carga horária
-                  </TableHead>
-                  <TableHead className="font-medium text-gray-700">
-                    Status
-                  </TableHead>
-                  <TableHead
-                    className="font-medium text-gray-700 text-center"
-                    aria-sort={
-                      sortField === "criadoEm"
-                        ? sortDirection === "asc"
-                          ? "ascending"
-                          : "descending"
-                        : "none"
-                    }
-                  >
-                    <div className="inline-flex items-center justify-center gap-1">
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <button
-                            type="button"
-                            onClick={() => toggleSort("criadoEm")}
-                            className={cn(
-                              "inline-flex items-center gap-1 px-2 py-1 cursor-pointer transition-colors bg-transparent",
-                              sortField === "criadoEm" && "text-gray-900"
-                            )}
-                          >
-                            Data da criação
-                          </button>
-                        </TooltipTrigger>
-                        <TooltipContent sideOffset={6}>
-                          {sortField === "criadoEm"
-                            ? sortDirection === "asc"
-                              ? "Mais antiga → mais nova"
-                              : "Mais nova → mais antiga"
-                            : "Ordenar por data"}
-                        </TooltipContent>
-                      </Tooltip>
+                    </TableHead>
+                    <TableHead className="font-medium text-gray-700">
+                      Categoria
+                    </TableHead>
+                    <TableHead className="font-medium text-gray-700">
+                      Carga horária
+                    </TableHead>
+                    <TableHead className="font-medium text-gray-700">
+                      Preço
+                    </TableHead>
+                    <TableHead className="font-medium text-gray-700">
+                      Status
+                    </TableHead>
+                    <TableHead
+                      className="font-medium text-gray-700 text-center"
+                      aria-sort={
+                        sortField === "criadoEm"
+                          ? sortDirection === "asc"
+                            ? "ascending"
+                            : "descending"
+                          : "none"
+                      }
+                    >
+                      <div className="inline-flex items-center justify-center gap-1">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button
+                              type="button"
+                              onClick={() => toggleSort("criadoEm")}
+                              className={cn(
+                                "inline-flex items-center gap-1 px-2 py-1 cursor-pointer transition-colors bg-transparent",
+                                sortField === "criadoEm" && "text-gray-900",
+                              )}
+                            >
+                              Data da criação
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent sideOffset={6}>
+                            {sortField === "criadoEm"
+                              ? sortDirection === "asc"
+                                ? "Mais antiga → mais nova"
+                                : "Mais nova → mais antiga"
+                              : "Ordenar por data"}
+                          </TooltipContent>
+                        </Tooltip>
 
-                      <div className="ml-1 flex flex-col -space-y-1.5 items-center leading-none">
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <button
-                              type="button"
-                              className="rounded p-0.5 cursor-pointer bg-transparent hover:bg-transparent"
-                              aria-label="Mais nova → mais antiga"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSort("criadoEm", "desc");
-                              }}
-                            >
-                              <ChevronUp
-                                className={cn(
-                                  "h-3 w-3 text-gray-400",
-                                  sortField === "criadoEm" &&
-                                    sortDirection === "desc" &&
-                                    "text-[var(--primary-color)]"
-                                )}
-                              />
-                            </button>
-                          </TooltipTrigger>
-                          <TooltipContent sideOffset={6}>
-                            Mais nova → mais antiga
-                          </TooltipContent>
-                        </Tooltip>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <button
-                              type="button"
-                              className="rounded p-0.5 cursor-pointer bg-transparent hover:bg-transparent"
-                              aria-label="Mais antiga → mais nova"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSort("criadoEm", "asc");
-                              }}
-                            >
-                              <ChevronDown
-                                className={cn(
-                                  "h-3 w-3 text-gray-400 -mt-0.5",
-                                  sortField === "criadoEm" &&
-                                    sortDirection === "asc" &&
-                                    "text-[var(--primary-color)]"
-                                )}
-                              />
-                            </button>
-                          </TooltipTrigger>
-                          <TooltipContent sideOffset={6}>
-                            Mais antiga → mais nova
-                          </TooltipContent>
-                        </Tooltip>
+                        <div className="ml-1 flex flex-col -space-y-1.5 items-center leading-none">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button
+                                type="button"
+                                className="rounded p-0.5 cursor-pointer bg-transparent hover:bg-transparent"
+                                aria-label="Mais nova → mais antiga"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSort("criadoEm", "desc");
+                                }}
+                              >
+                                <ChevronUp
+                                  className={cn(
+                                    "h-3 w-3 text-gray-400",
+                                    sortField === "criadoEm" &&
+                                      sortDirection === "desc" &&
+                                      "text-[var(--primary-color)]",
+                                  )}
+                                />
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent sideOffset={6}>
+                              Mais nova → mais antiga
+                            </TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button
+                                type="button"
+                                className="rounded p-0.5 cursor-pointer bg-transparent hover:bg-transparent"
+                                aria-label="Mais antiga → mais nova"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSort("criadoEm", "asc");
+                                }}
+                              >
+                                <ChevronDown
+                                  className={cn(
+                                    "h-3 w-3 text-gray-400 -mt-0.5",
+                                    sortField === "criadoEm" &&
+                                      sortDirection === "asc" &&
+                                      "text-[var(--primary-color)]",
+                                  )}
+                                />
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent sideOffset={6}>
+                              Mais antiga → mais nova
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
                       </div>
-                    </div>
-                  </TableHead>
-                  <TableHead className="w-12" />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+                    </TableHead>
+                    <TableHead className="w-12" />
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {shouldShowSkeleton ? (
                     <CursoTableSkeleton rows={pageSizeValue} />
                   ) : (
-                  displayedCursos.map((curso) => (
-                    <CursoRow
-                      key={curso.id}
-                      curso={curso}
-                      categoriaName={categoriaNameById[curso.categoriaId]}
-                      subcategoriaName={
-                        curso.subcategoriaId
-                          ? subcategoriaNameById[curso.subcategoriaId]
-                          : null
-                      }
-                      isDisabled={isNavigating}
-                      onNavigateStart={handleNavigateStart}
-                    />
+                    displayedCursos.map((curso) => (
+                      <CursoRow
+                        key={curso.id}
+                        curso={curso}
+                        categoriaName={categoriaNameById[curso.categoriaId]}
+                        subcategoriaName={
+                          curso.subcategoriaId
+                            ? subcategoriaNameById[curso.subcategoriaId]
+                            : null
+                        }
+                        isDisabled={isNavigating}
+                        onNavigateStart={handleNavigateStart}
+                      />
                     ))
                   )}
-              </TableBody>
-            </Table>
-          </div>
+                </TableBody>
+              </Table>
+            </div>
 
             {(totalItems > 0 || shouldShowSkeleton) && (
-            <div className="flex flex-col gap-4 px-6 py-4 border-t border-gray-200 bg-gray-50/30 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <span>
-                  Mostrando{" "}
+              <div className="flex flex-col gap-4 px-6 py-4 border-t border-gray-200 bg-gray-50/30 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <span>
+                    Mostrando{" "}
                     {Math.min(
                       (currentPageValue - 1) * pageSizeValue + 1,
-                      totalItems
+                      totalItems,
                     )}{" "}
                     a {Math.min(currentPageValue * pageSizeValue, totalItems)}{" "}
                     de {totalItems} curso{totalItems === 1 ? "" : "s"}
-                </span>
-              </div>
+                  </span>
+                </div>
 
-              {totalPages > 1 && (
-                <div className="flex items-center gap-2">
-                  <ButtonCustom
-                    variant="outline"
-                    size="sm"
+                {totalPages > 1 && (
+                  <div className="flex items-center gap-2">
+                    <ButtonCustom
+                      variant="outline"
+                      size="sm"
                       onClick={() => handlePageChange(currentPageValue - 1)}
                       disabled={
                         !pagination.hasPrevious || currentPageValue === 1
                       }
-                    className="h-8 px-3"
-                  >
-                    Anterior
-                  </ButtonCustom>
+                      className="h-8 px-3"
+                    >
+                      Anterior
+                    </ButtonCustom>
 
-                  {visiblePages[0] > 1 && (
-                    <>
-                      <ButtonCustom
+                    {visiblePages[0] > 1 && (
+                      <>
+                        <ButtonCustom
                           variant={
                             currentPageValue === 1 ? "primary" : "outline"
                           }
-                        size="sm"
-                        onClick={() => handlePageChange(1)}
-                        className="h-8 w-8 p-0"
-                      >
-                        1
-                      </ButtonCustom>
-                      {visiblePages[0] > 2 && (
-                        <span className="text-gray-400">...</span>
-                      )}
-                    </>
-                  )}
+                          size="sm"
+                          onClick={() => handlePageChange(1)}
+                          className="h-8 w-8 p-0"
+                        >
+                          1
+                        </ButtonCustom>
+                        {visiblePages[0] > 2 && (
+                          <span className="text-gray-400">...</span>
+                        )}
+                      </>
+                    )}
 
-                  {visiblePages.map((page) => (
-                    <ButtonCustom
-                      key={page}
+                    {visiblePages.map((page) => (
+                      <ButtonCustom
+                        key={page}
                         variant={
                           currentPageValue === page ? "primary" : "outline"
                         }
-                      size="sm"
-                      onClick={() => handlePageChange(page)}
-                      className="h-8 w-8 p-0"
-                    >
-                      {page}
-                    </ButtonCustom>
-                  ))}
+                        size="sm"
+                        onClick={() => handlePageChange(page)}
+                        className="h-8 w-8 p-0"
+                      >
+                        {page}
+                      </ButtonCustom>
+                    ))}
 
-                  {visiblePages[visiblePages.length - 1] < totalPages && (
-                    <>
-                      {visiblePages[visiblePages.length - 1] <
-                        totalPages - 1 && (
-                        <span className="text-gray-400">...</span>
-                      )}
-                      <ButtonCustom
-                        variant={
+                    {visiblePages[visiblePages.length - 1] < totalPages && (
+                      <>
+                        {visiblePages[visiblePages.length - 1] <
+                          totalPages - 1 && (
+                          <span className="text-gray-400">...</span>
+                        )}
+                        <ButtonCustom
+                          variant={
                             currentPageValue === totalPages
                               ? "primary"
                               : "outline"
-                        }
-                        size="sm"
-                        onClick={() => handlePageChange(totalPages)}
-                        className="h-8 w-8 p-0"
-                      >
-                        {totalPages}
-                      </ButtonCustom>
-                    </>
-                  )}
+                          }
+                          size="sm"
+                          onClick={() => handlePageChange(totalPages)}
+                          className="h-8 w-8 p-0"
+                        >
+                          {totalPages}
+                        </ButtonCustom>
+                      </>
+                    )}
 
-                  <ButtonCustom
-                    variant="outline"
-                    size="sm"
+                    <ButtonCustom
+                      variant="outline"
+                      size="sm"
                       onClick={() => handlePageChange(currentPageValue + 1)}
                       disabled={
                         !pagination.hasNext || currentPageValue === totalPages
                       }
-                    className="h-8 px-3"
-                  >
-                    Próxima
-                  </ButtonCustom>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
+                      className="h-8 px-3"
+                    >
+                      Próxima
+                    </ButtonCustom>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         )}
 
         {showEmptyState && (
           <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <EmptyState
-            fullHeight
-            maxContentWidth="sm"
-            illustration="fileNotFound"
-            illustrationAlt="Ilustração de arquivo não encontrado"
-            title="Nenhum curso encontrado"
+            <EmptyState
+              fullHeight
+              maxContentWidth="sm"
+              illustration="fileNotFound"
+              illustrationAlt="Ilustração de arquivo não encontrado"
+              title="Nenhum curso encontrado"
               description={
                 hasActiveFilters
                   ? "Não encontramos cursos com os filtros aplicados. Tente limpar os filtros ou ajustar sua busca."
                   : "Não há cursos cadastrados no momento. Cadastre um novo curso para começar."
               }
-          />
+            />
           </div>
         )}
       </div>

@@ -45,7 +45,7 @@ export function FilterSidebar({
                 "flex items-center rounded-2xl py-1 transition gap-3",
                 isOptionDisabled
                   ? "opacity-50 cursor-not-allowed"
-                  : "cursor-pointer"
+                  : "cursor-pointer",
               )}
             >
               <Checkbox
@@ -71,7 +71,7 @@ export function FilterSidebar({
     <div
       className={cn(
         "bg-white rounded-2xl p-6 border border-gray-100 space-y-1 lg:w-[320px]",
-        isDisabled && "opacity-70"
+        isDisabled && "opacity-70",
       )}
       aria-disabled={isDisabled}
     >

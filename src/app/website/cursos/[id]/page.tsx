@@ -14,7 +14,11 @@ import {
   CalendarDays,
   CheckCircle2,
   Sparkles,
+  DollarSign,
+  Gift,
+  Percent,
 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { ShareJobButton } from "@/theme/website/components/career-opportunities/components/ShareJobButton";
 import { env } from "@/lib/env";
 import Image from "next/image";
@@ -37,6 +41,13 @@ function normalizeCourse(curso: any): CourseData {
     totalTurmas: curso.totalTurmas || curso._count?.turmas || 0,
     totalAlunos: curso.totalAlunos || 0,
     criadoEm: curso.criadoEm || new Date().toISOString(),
+    // Campos de precificação
+    valor: Number(curso.valor ?? 0),
+    valorPromocional:
+      curso.valorPromocional != null
+        ? Number(curso.valorPromocional)
+        : undefined,
+    gratuito: Boolean(curso.gratuito ?? false),
   };
 }
 
@@ -54,7 +65,7 @@ function resolveApiUrl(path: string, origin: string): string {
 
 async function fetchCursoById(
   id: string,
-  origin: string
+  origin: string,
 ): Promise<CourseData | null> {
   const normalize = (data: any): any => {
     if (!data) return null;
@@ -93,13 +104,13 @@ async function fetchCursoById(
   let curso: CursoApiResponse = null;
 
   if (looksLikeUuid) {
-    curso = await doFetch(`/api/v1/cursos/publico/cursos/${encodeURIComponent(id)}`);
+    curso = await doFetch(
+      `/api/v1/cursos/publico/cursos/${encodeURIComponent(id)}`,
+    );
   }
 
   if (!curso) {
-    curso = await doFetch(
-      `/api/v1/cursos/cursos/${encodeURIComponent(id)}`
-    );
+    curso = await doFetch(`/api/v1/cursos/cursos/${encodeURIComponent(id)}`);
   }
 
   if (!curso) return null;
@@ -155,13 +166,83 @@ export default async function CourseDetailsPage({
     notFound();
   }
 
+  // Formatar valor
+  const formatCurrency = (value: number): string => {
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    }).format(value);
+  };
+
+  // Calcular desconto
+  const calcularDesconto = (): number | null => {
+    if (
+      course.valorPromocional &&
+      course.valor > 0 &&
+      course.valorPromocional < course.valor
+    ) {
+      return ((course.valor - course.valorPromocional) / course.valor) * 100;
+    }
+    return null;
+  };
+
+  const desconto = calcularDesconto();
+
   const infoCards = [
     { label: "Categoria", value: course.categoria, icon: BookOpen },
     { label: "Carga horária", value: `${course.cargaHoraria}h`, icon: Clock },
     {
       label: "Turmas disponíveis",
-      value: course.totalTurmas ? `${course.totalTurmas} turma${course.totalTurmas > 1 ? 's' : ''}` : null,
+      value: course.totalTurmas
+        ? `${course.totalTurmas} turma${course.totalTurmas > 1 ? "s" : ""}`
+        : null,
       icon: Users,
+    },
+    {
+      label: "Tipo de curso",
+      value: course.gratuito ? "Gratuito" : "Pago",
+      icon: course.gratuito ? Gift : DollarSign,
+      badge: course.gratuito ? (
+        <Badge
+          variant="outline"
+          className="bg-emerald-50 text-emerald-700 border-emerald-200"
+        >
+          <Gift className="h-3 w-3 mr-1" />
+          Gratuito
+        </Badge>
+      ) : null,
+    },
+    {
+      label: "Valor",
+      value:
+        !course.gratuito && course.valor > 0
+          ? formatCurrency(course.valor)
+          : null,
+      icon: DollarSign,
+      badge:
+        course.valorPromocional && course.valorPromocional < course.valor ? (
+          <div className="flex flex-col gap-1">
+            <span className="text-xs line-through text-gray-400">
+              {formatCurrency(course.valor)}
+            </span>
+            <span className="text-sm font-semibold text-emerald-600">
+              {formatCurrency(course.valorPromocional)}
+            </span>
+          </div>
+        ) : null,
+    },
+    {
+      label: "Desconto",
+      value: desconto ? `${desconto.toFixed(0)}% OFF` : null,
+      icon: Percent,
+      badge: desconto ? (
+        <Badge
+          variant="outline"
+          className="bg-red-50 text-red-700 border-red-200"
+        >
+          {desconto.toFixed(0)}% OFF
+        </Badge>
+      ) : null,
     },
     {
       label: "Estágio obrigatório",
@@ -203,13 +284,22 @@ export default async function CourseDetailsPage({
               <div className="flex items-center gap-4">
                 {course.imagemUrl && (
                   <div className="w-14 h-14 rounded-2xl border border-gray-200 bg-gray-50 flex items-center justify-center overflow-hidden">
-                    <Image
-                      src={course.imagemUrl}
-                      alt={course.nome}
-                      width={56}
-                      height={56}
-                      className="object-cover w-full h-full"
-                    />
+                    {course.imagemUrl.includes("via.placeholder.com") ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={course.imagemUrl}
+                        alt={course.nome}
+                        className="object-cover w-full h-full"
+                      />
+                    ) : (
+                      <Image
+                        src={course.imagemUrl}
+                        alt={course.nome}
+                        width={56}
+                        height={56}
+                        className="object-cover w-full h-full"
+                      />
+                    )}
                   </div>
                 )}
                 <div>
@@ -230,7 +320,11 @@ export default async function CourseDetailsPage({
                   variant="default"
                   className="rounded-full text-sm"
                 >
-                  <a href={`/dashboard/cursos/${course.id}`} target="_blank" rel="noopener noreferrer">
+                  <a
+                    href={`/dashboard/cursos/${course.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
                     Inscrever-se
                   </a>
                 </ButtonCustom>
@@ -244,19 +338,23 @@ export default async function CourseDetailsPage({
             <section className="space-y-3">
               <h6 className="uppercase text-gray-500">Sobre o curso</h6>
               <p className="!text-gray-700 !leading-relaxed !whitespace-pre-line">
-                {course.descricao || "Informações detalhadas sobre o curso em breve."}
+                {course.descricao ||
+                  "Informações detalhadas sobre o curso em breve."}
               </p>
             </section>
 
             {course.estagioObrigatorio && (
               <section className="space-y-2">
                 <div className="flex items-center gap-2 text-gray-500">
-                  <h6 className="uppercase text-gray-500">Estágio obrigatório</h6>
+                  <h6 className="uppercase text-gray-500">
+                    Estágio obrigatório
+                  </h6>
                 </div>
                 <div className="flex items-start gap-3 text-sm text-gray-700 bg-purple-50 border border-purple-200 rounded-xl p-4">
                   <Award className="mt-0.5 h-5 w-5 text-purple-600" />
                   <span className="leading-relaxed">
-                    Este curso inclui estágio obrigatório como parte da formação.
+                    Este curso inclui estágio obrigatório como parte da
+                    formação.
                   </span>
                 </div>
               </section>
@@ -269,7 +367,7 @@ export default async function CourseDetailsPage({
                 Informações
               </h4>
               <dl className="space-y-4 text-sm text-gray-700">
-                {infoCards.map(({ label, value, icon: Icon }) => (
+                {infoCards.map(({ label, value, icon: Icon, badge }: any) => (
                   <div
                     key={`aside-${label}`}
                     className="flex items-start gap-3"
@@ -282,7 +380,7 @@ export default async function CourseDetailsPage({
                         {label}
                       </dt>
                       <dd className="text-sm font-medium text-gray-900">
-                        {value || "—"}
+                        {badge || value || "—"}
                       </dd>
                     </div>
                   </div>
@@ -295,4 +393,3 @@ export default async function CourseDetailsPage({
     </div>
   );
 }
-

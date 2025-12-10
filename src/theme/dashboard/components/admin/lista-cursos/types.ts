@@ -9,4 +9,3 @@ export interface CursosDashboardProps {
   onDataLoaded?: (data: Curso[], response: any) => void;
   onError?: (error: string) => void;
 }
-
