@@ -18,12 +18,19 @@ export interface UseVagaCategoriasResult {
   categorias: EmpresaVagaCategoria[];
   categoriaOptions: SelectOption[];
   subcategoriasPorCategoria: Record<string, SelectOption[]>;
-  getSubcategoriasOptions: (categoriaId: string | number | null) => SelectOption[];
+  getSubcategoriasOptions: (
+    categoriaId: string | number | null
+  ) => SelectOption[];
   isLoading: boolean;
   error: string | null;
   refetch: () => Promise<void>;
 }
 
+/**
+ * Hook para buscar categorias de vagas para formulário.
+ * Usa o endpoint: GET /api/v1/empresas/vagas/categorias
+ * Mesmo endpoint usado em /dashboard/config/empresas
+ */
 export function useVagaCategorias(): UseVagaCategoriasResult {
   const [categorias, setCategorias] = useState<EmpresaVagaCategoria[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -70,16 +77,21 @@ export function useVagaCategorias(): UseVagaCategoriasResult {
   );
 
   const subcategoriasPorCategoria = useMemo(() => {
-    return categorias.reduce<Record<string, SelectOption[]>>((acc, categoria) => {
-      const key = String(categoria.id);
-      const subcategorias = (categoria.subcategorias ?? []).map((sub) => ({
-        value: String(sub.id),
-        label: sub.nome,
-      }));
+    return categorias.reduce<Record<string, SelectOption[]>>(
+      (acc, categoria) => {
+        const key = String(categoria.id);
+        const subcategorias = (categoria.subcategorias ?? []).map((sub) => ({
+          value: String(sub.id),
+          label: sub.nome,
+        }));
 
-      acc[key] = subcategorias.sort((a, b) => a.label.localeCompare(b.label, "pt-BR"));
-      return acc;
-    }, {});
+        acc[key] = subcategorias.sort((a, b) =>
+          a.label.localeCompare(b.label, "pt-BR")
+        );
+        return acc;
+      },
+      {}
+    );
   }, [categorias]);
 
   const getSubcategoriasOptions = useCallback(

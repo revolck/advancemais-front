@@ -9,13 +9,11 @@ import { UserRole } from "@/config/roles";
 import { useUserRole } from "@/hooks/useUserRole";
 import { VagasDashboard } from "@/theme/dashboard/components/admin";
 
-import { EmpresaVagasDashboard } from "./empresa/EmpresaVagasDashboard";
-
-const ADMIN_ROLES = new Set<UserRole>([UserRole.ADMIN, UserRole.MODERADOR]);
-const ADMIN_AND_SETOR_DE_VAGAS = new Set<UserRole>([
+const ALLOWED_ROLES = new Set<UserRole>([
   UserRole.ADMIN,
   UserRole.MODERADOR,
   UserRole.SETOR_DE_VAGAS,
+  UserRole.EMPRESA, // Adicionada role EMPRESA
 ]);
 
 export default function DashboardVagasPage() {
@@ -36,16 +34,12 @@ export default function DashboardVagasPage() {
       );
     }
 
-    if (ADMIN_AND_SETOR_DE_VAGAS.has(role)) {
+    if (ALLOWED_ROLES.has(role)) {
       return (
         <div className="space-y-8">
           <VagasDashboard />
         </div>
       );
-    }
-
-    if (role === UserRole.EMPRESA) {
-      return <EmpresaVagasDashboard />;
     }
 
     return (

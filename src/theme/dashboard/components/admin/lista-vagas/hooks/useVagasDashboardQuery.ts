@@ -8,6 +8,7 @@ import {
   type VagaListParams,
   type VagaStatus,
 } from "@/api/vagas";
+import { listMyCompanyVacancies } from "@/api/empresas";
 import { useUserRole } from "@/hooks/useUserRole";
 import { UserRole } from "@/config/roles";
 
@@ -140,9 +141,6 @@ export function useVagasDashboardQuery(
   return useQuery<VagasQueryResult, Error>({
     queryKey: ["admin-vagas-list", serializedFilters],
     queryFn: async () => {
-      const params = buildParams(filters, userRole);
-      const response = await listVagas(params);
-
       let vagas: VagaListItem[] = [];
       let pagination = {
         page: filters.page,
@@ -151,23 +149,49 @@ export function useVagasDashboardQuery(
         totalPages: 1,
       };
 
-      if (Array.isArray(response)) {
-        vagas = response;
-        pagination.total = response.length;
-        pagination.totalPages = Math.max(
-          1,
-          Math.ceil(response.length / filters.pageSize)
-        );
+      // Se for EMPRESA, usa a rota específica /empresas/vagas/minhas
+      if (userRole === UserRole.EMPRESA) {
+        const params = buildParams(filters, userRole);
+        const response = await listMyCompanyVacancies({
+          page: params.page,
+          pageSize: params.pageSize,
+          status: params.status as any,
+        });
+
+        if ("data" in response) {
+          vagas = (response.data ?? []) as VagaListItem[];
+          pagination = {
+            page: response.pagination?.page ?? filters.page,
+            pageSize: response.pagination?.pageSize ?? filters.pageSize,
+            total: response.pagination?.total ?? vagas.length,
+            totalPages:
+              response.pagination?.totalPages ??
+              Math.max(1, Math.ceil((response.pagination?.total ?? vagas.length) / filters.pageSize)),
+          };
+        }
       } else {
-        vagas = response.data ?? [];
-        pagination = {
-          page: response.pagination?.page ?? filters.page,
-          pageSize: response.pagination?.pageSize ?? filters.pageSize,
-          total: response.pagination?.total ?? vagas.length,
-          totalPages:
-            response.pagination?.totalPages ??
-            Math.max(1, Math.ceil((response.pagination?.total ?? vagas.length) / filters.pageSize)),
-        };
+        // Para outras roles, usa a rota padrão
+        const params = buildParams(filters, userRole);
+        const response = await listVagas(params);
+
+        if (Array.isArray(response)) {
+          vagas = response;
+          pagination.total = response.length;
+          pagination.totalPages = Math.max(
+            1,
+            Math.ceil(response.length / filters.pageSize)
+          );
+        } else {
+          vagas = response.data ?? [];
+          pagination = {
+            page: response.pagination?.page ?? filters.page,
+            pageSize: response.pagination?.pageSize ?? filters.pageSize,
+            total: response.pagination?.total ?? vagas.length,
+            totalPages:
+              response.pagination?.totalPages ??
+              Math.max(1, Math.ceil((response.pagination?.total ?? vagas.length) / filters.pageSize)),
+          };
+        }
       }
 
       const filtered = applyClientFilters(vagas, filters, userRole);

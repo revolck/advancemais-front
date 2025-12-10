@@ -10,6 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ChevronUp, ChevronDown } from "lucide-react";
 import {
   Tooltip,
@@ -27,6 +28,9 @@ import {
   getNormalizedSearchOrUndefined,
   getSearchValidationMessage,
 } from "../shared/filterUtils";
+import { useUserRole } from "@/hooks/useUserRole";
+import { UserRole } from "@/config/roles";
+import { useTenantCompany } from "@/hooks/useTenantCompany";
 
 const STATUS_FILTER_OPTIONS: { value: VagaStatus; label: string }[] = [
   { value: "PUBLICADO", label: "Publicada" },
@@ -47,6 +51,9 @@ export function VagasDashboard({
   onDataLoaded,
   onError,
 }: VagaDashboardProps) {
+  const role = useUserRole();
+  const { company } = useTenantCompany(role === UserRole.EMPRESA);
+  
   const defaultPageSize = pageSizeProp ?? itemsPerPageProp ?? 10;
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = defaultPageSize;
@@ -57,6 +64,25 @@ export function VagasDashboard({
   const [selectedCompanies, setSelectedCompanies] = useState<string[]>([]);
   const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
   const [isNavigating, setIsNavigating] = useState(false);
+
+  // Verificações para EMPRESA
+  const isEmpresa = role === UserRole.EMPRESA;
+  const plan = company?.plano ?? null;
+  const vagasInfo = company?.vagas ?? null;
+  const limitFromPlan = plan?.quantidadeVagas ?? 0;
+  const limitFromUsage = vagasInfo?.limitePlano ?? 0;
+  const totalLimit = limitFromUsage || limitFromPlan;
+  const publishedCount = vagasInfo?.publicadas ?? 0;
+  const hasLimitedPlan = totalLimit > 0;
+  const remainingSlots = hasLimitedPlan ? Math.max(totalLimit - publishedCount, 0) : null;
+  const hasReachedLimit = hasLimitedPlan && remainingSlots === 0;
+  const planStatus = plan?.status ?? null;
+  // ATIVO ou SUSPENSO (dentro da tolerância) = pode usar o sistema
+  const hasActivePlan = Boolean(plan) && (planStatus === "ATIVO" || planStatus === "SUSPENSO");
+  // SUSPENSO = pagamento pendente (ainda pode criar vagas)
+  const isPagamentoPendente = planStatus === "SUSPENSO";
+  // CANCELADO ou EXPIRADO = bloqueado (não pode criar vagas)
+  const isPlanoBloqueado = planStatus === "CANCELADO" || planStatus === "EXPIRADO";
 
   const handleNavigateStart = useCallback(() => {
     setIsNavigating(true);
@@ -238,8 +264,9 @@ export function VagasDashboard({
     return list;
   }, [vagas, sortField, sortDirection]);
 
-  const isLoading = shouldFetch && vagasQuery.status === "pending";
+  const isLoading = shouldFetch && (vagasQuery.status === "pending" || vagasQuery.isLoading);
   const isFetching = shouldFetch && vagasQuery.isFetching;
+  const isInitialLoading = isLoading && vagas.length === 0;
   const errorMessage = shouldFetch && vagasQuery.error
     ? vagasQuery.error.message || "Erro ao carregar vagas"
     : null;
@@ -269,30 +296,39 @@ export function VagasDashboard({
   }, [pagination.page, pagination.totalPages]);
 
   const filterFields: FilterField[] = useMemo(
-    () => [
-      {
-        key: "status",
-        label: "Status",
-        mode: "multiple",
-        options: STATUS_FILTER_OPTIONS,
-        placeholder: "Selecione status",
-      },
-      {
-        key: "empresa",
-        label: "Empresa",
-        mode: "multiple",
-        options: companyOptions,
-        placeholder: "Selecione empresa",
-      },
-      {
+    () => {
+      const fields: FilterField[] = [
+        {
+          key: "status",
+          label: "Status",
+          mode: "multiple",
+          options: STATUS_FILTER_OPTIONS,
+          placeholder: "Selecione status",
+        },
+      ];
+
+      // Filtro de empresa: apenas para ADMIN, MODERADOR, SETOR_DE_VAGAS
+      if (!isEmpresa) {
+        fields.push({
+          key: "empresa",
+          label: "Empresa",
+          mode: "multiple",
+          options: companyOptions,
+          placeholder: "Selecione empresa",
+        });
+      }
+
+      fields.push({
         key: "localizacao",
         label: "Localização",
         mode: "multiple",
         options: locationOptions,
         placeholder: "Selecione localização",
-      },
-    ],
-    [companyOptions, locationOptions]
+      });
+
+      return fields;
+    },
+    [companyOptions, locationOptions, isEmpresa]
   );
 
   const filterValues = useMemo(
@@ -309,26 +345,86 @@ export function VagasDashboard({
     setCurrentPage(nextPage);
   };
 
+  // Lógica do botão de criar vaga:
+  // - Admin/Moderador: sempre pode
+  // - Empresa com plano ativo/suspenso: pode (disabled se atingiu limite)
+  // - Empresa com plano bloqueado: não pode
+  const canShowCreateButton = isEmpresa ? hasActivePlan : true;
+  const isCreateButtonDisabled = isEmpresa && hasReachedLimit;
+
   return (
     <div className={cn("min-h-full space-y-6", className)}>
-      <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-end">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-          <ButtonCustom
-            asChild
-            variant="primary"
-            size="md"
-            icon="Plus"
-            className="w-full sm:w-auto"
-          >
-            <Link href="/dashboard/empresas/vagas/cadastrar">
-              Cadastrar vaga
-            </Link>
-          </ButtonCustom>
+      {canShowCreateButton && (
+        <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-end">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            {isCreateButtonDisabled ? (
+              <ButtonCustom
+                variant="primary"
+                size="md"
+                icon="Plus"
+                className="w-full sm:w-auto"
+                disabled
+              >
+                Cadastrar vaga
+              </ButtonCustom>
+            ) : (
+              <ButtonCustom
+                asChild
+                variant="primary"
+                size="md"
+                icon="Plus"
+                className="w-full sm:w-auto"
+              >
+                <Link href="/dashboard/empresas/vagas/cadastrar">
+                  Cadastrar vaga
+                </Link>
+              </ButtonCustom>
+            )}
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* Alerta: Pagamento Pendente (SUSPENSO) */}
+      {isEmpresa && isPagamentoPendente && (
+        <Alert variant="default" className="border-amber-200 bg-amber-50">
+          <AlertTitle>Pagamento pendente</AlertTitle>
+          <AlertDescription>
+            Não identificamos seu pagamento. Regularize para continuar usando o sistema normalmente.
+            {" "}
+            <Link href="/dashboard/empresas/pagamentos" className="font-semibold text-amber-700 underline">
+              Regularizar pagamento
+            </Link>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Alerta: Plano Bloqueado (CANCELADO/EXPIRADO) */}
+      {isEmpresa && isPlanoBloqueado && (
+        <Alert variant="default" className="border-red-200 bg-red-50">
+          <AlertTitle>Plano {planStatus === "CANCELADO" ? "cancelado" : "expirado"}</AlertTitle>
+          <AlertDescription>
+            Seu plano foi {planStatus === "CANCELADO" ? "cancelado por inadimplência" : "expirado"}. Você pode visualizar suas vagas, mas não poderá cadastrar novas vagas até reativar sua assinatura.
+            {" "}
+            <Link href="/dashboard/empresas/pagamentos" className="font-semibold text-red-700 underline">
+              Reativar plano
+            </Link>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Alerta: Limite de vagas atingido */}
+      {isEmpresa && hasReachedLimit && hasActivePlan && (
+        <Alert variant="default" className="border-rose-200 bg-rose-50">
+          <AlertTitle>Limite de vagas atingido</AlertTitle>
+          <AlertDescription>
+            Seu plano permite publicar até {totalLimit} vagas. Para liberar espaço, encerre alguma vaga ativa ou faça upgrade do seu plano.
+          </AlertDescription>
+        </Alert>
+      )}
 
       <div className="border-b border-gray-200">
         <FilterBar
+          className={isEmpresa ? "lg:grid-cols-[minmax(0,3fr)_minmax(0,1fr)_minmax(0,1fr)_auto]" : undefined}
           fields={filterFields}
           values={filterValues}
           onChange={(key, value) => {
@@ -390,7 +486,7 @@ export function VagasDashboard({
         </div>
       )}
 
-      {isLoading ? (
+      {isInitialLoading ? (
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
           <div className="overflow-x-auto">
             <Table className="min-w-[900px]">
@@ -400,7 +496,7 @@ export function VagasDashboard({
                     Vaga
                   </TableHead>
                   <TableHead className="font-medium text-gray-700 min-w-[180px]">
-                    Empresa
+                    {isEmpresa ? "Último candidato" : "Empresa"}
                   </TableHead>
                   <TableHead className="font-medium text-gray-700 min-w-[140px]">
                     Localização
@@ -491,7 +587,7 @@ export function VagasDashboard({
                     </div>
                   </TableHead>
                   <TableHead className="font-medium text-gray-700 min-w-[180px]">
-                    Empresa
+                    {isEmpresa ? "Último candidato" : "Empresa"}
                   </TableHead>
                   <TableHead className="font-medium text-gray-700 min-w-[140px]">
                     Localização
@@ -535,6 +631,7 @@ export function VagasDashboard({
                       vaga={vaga}
                       isDisabled={isNavigating}
                       onNavigateStart={handleNavigateStart}
+                      isEmpresaRole={isEmpresa}
                     />
                   ))
                 )}

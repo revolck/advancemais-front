@@ -430,7 +430,7 @@ export function StepperSeparator({
       aria-hidden
       data-complete={state === "completed" ? "true" : undefined}
       className={cn(
-        "mx-2 md:mx-1 h-0.5 w-full flex-1 bg-gray-200 data-[complete=true]:bg-[var(--primary-color)]",
+        "h-0.5 flex-1 min-w-8 bg-gray-200 data-[complete=true]:bg-[var(--primary-color)]",
         className
       )}
     />

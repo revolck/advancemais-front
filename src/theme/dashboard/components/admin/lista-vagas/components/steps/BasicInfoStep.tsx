@@ -9,6 +9,12 @@ import MultiSelect, {
   type MultiSelectOption,
 } from "@/components/ui/custom/multiselect";
 import { toastCustom } from "@/components/ui/custom/toast";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Info } from "lucide-react";
 
 interface FormState {
   usuarioId: string;
@@ -61,6 +67,7 @@ interface BasicInfoStepProps {
   categoriaOptions: Array<{ value: string; label: string }>;
   subcategoriaOptions: Array<{ value: string; label: string }>;
   onFieldChange: (field: keyof FormState, value: any) => void;
+  isEmpresaRole?: boolean;
 }
 
 export function BasicInfoStep({
@@ -75,13 +82,15 @@ export function BasicInfoStep({
   categoriaOptions,
   subcategoriaOptions,
   onFieldChange,
+  isEmpresaRole = false,
 }: BasicInfoStepProps) {
   const regimeOptions = [
     { value: "CLT", label: "CLT" },
-    { value: "PJ", label: "Pessoa Jurídica" },
+    { value: "PJ", label: "PJ / Freelance" },
     { value: "ESTAGIO", label: "Estágio" },
-    { value: "TRAINEE", label: "Trainee" },
-    { value: "FREELANCE", label: "Freelance" },
+    { value: "TEMPORARIO", label: "Temporário" },
+    { value: "HOME_OFFICE", label: "Home Office" },
+    { value: "JOVEM_APRENDIZ", label: "Jovem Aprendiz" },
   ];
 
   const modalidadeOptions = [
@@ -91,32 +100,39 @@ export function BasicInfoStep({
   ];
 
   const jornadaOptions = [
-    { value: "INTEGRAL", label: "Integral" },
-    { value: "MEIO_PERIODO", label: "Meio período" },
+    { value: "INTEGRAL", label: "Integral (8h/dia)" },
+    { value: "MEIO_PERIODO", label: "Meio período (4h/dia)" },
     { value: "FLEXIVEL", label: "Flexível" },
   ];
 
   const senioridadeOptions = [
+    { value: "ABERTO", label: "Aberto (qualquer nível)" },
+    { value: "ESTAGIARIO", label: "Estagiário" },
     { value: "JUNIOR", label: "Júnior" },
     { value: "PLENO", label: "Pleno" },
     { value: "SENIOR", label: "Sênior" },
     { value: "ESPECIALISTA", label: "Especialista" },
-    { value: "GERENTE", label: "Gerente" },
-    { value: "DIRETOR", label: "Diretor" },
+    { value: "LIDER", label: "Líder / Gestor" },
   ];
 
   return (
     <fieldset disabled={isSubmitting} className="space-y-6">
       <section className="space-y-5">
         <header className="mb-10">
-          <h3 className="!mb-0">Informações básicas da vaga</h3>
+          <h4 className="!mb-0">Informações básicas da vaga</h4>
           <p className="!text-sm">
             Defina os detalhes principais da oportunidade.
           </p>
         </header>
 
-        {/* Linha 1: Título (50%), Empresa (30%), Inscrições até (20%) */}
-        <div className="grid gap-4 lg:grid-cols-[2.5fr_1.5fr_1fr]">
+        {/* Linha 1: Título, Empresa (se não for role EMPRESA), Inscrições até */}
+        <div
+          className={`grid gap-4 ${
+            isEmpresaRole
+              ? "lg:grid-cols-[3fr_1fr]"
+              : "lg:grid-cols-[2.5fr_1.5fr_1fr]"
+          }`}
+        >
           <InputCustom
             label="Título da vaga"
             name="titulo"
@@ -128,25 +144,36 @@ export function BasicInfoStep({
             required
           />
 
-          <SelectCustom
-            label="Empresa"
-            placeholder={
-              isLoadingEmpresas
-                ? "Carregando empresas..."
-                : "Selecione a empresa"
-            }
-            options={empresas}
-            value={formData.usuarioId || null}
-            onChange={(value) => onFieldChange("usuarioId", value || "")}
-            disabled={isSubmitting || isLoadingEmpresas}
-            error={errors.usuarioId || empresasError || undefined}
-            required
-          />
+          {/* Campo de Empresa - só aparece para roles que não são EMPRESA */}
+          {!isEmpresaRole && (
+            <SelectCustom
+              label="Empresa"
+              placeholder={
+                isLoadingEmpresas
+                  ? "Carregando empresas..."
+                  : "Selecione a empresa"
+              }
+              options={empresas}
+              value={formData.usuarioId || null}
+              onChange={(value) => onFieldChange("usuarioId", value || "")}
+              disabled={isSubmitting || isLoadingEmpresas}
+              error={errors.usuarioId || empresasError || undefined}
+              required
+            />
+          )}
 
           <DatePickerCustom
             label="Inscrições até"
             value={
-              formData.inscricoesAte ? new Date(formData.inscricoesAte) : null
+              formData.inscricoesAte
+                ? (() => {
+                    // Parse da data sem problemas de timezone
+                    const [year, month, day] = formData.inscricoesAte
+                      .split("-")
+                      .map(Number);
+                    return new Date(year, month - 1, day);
+                  })()
+                : null
             }
             onChange={(date) =>
               onFieldChange(
@@ -156,32 +183,57 @@ export function BasicInfoStep({
             }
             placeholder="Selecione a data"
             error={errors.inscricoesAte}
+            minDate={new Date()} // Não permitir datas passadas
             required
           />
         </div>
 
         {/* Linha 2: Visibilidade, Categoria, Subcategoria, Número de vagas */}
         <div className="grid gap-4 lg:grid-cols-4">
-          <SelectCustom
-            label="Visibilidade"
-            value={formData.modoAnonimo ? "anonimo" : "publico"}
-            onChange={(value) =>
-              onFieldChange("modoAnonimo", value === "anonimo")
-            }
-            options={[
-              {
-                value: "publico",
-                label: "Empresa visível",
-              },
-              {
-                value: "anonimo",
-                label: "Anônima",
-              },
-            ]}
-            error={errors.modoAnonimo}
-            disabled={isSubmitting}
-            placeholder="Selecione a visibilidade"
-          />
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium required">
+                Visibilidade
+              </label>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    className="flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                    onClick={(e) => e.preventDefault()}
+                  >
+                    <Info className="h-4 w-4" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent sideOffset={2} className="w-[250px]">
+                  <p className="text-sm! text-gray-200! leading-relaxed">
+                    Ao escolher "Empresa visível", o nome e logo da empresa
+                    aparecerão no site principal.
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+            <SelectCustom
+              value={formData.modoAnonimo ? "anonimo" : "publico"}
+              onChange={(value) =>
+                onFieldChange("modoAnonimo", value === "anonimo")
+              }
+              options={[
+                {
+                  value: "publico",
+                  label: "Empresa visível",
+                },
+                {
+                  value: "anonimo",
+                  label: "Anônima",
+                },
+              ]}
+              error={errors.modoAnonimo}
+              disabled={isSubmitting}
+              placeholder="Selecione a visibilidade"
+              required
+            />
+          </div>
 
           <SelectCustom
             label="Categoria"
@@ -200,7 +252,6 @@ export function BasicInfoStep({
 
           <MultiSelect
             label="Subcategoria"
-            required
             size="md"
             placeholder={
               formData.areaInteresseId
@@ -232,9 +283,6 @@ export function BasicInfoStep({
               subcategoriaOptions.length === 0
             }
           />
-          {errors.subareaInteresseId && (
-            <p className="text-sm text-red-500">{errors.subareaInteresseId}</p>
-          )}
 
           <InputCustom
             label="Número de vagas"
@@ -297,7 +345,7 @@ export function BasicInfoStep({
           />
 
           <SelectCustom
-            label="Jornada"
+            label="Jornada de trabalho"
             options={jornadaOptions}
             value={formData.jornada || null}
             onChange={(value) => onFieldChange("jornada", value || "")}
@@ -308,7 +356,7 @@ export function BasicInfoStep({
           />
 
           <SelectCustom
-            label="Regime"
+            label="Regime de contratação"
             options={regimeOptions}
             value={formData.regimeDeTrabalho || null}
             onChange={(value) => onFieldChange("regimeDeTrabalho", value || "")}
@@ -326,7 +374,6 @@ export function BasicInfoStep({
             placeholder="Selecione a senioridade"
             disabled={isSubmitting}
             error={errors.senioridade}
-            required
           />
         </div>
       </section>

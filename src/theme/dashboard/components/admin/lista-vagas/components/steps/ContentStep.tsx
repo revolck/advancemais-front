@@ -22,7 +22,7 @@ export function ContentStep({
     <fieldset disabled={isSubmitting} className="space-y-10">
       <section className="space-y-5">
         <header className="mb-10">
-          <h3 className="!mb-0">Conteúdo da vaga</h3>
+          <h4 className="!mb-0">Conteúdo da vaga</h4>
           <p className="!text-sm">
             Estruture a descrição, as atividades e os benefícios.
           </p>
@@ -70,6 +70,7 @@ export function ContentStep({
               maxLength={2000}
               showCharCount
               error={errors.atividadesPrincipais}
+              required
             />
             <SimpleTextarea
               label="Extras"
@@ -103,6 +104,7 @@ export function ContentStep({
               maxLength={2000}
               showCharCount
               error={errors.requisitosObrigatorios}
+              required
             />
             <SimpleTextarea
               label="Desejáveis"

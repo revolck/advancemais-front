@@ -109,7 +109,7 @@ async function fetchEligibleCompanies(
   return collected.filter(isEmpresaElegivel);
 }
 
-export function useEmpresasForSelect() {
+export function useEmpresasForSelect(enabled: boolean = true) {
   const queryClient = useQueryClient();
 
   const queryFn = useCallback(
@@ -128,6 +128,7 @@ export function useEmpresasForSelect() {
     queryFn,
     staleTime: STALE_TIME,
     gcTime: GC_TIME,
+    enabled, // Só executa a query se enabled for true
   });
 
   const empresas = useMemo(() => {

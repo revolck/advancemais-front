@@ -33,7 +33,7 @@ export const DASHBOARD_ROUTE_RULES: readonly RouteRule[] = Object.freeze([
   },
   {
     pattern: "/dashboard/empresas{/*path}",
-    roles: [UserRole.ADMIN, UserRole.MODERADOR, UserRole.SETOR_DE_VAGAS],
+    roles: [UserRole.ADMIN, UserRole.MODERADOR, UserRole.SETOR_DE_VAGAS, UserRole.EMPRESA],
   },
   {
     pattern: "/dashboard/vagas{/*path}",

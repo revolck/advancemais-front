@@ -1,8 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
-import { getAdminCompanyById } from "@/api/empresas";
+import { getAdminCompanyById, getMyCompany } from "@/api/empresas";
 import type { AdminCompanyDetail } from "@/api/empresas";
+import { useUserRole } from "./useUserRole";
+import { UserRole } from "@/config/roles";
 
 interface UseTenantCompanyResult {
   company: AdminCompanyDetail | null;
@@ -26,6 +28,7 @@ export function useTenantCompany(enabled = true): UseTenantCompanyResult {
   const [tenantId, setTenantId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(Boolean(enabled));
   const [error, setError] = useState<string | null>(null);
+  const role = useUserRole();
 
   // Ref para evitar chamadas duplicadas
   const hasFetched = useRef(false);
@@ -37,27 +40,41 @@ export function useTenantCompany(enabled = true): UseTenantCompanyResult {
       return;
     }
 
-    const id = getCookieValue("tenant_id");
-    setTenantId(id);
-
-    // Se não tem tenant_id, não é empresa - não é erro, apenas não tem dados
-    if (!id) {
-      setCompany(null);
-      setError(null); // Não é erro, apenas não é empresa
-      setIsLoading(false);
-      return;
-    }
-
     setIsLoading(true);
     setError(null);
 
     try {
-      const response = await getAdminCompanyById(id);
-
-      if (response && "empresa" in response) {
-        setCompany(response.empresa);
+      // Se for EMPRESA, usa a nova rota /empresas/minha
+      if (role === UserRole.EMPRESA) {
+        const response = await getMyCompany();
+        
+        if (response && "empresa" in response) {
+          setCompany(response.empresa);
+          setTenantId(response.empresa.id);
+        } else {
+          setCompany(null);
+          setTenantId(null);
+        }
       } else {
-        setCompany(null);
+        // Para outras roles, usa o tenant_id do cookie (comportamento antigo)
+        const id = getCookieValue("tenant_id");
+        setTenantId(id);
+
+        // Se não tem tenant_id, não é empresa - não é erro, apenas não tem dados
+        if (!id) {
+          setCompany(null);
+          setError(null);
+          setIsLoading(false);
+          return;
+        }
+
+        const response = await getAdminCompanyById(id);
+
+        if (response && "empresa" in response) {
+          setCompany(response.empresa);
+        } else {
+          setCompany(null);
+        }
       }
     } catch (err: any) {
       // Erros silenciados (403/404) não são erros reais - apenas falta de permissão
@@ -76,7 +93,7 @@ export function useTenantCompany(enabled = true): UseTenantCompanyResult {
     } finally {
       setIsLoading(false);
     }
-  }, [enabled]);
+  }, [enabled, role]);
 
   useEffect(() => {
     // Evita chamadas duplicadas em StrictMode

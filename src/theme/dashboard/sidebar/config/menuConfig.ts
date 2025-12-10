@@ -544,6 +544,48 @@ const rawMenuSections: MenuSection[] = [
       },
     ],
   },
+  // Seção para EMPRESA
+  {
+    title: "DASHBOARD",
+    items: [
+      {
+        icon: "LayoutDashboard",
+        label: "Visão geral",
+        route: "/dashboard",
+        permissions: [UserRole.EMPRESA],
+      },
+      {
+        icon: "Briefcase",
+        label: "Vagas",
+        route: "/dashboard/empresas/vagas",
+        permissions: [UserRole.EMPRESA],
+      },
+      {
+        icon: "Users",
+        label: "Candidatos",
+        route: "/dashboard/empresas/candidatos",
+        permissions: [UserRole.EMPRESA],
+      },
+      {
+        icon: "CreditCard",
+        label: "Assinatura",
+        route: "/dashboard/empresas/pagamentos",
+        permissions: [UserRole.EMPRESA],
+      },
+      {
+        icon: "Calendar",
+        label: "Agenda",
+        route: "/empresa/agenda",
+        permissions: [UserRole.EMPRESA],
+      },
+      {
+        icon: "UserCheck",
+        label: "Entrevistas",
+        route: "/empresa/entrevistas",
+        permissions: [UserRole.EMPRESA],
+      },
+    ],
+  },
 ];
 
 export const menuSections: ReadonlyArray<MenuSection> =

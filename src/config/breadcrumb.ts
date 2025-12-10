@@ -1,6 +1,8 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import { useUserRole } from "@/hooks/useUserRole";
+import { UserRole } from "@/config/roles";
 
 export type IconName =
   | "Home"
@@ -45,7 +47,8 @@ export type IconName =
   | "Building2"
   | "ExternalLink"
   | "Tag"
-  | "GraduationCap";
+  | "GraduationCap"
+  | "CreditCard";
 
 export interface BreadcrumbItem {
   label: string;
@@ -226,6 +229,14 @@ export const breadcrumbConfig: Record<string, BreadcrumbConfig> = {
       { label: "Candidatos", icon: "Users" },
     ],
   },
+  "/dashboard/empresas/pagamentos": {
+    title: "Assinatura",
+    items: [
+      { label: "Dashboard", href: "/", icon: "Home" },
+      { label: "Empresas", href: "/dashboard/empresas", icon: "Building2" },
+      { label: "Assinatura", icon: "CreditCard" },
+    ],
+  },
   "/dashboard/cursos": {
     title: "Cursos",
     items: [
@@ -374,9 +385,29 @@ export const breadcrumbConfig: Record<string, BreadcrumbConfig> = {
   },
 };
 
+// Hook para filtrar "Empresas" do breadcrumb para role EMPRESA
+function filterBreadcrumbForEmpresa(
+  config: BreadcrumbConfig,
+  isEmpresaRole: boolean
+): BreadcrumbConfig {
+  if (!isEmpresaRole) return config;
+
+  // Remove o item "Empresas" do breadcrumb para role EMPRESA
+  const filteredItems = config.items.filter(
+    (item) => item.label !== "Empresas"
+  );
+
+  return {
+    ...config,
+    items: filteredItems,
+  };
+}
+
 // Hook centralizado que consome a configuração acima
 export function useBreadcrumb(): BreadcrumbConfig {
   const pathname = usePathname() || "/";
+  const role = useUserRole();
+  const isEmpresaRole = role === UserRole.EMPRESA;
 
   // Remove query strings e hash do pathname para garantir correspondência exata
   const cleanPathname = pathname.split("?")[0].split("#")[0];
@@ -385,13 +416,13 @@ export function useBreadcrumb(): BreadcrumbConfig {
   const config = breadcrumbConfig[cleanPathname];
 
   if (config) {
-    return config;
+    return filterBreadcrumbForEmpresa(config, isEmpresaRole);
   }
 
   // Regras dinâmicas específicas
   // Detalhes de candidato: /dashboard/empresas/candidatos/[id]
   if (cleanPathname.match(/^\/dashboard\/empresas\/candidatos\/[^/]+$/)) {
-    return {
+    return filterBreadcrumbForEmpresa({
       title: "Detalhes do Candidato",
       items: [
         { label: "Dashboard", href: "/", icon: "Home" },
@@ -399,12 +430,12 @@ export function useBreadcrumb(): BreadcrumbConfig {
         { label: "Candidatos", href: "/dashboard/empresas/candidatos", icon: "Users" },
         { label: "Detalhes do Candidato", icon: "Eye" },
       ],
-    };
+    }, isEmpresaRole);
   }
 
   // Detalhes de vaga: /dashboard/empresas/vagas/[id]
   if (cleanPathname.match(/^\/dashboard\/empresas\/vagas\/[^/]+$/)) {
-    return {
+    return filterBreadcrumbForEmpresa({
       title: "Detalhes da Vaga",
       items: [
         { label: "Dashboard", href: "/", icon: "Home" },
@@ -412,31 +443,31 @@ export function useBreadcrumb(): BreadcrumbConfig {
         { label: "Vagas", href: "/dashboard/empresas/vagas", icon: "Briefcase" },
         { label: "Detalhes da Vaga", icon: "Eye" },
       ],
-    };
+    }, isEmpresaRole);
   }
 
   // Detalhes de empresa: /dashboard/empresas/[id] (deve vir após verificações de candidatos/vagas)
   if (cleanPathname.match(/^\/dashboard\/empresas\/[^/]+$/)) {
-    return {
+    return filterBreadcrumbForEmpresa({
       title: "Detalhes da Empresa",
       items: [
         { label: "Dashboard", href: "/", icon: "Home" },
         { label: "Empresas", href: "/dashboard/empresas", icon: "Building2" },
         { label: "Detalhes da Empresa", icon: "Eye" },
       ],
-    };
+    }, isEmpresaRole);
   }
 
   // Detalhes de empresa (rota antiga): /empresas/[id]
   if (cleanPathname.startsWith("/empresas/") && !cleanPathname.startsWith("/dashboard/empresas/")) {
-    return {
+    return filterBreadcrumbForEmpresa({
       title: "Empresa",
       items: [
         { label: "Dashboard", href: "/", icon: "Home" },
         { label: "Empresas", href: "/dashboard/empresas", icon: "Building2" },
         { label: "Visualizando empresa", icon: "Eye" },
       ],
-    };
+    }, isEmpresaRole);
   }
 
   // Detalhes de usuário: /dashboard/usuarios/[id]
@@ -522,7 +553,7 @@ export function useBreadcrumb(): BreadcrumbConfig {
   for (let i = pathSegments.length; i > 0; i--) {
     currentPath = "/" + pathSegments.slice(0, i).join("/");
     if (breadcrumbConfig[currentPath]) {
-      return breadcrumbConfig[currentPath];
+      return filterBreadcrumbForEmpresa(breadcrumbConfig[currentPath], isEmpresaRole);
     }
   }
 

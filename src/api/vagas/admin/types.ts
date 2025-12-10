@@ -11,16 +11,23 @@ export type VagaStatus =
   | "ENCERRADA"
   | "EXPIRADO";
 
-export type RegimeTrabalho = "CLT" | "PJ" | "ESTAGIO" | "TRAINEE" | "FREELANCE";
+export type RegimeTrabalho =
+  | "CLT"
+  | "PJ"
+  | "ESTAGIO"
+  | "TEMPORARIO"
+  | "HOME_OFFICE"
+  | "JOVEM_APRENDIZ";
 export type ModalidadeTrabalho = "PRESENCIAL" | "REMOTO" | "HIBRIDO";
 export type JornadaTrabalho = "INTEGRAL" | "MEIO_PERIODO" | "FLEXIVEL";
 export type Senioridade =
+  | "ABERTO"
+  | "ESTAGIARIO"
   | "JUNIOR"
   | "PLENO"
   | "SENIOR"
   | "ESPECIALISTA"
-  | "GERENTE"
-  | "DIRETOR";
+  | "LIDER";
 
 // ============================================================================
 // ESTRUTURAS DE DADOS
@@ -102,6 +109,12 @@ export interface VagaEmpresa {
 // ITEM DE LISTA
 // ============================================================================
 
+export interface VagaUltimoCandidato {
+  id: string;
+  nome: string;
+  aplicadaEm: string;
+}
+
 export interface VagaListItem {
   id: string;
   codigo: string;
@@ -138,6 +151,7 @@ export interface VagaListItem {
   logoExibicao?: string;
   mensagemAnonimato?: string;
   descricaoExibicao?: string;
+  ultimoCandidato?: VagaUltimoCandidato | null;
 }
 
 // ============================================================================
@@ -174,8 +188,8 @@ export interface VagaListParams {
 
 export interface CreateVagaPayload {
   usuarioId: string;
-  areaInteresseId: number | string;
-  subareaInteresseId: number | string;
+  categoriaVagaId: string; // UUID da categoria
+  subcategoriaVagaId?: string | null; // UUID opcional da subcategoria
   slug?: string;
   modoAnonimo: boolean;
   regimeDeTrabalho: RegimeTrabalho;
@@ -190,7 +204,7 @@ export interface CreateVagaPayload {
   beneficios?: VagaBeneficios | null;
   observacoes?: string;
   jornada: JornadaTrabalho;
-  senioridade: Senioridade;
+  senioridade?: Senioridade | null; // Opcional
   localizacao: VagaLocalizacao;
   inscricoesAte?: string;
   inseridaEm?: string;

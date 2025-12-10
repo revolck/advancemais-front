@@ -38,6 +38,7 @@ export async function listWebsiteScripts(
     retries: 1,
     timeout: process.env.NODE_ENV === "production" ? 4000 : 7000,
     skipLogoutOn401: true, // Permite acesso público sem autenticação
+    silenceConnectionErrors: true, // Silencia erros de conexão (API pode não estar disponível)
   });
 }
 

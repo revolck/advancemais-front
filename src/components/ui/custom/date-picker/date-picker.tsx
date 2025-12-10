@@ -156,6 +156,7 @@ export function DatePickerCustom({
           <Calendar
             mode="single"
             selected={value ?? undefined}
+            defaultMonth={value || minDate || new Date()}
             onSelect={(date) => {
               onChange(date ?? null);
               setOpen(false);

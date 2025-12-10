@@ -1,8 +1,9 @@
 import type { SelectOption } from "@/components/ui/custom/select";
 import type { DateRange } from "@/components/ui/custom/date-picker";
+import type { MaskType } from "@/types/components/input";
 
 export type FilterMode = "single" | "multiple";
-export type FilterType = "select" | "date-range";
+export type FilterType = "select" | "date-range" | "text";
 
 export interface FilterField {
   key: string;
@@ -13,6 +14,7 @@ export interface FilterField {
   placeholder?: string;
   disabled?: boolean; // quando true, componente fica desabilitado
   emptyPlaceholder?: string; // placeholder quando não há opções
+  mask?: MaskType; // máscara para campos de texto (ex: "money")
 }
 
 export type FilterValues = Record<

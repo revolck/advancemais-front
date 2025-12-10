@@ -48,8 +48,12 @@ interface VisualizarVagaModalProps {
 // Labels
 const REGIME_LABELS: Record<string, string> = {
   CLT: "CLT",
-  PJ: "PJ",
+  PJ: "PJ / Freelance",
   ESTAGIO: "Estágio",
+  TEMPORARIO: "Temporário",
+  HOME_OFFICE: "Home Office",
+  JOVEM_APRENDIZ: "Jovem Aprendiz",
+  // Valores legados para compatibilidade
   TRAINEE: "Trainee",
   FREELANCE: "Freelance",
 };

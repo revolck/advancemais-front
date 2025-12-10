@@ -23,6 +23,11 @@ interface FetchOptions<T> {
    * Útil para endpoints que podem retornar 403 quando o usuário não tem permissão.
    */
   silence403?: boolean;
+  /**
+   * Silencia erros de conexão (ECONNREFUSED, network errors).
+   * Útil para chamadas opcionais onde a API pode não estar disponível.
+   */
+  silenceConnectionErrors?: boolean;
 }
 
 // Cache em memória simples
@@ -53,6 +58,7 @@ export async function apiFetch<T = unknown>(
     skipLogoutOn401 = false,
     silence404 = false,
     silence403 = false,
+    silenceConnectionErrors = false,
   }: FetchOptions<T> = {}
 ): Promise<T> {
   const url = endpoint.startsWith("http") ? endpoint : buildApiUrl(endpoint);
@@ -177,13 +183,26 @@ export async function apiFetch<T = unknown>(
       return data as T;
     } catch (error) {
       lastError = error as Error;
+      
+      // Detecta erros de conexão (ECONNREFUSED, network errors)
+      const isConnectionError = 
+        (error as any)?.cause?.code === "ECONNREFUSED" ||
+        (error as any)?.code === "ECONNREFUSED" ||
+        lastError?.message?.includes("fetch failed") ||
+        lastError?.message?.includes("ECONNREFUSED");
+      
+      // Marca como silenciado se for erro de conexão e a opção estiver ativa
+      if (isConnectionError && silenceConnectionErrors) {
+        (error as any).silenced = true;
+        (error as any).noRetry = true; // Não tenta novamente para erros de conexão
+      }
 
       // Não loga AbortError (requisição cancelada intencionalmente) ou erros silenciados
       if ((error as any)?.name !== "AbortError" && !(error as any)?.silenced) {
         console.warn(`⚠️ API Error [${attempt}/${retries}]:`, error);
       }
 
-      // Não faz retry para erros 401, 403, 404 (não vai mudar com retry)
+      // Não faz retry para erros 401, 403, 404 ou conexão (não vai mudar com retry)
       if ((error as any).noRetry) {
         break;
       }

@@ -207,6 +207,30 @@ export function FilterBar({
             );
           }
 
+          if (type === "text") {
+            const fieldValue = (values[field.key] as string | null | undefined) ?? "";
+            return (
+              <div key={field.key} className="min-w-0">
+                {field.label && (
+                  <Label className="text-sm font-medium mb-1 block">
+                    {field.label}
+                  </Label>
+                )}
+                <InputCustom
+                  value={fieldValue}
+                  onChange={(e) => {
+                    const newValue = e.target.value;
+                    onChange(field.key, newValue || null);
+                  }}
+                  placeholder={field.placeholder ?? ""}
+                  disabled={field.disabled}
+                  size="md"
+                  mask={field.mask}
+                />
+              </div>
+            );
+          }
+
           const commonProps = {
             options: field.options ?? [],
             placeholder:

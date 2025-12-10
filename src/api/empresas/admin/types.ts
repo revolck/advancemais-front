@@ -7,7 +7,9 @@ export type AdminCompanyStatus =
   | "INATIVO"
   | "BLOQUEADO"
   | "PENDENTE"
-  | "SUSPENSO";
+  | "SUSPENSO"
+  | "CANCELADO"
+  | "EXPIRADO";
 
 export type AdminCompanyPlanMode = "CLIENTE" | "TESTE" | "PARCEIRO";
 
@@ -82,6 +84,11 @@ export interface AdminCompanyPlano {
   atualizadoEm?: string;
   proximaCobranca?: string | null;
   graceUntil?: string | null;
+  // Campos de destaque
+  permiteDestaque?: boolean;
+  quantidadeDestaquesPlano?: number;
+  destaquesUtilizados?: number;
+  destaquesDisponiveis?: number;
 }
 
 // ============================================================================

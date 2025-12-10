@@ -217,6 +217,7 @@ export const empresasRoutes = {
     // apontando para as novas rotas públicas do módulo Empresas.
     dashboard: () => `${prefix}/empresas/dashboard`,
     list: () => `${prefix}/empresas`,
+    minha: () => `${prefix}/empresas/minha`, // Nova rota para empresa acessar seus próprios dados
     create: () => `${prefix}/empresas`,
     get: (id: string) => `${prefix}/empresas/${id}`,
     update: (id: string) => `${prefix}/empresas/${id}`,
@@ -241,6 +242,7 @@ export const empresasRoutes = {
     },
     vagas: {
       list: (id: string) => `${prefix}/empresas/${id}/vagas`,
+      minhas: () => `${prefix}/empresas/vagas/minhas`, // Nova rota para empresa acessar suas próprias vagas
       get: (id: string) => `${prefix}/empresas/vagas/${id}`,
       update: (id: string) => `${prefix}/empresas/vagas/${id}`,
       delete: (id: string) => `${prefix}/empresas/vagas/${id}`,

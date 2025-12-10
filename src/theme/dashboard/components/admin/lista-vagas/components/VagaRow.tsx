@@ -6,7 +6,9 @@ import { TableCell, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { ChevronRight, MapPin, Calendar, Clock, Loader2 } from "lucide-react";
+import { ChevronRight, MapPin, Calendar, Clock, Loader2, Users, ExternalLink } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import {
   Tooltip,
   TooltipContent,
@@ -19,6 +21,7 @@ interface VagaRowProps {
   vaga: VagaListItem;
   isDisabled?: boolean;
   onNavigateStart?: () => void;
+  isEmpresaRole?: boolean;
 }
 
 const getStatusColor = (status: string) => {
@@ -83,9 +86,11 @@ export function VagaRow({
   vaga,
   isDisabled = false,
   onNavigateStart,
+  isEmpresaRole = false,
 }: VagaRowProps) {
   const router = useRouter();
   const [isNavigating, setIsNavigating] = useState(false);
+  const [isNavigatingToCandidato, setIsNavigatingToCandidato] = useState(false);
   const isRowDisabled = isDisabled || isNavigating;
 
   const handleNavigate = (e: React.MouseEvent) => {
@@ -124,31 +129,91 @@ export function VagaRow({
       </TableCell>
 
       <TableCell className="py-4 min-w-[200px] max-w-[250px]">
-        <div className="flex items-center gap-3">
-          <Avatar className="h-8 w-8 flex-shrink-0">
-            <AvatarImage src={vaga.empresa.avatarUrl} />
-            <AvatarFallback className="bg-purple-100 text-purple-600 text-xs font-medium">
-              {vaga.empresa.nome.substring(0, 2).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 mb-1">
-              <div className="font-medium text-gray-900 truncate text-sm">
-                {vaga.empresa.nome}
-              </div>
-              {vaga.empresa.codUsuario && (
-                <code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded font-mono text-gray-500 flex-shrink-0">
-                  {vaga.empresa.codUsuario}
-                </code>
-              )}
-            </div>
-            {vaga.empresa.cnpj && (
-              <div className="text-xs text-gray-500 font-mono truncate">
-                {formatCnpj(vaga.empresa.cnpj)}
+        {isEmpresaRole ? (
+          // Para role EMPRESA: mostrar último candidato inscrito
+          <div className="flex items-center gap-3">
+            {vaga.ultimoCandidato ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button 
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsNavigatingToCandidato(true);
+                      router.push(`/dashboard/empresas/candidatos/${vaga.ultimoCandidato!.id}`);
+                    }}
+                    disabled={isNavigatingToCandidato}
+                    className={cn(
+                      "flex items-center gap-3 hover:bg-gray-50 -mx-2 px-2 py-1 rounded-lg transition-colors cursor-pointer text-left",
+                      isNavigatingToCandidato && "opacity-50 cursor-wait"
+                    )}
+                  >
+                    <Avatar className="h-8 w-8 flex-shrink-0">
+                      <AvatarFallback className={cn(
+                        "text-xs font-medium",
+                        isNavigatingToCandidato 
+                          ? "bg-blue-200 text-blue-700" 
+                          : "bg-blue-100 text-blue-600"
+                      )}>
+                        {isNavigatingToCandidato ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          vaga.ultimoCandidato.nome.substring(0, 2).toUpperCase()
+                        )}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0 flex-1">
+                      <div className="font-medium text-gray-900 truncate text-sm">
+                        {vaga.ultimoCandidato.nome}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {formatDistanceToNow(new Date(vaga.ultimoCandidato.aplicadaEm), { addSuffix: true, locale: ptBR })}
+                      </div>
+                    </div>
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent sideOffset={8}>
+                  <div className="flex items-center gap-2">
+                    <ExternalLink className="h-3 w-3" />
+                    <span>Ver perfil do candidato</span>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            ) : (
+              <div className="flex items-center gap-2 text-gray-400">
+                <Users className="h-4 w-4" />
+                <span className="text-sm">Nenhum candidato</span>
               </div>
             )}
           </div>
-        </div>
+        ) : (
+          // Para outras roles: mostrar empresa
+          <div className="flex items-center gap-3">
+            <Avatar className="h-8 w-8 flex-shrink-0">
+              <AvatarImage src={vaga.empresa.avatarUrl} />
+              <AvatarFallback className="bg-purple-100 text-purple-600 text-xs font-medium">
+                {vaga.empresa.nome.substring(0, 2).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2 mb-1">
+                <div className="font-medium text-gray-900 truncate text-sm">
+                  {vaga.empresa.nome}
+                </div>
+                {vaga.empresa.codUsuario && (
+                  <code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded font-mono text-gray-500 flex-shrink-0">
+                    {vaga.empresa.codUsuario}
+                  </code>
+                )}
+              </div>
+              {vaga.empresa.cnpj && (
+                <div className="text-xs text-gray-500 font-mono truncate">
+                  {formatCnpj(vaga.empresa.cnpj)}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </TableCell>
 
       <TableCell className="py-4 min-w-[140px]">

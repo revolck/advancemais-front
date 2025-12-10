@@ -34,10 +34,7 @@ class MaskService {
       mask: "99/99/9999",
       alwaysShowMask: false,
     },
-    money: {
-      mask: "R$ 999.999.999,99",
-      alwaysShowMask: true,
-    },
+    money: null, // Usa formatação dinâmica customizada
     creditCard: {
       mask: "9999 9999 9999 9999",
       alwaysShowMask: false,
@@ -256,6 +253,29 @@ class MaskService {
   }
 
   /**
+   * Formata valor como moeda brasileira (R$ 1.234,56)
+   */
+  public formatMoney(value: string): string {
+    // Remove tudo que não é dígito
+    const digits = value.replace(/\D/g, "");
+
+    if (!digits) return "";
+
+    // Converte para número (centavos)
+    const numericValue = parseInt(digits, 10);
+
+    // Formata como moeda
+    const formatted = new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(numericValue / 100);
+
+    return formatted;
+  }
+
+  /**
    * Processa o valor de entrada aplicando a máscara ou validação apropriada
    */
   public processInput(
@@ -280,6 +300,12 @@ class MaskService {
       const targetMask: MaskType = digits.length > 11 ? "cnpj" : "cpf";
       return this.applyMask(digits, targetMask);
     }
+
+    // Formatação especial para money
+    if (maskType === "money") {
+      return this.formatMoney(value);
+    }
+
     const unmaskedValue = this.removeMask(value, maskType);
     return this.applyMask(unmaskedValue, maskType, customConfig);
   }

@@ -185,6 +185,9 @@ importers:
       react-resizable-panels:
         specifier: ^2.1.9
         version: 2.1.9(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
+      react-svg-credit-card-payment-icons:
+        specifier: ^5.1.2
+        version: 5.1.2(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
       recharts:
         specifier: ^2.15.4
         version: 2.15.4(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
@@ -3438,6 +3441,12 @@ packages:
     peerDependenciesMeta:
       '@types/react':
         optional: true
+
+  react-svg-credit-card-payment-icons@5.1.2:
+    resolution: {integrity: sha512-KnCrg0U5v6SPqDw1DJ0zKCrxg1fuSaaWNn1Ls08x0fWCeqaRVctAOrKNUFE6RVaEgsvg81GOJb0bYHQaxhozNQ==}
+    peerDependencies:
+      react: '>=16'
+      react-dom: '>=16'
 
   react-transition-group@4.4.5:
     resolution: {integrity: sha512-pZcd1MCJoiKiBR2NRxeCRg13uCXbydPnmB4EOeRrY7480qNWO8IIgQG6zlDkm6uRMsURXPuKq0GWtiM59a5Q6g==}
@@ -7116,6 +7125,11 @@ snapshots:
       tslib: 2.8.1
     optionalDependencies:
       '@types/react': 19.2.7
+
+  react-svg-credit-card-payment-icons@5.1.2(react-dom@19.2.1(react@19.2.1))(react@19.2.1):
+    dependencies:
+      react: 19.2.1
+      react-dom: 19.2.1(react@19.2.1)
 
   react-transition-group@4.4.5(react-dom@19.2.1(react@19.2.1))(react@19.2.1):
     dependencies:

@@ -236,7 +236,7 @@ export const InputCustom = React.forwardRef<HTMLInputElement, InputCustomProps>(
 
         {/* Mensagem de erro ou texto de ajuda */}
         {shouldShowError && (
-          <p id={`${inputId}-error`} className="text-xs text-destructive">
+          <p id={`${inputId}-error`} className="text-xs! text-destructive!">
             {error}
           </p>
         )}

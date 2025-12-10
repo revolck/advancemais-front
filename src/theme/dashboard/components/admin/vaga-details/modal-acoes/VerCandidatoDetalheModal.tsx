@@ -310,7 +310,7 @@ export function VerCandidatoDetalheModal({
   const renderContactList = useCallback(() => {
     if (contactItems.length === 0) return null;
 
-    return (
+  return (
       <div className="flex items-center gap-4 flex-wrap mt-2">
         {contactItems.map(renderContactItem)}
       </div>
@@ -342,15 +342,15 @@ export function VerCandidatoDetalheModal({
         <div>
           <h5 className="!mb-0">Resumo Profissional</h5>
           <p className="!leading-relaxed">{curriculo.resumo}</p>
-        </div>
-      )}
+                    </div>
+                  )}
 
       {curriculo?.objetivo && (
         <div>
           <h5 className="!mb-0">Objetivo Profissional</h5>
           <p className="!leading-relaxed">{curriculo.objetivo}</p>
-        </div>
-      )}
+                    </div>
+                  )}
 
       {!curriculo?.titulo && !curriculo?.resumo && !curriculo?.objetivo && (
         <EmptyState
@@ -362,7 +362,7 @@ export function VerCandidatoDetalheModal({
           size="sm"
         />
       )}
-    </div>
+                    </div>
   );
 
   // Aba Experiência
@@ -407,7 +407,7 @@ export function VerCandidatoDetalheModal({
           maxContentWidth="md"
           size="sm"
         />
-      )}
+            )}
     </div>
   );
 
@@ -415,7 +415,7 @@ export function VerCandidatoDetalheModal({
   const formacaoContent = (
     <div className="space-y-10">
       {formacoes.length > 0 ? (
-        <div>
+                <div>
           <h5 className="!mb-0 flex items-center gap-2">
             <GraduationCap className="h-5 w-5 text-[var(--secondary-color)]" />
             Formação Acadêmica
@@ -479,7 +479,7 @@ export function VerCandidatoDetalheModal({
   const habilidadesContent = (
     <div className="space-y-10">
       {todasHabilidades.length > 0 && (
-        <div>
+                  <div>
           <h5 className="!mb-5 flex items-center gap-2">
             <Briefcase className="h-4 w-4 text-[var(--primary-color)]" />
             Habilidades
@@ -495,7 +495,7 @@ export function VerCandidatoDetalheModal({
               </Badge>
             ))}
           </div>
-        </div>
+                          </div>
       )}
 
       {idiomas.length > 0 && (
@@ -517,12 +517,12 @@ export function VerCandidatoDetalheModal({
                   >
                     {idioma.nivel}
                   </Badge>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       {todasHabilidades.length === 0 && idiomas.length === 0 && (
         <EmptyState
@@ -533,8 +533,8 @@ export function VerCandidatoDetalheModal({
           maxContentWidth="md"
           size="sm"
         />
-      )}
-    </div>
+                          )}
+                        </div>
   );
 
   // Construir abas
@@ -659,7 +659,7 @@ export function VerCandidatoDetalheModal({
               </div>
               {curriculo?.titulo && (
                 <p className="!text-sm !text-gray-600 !mb-0">{curriculo.titulo}</p>
-              )}
+            )}
               {renderContactList()}
             </div>
           </div>

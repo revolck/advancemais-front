@@ -588,6 +588,64 @@ export async function listAdminCompanyVacancies(
 }
 
 /**
+ * Obtém dados da empresa autenticada (rota específica para EMPRESA)
+ *
+ * Usa a nova rota /empresas/minha que identifica automaticamente
+ * a empresa através do token JWT, sem precisar passar o empresaId.
+ *
+ * @param init - Configurações adicionais da requisição
+ * @returns Dados completos da empresa autenticada (empresa, plano, vagas)
+ */
+export async function getMyCompany(
+  init?: RequestInit
+): Promise<AdminCompanyDetailApiResponse> {
+  const endpoint = empresasRoutes.adminEmpresas.minha();
+
+  return apiFetch<AdminCompanyDetailApiResponse>(endpoint, {
+    init: {
+      method: "GET",
+      ...init,
+      headers: buildAuthHeaders(init?.headers),
+    },
+    cache: "no-cache",
+  });
+}
+
+/**
+ * Lista vagas da empresa autenticada (rota específica para EMPRESA)
+ *
+ * Usa a nova rota /empresas/vagas/minhas que identifica automaticamente
+ * a empresa através do token JWT, sem precisar passar o empresaId.
+ *
+ * @param params - Parâmetros de filtro e paginação
+ * @param init - Configurações adicionais da requisição
+ * @returns Vagas da empresa autenticada
+ */
+export async function listMyCompanyVacancies(
+  params?: AdminCompanyVagaParams,
+  init?: RequestInit
+): Promise<AdminCompanyVagaListApiResponse> {
+  const endpoint = empresasRoutes.adminEmpresas.vagas.minhas();
+  const queryParams: Record<string, any> = {};
+
+  if (params?.page) queryParams.page = params.page;
+  if (params?.pageSize) queryParams.pageSize = params.pageSize;
+  if (params?.status) queryParams.status = params.status;
+
+  const queryString = buildQueryString(queryParams);
+  const url = queryString ? `${endpoint}?${queryString}` : endpoint;
+
+  return apiFetch<AdminCompanyVagaListApiResponse>(url, {
+    init: {
+      method: "GET",
+      ...init,
+      headers: buildAuthHeaders(init?.headers),
+    },
+    cache: "no-cache",
+  });
+}
+
+/**
  * Lista vagas em análise da empresa
  *
  * Retorna vagas da empresa com status EM_ANALISE aguardando aprovação.

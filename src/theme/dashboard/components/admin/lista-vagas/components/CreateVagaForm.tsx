@@ -25,11 +25,13 @@ import {
   useUnsavedChanges,
   getInitialFormState,
 } from "../hooks";
+import { useUserRole } from "@/hooks/useUserRole";
+import { useTenantCompany } from "@/hooks/useTenantCompany";
+import { UserRole } from "@/config/roles";
 import {
   isErrorResponse,
   slugify,
   parseMultiline,
-  toNumericOrString,
   containsProhibitedInfo,
 } from "../utils/formUtils";
 import { SECTION_FIELD_MAP, FORM_STEPS } from "../constants/formConstants";
@@ -55,11 +57,19 @@ export function CreateVagaForm({
   const [errors, setErrors] = useState<FormErrors>({});
   const [currentStep, setCurrentStep] = useState(0);
 
+  // Verificar role do usuário
+  const role = useUserRole();
+  const isEmpresaRole = role === UserRole.EMPRESA;
+  
+  // Buscar dados da empresa logada (apenas para role EMPRESA)
+  const { company: empresaLogada } = useTenantCompany(isEmpresaRole);
+
+  // Só buscar lista de empresas se NÃO for role EMPRESA
   const {
     empresas,
     isLoading: isLoadingEmpresas,
     error: empresasError,
-  } = useEmpresasForSelect();
+  } = useEmpresasForSelect(!isEmpresaRole);
 
   const {
     categoriaOptions,
@@ -68,7 +78,24 @@ export function CreateVagaForm({
     error: categoriasError,
   } = useVagaCategorias();
 
-  const { empresaDetails } = useEmpresaDetails(formData.usuarioId || null);
+  // Para role EMPRESA, usar dados diretos do useTenantCompany
+  // Para outras roles, buscar detalhes quando selecionarem uma empresa
+  const { empresaDetails: empresaDetailsFetched } = useEmpresaDetails(
+    !isEmpresaRole && formData.usuarioId ? formData.usuarioId : null
+  );
+  
+  // Unificar fonte de dados: EMPRESA usa empresaLogada, outras roles usam empresaDetailsFetched
+  const empresaDetails = isEmpresaRole ? empresaLogada : empresaDetailsFetched;
+  
+  // Atualizar formData com o ID da empresa quando for role EMPRESA
+  useEffect(() => {
+    if (isEmpresaRole && empresaLogada?.id && !formData.usuarioId) {
+      setFormData((prev) => ({
+        ...prev,
+        usuarioId: empresaLogada.id,
+      }));
+    }
+  }, [isEmpresaRole, empresaLogada?.id, formData.usuarioId]);
 
   const subcategoriaOptions = useMemo(
     () => getSubcategoriasOptions(formData.areaInteresseId || null),
@@ -172,6 +199,27 @@ export function CreateVagaForm({
     }
   };
 
+  // Atualiza múltiplos campos de localização de uma vez (usado na busca de CEP)
+  const handleLocalizacaoBatchChange = (
+    updates: Partial<FormState["localizacao"]>
+  ) => {
+    setFormData((prev) => ({
+      ...prev,
+      localizacao: {
+        ...prev.localizacao,
+        ...updates,
+      },
+    }));
+
+    // Limpa erros dos campos atualizados
+    const errorKeys = Object.keys(updates).map((key) => `localizacao.${key}`);
+    setErrors((prev) => {
+      const clone = { ...prev };
+      errorKeys.forEach((key) => delete clone[key]);
+      return clone;
+    });
+  };
+
   const validateSections = (
     scope: SectionKey | "all" = "all",
     { showToast = true }: { showToast?: boolean } = {}
@@ -200,19 +248,11 @@ export function CreateVagaForm({
         if (!formData.jornada) {
           sectionErrors.jornada = "Selecione a jornada";
         }
-        if (!formData.senioridade) {
-          sectionErrors.senioridade = "Selecione a senioridade";
-        }
+        // Senioridade é opcional, não valida
         if (!formData.areaInteresseId) {
           sectionErrors.areaInteresseId = "Selecione a categoria";
         }
-        if (
-          !formData.subareaInteresseId ||
-          formData.subareaInteresseId.length === 0
-        ) {
-          sectionErrors.subareaInteresseId =
-            "Selecione pelo menos uma subcategoria";
-        }
+        // Subcategoria é opcional, não valida
         const numeroVagasValor = Number(formData.numeroVagas);
         if (
           Number.isNaN(numeroVagasValor) ||
@@ -250,38 +290,74 @@ export function CreateVagaForm({
       }
 
       if (section === "content") {
-        const textFields: Array<{
-          key: keyof FormState;
-          label: string;
-          required?: boolean;
-        }> = [
-          { key: "descricao", label: "descrição", required: true },
-          { key: "atividadesPrincipais", label: "atividades principais" },
+        // Validação de descrição (obrigatória)
+        if (!formData.descricao.trim()) {
+          sectionErrors.descricao = "Informe a descrição da vaga";
+        } else if (containsProhibitedInfo(formData.descricao)) {
+          sectionErrors.descricao =
+            "Remova links, e-mails ou telefones do texto.";
+        }
+
+        // Validação de requisitos obrigatórios (pelo menos 1)
+        const requisitosObrigatorios = parseMultiline(
+          formData.requisitosObrigatorios
+        );
+        if (requisitosObrigatorios.length === 0) {
+          sectionErrors.requisitosObrigatorios =
+            "Informe pelo menos um requisito obrigatório";
+        } else if (containsProhibitedInfo(formData.requisitosObrigatorios)) {
+          sectionErrors.requisitosObrigatorios =
+            "Remova links, e-mails ou telefones do texto.";
+        }
+
+        // Validação de atividades principais (pelo menos 1)
+        const atividadesPrincipais = parseMultiline(
+          formData.atividadesPrincipais
+        );
+        if (atividadesPrincipais.length === 0) {
+          sectionErrors.atividadesPrincipais =
+            "Informe pelo menos uma atividade principal";
+        } else if (containsProhibitedInfo(formData.atividadesPrincipais)) {
+          sectionErrors.atividadesPrincipais =
+            "Remova links, e-mails ou telefones do texto.";
+        }
+
+        // Validação de benefícios (opcional, apenas verifica info proibida)
+        if (
+          formData.beneficiosLista &&
+          containsProhibitedInfo(formData.beneficiosLista)
+        ) {
+          sectionErrors.beneficiosLista =
+            "Remova links, e-mails ou telefones do texto.";
+        }
+
+        // Validação de campos opcionais (apenas proibição de info sensível)
+        const optionalTextFields = [
           { key: "atividadesExtras", label: "atividades extras" },
-          { key: "requisitosObrigatorios", label: "requisitos obrigatórios" },
           { key: "requisitosDesejaveis", label: "requisitos desejáveis" },
-          { key: "beneficiosLista", label: "benefícios" },
           { key: "beneficiosObservacoes", label: "observações de benefícios" },
           { key: "observacoes", label: "observações gerais" },
         ];
 
-        textFields.forEach(({ key, label, required }) => {
-          const raw = (formData as unknown as Record<string, unknown>)[
-            key as string
-          ];
+        optionalTextFields.forEach(({ key }) => {
+          const raw = (formData as unknown as Record<string, unknown>)[key];
           const value = typeof raw === "string" ? raw : String(raw ?? "");
-          if (required && !value.trim()) {
-            sectionErrors[key as string] = `Informe a ${label}`;
-            return;
-          }
           if (value && containsProhibitedInfo(value)) {
-            sectionErrors[key as string] =
+            sectionErrors[key] =
               "Remova links, e-mails ou telefones do texto.";
           }
         });
       }
 
       if (section === "compensation") {
+        // Se salário NÃO é confidencial, salário mínimo é obrigatório
+        if (!formData.salarioConfidencial) {
+          if (!formData.salarioMin || formData.salarioMin.trim() === "") {
+            sectionErrors.salarioMin =
+              "Salário mínimo é obrigatório quando não confidencial";
+          }
+        }
+
         const salarioMin = formData.salarioMin
           ? Number(formData.salarioMin.replace(",", "."))
           : null;
@@ -325,11 +401,13 @@ export function CreateVagaForm({
     const salarioMax = formData.salarioMax.trim();
     const maxCandidaturas = formData.maxCandidaturasPorUsuario.trim();
 
-    const areaInteresseValue = toNumericOrString(formData.areaInteresseId);
-    const subareaInteresseValue =
+    // categoriaVagaId é o UUID da categoria
+    const categoriaVagaValue = formData.areaInteresseId;
+    // subcategoriaVagaId é opcional - só envia se tiver valor
+    const subcategoriaVagaFinal =
       formData.subareaInteresseId.length > 0
-        ? toNumericOrString(formData.subareaInteresseId[0])
-        : "";
+        ? formData.subareaInteresseId[0]
+        : undefined;
 
     const maxCandidaturasNumber = Number(maxCandidaturas);
     const maxCandidaturasValue =
@@ -346,8 +424,8 @@ export function CreateVagaForm({
 
     const payload: CreateVagaPayload = {
       usuarioId: formData.usuarioId,
-      areaInteresseId: areaInteresseValue,
-      subareaInteresseId: subareaInteresseValue,
+      categoriaVagaId: categoriaVagaValue,
+      subcategoriaVagaId: subcategoriaVagaFinal,
       slug: slugify(formData.titulo).trim(),
       modoAnonimo: formData.modoAnonimo,
       regimeDeTrabalho:
@@ -372,7 +450,10 @@ export function CreateVagaForm({
       },
       observacoes: formData.observacoes.trim() || undefined,
       jornada: formData.jornada as CreateVagaPayload["jornada"],
-      senioridade: formData.senioridade as CreateVagaPayload["senioridade"],
+      // senioridade é opcional - só envia se tiver valor
+      senioridade: formData.senioridade
+        ? (formData.senioridade as CreateVagaPayload["senioridade"])
+        : undefined,
       localizacao: {
         logradouro: formData.localizacao.logradouro.trim(),
         numero: formData.localizacao.numero.trim(),
@@ -548,6 +629,7 @@ export function CreateVagaForm({
                     categoriaOptions={categoriaOptions}
                     subcategoriaOptions={subcategoriaOptions}
                     onFieldChange={handleChange}
+                    isEmpresaRole={isEmpresaRole}
                   />
                 </StepperContent>
 
@@ -557,6 +639,7 @@ export function CreateVagaForm({
                     errors={errors}
                     isSubmitting={isSubmitting}
                     onLocalizacaoChange={handleLocalizacaoChange}
+                    onLocalizacaoBatchChange={handleLocalizacaoBatchChange}
                   />
                 </StepperContent>
 
@@ -578,6 +661,15 @@ export function CreateVagaForm({
                     isSubmitting={isSubmitting}
                     onFieldChange={(field, value) =>
                       handleChange(field as keyof FormState, value)
+                    }
+                    isEmpresaRole={isEmpresaRole}
+                    planoDestaque={
+                      empresaDetails?.plano
+                        ? {
+                            permiteDestaque: empresaDetails.plano.permiteDestaque ?? false,
+                            destaquesDisponiveis: empresaDetails.plano.destaquesDisponiveis ?? 0,
+                          }
+                        : null
                     }
                   />
                 </StepperContent>

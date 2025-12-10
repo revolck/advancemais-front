@@ -26,6 +26,7 @@ export type {
 export {
   listAdminCompanies,
   getAdminCompanyById,
+  getMyCompany,
   getAdminCompanyConsolidated,
   createAdminCompany,
   updateAdminCompany,
@@ -35,6 +36,7 @@ export {
   listAdminCompanyBans,
   createAdminCompanyBan,
   listAdminCompanyVacancies,
+  listMyCompanyVacancies,
   listAdminCompanyVacanciesInReview,
   approveAdminCompanyVacancy,
   listAdminCompanyUserBans,
@@ -155,3 +157,28 @@ export type {
   EmpresaClientePlanoListResponse,
   EmpresaClientePlanoDetailResponse,
 } from "./clientes/types";
+
+// Cartões (gerenciamento de cartões para cobrança recorrente)
+export {
+  getCartoes,
+  adicionarCartao,
+  definirCartaoPadrao,
+  removerCartao,
+  pagarPendente,
+  getPreferenciaPagamento,
+  atualizarPreferenciaPagamento,
+} from "./cartoes";
+export type {
+  CartaoEmpresa,
+  TipoCartao,
+  BandeiraCartao,
+  AdicionarCartaoPayload,
+  AdicionarCartaoResponse,
+  ListarCartoesResponse,
+  CartaoActionResponse,
+  PagarPendenteResponse,
+  MetodoPagamentoPreferido,
+  PreferenciaPagamento,
+  PreferenciaPagamentoResponse,
+  AtualizarPreferenciaPayload,
+} from "./cartoes/types";
