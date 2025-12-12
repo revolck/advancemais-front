@@ -229,15 +229,6 @@ export function CreateTurmaForm({ onSuccess }: CreateTurmaFormProps) {
       });
       return false;
     }
-    // Instrutor não é obrigatório nesta etapa
-    const vagas = Number(vagasTotais);
-    if (!Number.isFinite(vagas) || vagas <= 0) {
-      toastCustom.error({
-        title: "Vagas inválidas",
-        description: "Informe um número de vagas válido.",
-      });
-      return false;
-    }
     if (!turno || !metodo) {
       toastCustom.error({
         title: "Turno e modalidade obrigatórios",
@@ -245,6 +236,21 @@ export function CreateTurmaForm({ onSuccess }: CreateTurmaFormProps) {
       });
       return false;
     }
+    if (!dataInscricaoInicio || !dataInscricaoFim) {
+      toastCustom.error({
+        title: "Período de inscrições obrigatório",
+        description: "Informe o início e término das inscrições.",
+      });
+      return false;
+    }
+    if (instrutorIds.length === 0) {
+      toastCustom.error({
+        title: "Instrutor obrigatório",
+        description: "Adicione pelo menos um instrutor à turma.",
+      });
+      return false;
+    }
+    // Vagas totais: se vazio ou 0 = infinito (permitido)
     if (!templateTipo) {
       toastCustom.error({
         title: "Tipo de turma obrigatório",
@@ -330,13 +336,42 @@ export function CreateTurmaForm({ onSuccess }: CreateTurmaFormProps) {
         toastCustom.error("Informe turno e modalidade.");
         return false;
       }
-      const vagas = Number(vagasTotais);
-      if (!Number.isFinite(vagas) || vagas <= 0) {
-        toastCustom.error("Informe vagas válidas.");
+      if (!dataInscricaoInicio || !dataInscricaoFim) {
+        toastCustom.error("Informe o período de inscrições.");
         return false;
       }
+      if (instrutorIds.length === 0) {
+        toastCustom.error("Adicione pelo menos um instrutor.");
+        return false;
+      }
+      // Vagas totais: se vazio ou 0 = infinito (permitido)
     }
     if (current === 3) {
+      // Validar se tem pelo menos um módulo ou item na estrutura
+      const hasModules = curriculum.modules && curriculum.modules.length > 0;
+      const hasStandaloneItems =
+        curriculum.standaloneItems && curriculum.standaloneItems.length > 0;
+
+      if (!hasModules && !hasStandaloneItems) {
+        toastCustom.error(
+          "Adicione pelo menos um módulo ou item à estrutura do curso."
+        );
+        return false;
+      }
+
+      // Validar se os módulos têm pelo menos um item (opcional, mas recomendado)
+      if (hasModules) {
+        const emptyModules = curriculum.modules.filter(
+          (m) => !m.items || m.items.length === 0
+        );
+        if (emptyModules.length === curriculum.modules.length) {
+          toastCustom.error(
+            "Adicione pelo menos um item (aula, atividade ou prova) em um dos módulos."
+          );
+          return false;
+        }
+      }
+
       // Datas opcionais com validação de ordem
       const now = Date.now();
       if (dataInicio && new Date(dataInicio).getTime() < now) {
@@ -373,7 +408,9 @@ export function CreateTurmaForm({ onSuccess }: CreateTurmaFormProps) {
         ...(instrutorIds.length > 0 ? { instrutorId: instrutorIds[0] } : {}),
         turno: turno as any,
         metodo: metodo as any,
-        vagasTotais: Number(vagasTotais),
+        // Vagas totais: se vazio ou 0 = 999999 (infinito)
+        vagasTotais:
+          vagasTotais && Number(vagasTotais) > 0 ? Number(vagasTotais) : 999999,
         dataInicio: dataInicio ? new Date(dataInicio).toISOString() : undefined,
         dataFim: dataFim ? new Date(dataFim).toISOString() : undefined,
         dataInscricaoInicio: dataInscricaoInicio
@@ -581,6 +618,7 @@ export function CreateTurmaForm({ onSuccess }: CreateTurmaFormProps) {
                       options={cursos}
                       value={cursoId}
                       onChange={(v) => setCursoId(v)}
+                      required
                     />
                     <InputCustom
                       label="Nome da Turma"
@@ -588,6 +626,7 @@ export function CreateTurmaForm({ onSuccess }: CreateTurmaFormProps) {
                       onChange={(e) => setNome(e.target.value)}
                       placeholder="Ex.: Turma 01 - Manhã"
                       className="md:col-span-2"
+                      required
                     />
                     <DatePickerRangeCustom
                       label="Inscrições"
@@ -610,6 +649,7 @@ export function CreateTurmaForm({ onSuccess }: CreateTurmaFormProps) {
                       }}
                       helperLabel="Período em que os alunos poderão se inscrever"
                       minDate={new Date()}
+                      required
                     />
                   </div>
 
@@ -620,6 +660,7 @@ export function CreateTurmaForm({ onSuccess }: CreateTurmaFormProps) {
                       options={TURNO_OPTIONS}
                       value={turno}
                       onChange={(v) => setTurno(v)}
+                      required
                     />
                     <SelectCustom
                       label="Modalidade"
@@ -627,19 +668,21 @@ export function CreateTurmaForm({ onSuccess }: CreateTurmaFormProps) {
                       options={METODO_OPTIONS}
                       value={metodo}
                       onChange={(v) => setMetodo(v)}
+                      required
                     />
                     <InputCustom
                       label="Vagas totais"
                       type="number"
                       value={vagasTotais}
                       onChange={(e) => setVagasTotais(e.target.value)}
-                      placeholder="Ex.: 30"
+                      placeholder="Deixe vazio para ilimitado"
                     />
                     <SelectCustom
                       label="Adicionar instrutor?"
                       options={ADICIONAR_INSTRUTOR_OPTIONS}
                       value={addInstrutorNow ? "SIM" : "NAO"}
                       onChange={(v) => setAddInstrutorNow(v === "SIM")}
+                      required
                     />
                   </div>
 
@@ -740,7 +783,9 @@ export function CreateTurmaForm({ onSuccess }: CreateTurmaFormProps) {
                           Vagas totais
                         </span>
                         <div className="mt-1 text-gray-900">
-                          {vagasTotais || "—"}
+                          {vagasTotais && Number(vagasTotais) > 0
+                            ? vagasTotais
+                            : "Ilimitadas"}
                         </div>
                       </div>
                       <div>

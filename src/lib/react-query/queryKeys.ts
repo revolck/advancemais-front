@@ -63,4 +63,8 @@ export const queryKeys = {
   candidaturas: {
     detalhe: createDetailKey("candidatura-detalhe"),
   },
+  aulas: {
+    list: createListKey<unknown>("admin-aulas-list"),
+    detail: createDetailKey("admin-aula-detail"),
+  },
 };

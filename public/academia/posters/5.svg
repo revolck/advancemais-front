@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
+  <defs>
+    <linearGradient id="g" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#111827"/>
+      <stop offset="1" stop-color="#a855f7"/>
+    </linearGradient>
+  </defs>
+  <rect width="1280" height="720" fill="#0b0b0f"/>
+  <rect width="1280" height="720" fill="url(#g)" opacity="0.92"/>
+  <g opacity="0.25" fill="#000">
+    <rect x="860" y="120" width="340" height="480" rx="60"/>
+    <rect x="900" y="170" width="260" height="30" rx="14" opacity="0.45"/>
+    <rect x="900" y="230" width="210" height="30" rx="14" opacity="0.35"/>
+    <rect x="900" y="290" width="240" height="30" rx="14" opacity="0.25"/>
+  </g>
+  <g fill="#fff">
+    <text x="70" y="520" font-family="Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial" font-size="64" font-weight="800">Cursos avançado</text>
+    <text x="70" y="585" font-family="Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial" font-size="36" opacity="0.88">Organização e escala</text>
+  </g>
+</svg>
+

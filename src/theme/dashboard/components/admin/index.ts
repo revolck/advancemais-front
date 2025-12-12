@@ -77,3 +77,11 @@ export type {
   HeaderInfoProps as UsuarioHeaderInfoProps,
   AboutTabProps as UsuarioAboutTabProps,
 } from "./usuario-details/types";
+
+// Aula Details
+export {
+  AulaDetailsView,
+  AboutTab as AulaAboutTab,
+  HeaderInfo as AulaHeaderInfo,
+  HistoricoTab as AulaHistoricoTab,
+} from "./aula-details";

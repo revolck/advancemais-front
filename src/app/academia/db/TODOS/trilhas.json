@@ -1,0 +1,54 @@
+[
+  {
+    "id": "1",
+    "title": "Primeiro acesso: visão geral da plataforma",
+    "description": "Entenda onde ficam as principais funções e como navegar com segurança.",
+    "url": "https://www.youtube.com/embed/dQw4w9WgXcQ",
+    "duration": "10:30",
+    "thumbnailUrl": "https://i.imgur.com/placeholder1.jpg",
+    "posterUrl": "/academia/posters/1.svg",
+    "category": "Introdução",
+    "module": "primeiros-passos",
+    "level": "Iniciante",
+    "tags": ["começar", "navegação", "interface"],
+    "transcript": "Bem-vindo à plataforma Advance+. Neste vídeo, vamos explorar os conceitos básicos...",
+    "isActive": true,
+    "createdAt": "2025-12-12T00:00:00.000Z",
+    "updatedAt": "2025-12-12T00:00:00.000Z"
+  },
+  {
+    "id": "2",
+    "title": "Dashboard: atalhos e rotinas do dia a dia",
+    "description": "Ganhe velocidade usando atalhos, filtros e listas.",
+    "url": "https://www.youtube.com/embed/dQw4w9WgXcQ",
+    "duration": "8:45",
+    "thumbnailUrl": "https://i.imgur.com/placeholder2.jpg",
+    "posterUrl": "/academia/posters/2.svg",
+    "category": "Introdução",
+    "module": "primeiros-passos",
+    "level": "Iniciante",
+    "tags": ["dashboard", "produtividade"],
+    "transcript": "O Dashboard é o centro de controle da sua plataforma...",
+    "isActive": true,
+    "createdAt": "2025-12-12T00:00:00.000Z",
+    "updatedAt": "2025-12-12T00:00:00.000Z"
+  },
+  {
+    "id": "3",
+    "title": "Seu perfil: preferências e boas práticas",
+    "description": "Deixe sua conta do jeito certo e evite problemas comuns.",
+    "url": "https://www.youtube.com/embed/dQw4w9WgXcQ",
+    "duration": "6:20",
+    "thumbnailUrl": "https://i.imgur.com/placeholder3.jpg",
+    "posterUrl": "/academia/posters/3.svg",
+    "category": "Introdução",
+    "module": "primeiros-passos",
+    "level": "Iniciante",
+    "tags": ["perfil", "configuração"],
+    "transcript": "Neste vídeo, você aprenderá como personalizar seu perfil...",
+    "isActive": true,
+    "createdAt": "2025-12-12T00:00:00.000Z",
+    "updatedAt": "2025-12-12T00:00:00.000Z"
+  }
+]
+

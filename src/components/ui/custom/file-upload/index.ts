@@ -1,4 +1,5 @@
 export { FileUpload } from "./FileUpload";
+export { FileUploadMultiple } from "./FileUploadMultiple";
 
 export {
   fileUploadVariants,

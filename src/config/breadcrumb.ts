@@ -281,6 +281,23 @@ export const breadcrumbConfig: Record<string, BreadcrumbConfig> = {
       { label: "Detalhes da Turma", icon: "Eye" },
     ],
   },
+  "/dashboard/cursos/aulas": {
+    title: "Aulas",
+    items: [
+      { label: "Dashboard", href: "/", icon: "Home" },
+      { label: "Cursos", href: "/dashboard/cursos", icon: "BookOpen" },
+      { label: "Aulas", icon: "BookOpen" },
+    ],
+  },
+  "/dashboard/cursos/aulas/cadastrar": {
+    title: "Cadastrar Aula",
+    items: [
+      { label: "Dashboard", href: "/", icon: "Home" },
+      { label: "Cursos", href: "/dashboard/cursos", icon: "BookOpen" },
+      { label: "Aulas", href: "/dashboard/cursos/aulas", icon: "BookOpen" },
+      { label: "Cadastrar", icon: "FileText" },
+    ],
+  },
   "/dashboard/cursos/alunos": {
     title: "Alunos",
     items: [
@@ -541,6 +558,32 @@ export function useBreadcrumb(): BreadcrumbConfig {
         { label: "Dashboard", href: "/dashboard", icon: "Home" },
         { label: "Cursos", href: "/dashboard/cursos", icon: "BookOpen" },
         { label: "Editar Curso", icon: "Edit" },
+      ],
+    };
+  }
+
+  // Detalhes de aula: /dashboard/cursos/aulas/[id]
+  if (cleanPathname.match(/^\/dashboard\/cursos\/aulas\/[^/]+$/) && !cleanPathname.includes("cadastrar")) {
+    return {
+      title: "Detalhes da Aula",
+      items: [
+        { label: "Dashboard", href: "/dashboard", icon: "Home" },
+        { label: "Cursos", href: "/dashboard/cursos", icon: "BookOpen" },
+        { label: "Aulas", href: "/dashboard/cursos/aulas", icon: "BookOpen" },
+        { label: "Detalhes da Aula", icon: "Eye" },
+      ],
+    };
+  }
+
+  // Edição de aula: /dashboard/cursos/aulas/[id]/editar
+  if (cleanPathname.match(/^\/dashboard\/cursos\/aulas\/[^/]+\/editar$/)) {
+    return {
+      title: "Editar Aula",
+      items: [
+        { label: "Dashboard", href: "/dashboard", icon: "Home" },
+        { label: "Cursos", href: "/dashboard/cursos", icon: "BookOpen" },
+        { label: "Aulas", href: "/dashboard/cursos/aulas", icon: "BookOpen" },
+        { label: "Editar Aula", icon: "Edit" },
       ],
     };
   }

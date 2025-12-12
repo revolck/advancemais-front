@@ -1,0 +1,20 @@
+[
+  {
+    "id": "6",
+    "title": "Alunos: cadastro, turmas e acompanhamento",
+    "description": "Cadastro individual/lote, organização e visão do progresso.",
+    "url": "https://www.youtube.com/embed/dQw4w9WgXcQ",
+    "duration": "12:20",
+    "thumbnailUrl": "https://i.imgur.com/placeholder6.jpg",
+    "posterUrl": "/academia/posters/6.svg",
+    "category": "Usuários",
+    "module": "gestao-usuarios",
+    "level": "Iniciante",
+    "tags": ["alunos", "turmas"],
+    "transcript": "O cadastro de alunos pode ser feito de forma individual...",
+    "isActive": true,
+    "createdAt": "2025-12-12T00:00:00.000Z",
+    "updatedAt": "2025-12-12T00:00:00.000Z"
+  }
+]
+

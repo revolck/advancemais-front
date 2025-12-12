@@ -892,7 +892,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
 
             <div className="text-center">
               {dropzoneText || (
-                <p className="text-foreground font-medium !mb-0">
+                <p className="mb-0!">
                   {DEFAULT_UI_TEXTS.dropzoneTitle}{" "}
                   <span className="text-primary font-semibold hover:text-[var(--secondary-color)] cursor-pointer">
                     {browseText}

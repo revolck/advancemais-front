@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { UserRole } from "@/config/roles";
+import { composeDashboardLoginUrl } from "@/lib/auth/server";
 
 /**
  * Middleware principal da aplicação
@@ -48,6 +49,9 @@ const SYSTEM_CONFIG = {
   // Rotas de autenticação (neutras)
   authRoutes: ["/auth"],
 
+  // Rotas de academia (treinamento)
+  academiaRoutes: ["/academia"],
+
   // Redirects do website
   websiteRedirects: {
     "/home": "/",
@@ -92,6 +96,15 @@ function isWebsiteRoute(pathname: string): boolean {
  */
 function isAuthRoute(pathname: string): boolean {
   return SYSTEM_CONFIG.authRoutes.some((route) => pathname.startsWith(route));
+}
+
+/**
+ * Detecta se a rota é de academia
+ */
+function isAcademiaRoute(pathname: string): boolean {
+  return SYSTEM_CONFIG.academiaRoutes.some((route) =>
+    pathname.startsWith(route)
+  );
 }
 
 /**
@@ -198,7 +211,8 @@ export function middleware(request: NextRequest) {
   const baseDomain = hostname
     .replace(/^www\./, "")
     .replace(/^app\./, "")
-    .replace(/^auth\./, "");
+    .replace(/^auth\./, "")
+    .replace(/^academia\./, "");
 
   // Normaliza hosts com prefixo www
   if (hostname.startsWith("www.")) {
@@ -261,6 +275,41 @@ export function middleware(request: NextRequest) {
     return setupDevCookies(request, NextResponse.next());
   }
 
+  // Subdomínio da academia (academia.)
+  // Garante que todas as rotas sejam servidas a partir de /academia
+  if (hostname.startsWith("academia.")) {
+    const isAuthenticated =
+      request.cookies.has("token") || request.cookies.has("refresh_token");
+
+    if (!isAuthenticated) {
+      const [, port] = host.split(":");
+      const redirectPath = `${pathname}${request.nextUrl.search}`;
+
+      const loginUrl = composeDashboardLoginUrl({
+        hostname,
+        protocol: request.nextUrl.protocol || "https:",
+        port: port || undefined,
+        redirectPath,
+      });
+
+      const response = NextResponse.redirect(loginUrl);
+
+      if (isLocalhost) {
+        response.headers.set("location", loginUrl);
+      }
+
+      return response;
+    }
+
+    // Se não começa com /academia, reescreve para incluir
+    if (!pathname.startsWith("/academia")) {
+      const url = request.nextUrl.clone();
+      url.pathname = `/academia${pathname === "/" ? "" : pathname}`;
+      return setupDevCookies(request, NextResponse.rewrite(url));
+    }
+    return setupDevCookies(request, NextResponse.next());
+  }
+
   // Log para desenvolvimento
   if (process.env.NODE_ENV === "development") {
     console.log(`[Middleware] ${request.method} ${pathname}`);
@@ -284,6 +333,35 @@ export function middleware(request: NextRequest) {
 
   if (isAuthRoute(pathname)) {
     // Rotas de autenticação - manter como estão
+    const response = NextResponse.next();
+    return setupDevCookies(request, response);
+  }
+
+  if (isAcademiaRoute(pathname)) {
+    // Rotas de academia - REQUER AUTENTICAÇÃO
+    const isAuthenticated =
+      request.cookies.has("token") || request.cookies.has("refresh_token");
+
+    if (!isAuthenticated) {
+      const [, port] = host.split(":");
+      const redirectPath = `${pathname}${request.nextUrl.search}`;
+
+      const loginUrl = composeDashboardLoginUrl({
+        hostname,
+        protocol: request.nextUrl.protocol || "https:",
+        port: port || undefined,
+        redirectPath,
+      });
+
+      const response = NextResponse.redirect(loginUrl);
+
+      if (isLocalhost) {
+        response.headers.set("location", loginUrl);
+      }
+
+      return response;
+    }
+
     const response = NextResponse.next();
     return setupDevCookies(request, response);
   }

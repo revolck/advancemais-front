@@ -77,7 +77,8 @@ export function composeDashboardLoginUrl({
   const baseDomain = derivedHost
     .replace(/^www\./, "")
     .replace(/^app\./, "")
-    .replace(/^auth\./, "");
+    .replace(/^auth\./, "")
+    .replace(/^academia\./, "");
 
   if (isLocalhost) {
     return `${resolvedProtocol}://${derivedHost}${portSegment}/auth/login?redirect=${encodedRedirect}`;

@@ -1,0 +1,2 @@
+export { AulasDashboard } from "./AulasDashboard";
+

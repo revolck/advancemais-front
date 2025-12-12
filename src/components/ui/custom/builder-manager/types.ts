@@ -1,4 +1,4 @@
-export type BuilderItemType = "AULA" | "PROVA" | "ATIVIDADE";
+export type BuilderItemType = "AULA" | "PROVA" | "ATIVIDADE" | "TRABALHO";
 export type ActivityType =
   | "IMAGEM"
   | "PDF"
@@ -15,6 +15,9 @@ export interface BuilderItem {
   endDate?: string | null;
   instructorId?: string | null;
   obrigatorio?: boolean;
+  // Posição do item standalone (quando fora de módulo)
+  // -1 = antes de todos, 0 = após módulo 0, 1 = após módulo 1, etc.
+  afterModuleIndex?: number;
   // Campos específicos para ATIVIDADE
   activityType?: ActivityType | null;
   platformActivityId?: string | null;
@@ -24,6 +27,11 @@ export interface BuilderItem {
   youtubeUrl?: string | null;
   meetUrl?: string | null;
   tipoLinkSemiPresencial?: "MEET" | "YOUTUBE" | null;
+  // Campos específicos para TRABALHO
+  metodoTrabalho?: "INDIVIDUAL" | "GRUPO" | "DUPLA" | null;
+  valeNota?: boolean;
+  pesoNota?: number | null;
+  descricaoTrabalho?: string | null;
 }
 
 export interface BuilderModule {

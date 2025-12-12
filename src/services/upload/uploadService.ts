@@ -1,8 +1,7 @@
 /**
- * Serviço responsável pelo upload e remoção de imagens.
- * Fornece uma camada reutilizável para enviar arquivos e
- * validar se a URL retornada realmente corresponde a um
- * recurso existente.
+ * Serviço responsável pelo upload e remoção de arquivos.
+ * Fornece uma camada reutilizável para enviar arquivos para o blob storage
+ * e gerenciar o ciclo de vida dos uploads.
  */
 
 import routes from "@/api/routes";
@@ -10,6 +9,14 @@ import routes from "@/api/routes";
 export interface UploadResult {
   url: string;
   title: string;
+}
+
+export interface FileUploadResult {
+  url: string;
+  filename: string;
+  originalName: string;
+  size: number;
+  mimeType: string;
 }
 
 /**
@@ -21,9 +28,9 @@ export function getImageTitle(url: string): string {
 }
 
 /**
- * Remove uma imagem existente informando sua URL.
+ * Remove um arquivo existente informando sua URL.
  */
-export async function deleteImage(url: string): Promise<void> {
+export async function deleteFile(url: string): Promise<void> {
   try {
     await fetch(
       `${routes.upload.base()}?file=${encodeURIComponent(
@@ -35,6 +42,12 @@ export async function deleteImage(url: string): Promise<void> {
     // Silencia erros de remoção para não impedir o fluxo principal
   }
 }
+
+/**
+ * Alias para retrocompatibilidade
+ * @deprecated Use deleteFile em vez disso
+ */
+export const deleteImage = deleteFile;
 
 /**
  * Realiza o upload de uma imagem para o backend.
@@ -93,8 +106,98 @@ export async function uploadImage(
   }
 
   if (previousUrl && previousUrl !== uploadedUrl) {
-    await deleteImage(previousUrl);
+    await deleteFile(previousUrl);
   }
 
   return { url: uploadedUrl, title: getImageTitle(uploadedUrl) };
+}
+
+/**
+ * Realiza o upload de um arquivo genérico para o blob storage.
+ * Retorna informações completas do arquivo para uso posterior.
+ *
+ * @param file Arquivo selecionado pelo usuário
+ * @param path Caminho/diretório de destino no servidor (ex: "materiais/aulas")
+ */
+export async function uploadFile(
+  file: File,
+  path: string,
+): Promise<FileUploadResult> {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await fetch(
+    `${routes.upload.base()}?path=${encodeURIComponent(path)}`,
+    { method: "POST", body: formData },
+  );
+
+  if (!response.ok) {
+    let reason = "";
+    try {
+      const data = await response.json();
+      reason = (data?.error || data?.message || "").toString();
+    } catch {
+      try {
+        reason = await response.text();
+      } catch {
+        /* ignore */
+      }
+    }
+    const suffix = reason ? `: ${reason}` : "";
+    throw new Error(`Falha no upload (${response.status})${suffix}`);
+  }
+
+  const result = await response.json();
+  const uploadedUrl: string | undefined = result?.url;
+
+  if (!uploadedUrl) {
+    throw new Error("URL de upload ausente na resposta");
+  }
+
+  return {
+    url: uploadedUrl,
+    filename: result?.filename || file.name,
+    originalName: file.name,
+    size: file.size,
+    mimeType: file.type || "application/octet-stream",
+  };
+}
+
+/**
+ * Realiza upload de múltiplos arquivos para o blob storage.
+ * Retorna array de resultados. Se algum falhar, faz rollback dos anteriores.
+ *
+ * @param files Array de arquivos para upload
+ * @param path Caminho/diretório de destino no servidor
+ */
+export async function uploadFiles(
+  files: File[],
+  path: string,
+): Promise<FileUploadResult[]> {
+  const results: FileUploadResult[] = [];
+
+  for (const file of files) {
+    try {
+      const result = await uploadFile(file, path);
+      results.push(result);
+    } catch (error) {
+      // Rollback: deletar arquivos já enviados
+      for (const uploaded of results) {
+        await deleteFile(uploaded.url);
+      }
+      throw error;
+    }
+  }
+
+  return results;
+}
+
+/**
+ * Deleta múltiplos arquivos do blob storage.
+ * Útil para rollback quando a API falha após uploads.
+ *
+ * @param urls Array de URLs para deletar
+ */
+export async function deleteFiles(urls: string[]): Promise<void> {
+  await Promise.all(urls.map((url) => deleteFile(url)));
 }

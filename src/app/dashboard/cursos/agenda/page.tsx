@@ -1,12 +1,15 @@
 "use client";
 
-import { AgendaDashboard } from "@/theme/dashboard/components/admin/lista-agenda/AgendaDashboard";
+import { AgendaCursosCalendar, FullCalendarStyles } from "@/theme/dashboard/components/admin/agenda-cursos";
 
 export default function DashboardAgendaPage() {
   return (
-    <div className="space-y-8">
-      <AgendaDashboard />
-    </div>
+    <>
+      <FullCalendarStyles />
+      <div className="space-y-8">
+        <AgendaCursosCalendar />
+      </div>
+    </>
   );
 }
 

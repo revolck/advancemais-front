@@ -1,0 +1,54 @@
+[
+  {
+    "id": "4",
+    "title": "Criando seu primeiro curso (passo a passo)",
+    "description": "Do zero à publicação: estrutura, módulos e conteúdos.",
+    "url": "https://www.youtube.com/embed/dQw4w9WgXcQ",
+    "duration": "15:45",
+    "thumbnailUrl": "https://i.imgur.com/placeholder4.jpg",
+    "posterUrl": "/academia/posters/4.svg",
+    "category": "Cursos",
+    "module": "gestao-cursos",
+    "level": "Iniciante",
+    "tags": ["cursos", "publicar"],
+    "transcript": "Para criar um novo curso, acesse o menu Cursos...",
+    "isActive": true,
+    "createdAt": "2025-12-12T00:00:00.000Z",
+    "updatedAt": "2025-12-12T00:00:00.000Z"
+  },
+  {
+    "id": "5",
+    "title": "Gestão avançada de cursos: organização e escala",
+    "description": "Padrões, estrutura e dicas para manter tudo consistente.",
+    "url": "https://www.youtube.com/embed/dQw4w9WgXcQ",
+    "duration": "12:30",
+    "thumbnailUrl": "https://i.imgur.com/placeholder5.jpg",
+    "posterUrl": "/academia/posters/5.svg",
+    "category": "Cursos",
+    "module": "gestao-cursos",
+    "level": "Intermediário",
+    "tags": ["cursos", "organização", "avançado"],
+    "transcript": "Explore técnicas avançadas de organização de cursos...",
+    "isActive": true,
+    "createdAt": "2025-12-12T00:00:00.000Z",
+    "updatedAt": "2025-12-12T00:00:00.000Z"
+  },
+  {
+    "id": "7",
+    "title": "Equipe e permissões: como dar acesso do jeito certo",
+    "description": "Defina responsabilidades e evite acesso indevido.",
+    "url": "https://www.youtube.com/embed/dQw4w9WgXcQ",
+    "duration": "10:15",
+    "thumbnailUrl": "https://i.imgur.com/placeholder7.jpg",
+    "posterUrl": "/academia/posters/7.svg",
+    "category": "Usuários",
+    "module": "gestao-usuarios",
+    "level": "Intermediário",
+    "tags": ["permissões", "equipe"],
+    "transcript": "Aprenda a configurar diferentes níveis de permissão...",
+    "isActive": true,
+    "createdAt": "2025-12-12T00:00:00.000Z",
+    "updatedAt": "2025-12-12T00:00:00.000Z"
+  }
+]
+

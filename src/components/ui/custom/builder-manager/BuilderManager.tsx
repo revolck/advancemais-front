@@ -19,24 +19,41 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { toastCustom } from "@/components/ui/custom";
-import { DeleteConfirmModal } from "./components";
-import { ModuleEditorModal, ItemEditorModal } from "./modals";
+import {
+  LocalInput,
+  SortableItem,
+  SortableModule,
+  StandaloneDroppable,
+  EmptyState,
+  Palette,
+} from "./components";
+import {
+  ModuleEditorModal,
+  ItemEditorModal,
+  DeleteConfirmModal,
+  MoveToModuleModal,
+  RestoreTemplateModal,
+} from "./modals";
+import {
+  TYPE_META,
+  TYPE_ICON_CLS,
+  getIconForType,
+  ITEM_TYPE_STYLES,
+  DRAG_OVERLAY_STYLES,
+} from "./config";
 import {
   DndContext,
   PointerSensor,
   useSensor,
   useSensors,
   closestCenter,
-  useDroppable,
   DragOverlay,
 } from "@dnd-kit/core";
 import {
   SortableContext,
-  useSortable,
   arrayMove,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
 
 interface BuilderManagerProps {
   value: BuilderData;
@@ -81,6 +98,16 @@ export function BuilderManager({
     Record<string, boolean>
   >({});
 
+  // Modal para selecionar módulo destino ao mover item standalone
+  const [moveToModuleModal, setMoveToModuleModal] = useState<{
+    isOpen: boolean;
+    itemId: string | null;
+    itemTitle: string;
+  }>({ isOpen: false, itemId: null, itemTitle: "" });
+
+  // Modal de confirmação para restaurar template
+  const [confirmRestoreModal, setConfirmRestoreModal] = useState(false);
+
   const toggleModuleCollapsed = (modId: string) => {
     setCollapsedModules((prev) => ({ ...prev, [modId]: !prev[modId] }));
   };
@@ -118,88 +145,30 @@ export function BuilderManager({
   const modules = value.modules || [];
   const standaloneItems = value.standaloneItems || [];
 
+  // Agrupa standaloneItems por posição (afterModuleIndex)
+  const groupedStandalone = React.useMemo(() => {
+    const groups: Record<number, BuilderItem[]> = {};
+    const ungrouped: BuilderItem[] = [];
+
+    standaloneItems.forEach((item) => {
+      if (typeof item.afterModuleIndex === "number") {
+        if (!groups[item.afterModuleIndex]) {
+          groups[item.afterModuleIndex] = [];
+        }
+        groups[item.afterModuleIndex].push(item);
+      } else {
+        ungrouped.push(item);
+      }
+    });
+
+    return { groups, ungrouped };
+  }, [standaloneItems]);
+
   const sensors = useSensors(
-    // Press-and-hold para iniciar o arrasto (ajuda a separar clique vs. arrastar)
     useSensor(PointerSensor, {
-      activationConstraint: { delay: 120, tolerance: 6 },
+      activationConstraint: { delay: 100, tolerance: 5 },
     })
   );
-
-  // Estilos e rótulos por tipo de conteúdo (para badges e realces sutis)
-  const TYPE_META: Record<BuilderItem["type"], { label: string; cls: string }> =
-    {
-      AULA: { label: "Aula", cls: "bg-blue-50 text-blue-700 border-blue-200" },
-      ATIVIDADE: {
-        label: "Atividade",
-        cls: "bg-amber-50 text-amber-700 border-amber-200",
-      },
-      PROVA: {
-        label: "Prova",
-        cls: "bg-rose-50 text-rose-700 border-rose-200",
-      },
-    };
-
-  // Cor do ícone por tipo (para combinar com o badge)
-  const TYPE_ICON_CLS: Record<BuilderItem["type"], string> = {
-    AULA: "text-blue-700",
-    ATIVIDADE: "text-amber-700",
-    PROVA: "text-rose-700",
-  };
-
-  function SortableItem({
-    id,
-    children,
-  }: {
-    id: string;
-    children: (opts: {
-      attributes: any;
-      listeners: any;
-      setNodeRef: any;
-      style: React.CSSProperties;
-    }) => React.ReactNode;
-  }) {
-    const { attributes, listeners, setNodeRef, transform, transition } =
-      useSortable({ id });
-    const style: React.CSSProperties = {
-      transform: CSS.Transform.toString(transform),
-      transition,
-    };
-    return <>{children({ attributes, listeners, setNodeRef, style })}</>;
-  }
-
-  // Sortable para módulos (reordena com dnd-kit em vez de drag nativo)
-  function SortableModule({
-    id,
-    children,
-  }: {
-    id: string;
-    children: (opts: {
-      attributes: any;
-      listeners: any;
-      setNodeRef: any;
-      style: React.CSSProperties;
-    }) => React.ReactNode;
-  }) {
-    const { attributes, listeners, setNodeRef, transform, transition } =
-      useSortable({ id });
-    const style: React.CSSProperties = {
-      transform: CSS.Transform.toString(transform),
-      transition,
-    };
-    return <>{children({ attributes, listeners, setNodeRef, style })}</>;
-  }
-
-  // Droppable para "fora de módulos" (usado com dnd-kit)
-  function StandaloneDroppable({
-    id,
-    children,
-  }: {
-    id: string;
-    children: (opts: { setNodeRef: any; isOver: boolean }) => React.ReactNode;
-  }) {
-    const { setNodeRef, isOver } = useDroppable({ id });
-    return <>{children({ setNodeRef, isOver })}</>;
-  }
 
   const handleDropModule = (targetModId: string) => {
     if (!dragId) return;
@@ -235,7 +204,7 @@ export function BuilderManager({
     // Palette new item
     if (dragId.startsWith("palette-")) {
       const raw = dragId.replace("palette-", "");
-      if (!["AULA", "ATIVIDADE", "PROVA"].includes(raw)) return;
+      if (!["AULA", "ATIVIDADE", "PROVA", "TRABALHO"].includes(raw)) return;
       const type = raw as BuilderItem["type"];
       const newItem: BuilderItem = {
         id: uid("item"),
@@ -244,6 +213,8 @@ export function BuilderManager({
             ? "Prova"
             : type === "ATIVIDADE"
             ? "Atividade"
+            : type === "TRABALHO"
+            ? "Trabalho"
             : "Nova aula",
         type,
       };
@@ -306,7 +277,7 @@ export function BuilderManager({
     }
     if (dragId.startsWith("palette-")) {
       const raw = dragId.replace("palette-", "");
-      if (!["AULA", "ATIVIDADE", "PROVA"].includes(raw)) return;
+      if (!["AULA", "ATIVIDADE", "PROVA", "TRABALHO"].includes(raw)) return;
       const type = raw as BuilderItem["type"];
       const newItem: BuilderItem = {
         id: uid("item"),
@@ -315,6 +286,8 @@ export function BuilderManager({
             ? "Prova"
             : type === "ATIVIDADE"
             ? "Atividade"
+            : type === "TRABALHO"
+            ? "Trabalho"
             : "Nova aula",
         type,
         startDate: null,
@@ -394,6 +367,8 @@ export function BuilderManager({
                     ? "Prova"
                     : type === "ATIVIDADE"
                     ? "Atividade"
+                    : type === "TRABALHO"
+                    ? "Trabalho"
                     : "Nova aula",
                 type,
                 startDate: null,
@@ -411,7 +386,14 @@ export function BuilderManager({
       ...standaloneItems,
       {
         id: uid("item"),
-        title: type === "PROVA" ? "Prova" : "Nova aula",
+        title:
+          type === "PROVA"
+            ? "Prova"
+            : type === "ATIVIDADE"
+            ? "Atividade"
+            : type === "TRABALHO"
+            ? "Trabalho"
+            : "Nova aula",
         type,
         startDate: null,
         endDate: null,
@@ -439,6 +421,8 @@ export function BuilderManager({
                 ? "Prova"
                 : type === "ATIVIDADE"
                 ? "Atividade"
+                : type === "TRABALHO"
+                ? "Trabalho"
                 : "Nova aula",
             type,
             startDate: null,
@@ -472,6 +456,8 @@ export function BuilderManager({
                     ? "Prova"
                     : type === "ATIVIDADE"
                     ? "Atividade"
+                    : type === "TRABALHO"
+                    ? "Trabalho"
                     : "Nova aula",
                 type,
                 startDate: null,
@@ -709,9 +695,54 @@ export function BuilderManager({
     onChange(getDefaultBuilder(template));
   };
 
+  // Contador de itens totais
+  const totalItems =
+    modules.reduce((acc, m) => acc + m.items.length, 0) +
+    standaloneItems.length;
+
   return (
     <div className="space-y-4">
-      {/* Botão 'Recarregar template' ocultado para simplificar a UI */}
+      {/* Contador de módulos/itens - só aparece quando há conteúdo */}
+      {(modules.length > 0 || standaloneItems.length > 0) && (
+        <div className="flex items-center justify-between p-3 rounded-xl bg-gradient-to-r from-gray-50 to-white border border-gray-100">
+          <div className="flex items-center gap-4 text-sm">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-lg bg-indigo-100 flex items-center justify-center">
+                <Icon name="Boxes" className="h-3.5 w-3.5 text-indigo-600" />
+              </div>
+              <span className="text-gray-600">
+                <strong className="text-gray-900">{modules.length}</strong>{" "}
+                módulo{modules.length !== 1 && "s"}
+              </span>
+            </div>
+            <div className="w-px h-4 bg-gray-200" />
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center">
+                <Icon name="FileText" className="h-3.5 w-3.5 text-blue-600" />
+              </div>
+              <span className="text-gray-600">
+                <strong className="text-gray-900">{totalItems}</strong> item
+                {totalItems !== 1 && "s"}
+              </span>
+            </div>
+          </div>
+          {template && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={() => setConfirmRestoreModal(true)}
+                  className="text-xs cursor-pointer text-gray-500 hover:text-gray-700 flex items-center gap-1 px-2 py-1 rounded-md hover:bg-gray-100 transition-colors"
+                >
+                  <Icon name="RotateCcw" className="h-3 w-3" />
+                  Restaurar template
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>Voltar ao template original</TooltipContent>
+            </Tooltip>
+          )}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div
@@ -733,7 +764,7 @@ export function BuilderManager({
           {/* gap antes do primeiro módulo */}
           {dragId?.startsWith("palette-MODULO") && modules.length > 0 && (
             <div
-              className="rounded-md border-2 border-dashed py-2 px-3 text-xs text-center"
+              className="rounded-xl border border-gray-200 bg-gray-50 py-3 px-4 text-xs text-center"
               style={{
                 borderColor:
                   insertIndex === 0
@@ -800,10 +831,91 @@ export function BuilderManager({
             onDragEnd={({ active, over }) => {
               setIsDragging(false);
               setActiveDragId(null);
-              if (!over) return;
+
+              if (!over) {
+                setActiveDragKind(null);
+                return;
+              }
               const activeId = String(active.id);
               const overId = String(over.id);
               if (activeId === overId) return;
+
+              // Detectar drop em zona verde (before-all-modules ou after-module-X)
+              if (
+                overId === "before-all-modules" &&
+                activeDragKind === "item"
+              ) {
+                const item =
+                  modules
+                    .flatMap((m) => m.items)
+                    .find((i) => i.id === activeId) ||
+                  standaloneItems.find((i) => i.id === activeId);
+
+                if (item) {
+                  const nextModules = modules.map((m) => ({
+                    ...m,
+                    items: m.items.filter((i) => i.id !== activeId),
+                  }));
+                  const nextStandalone = standaloneItems.filter(
+                    (i) => i.id !== activeId
+                  );
+
+                  onChange({
+                    ...value,
+                    modules: nextModules,
+                    standaloneItems: [
+                      ...nextStandalone,
+                      { ...item, afterModuleIndex: -1 },
+                    ],
+                  });
+                  toastCustom.success({
+                    description: "Item posicionado antes de todos os módulos",
+                  });
+                }
+                // RESET DOS ESTADOS DE DRAG
+                setActiveDragKind(null);
+                return;
+              }
+
+              if (
+                overId.startsWith("after-module-") &&
+                activeDragKind === "item"
+              ) {
+                const modIndex = parseInt(overId.replace("after-module-", ""));
+                const item =
+                  modules
+                    .flatMap((m) => m.items)
+                    .find((i) => i.id === activeId) ||
+                  standaloneItems.find((i) => i.id === activeId);
+
+                if (item) {
+                  const nextModules = modules.map((m) => ({
+                    ...m,
+                    items: m.items.filter((i) => i.id !== activeId),
+                  }));
+                  const nextStandalone = standaloneItems.filter(
+                    (i) => i.id !== activeId
+                  );
+
+                  onChange({
+                    ...value,
+                    modules: nextModules,
+                    standaloneItems: [
+                      ...nextStandalone,
+                      { ...item, afterModuleIndex: modIndex },
+                    ],
+                  });
+                  const targetMod = modules[modIndex];
+                  toastCustom.success({
+                    description: `Item posicionado após "${
+                      targetMod?.title || `Módulo ${modIndex + 1}`
+                    }"`,
+                  });
+                }
+                // RESET DOS ESTADOS DE DRAG
+                setActiveDragKind(null);
+                return;
+              }
 
               // Reordenar módulos
               if (activeDragKind === "module") {
@@ -843,6 +955,7 @@ export function BuilderManager({
                     standaloneItems: nextStandalone,
                   });
                   setActiveDragKind(null);
+                  setDragId(null);
                   return;
                 }
                 // Reordenar/mover para lista avulsa sobre item avulso
@@ -886,6 +999,7 @@ export function BuilderManager({
                     standaloneItems: nextStandalone,
                   });
                   setActiveDragKind(null);
+                  setDragId(null);
                   return;
                 }
                 // mover de módulo -> módulo OU de solto -> módulo
@@ -957,9 +1071,196 @@ export function BuilderManager({
             }}
           >
             <SortableContext
-              items={modules.map((m) => m.id)}
+              items={[
+                ...modules.map((m) => m.id),
+                ...(groupedStandalone.groups[-1]?.map((i) => i.id) || []),
+                ...Object.keys(groupedStandalone.groups)
+                  .filter((key) => parseInt(key) >= 0)
+                  .flatMap((key) => groupedStandalone.groups[parseInt(key)])
+                  .map((i) => i.id),
+              ]}
               strategy={verticalListSortingStrategy}
             >
+              {/* Renderizar itens standalone que devem aparecer ANTES de todos os módulos */}
+              {allowStandaloneItems &&
+                groupedStandalone.groups[-1]?.map((standaloneIt) => (
+                  <SortableItem id={standaloneIt.id} key={standaloneIt.id}>
+                    {({ attributes, listeners, setNodeRef, style }) => (
+                      <div
+                        ref={setNodeRef}
+                        style={style}
+                        className="rounded-xl border border-emerald-200 bg-emerald-50/30 p-3 mb-3"
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-3 flex-1">
+                            <button
+                              {...attributes}
+                              {...listeners}
+                              className="cursor-grab active:cursor-grabbing opacity-40 hover:opacity-100 transition-opacity"
+                              aria-label="Arrastar"
+                            >
+                              <Icon
+                                name="GripVertical"
+                                className="h-4 w-4 text-emerald-500"
+                              />
+                            </button>
+                            <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center shrink-0">
+                              <Icon
+                                name={getIconForType(standaloneIt.type) as any}
+                                className="h-4 w-4 text-emerald-600"
+                              />
+                            </div>
+                            <div className="flex-1 min-w-0 flex flex-col gap-0">
+                              <LocalInput
+                                className="w-full bg-transparent outline-none text-sm! font-medium text-gray-900 leading-tight! mb-0!"
+                                value={standaloneIt.title}
+                                onChange={(newTitle) =>
+                                  setItemTitle(standaloneIt.id, newTitle)
+                                }
+                              />
+                              <span className="text-[10px]! text-emerald-600 font-medium leading-tight! mb-0!">
+                                📍 Antes de todos os módulos
+                              </span>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span>
+                                  <ButtonCustom
+                                    type="button"
+                                    variant="ghost"
+                                    size="xs"
+                                    icon="FolderInput"
+                                    className="h-7 w-7 p-0"
+                                    onPointerDown={(e) => e.stopPropagation()}
+                                    onMouseDown={(e) => e.stopPropagation()}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      e.preventDefault();
+                                      setMoveToModuleModal({
+                                        isOpen: true,
+                                        itemId: standaloneIt.id,
+                                        itemTitle: standaloneIt.title || "Item",
+                                      });
+                                    }}
+                                  />
+                                </span>
+                              </TooltipTrigger>
+                              <TooltipContent sideOffset={6}>
+                                Mover para módulo
+                              </TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span>
+                                  <ButtonCustom
+                                    type="button"
+                                    variant="ghost"
+                                    size="xs"
+                                    icon="X"
+                                    className="h-7 w-7 p-0"
+                                    onPointerDown={(e) => e.stopPropagation()}
+                                    onMouseDown={(e) => e.stopPropagation()}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      e.preventDefault();
+                                      onChange({
+                                        ...value,
+                                        standaloneItems: standaloneItems.map(
+                                          (i) =>
+                                            i.id === standaloneIt.id
+                                              ? {
+                                                  ...i,
+                                                  afterModuleIndex: undefined,
+                                                }
+                                              : i
+                                        ),
+                                      });
+                                      toastCustom.info({
+                                        description: "Movido para área avulsa",
+                                      });
+                                    }}
+                                  />
+                                </span>
+                              </TooltipTrigger>
+                              <TooltipContent sideOffset={6}>
+                                Mover para área avulsa
+                              </TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span>
+                                  <ButtonCustom
+                                    type="button"
+                                    variant="ghost"
+                                    size="xs"
+                                    icon="Trash2"
+                                    className="h-7 w-7 p-0 hover:bg-red-100 hover:text-red-600"
+                                    onPointerDown={(e) => e.stopPropagation()}
+                                    onMouseDown={(e) => e.stopPropagation()}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      e.preventDefault();
+                                      setConfirmDelete({
+                                        type: "item",
+                                        id: standaloneIt.id,
+                                      });
+                                    }}
+                                  />
+                                </span>
+                              </TooltipTrigger>
+                              <TooltipContent sideOffset={6}>
+                                Excluir
+                              </TooltipContent>
+                            </Tooltip>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </SortableItem>
+                ))}
+
+              {/* Zona de drop ANTES do primeiro módulo - usando useDroppable */}
+              {modules.length > 0 &&
+                allowStandaloneItems &&
+                isDragging &&
+                activeDragKind === "item" && (
+                  <StandaloneDroppable id="before-all-modules">
+                    {({ setNodeRef, isOver }) => (
+                      <div
+                        ref={setNodeRef}
+                        className={cn(
+                          "rounded-xl border-2 py-4 px-4 text-xs text-center transition-all mb-3",
+                          isOver
+                            ? "border-emerald-500 bg-emerald-100"
+                            : "border-emerald-400 bg-emerald-50"
+                        )}
+                      >
+                        <div className="flex items-center justify-center gap-2">
+                          <Icon
+                            name="Download"
+                            className={cn(
+                              "h-4 w-4",
+                              isOver
+                                ? "text-emerald-700 animate-bounce"
+                                : "text-emerald-600"
+                            )}
+                          />
+                          <span
+                            className={cn(
+                              "font-medium",
+                              isOver ? "text-emerald-800" : "text-emerald-700"
+                            )}
+                          >
+                            Solte para posicionar antes de todos os módulos
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </StandaloneDroppable>
+                )}
+
               {modules.map((mod, modIndex) => (
                 <React.Fragment key={mod.id}>
                   <SortableModule id={mod.id}>
@@ -988,6 +1289,15 @@ export function BuilderManager({
                           )
                         }
                         onDrop={(e) => {
+                          // Não prevenir default se o target tem a classe das zonas verdes
+                          const target = e.target as HTMLElement;
+                          if (
+                            target.closest('[data-dropzone="between-modules"]')
+                          ) {
+                            // Deixa a zona verde lidar com o drop
+                            return;
+                          }
+
                           e.preventDefault();
                           // Drop de MÓDULO na casca do módulo atual => cria novo ao lado
                           if (dragId && dragId.startsWith("palette-MODULO")) {
@@ -1012,7 +1322,7 @@ export function BuilderManager({
                           }
                         }}
                         className={cn(
-                          "rounded-xl border border-gray-200 bg-white transition-all hover:-translate-y-px shadow-xs hover:shadow-sm cursor-pointer",
+                          "rounded-xl border border-gray-200 bg-white transition-all hover:border-gray-300 cursor-pointer",
                           hoverModuleId === mod.id &&
                             dragId?.startsWith("palette-") &&
                             "ring-1 ring-blue-300/60",
@@ -1027,102 +1337,134 @@ export function BuilderManager({
                           setLastModuleId(mod.id);
                         }}
                       >
-                        <div className="p-3 border-b border-gray-100 space-y-2">
-                          <div className="flex items-center justify-between gap-2 text-sm font-medium text-gray-700">
-                            <span>Módulo {modIndex + 1}</span>
-                            <span className="text-xs font-normal text-gray-500">
-                              {mod.items.length} item
-                              {mod.items.length === 1 ? "" : "s"}
-                            </span>
-                          </div>
-                          <div className="flex items-center justify-between gap-3">
-                            {/* Esquerda: mover módulo */}
+                        {/* Header do Módulo - Design moderno */}
+                        <div className="p-4 bg-indigo-50/50 rounded-t-xl">
+                          <div className="flex items-center gap-4">
+                            {/* Navegação do módulo */}
                             <div className="flex items-center gap-1">
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <span>
-                                    <ButtonCustom
+                              <button
+                                {...listeners}
+                                className="cursor-grab active:cursor-grabbing p-1.5 rounded-lg hover:bg-indigo-100 transition-colors"
+                                aria-label="Arrastar módulo"
+                              >
+                                <Icon
+                                  name="GripVertical"
+                                  className="h-5 w-5 text-indigo-400"
+                                />
+                              </button>
+                              <div className="flex flex-col gap-0.5">
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <button
                                       type="button"
-                                      variant="ghost"
-                                      size="icon"
-                                      icon="ArrowUp"
-                                      disabled={
-                                        modIndex === 0 || modules.length <= 1
-                                      }
+                                      className="h-4 w-5 flex items-center justify-center hover:bg-indigo-100 rounded-sm disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                                      disabled={modIndex === 0}
                                       onClick={(e) => {
                                         e.stopPropagation();
+                                        e.preventDefault();
                                         moveModule(mod.id, "up");
                                       }}
-                                    />
-                                  </span>
-                                </TooltipTrigger>
-                                <TooltipContent sideOffset={6}>
-                                  Subir módulo
-                                </TooltipContent>
-                              </Tooltip>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <span>
-                                    <ButtonCustom
+                                      onPointerDown={(e) => e.stopPropagation()}
+                                      onMouseDown={(e) => e.stopPropagation()}
+                                    >
+                                      <Icon
+                                        name="ChevronUp"
+                                        className="h-3 w-3 text-indigo-500 group-hover:text-indigo-700"
+                                      />
+                                    </button>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="left" sideOffset={6}>
+                                    Subir
+                                  </TooltipContent>
+                                </Tooltip>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <button
                                       type="button"
-                                      variant="ghost"
-                                      size="icon"
-                                      icon="ArrowDown"
-                                      disabled={
-                                        modIndex === modules.length - 1 ||
-                                        modules.length <= 1
-                                      }
+                                      className="h-4 w-5 flex items-center justify-center hover:bg-indigo-100 rounded-sm disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                                      disabled={modIndex === modules.length - 1}
                                       onClick={(e) => {
                                         e.stopPropagation();
+                                        e.preventDefault();
                                         moveModule(mod.id, "down");
                                       }}
-                                    />
-                                  </span>
-                                </TooltipTrigger>
-                                <TooltipContent sideOffset={6}>
-                                  Descer módulo
-                                </TooltipContent>
-                              </Tooltip>
+                                      onPointerDown={(e) => e.stopPropagation()}
+                                      onMouseDown={(e) => e.stopPropagation()}
+                                    >
+                                      <Icon
+                                        name="ChevronDown"
+                                        className="h-3 w-3 text-indigo-500 group-hover:text-indigo-700"
+                                      />
+                                    </button>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="left" sideOffset={6}>
+                                    Descer
+                                  </TooltipContent>
+                                </Tooltip>
+                              </div>
                             </div>
 
-                            {/* Centro: título compacto */}
-                            <div className="flex-1">
-                              <InputCustom
-                                value={mod.title}
-                                onChange={(e) =>
-                                  setModuleTitle(mod.id, e.target.value)
-                                }
-                                placeholder="Título do módulo"
-                                size="sm"
+                            {/* Ícone do módulo */}
+                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-100 shrink-0">
+                              <Icon
+                                name="Boxes"
+                                className="h-5 w-5 text-indigo-600"
                               />
                             </div>
 
-                            {/* Direita: colapsar/duplicar/excluir */}
-                            <div className="flex items-center gap-1 h-12">
-                              {mod.items.length >= 5 && (
+                            {/* Título e contador */}
+                            <div className="flex-1 min-w-0 flex flex-col gap-0">
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px]! font-semibold uppercase tracking-wide text-indigo-600 leading-tight!">
+                                  Módulo {modIndex + 1}
+                                </span>
+                                <span className="text-[10px]! px-1.5 py-0.5 rounded-full bg-indigo-100 text-indigo-600 leading-tight!">
+                                  {mod.items.length}{" "}
+                                  {mod.items.length === 1 ? "item" : "itens"}
+                                </span>
+                              </div>
+                              <LocalInput
+                                className="w-full bg-transparent outline-none text-base! font-semibold text-gray-900 placeholder:text-gray-400 leading-tight! -mt-0.5"
+                                value={mod.title}
+                                placeholder="Nome do módulo"
+                                onChange={(newTitle) =>
+                                  setModuleTitle(mod.id, newTitle)
+                                }
+                              />
+                            </div>
+
+                            {/* Ações do módulo */}
+                            <div className="flex items-center gap-1">
+                              {mod.items.length >= 3 && (
                                 <Tooltip>
                                   <TooltipTrigger asChild>
                                     <span>
                                       <ButtonCustom
                                         type="button"
                                         variant="ghost"
-                                        size="icon"
+                                        size="xs"
                                         icon={
                                           collapsedModules[mod.id]
                                             ? "ChevronRight"
                                             : "ChevronDown"
                                         }
+                                        className="h-8 w-8 p-0"
                                         onClick={(e) => {
                                           e.stopPropagation();
+                                          e.preventDefault();
                                           toggleModuleCollapsed(mod.id);
                                         }}
+                                        onPointerDown={(e) =>
+                                          e.stopPropagation()
+                                        }
+                                        onMouseDown={(e) => e.stopPropagation()}
                                       />
                                     </span>
                                   </TooltipTrigger>
                                   <TooltipContent sideOffset={6}>
                                     {collapsedModules[mod.id]
-                                      ? "Expandir módulo"
-                                      : "Minimizar módulo"}
+                                      ? "Expandir"
+                                      : "Minimizar"}
                                   </TooltipContent>
                                 </Tooltip>
                               )}
@@ -1132,17 +1474,21 @@ export function BuilderManager({
                                     <ButtonCustom
                                       type="button"
                                       variant="ghost"
-                                      size="icon"
+                                      size="xs"
                                       icon="Copy"
+                                      className="h-8 w-8 p-0"
                                       onClick={(e) => {
                                         e.stopPropagation();
+                                        e.preventDefault();
                                         duplicateModule(mod.id);
                                       }}
+                                      onPointerDown={(e) => e.stopPropagation()}
+                                      onMouseDown={(e) => e.stopPropagation()}
                                     />
                                   </span>
                                 </TooltipTrigger>
                                 <TooltipContent sideOffset={6}>
-                                  Duplicar módulo
+                                  Duplicar
                                 </TooltipContent>
                               </Tooltip>
                               <Tooltip>
@@ -1151,33 +1497,35 @@ export function BuilderManager({
                                     <ButtonCustom
                                       type="button"
                                       variant="ghost"
-                                      size="icon"
+                                      size="xs"
                                       icon="Trash2"
+                                      className="h-8 w-8 p-0 hover:bg-red-100 hover:text-red-600"
                                       onClick={(e) => {
                                         e.stopPropagation();
+                                        e.preventDefault();
                                         setConfirmDelete({
                                           type: "module",
                                           id: mod.id,
                                         });
                                       }}
+                                      onPointerDown={(e) => e.stopPropagation()}
+                                      onMouseDown={(e) => e.stopPropagation()}
                                     />
                                   </span>
                                 </TooltipTrigger>
                                 <TooltipContent sideOffset={6}>
-                                  Excluir módulo
+                                  Excluir
                                 </TooltipContent>
                               </Tooltip>
                             </div>
                           </div>
+                          {/* Instrutores do módulo */}
                           {instructorOptions &&
                             instructorOptions.length > 0 && (
-                              <div className="space-y-2">
-                                <div className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">
-                                  Instrutores
-                                </div>
+                              <div className="mt-3 pt-3 border-t border-indigo-100/50">
                                 <MultiSelectCustom
-                                  label="Adicionar instrutores (opcional)"
-                                  placeholder="Buscar por nome ou código"
+                                  label=""
+                                  placeholder="👤 Adicionar instrutores ao módulo..."
                                   value={(mod.instructorIds || []).map((id) => {
                                     const opt = instructorOptions.find(
                                       (o) => String(o.value) === String(id)
@@ -1273,28 +1621,64 @@ export function BuilderManager({
                                 if (droppingActive) {
                                   return (
                                     <div
-                                      className="rounded-md border-2 border-dashed py-8 px-3 text-sm text-center animate-pulse"
+                                      className="relative rounded-xl border-2 border-[var(--primary-color)]/40 bg-[var(--primary-color)]/5 py-10 px-4 text-center transition-all duration-300"
                                       style={{
-                                        borderColor:
-                                          "color-mix(in srgb, var(--primary-color) 25%, white)",
+                                        borderColor: "var(--primary-color)",
                                         backgroundColor:
-                                          "color-mix(in srgb, var(--primary-color) 4%, transparent)",
-                                        color:
-                                          "color-mix(in srgb, var(--primary-color) 80%, black)",
+                                          "color-mix(in srgb, var(--primary-color) 8%, transparent)",
                                       }}
                                       onDragOver={(e) => e.preventDefault()}
                                       onDrop={(e) =>
                                         handleDropItemInModule(e, mod.id, 0)
                                       }
                                     >
-                                      Solte aqui para adicionar itens ao módulo
+                                      <div className="absolute inset-0 bg-[var(--primary-color)]/5 rounded-xl animate-pulse" />
+                                      <div className="relative flex flex-col items-center gap-2">
+                                        <div className="w-12 h-12 rounded-full bg-[var(--primary-color)]/20 flex items-center justify-center">
+                                          <Icon
+                                            name="Download"
+                                            className="h-5 w-5 text-[var(--primary-color)] animate-bounce"
+                                          />
+                                        </div>
+                                        <span
+                                          className="text-sm font-medium"
+                                          style={{
+                                            color: "var(--primary-color)",
+                                          }}
+                                        >
+                                          Solte aqui para adicionar
+                                        </span>
+                                      </div>
                                     </div>
                                   );
                                 }
                                 return (
-                                  <div className="rounded-md border border-dashed border-gray-200 py-6 px-3 text-sm text-gray-500 text-center">
-                                    Arraste itens da paleta (Aula, Atividade,
-                                    Prova) para este módulo.
+                                  <div className="rounded-xl border border-gray-200 bg-gray-50 py-8 px-4 text-center group hover:border-gray-300 transition-all">
+                                    <div className="flex flex-col items-center gap-2">
+                                      <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center group-hover:bg-gray-200 transition-colors">
+                                        <Icon
+                                          name="Plus"
+                                          className="h-4 w-4 text-gray-400"
+                                        />
+                                      </div>
+                                      <p className="text-sm! text-gray-500! mb-0!">
+                                        Arraste{" "}
+                                        <span className="font-medium text-blue-600">
+                                          Aula
+                                        </span>
+                                        ,{" "}
+                                        <span className="font-medium text-amber-600">
+                                          Atividade
+                                        </span>{" "}
+                                        ou{" "}
+                                        <span className="font-medium text-rose-600">
+                                          Prova
+                                        </span>
+                                      </p>
+                                      <p className="text-xs! text-gray-400! mb-0! mt-[-10px]!">
+                                        para dentro deste módulo
+                                      </p>
+                                    </div>
                                   </div>
                                 );
                               }
@@ -1303,21 +1687,21 @@ export function BuilderManager({
                                 <>
                                   {droppingActive && (
                                     <div
-                                      className="rounded-md border-2 border-dashed animate-pulse py-2 px-3 text-xs"
-                                      style={{
-                                        borderColor:
-                                          "color-mix(in srgb, var(--primary-color) 25%, white)",
-                                        backgroundColor:
-                                          "color-mix(in srgb, var(--primary-color) 3%, transparent)",
-                                        color:
-                                          "color-mix(in srgb, var(--primary-color) 80%, black)",
-                                      }}
+                                      className="flex items-center gap-2 py-2 px-3 rounded-lg border border-[var(--primary-color)]/40 bg-[var(--primary-color)]/5 transition-all"
                                       onDragOver={(e) => e.preventDefault()}
                                       onDrop={(e) =>
                                         handleDropItemInModule(e, mod.id, 0)
                                       }
                                     >
-                                      Solte aqui para adicionar no início
+                                      <div className="w-6 h-6 rounded-full bg-[var(--primary-color)]/20 flex items-center justify-center">
+                                        <Icon
+                                          name="ArrowDown"
+                                          className="h-3 w-3 text-[var(--primary-color)] animate-bounce"
+                                        />
+                                      </div>
+                                      <span className="text-xs font-medium text-[var(--primary-color)]">
+                                        Adicionar no início
+                                      </span>
                                     </div>
                                   )}
 
@@ -1329,13 +1713,7 @@ export function BuilderManager({
                                       <React.Fragment key={it.id}>
                                         {droppingActive && (
                                           <div
-                                            className="mx-1 my-1 h-2 rounded-full border-2 border-dashed"
-                                            style={{
-                                              borderColor:
-                                                "color-mix(in srgb, var(--primary-color) 20%, white)",
-                                              backgroundColor:
-                                                "color-mix(in srgb, var(--primary-color) 3%, transparent)",
-                                            }}
+                                            className="mx-2 my-1 h-1.5 rounded-full bg-gradient-to-r from-transparent via-[var(--primary-color)]/40 to-transparent transition-all hover:via-[var(--primary-color)]/60"
                                             onDragOver={(e) =>
                                               e.preventDefault()
                                             }
@@ -1355,109 +1733,348 @@ export function BuilderManager({
                                             listeners,
                                             setNodeRef,
                                             style,
-                                          }) => (
-                                            <div
-                                              ref={setNodeRef}
-                                              style={style}
-                                              className={cn(
-                                                "relative rounded-lg border border-gray-200 bg-gray-50 hover:bg-white transition-all hover:-translate-y-px hover:shadow-xs cursor-pointer",
-                                                selected?.kind === "item" &&
-                                                  selected?.id === it.id &&
-                                                  "ring-1 ring-[var(--primary-color)]/30 bg-[var(--primary-color)]/5"
-                                              )}
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                setSelected({
-                                                  kind: "item",
-                                                  id: it.id,
-                                                });
-                                                setIsPanelOpen(true);
-                                                setLastModuleId(mod.id);
-                                              }}
-                                            >
+                                          }) => {
+                                            // Estilos por tipo de item (importados de config/)
+                                            const itemStyle =
+                                              ITEM_TYPE_STYLES[it.type] ||
+                                              ITEM_TYPE_STYLES.AULA;
+                                            const isSelected =
+                                              selected?.kind === "item" &&
+                                              selected?.id === it.id;
+
+                                            return (
                                               <div
-                                                className="flex items-center justify-between gap-3 p-2"
-                                                {...attributes}
+                                                ref={setNodeRef}
+                                                style={style}
+                                                className={cn(
+                                                  "group relative rounded-xl border-2 transition-all duration-200 cursor-pointer",
+                                                  itemStyle.border,
+                                                  itemStyle.bg,
+                                                  itemStyle.hoverBg,
+                                                  "hover:border-opacity-100",
+                                                  isSelected &&
+                                                    cn(
+                                                      "ring-2",
+                                                      itemStyle.selectedRing
+                                                    )
+                                                )}
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  setSelected({
+                                                    kind: "item",
+                                                    id: it.id,
+                                                  });
+                                                  setIsPanelOpen(true);
+                                                  setLastModuleId(mod.id);
+                                                }}
                                               >
-                                                <div className="flex items-center gap-3 flex-1">
-                                                  <button
-                                                    {...listeners}
-                                                    className="cursor-grab active:cursor-grabbing"
-                                                    aria-label="Reordenar"
-                                                    aria-grabbed={isDragging}
-                                                  >
-                                                    <Icon
-                                                      name="GripVertical"
-                                                      className="h-4 w-4 text-gray-400"
-                                                    />
-                                                  </button>
-                                                  {/* setas de mover item (esquerda) */}
-                                                  <div className="flex items-center gap-1">
-                                                    <Tooltip>
-                                                      <TooltipTrigger asChild>
-                                                        <span>
-                                                          <ButtonCustom
-                                                            type="button"
-                                                            variant="ghost"
-                                                            size="xs"
-                                                            className="bg-transparent hover:bg-gray-100"
-                                                            icon="ArrowUp"
-                                                            disabled={idx === 0}
-                                                            onClick={(e) => {
-                                                              e.stopPropagation();
-                                                              const to =
-                                                                Math.max(
-                                                                  0,
-                                                                  idx - 1
-                                                                );
-                                                              const targetModIndex =
-                                                                modules.findIndex(
-                                                                  (m) =>
-                                                                    m.id ===
-                                                                    mod.id
-                                                                );
-                                                              if (
-                                                                targetModIndex <
-                                                                0
-                                                              )
-                                                                return;
-                                                              const mcopy = {
-                                                                ...mod,
-                                                                items: [
-                                                                  ...mod.items,
-                                                                ],
-                                                              };
-                                                              const [moved] =
-                                                                mcopy.items.splice(
-                                                                  idx,
-                                                                  1
-                                                                );
-                                                              mcopy.items.splice(
-                                                                to,
-                                                                0,
-                                                                moved
-                                                              );
-                                                              onChange({
-                                                                ...value,
-                                                                modules:
-                                                                  modules.map(
-                                                                    (mm, i) =>
-                                                                      i ===
-                                                                      targetModIndex
-                                                                        ? mcopy
-                                                                        : mm
-                                                                  ),
-                                                              });
-                                                            }}
-                                                          />
-                                                        </span>
-                                                      </TooltipTrigger>
-                                                      <TooltipContent
-                                                        sideOffset={6}
+                                                <div
+                                                  className="flex items-center justify-between gap-3 p-3"
+                                                  {...attributes}
+                                                >
+                                                  <div className="flex items-center gap-3 flex-1">
+                                                    {/* Navegação do item */}
+                                                    <div className="flex items-center gap-0.5">
+                                                      <button
+                                                        {...listeners}
+                                                        className="cursor-grab active:cursor-grabbing opacity-40 group-hover:opacity-100 transition-opacity"
+                                                        aria-label="Reordenar"
+                                                        aria-grabbed={
+                                                          isDragging
+                                                        }
                                                       >
-                                                        Subir item
-                                                      </TooltipContent>
-                                                    </Tooltip>
+                                                        <Icon
+                                                          name="GripVertical"
+                                                          className="h-4 w-4 text-gray-400"
+                                                        />
+                                                      </button>
+                                                      <div className="flex flex-col gap-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        <Tooltip>
+                                                          <TooltipTrigger
+                                                            asChild
+                                                          >
+                                                            <button
+                                                              type="button"
+                                                              className="h-3 w-4 flex items-center justify-center hover:bg-gray-200 rounded-sm disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                                                              disabled={
+                                                                idx === 0
+                                                              }
+                                                              onPointerDown={(
+                                                                e
+                                                              ) =>
+                                                                e.stopPropagation()
+                                                              }
+                                                              onMouseDown={(
+                                                                e
+                                                              ) =>
+                                                                e.stopPropagation()
+                                                              }
+                                                              onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                e.preventDefault();
+                                                                const to =
+                                                                  Math.max(
+                                                                    0,
+                                                                    idx - 1
+                                                                  );
+                                                                const targetModIndex =
+                                                                  modules.findIndex(
+                                                                    (m) =>
+                                                                      m.id ===
+                                                                      mod.id
+                                                                  );
+                                                                if (
+                                                                  targetModIndex <
+                                                                  0
+                                                                )
+                                                                  return;
+                                                                const mcopy = {
+                                                                  ...mod,
+                                                                  items: [
+                                                                    ...mod.items,
+                                                                  ],
+                                                                };
+                                                                const [moved] =
+                                                                  mcopy.items.splice(
+                                                                    idx,
+                                                                    1
+                                                                  );
+                                                                mcopy.items.splice(
+                                                                  to,
+                                                                  0,
+                                                                  moved
+                                                                );
+                                                                onChange({
+                                                                  ...value,
+                                                                  modules:
+                                                                    modules.map(
+                                                                      (mm, i) =>
+                                                                        i ===
+                                                                        targetModIndex
+                                                                          ? mcopy
+                                                                          : mm
+                                                                    ),
+                                                                });
+                                                              }}
+                                                            >
+                                                              <Icon
+                                                                name="ChevronUp"
+                                                                className="h-2.5 w-2.5 text-gray-500 hover:text-gray-700"
+                                                              />
+                                                            </button>
+                                                          </TooltipTrigger>
+                                                          <TooltipContent
+                                                            side="left"
+                                                            sideOffset={6}
+                                                          >
+                                                            Subir
+                                                          </TooltipContent>
+                                                        </Tooltip>
+                                                        <Tooltip>
+                                                          <TooltipTrigger
+                                                            asChild
+                                                          >
+                                                            <button
+                                                              type="button"
+                                                              className="h-3 w-4 flex items-center justify-center hover:bg-gray-200 rounded-sm disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                                                              disabled={
+                                                                idx ===
+                                                                mod.items
+                                                                  .length -
+                                                                  1
+                                                              }
+                                                              onPointerDown={(
+                                                                e
+                                                              ) =>
+                                                                e.stopPropagation()
+                                                              }
+                                                              onMouseDown={(
+                                                                e
+                                                              ) =>
+                                                                e.stopPropagation()
+                                                              }
+                                                              onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                e.preventDefault();
+                                                                const to =
+                                                                  Math.min(
+                                                                    mod.items
+                                                                      .length -
+                                                                      1,
+                                                                    idx + 1
+                                                                  );
+                                                                const targetModIndex =
+                                                                  modules.findIndex(
+                                                                    (m) =>
+                                                                      m.id ===
+                                                                      mod.id
+                                                                  );
+                                                                if (
+                                                                  targetModIndex <
+                                                                  0
+                                                                )
+                                                                  return;
+                                                                const mcopy = {
+                                                                  ...mod,
+                                                                  items: [
+                                                                    ...mod.items,
+                                                                  ],
+                                                                };
+                                                                const [moved] =
+                                                                  mcopy.items.splice(
+                                                                    idx,
+                                                                    1
+                                                                  );
+                                                                mcopy.items.splice(
+                                                                  to,
+                                                                  0,
+                                                                  moved
+                                                                );
+                                                                onChange({
+                                                                  ...value,
+                                                                  modules:
+                                                                    modules.map(
+                                                                      (mm, i) =>
+                                                                        i ===
+                                                                        targetModIndex
+                                                                          ? mcopy
+                                                                          : mm
+                                                                    ),
+                                                                });
+                                                              }}
+                                                            >
+                                                              <Icon
+                                                                name="ChevronDown"
+                                                                className="h-2.5 w-2.5 text-gray-500 hover:text-gray-700"
+                                                              />
+                                                            </button>
+                                                          </TooltipTrigger>
+                                                          <TooltipContent
+                                                            side="left"
+                                                            sideOffset={6}
+                                                          >
+                                                            Descer
+                                                          </TooltipContent>
+                                                        </Tooltip>
+                                                      </div>
+                                                    </div>
+                                                    {/* Ícone do tipo */}
+                                                    <div
+                                                      className={cn(
+                                                        "flex h-8 w-8 items-center justify-center rounded-lg shrink-0",
+                                                        itemStyle.iconBg
+                                                      )}
+                                                    >
+                                                      <Icon
+                                                        name={
+                                                          getIconForType(
+                                                            it.type
+                                                          ) as any
+                                                        }
+                                                        className={cn(
+                                                          "h-4 w-4",
+                                                          itemStyle.iconColor
+                                                        )}
+                                                      />
+                                                    </div>
+                                                    {/* Título editável */}
+                                                    <div className="flex-1 min-w-0 flex flex-col gap-0">
+                                                      <LocalInput
+                                                        className="w-full bg-transparent outline-none text-sm! font-medium text-gray-900 truncate leading-tight!"
+                                                        value={it.title}
+                                                        placeholder={
+                                                          TYPE_META[it.type]
+                                                            ?.label || "Aula"
+                                                        }
+                                                        onChange={(newTitle) =>
+                                                          setItemTitle(
+                                                            it.id,
+                                                            newTitle
+                                                          )
+                                                        }
+                                                      />
+                                                      <span
+                                                        className={cn(
+                                                          "text-[10px]! font-medium leading-tight! -mt-0.5",
+                                                          itemStyle.iconColor
+                                                        )}
+                                                      >
+                                                        {TYPE_META[it.type]
+                                                          ?.label || "Aula"}
+                                                      </span>
+                                                    </div>
+                                                  </div>
+                                                  {/* Ações - aparecem no hover */}
+                                                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    {allowStandaloneItems && (
+                                                      <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                          <span>
+                                                            <ButtonCustom
+                                                              type="button"
+                                                              variant="ghost"
+                                                              size="xs"
+                                                              icon="MoveUpRight"
+                                                              className="h-7 w-7 p-0"
+                                                              onPointerDown={(
+                                                                e
+                                                              ) =>
+                                                                e.stopPropagation()
+                                                              }
+                                                              onMouseDown={(
+                                                                e
+                                                              ) =>
+                                                                e.stopPropagation()
+                                                              }
+                                                              onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                e.preventDefault();
+                                                                // Extrair item do módulo
+                                                                const nextModules =
+                                                                  modules.map(
+                                                                    (m) =>
+                                                                      m.id ===
+                                                                      mod.id
+                                                                        ? {
+                                                                            ...m,
+                                                                            items:
+                                                                              m.items.filter(
+                                                                                (
+                                                                                  i
+                                                                                ) =>
+                                                                                  i.id !==
+                                                                                  it.id
+                                                                              ),
+                                                                          }
+                                                                        : m
+                                                                  );
+                                                                onChange({
+                                                                  ...value,
+                                                                  modules:
+                                                                    nextModules,
+                                                                  standaloneItems:
+                                                                    [
+                                                                      ...standaloneItems,
+                                                                      it,
+                                                                    ],
+                                                                });
+                                                                toastCustom.success(
+                                                                  {
+                                                                    description:
+                                                                      "Item movido para fora do módulo",
+                                                                  }
+                                                                );
+                                                              }}
+                                                            />
+                                                          </span>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent
+                                                          sideOffset={6}
+                                                        >
+                                                          Mover para fora
+                                                        </TooltipContent>
+                                                      </Tooltip>
+                                                    )}
                                                     <Tooltip>
                                                       <TooltipTrigger asChild>
                                                         <span>
@@ -1465,58 +2082,55 @@ export function BuilderManager({
                                                             type="button"
                                                             variant="ghost"
                                                             size="xs"
-                                                            className="bg-transparent hover:bg-gray-100"
-                                                            icon="ArrowDown"
-                                                            disabled={
-                                                              idx ===
-                                                              mod.items.length -
-                                                                1
+                                                            icon="Copy"
+                                                            className="h-7 w-7 p-0"
+                                                            onPointerDown={(
+                                                              e
+                                                            ) =>
+                                                              e.stopPropagation()
+                                                            }
+                                                            onMouseDown={(e) =>
+                                                              e.stopPropagation()
                                                             }
                                                             onClick={(e) => {
                                                               e.stopPropagation();
-                                                              const to =
-                                                                Math.min(
-                                                                  mod.items
-                                                                    .length - 1,
-                                                                  idx + 1
-                                                                );
-                                                              const targetModIndex =
-                                                                modules.findIndex(
-                                                                  (m) =>
-                                                                    m.id ===
-                                                                    mod.id
-                                                                );
-                                                              if (
-                                                                targetModIndex <
-                                                                0
-                                                              )
-                                                                return;
-                                                              const mcopy = {
-                                                                ...mod,
-                                                                items: [
-                                                                  ...mod.items,
-                                                                ],
-                                                              };
-                                                              const [moved] =
-                                                                mcopy.items.splice(
-                                                                  idx,
-                                                                  1
-                                                                );
-                                                              mcopy.items.splice(
-                                                                to,
-                                                                0,
-                                                                moved
+                                                              e.preventDefault();
+                                                              duplicateItem(
+                                                                it.id
                                                               );
-                                                              onChange({
-                                                                ...value,
-                                                                modules:
-                                                                  modules.map(
-                                                                    (mm, i) =>
-                                                                      i ===
-                                                                      targetModIndex
-                                                                        ? mcopy
-                                                                        : mm
-                                                                  ),
+                                                            }}
+                                                          />
+                                                        </span>
+                                                      </TooltipTrigger>
+                                                      <TooltipContent
+                                                        sideOffset={6}
+                                                      >
+                                                        Duplicar
+                                                      </TooltipContent>
+                                                    </Tooltip>
+                                                    <Tooltip>
+                                                      <TooltipTrigger asChild>
+                                                        <span>
+                                                          <ButtonCustom
+                                                            type="button"
+                                                            variant="ghost"
+                                                            size="xs"
+                                                            icon="Trash2"
+                                                            className="h-7 w-7 p-0 hover:bg-red-100 hover:text-red-600"
+                                                            onPointerDown={(
+                                                              e
+                                                            ) =>
+                                                              e.stopPropagation()
+                                                            }
+                                                            onMouseDown={(e) =>
+                                                              e.stopPropagation()
+                                                            }
+                                                            onClick={(e) => {
+                                                              e.stopPropagation();
+                                                              e.preventDefault();
+                                                              setConfirmDelete({
+                                                                type: "item",
+                                                                id: it.id,
                                                               });
                                                             }}
                                                           />
@@ -1525,116 +2139,21 @@ export function BuilderManager({
                                                       <TooltipContent
                                                         sideOffset={6}
                                                       >
-                                                        Descer item
+                                                        Excluir
                                                       </TooltipContent>
                                                     </Tooltip>
                                                   </div>
-                                                  {(() => {
-                                                    const meta =
-                                                      TYPE_META[
-                                                        (it as any)
-                                                          .type as keyof typeof TYPE_META
-                                                      ] || TYPE_META.AULA;
-                                                    const iconName =
-                                                      it.type === "PROVA"
-                                                        ? "FileText"
-                                                        : it.type ===
-                                                          "ATIVIDADE"
-                                                        ? "Paperclip"
-                                                        : "GraduationCap";
-                                                    return (
-                                                      <span
-                                                        className={cn(
-                                                          "hidden sm:inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] border",
-                                                          meta.cls
-                                                        )}
-                                                      >
-                                                        <Icon
-                                                          name={iconName as any}
-                                                          className="h-3.5 w-3.5"
-                                                        />
-                                                        {meta.label}
-                                                      </span>
-                                                    );
-                                                  })()}
-                                                  <input
-                                                    className="flex-1 bg-transparent outline-none text-sm cursor-text"
-                                                    value={it.title}
-                                                    onChange={(e) =>
-                                                      setItemTitle(
-                                                        it.id,
-                                                        e.target.value
-                                                      )
-                                                    }
-                                                  />
-                                                </div>
-                                                <div className="flex items-center gap-1">
-                                                  <Tooltip>
-                                                    <TooltipTrigger asChild>
-                                                      <span>
-                                                        <ButtonCustom
-                                                          type="button"
-                                                          variant="ghost"
-                                                          size="icon"
-                                                          icon="Copy"
-                                                          onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            duplicateItem(
-                                                              it.id
-                                                            );
-                                                          }}
-                                                        />
-                                                      </span>
-                                                    </TooltipTrigger>
-                                                    <TooltipContent
-                                                      sideOffset={6}
-                                                    >
-                                                      Duplicar item
-                                                    </TooltipContent>
-                                                  </Tooltip>
-                                                  <Tooltip>
-                                                    <TooltipTrigger asChild>
-                                                      <span>
-                                                        <ButtonCustom
-                                                          type="button"
-                                                          variant="ghost"
-                                                          size="icon"
-                                                          icon="Trash2"
-                                                          onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            setConfirmDelete({
-                                                              type: "item",
-                                                              id: it.id,
-                                                            });
-                                                          }}
-                                                        />
-                                                      </span>
-                                                    </TooltipTrigger>
-                                                    <TooltipContent
-                                                      sideOffset={6}
-                                                    >
-                                                      Excluir item
-                                                    </TooltipContent>
-                                                  </Tooltip>
                                                 </div>
                                               </div>
-                                            </div>
-                                          )}
+                                            );
+                                          }}
                                         </SortableItem>
                                       </React.Fragment>
                                     ))}
                                   </SortableContext>
                                   {droppingActive && (
                                     <div
-                                      className="rounded-md border-2 border-dashed animate-pulse py-2 px-3 text-xs"
-                                      style={{
-                                        borderColor:
-                                          "color-mix(in srgb, var(--primary-color) 25%, white)",
-                                        backgroundColor:
-                                          "color-mix(in srgb, var(--primary-color) 3%, transparent)",
-                                        color:
-                                          "color-mix(in srgb, var(--primary-color) 80%, black)",
-                                      }}
+                                      className="flex items-center gap-2 py-2 px-3 rounded-lg border border-[var(--primary-color)]/40 bg-[var(--primary-color)]/5 transition-all"
                                       onDragOver={(e) => e.preventDefault()}
                                       onDrop={(e) =>
                                         handleDropItemInModule(
@@ -1644,7 +2163,15 @@ export function BuilderManager({
                                         )
                                       }
                                     >
-                                      Solte aqui para adicionar no fim
+                                      <div className="w-6 h-6 rounded-full bg-[var(--primary-color)]/20 flex items-center justify-center">
+                                        <Icon
+                                          name="Plus"
+                                          className="h-3 w-3 text-[var(--primary-color)]"
+                                        />
+                                      </div>
+                                      <span className="text-xs font-medium text-[var(--primary-color)]">
+                                        Adicionar no fim
+                                      </span>
                                     </div>
                                   )}
                                   {/* barra de atalhos removida para evitar redundância */}
@@ -1656,35 +2183,233 @@ export function BuilderManager({
                       </div>
                     )}
                   </SortableModule>
-                  {/* gap imediatamente após este módulo */}
-                  {dragId?.startsWith("palette-MODULO") && (
-                    <div
-                      className="rounded-md border-2 border-dashed py-2 px-3 text-xs text-center"
-                      style={{
-                        borderColor:
-                          insertIndex === modIndex + 1
-                            ? "color-mix(in srgb, var(--primary-color) 35%, white)"
-                            : "color-mix(in srgb, var(--primary-color) 18%, white)",
-                        backgroundColor:
-                          insertIndex === modIndex + 1
-                            ? "color-mix(in srgb, var(--primary-color) 6%, transparent)"
-                            : "color-mix(in srgb, var(--primary-color) 3%, transparent)",
-                        color:
-                          "color-mix(in srgb, var(--primary-color) 80%, black)",
-                      }}
-                      onDragOver={(e) => {
-                        e.preventDefault();
-                        setInsertIndex(modIndex + 1);
-                      }}
-                      onDrop={(e) => {
-                        e.preventDefault();
-                        addModuleAt(modIndex + 1);
-                        setInsertIndex(null);
-                        setDragId(null);
-                      }}
-                    >
-                      Solte aqui para criar um novo módulo
-                    </div>
+
+                  {/* Renderizar standaloneItems que devem aparecer após este módulo */}
+                  {allowStandaloneItems &&
+                    groupedStandalone.groups[modIndex]?.map((standaloneIt) => (
+                      <SortableItem id={standaloneIt.id} key={standaloneIt.id}>
+                        {({ attributes, listeners, setNodeRef, style }) => (
+                          <div
+                            ref={setNodeRef}
+                            style={style}
+                            className="rounded-xl border border-emerald-200 bg-emerald-50/30 p-3 my-2"
+                          >
+                            <div className="flex items-center justify-between gap-3">
+                              <div className="flex items-center gap-3 flex-1">
+                                <button
+                                  {...attributes}
+                                  {...listeners}
+                                  className="cursor-grab active:cursor-grabbing opacity-40 hover:opacity-100 transition-opacity"
+                                  aria-label="Arrastar"
+                                >
+                                  <Icon
+                                    name="GripVertical"
+                                    className="h-4 w-4 text-emerald-500"
+                                  />
+                                </button>
+                                <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center shrink-0">
+                                  <Icon
+                                    name={
+                                      getIconForType(standaloneIt.type) as any
+                                    }
+                                    className="h-4 w-4 text-emerald-600"
+                                  />
+                                </div>
+                                <div className="flex-1 min-w-0 flex flex-col gap-0">
+                                  <LocalInput
+                                    className="w-full bg-transparent outline-none text-sm! font-medium text-gray-900 leading-tight! mb-0!"
+                                    value={standaloneIt.title}
+                                    onChange={(newTitle) =>
+                                      setItemTitle(standaloneIt.id, newTitle)
+                                    }
+                                  />
+                                  <span className="text-[10px]! text-emerald-600 font-medium leading-tight! mb-0!">
+                                    📍 Após{" "}
+                                    {mod.title || `Módulo ${modIndex + 1}`}
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <span>
+                                      <ButtonCustom
+                                        type="button"
+                                        variant="ghost"
+                                        size="xs"
+                                        icon="FolderInput"
+                                        className="h-7 w-7 p-0"
+                                        onPointerDown={(e) =>
+                                          e.stopPropagation()
+                                        }
+                                        onMouseDown={(e) => e.stopPropagation()}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          e.preventDefault();
+                                          setMoveToModuleModal({
+                                            isOpen: true,
+                                            itemId: standaloneIt.id,
+                                            itemTitle:
+                                              standaloneIt.title || "Item",
+                                          });
+                                        }}
+                                      />
+                                    </span>
+                                  </TooltipTrigger>
+                                  <TooltipContent sideOffset={6}>
+                                    Mover para módulo
+                                  </TooltipContent>
+                                </Tooltip>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <span>
+                                      <ButtonCustom
+                                        type="button"
+                                        variant="ghost"
+                                        size="xs"
+                                        icon="X"
+                                        className="h-7 w-7 p-0"
+                                        onPointerDown={(e) =>
+                                          e.stopPropagation()
+                                        }
+                                        onMouseDown={(e) => e.stopPropagation()}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          e.preventDefault();
+                                          onChange({
+                                            ...value,
+                                            standaloneItems:
+                                              standaloneItems.map((i) =>
+                                                i.id === standaloneIt.id
+                                                  ? {
+                                                      ...i,
+                                                      afterModuleIndex:
+                                                        undefined,
+                                                    }
+                                                  : i
+                                              ),
+                                          });
+                                          toastCustom.info({
+                                            description:
+                                              "Movido para área avulsa",
+                                          });
+                                        }}
+                                      />
+                                    </span>
+                                  </TooltipTrigger>
+                                  <TooltipContent sideOffset={6}>
+                                    Mover para área avulsa
+                                  </TooltipContent>
+                                </Tooltip>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <span>
+                                      <ButtonCustom
+                                        type="button"
+                                        variant="ghost"
+                                        size="xs"
+                                        icon="Trash2"
+                                        className="h-7 w-7 p-0 hover:bg-red-100 hover:text-red-600"
+                                        onPointerDown={(e) =>
+                                          e.stopPropagation()
+                                        }
+                                        onMouseDown={(e) => e.stopPropagation()}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          e.preventDefault();
+                                          setConfirmDelete({
+                                            type: "item",
+                                            id: standaloneIt.id,
+                                          });
+                                        }}
+                                      />
+                                    </span>
+                                  </TooltipTrigger>
+                                  <TooltipContent sideOffset={6}>
+                                    Excluir
+                                  </TooltipContent>
+                                </Tooltip>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </SortableItem>
+                    ))}
+
+                  {/* gap imediatamente após este módulo - usando useDroppable */}
+                  {(dragId?.startsWith("palette-MODULO") ||
+                    (allowStandaloneItems &&
+                      isDragging &&
+                      activeDragKind === "item")) && (
+                    <StandaloneDroppable id={`after-module-${modIndex}`}>
+                      {({ setNodeRef, isOver }) => (
+                        <div
+                          ref={setNodeRef}
+                          className={cn(
+                            "rounded-xl border-2 py-4 px-4 text-xs text-center transition-all my-2",
+                            dragId?.startsWith("palette-MODULO")
+                              ? isOver
+                                ? "border-indigo-500 bg-indigo-100"
+                                : "border-indigo-400 bg-indigo-50"
+                              : isOver
+                              ? "border-emerald-500 bg-emerald-100"
+                              : "border-emerald-400 bg-emerald-50"
+                          )}
+                          onDragOver={(e) => {
+                            e.preventDefault();
+                            if (dragId?.startsWith("palette-MODULO")) {
+                              setInsertIndex(modIndex + 1);
+                            }
+                          }}
+                          onDrop={(e) => {
+                            if (dragId?.startsWith("palette-MODULO")) {
+                              e.preventDefault();
+                              addModuleAt(modIndex + 1);
+                              setInsertIndex(null);
+                              setDragId(null);
+                            }
+                          }}
+                        >
+                          <div className="flex items-center justify-center gap-2">
+                            <Icon
+                              name={
+                                dragId?.startsWith("palette-MODULO")
+                                  ? "Plus"
+                                  : "Download"
+                              }
+                              className={cn(
+                                "h-4 w-4",
+                                dragId?.startsWith("palette-MODULO")
+                                  ? isOver
+                                    ? "text-indigo-700 animate-bounce"
+                                    : "text-indigo-600"
+                                  : isOver
+                                  ? "text-emerald-700 animate-bounce"
+                                  : "text-emerald-600"
+                              )}
+                            />
+                            <span
+                              className={cn(
+                                "font-medium",
+                                dragId?.startsWith("palette-MODULO")
+                                  ? isOver
+                                    ? "text-indigo-800"
+                                    : "text-indigo-700"
+                                  : isOver
+                                  ? "text-emerald-800"
+                                  : "text-emerald-700"
+                              )}
+                            >
+                              {dragId?.startsWith("palette-MODULO")
+                                ? "Solte para criar módulo aqui"
+                                : `Solte para posicionar após "${
+                                    mod.title || `Módulo ${modIndex + 1}`
+                                  }"`}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </StandaloneDroppable>
                   )}
                 </React.Fragment>
               ))}
@@ -1695,49 +2420,93 @@ export function BuilderManager({
               (dragId?.startsWith("palette-AULA") ||
                 dragId?.startsWith("palette-ATIVIDADE") ||
                 dragId?.startsWith("palette-PROVA") ||
+                dragId?.startsWith("palette-TRABALHO") ||
                 (isDragging && activeDragKind === "item")) && (
                 <StandaloneDroppable id="standalone-dropzone">
                   {({ setNodeRef, isOver }) => (
                     <div
                       ref={setNodeRef}
                       className={cn(
-                        "mt-2 rounded-md border-2 border-dashed py-3 px-3 text-xs text-center"
+                        "mt-3 rounded-xl border py-4 px-4 transition-all duration-200",
+                        isOver
+                          ? "border-emerald-400 bg-emerald-50"
+                          : "border-gray-200 bg-gray-50 hover:border-gray-300"
                       )}
-                      style={{
-                        borderColor: isOver
-                          ? "color-mix(in srgb, var(--primary-color) 35%, white)"
-                          : "color-mix(in srgb, var(--primary-color) 15%, white)",
-                        backgroundColor: isOver
-                          ? "color-mix(in srgb, var(--primary-color) 6%, transparent)"
-                          : "color-mix(in srgb, var(--primary-color) 3%, transparent)",
-                        color:
-                          "color-mix(in srgb, var(--primary-color) 80%, black)",
-                      }}
                       onDragOver={(e) => e.preventDefault()}
                       onDrop={(e) => handleDropItemStandalone(e)}
                     >
-                      Solte aqui para manter fora de módulos
+                      <div className="flex items-center justify-center gap-3">
+                        <div
+                          className={cn(
+                            "w-8 h-8 rounded-lg flex items-center justify-center transition-colors",
+                            isOver ? "bg-emerald-100" : "bg-gray-100"
+                          )}
+                        >
+                          <Icon
+                            name={isOver ? "Download" : "FolderOpen"}
+                            className={cn(
+                              "h-4 w-4",
+                              isOver
+                                ? "text-emerald-600 animate-bounce"
+                                : "text-gray-400"
+                            )}
+                          />
+                        </div>
+                        <span
+                          className={cn(
+                            "text-sm font-medium",
+                            isOver ? "text-emerald-700" : "text-gray-500"
+                          )}
+                        >
+                          {isOver
+                            ? "Solte para adicionar"
+                            : "Área para itens avulsos"}
+                        </span>
+                      </div>
                     </div>
                   )}
                 </StandaloneDroppable>
               )}
 
-            {modules.length > 0 && standaloneItems.length > 0 && (
+            {modules.length > 0 && groupedStandalone.ungrouped.length > 0 && (
               <>
+                {/* Divider com instrução */}
+                <div className="my-4">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="flex-1 h-px bg-gray-200" />
+                    <span className="text-xs text-gray-400 px-2">
+                      Itens avulsos (fora de módulos)
+                    </span>
+                    <div className="flex-1 h-px bg-gray-200" />
+                  </div>
+                  <div className="flex items-center justify-center gap-2 p-2 rounded-lg bg-blue-50/50 border border-blue-100">
+                    <Icon name="Info" className="h-3.5 w-3.5 text-blue-600" />
+                    <p className="text-xs! text-blue-700 mb-0!">
+                      <strong>Dica:</strong> Itens avulsos aparecem após os
+                      módulos. Para organizá-los entre módulos, use o botão
+                      <Icon
+                        name="FolderInput"
+                        className="h-3 w-3 inline mx-0.5"
+                      />
+                      para movê-los para dentro de um módulo específico.
+                    </p>
+                  </div>
+                </div>
+
                 {/* Lista de itens soltos (reordenável) abaixo dos módulos - usa o DnDContext global */}
                 <div className="space-y-2">
                   <SortableContext
-                    items={standaloneItems.map((x) => x.id)}
+                    items={groupedStandalone.ungrouped.map((x) => x.id)}
                     strategy={verticalListSortingStrategy}
                   >
-                    {standaloneItems.map((it, idx) => (
+                    {groupedStandalone.ungrouped.map((it, idx) => (
                       <SortableItem id={it.id} key={it.id}>
                         {({ attributes, listeners, setNodeRef, style }) => (
                           <div
                             ref={setNodeRef}
                             style={style}
                             className={cn(
-                              "relative rounded-xl border border-gray-200 bg-white transition-all hover:-translate-y-px hover:shadow-xs cursor-pointer",
+                              "relative rounded-xl border border-gray-200 bg-white transition-all hover:border-gray-300 cursor-pointer",
                               selected?.kind === "item" &&
                                 selected?.id === it.id &&
                                 "ring-1 ring-[var(--primary-color)]/30 bg-[var(--primary-color)]/3"
@@ -1748,51 +2517,48 @@ export function BuilderManager({
                               setIsPanelOpen(true);
                             }}
                           >
-                            <div className="flex items-center gap-3 p-2">
-                              <button
-                                {...attributes}
-                                {...listeners}
-                                className="cursor-grab active:cursor-grabbing"
-                                aria-label="Reordenar"
-                                aria-grabbed={isDragging}
-                              >
-                                <Icon
-                                  name="GripVertical"
-                                  className="h-4 w-4 text-gray-400"
-                                />
-                              </button>
-                              {/* setas de mover item (esquerda) */}
+                            <div className="flex items-center gap-3 p-3">
                               <div className="flex items-center gap-1">
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <span>
-                                      <ButtonCustom
+                                <button
+                                  {...attributes}
+                                  {...listeners}
+                                  className="cursor-grab active:cursor-grabbing opacity-40 hover:opacity-100 transition-opacity"
+                                  aria-label="Reordenar"
+                                  aria-grabbed={isDragging}
+                                >
+                                  <Icon
+                                    name="GripVertical"
+                                    className="h-4 w-4 text-gray-400"
+                                  />
+                                </button>
+                                {/* Navegação vertical compacta */}
+                                <div className="flex flex-col gap-0 opacity-0 hover:opacity-100 transition-opacity">
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <button
                                         type="button"
-                                        variant="ghost"
-                                        size="xs"
-                                        className="bg-transparent hover:bg-gray-100"
-                                        icon="ArrowUp"
+                                        className="h-3 w-4 flex items-center justify-center hover:bg-gray-200 rounded-sm disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
                                         disabled={idx === 0}
                                         onClick={(e) => {
                                           e.stopPropagation();
                                           moveStandaloneItem(it.id, "up");
                                         }}
-                                      />
-                                    </span>
-                                  </TooltipTrigger>
-                                  <TooltipContent sideOffset={6}>
-                                    Subir item
-                                  </TooltipContent>
-                                </Tooltip>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <span>
-                                      <ButtonCustom
+                                      >
+                                        <Icon
+                                          name="ChevronUp"
+                                          className="h-2.5 w-2.5 text-gray-500 hover:text-gray-700"
+                                        />
+                                      </button>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="left" sideOffset={6}>
+                                      Subir
+                                    </TooltipContent>
+                                  </Tooltip>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <button
                                         type="button"
-                                        variant="ghost"
-                                        size="xs"
-                                        className="bg-transparent hover:bg-gray-100"
-                                        icon="ArrowDown"
+                                        className="h-3 w-4 flex items-center justify-center hover:bg-gray-200 rounded-sm disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
                                         disabled={
                                           idx === standaloneItems.length - 1
                                         }
@@ -1800,25 +2566,25 @@ export function BuilderManager({
                                           e.stopPropagation();
                                           moveStandaloneItem(it.id, "down");
                                         }}
-                                      />
-                                    </span>
-                                  </TooltipTrigger>
-                                  <TooltipContent sideOffset={6}>
-                                    Descer item
-                                  </TooltipContent>
-                                </Tooltip>
+                                      >
+                                        <Icon
+                                          name="ChevronDown"
+                                          className="h-2.5 w-2.5 text-gray-500 hover:text-gray-700"
+                                        />
+                                      </button>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="left" sideOffset={6}>
+                                      Descer
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </div>
                               </div>
                               {(() => {
                                 const meta =
                                   TYPE_META[
                                     (it as any).type as keyof typeof TYPE_META
                                   ] || TYPE_META.AULA;
-                                const iconName =
-                                  it.type === "PROVA"
-                                    ? "FileText"
-                                    : it.type === "ATIVIDADE"
-                                    ? "Paperclip"
-                                    : "GraduationCap";
+                                const iconName = getIconForType(it.type);
                                 return (
                                   <span
                                     className={cn(
@@ -1834,14 +2600,40 @@ export function BuilderManager({
                                   </span>
                                 );
                               })()}
-                              <input
+                              <LocalInput
                                 className="flex-1 bg-transparent outline-none text-sm cursor-text"
                                 value={it.title}
-                                onChange={(e) =>
-                                  setItemTitle(it.id, e.target.value)
+                                onChange={(newTitle) =>
+                                  setItemTitle(it.id, newTitle)
                                 }
                               />
                               <div className="flex items-center gap-1">
+                                {modules.length > 0 && (
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <span>
+                                        <ButtonCustom
+                                          type="button"
+                                          variant="ghost"
+                                          size="xs"
+                                          icon="FolderInput"
+                                          className="h-7 w-7 p-0"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setMoveToModuleModal({
+                                              isOpen: true,
+                                              itemId: it.id,
+                                              itemTitle: it.title || "Item",
+                                            });
+                                          }}
+                                        />
+                                      </span>
+                                    </TooltipTrigger>
+                                    <TooltipContent sideOffset={6}>
+                                      Mover para módulo
+                                    </TooltipContent>
+                                  </Tooltip>
+                                )}
                                 <Tooltip>
                                   <TooltipTrigger asChild>
                                     <span>
@@ -1894,7 +2686,7 @@ export function BuilderManager({
                 {/* Gap adicional para criar módulo ao final, se estiver arrastando um módulo */}
                 {dragId?.startsWith("palette-MODULO") && (
                   <div
-                    className="rounded-md border-2 border-dashed py-2 px-3 text-xs text-center"
+                    className="rounded-xl border border-gray-200 bg-gray-50 py-3 px-4 text-xs text-center"
                     style={{
                       borderColor:
                         "color-mix(in srgb, var(--primary-color) 18%, white)",
@@ -1919,7 +2711,13 @@ export function BuilderManager({
             {modules.length === 0 &&
               (standaloneItems.length === 0 ? (
                 <div
-                  className="rounded-lg border border-dashed p-6 text-sm text-gray-500"
+                  className={cn(
+                    "relative rounded-2xl border transition-all duration-300",
+                    "flex flex-col items-center justify-center py-16 px-6 text-center",
+                    dragId
+                      ? "border-[var(--primary-color)] bg-[var(--primary-color)]/5"
+                      : "border-gray-200 bg-gray-50"
+                  )}
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={(e) => {
                     e.preventDefault();
@@ -1979,8 +2777,8 @@ export function BuilderManager({
                     onChange(nextStructure);
                   }}
                 >
-                  Nenhum conteúdo adicionado. Arraste "Aula", "Prova",
-                  "Atividade" ou "Módulo" da paleta para começar.
+                  {/* Componente de estado vazio */}
+                  <EmptyState isDragging={!!dragId} onAddModule={addModule} />
                 </div>
               ) : (
                 <>
@@ -2023,7 +2821,7 @@ export function BuilderManager({
                   >
                     {dragId?.startsWith("palette-MODULO") && (
                       <div
-                        className="rounded-md border-2 border-dashed py-2 px-3 text-xs text-center"
+                        className="rounded-xl border border-gray-200 bg-gray-50 py-3 px-4 text-xs text-center"
                         style={{
                           borderColor:
                             "color-mix(in srgb, var(--primary-color) 18%, white)",
@@ -2089,8 +2887,15 @@ export function BuilderManager({
                                             size="icon"
                                             icon="ArrowUp"
                                             disabled={idx === 0}
+                                            onPointerDown={(e) =>
+                                              e.stopPropagation()
+                                            }
+                                            onMouseDown={(e) =>
+                                              e.stopPropagation()
+                                            }
                                             onClick={(e) => {
                                               e.stopPropagation();
+                                              e.preventDefault();
                                               moveStandaloneItem(it.id, "up");
                                             }}
                                           />
@@ -2111,8 +2916,15 @@ export function BuilderManager({
                                             disabled={
                                               idx === standaloneItems.length - 1
                                             }
+                                            onPointerDown={(e) =>
+                                              e.stopPropagation()
+                                            }
+                                            onMouseDown={(e) =>
+                                              e.stopPropagation()
+                                            }
                                             onClick={(e) => {
                                               e.stopPropagation();
+                                              e.preventDefault();
                                               moveStandaloneItem(it.id, "down");
                                             }}
                                           />
@@ -2124,13 +2936,7 @@ export function BuilderManager({
                                     </Tooltip>
                                   </div>
                                   <Icon
-                                    name={
-                                      it.type === "PROVA"
-                                        ? "FileText"
-                                        : it.type === "ATIVIDADE"
-                                        ? "Paperclip"
-                                        : "GraduationCap"
-                                    }
+                                    name={getIconForType(it.type) as any}
                                     className="h-4 w-4 text-gray-500"
                                   />
                                   {(() => {
@@ -2150,11 +2956,11 @@ export function BuilderManager({
                                       </span>
                                     );
                                   })()}
-                                  <input
+                                  <LocalInput
                                     className="flex-1 bg-transparent outline-none text-sm cursor-text"
                                     value={it.title}
-                                    onChange={(e) =>
-                                      setItemTitle(it.id, e.target.value)
+                                    onChange={(newTitle) =>
+                                      setItemTitle(it.id, newTitle)
                                     }
                                   />
                                   <div className="flex items-center gap-1">
@@ -2166,8 +2972,15 @@ export function BuilderManager({
                                             variant="ghost"
                                             size="icon"
                                             icon="Copy"
+                                            onPointerDown={(e) =>
+                                              e.stopPropagation()
+                                            }
+                                            onMouseDown={(e) =>
+                                              e.stopPropagation()
+                                            }
                                             onClick={(e) => {
                                               e.stopPropagation();
+                                              e.preventDefault();
                                               duplicateItem(it.id);
                                             }}
                                           />
@@ -2185,8 +2998,15 @@ export function BuilderManager({
                                             variant="ghost"
                                             size="icon"
                                             icon="Trash2"
+                                            onPointerDown={(e) =>
+                                              e.stopPropagation()
+                                            }
+                                            onMouseDown={(e) =>
+                                              e.stopPropagation()
+                                            }
                                             onClick={(e) => {
                                               e.stopPropagation();
+                                              e.preventDefault();
                                               setConfirmDelete({
                                                 type: "item",
                                                 id: it.id,
@@ -2209,7 +3029,7 @@ export function BuilderManager({
                     </div>
                     {dragId?.startsWith("palette-MODULO") && (
                       <div
-                        className="rounded-md border-2 border-dashed py-2 px-3 text-xs text-center"
+                        className="rounded-xl border border-gray-200 bg-gray-50 py-3 px-4 text-xs text-center"
                         style={{
                           borderColor:
                             "color-mix(in srgb, var(--primary-color) 18%, white)",
@@ -2228,7 +3048,12 @@ export function BuilderManager({
                         Solte aqui para criar um novo módulo
                       </div>
                     )}
-                    <DragOverlay dropAnimation={{ duration: 150 }}>
+                    <DragOverlay
+                      dropAnimation={{
+                        duration: 200,
+                        easing: "cubic-bezier(0.18, 0.67, 0.6, 1.22)",
+                      }}
+                    >
                       {(() => {
                         if (!activeDragId || activeDragKind !== "item")
                           return null;
@@ -2236,27 +3061,52 @@ export function BuilderManager({
                           (i) => i.id === activeDragId
                         );
                         if (!it) return null;
+
+                        const style =
+                          DRAG_OVERLAY_STYLES[it.type] ||
+                          DRAG_OVERLAY_STYLES.AULA;
+
                         return (
-                          <div className="pointer-events-none rounded-md border border-gray-300 bg-white shadow px-2 py-1 text-sm">
-                            <div className="flex items-center gap-2">
-                              <Icon
-                                name={
-                                  it.type === "PROVA"
-                                    ? "FileText"
-                                    : it.type === "ATIVIDADE"
-                                    ? "Paperclip"
-                                    : "GraduationCap"
-                                }
-                                className="h-4 w-4 text-gray-500"
-                              />
-                              <span className="text-gray-700 truncate">
-                                {it.title ||
-                                  (it.type === "PROVA"
+                          <div
+                            className={cn(
+                              "pointer-events-none rounded-xl border bg-white px-4 py-3 text-sm min-w-[180px]",
+                              style.border
+                            )}
+                          >
+                            <div className="flex items-center gap-3">
+                              <div
+                                className={cn(
+                                  "flex h-9 w-9 items-center justify-center rounded-lg",
+                                  style.bg
+                                )}
+                              >
+                                <Icon
+                                  name={style.icon as any}
+                                  className={cn("h-4.5 w-4.5", style.text)}
+                                />
+                              </div>
+                              <div>
+                                <div
+                                  className={cn(
+                                    "text-[10px] font-medium uppercase tracking-wide",
+                                    style.text
+                                  )}
+                                >
+                                  {it.type === "PROVA"
                                     ? "Prova"
                                     : it.type === "ATIVIDADE"
                                     ? "Atividade"
-                                    : "Aula")}
-                              </span>
+                                    : "Aula"}
+                                </div>
+                                <div className="text-gray-900 font-medium truncate max-w-[130px]">
+                                  {it.title ||
+                                    (it.type === "PROVA"
+                                      ? "Prova"
+                                      : it.type === "ATIVIDADE"
+                                      ? "Atividade"
+                                      : "Aula")}
+                                </div>
+                              </div>
                             </div>
                           </div>
                         );
@@ -2267,17 +3117,34 @@ export function BuilderManager({
               ))}
 
             {/* Fecha o DnDContext global após módulos e itens soltos */}
-            <DragOverlay dropAnimation={{ duration: 150 }}>
+            <DragOverlay
+              dropAnimation={{
+                duration: 200,
+                easing: "cubic-bezier(0.18, 0.67, 0.6, 1.22)",
+              }}
+            >
               {(() => {
                 if (!activeDragId || !activeDragKind) return null;
                 if (activeDragKind === "module") {
                   const mod = modules.find((m) => m.id === activeDragId);
                   if (!mod) return null;
                   return (
-                    <div className="pointer-events-none rounded-lg border border-gray-300 bg-white shadow-md px-3 py-2 text-sm">
-                      <div className="text-gray-800 font-medium">Módulo</div>
-                      <div className="text-gray-600 truncate">
-                        {mod.title || "Sem título"}
+                    <div className="pointer-events-none rounded-xl border border-indigo-300 bg-white px-4 py-3 text-sm min-w-[200px]">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-100">
+                          <Icon
+                            name="Boxes"
+                            className="h-5 w-5 text-indigo-600"
+                          />
+                        </div>
+                        <div>
+                          <div className="text-xs text-indigo-600 font-medium uppercase tracking-wide">
+                            Módulo
+                          </div>
+                          <div className="text-gray-900 font-semibold truncate max-w-[150px]">
+                            {mod.title || "Sem título"}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   );
@@ -2288,27 +3155,52 @@ export function BuilderManager({
                     .find((i) => i.id === activeDragId) ||
                   standaloneItems.find((i) => i.id === activeDragId);
                 if (!it) return null;
+
+                // Cores por tipo (importadas de config/)
+                const style =
+                  DRAG_OVERLAY_STYLES[it.type] || DRAG_OVERLAY_STYLES.AULA;
+
                 return (
-                  <div className="pointer-events-none rounded-md border border-gray-300 bg-white shadow px-2 py-1 text-sm">
-                    <div className="flex items-center gap-2">
-                      <Icon
-                        name={
-                          it.type === "PROVA"
-                            ? "FileText"
-                            : it.type === "ATIVIDADE"
-                            ? "Paperclip"
-                            : "GraduationCap"
-                        }
-                        className="h-4 w-4 text-gray-500"
-                      />
-                      <span className="text-gray-700 truncate">
-                        {it.title ||
-                          (it.type === "PROVA"
+                  <div
+                    className={cn(
+                      "pointer-events-none rounded-xl border bg-white px-4 py-3 text-sm min-w-[180px]",
+                      style.border
+                    )}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={cn(
+                          "flex h-9 w-9 items-center justify-center rounded-lg",
+                          style.bg
+                        )}
+                      >
+                        <Icon
+                          name={style.icon as any}
+                          className={cn("h-4.5 w-4.5", style.text)}
+                        />
+                      </div>
+                      <div>
+                        <div
+                          className={cn(
+                            "text-[10px] font-medium uppercase tracking-wide",
+                            style.text
+                          )}
+                        >
+                          {it.type === "PROVA"
                             ? "Prova"
                             : it.type === "ATIVIDADE"
                             ? "Atividade"
-                            : "Aula")}
-                      </span>
+                            : "Aula"}
+                        </div>
+                        <div className="text-gray-900 font-medium truncate max-w-[130px]">
+                          {it.title ||
+                            (it.type === "PROVA"
+                              ? "Prova"
+                              : it.type === "ATIVIDADE"
+                              ? "Atividade"
+                              : "Aula")}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 );
@@ -2318,106 +3210,17 @@ export function BuilderManager({
         </div>
 
         <div className="space-y-4">
-          {/* Paleta de componentes (lateral) */}
-          <div className="rounded-xl border border-gray-200 bg-white p-3">
-            <div className="text-sm font-medium text-gray-700 mb-2">
-              Componentes
-            </div>
-            <div className="space-y-2">
-              {/* Módulo */}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div
-                    draggable
-                    onDragStart={() => setDragId("palette-MODULO")}
-                    onClick={addModule}
-                    className="flex cursor-grab items-center gap-2 rounded-md border border-gray-200 bg-gray-50 p-2 hover:bg-gray-100 hover:cursor-pointer"
-                  >
-                    <Icon name="Boxes" className="h-4 w-4 text-gray-500" />{" "}
-                    Módulo
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent side="top" sideOffset={8}>
-                  Clique ou arraste para adicionar
-                </TooltipContent>
-              </Tooltip>
-              {/* Aula */}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div
-                    draggable
-                    onClick={() => addToLastModuleAndEdit("AULA")}
-                    onDragStart={(e) => {
-                      setDragId("palette-AULA");
-                      e.dataTransfer.setData("text/plain", "AULA");
-                    }}
-                    onDragEnd={() => {
-                      setDragId(null);
-                      setHoverModuleId(null);
-                    }}
-                    className="flex cursor-grab items-center gap-2 rounded-md border border-gray-200 bg-gray-50 p-2 hover:bg-gray-100 hover:cursor-pointer"
-                  >
-                    <Icon
-                      name="GraduationCap"
-                      className="h-4 w-4 text-gray-500"
-                    />{" "}
-                    Aula
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent side="top" sideOffset={8}>
-                  Clique ou arraste para adicionar
-                </TooltipContent>
-              </Tooltip>
-              {/* Atividade */}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div
-                    draggable
-                    onClick={() => addToLastModuleAndEdit("ATIVIDADE")}
-                    onDragStart={(e) => {
-                      setDragId("palette-ATIVIDADE");
-                      e.dataTransfer.setData("text/plain", "ATIVIDADE");
-                    }}
-                    onDragEnd={() => {
-                      setDragId(null);
-                      setHoverModuleId(null);
-                    }}
-                    className="flex cursor-grab items-center gap-2 rounded-md border border-gray-200 bg-gray-50 p-2 hover:bg-gray-100 hover:cursor-pointer"
-                  >
-                    <Icon name="Paperclip" className="h-4 w-4 text-gray-500" />{" "}
-                    Atividade
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent side="top" sideOffset={8}>
-                  Clique ou arraste para adicionar
-                </TooltipContent>
-              </Tooltip>
-              {/* Prova */}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div
-                    draggable
-                    onClick={() => addToLastModuleAndEdit("PROVA")}
-                    onDragStart={(e) => {
-                      setDragId("palette-PROVA");
-                      e.dataTransfer.setData("text/plain", "PROVA");
-                    }}
-                    onDragEnd={() => {
-                      setDragId(null);
-                      setHoverModuleId(null);
-                    }}
-                    className="flex cursor-grab items-center gap-2 rounded-md border border-gray-200 bg-gray-50 p-2 hover:bg-gray-100 hover:cursor-pointer"
-                  >
-                    <Icon name="FileText" className="h-4 w-4 text-gray-500" />{" "}
-                    Prova
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent side="top" sideOffset={8}>
-                  Clique ou arraste para adicionar
-                </TooltipContent>
-              </Tooltip>
-            </div>
-          </div>
+          {/* Paleta de componentes (lateral) - Design minimalista e futurista */}
+          <Palette
+            onAddModule={addModule}
+            onAddItem={addToLastModuleAndEdit}
+            onDragStart={setDragId}
+            onDragEnd={() => {
+              setDragId(null);
+              setHoverModuleId(null);
+              setInsertIndex(null);
+            }}
+          />
           <ModuleEditorModal
             isOpen={isPanelOpen && selected?.kind === "module"}
             module={
@@ -2499,6 +3302,31 @@ export function BuilderManager({
             standaloneItems={standaloneItems}
             onConfirm={handleConfirmDelete}
             onCancel={() => setConfirmDelete(null)}
+          />
+
+          {/* Modal para selecionar módulo destino */}
+          <MoveToModuleModal
+            isOpen={moveToModuleModal.isOpen}
+            itemId={moveToModuleModal.itemId}
+            itemTitle={moveToModuleModal.itemTitle}
+            modules={modules}
+            standaloneItems={standaloneItems}
+            value={value}
+            onChange={onChange}
+            onClose={() =>
+              setMoveToModuleModal({
+                isOpen: false,
+                itemId: null,
+                itemTitle: "",
+              })
+            }
+          />
+
+          {/* Modal de confirmação para restaurar template */}
+          <RestoreTemplateModal
+            isOpen={confirmRestoreModal}
+            onClose={() => setConfirmRestoreModal(false)}
+            onConfirm={resetToTemplate}
           />
         </div>
       </div>

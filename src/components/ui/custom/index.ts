@@ -50,6 +50,8 @@ export * from "./multiselect";
 
 export * from "./date-picker";
 
+export * from "./time-input";
+
 export * from "./cards-statistics";
 
 export * from "./charts-custom";

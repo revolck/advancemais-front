@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
+  <defs>
+    <linearGradient id="g" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#ef4444"/>
+      <stop offset="1" stop-color="#3b82f6"/>
+    </linearGradient>
+  </defs>
+  <rect width="1280" height="720" fill="#0b0b0f"/>
+  <rect width="1280" height="720" fill="url(#g)" opacity="0.85"/>
+  <g opacity="0.18" fill="#000">
+    <path d="M860 120h340v480H860z" />
+    <path d="M860 120l170 240-170 240z" opacity="0.4"/>
+  </g>
+  <g fill="#fff">
+    <text x="70" y="520" font-family="Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial" font-size="64" font-weight="800">Criar curso</text>
+    <text x="70" y="585" font-family="Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial" font-size="36" opacity="0.88">Passo a passo</text>
+  </g>
+</svg>
+

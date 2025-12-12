@@ -1,0 +1,2 @@
+export { DeleteAulaModal } from "./DeleteAulaModal";
+

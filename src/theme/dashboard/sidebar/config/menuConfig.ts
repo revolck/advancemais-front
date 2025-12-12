@@ -53,7 +53,11 @@ const rawMenuSections: MenuSection[] = [
         icon: "LayoutDashboard",
         label: "Visão geral",
         route: "/dashboard",
-        permissions: [UserRole.ADMIN, UserRole.MODERADOR, UserRole.SETOR_DE_VAGAS],
+        permissions: [
+          UserRole.ADMIN,
+          UserRole.MODERADOR,
+          UserRole.SETOR_DE_VAGAS,
+        ],
       },
       {
         icon: "BookOpen",
@@ -76,6 +80,12 @@ const rawMenuSections: MenuSection[] = [
             icon: null,
             label: "Turmas",
             route: "/dashboard/cursos/turmas",
+            permissions: [UserRole.ADMIN, UserRole.MODERADOR],
+          },
+          {
+            icon: null,
+            label: "Aulas",
+            route: "/dashboard/cursos/aulas",
             permissions: [UserRole.ADMIN, UserRole.MODERADOR],
           },
           {
@@ -301,6 +311,16 @@ const rawMenuSections: MenuSection[] = [
           },
           {
             icon: null,
+            label: "Aulas",
+            route: "/dashboard/cursos/aulas",
+            permissions: [
+              UserRole.ADMIN,
+              UserRole.MODERADOR,
+              UserRole.PEDAGOGICO,
+            ],
+          },
+          {
+            icon: null,
             label: "Alunos",
             route: "/dashboard/cursos/alunos",
             permissions: [
@@ -458,6 +478,12 @@ const rawMenuSections: MenuSection[] = [
         icon: "BookOpen",
         label: "Cursos",
         route: "/instrutor/courses",
+        permissions: INSTRUTOR_PERMISSIONS,
+      },
+      {
+        icon: "Video",
+        label: "Aulas",
+        route: "/dashboard/cursos/aulas",
         permissions: INSTRUTOR_PERMISSIONS,
       },
     ],
