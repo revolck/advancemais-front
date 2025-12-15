@@ -1,0 +1,38 @@
+---
+alwaysApply: true
+---
+
+Este é um frontend em produção baseado em Next.js.
+
+Antes de propor qualquer solução, avalie:
+
+- Impacto em performance (bundle, rendering, cache)
+- Impacto em DX e manutenção
+- Complexidade cognitiva do código
+- Acessibilidade e experiência do usuário
+- Evolução futura do produto
+
+Arquitetura:
+
+- Organização por domínio (features).
+- Separar claramente:
+  - features (regras de negócio do frontend)
+  - components (UI reutilizável e desacoplada)
+  - services (comunicação com APIs / SDKs)
+  - hooks (lógica reutilizável)
+  - stores (estado global, apenas quando necessário)
+  - utils (funções puras)
+
+Regras rígidas:
+
+- Componentes NÃO devem conter regras de negócio complexas.
+- Nunca chamar API diretamente dentro de componentes.
+- Comunicação com backend sempre via services.
+- Estado global apenas quando o estado for realmente compartilhado.
+- Evitar efeitos colaterais fora de hooks.
+
+TypeScript:
+
+- Tipar props, retornos e estados.
+- Evitar any.
+- Preferir tipos explícitos a inferências confusas.

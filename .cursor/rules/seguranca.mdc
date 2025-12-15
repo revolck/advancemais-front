@@ -1,0 +1,19 @@
+---
+alwaysApply: true
+---
+
+Segurança no frontend é obrigatória.
+
+Regras:
+
+- Nunca armazenar tokens sensíveis em localStorage.
+- Preferir cookies httpOnly.
+- Validar dados vindos do backend antes de usar.
+- Prevenir XSS e injeções via renderização segura.
+- Não confiar em dados do client para decisões críticas.
+
+Pagamentos (MercadoPago):
+
+- Nunca expor chaves sensíveis.
+- Apenas iniciar fluxos no frontend.
+- Estados finais sempre validados pelo backend.

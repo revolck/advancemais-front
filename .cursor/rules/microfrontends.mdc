@@ -1,0 +1,25 @@
+---
+alwaysApply: true
+---
+
+Este projeto adota princípios de microfrontend.
+
+Diretrizes:
+
+- Microfrontends são separados por DOMÍNIO, não por tecnologia.
+- Cada domínio deve ser isolado e independente.
+- Evitar acoplamento implícito entre features.
+- Compartilhar apenas contratos (types, APIs), nunca estado global.
+
+Boas práticas:
+
+- Comunicação entre domínios via eventos ou interfaces bem definidas.
+- Evitar imports cruzados entre domínios.
+- Cada feature deve poder evoluir isoladamente.
+- Pensar em deploy independente, mesmo que ainda não exista.
+
+Evitar:
+
+- Contextos globais gigantes.
+- Utils compartilhados sem responsabilidade clara.
+- Dependência oculta entre features.

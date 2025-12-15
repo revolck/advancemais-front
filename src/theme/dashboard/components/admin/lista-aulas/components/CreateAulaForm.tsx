@@ -458,6 +458,27 @@ export function CreateAulaForm({
     return { valid: Object.keys(newErrors).length === 0, errors: newErrors };
   };
 
+  /**
+   * Formata uma data para o formato YYYY-MM-DD
+   */
+  const formatDateForAPI = (date: Date | string | null): string | undefined => {
+    if (!date) return undefined;
+    
+    const dateObj = typeof date === 'string' ? new Date(date) : date;
+    
+    // Se já é YYYY-MM-DD, retorna como está
+    if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      return date;
+    }
+    
+    // Converte para YYYY-MM-DD
+    const year = dateObj.getFullYear();
+    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const day = String(dateObj.getDate()).padStart(2, '0');
+    
+    return `${year}-${month}-${day}`;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -480,24 +501,24 @@ export function CreateAulaForm({
 
     try {
       // Construir dataInicio e dataFim se houver data e horários
+      // Enviar apenas a data (YYYY-MM-DD) e as horas separadamente (HH:MM)
       let dataInicio: string | undefined;
       let dataFim: string | undefined;
+      let horaInicio: string | undefined;
+      let horaFim: string | undefined;
       let hasPeriodo = false;
 
       if (formData.dataAula && formData.horaInicio && formData.horaFim) {
-        const dataBase = new Date(formData.dataAula);
-
-        // Data de início
-        const [horaIni, minIni] = formData.horaInicio.split(":");
-        const dtInicio = new Date(dataBase);
-        dtInicio.setHours(Number(horaIni), Number(minIni), 0, 0);
-        dataInicio = dtInicio.toISOString();
-
-        // Data de fim
-        const [horaFim, minFim] = formData.horaFim.split(":");
-        const dtFim = new Date(dataBase);
-        dtFim.setHours(Number(horaFim), Number(minFim), 0, 0);
-        dataFim = dtFim.toISOString();
+        // Data apenas no formato YYYY-MM-DD
+        dataInicio = formatDateForAPI(formData.dataAula);
+        
+        // Horas separadas no formato HH:MM
+        horaInicio = formData.horaInicio;
+        horaFim = formData.horaFim;
+        
+        // Para dataFim, usar a mesma data (aula acontece em um único dia)
+        // Se precisar de dataFim diferente, seria necessário um campo separado
+        dataFim = formatDateForAPI(formData.dataAula);
 
         hasPeriodo = true;
       }
@@ -513,8 +534,10 @@ export function CreateAulaForm({
           turmaId: formData.turmaId || undefined,
           instrutorId: formData.instrutorId || undefined,
           moduloId: formData.moduloId || undefined,
-          dataInicio,
-          dataFim,
+          ...(dataInicio && { dataInicio }),
+          ...(dataFim && { dataFim }),
+          ...(horaInicio && { horaInicio }),
+          ...(horaFim && { horaFim }),
           obrigatoria: formData.obrigatoria,
           duracaoMinutos: hasPeriodo
             ? undefined
@@ -533,14 +556,23 @@ export function CreateAulaForm({
         toastCustom.success("Aula atualizada com sucesso!");
       } else {
         // Modo de criação
-        // Calcular duração quando há período (dataInicio e dataFim)
+        // Calcular duração quando há período (horaInicio e horaFim)
         let duracaoMinutos = Number(formData.duracaoMinutos) || 60;
-        if (hasPeriodo && dataInicio && dataFim) {
-          const inicio = new Date(dataInicio);
-          const fim = new Date(dataFim);
-          duracaoMinutos = Math.round(
-            (fim.getTime() - inicio.getTime()) / (1000 * 60)
-          );
+        if (hasPeriodo && horaInicio && horaFim) {
+          const [horaIni, minIni] = horaInicio.split(":").map(Number);
+          const [horaFimNum, minFim] = horaFim.split(":").map(Number);
+          
+          const minutosInicio = horaIni * 60 + minIni;
+          const minutosFim = horaFimNum * 60 + minFim;
+          
+          // Se horaFim for menor que horaInicio, significa que passou da meia-noite
+          // Mas para aulas do mesmo dia, isso não deve acontecer
+          duracaoMinutos = minutosFim - minutosInicio;
+          
+          // Garantir que a duração seja positiva
+          if (duracaoMinutos <= 0) {
+            duracaoMinutos = 60; // Fallback para 1 hora
+          }
         }
 
         const createPayload: CreateAulaPayload = {
@@ -556,6 +588,8 @@ export function CreateAulaForm({
           ...(formData.moduloId && { moduloId: formData.moduloId }),
           ...(dataInicio && { dataInicio }),
           ...(dataFim && { dataFim }),
+          ...(horaInicio && { horaInicio }),
+          ...(horaFim && { horaFim }),
           ...(formData.sala &&
             formData.modalidade === "PRESENCIAL" && {
               sala: formData.sala.trim(),

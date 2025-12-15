@@ -207,3 +207,5 @@ export function AboutTab({ aula, isLoading = false }: AboutTabProps) {
   );
 }
 
+
+

@@ -1,0 +1,26 @@
+---
+alwaysApply: true
+---
+
+Gerenciamento de dados e estado é crítico.
+
+Regras:
+
+- Dados remotos devem usar React Query (TanStack).
+- Sempre tratar:
+  - loading
+  - error
+  - empty state
+- Cache deve ser considerado desde o início.
+- Side effects ficam em hooks ou services.
+
+Estado:
+
+- Estado local → componente
+- Estado compartilhado → Zustand ou Jotai
+- Evitar duplicação de estado entre Query e Store
+
+Nunca:
+
+- Buscar dados no render.
+- Sincronizar estado manualmente sem necessidade.
