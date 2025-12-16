@@ -13,7 +13,7 @@ import {
 import { ButtonCustom } from "@/components/ui/custom/button";
 import { Badge } from "@/components/ui/badge";
 import type { CourseCardProps } from "../types";
-import { cn } from "@/lib/utils";
+import { cn, stripHtmlTags } from "@/lib/utils";
 import Image from "next/image";
 
 // Mapeamento de cores para categorias (tons pastéis refinados)
@@ -217,7 +217,7 @@ export function CourseCard({ course, index, onViewDetails }: CourseCardProps) {
             {course.nome}
           </h3>
           <p className="text-sm text-gray-600 line-clamp-2 leading-relaxed">
-            {course.descricao ||
+            {stripHtmlTags(course.descricao) ||
               "Explore este curso e desenvolva novas habilidades profissionais."}
           </p>
         </div>

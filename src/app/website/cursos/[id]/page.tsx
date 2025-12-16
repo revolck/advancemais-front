@@ -21,6 +21,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { ShareJobButton } from "@/theme/website/components/career-opportunities/components/ShareJobButton";
 import { env } from "@/lib/env";
+import { stripHtmlTags } from "@/lib/utils";
 import Image from "next/image";
 
 type CursoApiResponse =
@@ -143,7 +144,7 @@ export async function generateMetadata({
   return {
     title: `${course.nome} | Cursos | Advance+`,
     description:
-      course.descricao?.slice(0, 155) ?? `Detalhes do curso ${course.nome}`,
+      stripHtmlTags(course.descricao)?.slice(0, 155) ?? `Detalhes do curso ${course.nome}`,
   };
 }
 
@@ -313,7 +314,7 @@ export default async function CourseDetailsPage({
                 <ShareJobButton
                   url={`${origin}/cursos/${course.id}`}
                   title={course.nome}
-                  description={course.descricao}
+                  description={stripHtmlTags(course.descricao)}
                 />
                 <ButtonCustom
                   asChild
@@ -338,7 +339,7 @@ export default async function CourseDetailsPage({
             <section className="space-y-3">
               <h6 className="uppercase text-gray-500">Sobre o curso</h6>
               <p className="!text-gray-700 !leading-relaxed !whitespace-pre-line">
-                {course.descricao ||
+                {stripHtmlTags(course.descricao) ||
                   "Informações detalhadas sobre o curso em breve."}
               </p>
             </section>

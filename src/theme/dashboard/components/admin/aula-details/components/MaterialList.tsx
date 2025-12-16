@@ -19,7 +19,6 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -74,8 +73,14 @@ function SortableMaterialItem({
   onDownload,
   isDeleting,
 }: SortableMaterialItemProps) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-    useSortable({ id: material.id });
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: material.id });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -116,7 +121,10 @@ function SortableMaterialItem({
             {material.titulo}
           </h4>
           {material.obrigatorio && (
-            <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 text-xs">
+            <Badge
+              variant="outline"
+              className="bg-red-50 text-red-700 border-red-200 text-xs"
+            >
               Obrigatório
             </Badge>
           )}
@@ -174,7 +182,10 @@ function SortableMaterialItem({
   );
 }
 
-export function MaterialList({ aulaId, onMaterialCountChange }: MaterialListProps) {
+export function MaterialList({
+  aulaId,
+  onMaterialCountChange,
+}: MaterialListProps) {
   const queryClient = useQueryClient();
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
@@ -261,76 +272,54 @@ export function MaterialList({ aulaId, onMaterialCountChange }: MaterialListProp
 
   if (isLoading) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Paperclip className="h-5 w-5" />
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <Paperclip className="h-5 w-5 text-gray-600" />
+          <h3 className="text-base font-semibold text-gray-900">
             Materiais Complementares
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
+          </h3>
+        </div>
+        <div className="space-y-3">
           <Skeleton className="h-20 w-full" />
           <Skeleton className="h-20 w-full" />
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     );
   }
 
   if (error) {
     return (
-      <Card>
-        <CardContent className="pt-6">
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              Erro ao carregar materiais. Tente novamente.
-            </AlertDescription>
-          </Alert>
-        </CardContent>
-      </Card>
+      <Alert variant="destructive">
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription>
+          Erro ao carregar materiais. Tente novamente.
+        </AlertDescription>
+      </Alert>
     );
   }
 
   if (materiais.length === 0) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Paperclip className="h-5 w-5" />
-            Materiais Complementares
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Alert>
-            <AlertCircle className="h-4 w-4 text-blue-600" />
-            <AlertDescription className="text-blue-700">
-              Nenhum material adicionado ainda. Use o formulário acima para
-              adicionar arquivos, links ou conteúdo em texto.
-            </AlertDescription>
-          </Alert>
-        </CardContent>
-      </Card>
-    );
+    return null;
   }
 
   return (
     <>
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <Paperclip className="h-5 w-5" />
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Paperclip className="h-5 w-5 text-gray-600" />
+            <h3 className="text-base font-semibold text-gray-900">
               Materiais Complementares
-            </CardTitle>
-            <Badge variant="outline">
-              {materiais.length}/{materiaisData?.limite || 3}
-            </Badge>
+            </h3>
           </div>
-          <p className="text-sm text-gray-500 mt-2">
-            Arraste para reordenar os materiais
-          </p>
-        </CardHeader>
-        <CardContent>
+          <Badge variant="outline">
+            {materiais.length}/{materiaisData?.limite || 3}
+          </Badge>
+        </div>
+        <p className="text-sm text-gray-500">
+          Arraste para reordenar os materiais
+        </p>
+        <div>
           <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
@@ -353,11 +342,14 @@ export function MaterialList({ aulaId, onMaterialCountChange }: MaterialListProp
               </div>
             </SortableContext>
           </DndContext>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Dialog de confirmação de exclusão */}
-      <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
+      <AlertDialog
+        open={!!deleteId}
+        onOpenChange={(open) => !open && setDeleteId(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Remover material?</AlertDialogTitle>
@@ -393,6 +385,3 @@ export function MaterialList({ aulaId, onMaterialCountChange }: MaterialListProp
     </>
   );
 }
-
-
-

@@ -99,9 +99,21 @@ export async function listAulas(
       ...init,
       headers: buildHeaders(init?.headers, true),
     },
-    cache: "short",
+    cache: "short", // Cache restaurado
     retries: 1,
   });
+  
+  // Debug: Log da resposta (apenas em desenvolvimento)
+  if (process.env.NODE_ENV === "development") {
+    console.log("[API_AULAS] URL chamada:", url);
+    console.log("[API_AULAS] Resposta completa:", {
+      total: response.pagination?.total,
+      totalPages: response.pagination?.totalPages,
+      page: response.pagination?.page,
+      pageSize: response.pagination?.pageSize,
+      dataLength: response.data?.length,
+    });
+  }
 
   return response;
 }
@@ -113,17 +125,33 @@ export async function getAulaById(
   aulaId: string,
   init?: RequestInit
 ): Promise<Aula> {
-  const response = await apiFetch<Aula>(`${BASE_URL}/${aulaId}`, {
-    init: {
-      method: "GET",
-      ...init,
-      headers: buildHeaders(init?.headers, true),
-    },
-    cache: "short",
-    retries: 1,
-  });
+  const response = await apiFetch<{ success: boolean; aula: Aula } | Aula>(
+    `${BASE_URL}/${aulaId}`,
+    {
+      init: {
+        method: "GET",
+        ...init,
+        headers: buildHeaders(init?.headers, true),
+      },
+      cache: "short", // Mantém cache para performance, mas será invalidado após updates
+      retries: 1,
+    }
+  );
 
-  return response;
+  // A API retorna { success: true, aula: {...} }
+  // Extrai o objeto aula do wrapper
+  if (
+    response &&
+    typeof response === "object" &&
+    "success" in response &&
+    "aula" in response &&
+    (response as { success: boolean; aula: Aula }).success
+  ) {
+    return (response as { success: boolean; aula: Aula }).aula;
+  }
+
+  // Fallback: se vier diretamente como Aula (compatibilidade)
+  return response as Aula;
 }
 
 /**
@@ -153,16 +181,33 @@ export async function updateAula(
   payload: UpdateAulaPayload,
   init?: RequestInit
 ): Promise<Aula> {
-  const response = await apiFetch<Aula>(`${BASE_URL}/${aulaId}`, {
-    init: {
-      method: "PUT",
-      body: JSON.stringify(payload),
-      ...init,
-      headers: buildHeaders(init?.headers, true),
-    },
-  });
+  const response = await apiFetch<{ success: boolean; aula: Aula } | Aula>(
+    `${BASE_URL}/${aulaId}`,
+    {
+      init: {
+        method: "PUT",
+        body: JSON.stringify(payload),
+        ...init,
+        headers: buildHeaders(init?.headers, true),
+      },
+      cache: "no-cache", // Não cachear atualizações
+    }
+  );
 
-  return response;
+  // A API pode retornar { success: true, aula: {...} }
+  // Extrai o objeto aula do wrapper
+  if (
+    response &&
+    typeof response === "object" &&
+    "success" in response &&
+    "aula" in response &&
+    (response as { success: boolean; aula: Aula }).success
+  ) {
+    return (response as { success: boolean; aula: Aula }).aula;
+  }
+
+  // Fallback: se vier diretamente como Aula (compatibilidade)
+  return response as Aula;
 }
 
 /**
@@ -182,25 +227,84 @@ export async function deleteAula(
 }
 
 /**
+ * Publicar ou despublicar uma aula
+ */
+export async function publicarAula(
+  aulaId: string,
+  publicar: boolean,
+  init?: RequestInit
+): Promise<Aula> {
+  const response = await apiFetch<{ success: boolean; aula: Aula } | Aula>(
+    `${BASE_URL}/${aulaId}/publicar`,
+    {
+      init: {
+        method: "PATCH",
+        ...init,
+        headers: buildHeaders(
+          {
+            "Content-Type": "application/json",
+            ...init?.headers,
+          },
+          true
+        ),
+        body: JSON.stringify({ publicar }),
+      },
+      cache: "no-cache",
+    }
+  );
+
+  // A API retorna { success: true, aula: {...} }
+  if (
+    response &&
+    typeof response === "object" &&
+    "success" in response &&
+    "aula" in response &&
+    (response as { success: boolean; aula: Aula }).success
+  ) {
+    return (response as { success: boolean; aula: Aula }).aula;
+  }
+
+  // Fallback: se vier diretamente como Aula
+  return response as Aula;
+}
+
+/**
  * Buscar histórico de alterações da aula
  */
 export async function getAulaHistorico(
   aulaId: string,
   init?: RequestInit
 ): Promise<AulaHistorico[]> {
-  const response = await apiFetch<{ historico: AulaHistorico[] }>(
-    `${BASE_URL}/${aulaId}/historico`,
-    {
-      init: {
-        method: "GET",
-        ...init,
-        headers: buildHeaders(init?.headers, true),
-      },
-      cache: "short",
-    }
-  );
+  const response = await apiFetch<
+    | { success: boolean; historico: AulaHistorico[] }
+    | { historico: AulaHistorico[] }
+  >(`${BASE_URL}/${aulaId}/historico`, {
+    init: {
+      method: "GET",
+      ...init,
+      headers: buildHeaders(init?.headers, true),
+    },
+    cache: "short",
+  });
 
-  return response.historico;
+  // A API retorna { success: true, historico: [...] } ou diretamente { historico: [...] }
+  if (
+    response &&
+    typeof response === "object" &&
+    "success" in response &&
+    "historico" in response
+  ) {
+    return (response as { success: boolean; historico: AulaHistorico[] })
+      .historico;
+  }
+
+  // Fallback: se vier diretamente como { historico: [...] }
+  if (response && typeof response === "object" && "historico" in response) {
+    return (response as { historico: AulaHistorico[] }).historico;
+  }
+
+  // Fallback: se vier diretamente como array (compatibilidade)
+  return Array.isArray(response) ? response : [];
 }
 
 /**
@@ -486,7 +590,12 @@ export async function createMaterialArquivoFromUrl(
  */
 export async function createMaterialLink(
   aulaId: string,
-  data: { titulo: string; linkUrl: string; descricao?: string; obrigatorio?: boolean },
+  data: {
+    titulo: string;
+    linkUrl: string;
+    descricao?: string;
+    obrigatorio?: boolean;
+  },
   init?: RequestInit
 ): Promise<AulaMaterial> {
   const response = await apiFetch<AulaMaterial>(
@@ -509,7 +618,12 @@ export async function createMaterialLink(
  */
 export async function createMaterialTexto(
   aulaId: string,
-  data: { titulo: string; conteudoHtml: string; descricao?: string; obrigatorio?: boolean },
+  data: {
+    titulo: string;
+    conteudoHtml: string;
+    descricao?: string;
+    obrigatorio?: boolean;
+  },
   init?: RequestInit
 ): Promise<AulaMaterial> {
   const response = await apiFetch<AulaMaterial>(
@@ -619,12 +733,18 @@ export function validarArquivo(
   if (file.size > config.MAX_TAMANHO_ARQUIVO) {
     return {
       valido: false,
-      erro: `Arquivo excede o limite de ${config.MAX_TAMANHO_ARQUIVO / (1024 * 1024)}MB`,
+      erro: `Arquivo excede o limite de ${
+        config.MAX_TAMANHO_ARQUIVO / (1024 * 1024)
+      }MB`,
     };
   }
 
   // Validar tipo MIME
-  if (!config.TIPOS_PERMITIDOS.includes(file.type as typeof config.TIPOS_PERMITIDOS[number])) {
+  if (
+    !config.TIPOS_PERMITIDOS.includes(
+      file.type as (typeof config.TIPOS_PERMITIDOS)[number]
+    )
+  ) {
     return {
       valido: false,
       erro: "Tipo de arquivo não permitido",
@@ -633,7 +753,11 @@ export function validarArquivo(
 
   // Validar extensão
   const extensao = `.${file.name.split(".").pop()?.toLowerCase()}`;
-  if (!config.EXTENSOES_PERMITIDAS.includes(extensao as typeof config.EXTENSOES_PERMITIDAS[number])) {
+  if (
+    !config.EXTENSOES_PERMITIDAS.includes(
+      extensao as (typeof config.EXTENSOES_PERMITIDAS)[number]
+    )
+  ) {
     return {
       valido: false,
       erro: "Extensão de arquivo não permitida",
@@ -665,10 +789,11 @@ export function getIconePorMimeType(mimeType: string): string {
   if (mimeType.startsWith("audio/")) return "🎵";
   if (mimeType.includes("pdf")) return "📄";
   if (mimeType.includes("word") || mimeType.includes("document")) return "📝";
-  if (mimeType.includes("excel") || mimeType.includes("spreadsheet")) return "📊";
-  if (mimeType.includes("powerpoint") || mimeType.includes("presentation")) return "📽️";
+  if (mimeType.includes("excel") || mimeType.includes("spreadsheet"))
+    return "📊";
+  if (mimeType.includes("powerpoint") || mimeType.includes("presentation"))
+    return "📽️";
   if (mimeType.includes("zip") || mimeType.includes("compressed")) return "📦";
   if (mimeType === "text/plain") return "📃";
   return "📎";
 }
-

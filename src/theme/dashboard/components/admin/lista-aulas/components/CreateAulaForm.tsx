@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   InputCustom,
@@ -15,6 +15,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, Video, Info, Circle } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   FileUploadMultiple,
   type FileUploadItem,
@@ -25,6 +26,7 @@ import {
   createAula,
   updateAula,
   createMaterialArquivoFromUrl,
+  publicarAula,
   MATERIAIS_CONFIG,
   type CreateAulaPayload,
   type UpdateAulaPayload,
@@ -43,6 +45,7 @@ import {
 } from "../hooks/useTurmasForSelect";
 import { useInstrutoresForSelect } from "../hooks/useInstrutoresForSelect";
 import { useAuth } from "@/hooks/useAuth";
+import { queryKeys } from "@/lib/react-query/queryKeys";
 
 const MODALIDADE_OPTIONS = [
   { value: "ONLINE", label: "Online (YouTube)" },
@@ -114,6 +117,17 @@ export interface CreateAulaFormProps {
   onCancel?: () => void;
 }
 
+/**
+ * Retorna a data de amanhã (hoje + 1 dia) com horário zerado
+ * Usado para garantir que apenas datas futuras possam ser selecionadas
+ */
+const getTomorrowDate = (): Date => {
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  tomorrow.setHours(0, 0, 0, 0);
+  return tomorrow;
+};
+
 export function CreateAulaForm({
   mode = "create",
   aulaId,
@@ -129,6 +143,8 @@ export function CreateAulaForm({
   const [loadingStep, setLoadingStep] = useState<string>("");
   const [uploadProgress, setUploadProgress] = useState(0);
   const [materialFiles, setMaterialFiles] = useState<FileUploadItem[]>([]);
+  const [isInitializing, setIsInitializing] = useState(mode === "edit");
+  const modalidadeAtualizadaRef = useRef(false); // Rastrear se já atualizamos a modalidade
 
   const { turmas, isLoading: loadingTurmas } = useTurmasForSelect();
   const { instrutores, isLoading: loadingInstrutores } =
@@ -149,48 +165,84 @@ export function CreateAulaForm({
 
   // Carregar dados iniciais no modo de edição
   useEffect(() => {
-    if (mode === "edit" && initialData) {
-      const aula = initialData;
+    if (mode === "edit") {
+      if (initialData && initialData.id) {
+        const aula = initialData;
 
-      // Extrair data e horários
-      let dataAula: Date | null = null;
-      let horaInicio = "";
-      let horaFim = "";
+        // Extrair data e horários
+        let dataAula: Date | null = null;
+        let horaInicio = "";
+        let horaFim = "";
 
-      if (aula.dataInicio) {
-        const dataInicio = new Date(aula.dataInicio);
-        dataAula = dataInicio;
-        horaInicio = `${String(dataInicio.getHours()).padStart(
-          2,
-          "0"
-        )}:${String(dataInicio.getMinutes()).padStart(2, "0")}`;
+        // Preferir usar horaInicio e horaFim separados da API (formato HH:MM)
+        if (aula.horaInicio) {
+          horaInicio = aula.horaInicio;
+        } else if (aula.dataInicio) {
+          // Fallback: extrair da data ISO se horaInicio não estiver disponível
+          const dataInicio = new Date(aula.dataInicio);
+          horaInicio = `${String(dataInicio.getHours()).padStart(
+            2,
+            "0"
+          )}:${String(dataInicio.getMinutes()).padStart(2, "0")}`;
+        }
+
+        if (aula.horaFim) {
+          horaFim = aula.horaFim;
+        } else if (aula.dataFim) {
+          // Fallback: extrair da data ISO se horaFim não estiver disponível
+          const dataFim = new Date(aula.dataFim);
+          horaFim = `${String(dataFim.getHours()).padStart(2, "0")}:${String(
+            dataFim.getMinutes()
+          ).padStart(2, "0")}`;
+        }
+
+        // Extrair apenas a data (sem hora) de dataInicio
+        if (aula.dataInicio) {
+          const dataInicio = new Date(aula.dataInicio);
+          // Criar nova data apenas com dia/mês/ano (zerar horas)
+          dataAula = new Date(
+            dataInicio.getFullYear(),
+            dataInicio.getMonth(),
+            dataInicio.getDate()
+          );
+        }
+
+        // Se há turma vinculada, não preencher modalidade aqui - será preenchida pelo useEffect quando turmas carregarem
+        // Se não há turma vinculada, usar a modalidade da aula
+        const modalidadeInicial = aula.turma?.id
+          ? "" // Será preenchida pelo useEffect quando turmas carregarem
+          : aula.modalidade || "";
+
+        setFormData({
+          titulo: aula.titulo || "",
+          descricao: aula.descricao || "",
+          modalidade: modalidadeInicial,
+          tipoLink: aula.tipoLink || "",
+          youtubeUrl: aula.youtubeUrl || "",
+          turmaId: aula.turma?.id || "",
+          instrutorId: aula.instrutor?.id || "",
+          moduloId: aula.modulo?.id || "",
+          dataAula,
+          horaInicio,
+          horaFim,
+          sala: aula.sala || "",
+          obrigatoria: aula.obrigatoria ?? true,
+          duracaoMinutos: aula.duracaoMinutos
+            ? String(aula.duracaoMinutos)
+            : "",
+          status: aula.status === "RASCUNHO" ? "RASCUNHO" : "PUBLICADA",
+          gravarAula: aula.gravarAula ?? false,
+        });
+
+        setIsInitializing(false);
+        modalidadeAtualizadaRef.current = false; // Resetar flag quando inicializa
+      } else {
+        // Se não há initialData válido, manter loading
+        setIsInitializing(true);
       }
-
-      if (aula.dataFim) {
-        const dataFim = new Date(aula.dataFim);
-        horaFim = `${String(dataFim.getHours()).padStart(2, "0")}:${String(
-          dataFim.getMinutes()
-        ).padStart(2, "0")}`;
-      }
-
-      setFormData({
-        titulo: aula.titulo || "",
-        descricao: aula.descricao || "",
-        modalidade: aula.modalidade || "",
-        tipoLink: aula.tipoLink || "",
-        youtubeUrl: aula.youtubeUrl || "",
-        turmaId: aula.turma?.id || "",
-        instrutorId: aula.instrutor?.id || "",
-        moduloId: aula.modulo?.id || "",
-        dataAula,
-        horaInicio,
-        horaFim,
-        sala: aula.sala || "",
-        obrigatoria: aula.obrigatoria ?? true,
-        duracaoMinutos: aula.duracaoMinutos ? String(aula.duracaoMinutos) : "",
-        status: aula.status === "RASCUNHO" ? "RASCUNHO" : "PUBLICADA",
-        gravarAula: aula.gravarAula ?? false,
-      });
+    } else {
+      setIsInitializing(false);
+      modalidadeAtualizadaRef.current = false;
     }
   }, [mode, initialData]);
 
@@ -212,6 +264,90 @@ export function CreateAulaForm({
       }));
     }
   }, [turmas, formData.turmaId, isInstrutor, mode]);
+
+  // Preencher modalidade automaticamente quando turma é carregada no modo de edição
+  // Este useEffect força a atualização quando as turmas terminam de carregar
+  useEffect(() => {
+    // Só executar no modo de edição, quando turmas terminaram de carregar e não está inicializando
+    if (
+      mode === "edit" &&
+      !loadingTurmas &&
+      !isInitializing &&
+      turmas.length > 0
+    ) {
+      // Se há turma vinculada, SEMPRE usar a modalidade da turma (forçar atualização)
+      if (formData.turmaId) {
+        const selectedTurma = turmas.find((t) => t.value === formData.turmaId);
+        if (selectedTurma) {
+          const modalidadeDaTurma = turmaMetodoToAulaModalidade(
+            selectedTurma.metodo
+          );
+
+          // SEMPRE atualizar modalidade quando há turma vinculada (vem da turma, não da aula)
+          // A API agora valida e força a modalidade baseada na turma, mas preencher aqui
+          // garante melhor UX (usuário vê a modalidade correta imediatamente)
+          setFormData((prev) => {
+            // Se a modalidade atual não corresponde à modalidade da turma, atualizar
+            if (prev.modalidade !== modalidadeDaTurma) {
+              modalidadeAtualizadaRef.current = true; // Marcar como atualizada
+              return {
+                ...prev,
+                modalidade: modalidadeDaTurma,
+                gravarAula:
+                  modalidadeDaTurma === "AO_VIVO"
+                    ? prev.gravarAula ?? true
+                    : prev.gravarAula,
+              };
+            } else {
+              // Mesmo se já está correto, marcar como atualizada
+              modalidadeAtualizadaRef.current = true;
+            }
+            return prev;
+          });
+        }
+      } else {
+        // Se não há turma vinculada e modalidade está vazia, usar a modalidade da aula
+        // A API sempre retorna AO_VIVO quando turma tem método LIVE, então podemos confiar
+        setFormData((prev) => {
+          if (!prev.modalidade && initialData?.modalidade) {
+            return {
+              ...prev,
+              modalidade: initialData.modalidade,
+            };
+          }
+          return prev;
+        });
+      }
+    }
+  }, [
+    mode,
+    formData.turmaId,
+    turmas, // Usar turmas completo para garantir que execute quando turmas mudam
+    loadingTurmas,
+    isInitializing,
+    initialData?.modalidade,
+  ]);
+
+  // Regra: Se não tiver turma, força status para RASCUNHO
+  // Se tiver turma, define como PUBLICADA por padrão (instrutor não é obrigatório para rascunho)
+  useEffect(() => {
+    const temTurma = !!formData.turmaId;
+    const podePublicar = temTurma; // Apenas turma é obrigatória para publicação
+
+    if (!podePublicar && formData.status === "PUBLICADA") {
+      // Se não pode publicar e está como PUBLICADA, força RASCUNHO
+      setFormData((prev) => ({
+        ...prev,
+        status: "RASCUNHO",
+      }));
+    } else if (podePublicar && formData.status === "RASCUNHO") {
+      // Se pode publicar e está como RASCUNHO, define como PUBLICADA por padrão
+      setFormData((prev) => ({
+        ...prev,
+        status: "PUBLICADA",
+      }));
+    }
+  }, [formData.turmaId, formData.status]);
 
   const handleInputChange = (field: keyof FormData, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -245,18 +381,36 @@ export function CreateAulaForm({
 
     if (selectedTurma) {
       const modalidade = turmaMetodoToAulaModalidade(selectedTurma.metodo);
-      setFormData((prev) => ({
-        ...prev,
-        turmaId: turmaId || "",
-        modalidade,
-        // Reset campos dependentes da modalidade
-        tipoLink: "",
-        youtubeUrl: "",
-        dataAula: null,
-        horaInicio: "",
-        horaFim: "",
-        gravarAula: modalidade === "AO_VIVO" ? true : false,
-      }));
+
+      // No modo de edição, não resetar campos se a turma já estava selecionada
+      if (mode === "edit" && formData.turmaId === turmaId) {
+        // Apenas atualizar modalidade se necessário
+        setFormData((prev) => ({
+          ...prev,
+          turmaId: turmaId || "",
+          modalidade: prev.modalidade || modalidade,
+          gravarAula:
+            modalidade === "AO_VIVO"
+              ? prev.gravarAula ?? true
+              : prev.gravarAula,
+        }));
+      } else {
+        // No modo de criação ou quando muda de turma, resetar campos
+        setFormData((prev) => ({
+          ...prev,
+          turmaId: turmaId || "",
+          modalidade,
+          // Reset campos dependentes da modalidade apenas no modo de criação
+          ...(mode === "create" && {
+            tipoLink: "",
+            youtubeUrl: "",
+            dataAula: null,
+            horaInicio: "",
+            horaFim: "",
+          }),
+          gravarAula: modalidade === "AO_VIVO" ? true : false,
+        }));
+      }
     } else {
       // Nenhuma turma selecionada - limpa modalidade para permitir seleção manual
       setFormData((prev) => ({
@@ -265,9 +419,11 @@ export function CreateAulaForm({
         modalidade: "",
         tipoLink: "",
         youtubeUrl: "",
-        dataAula: null,
-        horaInicio: "",
-        horaFim: "",
+        ...(mode === "create" && {
+          dataAula: null,
+          horaInicio: "",
+          horaFim: "",
+        }),
         gravarAula: false,
       }));
     }
@@ -380,6 +536,17 @@ export function CreateAulaForm({
       ) {
         newErrors.horaFim = "Hora de término deve ser após hora de início";
       }
+
+      // Verificar se é no futuro (amanhã ou depois)
+      if (formData.dataAula) {
+        const dataAula = new Date(formData.dataAula);
+        dataAula.setHours(0, 0, 0, 0);
+        const amanha = getTomorrowDate();
+
+        if (dataAula < amanha) {
+          newErrors.dataAula = "Aula deve ser agendada para amanhã ou depois";
+        }
+      }
     }
 
     if (formData.modalidade === "AO_VIVO") {
@@ -401,14 +568,14 @@ export function CreateAulaForm({
         newErrors.horaFim = "Hora de término deve ser após hora de início";
       }
 
-      // Verificar se é no futuro
-      if (formData.dataAula && formData.horaInicio) {
-        const dataHoraInicio = new Date(formData.dataAula);
-        const [hora, minuto] = formData.horaInicio.split(":");
-        dataHoraInicio.setHours(Number(hora), Number(minuto), 0, 0);
+      // Verificar se é no futuro (amanhã ou depois)
+      if (formData.dataAula) {
+        const dataAula = new Date(formData.dataAula);
+        dataAula.setHours(0, 0, 0, 0);
+        const amanha = getTomorrowDate();
 
-        if (dataHoraInicio < new Date()) {
-          newErrors.dataAula = "Aula ao vivo deve ser agendada para o futuro";
+        if (dataAula < amanha) {
+          newErrors.dataAula = "Aula deve ser agendada para amanhã ou depois";
         }
       }
     }
@@ -432,15 +599,14 @@ export function CreateAulaForm({
           newErrors.horaFim = "Hora de término é obrigatória";
         }
 
-        // Verificar se é no futuro
-        if (formData.dataAula && formData.horaInicio) {
-          const dataHoraInicio = new Date(formData.dataAula);
-          const [hora, minuto] = formData.horaInicio.split(":");
-          dataHoraInicio.setHours(Number(hora), Number(minuto), 0, 0);
+        // Verificar se é no futuro (amanhã ou depois)
+        if (formData.dataAula) {
+          const dataAula = new Date(formData.dataAula);
+          dataAula.setHours(0, 0, 0, 0);
+          const amanha = getTomorrowDate();
 
-          if (dataHoraInicio < new Date()) {
-            newErrors.dataAula =
-              "Aula com Meet deve ser agendada para o futuro";
+          if (dataAula < amanha) {
+            newErrors.dataAula = "Aula deve ser agendada para amanhã ou depois";
           }
         }
       }
@@ -463,19 +629,19 @@ export function CreateAulaForm({
    */
   const formatDateForAPI = (date: Date | string | null): string | undefined => {
     if (!date) return undefined;
-    
-    const dateObj = typeof date === 'string' ? new Date(date) : date;
-    
+
+    const dateObj = typeof date === "string" ? new Date(date) : date;
+
     // Se já é YYYY-MM-DD, retorna como está
-    if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    if (typeof date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
       return date;
     }
-    
+
     // Converte para YYYY-MM-DD
     const year = dateObj.getFullYear();
-    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-    const day = String(dateObj.getDate()).padStart(2, '0');
-    
+    const month = String(dateObj.getMonth() + 1).padStart(2, "0");
+    const day = String(dateObj.getDate()).padStart(2, "0");
+
     return `${year}-${month}-${day}`;
   };
 
@@ -511,11 +677,11 @@ export function CreateAulaForm({
       if (formData.dataAula && formData.horaInicio && formData.horaFim) {
         // Data apenas no formato YYYY-MM-DD
         dataInicio = formatDateForAPI(formData.dataAula);
-        
+
         // Horas separadas no formato HH:MM
         horaInicio = formData.horaInicio;
         horaFim = formData.horaFim;
-        
+
         // Para dataFim, usar a mesma data (aula acontece em um único dia)
         // Se precisar de dataFim diferente, seria necessário um campo separado
         dataFim = formatDateForAPI(formData.dataAula);
@@ -525,23 +691,42 @@ export function CreateAulaForm({
 
       if (mode === "edit" && aulaId) {
         // Modo de edição
+        // Detectar se turma foi removida (estava preenchida antes e agora está vazia)
+        const turmaFoiRemovida = initialData?.turma?.id && !formData.turmaId;
+
+        // Detectar se instrutor foi removido
+        const instrutorFoiRemovido =
+          initialData?.instrutor?.id && !formData.instrutorId;
+
         const updatePayload: UpdateAulaPayload = {
           titulo: formData.titulo.trim(),
           descricao: formData.descricao.trim(),
           modalidade: formData.modalidade as Modalidade,
           tipoLink: (formData.tipoLink as TipoLink) || undefined,
           youtubeUrl: formData.youtubeUrl || undefined,
-          turmaId: formData.turmaId || undefined,
-          instrutorId: formData.instrutorId || undefined,
-          moduloId: formData.moduloId || undefined,
+          // Se turma foi removida, não enviar o campo (API deve tratar como remoção)
+          // Se turma foi selecionada, enviar o ID
+          // Se não foi alterado, não enviar (undefined)
+          ...(turmaFoiRemovida
+            ? {} // Não enviar turmaId quando removido
+            : formData.turmaId
+            ? { turmaId: formData.turmaId }
+            : {}),
+          // Se instrutor foi removido, não enviar o campo (API deve tratar como remoção)
+          ...(instrutorFoiRemovido
+            ? {} // Não enviar instrutorId quando removido
+            : formData.instrutorId
+            ? { instrutorId: formData.instrutorId }
+            : {}),
+          ...(formData.moduloId && { moduloId: formData.moduloId }),
           ...(dataInicio && { dataInicio }),
           ...(dataFim && { dataFim }),
           ...(horaInicio && { horaInicio }),
           ...(horaFim && { horaFim }),
           obrigatoria: formData.obrigatoria,
-          duracaoMinutos: hasPeriodo
-            ? undefined
-            : Number(formData.duracaoMinutos),
+          ...(hasPeriodo
+            ? {}
+            : { duracaoMinutos: Number(formData.duracaoMinutos) }),
           status: formData.status,
           ...((formData.modalidade === "AO_VIVO" ||
             (formData.modalidade === "SEMIPRESENCIAL" &&
@@ -551,9 +736,56 @@ export function CreateAulaForm({
         };
 
         setLoadingStep("Salvando alterações...");
-        await updateAula(aulaId, updatePayload);
+        const updatedAula = await updateAula(aulaId, updatePayload);
         setLoadingStep("Finalizando...");
+
+        // Debug: Log para verificar a resposta da API
+        if (process.env.NODE_ENV === "development") {
+          console.log("[UPDATE_AULA] Resposta da API:", {
+            id: updatedAula?.id,
+            titulo: updatedAula?.titulo,
+            modalidade: updatedAula?.modalidade,
+            status: updatedAula?.status,
+            turma: updatedAula?.turma?.nome || null,
+            instrutor: updatedAula?.instrutor?.nome || null,
+            dataInicio: updatedAula?.dataInicio,
+            horaInicio: updatedAula?.horaInicio,
+            payload: updatePayload,
+          });
+        }
+
+        const detailKey = queryKeys.aulas.detail(aulaId);
+
+        // ✅ Remover dados antigos do cache antes de invalidar
+        queryClient.removeQueries({
+          queryKey: detailKey,
+          exact: true,
+        });
+
+        // ✅ Invalidar e forçar refetch completo da query de detalhes
+        await queryClient.invalidateQueries({
+          queryKey: detailKey,
+          exact: true,
+          refetchType: "all", // Força refetch de todas as queries (ativas e inativas)
+        });
+
+        // ✅ Forçar refetch explícito para garantir dados atualizados
+        await queryClient.refetchQueries({
+          queryKey: detailKey,
+          exact: true,
+        });
+
+        // Invalidar queries de listagem também
+        await queryClient.invalidateQueries({
+          queryKey: ["aulas"],
+          exact: false,
+          refetchType: "all",
+        });
+
         toastCustom.success("Aula atualizada com sucesso!");
+
+        // Pequeno delay para garantir que o refetch seja processado
+        await new Promise((resolve) => setTimeout(resolve, 200));
       } else {
         // Modo de criação
         // Calcular duração quando há período (horaInicio e horaFim)
@@ -561,14 +793,14 @@ export function CreateAulaForm({
         if (hasPeriodo && horaInicio && horaFim) {
           const [horaIni, minIni] = horaInicio.split(":").map(Number);
           const [horaFimNum, minFim] = horaFim.split(":").map(Number);
-          
+
           const minutosInicio = horaIni * 60 + minIni;
           const minutosFim = horaFimNum * 60 + minFim;
-          
+
           // Se horaFim for menor que horaInicio, significa que passou da meia-noite
           // Mas para aulas do mesmo dia, isso não deve acontecer
           duracaoMinutos = minutosFim - minutosInicio;
-          
+
           // Garantir que a duração seja positiva
           if (duracaoMinutos <= 0) {
             duracaoMinutos = 60; // Fallback para 1 hora
@@ -595,7 +827,7 @@ export function CreateAulaForm({
               sala: formData.sala.trim(),
             }),
           obrigatoria: formData.obrigatoria,
-          status: formData.status,
+          status: "RASCUNHO", // ✅ SEMPRE criar como RASCUNHO - publicação é feita via endpoint específico
           ...((formData.modalidade === "AO_VIVO" ||
             (formData.modalidade === "SEMIPRESENCIAL" &&
               formData.tipoLink === "MEET")) && {
@@ -689,15 +921,49 @@ export function CreateAulaForm({
         if (response.meetUrl) {
           toastCustom.info(`Sala Google Meet criada: ${response.meetUrl}`);
         }
+
+        // Se o usuário tinha selecionado "PUBLICADA", publicar automaticamente após criar
+        if (formData.status === "PUBLICADA") {
+          try {
+            setLoadingStep("Publicando aula...");
+            await publicarAula(response.aula.id, true);
+            toastCustom.success("Aula criada e publicada com sucesso!");
+          } catch (error) {
+            // Se falhar ao publicar, a aula já foi criada como RASCUNHO
+            console.error("Erro ao publicar aula:", error);
+            toastCustom.warning(
+              "Aula criada como rascunho. Você pode publicá-la depois na página de detalhes."
+            );
+          }
+        }
       }
 
-      // Refetch queries para atualizar a lista imediatamente
-      await queryClient.refetchQueries({ queryKey: ["aulas"] });
+      // Invalidar todas as queries de aulas para atualizar a lista imediatamente
+      await queryClient.invalidateQueries({
+        queryKey: ["aulas"],
+        exact: false, // Invalida todas as queries que começam com ["aulas"]
+      });
+
+      // Se estiver no modo de edição, também invalidar a query de detalhes
+      if (mode === "edit" && aulaId) {
+        const detailKey = queryKeys.aulas.detail(aulaId);
+        await queryClient.invalidateQueries({
+          queryKey: detailKey,
+          exact: true,
+        });
+        await queryClient.refetchQueries({
+          queryKey: detailKey,
+          exact: true,
+        });
+      }
 
       // Limpar loading e chamar onSuccess
       setIsLoading(false);
       setLoadingStep("");
       setUploadProgress(0);
+
+      // Aguardar um pouco para garantir que a invalidação foi processada
+      await new Promise((resolve) => setTimeout(resolve, 200));
 
       onSuccess?.();
     } catch (error: unknown) {
@@ -713,6 +979,50 @@ export function CreateAulaForm({
       setUploadProgress(0);
     }
   };
+
+  // Mostrar skeleton enquanto está inicializando no modo de edição
+  if (isInitializing && mode === "edit") {
+    return (
+      <div className="bg-white rounded-3xl p-6 relative">
+        <div className="space-y-6">
+          {/* Header Skeleton */}
+          <div className="flex items-center justify-between p-4 bg-muted/20 rounded-xl border border-gray-400/20">
+            <div className="flex items-center gap-3">
+              <Skeleton className="h-8 w-8 rounded-lg" />
+              <Skeleton className="h-5 w-48" />
+            </div>
+            <Skeleton className="h-6 w-24 rounded-full" />
+          </div>
+
+          {/* Form Fields Skeleton */}
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-32 w-full" />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white rounded-3xl p-6 relative">
@@ -823,10 +1133,35 @@ export function CreateAulaForm({
                     checked ? "PUBLICADA" : "RASCUNHO"
                   )
                 }
-                disabled={isLoading}
+                disabled={
+                  isLoading ||
+                  !formData.turmaId ||
+                  (isInstrutor && !formData.turmaId)
+                }
               />
             </div>
           </div>
+
+          {/* Alerta: Precisa ter turma para publicar */}
+          {!formData.turmaId && (
+            <div className="rounded-xl border-2 border-amber-200 bg-amber-50 p-4">
+              <div className="flex items-start gap-3">
+                <div className="shrink-0 w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
+                  <Info className="h-5 w-5 text-amber-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h4 className="text-sm! font-semibold! text-amber-900! mb-1!">
+                    Aula será salva como rascunho
+                  </h4>
+                  <p className="text-sm! text-amber-700! mb-0!">
+                    Para publicar a aula, é necessário vincular uma{" "}
+                    <strong>turma</strong>. O instrutor pode ser definido
+                    depois.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="space-y-4">
             {/* Título da Aula */}
@@ -846,47 +1181,65 @@ export function CreateAulaForm({
               {/* Campo Turma - Oculto se instrutor tem só 1 turma */}
               {showTurmaField && (
                 <div className="flex-1 min-w-0">
-                  <SelectCustom
-                    label="Turma"
-                    placeholder={
-                      loadingTurmas ? "Carregando..." : "Selecione a turma"
-                    }
-                    options={[
-                      ...(isAdminModPed
-                        ? [{ value: "", label: "Sem turma (vincular depois)" }]
-                        : []),
-                      ...turmas,
-                    ]}
-                    value={formData.turmaId}
-                    onChange={handleTurmaChange}
-                    error={errors.turmaId}
-                    required={turmaRequired}
-                    disabled={loadingTurmas}
-                  />
+                  {loadingTurmas ? (
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-gray-700">
+                        Turma{" "}
+                        {turmaRequired && (
+                          <span className="text-red-500">*</span>
+                        )}
+                      </Label>
+                      <Skeleton className="h-10 w-full rounded-md" />
+                    </div>
+                  ) : (
+                    <SelectCustom
+                      label="Turma"
+                      placeholder="Selecione a turma"
+                      options={[
+                        ...(isAdminModPed
+                          ? [
+                              {
+                                value: "",
+                                label: "Sem turma (vincular depois)",
+                              },
+                            ]
+                          : []),
+                        ...turmas,
+                      ]}
+                      value={formData.turmaId}
+                      onChange={handleTurmaChange}
+                      error={errors.turmaId}
+                      required={turmaRequired}
+                    />
+                  )}
                 </div>
               )}
 
               {/* Campo Instrutor - Apenas para Admin/Mod/Ped */}
               {showInstrutorField && (
                 <div className="flex-1 min-w-0">
-                  <SelectCustom
-                    label="Instrutor"
-                    placeholder={
-                      loadingInstrutores
-                        ? "Carregando..."
-                        : "Selecione o instrutor"
-                    }
-                    options={[
-                      { value: "", label: "Sem instrutor (vincular depois)" },
-                      ...instrutores,
-                    ]}
-                    value={formData.instrutorId}
-                    onChange={(val) =>
-                      handleInputChange("instrutorId", val || "")
-                    }
-                    error={errors.instrutorId}
-                    disabled={loadingInstrutores}
-                  />
+                  {loadingInstrutores ? (
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-gray-700">
+                        Instrutor
+                      </Label>
+                      <Skeleton className="h-10 w-full rounded-md" />
+                    </div>
+                  ) : (
+                    <SelectCustom
+                      label="Instrutor"
+                      placeholder="Selecione o instrutor"
+                      options={[
+                        { value: "", label: "Sem instrutor (vincular depois)" },
+                        ...instrutores,
+                      ]}
+                      value={formData.instrutorId}
+                      onChange={(val) =>
+                        handleInputChange("instrutorId", val || "")
+                      }
+                      error={errors.instrutorId}
+                    />
+                  )}
                 </div>
               )}
 
@@ -1000,13 +1353,7 @@ export function CreateAulaForm({
                       placeholder="Selecione"
                       error={errors.dataAula}
                       required
-                      minDate={
-                        formData.modalidade === "AO_VIVO" ||
-                        (formData.modalidade === "SEMIPRESENCIAL" &&
-                          formData.tipoLink === "MEET")
-                          ? new Date()
-                          : undefined
-                      }
+                      minDate={getTomorrowDate()}
                     />
                   </div>
 

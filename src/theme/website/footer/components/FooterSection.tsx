@@ -60,7 +60,7 @@ export const FooterSection: React.FC<FooterSectionProps> = ({
 
   return (
     <div className="flex-1">
-      <div className="flex items-center gap-2 mb-4">
+      <div className="flex items-center justify-center gap-2 mb-4">
         {SectionIcon && (
           <SectionIcon
             className="w-5 h-5 text-red-600 shrink-0"

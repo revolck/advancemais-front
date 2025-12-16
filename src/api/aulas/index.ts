@@ -9,6 +9,7 @@ export {
   createAula,
   updateAula,
   deleteAula,
+  publicarAula,
   getAulaHistorico,
   getAulaProgresso,
   updateAulaProgresso,

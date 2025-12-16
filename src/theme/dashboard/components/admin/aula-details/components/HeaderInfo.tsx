@@ -3,13 +3,11 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -17,48 +15,136 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { ChevronDown, ChevronLeft, Edit, Trash2, Video } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronLeft,
+  Edit,
+  Trash2,
+  Video,
+  Eye,
+  EyeOff,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Aula } from "@/api/aulas";
 import { useRouter } from "next/navigation";
-import { getModalidadeIcon, getModalidadeBadgeColor, getStatusBadgeColor, formatAulaStatus } from "../utils";
+import {
+  getModalidadeIcon,
+  getModalidadeBadgeColor,
+  getModalidadeLabel,
+  getStatusBadgeColor,
+  formatAulaStatus,
+} from "../utils";
 import { DeleteAulaModal } from "../modals/DeleteAulaModal";
+import { PublicarAulaMenuItem } from "./PublicarAulaMenuItem";
 import { useAuth } from "@/hooks/useAuth";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { deleteAula } from "@/api/aulas";
+import { toastCustom } from "@/components/ui/custom";
+import { queryKeys } from "@/lib/react-query/queryKeys";
+import {
+  validarExclusao,
+  validarPublicacao,
+  validarDespublicacao,
+  podeAlterarStatus,
+} from "../utils/validations";
 
 interface HeaderInfoProps {
   aula: Aula;
   onUpdate?: () => void;
 }
 
-function getInitials(name?: string): string {
-  if (!name || typeof name !== "string") return "??";
-  
-  const trimmed = name.trim();
-  if (!trimmed) return "??";
-  
-  const words = trimmed.split(/\s+/);
-  if (words.length >= 2) {
-    return (words[0][0] + words[words.length - 1][0]).toUpperCase();
-  }
-  return trimmed.substring(0, 2).toUpperCase();
-}
-
 export function HeaderInfo({ aula, onUpdate }: HeaderInfoProps) {
   const router = useRouter();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [isActionsOpen, setIsActionsOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+
+  // Mutation para excluir aula (deve ser chamado antes de qualquer early return)
+  const deleteMutation = useMutation({
+    mutationFn: (aulaId: string) => deleteAula(aulaId),
+    onSuccess: async () => {
+      toastCustom.success("Aula excluída com sucesso!");
+
+      // Fechar modal antes de invalidar
+      setIsDeleteModalOpen(false);
+
+      // Invalidar todas as queries de listagem de aulas (com diferentes filtros)
+      // A queryKey usada na listagem é ["aulas", params], então precisamos invalidar todas
+      await queryClient.invalidateQueries({
+        queryKey: ["aulas"],
+        exact: false, // Invalida todas as queries que começam com ["aulas"]
+        refetchType: "all", // Força refetch de todas as queries (ativas e inativas)
+      });
+
+      // Forçar refetch explícito de todas as queries de listagem
+      await queryClient.refetchQueries({
+        queryKey: ["aulas"],
+        exact: false,
+      });
+
+      // Invalidar query de detalhes da aula deletada
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.aulas.detail(aula.id),
+        exact: true,
+        refetchType: "all",
+      });
+
+      // Remover a aula deletada do cache
+      queryClient.removeQueries({
+        queryKey: queryKeys.aulas.detail(aula.id),
+        exact: true,
+      });
+
+      // Usar replace para evitar voltar à página deletada com botão voltar
+      router.replace("/dashboard/cursos/aulas");
+    },
+    onError: (error: any) => {
+      const errorData = error.response?.data || error;
+
+      switch (errorData?.code) {
+        case "FORBIDDEN":
+          toastCustom.error(
+            "Apenas administradores, moderadores e equipe pedagógica podem excluir aulas"
+          );
+          break;
+        case "AULA_JA_REALIZADA":
+          toastCustom.error(
+            "Não é possível excluir aulas que já foram realizadas"
+          );
+          break;
+        case "PRAZO_INSUFICIENTE":
+          toastCustom.error(
+            `Prazo insuficiente. A aula acontece em ${errorData.diasRestantes} dia(s). Mínimo de 5 dias de antecedência necessário.`
+          );
+          break;
+        case "AULA_NOT_FOUND":
+          toastCustom.error("Aula não encontrada");
+          break;
+        default:
+          toastCustom.error(errorData?.message || "Erro ao excluir aula");
+      }
+    },
+  });
+
+  // Verificação de segurança (após hooks)
+  if (!aula) {
+    return (
+      <section className="relative overflow-hidden rounded-3xl bg-white">
+        <div className="relative flex flex-col gap-6 px-6 py-6 sm:px-8 sm:py-8">
+          <p className="text-sm text-gray-500">Carregando dados da aula...</p>
+        </div>
+      </section>
+    );
+  }
 
   const isPublicada = aula.status === "PUBLICADA";
   const statusColor = isPublicada ? "bg-emerald-500" : "bg-gray-400";
   const statusLabel = isPublicada ? "Aula publicada" : "Aula em rascunho";
 
-  // Verificar se pode excluir (não é instrutor e aula não começou)
-  const isInstrutor = user?.role === "INSTRUTOR";
-  const aulaJaComecou = aula.dataInicio
-    ? new Date(aula.dataInicio) < new Date()
-    : false;
-  const podeExcluir = !isInstrutor && !aulaJaComecou;
+  // Validar exclusão usando função centralizada
+  const validacaoExclusao = validarExclusao(aula, user?.role);
+  const podeExcluir = validacaoExclusao.podeExcluir;
 
   const handleEditClick = () => {
     router.push(`/dashboard/cursos/aulas/${aula.id}/editar`);
@@ -68,6 +154,16 @@ export function HeaderInfo({ aula, onUpdate }: HeaderInfoProps) {
   const handleDeleteClick = () => {
     setIsDeleteModalOpen(true);
     setIsActionsOpen(false);
+  };
+
+  const handleConfirmDelete = async (aulaToDelete: typeof aula) => {
+    try {
+      await deleteMutation.mutateAsync(aulaToDelete.id);
+      // O modal fecha e o redirecionamento acontece no onSuccess da mutation
+    } catch (error) {
+      // Erro já tratado no onError da mutation
+      // Não fechar o modal em caso de erro para o usuário tentar novamente
+    }
   };
 
   const formatDate = (dateString?: string) => {
@@ -101,52 +197,18 @@ export function HeaderInfo({ aula, onUpdate }: HeaderInfoProps) {
       )}
     >
       <ModalidadeIcon className="h-3 w-3" />
-      {aula.modalidade}
+      {getModalidadeLabel(aula.modalidade)}
     </Badge>
   );
 
   return (
     <section className="relative overflow-hidden rounded-3xl bg-white">
       <div className="relative flex flex-col gap-6 px-6 py-6 sm:px-8 sm:py-8 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex items-center gap-5">
-          <div className="relative">
-            <Avatar className="h-20 w-20 shrink-0 text-base">
-              <AvatarFallback className="bg-primary/10 text-primary/80 text-base font-semibold">
-                {getInitials(aula.titulo)}
-              </AvatarFallback>
-            </Avatar>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span
-                  className={cn(
-                    "absolute bottom-1 right-1 inline-flex size-4 items-center justify-center rounded-full border-2 border-white cursor-pointer",
-                    statusColor
-                  )}
-                  aria-label={statusLabel}
-                >
-                  <span className="sr-only">{statusLabel}</span>
-                </span>
-              </TooltipTrigger>
-              <TooltipContent>{statusLabel}</TooltipContent>
-            </Tooltip>
-          </div>
+        <div className="flex-1 min-w-0">
           <div className="space-y-1">
             <div className="flex items-center gap-2 flex-wrap">
               <h3 className="font-semibold !mb-0">{aula.titulo}</h3>
               {statusBadge}
-            </div>
-            <div className="flex items-center gap-2 flex-wrap">
-              {modalidadeBadge}
-              {aula.turma && (
-                <span className="text-sm text-gray-500">
-                  Turma: {aula.turma.nome}
-                </span>
-              )}
-              {aula.instrutor && (
-                <span className="text-sm text-gray-500">
-                  • Instrutor: {aula.instrutor.nome}
-                </span>
-              )}
             </div>
           </div>
         </div>
@@ -174,25 +236,46 @@ export function HeaderInfo({ aula, onUpdate }: HeaderInfoProps) {
                 className="cursor-pointer"
               >
                 <Edit className="h-4 w-4 text-gray-500" />
-                <span>Editar aula</span>
+                <span>Editar</span>
               </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onSelect={handleDeleteClick}
-                className="cursor-pointer text-red-600 focus:text-red-600"
-                disabled={!podeExcluir}
-              >
-                <Trash2 className="h-4 w-4" />
-                <span>
-                  Excluir aula
-                  {!podeExcluir && (
-                    <span className="ml-2 text-xs text-gray-500">
-                      {isInstrutor && "(Sem permissão)"}
-                      {!isInstrutor && aulaJaComecou && "(Aula já aconteceu)"}
-                    </span>
-                  )}
-                </span>
-              </DropdownMenuItem>
+              {(() => {
+                const isPublicada = aula.status === "PUBLICADA";
+                const validacao = isPublicada ? null : validarPublicacao(aula);
+                const validacaoDespublicacao = isPublicada
+                  ? validarDespublicacao(aula, user?.role)
+                  : null;
+                const podeAlterar = podeAlterarStatus(
+                  aula.status,
+                  isPublicada ? "RASCUNHO" : "PUBLICADA",
+                  user?.role
+                );
+
+                const podePublicarDespublicar =
+                  podeAlterar &&
+                  (isPublicada
+                    ? validacaoDespublicacao?.podeDespublicar
+                    : validacao?.podePublicar);
+
+                // Só mostrar item se puder publicar/despublicar
+                if (!podePublicarDespublicar) return null;
+
+                return (
+                  <PublicarAulaMenuItem aula={aula} onSuccess={onUpdate} />
+                );
+              })()}
+              {/* Só mostrar "Excluir" se podeExcluir for true */}
+              {podeExcluir && (
+                <DropdownMenuItem
+                  onSelect={handleDeleteClick}
+                  className="cursor-pointer text-red-600 focus:text-red-600"
+                  disabled={deleteMutation.isPending}
+                >
+                  <Trash2 className="h-4 w-4" />
+                  <span>
+                    {deleteMutation.isPending ? "Excluindo..." : "Excluir"}
+                  </span>
+                </DropdownMenuItem>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
           <Button
@@ -213,11 +296,12 @@ export function HeaderInfo({ aula, onUpdate }: HeaderInfoProps) {
 
       {/* Modal de exclusão */}
       <DeleteAulaModal
-        aula={aula}
-        open={isDeleteModalOpen}
+        isOpen={isDeleteModalOpen}
         onOpenChange={setIsDeleteModalOpen}
+        aula={aula}
+        onConfirmDelete={handleConfirmDelete}
+        isDeleting={deleteMutation.isPending}
       />
     </section>
   );
 }
-

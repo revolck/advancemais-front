@@ -87,7 +87,17 @@ export function formatAulaStatus(status?: AulaStatus) {
 
 export function formatDate(dateString?: string) {
   if (!dateString) return "—";
+  
+  // Se já é formato YYYY-MM-DD, formata diretamente
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+    const [year, month, day] = dateString.split("-");
+    return `${day}/${month}/${year}`;
+  }
+  
+  // Caso contrário, trata como ISO date
   const date = new Date(dateString);
+  if (isNaN(date.getTime())) return "—";
+  
   return date.toLocaleDateString("pt-BR", {
     day: "2-digit",
     month: "2-digit",
@@ -114,6 +124,27 @@ export function formatDateTime(dateString?: string) {
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+export function getModalidadeLabel(modalidade?: Modalidade | string) {
+  if (!modalidade) return "—";
+
+  const normalized = modalidade.toUpperCase();
+  
+  // Tratar "LIVE" como fallback (API sempre retorna "AO_VIVO" quando turma tem método "LIVE",
+  // mas manter fallback para compatibilidade com dados antigos ou edge cases)
+  if (normalized === "LIVE") {
+    return "Ao Vivo";
+  }
+
+  const modalidadeMap: Record<string, string> = {
+    ONLINE: "Online",
+    PRESENCIAL: "Presencial",
+    AO_VIVO: "Ao Vivo",
+    SEMIPRESENCIAL: "Semipresencial",
+  };
+
+  return modalidadeMap[normalized] || modalidade;
 }
 
 

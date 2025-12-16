@@ -68,11 +68,11 @@ export function AulasDashboard({ className }: { className?: string }) {
   const [pageSize] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Sorting
+  // Sorting - Padrão: ordenar por data de criação (mais novo primeiro)
   type SortField = "titulo" | "criadoEm" | null;
   type SortDirection = "asc" | "desc";
-  const [sortField, setSortField] = useState<SortField>(null);
-  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
+  const [sortField, setSortField] = useState<SortField>("criadoEm"); // Padrão: ordenar por criação
+  const [sortDirection, setSortDirection] = useState<SortDirection>("desc"); // Padrão: mais novo primeiro
 
   const { turmas, isLoading: loadingTurmas } = useTurmasForSelect();
   const aulasQuery = useAulasDashboardQuery({
@@ -83,8 +83,11 @@ export function AulasDashboard({ className }: { className?: string }) {
     search: appliedSearchTerm || undefined,
     page: currentPage,
     pageSize,
+    orderBy: sortField || "criadoEm", // Padrão: ordenar por criação
+    order: sortDirection, // Padrão: DESC (mais novo primeiro)
   });
   const aulas = useMemo(() => aulasQuery.data?.data ?? [], [aulasQuery.data]);
+  const pagination = aulasQuery.data?.pagination;
   const isLoading = aulasQuery.status === "pending";
   const isFetching = aulasQuery.isFetching;
   const errorMessage =
@@ -142,7 +145,7 @@ export function AulasDashboard({ className }: { className?: string }) {
     setCurrentPage(1);
   }, []);
 
-  // Persist sort
+  // Persist sort - Carregar do localStorage, mas usar padrão se não existir
   useEffect(() => {
     try {
       const stored = localStorage.getItem("aulaList.sort");
@@ -151,9 +154,15 @@ export function AulasDashboard({ className }: { className?: string }) {
           field: SortField;
           dir: SortDirection;
         };
-        if (parsed.field) setSortField(parsed.field);
-        if (parsed.dir) setSortDirection(parsed.dir);
+        // Só aplicar se houver valores válidos no localStorage
+        if (parsed.field !== null && parsed.field !== undefined) {
+          setSortField(parsed.field);
+        }
+        if (parsed.dir) {
+          setSortDirection(parsed.dir);
+        }
       }
+      // Se não houver no localStorage, os valores padrão já estão definidos acima
     } catch {}
   }, []);
 
@@ -192,28 +201,14 @@ export function AulasDashboard({ className }: { className?: string }) {
     [sortDirection, sortField]
   );
 
-  const filteredAulas = useMemo(() => {
-    let filtered = aulas;
+  // A API já faz paginação, filtros, busca e ordenação no backend
+  // Não precisa ordenar client-side, a API já retorna ordenado conforme orderBy e order
+  const filteredAulas = aulas; // A API já retorna ordenado
 
-    // Aplica busca por título
-    if (normalizedSearch) {
-      const searchLower = normalizedSearch.toLowerCase();
-      filtered = filtered.filter((a) => {
-        const tituloMatch = a.titulo?.toLowerCase().includes(searchLower) ?? false;
-        return tituloMatch;
-      });
-    }
-
-    // Aplica ordenação
-    return sortList(filtered);
-  }, [aulas, normalizedSearch, sortList]);
-
-  // Paginação
-  const totalItems = filteredAulas.length;
-  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
-  const startIndex = (currentPage - 1) * pageSize;
-  const endIndex = startIndex + pageSize;
-  const paginatedAulas = filteredAulas.slice(startIndex, endIndex);
+  // Usa paginação da API ao invés de client-side
+  const totalItems = pagination?.total ?? filteredAulas.length;
+  const totalPages = pagination?.totalPages ?? Math.max(1, Math.ceil(totalItems / pageSize));
+  const paginatedAulas = filteredAulas; // A API já retorna apenas os itens da página atual
 
   // Páginas visíveis para paginação
   const visiblePages = useMemo(() => {
@@ -232,9 +227,10 @@ export function AulasDashboard({ className }: { className?: string }) {
   const handlePageChange = useCallback(
     (page: number) => {
       const nextPage = Math.max(1, Math.min(page, totalPages));
+      console.log("[PAGINATION] Mudando página:", { de: currentPage, para: nextPage, totalPages });
       setCurrentPage(nextPage);
     },
-    [totalPages]
+    [currentPage, totalPages]
   );
 
   // Reset página quando filtros mudam
@@ -242,12 +238,12 @@ export function AulasDashboard({ className }: { className?: string }) {
     setCurrentPage(1);
   }, [appliedSearchTerm, selectedTurmaId, selectedStatuses, selectedModalidades, selectedObrigatoria]);
 
-  // Ajusta página atual se necessário
+  // Ajusta página atual se necessário (apenas se totalPages mudou e currentPage está fora do range)
   useEffect(() => {
-    if (currentPage > totalPages && totalPages > 0) {
+    if (totalPages > 0 && currentPage > totalPages) {
       setCurrentPage(Math.max(1, totalPages));
     }
-  }, [currentPage, totalPages]);
+  }, [totalPages]); // Removido currentPage das dependências para evitar loop
 
   const shouldShowSkeleton = isLoading || (isFetching && aulas.length === 0);
   const canDisplayTable = !hasError && (shouldShowSkeleton || filteredAulas.length > 0);
@@ -484,7 +480,6 @@ export function AulasDashboard({ className }: { className?: string }) {
                     <TableHead className="font-medium text-gray-700 py-4 px-3">Turma</TableHead>
                   )}
                   <TableHead className="font-medium text-gray-700 py-4 px-3">Instrutor</TableHead>
-                  <TableHead className="font-medium text-gray-700 py-4 px-3">Modalidade</TableHead>
                   <TableHead className="font-medium text-gray-700 py-4 px-3">Status</TableHead>
                   <TableHead className="font-medium text-gray-700 py-4 px-3">Data e Horário</TableHead>
                   <TableHead className="font-medium text-gray-700 py-4 px-3 text-center whitespace-nowrap">Duração</TableHead>
@@ -601,9 +596,15 @@ export function AulasDashboard({ className }: { className?: string }) {
               <div className="flex flex-col gap-4 px-6 py-4 border-t border-gray-200 bg-gray-50/30 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-2 text-sm text-gray-600">
                   <span>
-                    Mostrando {Math.min(startIndex + 1, totalItems)} a{" "}
-                    {Math.min(endIndex, totalItems)} de {totalItems} aula
-                    {totalItems === 1 ? "" : "s"}
+                    {(() => {
+                      const startIndex = pagination 
+                        ? (pagination.page - 1) * pagination.pageSize + 1
+                        : 1;
+                      const endIndex = pagination
+                        ? Math.min(pagination.page * pagination.pageSize, totalItems)
+                        : Math.min(pageSize, totalItems);
+                      return `Mostrando ${startIndex} a ${endIndex} de ${totalItems} aula${totalItems === 1 ? "" : "s"}`;
+                    })()}
                   </span>
                 </div>
 

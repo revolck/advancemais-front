@@ -102,10 +102,14 @@ export interface AulaHistorico {
   usuario: {
     id: string;
     nome: string;
+    role?: "ADMIN" | "MODERADOR" | "PEDAGOGICO" | "INSTRUTOR";
+    email?: string;
   };
   acao: string;
-  camposAlterados?: Record<string, { de: unknown; para: unknown }>;
+  camposAlterados?: Record<string, { de: unknown; para: unknown }> | null;
   criadoEm: string;
+  ip?: string;
+  userAgent?: string;
 }
 
 // Payloads
@@ -129,7 +133,9 @@ export interface CreateAulaPayload {
   gravarAula?: boolean; // Novo campo (apenas AO_VIVO/SEMIPRESENCIAL com Meet)
 }
 
-export interface UpdateAulaPayload extends Partial<CreateAulaPayload> {}
+export interface UpdateAulaPayload extends Partial<CreateAulaPayload> {
+  // Todos os campos são opcionais, herdados de CreateAulaPayload
+}
 
 export interface UpdateProgressoPayload {
   inscricaoId: string;

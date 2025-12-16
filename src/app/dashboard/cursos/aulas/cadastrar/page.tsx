@@ -7,7 +7,10 @@ export default function CadastrarAulaPage() {
   const router = useRouter();
   return (
     <CreateAulaForm
-      onSuccess={() => router.push("/dashboard/cursos/aulas")}
+      onSuccess={() => {
+        // Redireciona para a página 1 da lista de aulas
+        router.push("/dashboard/cursos/aulas?page=1");
+      }}
       onCancel={() => router.push("/dashboard/cursos/aulas")}
     />
   );

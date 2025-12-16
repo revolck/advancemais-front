@@ -174,13 +174,30 @@ export function AulaRow({
       )}
     >
       <TableCell className="py-4 px-3">
-        <div className="flex items-center gap-2">
-          <span className="font-medium text-gray-900">{aula.titulo}</span>
-          {aula.codigo && (
-            <code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded font-mono text-gray-500 shrink-0">
-              {aula.codigo}
-            </code>
-          )}
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-2">
+            <span className="font-medium text-gray-900">{aula.titulo}</span>
+            {aula.codigo && (
+              <code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded font-mono text-gray-500 shrink-0">
+                {aula.codigo}
+              </code>
+            )}
+          </div>
+          {(() => {
+            const ModalidadeIcon = getModalidadeIcon(aula.modalidade);
+            return (
+              <Badge
+                variant="outline"
+                className={cn(
+                  "text-xs font-medium inline-flex items-center gap-1.5 w-fit",
+                  getModalidadeBadgeColor(aula.modalidade)
+                )}
+              >
+                <ModalidadeIcon className="h-3.5 w-3.5" />
+                {getModalidadeLabel(aula.modalidade)}
+              </Badge>
+            );
+          })()}
         </div>
       </TableCell>
       {showTurma && (
@@ -236,23 +253,6 @@ export function AulaRow({
         ) : (
           <span className="text-sm text-gray-400">—</span>
         )}
-      </TableCell>
-      <TableCell className="py-4 px-3">
-        {(() => {
-          const ModalidadeIcon = getModalidadeIcon(aula.modalidade);
-          return (
-            <Badge
-              variant="outline"
-              className={cn(
-                "text-xs font-medium inline-flex items-center gap-1.5",
-                getModalidadeBadgeColor(aula.modalidade)
-              )}
-            >
-              <ModalidadeIcon className="h-3.5 w-3.5" />
-              {getModalidadeLabel(aula.modalidade)}
-            </Badge>
-          );
-        })()}
       </TableCell>
       <TableCell className="py-4 px-3">
         <Badge

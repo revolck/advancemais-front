@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { ButtonCustom } from "@/components/ui/custom";
 import type { Aula } from "@/api/aulas";
 import { CreateAulaForm } from "../lista-aulas/components/CreateAulaForm";
 
@@ -16,7 +16,8 @@ export function EditAulaView({ aulaId, initialData }: EditAulaViewProps) {
   const router = useRouter();
 
   const handleSuccess = () => {
-    router.push(`/dashboard/cursos/aulas/${aulaId}`);
+    // Adicionar timestamp para forçar refetch na tela de detalhes
+    router.push(`/dashboard/cursos/aulas/${aulaId}?refresh=${Date.now()}`);
   };
 
   const handleCancel = () => {
@@ -26,26 +27,13 @@ export function EditAulaView({ aulaId, initialData }: EditAulaViewProps) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-bold text-gray-900">Editar Aula</h1>
-          <p className="text-sm text-gray-500">
-            Atualize as informações da aula
-          </p>
-        </div>
-        <Button
-          asChild
-          variant="outline"
-          className="rounded-full border-none px-5 py-2 text-sm font-medium hover:bg-gray-200 bg-gray-100/70"
-        >
-          <Link
-            href={`/dashboard/cursos/aulas/${aulaId}`}
-            className="flex items-center gap-2"
-          >
+      <div className="flex items-center justify-end">
+        <ButtonCustom asChild variant="ghost" size="sm">
+          <Link href={`/dashboard/cursos/aulas/${aulaId}`}>
             <ChevronLeft className="h-4 w-4" />
             Voltar
           </Link>
-        </Button>
+        </ButtonCustom>
       </div>
 
       {/* Form */}
@@ -59,6 +47,3 @@ export function EditAulaView({ aulaId, initialData }: EditAulaViewProps) {
     </div>
   );
 }
-
-
-

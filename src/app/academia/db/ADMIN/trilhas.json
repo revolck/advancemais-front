@@ -1,20 +1,36 @@
 [
   {
-    "id": "8",
+    "id": "1",
     "title": "Segurança e configurações avançadas",
     "description": "Permissões, boas práticas e cuidados importantes.",
-    "url": "https://www.youtube.com/embed/dQw4w9WgXcQ",
-    "duration": "14:50",
-    "thumbnailUrl": "https://i.imgur.com/placeholder8.jpg",
-    "posterUrl": "/academia/posters/8.svg",
+    "url": "https://www.youtube.com/embed/TFM_2zdvq4M",
+    "duration": "11:10",
+    "thumbnailUrl": "https://i.imgur.com/uqvVhOi.png",
+    "posterUrl": "https://i.imgur.com/uqvVhOi.png",
     "category": "Configurações",
     "module": "configuracoes",
-    "level": "Avançado",
-    "tags": ["segurança", "permissões"],
-    "transcript": "A plataforma oferece diferentes níveis de permissão...",
+    "level": "Básico",
+    "tags": ["website", "sistemas"],
+    "transcript": "Você pode configurar o seu site para atender às suas necessidades específicas.",
+    "isActive": true,
+    "createdAt": "2025-12-12T00:00:00.000Z",
+    "updatedAt": "2025-12-12T00:00:00.000Z"
+  },
+  {
+    "id": "2",
+    "title": "Configurações e regras de empresas",
+    "description": "Configurações e regras de empresas para atender às suas necessidades específicas.",
+    "url": "https://www.youtube.com/embed/7OJas9PP-is",
+    "duration": "06:45",
+    "thumbnailUrl": "https://i.imgur.com/dwAm7TN.png",
+    "posterUrl": "https://i.imgur.com/dwAm7TN.png",
+    "category": "Configurações",
+    "module": "configuracoes",
+    "level": "Básico",
+    "tags": ["website", "sistemas"],
+    "transcript": "Você pode configurar o seu site para atender às suas necessidades específicas.",
     "isActive": true,
     "createdAt": "2025-12-12T00:00:00.000Z",
     "updatedAt": "2025-12-12T00:00:00.000Z"
   }
 ]
-
