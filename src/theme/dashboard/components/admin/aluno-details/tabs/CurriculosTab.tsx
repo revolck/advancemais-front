@@ -114,7 +114,7 @@ export function CurriculosTab({
       
       await generateCurriculoPdf(
         curriculoCompleto,
-        aluno.nomeCompleto,
+        aluno.nome,
         usuarioData
       );
 
@@ -286,7 +286,7 @@ export function CurriculosTab({
           isOpen={isModalOpen}
           onOpenChange={setIsModalOpen}
           curriculo={selectedCurriculo}
-          usuarioNome={aluno.nomeCompleto}
+          usuarioNome={aluno.nome}
           usuarioData={usuarioData}
         />
       )}

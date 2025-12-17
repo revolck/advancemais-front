@@ -1,0 +1,4 @@
+export { AtividadesProvasDashboard } from "./AtividadesProvasDashboard";
+
+
+

@@ -88,14 +88,14 @@ export function VisaoGeralDashboard() {
       {
         icon: Users,
         iconBg: "bg-indigo-100 text-indigo-600",
-        value: metricasGerais.totalAlunosInscritos,
+        value: (metricasGerais as any).totalAlunosInscritos ?? metricasGerais.totalAlunos ?? metricasGerais.totalInscricoes,
         label: "Alunos Inscritos",
         cardBg: "bg-indigo-50/50",
       },
       {
         icon: Trophy,
         iconBg: "bg-emerald-100 text-emerald-600",
-        value: metricasGerais.totalAlunosConcluidos,
+        value: (metricasGerais as any).totalAlunosConcluidos ?? 0,
         label: "Alunos Concluídos",
         cardBg: "bg-emerald-50/50",
       },
@@ -105,37 +105,37 @@ export function VisaoGeralDashboard() {
   const secondaryMetrics = useMemo((): StatisticCard[] => {
     if (!response?.metricasGerais) return [];
 
-    const { metricasGerais } = response;
+    const metricasGerais = response.metricasGerais as any;
 
     return [
       {
         icon: CheckCircle,
         iconBg: "bg-emerald-100 text-emerald-700 border-emerald-200",
-        value: metricasGerais.cursosPublicados,
+        value: metricasGerais.cursosPublicados ?? metricasGerais.totalCursos ?? 0,
         label: "Cursos Publicados",
       },
       {
         icon: FileText,
         iconBg: "bg-amber-100 text-amber-700 border-amber-200",
-        value: metricasGerais.cursosRascunho,
+        value: metricasGerais.cursosRascunho ?? 0,
         label: "Em Rascunho",
       },
       {
         icon: Calendar,
         iconBg: "bg-cyan-100 text-cyan-700 border-cyan-200",
-        value: metricasGerais.turmasAtivas,
+        value: metricasGerais.turmasAtivas ?? metricasGerais.totalTurmas ?? 0,
         label: "Turmas Ativas",
       },
       {
         icon: UserPlus,
         iconBg: "bg-green-100 text-green-700 border-green-200",
-        value: metricasGerais.turmasInscricoesAbertas,
+        value: metricasGerais.turmasInscricoesAbertas ?? 0,
         label: "Inscrições Abertas",
       },
       {
         icon: Award,
         iconBg: "bg-rose-100 text-rose-700 border-rose-200",
-        value: metricasGerais.totalAlunosAtivos,
+        value: metricasGerais.totalAlunosAtivos ?? metricasGerais.totalAlunos ?? 0,
         label: "Alunos Ativos",
       },
     ];
@@ -273,12 +273,12 @@ export function VisaoGeralDashboard() {
       {/* Cursos Cards Grid with Tabs */}
       <div>
         <CursosCardsGrid
-          cursosPopulares={response.performance.cursosMaisPopulares}
-          cursosMaisPopulares={response.performance.cursosMaisPopulares}
-          cursosTaxaConclusao={response.performance.cursosComMaiorTaxaConclusao}
+          cursosPopulares={(response.performance as any).cursosMaisPopulares ?? response.performance.cursos ?? []}
+          cursosMaisPopulares={(response.performance as any).cursosMaisPopulares ?? response.performance.cursos ?? []}
+          cursosTaxaConclusao={(response.performance as any).cursosComMaiorTaxaConclusao ?? response.performance.cursos ?? []}
           cursosProximos={[
-            ...(response.cursosProximosInicio.proximos7Dias || []),
-            ...(response.cursosProximosInicio.proximos15Dias || []).slice(0, 3),
+            ...((response.proximosInicios as any)?.proximos7Dias || []),
+            ...((response.proximosInicios as any)?.proximos15Dias || []).slice(0, 3),
           ].slice(0, 5)}
           isLoading={isLoading}
         />

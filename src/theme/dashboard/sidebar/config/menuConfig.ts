@@ -102,8 +102,8 @@ const rawMenuSections: MenuSection[] = [
           },
           {
             icon: null,
-            label: "Provas",
-            route: "/dashboard/cursos/provas",
+            label: "Atividades/Provas",
+            route: "/dashboard/cursos/atividades-provas",
             permissions: [UserRole.ADMIN, UserRole.MODERADOR],
           },
           {
@@ -158,32 +158,14 @@ const rawMenuSections: MenuSection[] = [
         submenu: [
           {
             icon: null,
-            label: "Logs",
-            route: "/admin/audit/logs",
-            permissions: [UserRole.ADMIN],
-          },
-          {
-            icon: null,
             label: "Histórico de Usuários",
-            route: "/admin/audit/user-history",
+            route: "/dashboard/auditoria/historico",
             permissions: [UserRole.ADMIN],
           },
           {
             icon: null,
-            label: "Scripts",
-            route: "/admin/audit/scripts",
-            permissions: [UserRole.ADMIN],
-          },
-          {
-            icon: null,
-            label: "Assinaturas",
-            route: "/admin/audit/subscriptions",
-            permissions: [UserRole.ADMIN],
-          },
-          {
-            icon: null,
-            label: "Transações",
-            route: "/admin/audit/transactions",
+            label: "Assinatura/transações",
+            route: "/dashboard/auditoria/transacoes",
             permissions: [UserRole.ADMIN],
           },
         ],
@@ -341,8 +323,8 @@ const rawMenuSections: MenuSection[] = [
           },
           {
             icon: null,
-            label: "Provas",
-            route: "/dashboard/cursos/provas",
+            label: "Atividades/Provas",
+            route: "/dashboard/cursos/atividades-provas",
             permissions: [
               UserRole.ADMIN,
               UserRole.MODERADOR,

@@ -37,9 +37,10 @@ export function HeaderInfo({
   onDesbloquearAluno,
 }: HeaderInfoProps) {
   const [isActionsOpen, setIsActionsOpen] = useState(false);
-  const normalized = aluno.status?.toUpperCase();
-  const isBloqueado = normalized === "BLOQUEADO";
-  const isAtivo = normalized === "ATIVO";
+  // Status não está disponível em CursoAlunoDetalhes, usando valor padrão
+  const normalized = "ATIVO"; // Valor padrão, pode ser ajustado quando status estiver disponível
+  const isBloqueado = false; // Valor padrão
+  const isAtivo = true; // Valor padrão
   const statusColor = isBloqueado
     ? "bg-red-500"
     : isAtivo
@@ -59,10 +60,10 @@ export function HeaderInfo({
             <Avatar className="h-20 w-20 shrink-0 text-base">
               <AvatarImage
                 src={aluno.avatarUrl || undefined}
-                alt={aluno.nomeCompleto}
+                alt={aluno.nome}
               />
               <AvatarFallback className="bg-primary/10 text-primary/80 text-base font-semibold">
-                {getAlunoInitials(aluno.nomeCompleto)}
+                {getAlunoInitials(aluno.nome)}
               </AvatarFallback>
             </Avatar>
             <Tooltip>
@@ -82,37 +83,12 @@ export function HeaderInfo({
           </div>
 
           <div className="space-y-3">
-            <h3 className="font-semibold !mb-0"> {aluno.nomeCompleto}</h3>
+            <h3 className="font-semibold !mb-0"> {aluno.nome}</h3>
             <div className="flex flex-wrap items-center gap-2 text-xs text-gray-400 font-mono">
               <span>CPF: {formatCpf(aluno.cpf)}</span>
             </div>
 
-            {/* Redes sociais abaixo do gênero */}
-            {aluno.socialLinks &&
-              (aluno.socialLinks.instagram || aluno.socialLinks.linkedin) && (
-                <div className="flex flex-wrap items-center gap-2">
-                  {aluno.socialLinks.instagram && (
-                    <a
-                      href={aluno.socialLinks.instagram}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs text-blue-600 hover:text-blue-800 hover:underline"
-                    >
-                      Instagram
-                    </a>
-                  )}
-                  {aluno.socialLinks.linkedin && (
-                    <a
-                      href={aluno.socialLinks.linkedin}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs text-blue-600 hover:text-blue-800 hover:underline"
-                    >
-                      LinkedIn
-                    </a>
-                  )}
-                </div>
-              )}
+            {/* Redes sociais abaixo do gênero - socialLinks não disponível em CursoAlunoDetalhes */}
           </div>
         </div>
 

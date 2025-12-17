@@ -4,7 +4,11 @@
  */
 
 import { getVisaoGeral } from "@/api/cursos";
-import { listAlunosDashboard, listInstrutores, listUsuarios } from "@/api/usuarios";
+import {
+  listAlunosDashboard,
+  listInstrutores,
+  listUsuarios,
+} from "@/api/usuarios";
 import { getAdminCompanyDashboard } from "@/api/empresas/admin";
 import { listVagas } from "@/api/vagas/admin";
 import type { PlataformaOverviewResponse } from "./types";
@@ -42,9 +46,7 @@ export async function getPlataformaOverview(
 
     // Extrai dados de alunos
     const alunosData =
-      alunosResponse.status === "fulfilled"
-        ? alunosResponse.value
-        : null;
+      alunosResponse.status === "fulfilled" ? alunosResponse.value : null;
 
     // Extrai dados de instrutores
     const instrutoresData =
@@ -54,37 +56,31 @@ export async function getPlataformaOverview(
 
     // Extrai dados de usuários
     const usuariosData =
-      usuariosResponse.status === "fulfilled"
-        ? usuariosResponse.value
-        : null;
+      usuariosResponse.status === "fulfilled" ? usuariosResponse.value : null;
 
     // Extrai dados de empresas
     const empresasData =
-      empresasResponse.status === "fulfilled"
-        ? empresasResponse.value
-        : null;
+      empresasResponse.status === "fulfilled" ? empresasResponse.value : null;
 
     // Extrai dados de vagas
     const vagasData =
-      vagasResponse.status === "fulfilled"
-        ? vagasResponse.value
-        : null;
+      vagasResponse.status === "fulfilled" ? vagasResponse.value : null;
 
     // Agrega métricas gerais
     const metricasGerais = {
       // Cursos (da visão geral de cursos)
       totalCursos: cursosData?.metricasGerais.totalCursos || 0,
-      cursosPublicados: cursosData?.metricasGerais.cursosPublicados || 0,
-      cursosRascunho: cursosData?.metricasGerais.cursosRascunho || 0,
+      cursosPublicados: 0, // Não disponível em VisaoGeralMetricasGerais
+      cursosRascunho: 0, // Não disponível em VisaoGeralMetricasGerais
       totalTurmas: cursosData?.metricasGerais.totalTurmas || 0,
-      turmasAtivas: cursosData?.metricasGerais.turmasAtivas || 0,
-      turmasInscricoesAbertas: cursosData?.metricasGerais.turmasInscricoesAbertas || 0,
+      turmasAtivas: 0, // Não disponível em VisaoGeralMetricasGerais
+      turmasInscricoesAbertas: 0, // Não disponível em VisaoGeralMetricasGerais
 
       // Alunos
       totalAlunos: alunosData?.pagination?.total || 0,
-      totalAlunosAtivos: cursosData?.metricasGerais.totalAlunosAtivos || 0,
-      totalAlunosInscritos: cursosData?.metricasGerais.totalAlunosInscritos || 0,
-      totalAlunosConcluidos: cursosData?.metricasGerais.totalAlunosConcluidos || 0,
+      totalAlunosAtivos: 0, // Não disponível em VisaoGeralMetricasGerais
+      totalAlunosInscritos: cursosData?.metricasGerais.totalInscricoes || 0,
+      totalAlunosConcluidos: 0, // Não disponível em VisaoGeralMetricasGerais
 
       // Instrutores
       totalInstrutores: instrutoresData?.pagination?.total || 0,
@@ -92,7 +88,9 @@ export async function getPlataformaOverview(
         instrutoresData?.data?.filter((i) => i.status === "ATIVO").length || 0,
 
       // Candidatos (via usuários com role ALUNO_CANDIDATO)
-      totalCandidatos: usuariosData?.usuarios?.filter((u: any) => u.role === "ALUNO_CANDIDATO").length || 0,
+      totalCandidatos:
+        usuariosData?.usuarios?.filter((u: any) => u.role === "ALUNO_CANDIDATO")
+          .length || 0,
       totalCandidatosAtivos:
         usuariosData?.usuarios?.filter(
           (u: any) => u.role === "ALUNO_CANDIDATO" && u.status === "ATIVO"
@@ -123,7 +121,8 @@ export async function getPlataformaOverview(
         empresasData !== null &&
         "data" in empresasData &&
         Array.isArray(empresasData.data)
-          ? empresasData.data.filter((e: any) => e.status === "BLOQUEADO").length
+          ? empresasData.data.filter((e: any) => e.status === "BLOQUEADO")
+              .length
           : 0,
       empresasPendentes:
         empresasData !== null &&
@@ -137,30 +136,24 @@ export async function getPlataformaOverview(
         ? vagasData.length
         : vagasData?.pagination?.total || vagasData?.data?.length || 0,
       vagasPublicadas:
-        (Array.isArray(vagasData)
-          ? vagasData
-          : vagasData?.data || []
-        ).filter((v: any) => v.status === "PUBLICADO").length || 0,
+        (Array.isArray(vagasData) ? vagasData : vagasData?.data || []).filter(
+          (v: any) => v.status === "PUBLICADO"
+        ).length || 0,
       vagasEmAnalise:
-        (Array.isArray(vagasData)
-          ? vagasData
-          : vagasData?.data || []
-        ).filter((v: any) => v.status === "EM_ANALISE").length || 0,
+        (Array.isArray(vagasData) ? vagasData : vagasData?.data || []).filter(
+          (v: any) => v.status === "EM_ANALISE"
+        ).length || 0,
       vagasEncerradas:
-        (Array.isArray(vagasData)
-          ? vagasData
-          : vagasData?.data || []
-        ).filter((v: any) => v.status === "ENCERRADA").length || 0,
+        (Array.isArray(vagasData) ? vagasData : vagasData?.data || []).filter(
+          (v: any) => v.status === "ENCERRADA"
+        ).length || 0,
 
       // Financeiro (da visão geral de cursos)
-      faturamentoMesAtual: cursosData?.faturamento.faturamentoMesAtual || 0,
-      faturamentoMesAnterior: cursosData?.faturamento.faturamentoMesAnterior || 0,
-      totalTransacoes:
-        cursosData?.faturamento.cursoMaiorFaturamento?.totalTransacoes || 0,
-      transacoesAprovadas:
-        cursosData?.faturamento.cursoMaiorFaturamento?.transacoesAprovadas || 0,
-      transacoesPendentes:
-        cursosData?.faturamento.cursoMaiorFaturamento?.transacoesPendentes || 0,
+      faturamentoMesAtual: cursosData?.faturamento.total || 0,
+      faturamentoMesAnterior: 0, // Não disponível em VisaoGeralFaturamento
+      totalTransacoes: 0, // Não disponível em VisaoGeralFaturamento
+      transacoesAprovadas: 0, // Não disponível em VisaoGeralFaturamento
+      transacoesPendentes: 0, // Não disponível em VisaoGeralFaturamento
     };
 
     // Estatísticas de usuários (simplificado)
@@ -179,21 +172,29 @@ export async function getPlataformaOverview(
             ? empresasData.data.length
             : 0,
         candidatos:
-          usuariosData?.usuarios?.filter((u: any) => u.role === "ALUNO_CANDIDATO").length || 0,
+          usuariosData?.usuarios?.filter(
+            (u: any) => u.role === "ALUNO_CANDIDATO"
+          ).length || 0,
         admins:
-          usuariosData?.usuarios?.filter((u: any) => u.role === "ADMIN").length || 0,
+          usuariosData?.usuarios?.filter((u: any) => u.role === "ADMIN")
+            .length || 0,
         moderadores:
-          usuariosData?.usuarios?.filter((u: any) => u.role === "MODERADOR").length || 0,
+          usuariosData?.usuarios?.filter((u: any) => u.role === "MODERADOR")
+            .length || 0,
       },
       porStatus: {
         ativos:
-          usuariosData?.usuarios?.filter((u: any) => u.status === "ATIVO").length || 0,
+          usuariosData?.usuarios?.filter((u: any) => u.status === "ATIVO")
+            .length || 0,
         inativos:
-          usuariosData?.usuarios?.filter((u: any) => u.status === "INATIVO").length || 0,
+          usuariosData?.usuarios?.filter((u: any) => u.status === "INATIVO")
+            .length || 0,
         bloqueados:
-          usuariosData?.usuarios?.filter((u: any) => u.status === "BLOQUEADO").length || 0,
+          usuariosData?.usuarios?.filter((u: any) => u.status === "BLOQUEADO")
+            .length || 0,
         pendentes:
-          usuariosData?.usuarios?.filter((u: any) => u.status === "PENDENTE").length || 0,
+          usuariosData?.usuarios?.filter((u: any) => u.status === "PENDENTE")
+            .length || 0,
       },
       crescimentoMensal: [], // TODO: Buscar dados históricos quando disponível
     };
@@ -219,7 +220,8 @@ export async function getPlataformaOverview(
           empresasData !== null &&
           "data" in empresasData &&
           Array.isArray(empresasData.data)
-            ? empresasData.data.filter((e: any) => e.status === "INATIVO").length
+            ? empresasData.data.filter((e: any) => e.status === "INATIVO")
+                .length
             : 0,
       },
       porPlano: [], // TODO: Buscar planos quando disponível
@@ -233,10 +235,9 @@ export async function getPlataformaOverview(
         emAnalise: metricasGerais.vagasEmAnalise,
         encerradas: metricasGerais.vagasEncerradas,
         pausadas:
-          (Array.isArray(vagasData)
-            ? vagasData
-            : vagasData?.data || []
-          ).filter((v: any) => v.status === "PAUSADA").length || 0,
+          (Array.isArray(vagasData) ? vagasData : vagasData?.data || []).filter(
+            (v: any) => v.status === "PAUSADA"
+          ).length || 0,
       },
       crescimentoMensal: [], // TODO: Buscar dados históricos quando disponível
     };
@@ -246,11 +247,11 @@ export async function getPlataformaOverview(
       porMes: [], // TODO: Buscar dados históricos quando disponível
       porCategoria: [], // TODO: Buscar por categoria quando disponível
       topCursos:
-        cursosData?.faturamento.topCursosFaturamento.map((c) => ({
+        cursosData?.faturamento.cursos?.map((c) => ({
           cursoId: String(c.cursoId),
-          cursoNome: c.cursoNome,
-          cursoCodigo: c.cursoCodigo,
-          faturamento: c.totalFaturamento,
+          cursoNome: c.nome,
+          cursoCodigo: String(c.cursoId),
+          faturamento: c.faturamento,
         })) || [],
     };
 

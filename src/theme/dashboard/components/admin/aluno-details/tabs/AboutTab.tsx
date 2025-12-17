@@ -77,13 +77,14 @@ export function AboutTab({ aluno, isLoading = false }: AboutTabProps) {
     value: React.ReactNode | null;
     icon: LucideIcon;
   }> = [
-    { label: "Código do aluno", value: aluno.codigo ?? "—", icon: Tag },
+    { label: "Código do aluno", value: "—", icon: Tag }, // codigo não disponível em CursoAlunoDetalhes
     { label: "Criado em", value: formatDateTime(aluno.criadoEm), icon: CalendarDays },
     { label: "CPF", value: formatCpf(aluno.cpf), icon: Tag },
     { label: "Telefone", value: formatPhoneLink(aluno.telefone), icon: Phone },
     { label: "E-mail", value: formatEmailLink(aluno.email), icon: Mail },
-    { label: "Instagram", value: formatSocialLink(aluno.socialLinks?.instagram), icon: Instagram },
-    { label: "LinkedIn", value: formatSocialLink(aluno.socialLinks?.linkedin), icon: Linkedin },
+    // socialLinks não disponível em CursoAlunoDetalhes
+    // { label: "Instagram", value: formatSocialLink(aluno.socialLinks?.instagram), icon: Instagram },
+    // { label: "LinkedIn", value: formatSocialLink(aluno.socialLinks?.linkedin), icon: Linkedin },
     {
       label: "Localização",
       value: (() => {

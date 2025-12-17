@@ -237,7 +237,7 @@ export function AlunoDetailsView({
       <BloquearAlunoModal
         isOpen={isBloquearModalOpen}
         onOpenChange={setIsBloquearModalOpen}
-        alunoNome={alunoData.nomeCompleto}
+        alunoNome={alunoData.nome}
         onConfirm={async (payload) => {
           await bloquearAlunoMutation.mutateAsync(payload);
           await invalidateAluno();
@@ -247,7 +247,7 @@ export function AlunoDetailsView({
       <DesbloquearAlunoModal
         isOpen={isDesbloquearModalOpen}
         onOpenChange={setIsDesbloquearModalOpen}
-        alunoNome={alunoData.nomeCompleto}
+        alunoNome={alunoData.nome}
         onConfirm={async (obs) => {
           await desbloquearAlunoMutation.mutateAsync(
             obs ? { observacoes: obs } : undefined

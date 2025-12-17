@@ -48,7 +48,8 @@ export type IconName =
   | "ExternalLink"
   | "Tag"
   | "GraduationCap"
-  | "CreditCard";
+  | "CreditCard"
+  | "ClipboardList";
 
 export interface BreadcrumbItem {
   label: string;
@@ -314,12 +315,20 @@ export const breadcrumbConfig: Record<string, BreadcrumbConfig> = {
       { label: "Instrutores", icon: "GraduationCap" },
     ],
   },
-  "/dashboard/cursos/provas": {
-    title: "Provas",
+  "/dashboard/cursos/atividades-provas": {
+    title: "Atividades/Provas",
     items: [
       { label: "Dashboard", href: "/", icon: "Home" },
       { label: "Cursos", href: "/dashboard/cursos", icon: "BookOpen" },
-      { label: "Provas" },
+      { label: "Atividades/Provas", icon: "ClipboardList" },
+    ],
+  },
+  "/dashboard/cursos/provas": {
+    title: "Atividades/Provas",
+    items: [
+      { label: "Dashboard", href: "/", icon: "Home" },
+      { label: "Cursos", href: "/dashboard/cursos", icon: "BookOpen" },
+      { label: "Atividades/Provas", icon: "ClipboardList" },
     ],
   },
   "/dashboard/cursos/certificados": {
@@ -439,52 +448,75 @@ export function useBreadcrumb(): BreadcrumbConfig {
   // Regras dinâmicas específicas
   // Detalhes de candidato: /dashboard/empresas/candidatos/[id]
   if (cleanPathname.match(/^\/dashboard\/empresas\/candidatos\/[^/]+$/)) {
-    return filterBreadcrumbForEmpresa({
-      title: "Detalhes do Candidato",
-      items: [
-        { label: "Dashboard", href: "/", icon: "Home" },
-        { label: "Empresas", href: "/dashboard/empresas", icon: "Building2" },
-        { label: "Candidatos", href: "/dashboard/empresas/candidatos", icon: "Users" },
-        { label: "Detalhes do Candidato", icon: "Eye" },
-      ],
-    }, isEmpresaRole);
+    return filterBreadcrumbForEmpresa(
+      {
+        title: "Detalhes do Candidato",
+        items: [
+          { label: "Dashboard", href: "/", icon: "Home" },
+          { label: "Empresas", href: "/dashboard/empresas", icon: "Building2" },
+          {
+            label: "Candidatos",
+            href: "/dashboard/empresas/candidatos",
+            icon: "Users",
+          },
+          { label: "Detalhes do Candidato", icon: "Eye" },
+        ],
+      },
+      isEmpresaRole
+    );
   }
 
   // Detalhes de vaga: /dashboard/empresas/vagas/[id]
   if (cleanPathname.match(/^\/dashboard\/empresas\/vagas\/[^/]+$/)) {
-    return filterBreadcrumbForEmpresa({
-      title: "Detalhes da Vaga",
-      items: [
-        { label: "Dashboard", href: "/", icon: "Home" },
-        { label: "Empresas", href: "/dashboard/empresas", icon: "Building2" },
-        { label: "Vagas", href: "/dashboard/empresas/vagas", icon: "Briefcase" },
-        { label: "Detalhes da Vaga", icon: "Eye" },
-      ],
-    }, isEmpresaRole);
+    return filterBreadcrumbForEmpresa(
+      {
+        title: "Detalhes da Vaga",
+        items: [
+          { label: "Dashboard", href: "/", icon: "Home" },
+          { label: "Empresas", href: "/dashboard/empresas", icon: "Building2" },
+          {
+            label: "Vagas",
+            href: "/dashboard/empresas/vagas",
+            icon: "Briefcase",
+          },
+          { label: "Detalhes da Vaga", icon: "Eye" },
+        ],
+      },
+      isEmpresaRole
+    );
   }
 
   // Detalhes de empresa: /dashboard/empresas/[id] (deve vir após verificações de candidatos/vagas)
   if (cleanPathname.match(/^\/dashboard\/empresas\/[^/]+$/)) {
-    return filterBreadcrumbForEmpresa({
-      title: "Detalhes da Empresa",
-      items: [
-        { label: "Dashboard", href: "/", icon: "Home" },
-        { label: "Empresas", href: "/dashboard/empresas", icon: "Building2" },
-        { label: "Detalhes da Empresa", icon: "Eye" },
-      ],
-    }, isEmpresaRole);
+    return filterBreadcrumbForEmpresa(
+      {
+        title: "Detalhes da Empresa",
+        items: [
+          { label: "Dashboard", href: "/", icon: "Home" },
+          { label: "Empresas", href: "/dashboard/empresas", icon: "Building2" },
+          { label: "Detalhes da Empresa", icon: "Eye" },
+        ],
+      },
+      isEmpresaRole
+    );
   }
 
   // Detalhes de empresa (rota antiga): /empresas/[id]
-  if (cleanPathname.startsWith("/empresas/") && !cleanPathname.startsWith("/dashboard/empresas/")) {
-    return filterBreadcrumbForEmpresa({
-      title: "Empresa",
-      items: [
-        { label: "Dashboard", href: "/", icon: "Home" },
-        { label: "Empresas", href: "/dashboard/empresas", icon: "Building2" },
-        { label: "Visualizando empresa", icon: "Eye" },
-      ],
-    }, isEmpresaRole);
+  if (
+    cleanPathname.startsWith("/empresas/") &&
+    !cleanPathname.startsWith("/dashboard/empresas/")
+  ) {
+    return filterBreadcrumbForEmpresa(
+      {
+        title: "Empresa",
+        items: [
+          { label: "Dashboard", href: "/", icon: "Home" },
+          { label: "Empresas", href: "/dashboard/empresas", icon: "Building2" },
+          { label: "Visualizando empresa", icon: "Eye" },
+        ],
+      },
+      isEmpresaRole
+    );
   }
 
   // Detalhes de usuário: /dashboard/usuarios/[id]
@@ -519,7 +551,11 @@ export function useBreadcrumb(): BreadcrumbConfig {
       items: [
         { label: "Dashboard", href: "/", icon: "Home" },
         { label: "Cursos", href: "/dashboard/cursos", icon: "BookOpen" },
-        { label: "Instrutores", href: "/dashboard/cursos/instrutores", icon: "GraduationCap" },
+        {
+          label: "Instrutores",
+          href: "/dashboard/cursos/instrutores",
+          icon: "GraduationCap",
+        },
         { label: "Detalhes do Instrutor", icon: "Eye" },
       ],
     };
@@ -563,7 +599,10 @@ export function useBreadcrumb(): BreadcrumbConfig {
   }
 
   // Detalhes de aula: /dashboard/cursos/aulas/[id]
-  if (cleanPathname.match(/^\/dashboard\/cursos\/aulas\/[^/]+$/) && !cleanPathname.includes("cadastrar")) {
+  if (
+    cleanPathname.match(/^\/dashboard\/cursos\/aulas\/[^/]+$/) &&
+    !cleanPathname.includes("cadastrar")
+  ) {
     return {
       title: "Detalhes da Aula",
       items: [
@@ -608,7 +647,10 @@ export function useBreadcrumb(): BreadcrumbConfig {
   for (let i = pathSegments.length; i > 0; i--) {
     currentPath = "/" + pathSegments.slice(0, i).join("/");
     if (breadcrumbConfig[currentPath]) {
-      return filterBreadcrumbForEmpresa(breadcrumbConfig[currentPath], isEmpresaRole);
+      return filterBreadcrumbForEmpresa(
+        breadcrumbConfig[currentPath],
+        isEmpresaRole
+      );
     }
   }
 

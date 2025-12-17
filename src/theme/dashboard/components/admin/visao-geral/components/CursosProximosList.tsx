@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import type { TurmaProximoInicio } from "@/api/cursos";
 
 interface CursosProximosListProps {
-  turmas: TurmaProximoInicio[];
+  turmas: any[];
   isLoading?: boolean;
 }
 
@@ -80,8 +80,8 @@ export function CursosProximosList({
       <div className="space-y-2">
         {turmas.map((turma, index) => (
           <Link
-            key={turma.turmaId}
-            href={`/dashboard/cursos/${turma.cursoId}/turmas/${turma.turmaId}`}
+            key={turma.turmaId ?? index}
+            href={`/dashboard/cursos/${turma.cursoId ?? turma.turmaId}/turmas/${turma.turmaId}`}
             className={cn(
               "flex items-center gap-2 p-2 rounded-lg transition-all hover:bg-gray-50 group",
               index !== turmas.length - 1 && "border-b border-gray-200/60 pb-2"
@@ -95,17 +95,17 @@ export function CursosProximosList({
             {/* Info */}
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-gray-900 truncate group-hover:text-purple-600 transition-colors">
-                {turma.cursoNome}
+                {turma.cursoNome ?? turma.nome}
               </p>
               <p className="text-xs text-gray-500 truncate">
-                {turma.turmaNome}
+                {turma.turmaNome ?? turma.codigo ?? ""}
               </p>
             </div>
 
             {/* Stats */}
             <div className="text-right flex-shrink-0">
               <p className="text-xs font-semibold text-gray-900">
-                {turma.diasParaInicio} {turma.diasParaInicio === 1 ? "dia" : "dias"}
+                {turma.diasParaInicio != null ? `${turma.diasParaInicio} ${turma.diasParaInicio === 1 ? "dia" : "dias"}` : "Em breve"}
               </p>
               <p className="text-xs text-gray-500">
                 {formatDate(turma.dataInicio)}

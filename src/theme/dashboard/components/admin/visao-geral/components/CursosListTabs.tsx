@@ -188,10 +188,10 @@ export function CursosListTabs({
           <div className="space-y-2">
             {activeTab === "proximos" ? (
               // Renderização para cursos próximos (TurmaProximoInicio)
-              (currentData as TurmaProximoInicio[]).map((turma, index) => (
+              (currentData as any[]).map((turma, index) => (
                 <Link
                   key={turma.turmaId}
-                  href={`/dashboard/cursos/${turma.cursoId}/turmas/${turma.turmaId}`}
+                  href={`/dashboard/cursos/${turma.cursoId ?? turma.turmaId}/turmas/${turma.turmaId}`}
                   className={cn(
                     "flex items-center gap-2 p-2 rounded-lg transition-all hover:bg-gray-50 group",
                     index !== currentData.length - 1 &&
@@ -232,10 +232,10 @@ export function CursosListTabs({
               ))
             ) : activeTab === "taxa-conclusao" ? (
               // Renderização para taxa de conclusão (CursoTaxaConclusao)
-              (currentData as CursoTaxaConclusao[]).map((curso, index) => (
+              (currentData as any[]).map((curso, index) => (
                 <Link
-                  key={curso.cursoId}
-                  href={`/dashboard/cursos/${curso.cursoId}`}
+                  key={curso.cursoId ?? curso.id ?? index}
+                  href={`/dashboard/cursos/${curso.cursoId ?? curso.id}`}
                   className={cn(
                     "flex items-center gap-2 p-2 rounded-lg transition-all hover:bg-gray-50 group",
                     index !== currentData.length - 1 &&
@@ -257,10 +257,10 @@ export function CursosListTabs({
                         currentTab?.hoverColor
                       )}
                     >
-                      {curso.cursoNome}
+                      {curso.cursoNome ?? curso.nome}
                     </p>
                     <p className="text-xs text-gray-500 truncate">
-                      {curso.cursoCodigo}
+                      {curso.cursoCodigo ?? curso.codigo ?? ""}
                     </p>
                   </div>
                   <div className="text-right flex-shrink-0">
@@ -268,17 +268,17 @@ export function CursosListTabs({
                       {formatPercentage(curso.taxaConclusao)}
                     </p>
                     <p className="text-xs text-gray-500">
-                      {curso.totalConcluidos}/{curso.totalInscricoes}
+                      {curso.totalConcluidos ?? 0}/{curso.totalInscricoes ?? 0}
                     </p>
                   </div>
                 </Link>
               ))
             ) : (
               // Renderização para cursos populares/mais populares (CursoPerformance)
-              (currentData as CursoPerformance[]).map((curso, index) => (
+              (currentData as any[]).map((curso, index) => (
                 <Link
-                  key={curso.cursoId}
-                  href={`/dashboard/cursos/${curso.cursoId}`}
+                  key={curso.cursoId ?? curso.id ?? index}
+                  href={`/dashboard/cursos/${curso.cursoId ?? curso.id}`}
                   className={cn(
                     "flex items-center gap-2 p-2 rounded-lg transition-all hover:bg-gray-50 group",
                     index !== currentData.length - 1 &&

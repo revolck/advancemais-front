@@ -94,11 +94,10 @@ export function CursosTurmasTab({
       filtered = filtered.filter((inscricao) => {
         const cursoNome = inscricao.curso?.nome?.toLowerCase() || "";
         const turmaNome = inscricao.turma?.nome?.toLowerCase() || "";
-        const turmaCodigo = inscricao.turma?.codigo?.toLowerCase() || "";
+        // codigo não disponível em CursoAlunoTurmaResumo
         return (
           cursoNome.includes(query) ||
-          turmaNome.includes(query) ||
-          turmaCodigo.includes(query)
+          turmaNome.includes(query)
         );
       });
     }
@@ -346,7 +345,7 @@ export function CursosTurmasTab({
           {/* Grid de cards estilo Apple - limpo e minimalista */}
           <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
             {pageItems.map((inscricao) => {
-              const img = inscricao.curso?.imagemUrl;
+              const img = undefined; // imagemUrl não disponível em CursoAlunoCursoResumo
               const statusBadge = getStatusBadge(inscricao.statusInscricao);
               // Usa progresso da API se disponível (incluindo 0), caso contrário usa fallback baseado no status
               // Verifica se progresso é um número válido (incluindo 0)
@@ -398,12 +397,12 @@ export function CursosTurmasTab({
                     <div className="mt-3 space-y-2">
                       <div className="flex items-center gap-2 text-xs text-gray-600">
                         <Calendar className="h-3.5 w-3.5 text-gray-400" />
-                        <span>{formatDate(inscricao.turma?.dataInicio)}</span>
+                        <span>{"—"}</span> {/* dataInicio não disponível em CursoAlunoTurmaResumo */}
                       </div>
 
                       <div className="flex items-center gap-2 text-xs text-gray-600">
                         <Users className="h-3.5 w-3.5 text-gray-400" />
-                        <span>Turma {inscricao.turma?.codigo || "—"}</span>
+                        <span>Turma {"—"}</span> {/* codigo não disponível em CursoAlunoTurmaResumo */}
                       </div>
                     </div>
 

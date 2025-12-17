@@ -11,7 +11,7 @@ import type { VisaoGeralPerformance } from "@/api/cursos";
 import type { ChartData, ChartConfig } from "@/components/ui/custom/charts-custom";
 
 interface PerformanceSectionProps {
-  data: VisaoGeralPerformance;
+  data: any;
   isLoading?: boolean;
 }
 
@@ -33,9 +33,10 @@ export function PerformanceSection({ data, isLoading }: PerformanceSectionProps)
   }
 
   // Dados para gráfico radial de taxa de conclusão
+  const taxaConclusao = data.taxaConclusao ?? 0;
   const conclusaoChartData: ChartData[] = [
-    { name: "Concluídos", value: data.taxaConclusao },
-    { name: "Pendentes", value: 100 - data.taxaConclusao },
+    { name: "Concluídos", value: taxaConclusao },
+    { name: "Pendentes", value: 100 - taxaConclusao },
   ];
 
   const conclusaoChartConfig: ChartConfig = {
@@ -44,10 +45,11 @@ export function PerformanceSection({ data, isLoading }: PerformanceSectionProps)
   };
 
   // Dados para gráfico de barras dos cursos mais populares
-  const popularChartData: ChartData[] = data.cursosMaisPopulares.slice(0, 5).map((curso) => ({
-    name: curso.cursoNome.length > 20 ? curso.cursoNome.substring(0, 20) + "..." : curso.cursoNome,
-    inscricoes: curso.totalInscricoes,
-    turmas: curso.totalTurmas,
+  const cursosMaisPopulares = data.cursosMaisPopulares ?? data.cursos ?? [];
+  const popularChartData: ChartData[] = cursosMaisPopulares.slice(0, 5).map((curso: any) => ({
+    name: (curso.cursoNome ?? curso.nome ?? "").length > 20 ? (curso.cursoNome ?? curso.nome ?? "").substring(0, 20) + "..." : (curso.cursoNome ?? curso.nome ?? ""),
+    inscricoes: curso.totalInscricoes ?? 0,
+    turmas: curso.totalTurmas ?? 0,
   }));
 
   const popularChartConfig: ChartConfig = {
@@ -141,10 +143,10 @@ export function PerformanceSection({ data, isLoading }: PerformanceSectionProps)
             </h3>
           </div>
           <div className="space-y-2">
-            {data.cursosMaisPopulares.map((curso, index) => (
+            {cursosMaisPopulares.map((curso: any, index: number) => (
               <Link
-                key={curso.cursoId}
-                href={`/dashboard/cursos/${curso.cursoId}`}
+                key={curso.cursoId ?? curso.id ?? index}
+                href={`/dashboard/cursos/${curso.cursoId ?? curso.id}`}
               >
                 <div className="flex items-center justify-between p-4 rounded-xl border border-gray-200 hover:border-blue-300 hover:bg-blue-50/50 transition-all duration-200 cursor-pointer group">
                   <div className="flex items-center gap-4 flex-1">
@@ -153,17 +155,17 @@ export function PerformanceSection({ data, isLoading }: PerformanceSectionProps)
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-gray-900 truncate">
-                        {curso.cursoNome}
+                        {curso.cursoNome ?? curso.nome}
                       </p>
-                      <p className="text-xs text-gray-500 font-medium">{curso.cursoCodigo}</p>
+                      <p className="text-xs text-gray-500 font-medium">{curso.cursoCodigo ?? curso.codigo ?? ""}</p>
                     </div>
                   </div>
                   <div className="text-right">
                     <p className="font-bold text-gray-900">
-                      {curso.totalInscricoes} inscrições
+                      {curso.totalInscricoes ?? 0} inscrições
                     </p>
                     <p className="text-xs text-gray-500">
-                      {curso.totalTurmas} {curso.totalTurmas === 1 ? "turma" : "turmas"}
+                      {curso.totalTurmas ?? 0} {(curso.totalTurmas ?? 0) === 1 ? "turma" : "turmas"}
                     </p>
                   </div>
                 </div>
@@ -174,7 +176,7 @@ export function PerformanceSection({ data, isLoading }: PerformanceSectionProps)
       )}
 
       {/* Cursos com Maior Taxa de Conclusão */}
-      {data.cursosComMaiorTaxaConclusao.length > 0 && (
+      {(data.cursosComMaiorTaxaConclusao ?? data.cursos ?? []).length > 0 && (
         <div className="bg-white rounded-2xl border border-gray-200/80 shadow-sm p-6">
           <div className="flex items-center gap-3 mb-5">
             <div className="p-2 rounded-lg bg-emerald-100 text-emerald-600">
@@ -185,10 +187,10 @@ export function PerformanceSection({ data, isLoading }: PerformanceSectionProps)
             </h3>
           </div>
           <div className="space-y-2">
-            {data.cursosComMaiorTaxaConclusao.map((curso, index) => (
+            {(data.cursosComMaiorTaxaConclusao ?? data.cursos ?? []).map((curso: any, index: number) => (
               <Link
-                key={curso.cursoId}
-                href={`/dashboard/cursos/${curso.cursoId}`}
+                key={curso.cursoId ?? curso.id ?? index}
+                href={`/dashboard/cursos/${curso.cursoId ?? curso.id}`}
               >
                 <div className="p-5 rounded-xl border border-gray-200 hover:border-emerald-300 hover:bg-emerald-50/50 transition-all duration-200 cursor-pointer group">
                   <div className="flex items-center justify-between mb-3">
@@ -198,22 +200,22 @@ export function PerformanceSection({ data, isLoading }: PerformanceSectionProps)
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="font-semibold text-gray-900 truncate">
-                          {curso.cursoNome}
+                          {curso.cursoNome ?? curso.nome}
                         </p>
-                        <p className="text-xs text-gray-500 font-medium">{curso.cursoCodigo}</p>
+                        <p className="text-xs text-gray-500 font-medium">{curso.cursoCodigo ?? curso.codigo ?? ""}</p>
                       </div>
                     </div>
                     <div className="text-right">
                       <p className="text-2xl font-bold text-emerald-600">
-                        {formatPercent(curso.taxaConclusao)}
+                        {formatPercent(curso.taxaConclusao ?? 0)}
                       </p>
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Progress value={curso.taxaConclusao} className="h-2.5 bg-emerald-100" />
+                    <Progress value={curso.taxaConclusao ?? 0} className="h-2.5 bg-emerald-100" />
                     <div className="flex items-center justify-between text-xs text-gray-600">
                       <span className="font-medium">
-                        {curso.totalConcluidos} de {curso.totalInscricoes} concluídos
+                        {curso.totalConcluidos ?? 0} de {curso.totalInscricoes ?? 0} concluídos
                       </span>
                     </div>
                   </div>

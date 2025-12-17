@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import type { CursoPerformance } from "@/api/cursos";
 
 interface CursosPopularesListProps {
-  cursos: CursoPerformance[];
+  cursos: any[];
   isLoading?: boolean;
   maxItems?: number;
 }
@@ -73,8 +73,8 @@ export function CursosPopularesList({
       <div className="space-y-2">
         {displayedCursos.map((curso, index) => (
           <Link
-            key={curso.cursoId}
-            href={`/dashboard/cursos/${curso.cursoId}`}
+            key={curso.cursoId ?? curso.id ?? index}
+            href={`/dashboard/cursos/${curso.cursoId ?? curso.id}`}
             className={cn(
               "flex items-center gap-2 p-2 rounded-lg transition-all hover:bg-gray-50 group",
               index !== displayedCursos.length - 1 && "border-b border-gray-200/60 pb-2"
@@ -88,20 +88,20 @@ export function CursosPopularesList({
             {/* Info */}
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-gray-900 truncate group-hover:text-blue-600 transition-colors">
-                {curso.cursoNome}
+                {curso.cursoNome ?? curso.nome}
               </p>
               <p className="text-xs text-gray-500 truncate">
-                {curso.cursoCodigo}
+                {curso.cursoCodigo ?? curso.codigo ?? ""}
               </p>
             </div>
 
             {/* Stats */}
             <div className="text-right flex-shrink-0">
               <p className="text-xs font-semibold text-gray-900">
-                {curso.totalInscricoes.toLocaleString("pt-BR")}
+                {(curso.totalInscricoes ?? 0).toLocaleString("pt-BR")}
               </p>
               <p className="text-xs text-gray-500">
-                {curso.totalTurmas} turmas
+                {curso.totalTurmas ?? 0} turmas
               </p>
             </div>
           </Link>

@@ -67,18 +67,18 @@ export function useAlunosDashboardQuery(filters: NormalizedAlunosFilters) {
         const matchesStatus = !filters.status
           ? true
           : Array.isArray(filters.status)
-          ? filters.status.includes(aluno.ultimoCurso?.statusInscricao || "")
-          : aluno.ultimoCurso?.statusInscricao === filters.status;
+          ? filters.status.includes(aluno.inscricao?.status || "")
+          : aluno.inscricao?.status === filters.status;
         
         // Curso individual (string único)
         const matchesCurso = !filters.cursoId
           ? true
-          : aluno.ultimoCurso?.curso.id === filters.cursoId;
+          : aluno.inscricao?.curso.id === filters.cursoId;
         
-        // Turma individual (string único)
+        // Turma individual (string único) - turma não disponível em AlunoComInscricao
         const matchesTurma = !filters.turmaId
           ? true
-          : aluno.ultimoCurso?.turma.id === filters.turmaId;
+          : false; // turma não disponível
         
         // Suporte para múltiplas cidades
         const matchesCidade = !filters.cidade
@@ -92,7 +92,7 @@ export function useAlunosDashboardQuery(filters: NormalizedAlunosFilters) {
         if (filters.search && filters.search.length >= 3) {
           const searchLower = filters.search.toLowerCase();
           const matchesSearch =
-            aluno.nomeCompleto.toLowerCase().includes(searchLower) ||
+            aluno.nome.toLowerCase().includes(searchLower) ||
             (aluno.email || "").toLowerCase().includes(searchLower) ||
             (aluno.cpf || "").toLowerCase().includes(searchLower) ||
             aluno.id.toLowerCase().includes(searchLower);
@@ -125,7 +125,7 @@ export function useAlunosDashboardQuery(filters: NormalizedAlunosFilters) {
                     1,
                     Math.ceil(filteredTotal / filters.pageSize)
                   )
-                : response.pagination.pages ??
+                : response.pagination.totalPages ??
                   Math.max(1, Math.ceil(filteredTotal / filters.pageSize)),
           }
         : {

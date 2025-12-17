@@ -26,7 +26,8 @@ export {
 export { TurmasDashboard } from "./lista-turmas/TurmasDashboard";
 export { InstrutoresDashboard } from "./lista-instrutores/InstrutoresDashboard";
 export { UsuariosDashboard } from "./lista-usuarios/UsuariosDashboard";
-export { ProvasDashboard } from "./lista-provas/ProvasDashboard";
+export { AtividadesProvasDashboard } from "./lista-atividades-provas/AtividadesProvasDashboard";
+export { ProvaDetailsView } from "./prova-details";
 export { CertificadosDashboard } from "./lista-certificados/CertificadosDashboard";
 export { EstagiosDashboard } from "./lista-estagios/EstagiosDashboard";
 export { AgendaDashboard } from "./lista-agenda/AgendaDashboard";
@@ -85,3 +86,7 @@ export {
   HeaderInfo as AulaHeaderInfo,
   HistoricoTab as AulaHistoricoTab,
 } from "./aula-details";
+
+// Auditoria Dashboards
+export { HistoricoDashboard } from "./lista-historico/HistoricoDashboard";
+export { TransacoesDashboard } from "./lista-transacoes/TransacoesDashboard";

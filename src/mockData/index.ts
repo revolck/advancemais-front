@@ -5,3 +5,5 @@
 
 export * from "./faturamento";
 export * from "./financeiro";
+export * from "./auditoria";
+export * from "./transacoes";

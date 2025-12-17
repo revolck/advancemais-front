@@ -61,15 +61,18 @@ export function AlunosDashboard({ className }: { className?: string }) {
   // ID do curso filtrado para exibir na tabela (UUID string)
   const cursoFiltradoId = selectedCourseId;
 
-  const statusOptions: SelectOption[] = useMemo(() => [
-    { value: "INSCRITO", label: "Inscrito" },
-    { value: "EM_ANDAMENTO", label: "Em Andamento" },
-    { value: "CONCLUIDO", label: "Concluído" },
-    { value: "REPROVADO", label: "Reprovado" },
-    { value: "EM_ESTAGIO", label: "Em Estágio" },
-    { value: "CANCELADO", label: "Cancelado" },
-    { value: "TRANCADO", label: "Trancado" },
-  ], []);
+  const statusOptions: SelectOption[] = useMemo(
+    () => [
+      { value: "INSCRITO", label: "Inscrito" },
+      { value: "EM_ANDAMENTO", label: "Em Andamento" },
+      { value: "CONCLUIDO", label: "Concluído" },
+      { value: "REPROVADO", label: "Reprovado" },
+      { value: "EM_ESTAGIO", label: "Em Estágio" },
+      { value: "CANCELADO", label: "Cancelado" },
+      { value: "TRANCADO", label: "Trancado" },
+    ],
+    []
+  );
 
   const cursosQuery = useQuery({
     queryKey: queryKeys.cursos.list({ page: 1, pageSize: 100 }),
@@ -104,25 +107,25 @@ export function AlunosDashboard({ className }: { className?: string }) {
       page: currentPage,
       pageSize,
       // Enviar todos os status selecionados (array ou string único)
-      status: selectedStatuses.length > 0
-        ? selectedStatuses.length === 1
-          ? selectedStatuses[0]
-          : selectedStatuses
-        : null,
+      status:
+        selectedStatuses.length > 0
+          ? selectedStatuses.length === 1
+            ? selectedStatuses[0]
+            : selectedStatuses
+          : null,
       // Curso individual (string único)
       cursoId: selectedCourseId,
       // Turma individual (string único)
       turmaId: selectedTurmaId,
       // Enviar todas as cidades selecionadas (array ou string único)
-      cidade: selectedCidades.length > 0
-        ? selectedCidades.length === 1
-          ? selectedCidades[0].trim()
-          : selectedCidades.map((c) => c.trim())
-        : null,
+      cidade:
+        selectedCidades.length > 0
+          ? selectedCidades.length === 1
+            ? selectedCidades[0].trim()
+            : selectedCidades.map((c) => c.trim())
+          : null,
       search:
-        appliedSearchTerm.length >= MIN_SEARCH_LENGTH
-          ? appliedSearchTerm
-          : "",
+        appliedSearchTerm.length >= MIN_SEARCH_LENGTH ? appliedSearchTerm : "",
     };
   }, [
     currentPage,
@@ -135,21 +138,27 @@ export function AlunosDashboard({ className }: { className?: string }) {
   ]);
 
   const alunosQuery = useAlunosDashboardQuery(normalizedFilters);
-  const alunos = useMemo(() => alunosQuery.data?.alunos ?? [], [alunosQuery.data?.alunos]);
+  const alunos = useMemo(
+    () => alunosQuery.data?.alunos ?? [],
+    [alunosQuery.data?.alunos]
+  );
 
   const turmasFromAlunos = useMemo(() => {
-    const map = new Map<string, any>();
-    alunos.forEach((aluno) => {
-      const ultimo = aluno.ultimoCurso;
-      if (!ultimo?.turma) return;
-      if (selectedCourseId && ultimo.curso.id !== selectedCourseId) {
-        return;
-      }
-      map.set(ultimo.turma.id, ultimo.turma);
-    });
-    return Array.from(map.values()).sort((a, b) =>
-      a.nome.localeCompare(b.nome)
-    );
+    // turma não disponível em AlunoComInscricao.inscricao
+    // Retornando array vazio por enquanto
+    return [];
+    // const map = new Map<string, any>();
+    // alunos.forEach((aluno) => {
+    //   const inscricao = aluno.inscricao;
+    //   if (!inscricao?.curso) return;
+    //   if (selectedCourseId && inscricao.curso.id !== selectedCourseId) {
+    //     return;
+    //   }
+    //   // turma não está disponível no tipo
+    // });
+    // return Array.from(map.values()).sort((a, b) =>
+    //   a.nome.localeCompare(b.nome)
+    // );
   }, [alunos, selectedCourseId]);
 
   const turmasSource = useMemo(() => {
@@ -230,7 +239,7 @@ export function AlunosDashboard({ className }: { className?: string }) {
   // Mostra skeleton quando está buscando novos dados (isFetching)
   // Isso garante que o skeleton apareça mesmo quando há dados anteriores (placeholderData)
   const showSkeleton = isFetching;
-  
+
   const errorMessage = alunosQuery.error
     ? alunosQuery.error.message || "Erro ao carregar alunos"
     : null;
@@ -249,7 +258,10 @@ export function AlunosDashboard({ className }: { className?: string }) {
   const isSearchInputValid = !searchValidationMessage;
 
   const handlePageChange = (page: number) => {
-    const nextPage = Math.max(1, Math.min(page, Math.max(1, pagination.totalPages)));
+    const nextPage = Math.max(
+      1,
+      Math.min(page, Math.max(1, pagination.totalPages))
+    );
     setCurrentPage(nextPage);
   };
 
@@ -287,8 +299,8 @@ export function AlunosDashboard({ className }: { className?: string }) {
   const sortedAlunos = useMemo(() => {
     const sorted = [...alunos];
     sorted.sort((a, b) => {
-      const nameA = (a.nomeCompleto || a.id).toLowerCase();
-      const nameB = (b.nomeCompleto || b.id).toLowerCase();
+      const nameA = (a.nome || a.id).toLowerCase();
+      const nameB = (b.nome || b.id).toLowerCase();
       if (sortDirection === "asc") {
         return nameA.localeCompare(nameB, "pt-BR");
       } else {
@@ -341,10 +353,9 @@ export function AlunosDashboard({ className }: { className?: string }) {
         key: "turma",
         label: "Turma",
         options: turmasOptions,
-        placeholder:
-          selectedCourseId
-            ? "Selecione turma"
-            : "Selecione um curso primeiro",
+        placeholder: selectedCourseId
+          ? "Selecione turma"
+          : "Selecione um curso primeiro",
         disabled: !selectedCourseId,
       },
       {
@@ -649,7 +660,8 @@ export function AlunosDashboard({ className }: { className?: string }) {
                     </ButtonCustom>
                   ))}
 
-                  {visiblePages[visiblePages.length - 1] < pagination.totalPages && (
+                  {visiblePages[visiblePages.length - 1] <
+                    pagination.totalPages && (
                     <>
                       {visiblePages[visiblePages.length - 1] <
                         pagination.totalPages - 1 && (

@@ -10,9 +10,12 @@ import type {
   Curso,
   CreateTurmaPayload,
   CursoTurma,
+  CursoModulo,
   TurmaInscricao,
   CreateInscricaoPayload,
   TurmaProva,
+  CreateProvaPayload,
+  UpdateProvaPayload,
   TurmaCertificado,
   AlunoComInscricao,
   ListAlunosComInscricaoParams,
@@ -24,6 +27,11 @@ import type {
   ListInscricoesCursoResponse,
   ListCursoAuditoriaParams,
   ListCursoAuditoriaResponse,
+  ProvaToken,
+  CreateProvaTokenPayload,
+  ListProvaTokensParams,
+  ListProvaTokensResponse,
+  ProvaTokenResponse,
 } from "./types";
 
 function normalizeHeaders(headers?: HeadersInit): Record<string, string> {
@@ -44,7 +52,7 @@ function getAuthHeader(): Record<string, string> {
 
 function buildHeaders(
   additional?: HeadersInit,
-  auth = false,
+  auth = false
 ): Record<string, string> {
   return {
     Accept: apiConfig.headers.Accept,
@@ -54,7 +62,7 @@ function buildHeaders(
 }
 
 export async function getCursosMeta(
-  init?: RequestInit,
+  init?: RequestInit
 ): Promise<CursosModuleMeta> {
   return apiFetch<CursosModuleMeta>(cursosRoutes.meta(), {
     init: {
@@ -68,7 +76,7 @@ export async function getCursosMeta(
 
 export async function listCursos(
   params?: CursosListParams,
-  init?: RequestInit,
+  init?: RequestInit
 ): Promise<CursosListResponse> {
   const sp = new URLSearchParams();
   if (params) {
@@ -243,15 +251,15 @@ function buildCursoRequest(payload: CreateCursoPayload | UpdateCursoPayload): {
     console.log("[buildCursoRequest] Payload original:", payload);
     console.log(
       "[buildCursoRequest] imagemUrl no payload original:",
-      payload.imagemUrl,
+      payload.imagemUrl
     );
     console.log(
       "[buildCursoRequest] imagemUrl no JSON final:",
-      jsonPayload.imagemUrl,
+      jsonPayload.imagemUrl
     );
     console.log(
       "[buildCursoRequest] JSON stringificado:",
-      JSON.stringify(jsonPayload),
+      JSON.stringify(jsonPayload)
     );
   }
 
@@ -263,7 +271,7 @@ function buildCursoRequest(payload: CreateCursoPayload | UpdateCursoPayload): {
 
 export async function createCurso(
   payload: CreateCursoPayload,
-  init?: RequestInit,
+  init?: RequestInit
 ): Promise<Curso> {
   const { body, headers } = buildCursoRequest(payload);
 
@@ -303,7 +311,7 @@ export async function createCurso(
               ([field, messages]) =>
                 `${field}: ${
                   Array.isArray(messages) ? messages.join(", ") : messages
-                }`,
+                }`
             )
             .join("; ");
           if (issues) {
@@ -368,7 +376,7 @@ function normalizeTurma(turma: any): CursoTurma {
 
 export async function getCursoById(
   cursoId: number | string,
-  init?: RequestInit,
+  init?: RequestInit
 ): Promise<Curso & { turmas?: CursoTurma[]; turmasCount?: number }> {
   try {
     const response = await apiFetch<any>(cursosRoutes.cursos.get(cursoId), {
@@ -437,7 +445,7 @@ export async function getCursoById(
         message: "A resposta da API pode estar em formato inválido",
       });
       throw new Error(
-        "Erro ao processar resposta da API. Verifique se a API está retornando dados válidos.",
+        "Erro ao processar resposta da API. Verifique se a API está retornando dados válidos."
       );
     }
     throw error;
@@ -447,7 +455,7 @@ export async function getCursoById(
 export async function updateCurso(
   cursoId: number | string,
   payload: UpdateCursoPayload,
-  init?: RequestInit,
+  init?: RequestInit
 ): Promise<Curso> {
   const { body, headers } = buildCursoRequest(payload);
   return apiFetch<Curso>(cursosRoutes.cursos.update(cursoId), {
@@ -463,7 +471,7 @@ export async function updateCurso(
 
 export async function despublicarCurso(
   cursoId: number | string,
-  init?: RequestInit,
+  init?: RequestInit
 ): Promise<void> {
   return apiFetch<void>(cursosRoutes.cursos.delete(cursoId), {
     init: {
@@ -478,7 +486,7 @@ export async function despublicarCurso(
 // Turmas
 export async function listTurmas(
   cursoId: number | string,
-  init?: RequestInit,
+  init?: RequestInit
 ): Promise<CursoTurma[]> {
   const url = cursosRoutes.cursos.turmas.list(cursoId);
   const res = await apiFetch<any>(url, {
@@ -494,8 +502,8 @@ export async function listTurmas(
   const turmas: CursoTurma[] = Array.isArray(res)
     ? (res as CursoTurma[])
     : Array.isArray(res?.data)
-      ? (res.data as CursoTurma[])
-      : [];
+    ? (res.data as CursoTurma[])
+    : [];
 
   return turmas;
 }
@@ -503,7 +511,7 @@ export async function listTurmas(
 export async function getTurmaById(
   cursoId: number | string,
   turmaId: string,
-  init?: RequestInit,
+  init?: RequestInit
 ): Promise<CursoTurma> {
   try {
     const response = await apiFetch<any>(
@@ -515,7 +523,7 @@ export async function getTurmaById(
           headers: buildHeaders(init?.headers, true),
         },
         cache: "no-cache",
-      },
+      }
     );
 
     // Normaliza a turma usando a mesma função de normalização
@@ -538,7 +546,7 @@ export async function getTurmaById(
         message: "A resposta da API pode estar em formato inválido",
       });
       const parsingError = new Error(
-        "Erro ao processar resposta da API. Verifique se a API está retornando dados válidos.",
+        "Erro ao processar resposta da API. Verifique se a API está retornando dados válidos."
       ) as Error & { status?: number };
       if (status) parsingError.status = status;
       throw parsingError;
@@ -556,14 +564,14 @@ export async function getTurmaById(
 export async function createTurma(
   cursoId: number | string,
   payload: CreateTurmaPayload,
-  init?: RequestInit,
+  init?: RequestInit
 ): Promise<CursoTurma> {
   return apiFetch<CursoTurma>(cursosRoutes.cursos.turmas.create(cursoId), {
     init: {
       method: "POST",
       headers: buildHeaders(
         { "Content-Type": "application/json", ...init?.headers },
-        true,
+        true
       ),
       body: JSON.stringify(payload),
       ...init,
@@ -576,7 +584,7 @@ export async function createTurma(
 export async function listInscricoes(
   cursoId: number | string,
   turmaId: string,
-  init?: RequestInit,
+  init?: RequestInit
 ): Promise<TurmaInscricao[]> {
   try {
     // A API pode retornar {success: true, count: X, data: [...]} ou diretamente o array
@@ -639,7 +647,7 @@ export async function listInscricoes(
     // Isso pode acontecer se o endpoint não existe ou se não há inscrições
     if (apiError?.status === 404) {
       console.warn(
-        `Endpoint de inscrições não encontrado ou turma sem inscrições: ${cursoId}/${turmaId}`,
+        `Endpoint de inscrições não encontrado ou turma sem inscrições: ${cursoId}/${turmaId}`
       );
       return [];
     }
@@ -664,7 +672,7 @@ export async function createInscricao(
   cursoId: number | string,
   turmaId: string,
   payload: CreateInscricaoPayload,
-  init?: RequestInit,
+  init?: RequestInit
 ): Promise<TurmaInscricao> {
   return apiFetch<TurmaInscricao>(
     cursosRoutes.cursos.turmas.inscricoes.create(cursoId, turmaId),
@@ -673,13 +681,13 @@ export async function createInscricao(
         method: "POST",
         headers: buildHeaders(
           { "Content-Type": "application/json", ...init?.headers },
-          true,
+          true
         ),
         body: JSON.stringify(payload),
         ...init,
       },
       cache: "no-cache",
-    },
+    }
   );
 }
 
@@ -687,7 +695,7 @@ export async function deleteInscricao(
   cursoId: number | string,
   turmaId: string,
   alunoId: string,
-  init?: RequestInit,
+  init?: RequestInit
 ): Promise<void> {
   return apiFetch<void>(
     cursosRoutes.cursos.turmas.inscricoes.delete(cursoId, turmaId, alunoId),
@@ -698,7 +706,7 @@ export async function deleteInscricao(
         headers: buildHeaders(init?.headers, true),
       },
       cache: "no-cache",
-    },
+    }
   );
 }
 
@@ -706,7 +714,7 @@ export async function deleteInscricao(
 export async function listInscricoesCurso(
   cursoId: number | string,
   params?: ListInscricoesCursoParams,
-  init?: RequestInit,
+  init?: RequestInit
 ): Promise<ListInscricoesCursoResponse> {
   const searchParams = new URLSearchParams();
 
@@ -723,7 +731,10 @@ export async function listInscricoesCurso(
     searchParams.append("status", statusArray.join(","));
   }
   if (params?.turmaId) {
-    searchParams.append("turmaId", params.turmaId);
+    const turmaIdValue = Array.isArray(params.turmaId)
+      ? params.turmaId.join(",")
+      : params.turmaId;
+    searchParams.append("turmaId", turmaIdValue);
   }
   if (params?.search) {
     searchParams.append("search", params.search);
@@ -755,7 +766,7 @@ export async function listInscricoesCurso(
 export async function listCursoAuditoria(
   cursoId: number | string,
   params?: ListCursoAuditoriaParams,
-  init?: RequestInit,
+  init?: RequestInit
 ): Promise<ListCursoAuditoriaResponse> {
   const searchParams = new URLSearchParams();
 
@@ -785,7 +796,7 @@ export async function listCursoAuditoria(
 export async function listProvas(
   cursoId: number | string,
   turmaId: string,
-  init?: RequestInit,
+  init?: RequestInit
 ): Promise<TurmaProva[]> {
   return apiFetch<TurmaProva[]>(
     cursosRoutes.cursos.turmas.provas.list(cursoId, turmaId),
@@ -796,15 +807,238 @@ export async function listProvas(
         headers: buildHeaders(init?.headers, true),
       },
       cache: "no-cache",
-    },
+    }
   );
+}
+
+export async function getProvaById(
+  cursoId: number | string,
+  turmaId: string,
+  provaId: string,
+  init?: RequestInit
+): Promise<TurmaProva> {
+  return apiFetch<TurmaProva>(
+    cursosRoutes.cursos.turmas.provas.get(cursoId, turmaId, provaId),
+    {
+      init: {
+        method: "GET",
+        ...init,
+        headers: buildHeaders(init?.headers, true),
+      },
+      cache: "no-cache",
+    }
+  );
+}
+
+export async function createProva(
+  cursoId: number | string,
+  turmaId: string,
+  payload: CreateProvaPayload,
+  init?: RequestInit
+): Promise<TurmaProva> {
+  return apiFetch<TurmaProva>(
+    cursosRoutes.cursos.turmas.provas.create(cursoId, turmaId),
+    {
+      init: {
+        method: "POST",
+        headers: buildHeaders(
+          { "Content-Type": "application/json", ...init?.headers },
+          true
+        ),
+        body: JSON.stringify(payload),
+        ...init,
+      },
+      cache: "no-cache",
+    }
+  );
+}
+
+export async function updateProva(
+  cursoId: number | string,
+  turmaId: string,
+  provaId: string,
+  payload: UpdateProvaPayload,
+  init?: RequestInit
+): Promise<TurmaProva> {
+  return apiFetch<TurmaProva>(
+    cursosRoutes.cursos.turmas.provas.update(cursoId, turmaId, provaId),
+    {
+      init: {
+        method: "PUT",
+        headers: buildHeaders(
+          { "Content-Type": "application/json", ...init?.headers },
+          true
+        ),
+        body: JSON.stringify(payload),
+        ...init,
+      },
+      cache: "no-cache",
+    }
+  );
+}
+
+export async function deleteProva(
+  cursoId: number | string,
+  turmaId: string,
+  provaId: string,
+  init?: RequestInit
+): Promise<void> {
+  return apiFetch<void>(
+    cursosRoutes.cursos.turmas.provas.delete(cursoId, turmaId, provaId),
+    {
+      init: {
+        method: "DELETE",
+        ...init,
+        headers: buildHeaders(init?.headers, true),
+      },
+      cache: "no-cache",
+    }
+  );
+}
+
+// Tokens Únicos de Provas/Atividades
+export async function listProvaTokens(
+  cursoId: number | string,
+  turmaId: string,
+  provaId: string,
+  params?: ListProvaTokensParams,
+  init?: RequestInit
+): Promise<ListProvaTokensResponse> {
+  const queryParams = new URLSearchParams();
+
+  if (params?.page) queryParams.set("page", String(params.page));
+  if (params?.pageSize) queryParams.set("pageSize", String(params.pageSize));
+  if (params?.inscricaoId) queryParams.set("inscricaoId", params.inscricaoId);
+  if (params?.respondido !== undefined)
+    queryParams.set("respondido", String(params.respondido));
+
+  const url = cursosRoutes.cursos.turmas.provas.tokens.list(
+    cursoId,
+    turmaId,
+    provaId
+  );
+  const fullUrl = queryParams.toString()
+    ? `${url}?${queryParams.toString()}`
+    : url;
+
+  return apiFetch<ListProvaTokensResponse>(fullUrl, {
+    init: {
+      method: "GET",
+      ...init,
+      headers: buildHeaders(init?.headers, true),
+    },
+    cache: "no-cache",
+  });
+}
+
+export async function createProvaToken(
+  cursoId: number | string,
+  turmaId: string,
+  provaId: string,
+  payload: CreateProvaTokenPayload,
+  init?: RequestInit
+): Promise<ProvaTokenResponse> {
+  return apiFetch<ProvaTokenResponse>(
+    cursosRoutes.cursos.turmas.provas.tokens.create(cursoId, turmaId, provaId),
+    {
+      init: {
+        method: "POST",
+        headers: buildHeaders(
+          { "Content-Type": "application/json", ...init?.headers },
+          true
+        ),
+        body: JSON.stringify(payload),
+        ...init,
+      },
+      cache: "no-cache",
+    }
+  );
+}
+
+export async function getProvaTokenById(
+  cursoId: number | string,
+  turmaId: string,
+  provaId: string,
+  tokenId: string,
+  init?: RequestInit
+): Promise<ProvaTokenResponse> {
+  return apiFetch<ProvaTokenResponse>(
+    cursosRoutes.cursos.turmas.provas.tokens.get(
+      cursoId,
+      turmaId,
+      provaId,
+      tokenId
+    ),
+    {
+      init: {
+        method: "GET",
+        ...init,
+        headers: buildHeaders(init?.headers, true),
+      },
+      cache: "no-cache",
+    }
+  );
+}
+
+export async function getProvaTokenByToken(
+  token: string,
+  init?: RequestInit
+): Promise<ProvaTokenResponse> {
+  return apiFetch<ProvaTokenResponse>(
+    cursosRoutes.cursos.turmas.provas.tokens.getByToken(token),
+    {
+      init: {
+        method: "GET",
+        ...init,
+        headers: buildHeaders(init?.headers, true),
+      },
+      cache: "no-cache",
+    }
+  );
+}
+
+// Módulos
+export async function listModulos(
+  cursoId: number | string,
+  turmaId: string,
+  init?: RequestInit
+): Promise<CursoModulo[]> {
+  try {
+    const res = await apiFetch<any>(
+      cursosRoutes.cursos.turmas.modulos.list(cursoId, turmaId),
+      {
+        init: {
+          method: "GET",
+          ...init,
+          headers: buildHeaders(init?.headers, true),
+        },
+        cache: "no-cache",
+        silence404: true, // Pode não existir módulos
+      }
+    );
+
+    // Normaliza: pode vir array direto ou objeto { data: [...] }
+    const modulos: CursoModulo[] = Array.isArray(res)
+      ? (res as CursoModulo[])
+      : Array.isArray(res?.data)
+      ? (res.data as CursoModulo[])
+      : [];
+
+    return modulos;
+  } catch (error: any) {
+    // Se for 404, retorna array vazio (turma pode não ter módulos)
+    if (error?.status === 404) {
+      return [];
+    }
+    throw error;
+  }
 }
 
 // Certificados
 export async function listCertificados(
   cursoId: number | string,
   turmaId: string,
-  init?: RequestInit,
+  init?: RequestInit
 ): Promise<TurmaCertificado[]> {
   return apiFetch<TurmaCertificado[]>(
     cursosRoutes.cursos.turmas.certificados.list(cursoId, turmaId),
@@ -815,14 +1049,14 @@ export async function listCertificados(
         headers: buildHeaders(init?.headers, true),
       },
       cache: "no-cache",
-    },
+    }
   );
 }
 
 // Admin - Alunos com inscrições
 export async function listAlunosComInscricao(
   params?: ListAlunosComInscricaoParams,
-  init?: RequestInit,
+  init?: RequestInit
 ): Promise<ListAlunosComInscricaoResponse> {
   const queryParams = new URLSearchParams();
 
@@ -890,7 +1124,7 @@ export async function listAlunosComInscricao(
         page: response.pagination?.page || 1,
         pageSize: response.pagination?.pageSize || 50,
         total: response.pagination?.total || 0,
-        pages: response.pagination?.pages || 0,
+        totalPages: response.pagination?.totalPages || 0,
       },
     };
   } catch (error: any) {
@@ -909,7 +1143,7 @@ export async function listAlunosComInscricao(
 
 export async function getCursoAlunoDetalhes(
   alunoId: string,
-  init?: RequestInit,
+  init?: RequestInit
 ): Promise<CursoAlunoDetalhesResponse> {
   // Preferir as rotas unificadas do módulo de Cursos
   const url = cursosRoutes.alunos.get(alunoId);
@@ -924,7 +1158,7 @@ export async function getCursoAlunoDetalhes(
 }
 
 export async function getVisaoGeral(
-  init?: RequestInit,
+  init?: RequestInit
 ): Promise<VisaoGeralResponse> {
   return apiFetch<VisaoGeralResponse>(cursosRoutes.visaoGeral(), {
     init: {
@@ -940,7 +1174,7 @@ export async function getVisaoGeral(
 export async function updateCursoAluno(
   alunoId: string,
   payload: Partial<CursoAlunoDetalhes>,
-  init?: RequestInit,
+  init?: RequestInit
 ): Promise<CursoAlunoDetalhesResponse> {
   const url = cursosRoutes.alunos.update(alunoId);
   return apiFetch<CursoAlunoDetalhesResponse>(url, {
@@ -949,7 +1183,7 @@ export async function updateCursoAluno(
       ...init,
       headers: buildHeaders(
         { "Content-Type": "application/json", ...(init?.headers || {}) },
-        true,
+        true
       ),
       body: JSON.stringify(payload),
     },

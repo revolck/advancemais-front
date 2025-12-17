@@ -197,9 +197,10 @@ export function AlunosMatriculadosTab({
   const cidadesOptions: SelectOption[] = useMemo(() => {
     const cidades = new Set<string>();
     inscricoes.forEach((inscricao) => {
-      if (inscricao.aluno.cidade) {
-        cidades.add(inscricao.aluno.cidade);
-      }
+      // cidade não disponível no tipo de aluno
+      // if (inscricao.aluno.cidade) {
+      //   cidades.add(inscricao.aluno.cidade);
+      // }
     });
     return Array.from(cidades)
       .sort()
@@ -404,13 +405,9 @@ export function AlunosMatriculadosTab({
                         <div className="text-sm font-medium text-gray-900">
                           {inscricao.aluno.nomeCompleto}
                         </div>
-                        <code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded font-mono text-gray-500 flex-shrink-0">
-                          {inscricao.aluno.codigo}
-                        </code>
+                        {/* codigo não disponível no tipo de aluno */}
                       </div>
-                      <div className="text-xs text-gray-500 font-mono truncate max-w-[220px] mt-1">
-                        {formatCPF(inscricao.aluno.cpf)}
-                      </div>
+                      {/* cpf não disponível no tipo de aluno */}
                     </div>
                   </div>
                 </TableCell>
@@ -421,30 +418,14 @@ export function AlunosMatriculadosTab({
                   </div>
                 </TableCell>
                 <TableCell className="py-4">
-                  {inscricao.aluno.cidade || inscricao.aluno.estado ? (
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <MapPin className="h-4 w-4 text-gray-400" />
-                      <span>
-                        {[inscricao.aluno.cidade, inscricao.aluno.estado]
-                          .filter(Boolean)
-                          .join(", ")}
-                      </span>
-                    </div>
-                  ) : (
-                    <span className="text-gray-400 text-sm">—</span>
-                  )}
+                  {/* cidade e estado não disponíveis no tipo de aluno */}
+                  <span className="text-gray-400 text-sm">—</span>
                 </TableCell>
                 <TableCell className="py-4">
                   <div className="flex items-center gap-2 text-sm">
                     <GraduationCap className="h-4 w-4 text-gray-400" />
-                    <div>
-                      <div className="font-medium text-gray-900">
-                        {inscricao.turma.codigo}
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        {inscricao.turma.nome}
-                      </div>
-                    </div>
+                    {/* turma não disponível em InscricaoCurso */}
+                    <div className="text-sm text-gray-500">—</div>
                   </div>
                 </TableCell>
                 <TableCell className="py-4">
@@ -466,10 +447,8 @@ export function AlunosMatriculadosTab({
                   </div>
                 </TableCell>
                 <TableCell className="py-4 text-sm text-gray-600">
-                  {formatDateRange(
-                    inscricao.turma.dataInicio,
-                    inscricao.turma.dataFim,
-                  )}
+                  {/* turma não disponível em InscricaoCurso */}
+                  <span className="text-sm text-gray-500">—</span>
                 </TableCell>
                 <TableCell className="py-4">
                   <Tooltip>

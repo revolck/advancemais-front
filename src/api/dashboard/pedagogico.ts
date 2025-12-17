@@ -110,17 +110,17 @@ export async function getPlataformaOverviewPedagogico(
     const metricasGerais = {
       // Cursos (da visão geral de cursos)
       totalCursos: cursosData?.metricasGerais.totalCursos || 0,
-      cursosPublicados: cursosData?.metricasGerais.cursosPublicados || 0,
-      cursosRascunho: cursosData?.metricasGerais.cursosRascunho || 0,
+      cursosPublicados: 0, // Não disponível em VisaoGeralMetricasGerais
+      cursosRascunho: 0, // Não disponível em VisaoGeralMetricasGerais
       totalTurmas: cursosData?.metricasGerais.totalTurmas || 0,
-      turmasAtivas: cursosData?.metricasGerais.turmasAtivas || 0,
-      turmasInscricoesAbertas: cursosData?.metricasGerais.turmasInscricoesAbertas || 0,
+      turmasAtivas: 0, // Não disponível em VisaoGeralMetricasGerais
+      turmasInscricoesAbertas: 0, // Não disponível em VisaoGeralMetricasGerais
 
       // Alunos
       totalAlunos: alunosData?.pagination?.total || 0,
-      totalAlunosAtivos: cursosData?.metricasGerais.totalAlunosAtivos || 0,
-      totalAlunosInscritos: cursosData?.metricasGerais.totalAlunosInscritos || 0,
-      totalAlunosConcluidos: cursosData?.metricasGerais.totalAlunosConcluidos || 0,
+      totalAlunosAtivos: 0, // Não disponível em VisaoGeralMetricasGerais
+      totalAlunosInscritos: cursosData?.metricasGerais.totalInscricoes || 0,
+      totalAlunosConcluidos: 0, // Não disponível em VisaoGeralMetricasGerais
 
       // Instrutores
       totalInstrutores: instrutoresData?.pagination?.total || 0,

@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import type { CursoTaxaConclusao } from "@/api/cursos";
 
 interface CursosMaiorTaxaConclusaoListProps {
-  cursos: CursoTaxaConclusao[];
+  cursos: any[];
   isLoading?: boolean;
 }
 
@@ -73,8 +73,8 @@ export function CursosMaiorTaxaConclusaoList({
       <div className="space-y-2">
         {cursos.map((curso, index) => (
           <Link
-            key={curso.cursoId}
-            href={`/dashboard/cursos/${curso.cursoId}`}
+            key={curso.cursoId ?? curso.id ?? index}
+            href={`/dashboard/cursos/${curso.cursoId ?? curso.id}`}
             className={cn(
               "flex items-center gap-2 p-2 rounded-lg transition-all hover:bg-gray-50 group",
               index !== cursos.length - 1 && "border-b border-gray-200/60 pb-2"
@@ -88,20 +88,20 @@ export function CursosMaiorTaxaConclusaoList({
             {/* Info */}
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-gray-900 truncate group-hover:text-amber-600 transition-colors">
-                {curso.cursoNome}
+                {curso.cursoNome ?? curso.nome}
               </p>
               <p className="text-xs text-gray-500 truncate">
-                {curso.cursoCodigo}
+                {curso.cursoCodigo ?? curso.codigo ?? ""}
               </p>
             </div>
 
             {/* Stats */}
             <div className="text-right flex-shrink-0">
               <p className="text-xs font-semibold text-emerald-600">
-                {formatPercentage(curso.taxaConclusao)}
+                {formatPercentage(curso.taxaConclusao ?? 0)}
               </p>
               <p className="text-xs text-gray-500">
-                {curso.totalConcluidos}/{curso.totalInscricoes}
+                {curso.totalConcluidos ?? 0}/{curso.totalInscricoes ?? 0}
               </p>
             </div>
           </Link>

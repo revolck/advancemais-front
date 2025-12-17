@@ -30,7 +30,7 @@ import type { MetricConfig } from "@/components/ui/custom/charts-custom/componen
 import type { VisaoGeralFaturamento } from "@/api/cursos";
 
 interface FaturamentoSectionProps {
-  data: VisaoGeralFaturamento;
+  data: any;
   isLoading?: boolean;
 }
 
@@ -104,13 +104,14 @@ export function FaturamentoSection({
   // Dados para gráfico de barras dos top cursos
   const topCursosChartData = useMemo(() => {
     if (isLoading || !data) return [];
-    return data.topCursosFaturamento.slice(0, 5).map((curso) => ({
+    const cursos = data.topCursosFaturamento ?? data.cursos ?? [];
+    return cursos.slice(0, 5).map((curso: any) => ({
       name:
-        curso.cursoNome.length > 20
-          ? curso.cursoNome.substring(0, 20) + "..."
-          : curso.cursoNome,
-      valor: curso.totalFaturamento,
-      transacoes: curso.totalTransacoes,
+        (curso.cursoNome ?? curso.nome ?? "").length > 20
+          ? (curso.cursoNome ?? curso.nome ?? "").substring(0, 20) + "..."
+          : (curso.cursoNome ?? curso.nome ?? ""),
+      valor: curso.totalFaturamento ?? curso.faturamento ?? 0,
+      transacoes: curso.totalTransacoes ?? 0,
     }));
   }, [isLoading, data]);
 
@@ -371,7 +372,7 @@ export function FaturamentoSection({
                   }}
                 />
                 <Bar dataKey="valor" radius={[0, 8, 8, 0]}>
-                  {topCursosChartData.map((entry, index) => {
+                  {topCursosChartData.map((_entry: any, index: number) => {
                     const colors = [
                       "#3b82f6",
                       "#10b981",
@@ -402,10 +403,10 @@ export function FaturamentoSection({
               </p>
             </div>
             <div className="space-y-2 max-h-[320px] overflow-y-auto pr-2">
-              {data.topCursosFaturamento.map((curso, index) => (
+              {(data.topCursosFaturamento ?? data.cursos ?? []).map((curso: any, index: number) => (
                 <Link
-                  key={curso.cursoId}
-                  href={`/dashboard/cursos/${curso.cursoId}`}
+                  key={curso.cursoId ?? curso.id ?? index}
+                  href={`/dashboard/cursos/${curso.cursoId ?? curso.id}`}
                 >
                   <div className="flex items-center justify-between p-4 rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50/50 transition-all duration-200 cursor-pointer group">
                     <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -425,19 +426,19 @@ export function FaturamentoSection({
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="font-semibold text-gray-900 truncate group-hover:text-blue-700 transition-colors">
-                          {curso.cursoNome}
+                          {curso.cursoNome ?? curso.nome}
                         </p>
                         <p className="text-xs text-gray-500 font-mono">
-                          {curso.cursoCodigo}
+                          {curso.cursoCodigo ?? curso.codigo ?? ""}
                         </p>
                       </div>
                     </div>
                     <div className="text-right flex-shrink-0 ml-4">
                       <p className="font-bold text-gray-900 text-base">
-                        {formatCurrency(curso.totalFaturamento)}
+                        {formatCurrency(curso.totalFaturamento ?? curso.faturamento ?? 0)}
                       </p>
                       <p className="text-xs text-gray-500">
-                        {curso.totalTransacoes} trans.
+                        {curso.totalTransacoes ?? 0} trans.
                       </p>
                     </div>
                   </div>

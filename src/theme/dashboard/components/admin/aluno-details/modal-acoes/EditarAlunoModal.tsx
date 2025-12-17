@@ -43,15 +43,15 @@ export function EditarAlunoModal({
       ? maskService.applyMask(aluno.telefone, "phone")
       : "";
     return {
-      nomeCompleto: aluno.nomeCompleto ?? "",
+      nome: aluno.nome ?? "",
       email: aluno.email ?? "",
       telefone: telefoneMasked,
-      genero: aluno.genero ?? "",
-      dataNasc: aluno.dataNasc ? aluno.dataNasc : "",
+      genero: "", // genero não disponível em CursoAlunoDetalhes
+      dataNasc: "", // dataNasc não disponível em CursoAlunoDetalhes
       descricao: aluno.descricao ?? "",
-      status: aluno.status ?? "",
-      instagram: aluno.socialLinks?.instagram ?? "",
-      linkedin: aluno.socialLinks?.linkedin ?? "",
+      status: "", // status não disponível em CursoAlunoDetalhes
+      instagram: "", // socialLinks não disponível em CursoAlunoDetalhes
+      linkedin: "", // socialLinks não disponível em CursoAlunoDetalhes
     };
   }, [aluno]);
 
@@ -109,7 +109,7 @@ export function EditarAlunoModal({
     let hasChanges = false;
 
     // Nome completo obrigatório
-    const nomeSanitizado = sanitize(formState.nomeCompleto);
+    const nomeSanitizado = sanitize(formState.nome);
     if (!nomeSanitizado) {
       toastCustom.error({
         title: "Nome obrigatório",
@@ -117,8 +117,8 @@ export function EditarAlunoModal({
       });
       return;
     }
-    if (nomeSanitizado !== (aluno.nomeCompleto || "")) {
-      payload.nomeCompleto = nomeSanitizado ?? "";
+    if (nomeSanitizado !== (aluno.nome || "")) {
+      payload.nome = nomeSanitizado ?? "";
       hasChanges = true;
     }
 
@@ -163,26 +163,26 @@ export function EditarAlunoModal({
     // Redes sociais (opcionais) - segue padrão de empresa
     const instagramSanitizado = sanitize(formState.instagram);
     const linkedinSanitizado = sanitize(formState.linkedin);
-    const currentInstagram = aluno.socialLinks?.instagram ?? undefined;
-    const currentLinkedin = aluno.socialLinks?.linkedin ?? undefined;
-
-    let nextSocial: AlunoDetailsData["socialLinks"] | undefined = undefined;
-    if (instagramSanitizado !== currentInstagram) {
-      nextSocial = {
-        ...(nextSocial ?? aluno.socialLinks),
-        instagram: instagramSanitizado ?? undefined,
-      };
-    }
-    if (linkedinSanitizado !== currentLinkedin) {
-      nextSocial = {
-        ...(nextSocial ?? aluno.socialLinks),
-        linkedin: linkedinSanitizado ?? undefined,
-      };
-    }
-    if (nextSocial) {
-      (payload as Partial<AlunoDetailsData>).socialLinks = nextSocial;
-      hasChanges = true;
-    }
+    // socialLinks não disponível em CursoAlunoDetalhes
+    // const currentInstagram = aluno.socialLinks?.instagram ?? undefined;
+    // const currentLinkedin = aluno.socialLinks?.linkedin ?? undefined;
+    // let nextSocial: AlunoDetailsData["socialLinks"] | undefined = undefined;
+    // if (instagramSanitizado !== currentInstagram) {
+    //   nextSocial = {
+    //     ...(nextSocial ?? aluno.socialLinks),
+    //     instagram: instagramSanitizado ?? undefined,
+    //   };
+    // }
+    // if (linkedinSanitizado !== currentLinkedin) {
+    //   nextSocial = {
+    //     ...(nextSocial ?? aluno.socialLinks),
+    //     linkedin: linkedinSanitizado ?? undefined,
+    //   };
+    // }
+    // if (nextSocial) {
+    //   (payload as Partial<AlunoDetailsData>).socialLinks = nextSocial;
+    //   hasChanges = true;
+    // }
 
     // Gênero obrigatório
     const generoSanitizado = sanitize(formState.genero);
@@ -193,23 +193,24 @@ export function EditarAlunoModal({
       });
       return;
     }
-    if ((generoSanitizado ?? null) !== (aluno.genero ?? null)) {
-      payload.genero = generoSanitizado;
-      hasChanges = true;
-    }
+    // genero não disponível em CursoAlunoDetalhes
+    // if (false) {
+    //   payload.genero = generoSanitizado;
+    //   hasChanges = true;
+    // }
 
-    // Data de nascimento obrigatória
-    if (!formState.dataNasc) {
-      toastCustom.error({
-        title: "Data de nascimento obrigatória",
-        description: "Selecione a data de nascimento.",
-      });
-      return;
-    }
-    if ((formState.dataNasc || null) !== (aluno.dataNasc || null)) {
-      payload.dataNasc = formState.dataNasc || null;
-      hasChanges = true;
-    }
+    // Data de nascimento - dataNasc não disponível em CursoAlunoDetalhes
+    // if (!formState.dataNasc) {
+    //   toastCustom.error({
+    //     title: "Data de nascimento obrigatória",
+    //     description: "Selecione a data de nascimento.",
+    //   });
+    //   return;
+    // }
+    // if ((formState.dataNasc || null) !== (aluno.dataNasc || null)) {
+    //   payload.dataNasc = formState.dataNasc || null;
+    //   hasChanges = true;
+    // }
 
     if (!hasChanges) {
       toastCustom.info({
@@ -256,8 +257,8 @@ export function EditarAlunoModal({
             <InputCustom
               label="Nome completo"
               size="sm"
-              value={formState.nomeCompleto}
-              onChange={handleInputChange("nomeCompleto")}
+              value={formState.nome}
+              onChange={handleInputChange("nome")}
               disabled={isSaving}
               required
             />

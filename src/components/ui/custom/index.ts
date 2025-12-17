@@ -65,3 +65,5 @@ export * from "./user-search";
 export * from "./users-list";
 
 export * from "./calendar";
+
+export * from "./aulas-provas";

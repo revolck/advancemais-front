@@ -160,8 +160,9 @@ export function InscricoesTab({
     if (appliedSearchQuery) {
       const query = appliedSearchQuery.toLowerCase();
       result = result.filter((inscricao) => {
-        const nomeCompleto = (inscricao.aluno?.nomeCompleto || inscricao.aluno?.nome || "").toLowerCase();
-        const codigo = (inscricao.aluno?.codigo || inscricao.aluno?.codUsuario || "").toLowerCase();
+        const aluno = inscricao.aluno as any;
+        const nomeCompleto = (aluno?.nomeCompleto || aluno?.nome || "").toLowerCase();
+        const codigo = (aluno?.codigo || aluno?.codUsuario || "").toLowerCase();
         return nomeCompleto.includes(query) || codigo.includes(query);
       });
     }
@@ -387,9 +388,9 @@ export function InscricoesTab({
                             inscricao.aluno?.nome ||
                             "—"}
                         </span>
-                        {(inscricao.aluno?.codigo || inscricao.aluno?.codUsuario) && (
+                        {((inscricao.aluno as any)?.codigo || (inscricao.aluno as any)?.codUsuario) && (
                           <code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded font-mono text-gray-500 flex-shrink-0">
-                            {inscricao.aluno?.codigo || inscricao.aluno?.codUsuario}
+                            {(inscricao.aluno as any)?.codigo || (inscricao.aluno as any)?.codUsuario}
                           </code>
                         )}
                       </div>
@@ -398,7 +399,7 @@ export function InscricoesTab({
                 <TableCell className="py-4">
                   <div className="flex items-center gap-2 text-sm text-gray-900">
                     <Mail className="h-4 w-4 flex-shrink-0 text-gray-400" />
-                    <span>{inscricao.aluno?.email || "—"}</span>
+                    <span>{(inscricao.aluno as any)?.email || "—"}</span>
                   </div>
                 </TableCell>
                 <TableCell className="py-4">

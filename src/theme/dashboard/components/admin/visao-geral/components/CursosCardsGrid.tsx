@@ -118,30 +118,32 @@ export function CursosCardsGrid({
   // Função para gerar dados do card baseado no tipo
   const getCardData = (item: any, index: number) => {
     if (activeTab === "proximos") {
-      const turma = item as TurmaProximoInicio;
+      const turma = item as any;
       return {
         id: turma.turmaId,
-        title: turma.cursoNome,
-        subtitle: `${turma.diasParaInicio} ${turma.diasParaInicio === 1 ? "dia" : "dias"} • ${formatDate(turma.dataInicio)}`,
-        href: `/dashboard/cursos/${turma.cursoId}`,
+        title: turma.cursoNome ?? turma.nome ?? "Turma",
+        subtitle: turma.diasParaInicio != null 
+          ? `${turma.diasParaInicio} ${turma.diasParaInicio === 1 ? "dia" : "dias"} • ${formatDate(turma.dataInicio)}`
+          : formatDate(turma.dataInicio),
+        href: `/dashboard/cursos/${turma.cursoId ?? turma.turmaId}`,
         imageUrl: DEFAULT_IMAGE,
       };
     } else if (activeTab === "taxa-conclusao") {
-      const curso = item as CursoTaxaConclusao;
+      const curso = item as any;
       return {
-        id: curso.cursoId.toString(),
-        title: curso.cursoNome,
-        subtitle: `${formatPercentage(curso.taxaConclusao)} • ${curso.totalConcluidos}/${curso.totalInscricoes} concluídos`,
-        href: `/dashboard/cursos/${curso.cursoId}`,
+        id: (curso.cursoId ?? curso.id ?? index).toString(),
+        title: curso.cursoNome ?? curso.nome ?? "Curso",
+        subtitle: `${formatPercentage(curso.taxaConclusao)} • ${curso.totalConcluidos ?? 0}/${curso.totalInscricoes ?? 0} concluídos`,
+        href: `/dashboard/cursos/${curso.cursoId ?? curso.id}`,
         imageUrl: DEFAULT_IMAGE,
       };
     } else {
-      const curso = item as CursoPerformance;
+      const curso = item as any;
       return {
-        id: curso.cursoId.toString(),
-        title: curso.cursoNome,
-        subtitle: `${curso.totalInscricoes} inscrições • ${curso.totalTurmas} ${curso.totalTurmas === 1 ? "turma" : "turmas"}`,
-        href: `/dashboard/cursos/${curso.cursoId}`,
+        id: (curso.cursoId ?? curso.id ?? index).toString(),
+        title: curso.cursoNome ?? curso.nome ?? "Curso",
+        subtitle: `${curso.totalInscricoes ?? 0} inscrições • ${curso.totalTurmas ?? 0} ${(curso.totalTurmas ?? 0) === 1 ? "turma" : "turmas"}`,
+        href: `/dashboard/cursos/${curso.cursoId ?? curso.id}`,
         imageUrl: DEFAULT_IMAGE,
       };
     }

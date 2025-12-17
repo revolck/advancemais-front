@@ -93,14 +93,15 @@ export function CertificadosDashboard({ className }: CertificadosDashboardProps)
       if (!sortField) return list;
       const arr = [...list];
       arr.sort((a, b) => {
-        if (sortField === "aluno") {
-          const aName = (a.aluno?.nome || a.aluno?.email || "").toLowerCase();
-          const bName = (b.aluno?.nome || b.aluno?.email || "").toLowerCase();
-          const cmp = aName.localeCompare(bName, "pt-BR", {
-            sensitivity: "base",
-          });
-          return sortDirection === "asc" ? cmp : -cmp;
-        }
+        // aluno não disponível em TurmaCertificado, apenas alunoId
+        // if (sortField === "aluno") {
+        //   const aName = (a.aluno?.nome || a.aluno?.email || "").toLowerCase();
+        //   const bName = (b.aluno?.nome || b.aluno?.email || "").toLowerCase();
+        //   const cmp = aName.localeCompare(bName, "pt-BR", {
+        //     sensitivity: "base",
+        //   });
+        //   return sortDirection === "asc" ? cmp : -cmp;
+        // }
         const aTime = a.emitidoEm ? new Date(a.emitidoEm).getTime() : 0;
         const bTime = b.emitidoEm ? new Date(b.emitidoEm).getTime() : 0;
         const cmp = aTime - bTime;

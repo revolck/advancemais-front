@@ -64,12 +64,11 @@ export function EstagiosDashboard({ className }: EstagiosDashboardProps) {
           inscricao?.aluno
             ? {
                 id: String(inscricao.aluno.id ?? inscricao.alunoId ?? inscricao.id ?? inscricaoIndex),
-                nome: inscricao.aluno.nome,
-                email: inscricao.aluno.email,
-                telefone: inscricao.aluno.telefone,
+                nomeCompleto: inscricao.aluno.nome ?? inscricao.aluno.nomeCompleto ?? "",
+                email: inscricao.aluno.email ?? "",
               }
             : inscricao?.alunoId
-            ? { id: String(inscricao.alunoId) }
+            ? { id: String(inscricao.alunoId), nomeCompleto: "", email: "" }
             : undefined;
 
         const estagiosArray: any[] = [];
@@ -92,6 +91,8 @@ export function EstagiosDashboard({ className }: EstagiosDashboardProps) {
               : `estagio-${inscricaoIndex}-${estagioIndex}`;
           normalized.push({
             id: safeId,
+            turmaId: String(inscricao?.turmaId ?? selectedTurmaId ?? ""),
+            alunoId: String(inscricao?.alunoId ?? inscricao?.aluno?.id ?? ""),
             status: estagio?.status,
             empresa:
               estagio?.empresa != null
@@ -148,8 +149,8 @@ export function EstagiosDashboard({ className }: EstagiosDashboardProps) {
       const arr = [...list];
       arr.sort((a, b) => {
         if (sortField === "aluno") {
-          const aName = (a.aluno?.nome || a.aluno?.email || "").toLowerCase();
-          const bName = (b.aluno?.nome || b.aluno?.email || "").toLowerCase();
+          const aName = (a.aluno?.nomeCompleto || a.aluno?.email || "").toLowerCase();
+          const bName = (b.aluno?.nomeCompleto || b.aluno?.email || "").toLowerCase();
           const cmp = aName.localeCompare(bName, "pt-BR", {
             sensitivity: "base",
           });

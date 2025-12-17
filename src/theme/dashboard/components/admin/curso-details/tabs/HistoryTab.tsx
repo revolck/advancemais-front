@@ -332,7 +332,7 @@ export function HistoryTab({
         });
 
         // Remover duplicatas usando uma chave composta mais robusta
-        // Considera: campo, valorAnterior, valorNovo, criadoEm (até o segundo), e alteradoPor.id
+        // Considera: campo, valorAntigo, valorNovo, criadoEm (até o segundo), e alteradoPor.id
         if (result?.data && Array.isArray(result.data)) {
           const originalLength = result.data.length;
           const seen = new Set<string>();
@@ -351,9 +351,9 @@ export function HistoryTab({
               ? new Date(item.criadoEm).toISOString().substring(0, 19) // YYYY-MM-DDTHH:mm:ss
               : "";
 
-            const valorAnteriorStr =
-              item.valorAnterior !== null && item.valorAnterior !== undefined
-                ? String(item.valorAnterior)
+            const valorAntigoStr =
+              item.valorAntigo !== null && item.valorAntigo !== undefined
+                ? String(item.valorAntigo)
                 : "null";
             const valorNovoStr =
               item.valorNovo !== null && item.valorNovo !== undefined
@@ -362,7 +362,7 @@ export function HistoryTab({
 
             const compositeKey = [
               item.campo || "null",
-              valorAnteriorStr,
+              valorAntigoStr,
               valorNovoStr,
               dataNormalizada,
               item.alteradoPor?.id || "null",
@@ -689,7 +689,7 @@ export function HistoryTab({
                 </TableCell>
                 <TableCell className="py-4 text-sm">
                   <span className="text-gray-700">
-                    {formatValue(item.campo, item.valorAnterior, categoriasMap)}
+                    {formatValue(item.campo, item.valorAntigo, categoriasMap)}
                   </span>
                 </TableCell>
                 <TableCell className="py-4 text-sm">

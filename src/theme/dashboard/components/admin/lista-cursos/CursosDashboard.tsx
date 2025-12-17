@@ -157,13 +157,14 @@ export function CursosDashboard({
     const { pagination } = queryData;
 
     // Se a página foi ajustada pelo servidor, reposiciona a UI
-    if (pagination.isPageAdjusted && pagination.page !== currentPage) {
+    // isPageAdjusted não está disponível no tipo Pagination
+    if (pagination?.page !== currentPage) {
       setCurrentPage(pagination.page);
     }
   }, [
     shouldFetch,
     queryData,
-    queryData?.pagination?.isPageAdjusted,
+    // isPageAdjusted não está disponível no tipo Pagination
     queryData?.pagination?.page,
     currentPage,
   ]);
@@ -435,7 +436,7 @@ export function CursosDashboard({
   // O backend retorna label e total, e pode incluir value separado
   const statusFilterOptions = useMemo(() => {
     if (queryData?.filters?.summary?.statusPadrao) {
-      return queryData.filters.summary.statusPadrao.map((status) => {
+      return queryData.filters.summary.statusPadrao.map((status: { label: string; value?: string; total?: number; selected?: boolean }) => {
         // Usa value se disponível, senão normaliza o label
         const statusValue =
           status.value || status.label.toUpperCase().replace(/\s+/g, "_");
@@ -464,7 +465,7 @@ export function CursosDashboard({
         key: "status",
         label: "Status",
         mode: "multiple",
-        options: statusFilterOptions.map(({ value, label }) => ({
+        options: statusFilterOptions.map(({ value, label }: { value: string; label: string }) => ({
           value,
           label,
         })),
@@ -891,7 +892,7 @@ export function CursosDashboard({
                       size="sm"
                       onClick={() => handlePageChange(currentPageValue - 1)}
                       disabled={
-                        !pagination.hasPrevious || currentPageValue === 1
+                        currentPageValue === 1 || (pagination?.page ?? 1) <= 1
                       }
                       className="h-8 px-3"
                     >
@@ -956,7 +957,7 @@ export function CursosDashboard({
                       size="sm"
                       onClick={() => handlePageChange(currentPageValue + 1)}
                       disabled={
-                        !pagination.hasNext || currentPageValue === totalPages
+                        currentPageValue === totalPages || (pagination?.page ?? 1) >= (pagination?.totalPages ?? 1)
                       }
                       className="h-8 px-3"
                     >

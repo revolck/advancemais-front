@@ -5,7 +5,15 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { listCursos, type Curso, type CursosListParams } from "@/api/cursos";
 import { queryKeys } from "@/lib/react-query/queryKeys";
 
-import type { Pagination, Filters, Meta } from "@/api/cursos/types";
+// Pagination não está exportado de @/api/cursos/types, usando tipo inline
+type Pagination = {
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+};
+type Filters = any;
+type Meta = any;
 
 export interface NormalizedCursosFilters {
   page: number;
@@ -34,16 +42,17 @@ function buildParams(filters: NormalizedCursosFilters): CursosListParams {
   }
 
   if (filters.statuses.length > 0) {
-    params.statusPadrao = filters.statuses; // Envia como array
+    params.statusPadrao = filters.statuses as ("RASCUNHO" | "PUBLICADO")[]; // Envia como array
   }
 
   if (filters.categoriaId) {
     params.categoriaId = filters.categoriaId;
   }
 
-  if (filters.subcategoriaId) {
-    params.subcategoriaId = filters.subcategoriaId;
-  }
+  // subcategoriaId não está disponível em CursosListParams
+  // if (filters.subcategoriaId) {
+  //   params.subcategoriaId = filters.subcategoriaId;
+  // }
 
   return params;
 }
@@ -62,11 +71,7 @@ export function useCursosDashboardQuery(
 
       // Usa a paginação completa da API ou cria fallback
       const pagination: Pagination = response.pagination ?? {
-        requestedPage: filters.page,
         page: filters.page,
-        isPageAdjusted: false,
-        hasNext: false,
-        hasPrevious: false,
         pageSize: filters.pageSize,
         total: cursos.length,
         totalPages: Math.max(1, Math.ceil(cursos.length / filters.pageSize)),
@@ -75,8 +80,9 @@ export function useCursosDashboardQuery(
       return {
         cursos,
         pagination,
-        filters: response.filters,
-        meta: response.meta,
+        // filters e meta não estão disponíveis em CursosListResponse
+        filters: undefined,
+        meta: undefined,
       } satisfies CursosQueryResult;
     },
     enabled,

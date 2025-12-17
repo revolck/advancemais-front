@@ -88,6 +88,23 @@ export const cursosRoutes = {
           `${BASE}/${cursoId}/turmas/${turmaId}/provas/${provaId}`,
         notas: (cursoId: number | string, turmaId: string, provaId: string) =>
           `${BASE}/${cursoId}/turmas/${turmaId}/provas/${provaId}/notas`, // PUT
+        tokens: {
+          list: (cursoId: number | string, turmaId: string, provaId: string) =>
+            `${BASE}/${cursoId}/turmas/${turmaId}/provas/${provaId}/tokens`,
+          create: (
+            cursoId: number | string,
+            turmaId: string,
+            provaId: string
+          ) => `${BASE}/${cursoId}/turmas/${turmaId}/provas/${provaId}/tokens`,
+          get: (
+            cursoId: number | string,
+            turmaId: string,
+            provaId: string,
+            tokenId: string
+          ) =>
+            `${BASE}/${cursoId}/turmas/${turmaId}/provas/${provaId}/tokens/${tokenId}`,
+          getByToken: (token: string) => `${BASE}/provas/tokens/${token}`,
+        },
       },
       notas: {
         list: (cursoId: number | string, turmaId: string) =>
@@ -109,17 +126,17 @@ export const cursosRoutes = {
         get: (
           cursoId: number | string,
           turmaId: string,
-          frequenciaId: string,
+          frequenciaId: string
         ) => `${BASE}/${cursoId}/turmas/${turmaId}/frequencias/${frequenciaId}`,
         update: (
           cursoId: number | string,
           turmaId: string,
-          frequenciaId: string,
+          frequenciaId: string
         ) => `${BASE}/${cursoId}/turmas/${turmaId}/frequencias/${frequenciaId}`,
         delete: (
           cursoId: number | string,
           turmaId: string,
-          frequenciaId: string,
+          frequenciaId: string
         ) => `${BASE}/${cursoId}/turmas/${turmaId}/frequencias/${frequenciaId}`,
       },
       certificados: {
@@ -144,13 +161,13 @@ export const cursosRoutes = {
             list: (
               cursoId: number | string,
               turmaId: string,
-              inscricaoId: string,
+              inscricaoId: string
             ) =>
               `${BASE}/${cursoId}/turmas/${turmaId}/inscricoes/${inscricaoId}/estagios`,
             create: (
               cursoId: number | string,
               turmaId: string,
-              inscricaoId: string,
+              inscricaoId: string
             ) =>
               `${BASE}/${cursoId}/turmas/${turmaId}/inscricoes/${inscricaoId}/estagios`,
           },

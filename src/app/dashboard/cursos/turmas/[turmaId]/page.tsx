@@ -30,7 +30,7 @@ async function findCursoIdByTurmaId(
     // Busca todas as páginas de cursos
     while (hasMore) {
       const cursosResponse = await listCursos(
-        { includeTurmas: true, page, pageSize },
+        { page, pageSize },
         { headers: authHeaders }
       );
       

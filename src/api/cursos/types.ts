@@ -1,15 +1,6 @@
-// Tipos principais para o módulo de Cursos (resumo, conforme documentação)
-
-export interface CursosModuleMeta {
-  message: string;
-  version: string;
-  timestamp: string;
-  endpoints: Record<string, string>;
-  status?: string;
-}
-
+// Tipos básicos para Cursos
 export interface Curso {
-  id: string; // UUID (string) - alterado de number para string
+  id: string;
   nome: string;
   codigo: string;
   descricao: string;
@@ -20,24 +11,59 @@ export interface Curso {
   atualizadoEm: string;
   imagemUrl?: string;
   subcategoriaId?: number;
-
-  // Campos de precificação (adicionados em 10/12/2025)
-  valor: number; // Valor do curso em reais (ex: 299.90)
-  valorPromocional?: number; // Valor promocional (opcional)
-  gratuito: boolean; // É um curso gratuito
-  // Nota: Métodos de pagamento são gerenciados pelo Mercado Pago
-  // Nota: Disponibilidade é definida por statusPadrao ("PUBLICADO" = disponível)
+  valor: number;
+  valorPromocional?: number;
+  gratuito: boolean;
 }
+
+export interface CreateCursoPayload {
+  nome: string;
+  descricao: string;
+  cargaHoraria: number;
+  categoriaId: number;
+  statusPadrao?: "PUBLICADO" | "RASCUNHO";
+  subcategoriaId?: number;
+  estagioObrigatorio?: boolean;
+  imagemUrl?: string;
+  valor: number;
+  valorPromocional?: number;
+  gratuito?: boolean;
+}
+
+export type UpdateCursoPayload = Partial<CreateCursoPayload>;
 
 export interface CursosListParams {
   page?: number;
   pageSize?: number;
   search?: string;
-  statusPadrao?: string | string[]; // Aceita string (comma-separated) ou array
+  statusPadrao?: "PUBLICADO" | "RASCUNHO" | ("PUBLICADO" | "RASCUNHO")[];
   categoriaId?: number;
-  subcategoriaId?: number;
-  instrutorId?: string;
-  includeTurmas?: boolean;
+}
+
+export interface CursosListResponse {
+  data: Curso[];
+  pagination?: {
+    total: number;
+    page: number;
+    pageSize: number;
+    totalPages: number;
+  };
+}
+
+export interface CursosModuleMeta {
+  totalCursos: number;
+  totalTurmas: number;
+  totalInscricoes: number;
+}
+
+// Módulos
+export interface CursoModulo {
+  id: string;
+  nome: string;
+  descricao?: string;
+  ordem?: number;
+  turmaId: string;
+  cursoId?: number | string;
 }
 
 // Turmas
@@ -49,11 +75,10 @@ export interface CursoTurma {
   metodo: "ONLINE" | "PRESENCIAL" | "LIVE" | "SEMIPRESENCIAL";
   status?: string;
   vagasTotais?: number;
-  vagasDisponiveis?: number; // Mantido para compatibilidade, mas pode estar desatualizado
-  // Novos campos calculados pela API (sempre atualizados)
-  inscricoesCount?: number; // Número total de inscrições ativas
-  vagasOcupadas?: number; // Número de vagas ocupadas (igual a inscricoesCount)
-  vagasDisponiveisCalculadas?: number; // vagasTotais - inscricoesCount
+  vagasDisponiveis?: number;
+  inscricoesCount?: number;
+  vagasOcupadas?: number;
+  vagasDisponiveisCalculadas?: number;
   dataInicio?: string;
   dataFim?: string;
   dataInscricaoInicio?: string;
@@ -98,36 +123,31 @@ export interface CreateTurmaPayload {
   };
 }
 
-// Inscrições (Alunos)
+// Inscrições
 export interface TurmaInscricao {
   id: string;
-  turmaId: string;
   alunoId: string;
-  status?: string; // Status da inscrição: INSCRITO, EM_ANDAMENTO, CONCLUIDO, REPROVADO, EM_ESTAGIO, CANCELADO, TRANCADO
+  status?: string;
   criadoEm?: string;
   observacoes?: string;
   aluno?: {
     id: string;
     nome?: string;
     nomeCompleto?: string;
-    email?: string;
-    telefone?: string;
-    celular?: string;
-    cpf?: string;
-    codigo?: string; // Código do aluno (ex: MAT0001)
-    codUsuario?: string; // Fallback para código do usuário
-    status?: string;
-    tipoUsuario?: string;
-    role?: string;
+  };
+  curso?: {
+    id: string;
+    nome: string;
+    codigo: string;
   };
 }
 
 export interface CreateInscricaoPayload {
   alunoId: string;
+  status?: string;
   observacoes?: string;
 }
 
-// Histórico de Inscrições por Curso
 export type StatusInscricao =
   | "INSCRITO"
   | "EM_ANDAMENTO"
@@ -139,6 +159,7 @@ export type StatusInscricao =
 
 export interface InscricaoCurso {
   id: string;
+  alunoId: string;
   statusInscricao: StatusInscricao;
   criadoEm: string;
   progresso: number;
@@ -146,54 +167,331 @@ export interface InscricaoCurso {
     id: string;
     nomeCompleto: string;
     email: string;
-    codigo: string;
-    cpf: string;
-    status: string;
-    cidade: string | null;
-    estado: string | null;
-  };
-  turma: {
-    id: string;
-    nome: string;
-    codigo: string;
-    status: string;
-    dataInicio: string | null;
-    dataFim: string | null;
-  };
-  curso: {
-    id: string;
-    nome: string;
-    codigo: string;
-    descricao: string | null;
-    cargaHoraria: number;
-    imagemUrl: string | null;
   };
 }
 
+// Provas
+export type ProvaStatus =
+  | "RASCUNHO"
+  | "PUBLICADA"
+  | "EM_ANDAMENTO"
+  | "CONCLUIDA"
+  | "CANCELADA";
+
+export interface TurmaProva {
+  id: string;
+  titulo?: string;
+  nome?: string;
+  descricao?: string;
+  tipo?: string;
+  status?: ProvaStatus;
+  data?: string;
+  dataInicio?: string;
+  dataFim?: string;
+  inicioPrevisto?: string;
+  fimPrevisto?: string;
+  etiqueta?: string;
+  peso?: number;
+  valeNota?: boolean;
+  valePonto?: boolean;
+  ativo?: boolean;
+  localizacao?: "TURMA" | "MODULO";
+  turmaId?: string;
+  moduloId?: string;
+  modalidade?: "ONLINE" | "PRESENCIAL" | "AO_VIVO" | "SEMIPRESENCIAL";
+  instrutorId?: string;
+}
+
+export interface CreateProvaPayload {
+  titulo: string;
+  etiqueta?: string;
+  tipo?: "PROVA" | "ATIVIDADE";
+  tipoAtividade?: "QUESTOES" | "TEXTO"; // Apenas para ATIVIDADE
+  peso?: number;
+  valeNota?: boolean;
+  valePonto?: boolean;
+  localizacao?: "TURMA" | "MODULO";
+  moduloId?: string;
+  dataInicio?: string;
+  dataFim?: string;
+  horaInicio?: string;
+  horaFim?: string;
+  duracaoMinutos?: number;
+  modalidade?: "ONLINE" | "PRESENCIAL" | "AO_VIVO" | "SEMIPRESENCIAL";
+  instrutorId?: string;
+  obrigatoria?: boolean;
+  status?: "RASCUNHO" | "PUBLICADA";
+  // Dados específicos por tipo de atividade
+  questoes?: Array<{
+    id: string;
+    titulo: string;
+    alternativas: Array<{
+      id: string;
+      texto: string;
+    }>;
+    respostaCorreta: string | null;
+  }>;
+  texto?: {
+    titulo: string;
+  };
+  arquivo?: {
+    titulo: string;
+    arquivoUrl?: string;
+    arquivoNome?: string;
+    arquivoTamanho?: number;
+    arquivoMimeType?: string;
+  };
+}
+
+export type UpdateProvaPayload = Partial<CreateProvaPayload>;
+
+// Tokens Únicos para Provas/Atividades Online ou Ao Vivo
+export interface ProvaToken {
+  id: string;
+  provaId: string;
+  inscricaoId: string;
+  token: string; // Token único gerado
+  respondido: boolean; // Se o usuário já respondeu
+  nota?: number | null; // Nota obtida (0-10)
+  respondidoEm?: string | null; // Data/hora da resposta
+  criadoEm: string;
+  atualizadoEm: string;
+  aluno?: {
+    id: string;
+    nome?: string;
+    nomeCompleto?: string;
+    email?: string;
+  };
+  inscricao?: {
+    id: string;
+    alunoId: string;
+    status?: string;
+  };
+}
+
+export interface CreateProvaTokenPayload {
+  inscricaoId: string;
+}
+
+export interface ListProvaTokensParams {
+  page?: number;
+  pageSize?: number;
+  inscricaoId?: string;
+  respondido?: boolean;
+}
+
+export interface ListProvaTokensResponse {
+  data: ProvaToken[];
+  pagination?: {
+    total: number;
+    page: number;
+    pageSize: number;
+    totalPages: number;
+  };
+}
+
+export interface ProvaTokenResponse {
+  data: ProvaToken;
+}
+
+// Certificados
+export interface TurmaCertificado {
+  id: string;
+  turmaId: string;
+  alunoId: string;
+  emitidoEm: string;
+}
+
+// Alunos
+export interface AlunoComInscricao {
+  id: string;
+  nome: string;
+  email: string;
+  cpf?: string;
+  telefone?: string;
+  cidade?: string;
+  estado?: string;
+  inscricao: {
+    id: string;
+    status: string;
+    curso: {
+      id: string;
+      nome: string;
+      codigo: string;
+    };
+  };
+}
+
+export interface ListAlunosComInscricaoParams {
+  page?: number;
+  limit?: number;
+  status?: string | string[];
+  search?: string;
+  cursoId?: string | string[];
+  turmaId?: string | string[];
+  cidade?: string | string[];
+}
+
+export interface ListAlunosComInscricaoResponse {
+  data: AlunoComInscricao[];
+  pagination?: {
+    total: number;
+    page: number;
+    pageSize: number;
+    totalPages: number;
+  };
+}
+
+// Curso Aluno
+export interface CursoAlunoDetalhes {
+  id: string;
+  nome: string;
+  email: string;
+  cpf?: string;
+  telefone?: string;
+  cidade?: string;
+  estado?: string;
+  ultimoLogin?: string | null;
+  criadoEm: string;
+  ultimoCurso?: {
+    inscricaoId: string;
+    statusInscricao: string;
+    progresso?: number;
+  };
+  descricao?: string | null;
+  avatarUrl?: string | null;
+  atualizadoEm?: string | null;
+  enderecos: CursoAlunoEndereco[];
+  inscricoes: CursoAlunoInscricao[];
+  totalInscricoes: number;
+}
+
+export interface CursoAlunoEndereco {
+  id: string;
+  cep?: string | null;
+  logradouro?: string | null;
+  numero?: string | null;
+  complemento?: string | null;
+  bairro?: string | null;
+  cidade?: string | null;
+  estado?: string | null;
+}
+
+export interface CursoAlunoInscricao {
+  id: string;
+  statusInscricao: string;
+  progresso?: number;
+  criadoEm: string;
+  turma: CursoAlunoTurmaResumo;
+  curso: CursoAlunoCursoResumo;
+}
+
+export interface CursoAlunoTurmaResumo {
+  id: string;
+  nome: string;
+}
+
+export interface CursoAlunoCursoResumo {
+  id: string;
+  nome: string;
+}
+
+export interface CursoAlunoEstatisticas {
+  totalInscricoes: number;
+  cursosConcluidos: number;
+  cursosEmAndamento: number;
+}
+
+export interface CursoAlunoDetalhesResponse {
+  success: boolean;
+  data: CursoAlunoDetalhes;
+}
+
+// Visão Geral
+export interface VisaoGeralResponse {
+  success: boolean;
+  data: VisaoGeralData;
+}
+
+export interface VisaoGeralData {
+  metricasGerais: VisaoGeralMetricasGerais;
+  faturamento: VisaoGeralFaturamento;
+  performance: VisaoGeralPerformance;
+  proximosInicios: CursosProximosInicio[];
+}
+
+export interface VisaoGeralMetricasGerais {
+  totalCursos: number;
+  totalTurmas: number;
+  totalInscricoes: number;
+  totalAlunos: number;
+}
+
+export interface VisaoGeralFaturamento {
+  total: number;
+  cursos: CursoFaturamento[];
+}
+
+export interface CursoFaturamento {
+  cursoId: number;
+  nome: string;
+  faturamento: number;
+}
+
+export interface VisaoGeralPerformance {
+  taxaConclusao: number;
+  cursos: CursoPerformance[];
+}
+
+export interface CursoPerformance {
+  cursoId: number;
+  nome: string;
+  taxaConclusao: number;
+}
+
+export interface CursosProximosInicio {
+  cursoId: number;
+  nome: string;
+  turmas: TurmaProximoInicio[];
+}
+
+export interface TurmaProximoInicio {
+  turmaId: string;
+  nome: string;
+  dataInicio: string;
+}
+
+export interface CursoTaxaConclusao {
+  cursoId: number;
+  nome: string;
+  taxaConclusao: number;
+}
+
+// Inscrições Curso
 export interface ListInscricoesCursoParams {
   page?: number;
   pageSize?: number;
   status?: string | string[];
-  turmaId?: string;
   search?: string;
+  turmaId?: string | string[];
   cidade?: string | string[];
 }
 
 export interface ListInscricoesCursoResponse {
   data: InscricaoCurso[];
-  pagination: {
+  pagination?: {
+    total: number;
     page: number;
     pageSize: number;
-    total: number;
     totalPages: number;
   };
 }
 
-// Auditoria de Cursos
+// Auditoria
 export interface CursoAuditoriaItem {
   id: string;
-  campo: string | null;
-  valorAnterior: any;
+  campo: string;
+  valorAntigo: any;
   valorNovo: any;
   descricao: string;
   criadoEm: string;
@@ -211,341 +509,30 @@ export interface ListCursoAuditoriaParams {
 }
 
 export interface ListCursoAuditoriaResponse {
-  success: boolean;
   data: CursoAuditoriaItem[];
-  pagination: {
+  pagination?: {
+    total: number;
     page: number;
     pageSize: number;
-    total: number;
     totalPages: number;
   };
 }
 
-// Alunos com inscrições (estrutura exata da API - atualizada 30/10/2025)
-export interface AlunoComInscricao {
-  id: string;
-  codigo: string; // Código do aluno (ex: MAT0001, MAT0002, etc.)
-  nomeCompleto: string;
-  email: string;
-  cpf?: string;
-  status: string; // Status do usuário (ATIVO, INATIVO, etc.)
-  cidade?: string;
-  estado?: string;
-  ultimoLogin?: string | null;
-  criadoEm: string;
-  ultimoCurso?: {
-    // Última inscrição do aluno (pode ser undefined se não tiver inscrições)
-    inscricaoId: string;
-    statusInscricao: string; // Status da inscrição (INSCRITO, EM_ANDAMENTO, CONCLUIDO, REPROVADO, EM_ESTAGIO, CANCELADO, TRANCADO)
-    progresso?: number;
-    dataInscricao: string;
-    turma: {
-      id: string;
-      nome: string;
-      codigo: string;
-      status: string;
-    };
-    curso: {
-      id: string; // UUID (string) - alterado de number para string
-      nome: string;
-      codigo: string;
-    };
-  };
-}
-
-export interface ListAlunosComInscricaoParams {
-  page?: number;
-  limit?: number;
-  status?: string | string[]; // Status da INSCRIÇÃO (statusInscricao): INSCRITO, EM_ANDAMENTO, CONCLUIDO, REPROVADO, EM_ESTAGIO, CANCELADO, TRANCADO (ou array para múltiplos)
-  search?: string;
-  cursoId?: string | string[]; // UUID (string) ou array de UUIDs para múltiplos cursos
-  turmaId?: string | string[]; // UUID (string) ou array de UUIDs para múltiplas turmas
-  cidade?: string | string[]; // Cidade (string) ou array de strings para múltiplas cidades
-}
-
-export interface ListAlunosComInscricaoResponse {
-  data: AlunoComInscricao[];
-  pagination: {
-    page: number;
-    pageSize: number;
-    total: number;
-    pages: number;
-  };
-}
-
-export interface CursoAlunoEndereco {
-  id: string;
-  logradouro?: string | null;
-  numero?: string | null;
-  bairro?: string | null;
-  cidade?: string | null;
-  estado?: string | null;
-  cep?: string | null;
-  criadoEm?: string;
-}
-
-export interface CursoAlunoTurmaResumo {
-  id: string;
-  nome: string;
-  codigo: string;
-  status: string;
-  dataInicio?: string;
-  dataFim?: string;
-}
-
-export interface CursoAlunoCursoResumo {
-  id: number;
-  nome: string;
-  codigo: string;
-  descricao?: string;
-  cargaHoraria?: number;
-  imagemUrl?: string | null;
-}
-
-export interface CursoAlunoInscricao {
-  id: string;
-  statusInscricao: string;
-  progresso?: number;
-  criadoEm: string;
-  turma: CursoAlunoTurmaResumo;
-  curso: CursoAlunoCursoResumo;
-}
-
-export interface CursoAlunoEstatisticas {
-  cursosAtivos: number;
-  cursosConcluidos: number;
-  cursosCancelados: number;
-}
-
-export interface CursoAlunoDetalhes {
-  id: string;
-  codigo: string;
-  nomeCompleto: string;
-  email: string;
-  cpf?: string | null;
-  telefone?: string | null;
-  status: string;
-  genero?: string | null;
-  dataNasc?: string | null;
-  descricao?: string | null;
-  avatarUrl?: string | null;
-  criadoEm: string;
-  atualizadoEm?: string | null;
-  ultimoLogin?: string | null;
-  enderecos: CursoAlunoEndereco[];
-  inscricoes: CursoAlunoInscricao[];
-  totalInscricoes: number;
-  estatisticas?: CursoAlunoEstatisticas;
-  socialLinks?: {
-    instagram?: string;
-    linkedin?: string;
-  };
-}
-
-export interface CursoAlunoDetalhesResponse {
-  success: boolean;
-  data: CursoAlunoDetalhes;
-}
-
-// Provas
-export interface TurmaProva {
-  id: string;
-  titulo?: string;
-  nome?: string;
-  descricao?: string;
-  tipo?: string;
-  status?: string;
-  data?: string;
-  dataInicio?: string;
-  dataFim?: string;
-  inicioPrevisto?: string;
-  fimPrevisto?: string;
-}
-
-// Certificados
-export interface TurmaCertificado {
-  id: string;
-  alunoId?: string;
-  codigo?: string;
-  numero?: string;
-  emitidoEm?: string;
-  status?: string;
-  aluno?: {
-    id: string;
-    nome?: string;
-    email?: string;
-  };
-}
-
-// Estágios
+// Estágio
 export interface TurmaEstagio {
   id: string;
-  alunoId?: string;
-  status?: string;
+  turmaId: string;
+  alunoId: string;
+  status: string;
+  inicioPrevisto?: string;
+  fimPrevisto?: string;
   empresa?: string;
   cargo?: string;
   criadoEm?: string;
   atualizadoEm?: string;
-  inicioPrevisto?: string;
-  fimPrevisto?: string;
   aluno?: {
     id: string;
-    nome?: string;
-    email?: string;
-    telefone?: string;
+    nomeCompleto: string;
+    email: string;
   };
-}
-
-export interface Pagination {
-  requestedPage: number;
-  page: number;
-  isPageAdjusted: boolean;
-  hasNext: boolean;
-  hasPrevious: boolean;
-  pageSize: number;
-  total: number;
-  totalPages: number;
-}
-
-export interface StatusFilterSummary {
-  value?: string; // Valor do status (PUBLICADO, RASCUNHO, etc)
-  label: string;
-  total: number;
-  selected?: boolean;
-}
-
-export interface FiltersSummary {
-  statusPadrao?: StatusFilterSummary[];
-}
-
-export interface AppliedFilters {
-  search?: string;
-  statusPadrao?: string[];
-  categoriaId?: number;
-  subcategoriaId?: number;
-  instrutorId?: number;
-}
-
-export interface Filters {
-  summary?: FiltersSummary;
-  applied?: AppliedFilters;
-}
-
-export interface Meta {
-  empty: boolean;
-}
-
-export interface CursosListResponse {
-  data: Curso[];
-  pagination: Pagination;
-  filters?: Filters;
-  meta?: Meta;
-}
-
-export interface CreateCursoPayload {
-  nome: string;
-  descricao: string;
-  cargaHoraria: number;
-  categoriaId: number;
-  subcategoriaId?: number;
-  estagioObrigatorio?: boolean;
-  statusPadrao: "PUBLICADO" | "RASCUNHO";
-  imagemUrl?: string;
-
-  // Campos de precificação (adicionados em 10/12/2025)
-  valor: number; // Valor do curso em reais (obrigatório exceto se gratuito)
-  valorPromocional?: number; // Valor promocional (opcional)
-  gratuito?: boolean; // É um curso gratuito (padrão: false)
-  // Nota: Métodos de pagamento são gerenciados pelo Mercado Pago
-  // Nota: Disponibilidade é definida por statusPadrao ("PUBLICADO" = disponível)
-}
-
-export type UpdateCursoPayload = Partial<CreateCursoPayload>;
-
-// Visão Geral de Cursos
-export interface VisaoGeralMetricasGerais {
-  totalCursos: number;
-  cursosPublicados: number;
-  cursosRascunho: number;
-  totalTurmas: number;
-  turmasAtivas: number;
-  turmasInscricoesAbertas: number;
-  totalAlunosInscritos: number;
-  totalAlunosAtivos: number;
-  totalAlunosConcluidos: number;
-}
-
-export interface TurmaProximoInicio {
-  turmaId: string;
-  cursoId: number;
-  cursoNome: string;
-  cursoCodigo: string;
-  turmaNome: string;
-  turmaCodigo: string;
-  dataInicio: string;
-  diasParaInicio: number;
-  vagasTotais: number;
-  vagasDisponiveis: number;
-  inscricoesAtivas: number;
-  status: string;
-}
-
-export interface CursosProximosInicio {
-  proximos7Dias: TurmaProximoInicio[];
-  proximos15Dias: TurmaProximoInicio[];
-  proximos30Dias: TurmaProximoInicio[];
-}
-
-export interface CursoFaturamento {
-  cursoId: number;
-  cursoNome: string;
-  cursoCodigo: string;
-  totalFaturamento: number;
-  totalTransacoes: number;
-  transacoesAprovadas: number;
-  transacoesPendentes: number;
-  ultimaTransacao: string;
-}
-
-export interface VisaoGeralFaturamento {
-  totalFaturamento: number;
-  faturamentoMesAtual: number;
-  faturamentoMesAnterior: number;
-  cursoMaiorFaturamento: CursoFaturamento;
-  topCursosFaturamento: CursoFaturamento[];
-}
-
-export interface CursoPerformance {
-  cursoId: number;
-  cursoNome: string;
-  cursoCodigo: string;
-  totalInscricoes: number;
-  totalTurmas: number;
-}
-
-export interface CursoTaxaConclusao {
-  cursoId: number;
-  cursoNome: string;
-  cursoCodigo: string;
-  taxaConclusao: number;
-  totalInscricoes: number;
-  totalConcluidos: number;
-}
-
-export interface VisaoGeralPerformance {
-  cursosMaisPopulares: CursoPerformance[];
-  taxaConclusao: number;
-  cursosComMaiorTaxaConclusao: CursoTaxaConclusao[];
-}
-
-export interface VisaoGeralData {
-  metricasGerais: VisaoGeralMetricasGerais;
-  cursosProximosInicio: CursosProximosInicio;
-  faturamento: VisaoGeralFaturamento;
-  performance: VisaoGeralPerformance;
-}
-
-export interface VisaoGeralResponse {
-  success: boolean;
-  data: VisaoGeralData;
 }

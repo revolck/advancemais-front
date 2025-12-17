@@ -25,7 +25,7 @@ interface AlunoRowProps {
 
 const getStatusColor = (status?: string) => {
   if (!status) return "bg-gray-100 text-gray-800 border-gray-200";
-  
+
   switch (status) {
     case "INSCRITO":
       return "bg-green-100 text-green-800 border-green-200";
@@ -48,7 +48,7 @@ const getStatusColor = (status?: string) => {
 
 const getStatusLabel = (status?: string) => {
   if (!status) return "—";
-  
+
   switch (status) {
     case "INSCRITO":
       return "Inscrito";
@@ -106,20 +106,21 @@ const getModalidadeColor = (metodo?: string) => {
   }
 };
 
-// Nota: A API agora retorna apenas 'ultimoCurso' (última inscrição do aluno)
-// Se houver filtro de curso e o ultimoCurso for de outro curso, não exibimos nada
-const getUltimaTurma = (
-  ultimoCurso?: AlunoComInscricao["ultimoCurso"],
-  cursoFiltradoId?: string | null // UUID (string) - alterado de number para string
+// Nota: AlunoComInscricao tem 'inscricao' mas não tem 'ultimoCurso' ou 'turma'
+// Ajustado para usar inscricao
+const getInscricao = (
+  aluno: AlunoComInscricao,
+  cursoFiltradoId?: string | null
 ) => {
-  if (!ultimoCurso) return null;
+  const inscricao = aluno.inscricao;
+  if (!inscricao) return null;
 
-  // Se houver filtro de curso, verifica se o ultimoCurso é daquele curso
-  if (cursoFiltradoId && ultimoCurso.curso?.id !== cursoFiltradoId) {
+  // Se houver filtro de curso, verifica se a inscricao é daquele curso
+  if (cursoFiltradoId && inscricao.curso?.id !== cursoFiltradoId) {
     return null; // Não exibe se for de outro curso
   }
 
-  return ultimoCurso;
+  return inscricao;
 };
 
 const getTipoLabel = (tipo: string) => {
@@ -133,39 +134,39 @@ const getTipoLabel = (tipo: string) => {
   }
 };
 
-export function AlunoRow({ 
-  aluno, 
+export function AlunoRow({
+  aluno,
   cursoFiltradoId,
   isDisabled = false,
   onNavigateStart,
 }: AlunoRowProps) {
   const router = useRouter();
   const [isNavigating, setIsNavigating] = useState(false);
-  const ultimaTurma = getUltimaTurma(aluno.ultimoCurso, cursoFiltradoId);
+  const inscricao = getInscricao(aluno, cursoFiltradoId);
   const isRowDisabled = isDisabled || isNavigating;
 
-  const cursoNome = ultimaTurma?.curso?.nome;
-  const turmaNome = ultimaTurma?.turma?.nome;
+  const cursoNome = inscricao?.curso?.nome;
+  const turmaNome = undefined; // turma não disponível em AlunoComInscricao
 
   const handleNavigate = (e: React.MouseEvent) => {
     e.preventDefault();
     if (isRowDisabled) return;
-    
+
     setIsNavigating(true);
     onNavigateStart?.();
     router.push(`/dashboard/cursos/alunos/${encodeURIComponent(aluno.id)}`);
-    
+
     setTimeout(() => {
       setIsNavigating(false);
     }, 5000);
   };
 
   return (
-    <TableRow 
+    <TableRow
       className={cn(
         "border-gray-100 transition-colors",
-        isRowDisabled 
-          ? "opacity-50 pointer-events-none" 
+        isRowDisabled
+          ? "opacity-50 pointer-events-none"
           : "hover:bg-gray-50/50",
         isNavigating && "bg-blue-50/50"
       )}
@@ -175,20 +176,18 @@ export function AlunoRow({
           <Avatar className="h-8 w-8 flex-shrink-0">
             <AvatarImage
               src={(aluno as any)?.avatarUrl || undefined}
-              alt={aluno.nomeCompleto}
+              alt={aluno.nome}
             />
             <AvatarFallback className="bg-gray-100 text-gray-600 text-xs font-medium">
-              {aluno.nomeCompleto.substring(0, 2).toUpperCase()}
+              {aluno.nome.substring(0, 2).toUpperCase()}
             </AvatarFallback>
           </Avatar>
           <div className="min-w-0">
             <div className="flex items-center gap-2 mb-1">
               <div className="text-sm text-gray-900 font-medium truncate max-w-[220px]">
-                {aluno.nomeCompleto || aluno.id}
+                {aluno.nome || aluno.id}
               </div>
-              <code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded font-mono text-gray-500 flex-shrink-0">
-                {aluno.codigo}
-              </code>
+              {/* codigo não disponível em AlunoComInscricao */}
             </div>
             {aluno.cpf && (
               <div className="text-xs text-gray-500 font-mono truncate max-w-[220px]">
@@ -218,11 +217,7 @@ export function AlunoRow({
                   ? `${aluno.cidade}, ${aluno.estado}`
                   : aluno.cidade || aluno.estado}
               </div>
-              {false && ultimaTurma?.turma && (
-                <div className={cn("text-xs font-medium mt-0.5")}>
-                  {/* modalidade removida - campo não disponível no tipo atual */}
-                </div>
-              )}
+              {/* modalidade removida - campo não disponível no tipo atual */}
             </div>
           </div>
         ) : (
@@ -278,15 +273,15 @@ export function AlunoRow({
         )}
       </TableCell>
       <TableCell className="py-4">
-        {ultimaTurma?.statusInscricao ? (
+        {inscricao?.status ? (
           <Badge
             variant="outline"
             className={cn(
               "text-xs font-medium",
-              getStatusColor(ultimaTurma.statusInscricao)
+              getStatusColor(inscricao.status)
             )}
           >
-            {getStatusLabel(ultimaTurma.statusInscricao)}
+            {getStatusLabel(inscricao.status)}
           </Badge>
         ) : (
           <div className="text-sm text-gray-500">—</div>
@@ -302,8 +297,8 @@ export function AlunoRow({
               disabled={isRowDisabled}
               className={cn(
                 "h-8 w-8 rounded-full cursor-pointer",
-                isNavigating 
-                  ? "text-blue-600 bg-blue-100" 
+                isNavigating
+                  ? "text-blue-600 bg-blue-100"
                   : "text-gray-500 hover:text-white hover:bg-[var(--primary-color)]",
                 "disabled:opacity-50 disabled:cursor-wait"
               )}

@@ -9,7 +9,7 @@ import { Progress } from "@/components/ui/progress";
 import type { CursosProximosInicio, TurmaProximoInicio } from "@/api/cursos";
 
 interface CursosProximosProps {
-  data: CursosProximosInicio;
+  data: any;
   isLoading?: boolean;
 }
 
@@ -38,13 +38,15 @@ const getStatusBadge = (status: string) => {
   return <Badge variant={mapped.variant}>{mapped.label}</Badge>;
 };
 
-function TurmaCard({ turma }: { turma: TurmaProximoInicio }) {
-  const ocupacaoPercent = turma.vagasTotais > 0 
-    ? (turma.inscricoesAtivas / turma.vagasTotais) * 100 
+function TurmaCard({ turma }: { turma: any }) {
+  const vagasTotais = turma.vagasTotais ?? 0;
+  const inscricoesAtivas = turma.inscricoesAtivas ?? 0;
+  const ocupacaoPercent = vagasTotais > 0 
+    ? (inscricoesAtivas / vagasTotais) * 100 
     : 0;
 
   return (
-    <Link href={`/dashboard/cursos/${turma.cursoId}/turmas/${turma.turmaId}`}>
+    <Link href={`/dashboard/cursos/${turma.cursoId ?? turma.turmaId}/turmas/${turma.turmaId}`}>
       <div className="bg-gradient-to-br from-gray-50 to-white rounded-xl border border-gray-200 p-5 hover:shadow-lg hover:border-blue-300 transition-all duration-200 cursor-pointer group">
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-start gap-3 flex-1">
@@ -52,8 +54,8 @@ function TurmaCard({ turma }: { turma: TurmaProximoInicio }) {
               <BookOpen className="size-5" />
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className="font-bold text-gray-900 mb-1 leading-tight">{turma.cursoNome}</h3>
-              <p className="text-xs text-gray-500 font-medium">Turma: {turma.turmaCodigo}</p>
+              <h3 className="font-bold text-gray-900 mb-1 leading-tight">{turma.cursoNome ?? turma.nome}</h3>
+              <p className="text-xs text-gray-500 font-medium">Turma: {turma.turmaCodigo ?? turma.codigo ?? ""}</p>
             </div>
           </div>
           {getStatusBadge(turma.status)}
@@ -63,7 +65,9 @@ function TurmaCard({ turma }: { turma: TurmaProximoInicio }) {
           <div className="flex items-center gap-2 text-sm text-gray-700">
             <Calendar className="size-4 text-gray-500" />
             <span className="font-medium">
-              Inicia em {turma.diasParaInicio} {turma.diasParaInicio === 1 ? "dia" : "dias"}
+              {turma.diasParaInicio != null 
+                ? `Inicia em ${turma.diasParaInicio} ${turma.diasParaInicio === 1 ? "dia" : "dias"}`
+                : "Data próxima"}
             </span>
             <span className="text-gray-400">•</span>
             <span className="text-gray-600 text-xs">{formatDate(turma.dataInicio)}</span>
@@ -74,7 +78,7 @@ function TurmaCard({ turma }: { turma: TurmaProximoInicio }) {
               <div className="flex items-center gap-2 text-gray-700">
                 <Users className="size-4 text-gray-500" />
                 <span className="font-medium">
-                  {turma.inscricoesAtivas}/{turma.vagasTotais} vagas ocupadas
+                  {inscricoesAtivas}/{vagasTotais} vagas ocupadas
                 </span>
               </div>
               <span className="text-sm font-semibold text-gray-600">{ocupacaoPercent.toFixed(0)}%</span>
@@ -148,7 +152,7 @@ export function CursosProximos({ data, isLoading }: CursosProximosProps) {
           </div>
         ) : (
           <div className="space-y-4">
-            {turmas.map((turma) => (
+            {turmas.map((turma: any) => (
               <TurmaCard key={turma.turmaId} turma={turma} />
             ))}
           </div>
