@@ -18,6 +18,8 @@ import { updateVacancy } from "@/api/empresas/admin/update-vacancy";
 import type { AdminCompanyVagaItem } from "@/api/empresas/admin/types";
 import { useState } from "react";
 import { toast } from "sonner";
+import { Briefcase } from "lucide-react";
+import { FormLoadingModal } from "@/components/ui/custom/form-loading-modal";
 
 interface EditVacancyModalProps {
   isOpen: boolean;
@@ -35,6 +37,7 @@ export function EditVacancyModal({
   onVacancyUpdated,
 }: EditVacancyModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loadingStep, setLoadingStep] = useState<string>("");
 
   const {
     formData,
@@ -65,6 +68,7 @@ export function EditVacancyModal({
     if (!vacancy) return;
 
     setIsSubmitting(true);
+    setLoadingStep("Salvando alterações...");
     try {
       const dataToSubmit = {
         titulo: formData.titulo,
@@ -104,7 +108,9 @@ export function EditVacancyModal({
         return;
       }
 
+      setLoadingStep("Salvando alterações...");
       const updatedVacancy = await updateVacancy(vacancy.id, cleanedData);
+      setLoadingStep("Finalizando...");
       toast.success("Vaga atualizada com sucesso!");
       onVacancyUpdated?.(updatedVacancy);
       onOpenChange(false);
@@ -113,10 +119,20 @@ export function EditVacancyModal({
       toast.error("Erro ao atualizar vaga. Tente novamente.");
     } finally {
       setIsSubmitting(false);
+      setLoadingStep("");
     }
   };
 
+  const isSaving = isSubmitting || isLoading;
+
   return (
+    <>
+      <FormLoadingModal
+        isLoading={isSaving}
+        title="Salvando..."
+        loadingStep={loadingStep}
+        icon={Briefcase}
+      />
     <ModalCustom
       isOpen={isOpen}
       onOpenChange={onOpenChange}
@@ -373,7 +389,7 @@ export function EditVacancyModal({
               </ButtonCustom>
               <ButtonCustom
                 onClick={handleSave}
-                disabled={isSubmitting || isLoading}
+                disabled={isSaving}
               >
                 {isSubmitting ? "Salvando..." : "Salvar alterações"}
               </ButtonCustom>
@@ -393,5 +409,6 @@ export function EditVacancyModal({
         )}
       </ModalContentWrapper>
     </ModalCustom>
+    </>
   );
 }

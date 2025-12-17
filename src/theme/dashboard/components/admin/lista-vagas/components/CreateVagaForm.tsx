@@ -17,7 +17,8 @@ import {
 } from "@/components/ui/custom";
 import { UnsavedChangesModal } from "./modals";
 import { createVaga, type CreateVagaPayload } from "@/api/vagas";
-import { Check, Loader2 } from "lucide-react";
+import { Check, Loader2, Briefcase } from "lucide-react";
+import { FormLoadingModal } from "@/components/ui/custom/form-loading-modal";
 import {
   useEmpresasForSelect,
   useVagaCategorias,
@@ -56,6 +57,7 @@ export function CreateVagaForm({
   const [formData, setFormData] = useState<FormState>(getInitialFormState);
   const [errors, setErrors] = useState<FormErrors>({});
   const [currentStep, setCurrentStep] = useState(0);
+  const [loadingStep, setLoadingStep] = useState<string>("");
 
   // Verificar role do usuário
   const role = useUserRole();
@@ -487,9 +489,11 @@ export function CreateVagaForm({
     }
 
     setIsSubmitting(true);
+    setLoadingStep("Criando vaga...");
 
     try {
       const payload = buildPayload();
+      setLoadingStep("Salvando vaga...");
       const response = await createVaga(payload);
 
       if (isErrorResponse(response)) {
@@ -511,6 +515,7 @@ export function CreateVagaForm({
         return;
       }
 
+      setLoadingStep("Finalizando...");
       toastCustom.success("Vaga criada com sucesso!");
       onSuccess();
 
@@ -522,6 +527,7 @@ export function CreateVagaForm({
       toastCustom.error("Erro inesperado ao criar a vaga. Tente novamente.");
     } finally {
       setIsSubmitting(false);
+      setLoadingStep("");
     }
   };
 
@@ -541,7 +547,13 @@ export function CreateVagaForm({
   const isLastStep = currentStep === FORM_STEPS.length - 1;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 relative">
+      <FormLoadingModal
+        isLoading={isSubmitting}
+        title="Criando vaga..."
+        loadingStep={loadingStep}
+        icon={Briefcase}
+      />
       {/* Container para navegação dos steps */}
       <div className="bg-white rounded-3xl p-4 h-full flex flex-col">
         <div className="flex-1 min-h-0">

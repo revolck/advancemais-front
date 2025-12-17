@@ -175,13 +175,13 @@ export function AulaRow({
     >
       <TableCell className="py-4 px-3">
         <div className="space-y-1.5">
-          <div className="flex items-center gap-2">
-            <span className="font-medium text-gray-900">{aula.titulo}</span>
-            {aula.codigo && (
-              <code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded font-mono text-gray-500 shrink-0">
-                {aula.codigo}
-              </code>
-            )}
+        <div className="flex items-center gap-2">
+          <span className="font-medium text-gray-900">{aula.titulo}</span>
+          {aula.codigo && (
+            <code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded font-mono text-gray-500 shrink-0">
+              {aula.codigo}
+            </code>
+          )}
           </div>
           {(() => {
             const ModalidadeIcon = getModalidadeIcon(aula.modalidade);

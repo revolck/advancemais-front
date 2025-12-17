@@ -7,6 +7,7 @@ import {
   useState,
   type ChangeEvent,
 } from "react";
+import { Building2 } from "lucide-react";
 import {
   ModalCustom,
   ModalContentWrapper,
@@ -19,6 +20,7 @@ import { InputCustom } from "@/components/ui/custom/input";
 import { SimpleTextarea } from "@/components/ui/custom/text-area";
 import { ButtonCustom } from "@/components/ui/custom/button";
 import { toastCustom } from "@/components/ui/custom/toast";
+import { FormLoadingModal } from "@/components/ui/custom/form-loading-modal";
 import type {
   AdminCompanyDetail,
   UpdateAdminCompanyPayload,
@@ -62,6 +64,7 @@ export function EditarEmpresaModal({
   }, [company]);
 
   const [formState, setFormState] = useState<CompanyFormState>(initialValues);
+  const [loadingStep, setLoadingStep] = useState<string>("");
   const { updateCompanyProfile } = useCompanyMutations(company.id);
   const isSaving = updateCompanyProfile.status === "pending";
 
@@ -192,8 +195,10 @@ export function EditarEmpresaModal({
     }
 
     try {
+      setLoadingStep("Salvando alterações...");
       await updateCompanyProfile.mutateAsync(payload);
-
+      
+      setLoadingStep("Finalizando...");
       toastCustom.success({
         title: "Dados atualizados",
         description: "As informações da empresa foram salvas com sucesso.",
@@ -230,6 +235,8 @@ export function EditarEmpresaModal({
         title: "Erro ao salvar",
         description: errorMessage,
       });
+    } finally {
+      setLoadingStep("");
     }
   }, [
     company.email,
@@ -244,14 +251,22 @@ export function EditarEmpresaModal({
   ]);
 
   return (
-    <ModalCustom
-      isOpen={isOpen}
-      onOpenChange={onOpenChange}
-      scrollBehavior="inside"
-      size="2xl"
-      backdrop="blur"
-    >
-      <ModalContentWrapper>
+    <>
+      <FormLoadingModal
+        isLoading={isSaving}
+        title="Salvando..."
+        loadingStep={loadingStep}
+        icon={Building2}
+      />
+
+      <ModalCustom
+        isOpen={isOpen}
+        onOpenChange={onOpenChange}
+        scrollBehavior="inside"
+        size="2xl"
+        backdrop="blur"
+      >
+        <ModalContentWrapper>
         <ModalHeader>
           <ModalTitle>Editar empresa</ModalTitle>
         </ModalHeader>
@@ -331,5 +346,6 @@ export function EditarEmpresaModal({
         </ModalFooter>
       </ModalContentWrapper>
     </ModalCustom>
+    </>
   );
 }

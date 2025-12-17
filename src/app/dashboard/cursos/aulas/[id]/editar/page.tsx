@@ -28,7 +28,9 @@ export default async function EditAulaPage({ params }: EditAulaPageProps) {
   let aulaResponse: Awaited<ReturnType<typeof getAulaById>> | null = null;
 
   try {
-    aulaResponse = await getAulaById(id, { headers: authHeaders });
+    // ✅ SEMPRE usar noCache: true para garantir dados frescos na edição
+    // Isso evita que dados antigos sejam exibidos após uma edição
+    aulaResponse = await getAulaById(id, { headers: authHeaders }, { noCache: true });
   } catch (error) {
     handleDashboardApiError(error, loginUrl, {
       scope: "dashboard-aula-edit",

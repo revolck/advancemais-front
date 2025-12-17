@@ -48,6 +48,8 @@ export * from "./steps";
 
 export * from "./multiselect";
 
+export * from "./form-loading-modal";
+
 export * from "./date-picker";
 
 export * from "./time-input";

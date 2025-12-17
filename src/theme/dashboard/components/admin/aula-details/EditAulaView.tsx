@@ -16,7 +16,9 @@ export function EditAulaView({ aulaId, initialData }: EditAulaViewProps) {
   const router = useRouter();
 
   const handleSuccess = () => {
-    // Adicionar timestamp para forçar refetch na tela de detalhes
+    // ✅ Forçar reload completo: usar router.refresh() para invalidar cache do servidor
+    // e adicionar timestamp para garantir que a página de edição recarregue dados frescos
+    router.refresh();
     router.push(`/dashboard/cursos/aulas/${aulaId}?refresh=${Date.now()}`);
   };
 

@@ -16,7 +16,7 @@ import {
   createAdminCompany,
   validateAdminCompanyCnpj,
 } from "@/api/empresas/admin";
-import { Loader2, Check, AlertTriangle } from "lucide-react";
+import { Loader2, Check, AlertTriangle, Building2 } from "lucide-react";
 
 interface CreateCompanyModalProps {
   isOpen: boolean;
@@ -45,6 +45,7 @@ export function CreateCompanyModal({
 }: CreateCompanyModalProps) {
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingStep, setLoadingStep] = useState<string>("");
   const [isValidatingCnpj, setIsValidatingCnpj] = useState(false);
   const [cnpjValidationStatus, setCnpjValidationStatus] = useState<
     "idle" | "validating" | "success" | "error"
@@ -176,6 +177,7 @@ export function CreateCompanyModal({
     }
 
     setIsLoading(true);
+    setLoadingStep("Criando empresa...");
 
     try {
       // Normalizar dados conforme especificação da API
@@ -198,8 +200,10 @@ export function CreateCompanyModal({
         aceitarTermos: true,
       };
 
+      setLoadingStep("Salvando...");
       await createAdminCompany(payload as any);
 
+      setLoadingStep("Finalizando...");
       // Resetar formulário
       setFormData(initialFormData);
       setErrors({});
@@ -227,6 +231,7 @@ export function CreateCompanyModal({
       });
     } finally {
       setIsLoading(false);
+      setLoadingStep("");
     }
   };
 
@@ -251,18 +256,47 @@ export function CreateCompanyModal({
   };
 
   return (
-    <ModalCustom
-      isOpen={isOpen}
-      onOpenChange={handleClose}
-      size="2xl"
-      backdrop="blur"
-    >
-      <ModalContentWrapper>
-        <ModalHeader>
-          <ModalTitle>Cadastrar Empresa</ModalTitle>
-        </ModalHeader>
+    <>
+      {/* Overlay de Loading Compacto */}
+      {isLoading && (
+        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-[60] flex items-center justify-center">
+          <div className="bg-white rounded-xl shadow-2xl border border-gray-200 p-5 w-80">
+            <div className="flex items-center gap-4">
+              {/* Spinner compacto */}
+              <div className="relative shrink-0">
+                <div className="w-12 h-12 rounded-full border-3 border-gray-200" />
+                <div className="absolute inset-0 w-12 h-12 rounded-full border-3 border-primary border-t-transparent animate-spin" />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <Building2 className="h-5 w-5 text-primary" />
+                </div>
+              </div>
 
-        <form onSubmit={handleSubmit}>
+              {/* Título e descrição ao lado */}
+              <div className="flex-1 min-w-0">
+                <h3 className="text-sm! font-semibold! text-gray-900! mb-0.5!">
+                  Criando empresa...
+                </h3>
+                <p className="text-xs! text-gray-600! mb-0!">
+                  {loadingStep || "Processando"}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <ModalCustom
+        isOpen={isOpen}
+        onOpenChange={handleClose}
+        size="2xl"
+        backdrop="blur"
+      >
+        <ModalContentWrapper>
+          <ModalHeader>
+            <ModalTitle>Cadastrar Empresa</ModalTitle>
+          </ModalHeader>
+
+          <form onSubmit={handleSubmit}>
           <fieldset disabled={isLoading} className="space-y-6">
           <ModalBody className="space-y-6 p-1">
             {/* Informações Básicas */}
@@ -358,5 +392,6 @@ export function CreateCompanyModal({
         </form>
       </ModalContentWrapper>
     </ModalCustom>
+    </>
   );
 }

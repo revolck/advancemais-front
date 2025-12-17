@@ -241,13 +241,13 @@ export function AboutTab({ aula, isLoading = false }: AboutTabProps) {
   }
 
   if (isLoading) {
-    return (
+  return (
       <div className="grid gap-6 grid-cols-1 lg:grid-cols-[minmax(0,_7fr)_minmax(0,_3fr)]">
         <section className="rounded-2xl border border-gray-200/60 bg-white p-6 min-w-0">
           <Skeleton className="h-4 w-full mb-2" />
           <Skeleton className="h-4 w-3/4 mb-2" />
           <Skeleton className="h-4 w-1/2" />
-        </section>
+          </section>
         <aside className="space-y-4 min-w-0">
           <div className="rounded-2xl border border-gray-200/60 bg-white p-6">
             <div className="space-y-4">

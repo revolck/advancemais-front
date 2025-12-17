@@ -120,10 +120,14 @@ export async function listAulas(
 
 /**
  * Buscar aula por ID
+ * @param aulaId - ID da aula
+ * @param init - Opções de RequestInit
+ * @param options - Opções adicionais como { noCache: true } para desabilitar cache
  */
 export async function getAulaById(
   aulaId: string,
-  init?: RequestInit
+  init?: RequestInit,
+  options?: { noCache?: boolean }
 ): Promise<Aula> {
   const response = await apiFetch<{ success: boolean; aula: Aula } | Aula>(
     `${BASE_URL}/${aulaId}`,
@@ -133,7 +137,8 @@ export async function getAulaById(
         ...init,
         headers: buildHeaders(init?.headers, true),
       },
-      cache: "short", // Mantém cache para performance, mas será invalidado após updates
+      // Usar no-cache se solicitado, caso contrário usar short para performance
+      cache: options?.noCache ? "no-cache" : "short",
       retries: 1,
     }
   );
@@ -181,12 +186,45 @@ export async function updateAula(
   payload: UpdateAulaPayload,
   init?: RequestInit
 ): Promise<Aula> {
+  // ✅ DEBUG: Log do payload que será enviado para a API
+  if (process.env.NODE_ENV === "development") {
+    console.log("[API_UPDATE_AULA] Payload que será enviado:", {
+      aulaId,
+      payload,
+      payloadString: JSON.stringify(payload),
+      hasTurmaId: "turmaId" in payload,
+      turmaId: payload.turmaId,
+      turmaIdType: typeof payload.turmaId,
+      payloadKeys: Object.keys(payload),
+    });
+  }
+
+  // ✅ GARANTIR que turmaId seja incluído se existe no payload
+  // Criar uma cópia do payload para garantir que não seja modificado
+  const finalPayload = { ...payload };
+  
+  // ✅ Se turmaId existe no payload original, garantir que está na cópia
+  if ("turmaId" in payload && payload.turmaId) {
+    (finalPayload as any).turmaId = payload.turmaId;
+  }
+
+  // ✅ DEBUG: Verificar payload final antes de enviar
+  if (process.env.NODE_ENV === "development") {
+    console.log("[API_UPDATE_AULA] Payload final antes de enviar:", {
+      finalPayload,
+      finalPayloadString: JSON.stringify(finalPayload),
+      hasTurmaId: "turmaId" in finalPayload,
+      turmaId: (finalPayload as any).turmaId,
+      bodyString: JSON.stringify(finalPayload),
+    });
+  }
+
   const response = await apiFetch<{ success: boolean; aula: Aula } | Aula>(
     `${BASE_URL}/${aulaId}`,
     {
       init: {
         method: "PUT",
-        body: JSON.stringify(payload),
+        body: JSON.stringify(finalPayload), // ✅ Usar finalPayload
         ...init,
         headers: buildHeaders(init?.headers, true),
       },

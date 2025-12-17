@@ -39,12 +39,12 @@ export function validarPublicacao(aula: Aula): ValidacaoPublicacao {
     camposFaltando.push("Descrição (mínimo 10 caracteres)");
   }
 
-  // Validações por modalidade
+  // ✅ Validações por modalidade (API atualizada: instrutor é opcional)
   switch (aula.modalidade) {
     case "PRESENCIAL":
       if (!aula.dataInicio) camposFaltando.push("Data de início");
       if (!aula.turma?.id) camposFaltando.push("Turma");
-      if (!aula.instrutor?.id) camposFaltando.push("Instrutor");
+      // ✅ Instrutor é opcional - Google Meet será criado quando instrutor for adicionado
       break;
 
     case "AO_VIVO":
@@ -61,7 +61,7 @@ export function validarPublicacao(aula: Aula): ValidacaoPublicacao {
         }
       }
       if (!aula.turma?.id) camposFaltando.push("Turma");
-      if (!aula.instrutor?.id) camposFaltando.push("Instrutor");
+      // ✅ Instrutor é opcional - Google Meet será criado quando instrutor for adicionado
       break;
 
     case "SEMIPRESENCIAL":
@@ -78,7 +78,7 @@ export function validarPublicacao(aula: Aula): ValidacaoPublicacao {
           bloqueios.push("Data de início deve ser no futuro");
         }
         if (!aula.turma?.id) camposFaltando.push("Turma");
-        if (!aula.instrutor?.id) camposFaltando.push("Instrutor");
+        // ✅ Instrutor é opcional - Google Meet será criado quando instrutor for adicionado
       }
       break;
 

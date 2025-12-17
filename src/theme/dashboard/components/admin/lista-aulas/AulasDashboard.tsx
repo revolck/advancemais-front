@@ -160,7 +160,7 @@ export function AulasDashboard({ className }: { className?: string }) {
         }
         if (parsed.dir) {
           setSortDirection(parsed.dir);
-        }
+      }
       }
       // Se não houver no localStorage, os valores padrão já estão definidos acima
     } catch {}

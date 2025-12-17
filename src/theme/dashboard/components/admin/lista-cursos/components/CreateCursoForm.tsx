@@ -19,7 +19,8 @@ import { useCursoSubcategorias } from "../hooks/useCursoSubcategorias";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
-import { BookOpen, Loader2 } from "lucide-react";
+import { BookOpen } from "lucide-react";
+import { FormLoadingModal } from "@/components/ui/custom/form-loading-modal";
 import {
   FileUpload,
   type FileUploadItem,
@@ -119,6 +120,7 @@ export function CreateCursoForm({
 
   const [formData, setFormData] = useState<FormData>(prepareInitialFormData());
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingStep, setLoadingStep] = useState<string>("");
   const [errors, setErrors] = useState<
     Partial<Record<keyof FormData | "imagemUrl", string>>
   >({});
@@ -145,15 +147,15 @@ export function CreateCursoForm({
   };
 
   const [imagemFiles, setImagemFiles] = useState<FileUploadItem[]>(
-    prepareInitialImage(),
+    prepareInitialImage()
   );
   const [imagemUrl, setImagemUrl] = useState<string | null>(
-    mode === "edit" && initialData?.imagemUrl ? initialData.imagemUrl : null,
+    mode === "edit" && initialData?.imagemUrl ? initialData.imagemUrl : null
   );
   const [oldImageUrl, setOldImageUrl] = useState<string | undefined>(
     mode === "edit" && initialData?.imagemUrl
       ? initialData.imagemUrl
-      : undefined,
+      : undefined
   );
   const [imageRemoved, setImageRemoved] = useState(false); // Rastreia se usuário removeu a imagem
 
@@ -161,7 +163,7 @@ export function CreateCursoForm({
     useCursoCategorias();
   const { subcategoriaOptions, isLoading: isLoadingSubcategorias } =
     useCursoSubcategorias(
-      formData.categoriaId ? Number(formData.categoriaId) : null,
+      formData.categoriaId ? Number(formData.categoriaId) : null
     );
 
   const isGratuito = formData.tipoCurso === "GRATUITO";
@@ -224,6 +226,9 @@ export function CreateCursoForm({
     e.preventDefault();
     if (!validateForm()) return;
     setIsLoading(true);
+    setLoadingStep(
+      mode === "edit" ? "Salvando alterações..." : "Criando curso..."
+    );
 
     let finalImageUrl: string | null = imagemUrl;
 
@@ -235,6 +240,7 @@ export function CreateCursoForm({
           description: "Por favor, adicione uma imagem para o curso.",
         });
         setIsLoading(false);
+        setLoadingStep("");
         return;
       }
 
@@ -242,6 +248,7 @@ export function CreateCursoForm({
       const fileItem = imagemFiles[0];
       if (fileItem?.file) {
         try {
+          setLoadingStep("Fazendo upload da imagem...");
           if (process.env.NODE_ENV === "development") {
             console.log("[CreateCursoForm] Iniciando upload da imagem...");
           }
@@ -249,7 +256,7 @@ export function CreateCursoForm({
           const uploadResult = await uploadImage(
             fileItem.file,
             "cursos",
-            mode === "edit" ? oldImageUrl : imagemUrl || undefined,
+            mode === "edit" ? oldImageUrl : imagemUrl || undefined
           );
 
           if (!uploadResult?.url || uploadResult.url.trim() === "") {
@@ -262,7 +269,7 @@ export function CreateCursoForm({
           if (process.env.NODE_ENV === "development") {
             console.log(
               "[CreateCursoForm] Upload concluído. URL:",
-              finalImageUrl,
+              finalImageUrl
             );
           }
         } catch (uploadError: any) {
@@ -279,6 +286,7 @@ export function CreateCursoForm({
             description: errorMessage,
           });
           setIsLoading(false);
+          setLoadingStep("");
           return;
         }
       }
@@ -290,6 +298,7 @@ export function CreateCursoForm({
           description: "Por favor, adicione uma imagem para o curso.",
         });
         setIsLoading(false);
+        setLoadingStep("");
         return;
       }
 
@@ -317,11 +326,14 @@ export function CreateCursoForm({
       if (process.env.NODE_ENV === "development") {
         console.log(
           "[CreateCursoForm] Payload completo sendo enviado:",
-          payload,
+          payload
         );
       }
 
       // PASSO 4: Envia o payload completo para a API
+      setLoadingStep(
+        mode === "edit" ? "Salvando alterações..." : "Criando curso..."
+      );
       if (mode === "edit" && cursoId) {
         await updateCurso(cursoId, payload as UpdateCursoPayload);
 
@@ -347,6 +359,7 @@ export function CreateCursoForm({
           description: `O curso "${payload.nome}" foi atualizado.`,
         });
       } else {
+        setLoadingStep("Criando curso...");
         await createCurso(payload);
 
         // Invalida todas as queries de listagem de cursos para atualizar a lista
@@ -362,6 +375,7 @@ export function CreateCursoForm({
           description: `O curso "${payload.nome}" foi criado.`,
         });
       }
+      setLoadingStep("Finalizando...");
       setFormData(initialFormData);
       setImagemUrl(null);
       setImagemFiles([]);
@@ -374,29 +388,18 @@ export function CreateCursoForm({
       });
     } finally {
       setIsLoading(false);
+      setLoadingStep("");
     }
   };
 
   return (
     <div className="bg-white rounded-3xl p-6 relative">
-      {/* Overlay de Loading */}
-      {isLoading && (
-        <div className="absolute inset-0 bg-white/90 backdrop-blur-sm z-50 flex items-center justify-center rounded-3xl">
-          <div className="flex flex-col items-center gap-4">
-            <Loader2 className="h-12 w-12 animate-spin text-primary" />
-            <div className="text-center">
-              <p className="text-lg font-semibold text-gray-900">
-                {mode === "edit"
-                  ? "Salvando alterações..."
-                  : "Cadastrando curso..."}
-              </p>
-              <p className="text-sm text-gray-500 mt-1">
-                Por favor, aguarde enquanto processamos sua solicitação
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
+      <FormLoadingModal
+        isLoading={isLoading}
+        title={mode === "edit" ? "Salvando..." : "Criando curso..."}
+        loadingStep={loadingStep}
+        icon={BookOpen}
+      />
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <fieldset disabled={isLoading} className="space-y-6">
@@ -417,7 +420,7 @@ export function CreateCursoForm({
                   "text-xs font-medium px-2 py-1 rounded-full transition-colors",
                   formData.statusPadrao === "PUBLICADO"
                     ? "bg-emerald-100 text-emerald-700"
-                    : "bg-red-100 text-red-700",
+                    : "bg-red-100 text-red-700"
                 )}
               >
                 {formData.statusPadrao === "PUBLICADO"
@@ -430,7 +433,7 @@ export function CreateCursoForm({
                 onCheckedChange={(checked) =>
                   handleInputChange(
                     "statusPadrao",
-                    (checked ? "PUBLICADO" : "RASCUNHO") as StatusPadrao,
+                    (checked ? "PUBLICADO" : "RASCUNHO") as StatusPadrao
                   )
                 }
                 disabled={isLoading}
@@ -515,10 +518,10 @@ export function CreateCursoForm({
                     !formData.categoriaId
                       ? "Selecione uma categoria"
                       : isLoadingSubcategorias
-                        ? "Carregando..."
-                        : subcategoriaOptions.length === 0
-                          ? "Nenhuma subcategoria"
-                          : "Selecionar"
+                      ? "Carregando..."
+                      : subcategoriaOptions.length === 0
+                      ? "Nenhuma subcategoria"
+                      : "Selecionar"
                   }
                   options={subcategoriaOptions}
                   value={formData.subcategoriaId}
@@ -610,7 +613,7 @@ export function CreateCursoForm({
               onChange={(e) =>
                 handleInputChange(
                   "descricao",
-                  (e.target as HTMLTextAreaElement).value,
+                  (e.target as HTMLTextAreaElement).value
                 )
               }
               onHtmlChange={(html) => {
@@ -645,8 +648,8 @@ export function CreateCursoForm({
                   ? "Salvando..."
                   : "Cadastrando..."
                 : mode === "edit"
-                  ? "Salvar Alterações"
-                  : "Cadastrar"}
+                ? "Salvar Alterações"
+                : "Cadastrar"}
             </ButtonCustom>
           </div>
         </fieldset>

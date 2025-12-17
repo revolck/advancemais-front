@@ -41,6 +41,19 @@ const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
     const [plainTextValue, setPlainTextValue] = React.useState<string>(
       typeof props.value === "string" ? props.value : ""
     );
+
+    // ✅ DEBUG: Log inicial do RichTextarea
+    React.useEffect(() => {
+      if (process.env.NODE_ENV === "development") {
+        console.log("[RichTextarea] Inicializado:", {
+          propsValue: props.value,
+          propsValueLength: props.value?.length || 0,
+          initialPlainTextValue: plainTextValue,
+          initialPlainTextValueLength: plainTextValue.length,
+        });
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); // Apenas no mount - intencionalmente sem dependências
     const contentEditableRef = React.useRef<HTMLDivElement>(null);
     const [activeFormats, setActiveFormats] = React.useState<Set<string>>(
       new Set()
@@ -88,19 +101,54 @@ const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
     }, []);
 
     // Sincronização com props.value
+    // ⚠️ IMPORTANTE: Não atualiza o DOM quando o usuário está focado e digitando
+    // Isso previne perda de foco durante a digitação
     React.useEffect(() => {
-      if (props.value !== undefined && props.value !== plainTextValue) {
-        const newValue = typeof props.value === "string" ? props.value : "";
-        setPlainTextValue(newValue);
-        if (contentEditableRef.current) {
-          contentEditableRef.current.innerHTML = newValue;
-          // Ajusta altura após atualizar conteúdo
-          setTimeout(() => {
-            adjustHeight();
-          }, 0);
+      // Não sincroniza se o usuário está ativamente editando (focado)
+      // Isso previne conflitos entre a digitação do usuário e atualizações externas
+      if (isFocused && contentEditableRef.current) {
+        // Se o usuário está focado, só atualiza se o valor externo for completamente diferente
+        // (caso de substituição completa, não de edição incremental)
+        const currentText = contentEditableRef.current.textContent || "";
+        if (props.value !== undefined && props.value !== currentText) {
+          // Se o valor externo é muito diferente, provavelmente é uma atualização externa
+          // Mas ainda assim, só atualiza se não estiver digitando ativamente
+          const isMajorChange =
+            Math.abs((props.value?.length || 0) - currentText.length) > 1;
+          if (!isMajorChange) {
+            return; // Ignora mudanças menores quando o usuário está digitando
+          }
+        } else {
+          return; // Valor igual ou indefinido, não precisa atualizar
         }
       }
-    }, [props.value, plainTextValue, adjustHeight]);
+
+      // ✅ Sincronizar quando props.value mudar externamente (quando não está em foco)
+      if (props.value !== undefined) {
+        const newValue = typeof props.value === "string" ? props.value : "";
+
+        // ✅ Sempre atualizar se o valor mudou ou se o componente foi remontado
+        if (
+          props.value !== plainTextValue ||
+          !contentEditableRef.current?.textContent
+        ) {
+          setPlainTextValue(newValue);
+          if (contentEditableRef.current) {
+            // ✅ Usar textContent se for texto simples, innerHTML se for HTML
+            // Se o valor contém tags HTML, usar innerHTML, senão usar textContent
+            if (newValue && /<[^>]+>/.test(newValue)) {
+              contentEditableRef.current.innerHTML = newValue;
+            } else {
+              contentEditableRef.current.textContent = newValue;
+            }
+            // Ajusta altura após atualizar conteúdo
+            setTimeout(() => {
+              adjustHeight();
+            }, 0);
+          }
+        }
+      }
+    }, [props.value, plainTextValue, adjustHeight, isFocused]);
 
     // Ajusta altura quando o conteúdo muda
     React.useEffect(() => {
@@ -1131,7 +1179,7 @@ const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
               contentEditable
               className={cn(
                 textareaVariants({ size }),
-                "rich-textarea-content !resize-none !min-w-full !max-w-full !w-full !overflow-y-auto !overflow-x-hidden",
+                "rich-textarea-content resize-none! min-w-full! max-w-full! w-full! overflow-y-auto! overflow-x-hidden!",
                 "focus:outline-none focus-visible:outline-none flex-1 relative z-10",
                 className
               )}
@@ -1195,7 +1243,7 @@ const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
             />
 
             {(showCharCount || maxLength) && (
-              <div className="flex justify-end px-3 py-2 border-t border-input flex-shrink-0 bg-background">
+              <div className="flex justify-end px-3 py-2 border-t border-input shrink-0 bg-background">
                 <span
                   className={cn(
                     "text-xs text-muted-foreground",

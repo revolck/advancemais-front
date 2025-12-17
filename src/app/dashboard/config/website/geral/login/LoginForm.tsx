@@ -17,6 +17,8 @@ import {
   type LoginImageBackendResponse,
 } from "@/api/websites/components";
 import { uploadImage, deleteImage, getImageTitle } from "@/services/upload";
+import { Settings } from "lucide-react";
+import { FormLoadingModal } from "@/components/ui/custom/form-loading-modal";
 
 interface LoginContent {
   id?: string;
@@ -29,6 +31,7 @@ export default function LoginForm() {
   const [content, setContent] = useState<LoginContent>({});
   const [files, setFiles] = useState<FileUploadItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingStep, setLoadingStep] = useState<string>("");
   const [logs, setLogs] = useState<string[]>([]);
   const [isFetching, setIsFetching] = useState(true);
   const [oldImageUrl, setOldImageUrl] = useState<string | undefined>(undefined);
@@ -150,7 +153,7 @@ export default function LoginForm() {
     }
 
     setIsLoading(true);
-    toastCustom.info("Salvando conteúdo...");
+    setLoadingStep("Salvando conteúdo...");
 
     let uploadResult: { url: string; title: string } | undefined;
 
@@ -167,6 +170,7 @@ export default function LoginForm() {
       const previousUrl = oldImageUrl;
 
       if (fileItem?.file) {
+        setLoadingStep("Fazendo upload da imagem...");
         addLog(`Upload iniciado: ${fileItem.name}`);
         try {
           uploadResult = await uploadImage(
@@ -195,6 +199,7 @@ export default function LoginForm() {
 
       addLog(`Payload enviado: ${JSON.stringify(payload)}`);
 
+      setLoadingStep("Salvando configurações...");
       const saved = content.id
         ? await updateLoginImage(content.id, payload)
         : await createLoginImage(payload);
@@ -206,6 +211,7 @@ export default function LoginForm() {
         return;
       }
 
+      setLoadingStep("Finalizando...");
       if (content.id) {
         toastCustom.success("Imagem de login atualizada com sucesso!");
       } else {
@@ -297,11 +303,18 @@ export default function LoginForm() {
       }
     } finally {
       setIsLoading(false);
+      setLoadingStep("");
     }
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 relative">
+      <FormLoadingModal
+        isLoading={isLoading}
+        title="Salvando..."
+        loadingStep={loadingStep}
+        icon={Settings}
+      />
       {isFetching ? (
         <div className="space-y-6">
           <Skeleton className="h-40 w-full" />

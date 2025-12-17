@@ -16,7 +16,8 @@ import {
   StepperSeparator,
 } from "@/components/ui/custom";
 import { CardCustom } from "@/components/ui/custom";
-import { Check, Loader2, CheckCircle2 } from "lucide-react";
+import { Check, Loader2, CheckCircle2, Users } from "lucide-react";
+import { FormLoadingModal } from "@/components/ui/custom/form-loading-modal";
 import { motion, AnimatePresence } from "framer-motion";
 import { InputCustom } from "@/components/ui/custom/input";
 import { DatePickerRangeCustom } from "@/components/ui/custom/date-picker";
@@ -204,6 +205,7 @@ export function CreateTurmaForm({ onSuccess }: CreateTurmaFormProps) {
   const [dataInscricaoInicio, setDataInscricaoInicio] = useState<string>("");
   const [dataInscricaoFim, setDataInscricaoFim] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loadingStep, setLoadingStep] = useState<string>("");
   const [step, setStep] = useState(1); // 1: Fluxo & iniciais, 2: Configurações, 3: Estrutura, 4: Revisão
   // Imagem do curso/turma (opcional)
   // imagem foi removida do cadastro de turmas
@@ -402,6 +404,7 @@ export function CreateTurmaForm({ onSuccess }: CreateTurmaFormProps) {
     e.preventDefault();
     if (!validate()) return;
     setIsSubmitting(true);
+    setLoadingStep("Criando turma...");
     try {
       const payload: CreateTurmaPayload = {
         nome: nome.trim(),
@@ -466,7 +469,9 @@ export function CreateTurmaForm({ onSuccess }: CreateTurmaFormProps) {
             }) || [],
         },
       };
+      setLoadingStep("Salvando turma...");
       await createTurma(cursoId!, payload);
+      setLoadingStep("Finalizando...");
       toastCustom.success({ title: "Turma criada com sucesso" });
       onSuccess?.();
     } catch (err: any) {
@@ -476,11 +481,19 @@ export function CreateTurmaForm({ onSuccess }: CreateTurmaFormProps) {
       });
     } finally {
       setIsSubmitting(false);
+      setLoadingStep("");
     }
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 relative">
+      <FormLoadingModal
+        isLoading={isSubmitting}
+        title="Criando turma..."
+        loadingStep={loadingStep}
+        icon={Users}
+      />
+
       {/* Header com Stepper */}
       <div className="rounded-3xl border border-gray-200 bg-gray-50 p-4">
         <Stepper

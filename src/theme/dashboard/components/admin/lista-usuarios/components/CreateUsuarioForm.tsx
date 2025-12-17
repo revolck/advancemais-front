@@ -15,7 +15,8 @@ import {
   type TipoUsuario,
   type StatusUsuario,
 } from "@/api/usuarios";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2, User } from "lucide-react";
+import { FormLoadingModal } from "@/components/ui/custom/form-loading-modal";
 import { invalidateUsuarios } from "@/lib/react-query/invalidation";
 import { lookupCep, normalizeCep } from "@/lib/cep";
 
@@ -164,6 +165,7 @@ export function CreateUsuarioForm({
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingStep, setLoadingStep] = useState<string>("");
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>(
     {}
   );
@@ -432,6 +434,7 @@ export function CreateUsuarioForm({
     e.preventDefault();
     if (!validateForm()) return;
     setIsLoading(true);
+    setLoadingStep("Criando usuário...");
     try {
       const payload: CreateUsuarioPayload = {
         nomeCompleto: formData.nomeCompleto.trim(),
@@ -470,9 +473,11 @@ export function CreateUsuarioForm({
         cep: formData.cep.replace(/\D/g, ""),
       };
 
+      setLoadingStep("Salvando usuário...");
       const response = await createUsuario(payload);
 
       if (response.success) {
+        setLoadingStep("Finalizando...");
         toastCustom.success({
           title: "Sucesso!",
           description: "Usuário cadastrado com sucesso",
@@ -517,11 +522,18 @@ export function CreateUsuarioForm({
       }
     } finally {
       setIsLoading(false);
+      setLoadingStep("");
     }
   };
 
   return (
-    <div className="w-full">
+    <div className="w-full relative">
+      <FormLoadingModal
+        isLoading={isLoading}
+        title="Criando usuário..."
+        loadingStep={loadingStep}
+        icon={User}
+      />
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="rounded-3xl bg-white p-6 border border-gray-200 space-y-4">
           <div className="grid grid-cols-1 md:[grid-template-columns:0.2fr_0.2fr_0.6fr] gap-4">

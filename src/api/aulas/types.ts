@@ -133,9 +133,7 @@ export interface CreateAulaPayload {
   gravarAula?: boolean; // Novo campo (apenas AO_VIVO/SEMIPRESENCIAL com Meet)
 }
 
-export interface UpdateAulaPayload extends Partial<CreateAulaPayload> {
-  // Todos os campos são opcionais, herdados de CreateAulaPayload
-}
+export type UpdateAulaPayload = Partial<CreateAulaPayload>;
 
 export interface UpdateProgressoPayload {
   inscricaoId: string;

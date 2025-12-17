@@ -32,5 +32,22 @@
     "isActive": true,
     "createdAt": "2025-12-12T00:00:00.000Z",
     "updatedAt": "2025-12-12T00:00:00.000Z"
+  },
+  {
+    "id": "3",
+    "title": "Cadastro, visualização e edição de empresas",
+    "description": "Cadastro, visualização e edição de empresas para atender às suas necessidades específicas.",
+    "url": "https://www.youtube.com/embed/WOXRHNcjU8E",
+    "duration": "07:15",
+    "thumbnailUrl": "https://i.imgur.com/ZK6NG3m.png",
+    "posterUrl": "https://i.imgur.com/ZK6NG3m.png",
+    "category": "Empresas",
+    "module": "empresas",
+    "level": "Básico",
+    "tags": ["empresas", "cadastro", "visualização", "edição"],
+    "transcript": "Você pode cadastrar, visualizar e editar as empresas para atender às suas necessidades específicas.",
+    "isActive": true,
+    "createdAt": "2025-12-12T00:00:00.000Z",
+    "updatedAt": "2025-12-12T00:00:00.000Z"
   }
 ]
