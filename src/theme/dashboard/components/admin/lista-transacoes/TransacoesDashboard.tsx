@@ -53,48 +53,54 @@ export function TransacoesDashboard({ className }: { className?: string }) {
   type SortDirection = "asc" | "desc";
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
 
-  const tipoOptions: SelectOption[] = useMemo(() => [
-    { value: "PAGAMENTO", label: "Pagamento" },
-    { value: "REEMBOLSO", label: "Reembolso" },
-    { value: "ESTORNO", label: "Estorno" },
-    { value: "ASSINATURA", label: "Assinatura" },
-    { value: "CUPOM", label: "Cupom" },
-    { value: "TAXA", label: "Taxa" },
-  ], []);
+  const tipoOptions: SelectOption[] = useMemo(
+    () => [
+      { value: "PAGAMENTO", label: "Pagamento" },
+      { value: "REEMBOLSO", label: "Reembolso" },
+      { value: "ESTORNO", label: "Estorno" },
+      { value: "ASSINATURA", label: "Assinatura" },
+      { value: "CUPOM", label: "Cupom" },
+      { value: "TAXA", label: "Taxa" },
+    ],
+    []
+  );
 
-  const statusOptions: SelectOption[] = useMemo(() => [
-    { value: "PENDENTE", label: "Pendente" },
-    { value: "PROCESSANDO", label: "Processando" },
-    { value: "APROVADA", label: "Aprovada" },
-    { value: "RECUSADA", label: "Recusada" },
-    { value: "CANCELADA", label: "Cancelada" },
-    { value: "ESTORNADA", label: "Estornada" },
-  ], []);
+  const statusOptions: SelectOption[] = useMemo(
+    () => [
+      { value: "PENDENTE", label: "Pendente" },
+      { value: "PROCESSANDO", label: "Processando" },
+      { value: "APROVADA", label: "Aprovada" },
+      { value: "RECUSADA", label: "Recusada" },
+      { value: "CANCELADA", label: "Cancelada" },
+      { value: "ESTORNADA", label: "Estornada" },
+    ],
+    []
+  );
 
   const normalizedFilters = useMemo(() => {
     return {
       page: currentPage,
       pageSize,
-      tipo: selectedTipos.length > 0
-        ? selectedTipos.length === 1
-          ? selectedTipos[0]
-          : selectedTipos
-        : null,
-      status: selectedStatuses.length > 0
-        ? selectedStatuses.length === 1
-          ? selectedStatuses[0]
-          : selectedStatuses
-        : null,
+      tipo:
+        selectedTipos.length > 0
+          ? selectedTipos.length === 1
+            ? selectedTipos[0]
+            : selectedTipos
+          : null,
+      status:
+        selectedStatuses.length > 0
+          ? selectedStatuses.length === 1
+            ? selectedStatuses[0]
+            : selectedStatuses
+          : null,
     };
-  }, [
-    currentPage,
-    pageSize,
-    selectedTipos,
-    selectedStatuses,
-  ]);
+  }, [currentPage, pageSize, selectedTipos, selectedStatuses]);
 
   const transacoesQuery = useTransacoesDashboardQuery(normalizedFilters);
-  const transacoes = useMemo(() => transacoesQuery.data?.transacoes ?? [], [transacoesQuery.data?.transacoes]);
+  const transacoes = useMemo(
+    () => transacoesQuery.data?.transacoes ?? [],
+    [transacoesQuery.data?.transacoes]
+  );
 
   useEffect(() => {
     setCurrentPage(1);
@@ -116,17 +122,18 @@ export function TransacoesDashboard({ className }: { className?: string }) {
       setCurrentPage(Math.max(1, transacoesPagination.totalPages));
     }
   }, [transacoesPagination.totalPages, currentPage]);
-  
+
   const isLoading = transacoesQuery.isLoading;
   const isFetching = transacoesQuery.isFetching;
   const showSkeleton = isFetching;
-  
+
   const errorMessage = transacoesQuery.error
     ? transacoesQuery.error.message || "Erro ao carregar transações"
     : null;
   const showEmptyState = !isLoading && !isFetching && transacoes.length === 0;
   const emptyStateTitle = "Nenhuma transação encontrada";
-  const emptyStateDescription = "Não encontramos transações com os filtros aplicados. Tente ajustar sua busca.";
+  const emptyStateDescription =
+    "Não encontramos transações com os filtros aplicados. Tente ajustar sua busca.";
 
   const searchValidationMessage = useMemo(
     () => getSearchValidationMessage(pendingSearchTerm),
@@ -135,7 +142,10 @@ export function TransacoesDashboard({ className }: { className?: string }) {
   const isSearchInputValid = !searchValidationMessage;
 
   const handlePageChange = (page: number) => {
-    const nextPage = Math.max(1, Math.min(page, Math.max(1, pagination.totalPages)));
+    const nextPage = Math.max(
+      1,
+      Math.min(page, Math.max(1, pagination.totalPages))
+    );
     setCurrentPage(nextPage);
   };
 
@@ -355,7 +365,9 @@ export function TransacoesDashboard({ className }: { className?: string }) {
                               />
                             </button>
                           </TooltipTrigger>
-                          <TooltipContent sideOffset={6}>Mais antigo primeiro</TooltipContent>
+                          <TooltipContent sideOffset={6}>
+                            Mais antigo primeiro
+                          </TooltipContent>
                         </Tooltip>
                         <Tooltip>
                           <TooltipTrigger asChild>
@@ -374,7 +386,9 @@ export function TransacoesDashboard({ className }: { className?: string }) {
                               />
                             </button>
                           </TooltipTrigger>
-                          <TooltipContent sideOffset={6}>Mais recente primeiro</TooltipContent>
+                          <TooltipContent sideOffset={6}>
+                            Mais recente primeiro
+                          </TooltipContent>
                         </Tooltip>
                       </div>
                     </div>
@@ -443,7 +457,9 @@ export function TransacoesDashboard({ className }: { className?: string }) {
                               />
                             </button>
                           </TooltipTrigger>
-                          <TooltipContent sideOffset={6}>Mais antigo primeiro</TooltipContent>
+                          <TooltipContent sideOffset={6}>
+                            Mais antigo primeiro
+                          </TooltipContent>
                         </Tooltip>
                         <Tooltip>
                           <TooltipTrigger asChild>
@@ -462,7 +478,9 @@ export function TransacoesDashboard({ className }: { className?: string }) {
                               />
                             </button>
                           </TooltipTrigger>
-                          <TooltipContent sideOffset={6}>Mais recente primeiro</TooltipContent>
+                          <TooltipContent sideOffset={6}>
+                            Mais recente primeiro
+                          </TooltipContent>
                         </Tooltip>
                       </div>
                     </div>
@@ -544,7 +562,8 @@ export function TransacoesDashboard({ className }: { className?: string }) {
                     </ButtonCustom>
                   ))}
 
-                  {visiblePages[visiblePages.length - 1] < pagination.totalPages && (
+                  {visiblePages[visiblePages.length - 1] <
+                    pagination.totalPages && (
                     <>
                       {visiblePages[visiblePages.length - 1] <
                         pagination.totalPages - 1 && (
@@ -585,4 +604,3 @@ export function TransacoesDashboard({ className }: { className?: string }) {
 }
 
 export default TransacoesDashboard;
-

@@ -138,7 +138,7 @@ export const SignInPage: React.FC<SignInPageProps> = ({
                     id="rememberMe"
                     checked={rememberMe}
                     onCheckedChange={(v) => setRememberMe(v === true)}
-                    className="cursor-pointer bg-gray-200"
+                    className="cursor-pointer bg-gray-400/30"
                   />
                   <Label
                     htmlFor="rememberMe"

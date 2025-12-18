@@ -92,7 +92,7 @@ export function useAlunosDashboardQuery(filters: NormalizedAlunosFilters) {
         if (filters.search && filters.search.length >= 3) {
           const searchLower = filters.search.toLowerCase();
           const matchesSearch =
-            aluno.nome.toLowerCase().includes(searchLower) ||
+            (aluno.nome || "").toLowerCase().includes(searchLower) ||
             (aluno.email || "").toLowerCase().includes(searchLower) ||
             (aluno.cpf || "").toLowerCase().includes(searchLower) ||
             aluno.id.toLowerCase().includes(searchLower);

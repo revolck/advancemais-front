@@ -176,10 +176,12 @@ export function AlunoRow({
           <Avatar className="h-8 w-8 flex-shrink-0">
             <AvatarImage
               src={(aluno as any)?.avatarUrl || undefined}
-              alt={aluno.nome}
+              alt={aluno.nome || aluno.id}
             />
             <AvatarFallback className="bg-gray-100 text-gray-600 text-xs font-medium">
-              {aluno.nome.substring(0, 2).toUpperCase()}
+              {aluno.nome
+                ? aluno.nome.substring(0, 2).toUpperCase()
+                : aluno.id.substring(0, 2).toUpperCase()}
             </AvatarFallback>
           </Avatar>
           <div className="min-w-0">

@@ -497,7 +497,7 @@ export function CandidatosTab({ vaga }: AboutTabProps) {
     try {
       // Busca os detalhes da candidatura (que inclui o currículo completo)
       const response = await getCandidaturaDetalhe(candidato.candidaturaId);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       const responseAny = response as any;
       const candidaturaData = responseAny?.candidatura ?? responseAny;
       const curriculo = candidaturaData?.curriculo;

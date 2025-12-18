@@ -8,6 +8,7 @@ import {
   ButtonCustom,
   toastCustom,
   OfflineModal,
+  FormLoadingModal,
 } from "@/components/ui/custom";
 import TermsOfUseModal from "@/components/partials/auth/register/terms-of-use-modal";
 import PrivacyPolicyModal from "@/components/partials/auth/register/privacy-policy-modal";
@@ -59,6 +60,25 @@ const PASSWORD_REQUIREMENTS = [
 const isPasswordStrong = (value: string): boolean =>
   PASSWORD_REQUIREMENTS.every((requirement) => requirement.validate(value));
 
+/**
+ * Capitaliza o nome corretamente (primeira letra de cada palavra em maiúscula)
+ * Exemplo: "FILIPE REIS MARQUES" -> "Filipe Reis Marques"
+ */
+const capitalizeName = (name: string): string => {
+  return name
+    .trim()
+    .toLowerCase()
+    .split(/\s+/)
+    .map((word) => {
+      // Ignora palavras muito curtas (artigos, preposições) ou mantém como está
+      if (word.length <= 2) {
+        return word;
+      }
+      return word.charAt(0).toUpperCase() + word.slice(1);
+    })
+    .join(" ");
+};
+
 const createInitialFormData = (): RegisterFormData => ({
   name: "",
   document: "",
@@ -72,6 +92,7 @@ const RegisterPage = () => {
   const [selectedType, setSelectedType] = useState<SelectedType>(null);
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const [loadingStep, setLoadingStep] = useState<string>("");
   const [formData, setFormData] = useState<RegisterFormData>(() =>
     createInitialFormData()
   );
@@ -332,6 +353,8 @@ const RegisterPage = () => {
     }
 
     startTransition(async () => {
+      setLoadingStep("Validando dados...");
+
       const documentoLimpo = maskService.removeMask(
         formData.document,
         selectedType === "company" ? "cnpj" : "cpf"
@@ -341,9 +364,11 @@ const RegisterPage = () => {
       const tipoUsuario: UsuarioRegisterPayload["tipoUsuario"] =
         isCompanyAccount ? "PESSOA_JURIDICA" : "PESSOA_FISICA";
 
+      setLoadingStep("Preparando cadastro...");
+
       // Criar payload baseado no tipo selecionado
       const payloadForApi: UsuarioRegisterPayload = {
-        nomeCompleto: formData.name.trim(),
+        nomeCompleto: capitalizeName(formData.name),
         telefone: telefoneFormatado,
         email: formData.email.trim().toLowerCase(),
         senha: formData.password,
@@ -383,9 +408,17 @@ const RegisterPage = () => {
       };
 
       try {
+        setLoadingStep(
+          isCompanyAccount
+            ? "Criando conta da empresa..."
+            : selectedType === "student"
+            ? "Criando conta do aluno..."
+            : "Criando conta do candidato..."
+        );
         const response = await registerUser(payloadForApi);
 
         if (response.success) {
+          setLoadingStep("Finalizando...");
           toastCustom.success(
             response.message ||
               "Cadastro realizado com sucesso! Verifique seu email para confirmar."
@@ -436,6 +469,8 @@ const RegisterPage = () => {
         }
 
         toastCustom.error(message);
+      } finally {
+        setLoadingStep("");
       }
     });
   };
@@ -446,237 +481,250 @@ const RegisterPage = () => {
 
     return (
       <form onSubmit={handleSignUp} className="space-y-5 sm:space-y-6">
-        {/* Cabeçalho centralizado com botão à direita */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 items-center gap-3">
-          <div className="hidden sm:block" />
-          <div className="text-center space-y-1">
-            <div className="flex items-center justify-center gap-2 mb-2">
-              <h1 className="!text-2xl sm:text-xl md:text-2xl !mb-0 font-semibold text-gray-900 leading-tight">
-                Criar conta como{" "}
-                {userTypes.find((type) => type.id === selectedType)?.title}
-              </h1>
-            </div>
-            <p className="sm:text-sm text-gray-500">
-              {userTypes.find((type) => type.id === selectedType)?.description}
-            </p>
-          </div>
-          <div className="flex justify-end">
-            <ButtonCustom
-              onClick={resetForm}
-              type="button"
-              variant="ghost"
-              size="sm"
-              icon="ArrowLeft"
-              className="bg-gray-400/10 hover:bg-gray-400/30"
-            >
-              Voltar
-            </ButtonCustom>
-          </div>
-        </div>
-
-        <div className="space-y-3 sm:space-y-4">
-          {/* Nome + Documento na mesma linha */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <InputCustom
-              label={isCompany ? "Nome da empresa" : "Nome completo"}
-              name="name"
-              value={formData.name}
-              onChange={(e) => handleInputChange("name", e.target.value)}
-              placeholder={
-                isCompany ? "Digite o nome da sua empresa" : "Digite seu nome"
-              }
-              size="md"
-              className="text-sm"
-              required
-            />
-            <InputCustom
-              label={isCompany ? "CNPJ" : "CPF"}
-              name="document"
-              value={formData.document}
-              onChange={(e) => handleInputChange("document", e.target.value)}
-              mask={isCompany ? "cnpj" : "cpf"}
-              placeholder={isCompany ? "00.000.000/0000-00" : "000.000.000-00"}
-              size="md"
-              className="text-sm"
-              required
-            />
-          </div>
-
-          <div className="space-y-3 sm:space-y-0 sm:grid sm:grid-cols-2 sm:gap-4">
-            <InputCustom
-              label="Telefone/Whatsapp"
-              name="phone"
-              value={formData.phone}
-              onChange={(e) => handleInputChange("phone", e.target.value)}
-              mask="phone"
-              placeholder="(00) 00000-0000"
-              size="md"
-              className="text-sm"
-              required
-            />
-
-            <InputCustom
-              label="Email"
-              name="email"
-              type="email"
-              value={formData.email}
-              onChange={(e) => handleInputChange("email", e.target.value)}
-              mask="email"
-              placeholder="seuemail@email.com"
-              size="md"
-              className="text-sm"
-              required
-            />
-          </div>
-
-          <div className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <InputCustom
-                label="Senha"
-                name="password"
-                type="password"
-                value={formData.password}
-                onChange={(e) => handleInputChange("password", e.target.value)}
-                placeholder="••••••••"
-                showPasswordToggle
-                size="md"
-                className="text-sm"
-                required
-              />
-
-              <InputCustom
-                label="Confirmar senha"
-                name="confirmPassword"
-                type="password"
-                value={formData.confirmPassword}
-                onChange={(e) =>
-                  handleInputChange("confirmPassword", e.target.value)
+        <fieldset disabled={isPending}>
+          {/* Cabeçalho centralizado com botão à direita */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 items-center gap-3">
+            <div className="hidden sm:block" />
+            <div className="text-center space-y-1">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <h1 className="!text-2xl sm:text-xl md:text-2xl !mb-0 font-semibold text-gray-900 leading-tight">
+                  Criar conta como{" "}
+                  {userTypes.find((type) => type.id === selectedType)?.title}
+                </h1>
+              </div>
+              <p className="sm:text-sm text-gray-500">
+                {
+                  userTypes.find((type) => type.id === selectedType)
+                    ?.description
                 }
-                placeholder="••••••••"
-                showPasswordToggle
-                size="md"
-                className="text-sm"
-                error={
-                  passwordMismatch
-                    ? "As senhas não são iguais. Confira os campos."
-                    : undefined
-                }
-                required
-              />
-            </div>
-
-            <div className="rounded-2xl border border-gray-200 bg-gray-100/30 p-4">
-              <p className="!mb-0 text-sm">Sua senha deve conter:</p>
-              <ul className="mt-2 space-y-2 text-left text-sm">
-                {satisfiedRequirements.map((requirement) => (
-                  <li key={requirement.id} className="flex items-center gap-2">
-                    <span
-                      className={`flex h-4 w-4 items-center justify-center rounded-full border text-[11px] font-semibold transition ${
-                        requirement.satisfied
-                          ? "border-emerald-500 bg-emerald-500 text-white"
-                          : "border-[var(--primary-color)]/40 bg-white text-[var(--primary-color)]/70"
-                      }`}
-                      aria-hidden
-                    >
-                      {requirement.satisfied ? "✓" : ""}
-                    </span>
-                    <span
-                      className={
-                        requirement.satisfied
-                          ? "text-foreground"
-                          : "text-muted-foreground"
-                      }
-                    >
-                      {requirement.label}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {passwordValidationMessage && (
-              <p
-                className="text-sm font-medium text-destructive"
-                role="alert"
-                aria-live="assertive"
-              >
-                {passwordValidationMessage}
               </p>
+            </div>
+            <div className="flex justify-end">
+              <ButtonCustom
+                onClick={resetForm}
+                type="button"
+                variant="ghost"
+                size="sm"
+                icon="ArrowLeft"
+                className="bg-gray-400/10 hover:bg-gray-400/30"
+              >
+                Voltar
+              </ButtonCustom>
+            </div>
+          </div>
+
+          <div className="space-y-3 sm:space-y-4">
+            {/* Nome + Documento na mesma linha */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <InputCustom
+                label={isCompany ? "Nome da empresa" : "Nome completo"}
+                name="name"
+                value={formData.name}
+                onChange={(e) => handleInputChange("name", e.target.value)}
+                placeholder={
+                  isCompany ? "Digite o nome da sua empresa" : "Digite seu nome"
+                }
+                size="md"
+                className="text-sm"
+                required
+              />
+              <InputCustom
+                label={isCompany ? "CNPJ" : "CPF"}
+                name="document"
+                value={formData.document}
+                onChange={(e) => handleInputChange("document", e.target.value)}
+                mask={isCompany ? "cnpj" : "cpf"}
+                placeholder={
+                  isCompany ? "00.000.000/0000-00" : "000.000.000-00"
+                }
+                size="md"
+                className="text-sm"
+                required
+              />
+            </div>
+
+            <div className="space-y-3 sm:space-y-0 sm:grid sm:grid-cols-2 sm:gap-4">
+              <InputCustom
+                label="Telefone/Whatsapp"
+                name="phone"
+                value={formData.phone}
+                onChange={(e) => handleInputChange("phone", e.target.value)}
+                mask="phone"
+                placeholder="(00) 00000-0000"
+                size="md"
+                className="text-sm"
+                required
+              />
+
+              <InputCustom
+                label="Email"
+                name="email"
+                type="email"
+                value={formData.email}
+                onChange={(e) => handleInputChange("email", e.target.value)}
+                mask="email"
+                placeholder="seuemail@email.com"
+                size="md"
+                className="text-sm"
+                required
+              />
+            </div>
+
+            <div className="space-y-4">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <InputCustom
+                  label="Senha"
+                  name="password"
+                  type="password"
+                  value={formData.password}
+                  onChange={(e) =>
+                    handleInputChange("password", e.target.value)
+                  }
+                  placeholder="••••••••"
+                  showPasswordToggle
+                  size="md"
+                  className="text-sm"
+                  required
+                />
+
+                <InputCustom
+                  label="Confirmar senha"
+                  name="confirmPassword"
+                  type="password"
+                  value={formData.confirmPassword}
+                  onChange={(e) =>
+                    handleInputChange("confirmPassword", e.target.value)
+                  }
+                  placeholder="••••••••"
+                  showPasswordToggle
+                  size="md"
+                  className="text-sm"
+                  error={
+                    passwordMismatch
+                      ? "As senhas não são iguais. Confira os campos."
+                      : undefined
+                  }
+                  required
+                />
+              </div>
+
+              <div className="rounded-2xl border border-gray-200 bg-gray-100/30 p-4">
+                <p className="!mb-0 text-sm">Sua senha deve conter:</p>
+                <ul className="mt-2 space-y-2 text-left text-sm">
+                  {satisfiedRequirements.map((requirement) => (
+                    <li
+                      key={requirement.id}
+                      className="flex items-center gap-2"
+                    >
+                      <span
+                        className={`flex h-4 w-4 items-center justify-center rounded-full border text-[11px] font-semibold transition ${
+                          requirement.satisfied
+                            ? "border-emerald-500 bg-emerald-500 text-white"
+                            : "border-[var(--primary-color)]/40 bg-white text-[var(--primary-color)]/70"
+                        }`}
+                        aria-hidden
+                      >
+                        {requirement.satisfied ? "✓" : ""}
+                      </span>
+                      <span
+                        className={
+                          requirement.satisfied
+                            ? "text-foreground"
+                            : "text-muted-foreground"
+                        }
+                      >
+                        {requirement.label}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {passwordValidationMessage && (
+                <p
+                  className="text-sm font-medium text-destructive"
+                  role="alert"
+                  aria-live="assertive"
+                >
+                  {passwordValidationMessage}
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-start space-x-3 pt-4 sm:pt-6">
+            <Checkbox
+              id="terms"
+              checked={acceptTerms}
+              onCheckedChange={(v) => setAcceptTerms(!!v)}
+              className="mt-0.5 cursor-pointer bg-gray-400/30"
+            />
+            <Label
+              htmlFor="terms"
+              className="sm:text-sm text-gray-600 leading-relaxed cursor-pointer"
+            >
+              Concordo com os{" "}
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  setIsTermsModalOpen(true);
+                }}
+                className="text-blue-600 hover:underline font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white rounded"
+              >
+                Termos de Uso
+              </button>{" "}
+              e{" "}
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  setIsPrivacyModalOpen(true);
+                }}
+                className="text-blue-600 hover:underline font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white rounded"
+              >
+                Política de Privacidade
+              </button>
+              .
+            </Label>
+          </div>
+
+          <div className="space-y-3 pt-2 sm:pt-4">
+            <ButtonCustom
+              type="submit"
+              fullWidth
+              size="lg"
+              variant="primary"
+              disabled={!isFormValid() || isPending}
+              isLoading={isPending}
+              loadingText={`Criando conta ${
+                selectedType === "company"
+                  ? "da empresa"
+                  : selectedType === "student"
+                  ? "do aluno"
+                  : "do candidato"
+              }...`}
+            >
+              Criar conta
+            </ButtonCustom>
+
+            {isPending && (
+              <div className="text-center">
+                <p className="text-sm text-gray-500">
+                  Enviando dados para{" "}
+                  {selectedType === "company"
+                    ? "cadastro de empresa"
+                    : selectedType === "student"
+                    ? "cadastro de aluno"
+                    : "cadastro de candidato"}
+                  ...
+                </p>
+              </div>
             )}
           </div>
-        </div>
-
-        <div className="flex items-start space-x-2.5 pt-1">
-          <Checkbox
-            id="terms"
-            checked={acceptTerms}
-            onCheckedChange={(v) => setAcceptTerms(!!v)}
-          />
-          <Label
-            htmlFor="terms"
-            className="sm:text-sm text-gray-600 leading-5 cursor-pointer"
-          >
-            Li e aceito os{" "}
-            <button
-              type="button"
-              onClick={(event) => {
-                event.preventDefault();
-                event.stopPropagation();
-                setIsTermsModalOpen(true);
-              }}
-              className="text-blue-600 hover:underline font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white rounded"
-            >
-              Termos de Uso
-            </button>
-            , a{" "}
-            <button
-              type="button"
-              onClick={(event) => {
-                event.preventDefault();
-                event.stopPropagation();
-                setIsPrivacyModalOpen(true);
-              }}
-              className="text-blue-600 hover:underline font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white rounded"
-            >
-              Política de Privacidade
-            </button>{" "}
-            e autorizo o uso das minhas informações conforme descrito.
-          </Label>
-        </div>
-
-        <div className="space-y-3">
-          <ButtonCustom
-            type="submit"
-            fullWidth
-            size="lg"
-            variant="primary"
-            disabled={!isFormValid() || isPending}
-            isLoading={isPending}
-            loadingText={`Criando conta ${
-              selectedType === "company"
-                ? "da empresa"
-                : selectedType === "student"
-                ? "do aluno"
-                : "do candidato"
-            }...`}
-          >
-            Criar conta
-          </ButtonCustom>
-
-          {isPending && (
-            <div className="text-center">
-              <p className="text-sm text-gray-500">
-                Enviando dados para{" "}
-                {selectedType === "company"
-                  ? "cadastro de empresa"
-                  : selectedType === "student"
-                  ? "cadastro de aluno"
-                  : "cadastro de candidato"}
-                ...
-              </p>
-            </div>
-          )}
-        </div>
+        </fieldset>
       </form>
     );
   };
@@ -810,7 +858,7 @@ const RegisterPage = () => {
           </p>
           <div className="flex flex-wrap items-center justify-center text-[12px] sm:text-sm text-white/80">
             <a
-              href="http://advancemais.com/politica-privacidade"
+              href="/politica-privacidade"
               target="_blank"
               rel="noopener noreferrer"
               className="hover:text-white transition-colors px-3"
@@ -822,7 +870,7 @@ const RegisterPage = () => {
               aria-hidden
             ></span>
             <a
-              href="http://advancemais.com/termos-uso"
+              href="/termos-uso"
               target="_blank"
               rel="noopener noreferrer"
               className="hover:text-white transition-colors px-3"
@@ -833,7 +881,12 @@ const RegisterPage = () => {
               className="h-4 w-px bg-blue-800/20 self-center"
               aria-hidden
             ></span>
-            <a href="#" className="hover:text-white transition-colors px-3">
+            <a
+              href="/cookies"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-white transition-colors px-3"
+            >
               Preferências de Cookies
             </a>
           </div>
@@ -855,6 +908,18 @@ const RegisterPage = () => {
         documentValue={formData.document}
       />
       <OfflineModal />
+      <FormLoadingModal
+        isLoading={isPending}
+        title={
+          selectedType === "company"
+            ? "Criando conta da empresa..."
+            : selectedType === "student"
+            ? "Criando conta do aluno..."
+            : "Criando conta do candidato..."
+        }
+        loadingStep={loadingStep}
+        icon={User}
+      />
     </div>
   );
 };

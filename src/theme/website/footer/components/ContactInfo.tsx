@@ -14,45 +14,59 @@ export const ContactInfo: React.FC<ContactInfoProps> = ({ contact }) => {
     <div className="flex-1">
       {/* Horário de Atendimento */}
       <div className="mb-6">
-        <div className="flex items-center gap-2 mb-2">
-          <Clock className="w-4 h-4 text-red-600" />
-          <span className="font-semibold text-white text-sm">
-            Horário de atendimento:
-          </span>
+        <div className="flex items-center gap-2 mb-4">
+          <Clock
+            className="w-5 h-5 text-red-600 shrink-0"
+            aria-hidden="true"
+            focusable="false"
+          />
+          <h4 className="text-sm! font-semibold! uppercase! text-white! leading-none! mb-0!">
+            Horário de Atendimento
+          </h4>
         </div>
-        <p className="text-gray-400 text-sm ml-6">
-          {contact.hours}
-        </p>
+        <ul className="space-y-2">
+          <li>
+            <p className="text-gray-400! text-sm! mb-0!">
+              {contact.hours}
+            </p>
+          </li>
+        </ul>
       </div>
 
       {/* Contatos */}
       <div className="mb-6">
-        <div className="flex items-center gap-2 mb-2">
-          <Phone className="w-4 h-4 text-red-600" />
-          <span className="font-semibold text-white text-sm">Contato:</span>
+        <div className="flex items-center gap-2 mb-4">
+          <Phone
+            className="w-5 h-5 text-red-600 shrink-0"
+            aria-hidden="true"
+            focusable="false"
+          />
+          <h4 className="text-sm! font-semibold! uppercase! text-white! leading-none! mb-0!">
+            Contato
+          </h4>
         </div>
-        <div className="text-gray-400 text-sm ml-6 space-y-1">
+        <ul className="space-y-2">
           {contact.phones.map((phone, index) => (
-            <div key={index}>
+            <li key={index}>
               <a
                 href={`tel:${phone.replace(/\D/g, "")}`}
-                className="hover:text-white transition-colors"
+                className="text-gray-400! hover:text-white! transition-colors! duration-200! text-sm! mb-0!"
               >
                 {phone}
               </a>
-            </div>
+            </li>
           ))}
           {contact.email && (
-            <div>
+            <li>
               <a
                 href={`mailto:${contact.email}`}
-                className="hover:text-white transition-colors"
+                className="text-gray-400! hover:text-white! transition-colors! duration-200! text-sm! mb-0!"
               >
                 {contact.email}
               </a>
-            </div>
+            </li>
           )}
-        </div>
+        </ul>
       </div>
     </div>
   );

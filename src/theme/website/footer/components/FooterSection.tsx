@@ -60,7 +60,7 @@ export const FooterSection: React.FC<FooterSectionProps> = ({
 
   return (
     <div className="flex-1">
-      <div className="flex items-center justify-center gap-2 mb-4">
+      <div className="flex items-center gap-2 mb-4">
         {SectionIcon && (
           <SectionIcon
             className="w-5 h-5 text-red-600 shrink-0"
@@ -68,12 +68,12 @@ export const FooterSection: React.FC<FooterSectionProps> = ({
             focusable="false"
           />
         )}
-        <h4 className="text-sm font-semibold uppercase text-white leading-none">
+        <h4 className="text-sm! font-semibold! uppercase! text-white! leading-none! mb-0!">
           {section.title}
         </h4>
       </div>
 
-      <ul className="space-y-3">
+      <ul className="space-y-2">
         {section.links.map((link, index) => {
           const LinkIcon = getIcon(link.icon);
 

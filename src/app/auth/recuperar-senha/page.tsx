@@ -4,9 +4,15 @@ import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { CheckCircle2, Loader2, TriangleAlert } from "lucide-react";
+import { CheckCircle2, Lock, ArrowLeft } from "lucide-react";
 
-import { ButtonCustom, InputCustom, toastCustom } from "@/components/ui/custom";
+import {
+  ButtonCustom,
+  InputCustom,
+  toastCustom,
+  FormLoadingModal,
+  EmptyState,
+} from "@/components/ui/custom";
 import {
   validatePasswordRecoveryToken,
   resetPasswordWithToken,
@@ -50,6 +56,7 @@ export default function PasswordResetPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loadingStep, setLoadingStep] = useState<string>("");
 
   const decodedEmail = useMemo(() => {
     if (!emailParam) return undefined;
@@ -70,15 +77,21 @@ export default function PasswordResetPage() {
     let isActive = true;
     setPageState("loading");
 
+    setLoadingStep("Validando token...");
     validatePasswordRecoveryToken(tokenParam)
       .then(() => {
         if (!isActive) return;
-        setPageState("ready");
+        setLoadingStep("Token válido");
+        setTimeout(() => {
+          setPageState("ready");
+          setLoadingStep("");
+        }, 500);
       })
       .catch((error) => {
         console.error("Erro ao validar token de recuperação", error);
         if (!isActive) return;
         setPageState("invalid");
+        setLoadingStep("");
       });
 
     return () => {
@@ -157,34 +170,32 @@ export default function PasswordResetPage() {
 
   const renderContent = () => {
     if (pageState === "loading") {
-      return (
-        <div className="flex flex-col items-center justify-center gap-4 py-10 text-center">
-          <Loader2
-            className="h-8 w-8 animate-spin text-[var(--primary-color)]"
-            aria-hidden
-          />
-          <p className="!font-medium">
-            Validando seu link seguro. Aguarde alguns instantes...
-          </p>
-        </div>
-      );
+      return null; // O FormLoadingModal já está sendo exibido
     }
 
     if (pageState === "invalid") {
       return (
-        <div className="flex flex-col items-center gap-4 py-10 text-center">
-          <TriangleAlert className="h-12 w-12 text-destructive" aria-hidden />
-          <div className="space-y-2">
-            <h2>Link inválido ou expirado</h2>
-            <p className="!leading-normal">
-              Solicite um novo e-mail de recuperação para garantir sua
-              segurança. O link pode ter sido usado ou expirou.
-            </p>
-          </div>
-          <ButtonCustom asChild variant="secondary" size="md" className="px-6">
-            <Link href="/login">Voltar para o login</Link>
-          </ButtonCustom>
-        </div>
+        <EmptyState
+          illustration="fileNotFound"
+          illustrationAlt="Link inválido ou expirado"
+          title="Link inválido ou expirado"
+          description="Solicite um novo e-mail de recuperação para garantir sua segurança. O link pode ter sido usado ou expirou."
+          maxContentWidth="md"
+          actions={
+            <ButtonCustom
+              asChild
+              variant="primary"
+              size="lg"
+              withAnimation
+              className="inline-flex items-center gap-2"
+            >
+              <Link href="/login">
+                <ArrowLeft className="w-4 h-4" />
+                Voltar para o login
+              </Link>
+            </ButtonCustom>
+          }
+        />
       );
     }
 
@@ -320,6 +331,13 @@ export default function PasswordResetPage() {
 
   return (
     <div className="flex min-h-[100dvh] w-full flex-col bg-white font-geist text-foreground">
+      <FormLoadingModal
+        isLoading={pageState === "loading"}
+        title="Verificando seu link de recuperação..."
+        loadingStep={loadingStep || "Processando"}
+        icon={Lock}
+      />
+
       <header className="w-full border-b border-gray-100">
         <div className="mx-auto flex max-w-5xl justify-center px-6 py-6">
           <Image

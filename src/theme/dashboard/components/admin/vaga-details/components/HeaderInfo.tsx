@@ -200,7 +200,10 @@ export function HeaderInfo({
             variant="outline"
             className="rounded-full border-none px-5 py-2 text-sm font-medium hover:bg-gray-200 bg-gray-100/70 hover:text-accent-foreground transition-all duration-200"
           >
-            <Link href="/dashboard/empresas/vagas" className="flex items-center gap-2">
+            <Link
+              href="/dashboard/empresas/vagas"
+              className="flex items-center gap-2"
+            >
               <ChevronLeft className="h-4 w-4" />
               Voltar
             </Link>

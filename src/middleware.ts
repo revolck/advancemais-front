@@ -39,8 +39,11 @@ const SYSTEM_CONFIG = {
     "/plataforma",
     "/suporte",
     "/privacidade",
+    "/politica-privacidade",
     "/termos",
+    "/termos-uso",
     "/cookies",
+    "/faq",
     "/components",
     "/checkout",
     "/planos",
@@ -60,10 +63,11 @@ const SYSTEM_CONFIG = {
     "/empresa": "/sobre",
     "/fale-conosco": "/contato",
     "/entre-em-contato": "/contato",
-    "/politica-privacidade": "/privacidade",
-    "/politica-de-privacidade": "/privacidade",
-    "/termos-de-uso": "/termos",
-    "/termos-servico": "/termos",
+    "/politica-de-privacidade": "/politica-privacidade",
+    "/privacidade": "/politica-privacidade",
+    "/termos-de-uso": "/termos-uso",
+    "/termos-servico": "/termos-uso",
+    "/termos": "/termos-uso",
     "/ajuda": "/suporte",
     "/help": "/suporte",
     "/planos": "/recrutamento",
@@ -177,7 +181,13 @@ function applyWebsiteHeaders(
   response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
 
   // Headers de cache para páginas estáticas
-  const staticPages = ["/", "/sobre", "/privacidade", "/termos"];
+  const staticPages = [
+    "/",
+    "/sobre",
+    "/politica-privacidade",
+    "/termos-uso",
+    "/faq",
+  ];
   if (staticPages.includes(pathname)) {
     response.headers.set(
       "Cache-Control",
@@ -188,7 +198,9 @@ function applyWebsiteHeaders(
   // Headers específicos para SEO
   if (pathname === "/") {
     response.headers.set("X-Robots-Tag", "index, follow, max-snippet:-1");
-  } else if (["/privacidade", "/termos", "/cookies"].includes(pathname)) {
+  } else if (
+    ["/politica-privacidade", "/termos-uso", "/cookies"].includes(pathname)
+  ) {
     response.headers.set("X-Robots-Tag", "noindex, follow");
   } else {
     response.headers.set("X-Robots-Tag", "index, follow");

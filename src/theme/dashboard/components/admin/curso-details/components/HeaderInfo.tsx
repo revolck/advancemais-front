@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -11,11 +10,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { ChevronDown, ChevronLeft, Edit } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Curso } from "@/api/cursos";
@@ -51,20 +45,11 @@ export function HeaderInfo({ curso, onEditCurso }: HeaderInfoProps) {
     setIsActionsOpen(false);
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("pt-BR", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    });
-  };
-
   const statusBadge = (
     <Badge
       className={cn(
         "inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-wide",
-        getCursoStatusBadgeClasses(curso.statusPadrao),
+        getCursoStatusBadgeClasses(curso.statusPadrao)
       )}
     >
       {formatCursoStatus(curso.statusPadrao)}
@@ -75,27 +60,6 @@ export function HeaderInfo({ curso, onEditCurso }: HeaderInfoProps) {
     <section className="relative overflow-hidden rounded-3xl bg-white">
       <div className="relative flex flex-col gap-6 px-6 py-6 sm:px-8 sm:py-8 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex items-center gap-5">
-          <div className="relative">
-            <Avatar className="h-20 w-20 shrink-0 text-base">
-              <AvatarFallback className="bg-primary/10 text-primary/80 text-base font-semibold">
-                {getInitials(curso.nome)}
-              </AvatarFallback>
-            </Avatar>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span
-                  className={cn(
-                    "absolute bottom-1 right-1 inline-flex size-4 items-center justify-center rounded-full border-2 border-white cursor-pointer",
-                    statusColor,
-                  )}
-                  aria-label={statusLabel}
-                >
-                  <span className="sr-only">{statusLabel}</span>
-                </span>
-              </TooltipTrigger>
-              <TooltipContent>{statusLabel}</TooltipContent>
-            </Tooltip>
-          </div>
           <div className="space-y-0">
             <div className="flex items-center gap-3">
               <h3 className="font-semibold !mb-0">{curso.nome}</h3>
@@ -115,7 +79,7 @@ export function HeaderInfo({ curso, onEditCurso }: HeaderInfoProps) {
                 <ChevronDown
                   className={cn(
                     "h-4 w-4 transition-transform duration-200",
-                    isActionsOpen ? "rotate-180" : "rotate-0",
+                    isActionsOpen ? "rotate-180" : "rotate-0"
                   )}
                   aria-hidden="true"
                 />

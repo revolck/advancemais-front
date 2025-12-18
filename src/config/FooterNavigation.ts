@@ -38,8 +38,8 @@ export const FOOTER_CONFIG: FooterConfig = {
     hours: "segunda a sexta (08h às 20h) e sábado (09h às 13h)",
   },
   legal: [
-    { label: "Política de Privacidade", href: "/privacidade" },
-    { label: "Termos de Uso", href: "/termos" },
+    { label: "Política de Privacidade", href: "/politica-privacidade" },
+    { label: "Termos de Uso", href: "/termos-uso" },
     { label: "Preferências de Cookies", href: "/cookies" },
   ],
   copyright: "Todos os Direitos Reservados Advance+",
