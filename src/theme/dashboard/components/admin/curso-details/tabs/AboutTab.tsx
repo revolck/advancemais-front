@@ -103,7 +103,7 @@ export function AboutTab({ curso, isLoading = false }: AboutTabProps) {
     },
     {
       label: "Tipo de curso",
-      value: curso.gratuito ? (
+      value: curso.gratuito || curso.valor === 0 ? (
         <Badge
           variant="outline"
           className="bg-emerald-50 text-emerald-700 border-emerald-200"
@@ -120,12 +120,12 @@ export function AboutTab({ curso, isLoading = false }: AboutTabProps) {
           Pago
         </Badge>
       ),
-      icon: curso.gratuito ? Gift : DollarSign,
+      icon: curso.gratuito || curso.valor === 0 ? Gift : DollarSign,
     },
     {
       label: "Valor do curso",
       value:
-        !curso.gratuito && curso.valor > 0 ? (
+        !(curso.gratuito || curso.valor === 0) && curso.valor > 0 ? (
           <div className="flex flex-col gap-1">
             {curso.valorPromocional && curso.valorPromocional < curso.valor ? (
               <>

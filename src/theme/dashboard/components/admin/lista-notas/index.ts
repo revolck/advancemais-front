@@ -1,0 +1,2 @@
+export { NotasDashboard } from "./NotasDashboard";
+

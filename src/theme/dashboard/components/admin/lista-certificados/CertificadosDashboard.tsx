@@ -22,8 +22,26 @@ import { useTurmaOptions } from "../lista-alunos/hooks/useTurmaOptions";
 import { listCertificados } from "@/api/cursos";
 import type { TurmaCertificado } from "@/api/cursos";
 import type { FilterField } from "@/components/ui/custom/filters";
+import type { DateRange } from "@/components/ui/custom/date-picker";
+import {
+  DEFAULT_SEARCH_MIN_LENGTH,
+  getNormalizedSearchOrUndefined,
+  getSearchValidationMessage,
+} from "../shared/filterUtils";
 import { CertificadoRow } from "./components/CertificadoRow";
 import { CertificadoTableSkeleton } from "./components/CertificadoTableSkeleton";
+
+const SEARCH_HELPER_TEXT = "Pesquise por nome, código do aluno ou CPF.";
+
+const createEmptyDateRange = (): DateRange => ({
+  from: null,
+  to: null,
+});
+
+const cloneDateRange = (range: DateRange): DateRange => ({
+  from: range.from ? new Date(range.from) : null,
+  to: range.to ? new Date(range.to) : null,
+});
 
 export interface CertificadosDashboardProps {
   className?: string;
@@ -32,6 +50,14 @@ export interface CertificadosDashboardProps {
 export function CertificadosDashboard({ className }: CertificadosDashboardProps) {
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
   const [selectedTurmaId, setSelectedTurmaId] = useState<string | null>(null);
+  const [pendingSearchTerm, setPendingSearchTerm] = useState("");
+  const [appliedSearchTerm, setAppliedSearchTerm] = useState("");
+  const [pendingDateRange, setPendingDateRange] = useState<DateRange>(() =>
+    createEmptyDateRange()
+  );
+  const [appliedDateRange, setAppliedDateRange] = useState<DateRange>(() =>
+    createEmptyDateRange()
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [certificados, setCertificados] = useState<TurmaCertificado[]>([]);
@@ -50,16 +76,56 @@ export function CertificadosDashboard({ className }: CertificadosDashboardProps)
   const { cursos } = useCursosForSelect();
   const { turmas } = useTurmaOptions(selectedCourseId);
 
+  const searchValidationMessage = useMemo(
+    () => getSearchValidationMessage(pendingSearchTerm),
+    [pendingSearchTerm]
+  );
+  const isSearchInputValid = !searchValidationMessage;
+
+  const normalizedSearch = useMemo(
+    () =>
+      getNormalizedSearchOrUndefined(
+        appliedSearchTerm,
+        DEFAULT_SEARCH_MIN_LENGTH
+      ),
+    [appliedSearchTerm]
+  );
+
+  const handleSearchSubmit = useCallback(
+    (rawValue?: string) => {
+      const value = rawValue ?? pendingSearchTerm;
+      const validationMessage = getSearchValidationMessage(value);
+      if (validationMessage) return;
+      const trimmedValue = value.trim();
+      setPendingSearchTerm(value);
+      setAppliedSearchTerm(trimmedValue);
+      setCurrentPage(1);
+    },
+    [pendingSearchTerm]
+  );
+
   const runFetch = useCallback(async () => {
     if (!selectedCourseId || !selectedTurmaId) return;
+    
+    // Aplicar filtros antes de buscar
+    const validationMessage = getSearchValidationMessage(pendingSearchTerm);
+    if (!validationMessage) {
+      setAppliedSearchTerm(pendingSearchTerm.trim());
+    } else {
+      setAppliedSearchTerm("");
+    }
+    setAppliedDateRange(cloneDateRange(pendingDateRange));
+    
     setLoading(true);
     setError(null);
     setHasFetched(true);
     try {
       const data = await listCertificados(selectedCourseId, selectedTurmaId);
-      setCertificados(data || []);
+      // Garantir que sempre seja um array
+      const certificadosArray = Array.isArray(data) ? data : [];
+      setCertificados(certificadosArray);
       setCurrentPage(1);
-      if (!data || data.length === 0) {
+      if (!certificadosArray || certificadosArray.length === 0) {
         setError("Nenhum certificado encontrado para esta turma.");
       }
     } catch (err) {
@@ -68,7 +134,7 @@ export function CertificadosDashboard({ className }: CertificadosDashboardProps)
     } finally {
       setLoading(false);
     }
-  }, [selectedCourseId, selectedTurmaId]);
+  }, [selectedCourseId, selectedTurmaId, pendingDateRange, pendingSearchTerm]);
 
   // Sorting functions
   const setSort = (field: SortField, direction: SortDirection) => {
@@ -90,6 +156,7 @@ export function CertificadosDashboard({ className }: CertificadosDashboardProps)
 
   const sortList = useCallback(
     <T extends TurmaCertificado>(list: T[]) => {
+      if (!Array.isArray(list)) return [];
       if (!sortField) return list;
       const arr = [...list];
       arr.sort((a, b) => {
@@ -112,7 +179,80 @@ export function CertificadosDashboard({ className }: CertificadosDashboardProps)
     [sortDirection, sortField]
   );
 
-  const sortedCertificados = useMemo(() => sortList(certificados), [certificados, sortList]);
+  // Filtrar por busca (nome, código, CPF)
+  const filteredBySearchCertificados = useMemo(() => {
+    if (!Array.isArray(certificados)) {
+      return [];
+    }
+
+    if (!normalizedSearch) {
+      return certificados;
+    }
+
+    const searchLower = normalizedSearch.toLowerCase();
+
+    return certificados.filter((certificado) => {
+      // Buscar por nome do aluno
+      const alunoNome = (certificado as any).aluno?.nome?.toLowerCase() || "";
+      if (alunoNome.includes(searchLower)) return true;
+
+      // Buscar por email do aluno
+      const alunoEmail = (certificado as any).aluno?.email?.toLowerCase() || "";
+      if (alunoEmail.includes(searchLower)) return true;
+
+      // Buscar por código do aluno (alunoId)
+      const alunoId = certificado.alunoId?.toLowerCase() || "";
+      if (alunoId.includes(searchLower)) return true;
+
+      // Buscar por CPF do aluno
+      const alunoCpf = (certificado as any).aluno?.cpf?.replace(/\D/g, "") || "";
+      const searchCpf = searchLower.replace(/\D/g, "");
+      if (alunoCpf && searchCpf && alunoCpf.includes(searchCpf)) return true;
+
+      // Buscar por código do certificado
+      const codigo = ((certificado as any).codigo || (certificado as any).numero || "").toLowerCase();
+      if (codigo.includes(searchLower)) return true;
+
+      return false;
+    });
+  }, [certificados, normalizedSearch]);
+
+  // Filtrar por data de emissão
+  const filteredByDateCertificados = useMemo(() => {
+    if (!Array.isArray(filteredBySearchCertificados)) {
+      return [];
+    }
+
+    if (!appliedDateRange.from && !appliedDateRange.to) {
+      return filteredBySearchCertificados;
+    }
+
+    return filteredBySearchCertificados.filter((certificado) => {
+      if (!certificado.emitidoEm) return false;
+
+      const emitidoEm = new Date(certificado.emitidoEm);
+      emitidoEm.setHours(0, 0, 0, 0);
+
+      if (appliedDateRange.from) {
+        const fromDate = new Date(appliedDateRange.from);
+        fromDate.setHours(0, 0, 0, 0);
+        if (emitidoEm < fromDate) return false;
+      }
+
+      if (appliedDateRange.to) {
+        const toDate = new Date(appliedDateRange.to);
+        toDate.setHours(23, 59, 59, 999);
+        if (emitidoEm > toDate) return false;
+      }
+
+      return true;
+    });
+  }, [filteredBySearchCertificados, appliedDateRange]);
+
+  const sortedCertificados = useMemo(
+    () => sortList(filteredByDateCertificados),
+    [filteredByDateCertificados, sortList]
+  );
 
   // Paginação local
   const totalItems = sortedCertificados.length;
@@ -160,6 +300,12 @@ export function CertificadosDashboard({ className }: CertificadosDashboardProps)
           : "Selecione um curso primeiro",
         disabled: !selectedCourseId || turmas.length === 0,
       },
+      {
+        key: "dateRange",
+        label: "Data de emissão",
+        type: "date-range",
+        placeholder: "Selecionar período",
+      },
     ],
     [cursos, turmas, selectedCourseId]
   );
@@ -168,23 +314,25 @@ export function CertificadosDashboard({ className }: CertificadosDashboardProps)
     () => ({
       curso: selectedCourseId,
       turma: selectedTurmaId,
+      dateRange: pendingDateRange,
     }),
-    [selectedCourseId, selectedTurmaId]
+    [selectedCourseId, selectedTurmaId, pendingDateRange]
   );
 
   const showEmptyState =
     !loading &&
     (!selectedCourseId ||
       !selectedTurmaId ||
-      (hasFetched && certificados.length === 0));
+      sortedCertificados.length === 0);
 
-  const showTable = !showEmptyState && (loading || certificados.length > 0);
+  const showTable = !showEmptyState && (loading || (hasFetched && sortedCertificados.length > 0));
 
   return (
     <div className={cn("min-h-full", className)}>
       <div className="border-b border-gray-200 top-0 z-10">
         <div className="py-4">
           <FilterBar
+            className="[&>div]:lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,1fr)_auto]"
             fields={filterFields}
             values={filterValues}
             onChange={(key, value) => {
@@ -200,6 +348,26 @@ export function CertificadosDashboard({ className }: CertificadosDashboardProps)
                 setCertificados([]);
                 setHasFetched(false);
               }
+              if (key === "dateRange") {
+                setPendingDateRange(
+                  (value as DateRange) || createEmptyDateRange()
+                );
+              }
+            }}
+            search={{
+              label: "Pesquisar aluno",
+              value: pendingSearchTerm,
+              onChange: (value) => setPendingSearchTerm(value),
+              placeholder: "Nome, código do aluno ou CPF...",
+              onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleSearchSubmit((e.target as HTMLInputElement).value);
+                }
+              },
+              error: searchValidationMessage,
+              helperText: SEARCH_HELPER_TEXT,
+              helperPlacement: "tooltip",
             }}
             rightActions={
               <ButtonCustom
@@ -208,6 +376,7 @@ export function CertificadosDashboard({ className }: CertificadosDashboardProps)
                 onClick={runFetch}
                 disabled={!selectedCourseId || !selectedTurmaId || loading}
                 isLoading={loading}
+                className="md:w-full xl:w-auto"
               >
                 Pesquisar
               </ButtonCustom>
@@ -216,8 +385,9 @@ export function CertificadosDashboard({ className }: CertificadosDashboardProps)
         </div>
       </div>
 
-      <div className="py-6">
-        {showTable && (
+      {(showTable || showEmptyState) && (
+        <div className="py-6">
+          {showTable && (
           <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
             <div className="overflow-x-auto">
               <Table className="min-w-[800px]">
@@ -508,28 +678,29 @@ export function CertificadosDashboard({ className }: CertificadosDashboardProps)
           </div>
         )}
 
-        {showEmptyState && (
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-            <EmptyState
-              fullHeight
-              maxContentWidth="sm"
-              illustration="books"
-              illustrationAlt="Ilustração de certificados"
-              title={
-                !selectedCourseId || !selectedTurmaId
-                  ? "Selecione curso e turma"
-                  : "Nenhum certificado encontrado"
-              }
-              description={
-                !selectedCourseId || !selectedTurmaId
-                  ? "Selecione o curso e a turma para listar os certificados disponíveis."
-                  : error ||
-                    "Nenhum certificado encontrado para os filtros aplicados. Tente ajustar sua busca."
-              }
-            />
-          </div>
-        )}
-      </div>
+          {showEmptyState && (
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+              <EmptyState
+                fullHeight
+                maxContentWidth="sm"
+                illustration="books"
+                illustrationAlt="Ilustração de certificados"
+                title={
+                  !selectedCourseId || !selectedTurmaId
+                    ? "Selecione curso e turma"
+                    : "Nenhum certificado encontrado"
+                }
+                description={
+                  !selectedCourseId || !selectedTurmaId
+                    ? "Selecione o curso e a turma para listar os certificados disponíveis."
+                    : error ||
+                      "Nenhum certificado encontrado para os filtros aplicados. Tente ajustar sua busca."
+                }
+              />
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

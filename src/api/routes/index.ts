@@ -372,6 +372,7 @@ export const usuarioRoutes = {
   profile: {
     get: () => `${prefix}/usuarios/perfil`,
     update: () => `${prefix}/usuarios/perfil`,
+    changePassword: () => `${prefix}/usuarios/perfil/alterar-senha`,
   },
   recovery: {
     request: () => `${prefix}/usuarios/recuperar-senha`,

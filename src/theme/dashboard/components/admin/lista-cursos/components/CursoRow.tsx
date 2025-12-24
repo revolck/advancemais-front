@@ -134,7 +134,7 @@ export function CursoRow({
       {/* Coluna de Preço */}
       <TableCell className="py-4">
         <div className="flex items-center gap-2">
-          {curso.gratuito ? (
+          {curso.gratuito || curso.valor === 0 ? (
             <Badge
               variant="outline"
               className="bg-emerald-50 text-emerald-700 border-emerald-200"

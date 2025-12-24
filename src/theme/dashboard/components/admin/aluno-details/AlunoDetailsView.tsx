@@ -70,6 +70,7 @@ export function AlunoDetailsView({
   });
 
   const alunoData = alunoResponse?.data ?? null;
+  const alunoNome = alunoData?.nome || alunoData?.nomeCompleto || "Aluno";
   const inscricoes = alunoData?.inscricoes ?? [];
 
   const isPending = !initialData && isLoading;
@@ -237,7 +238,7 @@ export function AlunoDetailsView({
       <BloquearAlunoModal
         isOpen={isBloquearModalOpen}
         onOpenChange={setIsBloquearModalOpen}
-        alunoNome={alunoData.nome}
+        alunoNome={alunoNome}
         onConfirm={async (payload) => {
           await bloquearAlunoMutation.mutateAsync(payload);
           await invalidateAluno();
@@ -247,7 +248,7 @@ export function AlunoDetailsView({
       <DesbloquearAlunoModal
         isOpen={isDesbloquearModalOpen}
         onOpenChange={setIsDesbloquearModalOpen}
-        alunoNome={alunoData.nome}
+        alunoNome={alunoNome}
         onConfirm={async (obs) => {
           await desbloquearAlunoMutation.mutateAsync(
             obs ? { observacoes: obs } : undefined

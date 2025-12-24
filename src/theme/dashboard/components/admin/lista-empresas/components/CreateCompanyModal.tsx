@@ -186,8 +186,8 @@ export function CreateCompanyModal({
       const telefoneNormalized = formData.telefone.trim();
       const cnpjNormalized = formData.cnpj.trim();
 
-      // Gerar supabaseId automaticamente usando o mesmo modelo da tela de cadastro
-      const supabaseIdGenerated = `temp-${Date.now()}-${Math.random()
+      // Gerar authId automaticamente usando o mesmo modelo da tela de cadastro
+      const authIdGenerated = `temp-${Date.now()}-${Math.random()
         .toString(36)
         .substr(2, 9)}-${Math.random().toString(36).substr(2, 9)}`;
 
@@ -195,7 +195,7 @@ export function CreateCompanyModal({
         nome: nomeNormalized,
         email: emailNormalized,
         telefone: telefoneNormalized,
-        supabaseId: supabaseIdGenerated,
+        authId: authIdGenerated,
         cnpj: cnpjNormalized,
         aceitarTermos: true,
       };

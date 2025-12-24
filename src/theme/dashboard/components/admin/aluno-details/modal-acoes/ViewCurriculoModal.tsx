@@ -305,7 +305,7 @@ export function ViewCurriculoModal({
   // Aba Experiência
   const experienciaContent = (
     <div className="space-y-8">
-      {curriculo.experiencias && curriculo.experiencias.length > 0 ? (
+      {Array.isArray(curriculo.experiencias) && curriculo.experiencias.length > 0 ? (
         curriculo.experiencias.map((exp, index) => (
           <div key={index} className="relative">
             <div className="flex items-start justify-between gap-4">
@@ -437,7 +437,7 @@ export function ViewCurriculoModal({
   // Aba Habilidades
   const habilidadesContent = (
     <div className="space-y-10">
-      {curriculo.habilidades?.tecnicas &&
+      {Array.isArray(curriculo.habilidades?.tecnicas) &&
         curriculo.habilidades.tecnicas.length > 0 && (
           <div>
             <h5 className="!mb-5 flex items-center gap-2">
@@ -458,7 +458,7 @@ export function ViewCurriculoModal({
           </div>
         )}
 
-      {curriculo.idiomas && curriculo.idiomas.length > 0 && (
+      {Array.isArray(curriculo.idiomas) && curriculo.idiomas.length > 0 && (
         <div>
           <h5 className="mb-6 flex items-center gap-2">
             <Globe className="h-4 w-4 text-[var(--secondary-color)]" />
@@ -482,7 +482,7 @@ export function ViewCurriculoModal({
         </div>
       )}
 
-      {curriculo.premiosPublicacoes &&
+      {Array.isArray(curriculo.premiosPublicacoes) &&
         curriculo.premiosPublicacoes.length > 0 && (
           <div>
             <h5 className="!mb-6 flex items-center gap-2">
@@ -503,10 +503,10 @@ export function ViewCurriculoModal({
           </div>
         )}
 
-      {(!curriculo.habilidades?.tecnicas ||
+      {(!Array.isArray(curriculo.habilidades?.tecnicas) ||
         curriculo.habilidades.tecnicas.length === 0) &&
-        (!curriculo.idiomas || curriculo.idiomas.length === 0) &&
-        (!curriculo.premiosPublicacoes ||
+        (!Array.isArray(curriculo.idiomas) || curriculo.idiomas.length === 0) &&
+        (!Array.isArray(curriculo.premiosPublicacoes) ||
           curriculo.premiosPublicacoes.length === 0) && (
           <EmptyState
             illustration="fileNotFound"
@@ -533,7 +533,7 @@ export function ViewCurriculoModal({
       label: "Experiência",
       icon: "Briefcase",
       badge:
-        curriculo.experiencias && curriculo.experiencias.length > 0
+        Array.isArray(curriculo.experiencias) && curriculo.experiencias.length > 0
           ? curriculo.experiencias.length
           : undefined,
       content: experienciaContent,
@@ -543,11 +543,15 @@ export function ViewCurriculoModal({
       label: "Formação",
       icon: "GraduationCap",
       badge:
-        (curriculo.formacao?.length || 0) +
-          (curriculo.cursosCertificacoes?.length || 0) >
+        (Array.isArray(curriculo.formacao) ? curriculo.formacao.length : 0) +
+          (Array.isArray(curriculo.cursosCertificacoes)
+            ? curriculo.cursosCertificacoes.length
+            : 0) >
         0
-          ? (curriculo.formacao?.length || 0) +
-            (curriculo.cursosCertificacoes?.length || 0)
+          ? (Array.isArray(curriculo.formacao) ? curriculo.formacao.length : 0) +
+            (Array.isArray(curriculo.cursosCertificacoes)
+              ? curriculo.cursosCertificacoes.length
+              : 0)
           : undefined,
       content: formacaoContent,
     },
@@ -749,7 +753,7 @@ export function ViewCurriculoModal({
             </section>
           )}
 
-          {curriculo.experiencias && curriculo.experiencias.length > 0 && (
+          {Array.isArray(curriculo.experiencias) && curriculo.experiencias.length > 0 && (
             <section>
               <h2 style={{ fontSize: "12px", letterSpacing: "0.1em" }}>
                 EXPERIÊNCIA
@@ -790,7 +794,7 @@ export function ViewCurriculoModal({
             </section>
           )}
 
-          {curriculo.formacao && curriculo.formacao.length > 0 && (
+          {Array.isArray(curriculo.formacao) && curriculo.formacao.length > 0 && (
             <section>
               <h2 style={{ fontSize: "12px", letterSpacing: "0.1em" }}>
                 FORMAÇÃO
@@ -831,7 +835,7 @@ export function ViewCurriculoModal({
             </section>
           )}
 
-          {curriculo.cursosCertificacoes &&
+          {Array.isArray(curriculo.cursosCertificacoes) &&
             curriculo.cursosCertificacoes.length > 0 && (
               <section>
                 <h2 style={{ fontSize: "12px", letterSpacing: "0.1em" }}>
@@ -870,7 +874,7 @@ export function ViewCurriculoModal({
               </section>
             )}
 
-          {curriculo.habilidades?.tecnicas &&
+          {Array.isArray(curriculo.habilidades?.tecnicas) &&
             curriculo.habilidades.tecnicas.length > 0 && (
               <section>
                 <h2 style={{ fontSize: "12px", letterSpacing: "0.1em" }}>
@@ -882,7 +886,7 @@ export function ViewCurriculoModal({
               </section>
             )}
 
-          {curriculo.idiomas && curriculo.idiomas.length > 0 && (
+          {Array.isArray(curriculo.idiomas) && curriculo.idiomas.length > 0 && (
             <section>
               <h2 style={{ fontSize: "12px", letterSpacing: "0.1em" }}>
                 IDIOMAS
@@ -912,7 +916,7 @@ export function ViewCurriculoModal({
             </section>
           )}
 
-          {curriculo.premiosPublicacoes &&
+          {Array.isArray(curriculo.premiosPublicacoes) &&
             curriculo.premiosPublicacoes.length > 0 && (
               <section>
                 <h2 style={{ fontSize: "12px", letterSpacing: "0.1em" }}>

@@ -1,0 +1,2 @@
+export { FrequenciaDashboard } from "./FrequenciaDashboard";
+

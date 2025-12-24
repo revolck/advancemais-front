@@ -106,21 +106,19 @@ const getModalidadeColor = (metodo?: string) => {
   }
 };
 
-// Nota: AlunoComInscricao tem 'inscricao' mas não tem 'ultimoCurso' ou 'turma'
-// Ajustado para usar inscricao
-const getInscricao = (
+const getUltimoCurso = (
   aluno: AlunoComInscricao,
   cursoFiltradoId?: string | null
 ) => {
-  const inscricao = aluno.inscricao;
-  if (!inscricao) return null;
+  const ultimoCurso = aluno.ultimoCurso;
+  if (!ultimoCurso) return null;
 
-  // Se houver filtro de curso, verifica se a inscricao é daquele curso
-  if (cursoFiltradoId && inscricao.curso?.id !== cursoFiltradoId) {
-    return null; // Não exibe se for de outro curso
+  // Se houver filtro de curso, garante que estamos usando o curso filtrado.
+  if (cursoFiltradoId && ultimoCurso.curso?.id !== cursoFiltradoId) {
+    return null;
   }
 
-  return inscricao;
+  return ultimoCurso;
 };
 
 const getTipoLabel = (tipo: string) => {
@@ -142,11 +140,13 @@ export function AlunoRow({
 }: AlunoRowProps) {
   const router = useRouter();
   const [isNavigating, setIsNavigating] = useState(false);
-  const inscricao = getInscricao(aluno, cursoFiltradoId);
+  const ultimoCurso = getUltimoCurso(aluno, cursoFiltradoId);
   const isRowDisabled = isDisabled || isNavigating;
 
-  const cursoNome = inscricao?.curso?.nome;
-  const turmaNome = undefined; // turma não disponível em AlunoComInscricao
+  const alunoNome = aluno.nomeCompleto || aluno.id;
+  const cursoNome = ultimoCurso?.curso?.nome;
+  const turmaNome = ultimoCurso?.turma?.nome;
+  const statusInscricao = ultimoCurso?.statusInscricao;
 
   const handleNavigate = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -176,20 +176,22 @@ export function AlunoRow({
           <Avatar className="h-8 w-8 flex-shrink-0">
             <AvatarImage
               src={(aluno as any)?.avatarUrl || undefined}
-              alt={aluno.nome || aluno.id}
+              alt={alunoNome}
             />
             <AvatarFallback className="bg-gray-100 text-gray-600 text-xs font-medium">
-              {aluno.nome
-                ? aluno.nome.substring(0, 2).toUpperCase()
-                : aluno.id.substring(0, 2).toUpperCase()}
+              {alunoNome.substring(0, 2).toUpperCase()}
             </AvatarFallback>
           </Avatar>
           <div className="min-w-0">
             <div className="flex items-center gap-2 mb-1">
               <div className="text-sm text-gray-900 font-medium truncate max-w-[220px]">
-                {aluno.nome || aluno.id}
+                {alunoNome}
               </div>
-              {/* codigo não disponível em AlunoComInscricao */}
+              {aluno.codigo && (
+                <code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded font-mono text-gray-500 flex-shrink-0">
+                  {aluno.codigo}
+                </code>
+              )}
             </div>
             {aluno.cpf && (
               <div className="text-xs text-gray-500 font-mono truncate max-w-[220px]">
@@ -275,15 +277,15 @@ export function AlunoRow({
         )}
       </TableCell>
       <TableCell className="py-4">
-        {inscricao?.status ? (
+        {statusInscricao ? (
           <Badge
             variant="outline"
             className={cn(
               "text-xs font-medium",
-              getStatusColor(inscricao.status)
+              getStatusColor(statusInscricao)
             )}
           >
-            {getStatusLabel(inscricao.status)}
+            {getStatusLabel(statusInscricao)}
           </Badge>
         ) : (
           <div className="text-sm text-gray-500">—</div>

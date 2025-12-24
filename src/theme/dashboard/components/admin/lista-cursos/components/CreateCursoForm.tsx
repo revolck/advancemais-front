@@ -7,6 +7,7 @@ import { InputCustom } from "@/components/ui/custom/input";
 import { RichTextarea } from "@/components/ui/custom/text-area";
 import { SelectCustom } from "@/components/ui/custom/select";
 import { toastCustom } from "@/components/ui/custom";
+import { clearApiCache } from "@/api/client";
 import {
   createCurso,
   updateCurso,
@@ -27,6 +28,7 @@ import {
 } from "@/components/ui/custom/file-upload";
 import { uploadImage, deleteImage } from "@/services/upload";
 import { Skeleton } from "@/components/ui/skeleton";
+import { optimisticallyUpsertCursoInCursosListQueries } from "../utils/cursosQueryCache";
 
 type StatusPadrao = "PUBLICADO" | "RASCUNHO";
 type TipoCurso = "PAGO" | "GRATUITO";
@@ -63,13 +65,27 @@ const initialFormData: FormData = {
 // Converte valor mascarado (R$ 299,90) para número (299.90)
 const parseCurrencyToNumber = (value: string): number => {
   if (!value) return 0;
-  // Remove "R$", pontos de milhar e espaços, troca vírgula por ponto
-  const cleaned = value
-    .replace(/R\$\s?/g, "")
-    .replace(/\./g, "")
-    .replace(",", ".")
-    .trim();
-  const num = parseFloat(cleaned);
+  const filtered = value.replace(/[^\d.,-]/g, "").trim();
+  if (!filtered) return 0;
+
+  const lastComma = filtered.lastIndexOf(",");
+  const lastDot = filtered.lastIndexOf(".");
+
+  let normalized = filtered;
+
+  if (lastComma !== -1 && lastDot !== -1) {
+    if (lastComma > lastDot) {
+      normalized = filtered.replace(/\./g, "").replace(",", ".");
+    } else {
+      normalized = filtered.replace(/,/g, "");
+    }
+  } else if (lastComma !== -1) {
+    normalized = filtered.replace(/\./g, "").replace(",", ".");
+  } else {
+    normalized = filtered.replace(/,/g, "");
+  }
+
+  const num = Number.parseFloat(normalized);
   return Number.isFinite(num) ? num : 0;
 };
 
@@ -97,9 +113,7 @@ export function CreateCursoForm({
   // Preparar dados iniciais baseado no modo
   const prepareInitialFormData = (): FormData => {
     if (mode === "edit" && initialData) {
-      const isGratuito =
-        initialData.gratuito ||
-        (initialData.valor === 0 && !initialData.gratuito);
+      const isGratuito = Boolean(initialData.gratuito);
       return {
         nome: initialData.nome || "",
         descricao: initialData.descricao || "",
@@ -335,7 +349,26 @@ export function CreateCursoForm({
         mode === "edit" ? "Salvando alterações..." : "Criando curso..."
       );
       if (mode === "edit" && cursoId) {
-        await updateCurso(cursoId, payload as UpdateCursoPayload);
+        const updatedCurso = await updateCurso(
+          cursoId,
+          payload as UpdateCursoPayload
+        );
+
+        clearApiCache();
+
+        const cursoForCache: Curso = {
+          ...updatedCurso,
+          ...payload,
+          id: String(cursoId),
+          valor: payload.valor,
+          valorPromocional: payload.valorPromocional,
+          gratuito: Boolean(payload.gratuito),
+        };
+        optimisticallyUpsertCursoInCursosListQueries(
+          queryClient,
+          cursoForCache,
+          "update"
+        );
 
         // Invalida queries de listagem e detalhes
         await queryClient.invalidateQueries({
@@ -360,7 +393,23 @@ export function CreateCursoForm({
         });
       } else {
         setLoadingStep("Criando curso...");
-        await createCurso(payload);
+        const createdCurso = await createCurso(payload);
+
+        clearApiCache();
+
+        const cursoForCache = {
+          ...createdCurso,
+          ...payload,
+          valor: payload.valor,
+          valorPromocional: payload.valorPromocional,
+          gratuito: Boolean(payload.gratuito),
+        } satisfies Curso;
+
+        optimisticallyUpsertCursoInCursosListQueries(
+          queryClient,
+          cursoForCache,
+          "create"
+        );
 
         // Invalida todas as queries de listagem de cursos para atualizar a lista
         await queryClient.invalidateQueries({

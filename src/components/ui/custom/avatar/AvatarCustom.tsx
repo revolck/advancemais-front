@@ -65,7 +65,10 @@ const AvatarCustom = React.forwardRef<HTMLDivElement, AvatarCustomProps>(
         <Avatar className="size-full">
           <AvatarFallback
             className={cn(
-              "font-semibold border-0 text-[#314e93]",
+              "font-semibold border-0",
+              avatarColor === "bg-[var(--primary-color)]"
+                ? "text-white"
+                : "text-[#314e93]",
               avatarColor,
               isLoading && "animate-pulse bg-gray-200 text-transparent"
             )}

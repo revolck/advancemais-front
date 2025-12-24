@@ -38,7 +38,11 @@ const PROVA_STATUS_OPTIONS = [
 
 const SEARCH_HELPER_TEXT = "Pesquise pelo título da atividade/prova.";
 
-export function AtividadesProvasDashboard({ className }: { className?: string }) {
+export function AtividadesProvasDashboard({
+  className,
+}: {
+  className?: string;
+}) {
   const [pendingSearchTerm, setPendingSearchTerm] = useState("");
   const [appliedSearchTerm, setAppliedSearchTerm] = useState("");
   const [selectedTurmaId, setSelectedTurmaId] = useState<string | null>(null);
@@ -61,7 +65,7 @@ export function AtividadesProvasDashboard({ className }: { className?: string })
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc"); // Padrão: mais novo primeiro
 
   const { turmas, rawData, isLoading: loadingTurmas } = useTurmasForSelect();
-  
+
   // Extrair cursoId da turma selecionada se houver
   const selectedTurma = useMemo(() => {
     if (!selectedTurmaId || !turmas) return null;
@@ -83,13 +87,17 @@ export function AtividadesProvasDashboard({ className }: { className?: string })
     orderBy: sortField || "titulo", // Padrão: ordenar por título
     order: sortDirection, // Padrão: DESC (mais novo primeiro)
   });
-  const provas = useMemo(() => provasQuery.data?.data ?? [], [provasQuery.data]);
+  const provas = useMemo(
+    () => provasQuery.data?.data ?? [],
+    [provasQuery.data]
+  );
   const pagination = provasQuery.data?.pagination;
   const isLoading = provasQuery.status === "pending";
   const isFetching = provasQuery.isFetching;
   const errorMessage =
     provasQuery.status === "error"
-      ? provasQuery.error?.message ?? "Não foi possível carregar as atividades/provas."
+      ? provasQuery.error?.message ??
+        "Não foi possível carregar as atividades/provas."
       : null;
   const hasError = Boolean(errorMessage);
 
@@ -157,7 +165,7 @@ export function AtividadesProvasDashboard({ className }: { className?: string })
         }
         if (parsed.dir) {
           setSortDirection(parsed.dir);
-      }
+        }
       }
       // Se não houver no localStorage, os valores padrão já estão definidos acima
     } catch {}
@@ -204,7 +212,8 @@ export function AtividadesProvasDashboard({ className }: { className?: string })
 
   // Usa paginação da API ao invés de client-side
   const totalItems = pagination?.total ?? filteredProvas.length;
-  const totalPages = pagination?.totalPages ?? Math.max(1, Math.ceil(totalItems / pageSize));
+  const totalPages =
+    pagination?.totalPages ?? Math.max(1, Math.ceil(totalItems / pageSize));
   const paginatedProvas = filteredProvas; // A API já retorna apenas os itens da página atual
 
   // Páginas visíveis para paginação
@@ -224,7 +233,11 @@ export function AtividadesProvasDashboard({ className }: { className?: string })
   const handlePageChange = useCallback(
     (page: number) => {
       const nextPage = Math.max(1, Math.min(page, totalPages));
-      console.log("[PAGINATION] Mudando página:", { de: currentPage, para: nextPage, totalPages });
+      console.log("[PAGINATION] Mudando página:", {
+        de: currentPage,
+        para: nextPage,
+        totalPages,
+      });
       setCurrentPage(nextPage);
     },
     [currentPage, totalPages]
@@ -243,8 +256,10 @@ export function AtividadesProvasDashboard({ className }: { className?: string })
   }, [totalPages]); // Removido currentPage das dependências para evitar loop
 
   const shouldShowSkeleton = isLoading || (isFetching && provas.length === 0);
-  const canDisplayTable = !hasError && (shouldShowSkeleton || filteredProvas.length > 0);
-  const showEmptyState = !hasError && !shouldShowSkeleton && filteredProvas.length === 0;
+  const canDisplayTable =
+    !hasError && (shouldShowSkeleton || filteredProvas.length > 0);
+  const showEmptyState =
+    !hasError && !shouldShowSkeleton && filteredProvas.length === 0;
 
   // Ordem dos campos: turma na primeira linha; modalidade, status, obrigatoria na segunda
   const filterFields: FilterField[] = useMemo(
@@ -286,7 +301,9 @@ export function AtividadesProvasDashboard({ className }: { className?: string })
           className="sm:w-auto"
           asChild
         >
-          <Link href="/dashboard/cursos/atividades-provas/cadastrar">Nova Atividade/Prova</Link>
+          <Link href="/dashboard/cursos/atividades-provas/cadastrar">
+            Nova Atividade/Prova
+          </Link>
         </ButtonCustom>
       </div>
 
@@ -294,7 +311,7 @@ export function AtividadesProvasDashboard({ className }: { className?: string })
       <div className="border-b border-gray-200 top-0 z-10">
         <div className="py-4">
           <FilterBar
-            className="lg:grid-cols-[minmax(0,2fr)_minmax(0,2.5fr)_minmax(0,1.5fr)_auto] [&>div>*:nth-child(2)]:lg:col-start-2 [&>div>*:nth-child(2)]:lg:col-end-4 [&>div>*:nth-child(3)]:lg:row-start-2 [&>div>*:nth-child(3)]:lg:col-start-1 [&>div>*:nth-child(4)]:lg:row-start-2 [&>div>*:nth-child(4)]:lg:col-start-2 [&>div>*:nth-child(5)]:lg:row-start-2 [&>div>*:nth-child(5)]:lg:col-start-3 [&>div>*:nth-child(6)]:lg:row-start-2 [&>div>*:nth-child(6)]:lg:col-start-4"
+            className="[&>div]:lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_auto]"
             fields={filterFields}
             values={filterValues}
             onChange={(key, value) => {
@@ -303,7 +320,9 @@ export function AtividadesProvasDashboard({ className }: { className?: string })
                 setCurrentPage(1);
               }
               if (key === "status") {
-                setSelectedStatuses(Array.isArray(value) ? (value as string[]) : []);
+                setSelectedStatuses(
+                  Array.isArray(value) ? (value as string[]) : []
+                );
                 setCurrentPage(1);
               }
             }}
@@ -449,13 +468,25 @@ export function AtividadesProvasDashboard({ className }: { className?: string })
                     </div>
                   </TableHead>
                   {!selectedTurmaId && (
-                    <TableHead className="font-medium text-gray-700 py-4 px-3">Turma</TableHead>
+                    <TableHead className="font-medium text-gray-700 py-4 px-3">
+                      Turma
+                    </TableHead>
                   )}
-                  <TableHead className="font-medium text-gray-700 py-4 px-3">Curso</TableHead>
-                  <TableHead className="font-medium text-gray-700 py-4 px-3">Status</TableHead>
-                  <TableHead className="font-medium text-gray-700 py-4 px-3">Data</TableHead>
-                  <TableHead className="font-medium text-gray-700 py-4 px-3 text-center whitespace-nowrap">Peso</TableHead>
-                  <TableHead className="font-medium text-gray-700 py-4 px-3 text-center whitespace-nowrap">Vale Ponto</TableHead>
+                  <TableHead className="font-medium text-gray-700 py-4 px-3">
+                    Curso
+                  </TableHead>
+                  <TableHead className="font-medium text-gray-700 py-4 px-3">
+                    Status
+                  </TableHead>
+                  <TableHead className="font-medium text-gray-700 py-4 px-3">
+                    Data
+                  </TableHead>
+                  <TableHead className="font-medium text-gray-700 py-4 px-3 text-center whitespace-nowrap">
+                    Peso
+                  </TableHead>
+                  <TableHead className="font-medium text-gray-700 py-4 px-3 text-center whitespace-nowrap">
+                    Vale Ponto
+                  </TableHead>
                   <TableHead
                     className="font-medium text-gray-700 py-4 px-2 whitespace-nowrap"
                     aria-sort={
@@ -569,13 +600,18 @@ export function AtividadesProvasDashboard({ className }: { className?: string })
                 <div className="flex items-center gap-2 text-sm text-gray-600">
                   <span>
                     {(() => {
-                      const startIndex = pagination 
+                      const startIndex = pagination
                         ? (pagination.page - 1) * pagination.pageSize + 1
                         : 1;
                       const endIndex = pagination
-                        ? Math.min(pagination.page * pagination.pageSize, totalItems)
+                        ? Math.min(
+                            pagination.page * pagination.pageSize,
+                            totalItems
+                          )
                         : Math.min(pageSize, totalItems);
-                      return `Mostrando ${startIndex} a ${endIndex} de ${totalItems} atividade${totalItems === 1 ? "" : "s"}/prova${totalItems === 1 ? "" : "s"}`;
+                      return `Mostrando ${startIndex} a ${endIndex} de ${totalItems} atividade${
+                        totalItems === 1 ? "" : "s"
+                      }/prova${totalItems === 1 ? "" : "s"}`;
                     })()}
                   </span>
                 </div>

@@ -77,6 +77,14 @@ export const breadcrumbConfig: Record<string, BreadcrumbConfig> = {
     items: [{ label: "Dashboard", href: "/", icon: "Home" }],
   },
 
+  "/perfil": {
+    title: "Perfil",
+    items: [
+      { label: "Dashboard", href: "/", icon: "Home" },
+      { label: "Perfil", icon: "User" },
+    ],
+  },
+
   "/dashboard/admin": {
     title: "Administração",
     items: [
@@ -321,6 +329,22 @@ export const breadcrumbConfig: Record<string, BreadcrumbConfig> = {
       { label: "Dashboard", href: "/", icon: "Home" },
       { label: "Cursos", href: "/dashboard/cursos", icon: "BookOpen" },
       { label: "Atividades/Provas", icon: "ClipboardList" },
+    ],
+  },
+  "/dashboard/cursos/notas": {
+    title: "Notas",
+    items: [
+      { label: "Dashboard", href: "/", icon: "Home" },
+      { label: "Cursos", href: "/dashboard/cursos", icon: "BookOpen" },
+      { label: "Notas", icon: "ClipboardList" },
+    ],
+  },
+  "/dashboard/cursos/frequencia": {
+    title: "Frequência",
+    items: [
+      { label: "Dashboard", href: "/", icon: "Home" },
+      { label: "Cursos", href: "/dashboard/cursos", icon: "BookOpen" },
+      { label: "Frequência", icon: "ClipboardList" },
     ],
   },
   "/dashboard/cursos/provas": {

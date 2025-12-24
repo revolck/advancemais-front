@@ -105,7 +105,7 @@ export default function VerifyEmailPage() {
           </p>
           <div className="flex flex-wrap items-center justify-center text-[12px] sm:text-sm text-white/80">
             <a
-              href="/politica-privacidade"
+              href="https://advancemais.com/politica-privacidade"
               target="_blank"
               rel="noopener noreferrer"
               className="hover:text-white transition-colors px-3"
@@ -117,7 +117,7 @@ export default function VerifyEmailPage() {
               aria-hidden
             ></span>
             <a
-              href="/termos-uso"
+              href="https://advancemais.com/termos-uso"
               target="_blank"
               rel="noopener noreferrer"
               className="hover:text-white transition-colors px-3"
@@ -129,7 +129,7 @@ export default function VerifyEmailPage() {
               aria-hidden
             ></span>
             <a
-              href="/cookies"
+              href="https://advancemais.com/cookies"
               target="_blank"
               rel="noopener noreferrer"
               className="hover:text-white transition-colors px-3"

@@ -203,7 +203,7 @@ export function MenuItem({
           className={cn(
             "mt-2 pl-4 border-l border-white/20",
             "overflow-hidden transition-all duration-300 ease-in-out",
-            isSubmenuOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+            isSubmenuOpen ? "max-h-[9999px] opacity-100" : "max-h-0 opacity-0"
           )}
         >
           {item.submenu?.map((subItem) => (
@@ -221,4 +221,3 @@ export function MenuItem({
     </div>
   );
 }
-

@@ -1,4 +1,4 @@
-export type BuilderItemType = "AULA" | "PROVA" | "ATIVIDADE" | "TRABALHO";
+export type BuilderItemType = "AULA" | "PROVA" | "ATIVIDADE";
 export type ActivityType =
   | "IMAGEM"
   | "PDF"
@@ -15,6 +15,7 @@ export interface BuilderItem {
   endDate?: string | null;
   instructorId?: string | null;
   obrigatorio?: boolean;
+  aulaId?: string | null;
   // Posição do item standalone (quando fora de módulo)
   // -1 = antes de todos, 0 = após módulo 0, 1 = após módulo 1, etc.
   afterModuleIndex?: number;
@@ -27,11 +28,6 @@ export interface BuilderItem {
   youtubeUrl?: string | null;
   meetUrl?: string | null;
   tipoLinkSemiPresencial?: "MEET" | "YOUTUBE" | null;
-  // Campos específicos para TRABALHO
-  metodoTrabalho?: "INDIVIDUAL" | "GRUPO" | "DUPLA" | null;
-  valeNota?: boolean;
-  pesoNota?: number | null;
-  descricaoTrabalho?: string | null;
 }
 
 export interface BuilderModule {
@@ -60,6 +56,7 @@ export function getDefaultBuilder(template: BuilderTemplate): BuilderData {
     type: "AULA",
     startDate: null,
     endDate: null,
+    aulaId: null,
   });
   const prova = (): BuilderItem => ({
     id: `prova-${Math.random().toString(36).slice(2, 7)}`,

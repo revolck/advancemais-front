@@ -18,7 +18,7 @@ interface PaletteProps {
 }
 
 /**
- * Paleta de componentes arrastáveis (Módulo, Aula, Atividade, Trabalho, Prova)
+ * Paleta de componentes arrastáveis (Módulo, Aula, Atividade, Prova)
  */
 export function Palette({
   onAddModule,
@@ -188,57 +188,6 @@ export function Palette({
           </TooltipContent>
         </Tooltip>
 
-        {/* Trabalho - Card com cor roxa */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <div
-              draggable
-              onClick={() => onAddItem("TRABALHO")}
-              onDragStart={(e) => {
-                onDragStart("palette-TRABALHO");
-                e.dataTransfer.setData("text/plain", "TRABALHO");
-              }}
-              onDragEnd={onDragEnd}
-              className={cn(
-                "group relative flex items-center gap-3 rounded-xl border p-3 transition-all duration-200",
-                "border-purple-200 bg-purple-50/50 hover:bg-purple-100/70 hover:border-purple-300",
-                "cursor-grab active:cursor-grabbing"
-              )}
-            >
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-purple-100 group-hover:bg-purple-200 transition-colors">
-                <Icon
-                  name="Briefcase"
-                  className="h-4.5 w-4.5 text-purple-600"
-                />
-              </div>
-              <div className="flex-1 min-w-0 flex flex-col gap-0">
-                <span className="text-sm! font-medium text-purple-900 leading-tight!">
-                  Trabalho
-                </span>
-                <p className="text-[10px]! text-purple-600/70 truncate leading-tight! mb-0!">
-                  Projeto avaliativo
-                </p>
-              </div>
-              <Icon
-                name="GripVertical"
-                className="h-4 w-4 text-purple-300 opacity-0 group-hover:opacity-100 transition-opacity"
-              />
-            </div>
-          </TooltipTrigger>
-          <TooltipContent side="left" sideOffset={8} className="p-3 max-w-xs">
-            <div className="space-y-1.5 mt-2">
-              <div className="flex items-center gap-2">
-                <span className="text-xs mb-0! font-medium text-white">
-                  Trabalho
-                </span>
-              </div>
-              <p className="text-[11px]! text-white/70! mt-[-5px]!">
-                Projeto individual ou em grupo com nota
-              </p>
-            </div>
-          </TooltipContent>
-        </Tooltip>
-
         {/* Prova - Card com cor rosa */}
         <Tooltip>
           <TooltipTrigger asChild>
@@ -290,4 +239,3 @@ export function Palette({
     </div>
   );
 }
-

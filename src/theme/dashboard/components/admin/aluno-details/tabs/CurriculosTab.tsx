@@ -41,7 +41,50 @@ export function CurriculosTab({
   const isCurriculoDetalhado = (
     curriculo: Curriculo | UsuarioCurriculo
   ): curriculo is Curriculo => {
-    return "objetivo" in curriculo || "resumo" in curriculo;
+    // UsuarioCurriculo também pode ter "resumo"; valida por campos típicos do Curriculo completo.
+    return (
+      typeof (curriculo as any)?.usuarioId === "string" ||
+      typeof (curriculo as any)?.ultimaAtualizacao === "string" ||
+      Array.isArray((curriculo as any)?.experiencias) ||
+      Array.isArray((curriculo as any)?.formacao)
+    );
+  };
+
+  const unwrapCurriculo = (response: unknown): Curriculo => {
+    const raw: any = response as any;
+    const data =
+      raw?.data && typeof raw.data === "object"
+        ? raw.data
+        : raw?.curriculo && typeof raw.curriculo === "object"
+        ? raw.curriculo
+        : raw;
+
+    const safe: any = data && typeof data === "object" ? data : {};
+    return {
+      id: String(safe.id ?? ""),
+      usuarioId: String(safe.usuarioId ?? aluno.id ?? ""),
+      titulo: String(safe.titulo ?? "Currículo"),
+      resumo: safe.resumo ?? null,
+      objetivo: safe.objetivo ?? null,
+      principal: Boolean(safe.principal ?? false),
+      areasInteresse: safe.areasInteresse ?? {},
+      preferencias: safe.preferencias ?? null,
+      habilidades: safe.habilidades ?? {},
+      idiomas: Array.isArray(safe.idiomas) ? safe.idiomas : [],
+      experiencias: Array.isArray(safe.experiencias) ? safe.experiencias : [],
+      formacao: Array.isArray(safe.formacao) ? safe.formacao : [],
+      cursosCertificacoes: Array.isArray(safe.cursosCertificacoes)
+        ? safe.cursosCertificacoes
+        : [],
+      premiosPublicacoes: Array.isArray(safe.premiosPublicacoes)
+        ? safe.premiosPublicacoes
+        : [],
+      acessibilidade: safe.acessibilidade ?? null,
+      consentimentos: safe.consentimentos ?? null,
+      ultimaAtualizacao: String(safe.ultimaAtualizacao ?? safe.atualizadoEm ?? ""),
+      criadoEm: String(safe.criadoEm ?? ""),
+      atualizadoEm: String(safe.atualizadoEm ?? ""),
+    } as Curriculo;
   };
 
   const [loadingStates, setLoadingStates] = useState<Record<string, boolean>>(
@@ -72,13 +115,15 @@ export function CurriculosTab({
     staleTime: 5 * 60 * 1000,
   });
 
-  const curriculos = usuarioData?.curriculos || [];
+  const curriculos = Array.isArray(usuarioData?.curriculos)
+    ? usuarioData!.curriculos!
+    : [];
 
   const handleViewCurriculo = async (curriculoId: string, titulo: string) => {
     setLoadingStates((prev) => ({ ...prev, [curriculoId]: true }));
     try {
-      const curriculo = await getCurriculo(curriculoId);
-      setSelectedCurriculo(curriculo);
+      const response = await getCurriculo(curriculoId);
+      setSelectedCurriculo(unwrapCurriculo(response));
       setIsModalOpen(true);
     } catch (error) {
       console.error("Erro ao carregar currículo:", error);
@@ -109,8 +154,8 @@ export function CurriculosTab({
     try {
       // Buscar o currículo completo se necessário
       const curriculoCompleto = isCurriculoDetalhado(curriculo)
-        ? curriculo
-        : await getCurriculo(curriculo.id);
+        ? (curriculo as Curriculo)
+        : unwrapCurriculo(await getCurriculo(curriculo.id));
       
       await generateCurriculoPdf(
         curriculoCompleto,
@@ -293,4 +338,3 @@ export function CurriculosTab({
     </div>
   );
 }
-

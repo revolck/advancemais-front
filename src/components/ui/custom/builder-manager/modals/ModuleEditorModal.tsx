@@ -13,6 +13,7 @@ import { DatePickerRangeCustom } from "@/components/ui/custom/date-picker";
 import { MultiSelectFilter } from "@/components/ui/custom/filters/MultiSelectFilter";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { toastCustom } from "@/components/ui/custom";
 import type { BuilderModule } from "../types";
 import { PLACEHOLDERS } from "../config";
 
@@ -20,6 +21,9 @@ interface ModuleEditorModalProps {
   isOpen: boolean;
   module: BuilderModule | null;
   instructorOptions?: Array<{ value: string; label: string }>;
+  minDate?: Date;
+  maxDate?: Date;
+  existingModules?: BuilderModule[];
   onSave: (updates: Partial<BuilderModule>) => void;
   onClose: () => void;
 }
@@ -32,6 +36,9 @@ export function ModuleEditorModal({
   isOpen,
   module,
   instructorOptions = [],
+  minDate,
+  maxDate,
+  existingModules = [],
   onSave,
   onClose,
 }: ModuleEditorModalProps) {
@@ -53,6 +60,66 @@ export function ModuleEditorModal({
   }, [module]);
 
   const handleSave = () => {
+    const start = startDate?.getTime() ?? null;
+    const end = endDate?.getTime() ?? null;
+    const min = minDate ? new Date(minDate).setHours(0, 0, 0, 0) : null;
+    const max = maxDate ? new Date(maxDate).setHours(23, 59, 59, 999) : null;
+
+    if (start == null || end == null) {
+      toastCustom.error({
+        title: "Período obrigatório",
+        description: "Informe o início e término do módulo.",
+      });
+      return;
+    }
+
+    if (start != null && end != null && start > end) {
+      toastCustom.error({
+        title: "Período inválido",
+        description: "A data final deve ser após a data inicial.",
+      });
+      return;
+    }
+    if (min != null && start != null && start < min) {
+      toastCustom.error({
+        title: "Período inválido",
+        description: "O período do módulo deve estar dentro do período da turma.",
+      });
+      return;
+    }
+    if (max != null && end != null && end > max) {
+      toastCustom.error({
+        title: "Período inválido",
+        description: "O período do módulo deve estar dentro do período da turma.",
+      });
+      return;
+    }
+
+    const conflictingModule = existingModules.find((m) => {
+      if (!m || m.id === module?.id) return false;
+      if (!m.startDate || !m.endDate) return false;
+      const ms = new Date(m.startDate).getTime();
+      const me = new Date(m.endDate).getTime();
+      // Não permite períodos sobrepostos (encostar na borda é permitido)
+      return start < me && end > ms;
+    });
+
+    if (conflictingModule) {
+      const conflictStart = new Date(conflictingModule.startDate!).toLocaleDateString(
+        "pt-BR"
+      );
+      const conflictEnd = new Date(conflictingModule.endDate!).toLocaleDateString(
+        "pt-BR"
+      );
+      toastCustom.error({
+        title: "Conflito de período",
+        description: `O período do módulo conflita com "${
+          conflictingModule.title || "Módulo"
+        }" (${conflictStart} - ${conflictEnd}). Escolha um período após ${conflictEnd} ou antes de ${conflictStart}.`,
+      });
+      return;
+    }
+
     onSave({
       title,
       startDate: startDate?.toISOString() || null,
@@ -80,6 +147,26 @@ export function ModuleEditorModal({
 
         <ModalBody className="space-y-6">
           <div className="space-y-4">
+            <div className="flex items-center gap-6 rounded-xl border border-border/60 bg-muted/5 p-4">
+              <div className="flex flex-1 flex-col gap-1">
+                <Label
+                  htmlFor="mod-obrigatorio"
+                  className="text-sm font-medium cursor-pointer"
+                >
+                  Módulo obrigatório
+                </Label>
+                <span className="text-xs text-muted-foreground">
+                  Define se este módulo é obrigatório para a conclusão do curso.
+                </span>
+              </div>
+              <Switch
+                id="mod-obrigatorio"
+                checked={obrigatorio}
+                onCheckedChange={setObrigatorio}
+                className="cursor-pointer"
+              />
+            </div>
+
             <InputCustom
               label="Título"
               required
@@ -101,7 +188,8 @@ export function ModuleEditorModal({
                 setStartDate(range.from || null);
                 setEndDate(range.to || null);
               }}
-              minDate={new Date()}
+              minDate={minDate ?? new Date()}
+              maxDate={maxDate}
               clearable
             />
 
@@ -117,26 +205,6 @@ export function ModuleEditorModal({
                 selectedValues={instructorIds.map(String)}
                 onSelectionChange={setInstructorIds}
                 showApplyButton
-              />
-            </div>
-
-            <div className="flex items-center gap-6 rounded-xl border border-border/60 bg-muted/5 p-4">
-              <div className="flex flex-1 flex-col gap-1">
-                <Label
-                  htmlFor="mod-obrigatorio"
-                  className="text-sm font-medium cursor-pointer"
-                >
-                  Módulo obrigatório
-                </Label>
-                <span className="text-xs text-muted-foreground">
-                  Define se este módulo é obrigatório para a conclusão do curso.
-                </span>
-              </div>
-              <Switch
-                id="mod-obrigatorio"
-                checked={obrigatorio}
-                onCheckedChange={setObrigatorio}
-                className="cursor-pointer"
               />
             </div>
           </div>

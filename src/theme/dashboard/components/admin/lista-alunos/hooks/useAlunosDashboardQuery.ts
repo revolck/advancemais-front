@@ -39,108 +39,46 @@ export function useAlunosDashboardQuery(filters: NormalizedAlunosFilters) {
       };
 
       if (filters.status) {
-        params.status = Array.isArray(filters.status) && filters.status.length === 1
-          ? filters.status[0]
-          : filters.status;
+        params.status =
+          Array.isArray(filters.status) && filters.status.length === 1
+            ? filters.status[0]
+            : filters.status;
       }
       if (filters.cursoId) {
-        // Agora sempre é string único (não array)
         params.cursoId = filters.cursoId;
       }
       if (filters.turmaId) {
-        // Agora sempre é string único (não array)
         params.turmaId = filters.turmaId;
       }
       if (filters.cidade) {
-        params.cidade = Array.isArray(filters.cidade) && filters.cidade.length === 1
-          ? filters.cidade[0]
-          : filters.cidade;
+        params.cidade =
+          Array.isArray(filters.cidade) && filters.cidade.length === 1
+            ? filters.cidade[0]
+            : filters.cidade;
       }
       if (filters.search) params.search = filters.search;
 
       const response = await listAlunosComInscricao(params);
 
-      const originalAlunos = response.data ?? [];
+      const alunos = response.data ?? [];
+      const apiPagination = response.pagination;
 
-      const filtered = originalAlunos.filter((aluno) => {
-        // Suporte para múltiplos status
-        const matchesStatus = !filters.status
-          ? true
-          : Array.isArray(filters.status)
-          ? filters.status.includes(aluno.inscricao?.status || "")
-          : aluno.inscricao?.status === filters.status;
-        
-        // Curso individual (string único)
-        const matchesCurso = !filters.cursoId
-          ? true
-          : aluno.inscricao?.curso.id === filters.cursoId;
-        
-        // Turma individual (string único) - turma não disponível em AlunoComInscricao
-        const matchesTurma = !filters.turmaId
-          ? true
-          : false; // turma não disponível
-        
-        // Suporte para múltiplas cidades
-        const matchesCidade = !filters.cidade
-          ? true
-          : Array.isArray(filters.cidade)
-          ? filters.cidade.some((cidade) =>
-              (aluno.cidade || "").toLowerCase() === cidade.toLowerCase()
-            )
-          : (aluno.cidade || "").toLowerCase() === filters.cidade.toLowerCase();
-
-        if (filters.search && filters.search.length >= 3) {
-          const searchLower = filters.search.toLowerCase();
-          const matchesSearch =
-            (aluno.nome || "").toLowerCase().includes(searchLower) ||
-            (aluno.email || "").toLowerCase().includes(searchLower) ||
-            (aluno.cpf || "").toLowerCase().includes(searchLower) ||
-            aluno.id.toLowerCase().includes(searchLower);
-
-          return (
-            matchesStatus &&
-            matchesCurso &&
-            matchesTurma &&
-            matchesCidade &&
-            matchesSearch
-          );
-        }
-
-        return matchesStatus && matchesCurso && matchesTurma && matchesCidade;
-      });
-
-      const filteredTotal = filtered.length;
-
-      const pagination = response.pagination
-        ? {
-            page: response.pagination.page ?? filters.page,
-            pageSize: response.pagination.pageSize ?? filters.pageSize,
-            total:
-              filters.status || filters.cursoId || filters.turmaId || filters.cidade || filters.search
-                ? filteredTotal
-                : response.pagination.total ?? filteredTotal,
-            totalPages:
-              filters.status || filters.cursoId || filters.turmaId || filters.cidade || filters.search
-                ? Math.max(
-                    1,
-                    Math.ceil(filteredTotal / filters.pageSize)
-                  )
-                : response.pagination.totalPages ??
-                  Math.max(1, Math.ceil(filteredTotal / filters.pageSize)),
-          }
-        : {
-            page: filters.page,
-            pageSize: filters.pageSize,
-            total: filteredTotal,
-            totalPages: Math.max(
-              1,
-              Math.ceil(filteredTotal / filters.pageSize)
-            ),
-          };
+      const page = apiPagination?.page ?? filters.page;
+      const pageSize = apiPagination?.pageSize ?? filters.pageSize;
+      const total = apiPagination?.total ?? alunos.length;
+      const totalPages =
+        apiPagination?.totalPages && apiPagination.totalPages > 0
+          ? apiPagination.totalPages
+          : Math.max(1, Math.ceil(total / Math.max(1, pageSize)));
 
       return {
-        alunos: filtered,
-        pagination,
+        alunos,
+        pagination: {
+          page,
+          pageSize,
+          total,
+          totalPages,
+        },
       };
     },
     placeholderData: keepPreviousData,
@@ -148,4 +86,3 @@ export function useAlunosDashboardQuery(filters: NormalizedAlunosFilters) {
     gcTime: 5 * 60 * 1000,
   });
 }
-

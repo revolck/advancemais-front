@@ -7,6 +7,11 @@ import { NotificationButton } from "./components/NotificationButton";
 import { UserMenuSimple } from "@/components/ui/custom/user-button";
 import { DashboardHeaderProps } from "./types/header.types";
 import { cn } from "@/lib/utils";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export function DashboardHeader({
   toggleSidebar,
@@ -50,6 +55,64 @@ export function DashboardHeader({
 
         {/* Seção Direita - Ações do Usuário */}
         <div className="flex items-center gap-2">
+          {/* Botão de Ajuda */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <motion.a
+                href="https://ajuda.advancemais.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className={cn(
+                  "flex items-center justify-center w-10 h-10 rounded-lg",
+                  "hover:bg-white/10 active:bg-white/20",
+                  "transition-all duration-200 ease-in-out",
+                  "focus:outline-none focus:ring-2 focus:ring-white/20"
+                )}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                aria-label="Ajuda"
+              >
+                <Icon
+                  name="HelpCircle"
+                  size={18}
+                  className="text-white transition-colors"
+                />
+              </motion.a>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" sideOffset={8} className="text-white">
+              Ajuda
+            </TooltipContent>
+          </Tooltip>
+
+          {/* Botão de Vídeos - Academia */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <motion.a
+                href="https://academia.advancemais.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className={cn(
+                  "flex items-center justify-center w-10 h-10 rounded-lg",
+                  "hover:bg-white/10 active:bg-white/20",
+                  "transition-all duration-200 ease-in-out",
+                  "focus:outline-none focus:ring-2 focus:ring-white/20"
+                )}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                aria-label="Videos"
+              >
+                <Icon
+                  name="Video"
+                  size={18}
+                  className="text-white transition-colors"
+                />
+              </motion.a>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" sideOffset={8} className="text-white">
+              Videos
+            </TooltipContent>
+          </Tooltip>
+
           {/* Botão de Notificações */}
           <NotificationButton />
 

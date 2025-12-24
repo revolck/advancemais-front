@@ -77,7 +77,7 @@ export function AboutTab({ aluno, isLoading = false }: AboutTabProps) {
     value: React.ReactNode | null;
     icon: LucideIcon;
   }> = [
-    { label: "Código do aluno", value: "—", icon: Tag }, // codigo não disponível em CursoAlunoDetalhes
+    { label: "Código do aluno", value: aluno.codigo || "—", icon: Tag },
     { label: "Criado em", value: formatDateTime(aluno.criadoEm), icon: CalendarDays },
     { label: "CPF", value: formatCpf(aluno.cpf), icon: Tag },
     { label: "Telefone", value: formatPhoneLink(aluno.telefone), icon: Phone },
@@ -175,5 +175,4 @@ export function AboutTab({ aluno, isLoading = false }: AboutTabProps) {
     </div>
   );
 }
-
 

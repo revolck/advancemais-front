@@ -129,7 +129,7 @@ export interface UsuarioRegisterPayload {
   senha: string;
   confirmarSenha: string;
   aceitarTermos: boolean;
-  supabaseId?: string;
+  authId?: string;
   tipoUsuario: TipoUsuario;
   cpf?: string;
   cnpj?: string;
@@ -197,9 +197,15 @@ export interface UsuarioLoginResponse extends UsuarioResponseBase {
     nomeCompleto: string;
     role: Role;
     tipoUsuario: TipoUsuario;
-    supabaseId: string;
+    authId: string;
     emailVerificado: boolean;
     ultimoLogin: string;
+    telefone?: string;
+    celular?: string;
+    genero?: string | null;
+    dataNasc?: string | null;
+    descricao?: string | null;
+    avatarUrl?: string | null;
     socialLinks: UsuarioSocialLinks;
     enderecos: UsuarioEndereco[];
   };
@@ -279,14 +285,41 @@ export interface UsuarioProfileResponse extends UsuarioResponseBase {
     nomeCompleto: string;
     role: Role;
     tipoUsuario: TipoUsuario;
-    supabaseId: string;
+    authId: string;
     emailVerificado: boolean;
     emailVerificadoEm: string | null;
     ultimoLogin: string | null;
-    socialLinks: UsuarioSocialLinks;
-    enderecos: UsuarioEndereco[];
+    cpf?: string | null;
+    cnpj?: string | null;
+    codUsuario?: string;
+    status?: StatusUsuario;
+    criadoEm?: string;
+    atualizadoEm?: string;
+    telefone?: string | null;
+    celular?: string | null;
+    genero?: string | null;
+    dataNasc?: string | null;
+    descricao?: string | null;
+    avatarUrl?: string | null;
+    cidade?: string | null;
+    estado?: string | null;
+    aceitarTermos?: boolean;
+    inscricao?: string | null;
+    redesSociais?: UsuarioSocialLinks | null;
+    socialLinks?: UsuarioSocialLinks;
+    enderecos?: UsuarioEndereco[];
+    UsuariosVerificacaoEmail?: {
+      verified: boolean;
+      verifiedAt: string | null;
+      token: string | null;
+      tokenExpiration: string | null;
+      attempts: number;
+      lastAttemptAt: string | null;
+    };
   };
   stats: UsuarioProfileStats;
+  correlationId?: string;
+  timestamp?: string;
 }
 
 // ============================================================================

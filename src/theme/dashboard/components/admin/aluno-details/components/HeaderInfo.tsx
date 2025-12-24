@@ -37,6 +37,7 @@ export function HeaderInfo({
   onDesbloquearAluno,
 }: HeaderInfoProps) {
   const [isActionsOpen, setIsActionsOpen] = useState(false);
+  const alunoNome = aluno.nome || aluno.nomeCompleto || "Aluno";
   // Status não está disponível em CursoAlunoDetalhes, usando valor padrão
   const normalized = "ATIVO"; // Valor padrão, pode ser ajustado quando status estiver disponível
   const isBloqueado = false; // Valor padrão
@@ -60,10 +61,10 @@ export function HeaderInfo({
             <Avatar className="h-20 w-20 shrink-0 text-base">
               <AvatarImage
                 src={aluno.avatarUrl || undefined}
-                alt={aluno.nome}
+                alt={alunoNome}
               />
               <AvatarFallback className="bg-primary/10 text-primary/80 text-base font-semibold">
-                {getAlunoInitials(aluno.nome)}
+                {getAlunoInitials(alunoNome)}
               </AvatarFallback>
             </Avatar>
             <Tooltip>
@@ -83,7 +84,7 @@ export function HeaderInfo({
           </div>
 
           <div className="space-y-3">
-            <h3 className="font-semibold !mb-0"> {aluno.nome}</h3>
+            <h3 className="font-semibold !mb-0">{alunoNome}</h3>
             <div className="flex flex-wrap items-center gap-2 text-xs text-gray-400 font-mono">
               <span>CPF: {formatCpf(aluno.cpf)}</span>
             </div>

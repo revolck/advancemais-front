@@ -305,21 +305,32 @@ export interface TurmaCertificado {
 // Alunos
 export interface AlunoComInscricao {
   id: string;
-  nome: string;
-  email: string;
+  codigo?: string;
+  nomeCompleto?: string;
+  email?: string;
   cpf?: string;
   telefone?: string;
   cidade?: string;
   estado?: string;
-  inscricao: {
-    id: string;
-    status: string;
-    curso: {
+  status?: string;
+  ultimoLogin?: string | null;
+  criadoEm?: string;
+  ultimoCurso?: {
+    inscricaoId: string;
+    statusInscricao: StatusInscricao | string;
+    dataInscricao?: string;
+    turma?: {
       id: string;
       nome: string;
-      codigo: string;
+      codigo?: string;
+      status?: string;
     };
-  };
+    curso?: {
+      id: string;
+      nome: string;
+      codigo?: string;
+    };
+  } | null;
 }
 
 export interface ListAlunosComInscricaoParams {
@@ -346,11 +357,14 @@ export interface ListAlunosComInscricaoResponse {
 export interface CursoAlunoDetalhes {
   id: string;
   nome: string;
+  nomeCompleto?: string;
+  codigo?: string;
   email: string;
   cpf?: string;
   telefone?: string;
   cidade?: string;
   estado?: string;
+  status?: string;
   ultimoLogin?: string | null;
   criadoEm: string;
   ultimoCurso?: {
@@ -379,21 +393,29 @@ export interface CursoAlunoEndereco {
 
 export interface CursoAlunoInscricao {
   id: string;
-  statusInscricao: string;
+  statusInscricao?: string;
+  status?: string;
   progresso?: number;
-  criadoEm: string;
-  turma: CursoAlunoTurmaResumo;
-  curso: CursoAlunoCursoResumo;
+  criadoEm?: string;
+  dataInscricao?: string;
+  turma?: CursoAlunoTurmaResumo;
+  curso?: CursoAlunoCursoResumo;
 }
 
 export interface CursoAlunoTurmaResumo {
   id: string;
   nome: string;
+  codigo?: string;
+  status?: string;
+  dataInicio?: string;
+  dataFim?: string;
 }
 
 export interface CursoAlunoCursoResumo {
   id: string;
   nome: string;
+  codigo?: string;
+  imagemUrl?: string | null;
 }
 
 export interface CursoAlunoEstatisticas {

@@ -28,6 +28,7 @@ function calculateProgress(status?: string): number {
   if (!status) return 0;
   const normalized = status.toUpperCase();
   const progressMap: Record<string, number> = {
+    INSCRITO: 10,
     MATRICULADO: 10,
     EM_ANDAMENTO: 50,
     EM_CURSO: 50,
@@ -38,6 +39,13 @@ function calculateProgress(status?: string): number {
     TRANCADO: 0,
   };
   return progressMap[normalized] || 0;
+}
+
+function normalizeProgress(value: number): number {
+  if (!Number.isFinite(value)) return 0;
+  // Alguns backends retornam 0..1; outros retornam 0..100.
+  if (value >= 0 && value <= 1) return value * 100;
+  return value;
 }
 
 // Função para obter cor do progresso baseado no valor do progresso
@@ -93,11 +101,14 @@ export function CursosTurmasTab({
       const query = searchQuery.toLowerCase().trim();
       filtered = filtered.filter((inscricao) => {
         const cursoNome = inscricao.curso?.nome?.toLowerCase() || "";
+        const cursoCodigo = inscricao.curso?.codigo?.toLowerCase() || "";
         const turmaNome = inscricao.turma?.nome?.toLowerCase() || "";
-        // codigo não disponível em CursoAlunoTurmaResumo
+        const turmaCodigo = inscricao.turma?.codigo?.toLowerCase() || "";
         return (
           cursoNome.includes(query) ||
+          cursoCodigo.includes(query) ||
           turmaNome.includes(query)
+          || turmaCodigo.includes(query)
         );
       });
     }
@@ -183,7 +194,7 @@ export function CursosTurmasTab({
   }
 
   const ativos = inscricoesData.filter((i) =>
-    ["MATRICULADO", "EM_ANDAMENTO", "EM_ESTAGIO", "EM_CURSO"].includes(
+    ["INSCRITO", "MATRICULADO", "EM_ANDAMENTO", "EM_ESTAGIO", "EM_CURSO"].includes(
       (i.statusInscricao || "").toUpperCase()
     )
   ).length;
@@ -345,13 +356,20 @@ export function CursosTurmasTab({
           {/* Grid de cards estilo Apple - limpo e minimalista */}
           <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
             {pageItems.map((inscricao) => {
-              const img = undefined; // imagemUrl não disponível em CursoAlunoCursoResumo
+              const img = inscricao.curso?.imagemUrl || undefined;
               const statusBadge = getStatusBadge(inscricao.statusInscricao);
               // Usa progresso da API se disponível (incluindo 0), caso contrário usa fallback baseado no status
               // Verifica se progresso é um número válido (incluindo 0)
+              const rawProgressoValue = (inscricao as any)?.progresso;
+              const parsedProgresso =
+                typeof rawProgressoValue === "number"
+                  ? rawProgressoValue
+                  : typeof rawProgressoValue === "string"
+                  ? Number(rawProgressoValue)
+                  : undefined;
               const rawProgress =
-                typeof inscricao.progresso === "number"
-                  ? inscricao.progresso
+                typeof parsedProgresso === "number" && Number.isFinite(parsedProgresso)
+                  ? normalizeProgress(parsedProgresso)
                   : calculateProgress(inscricao.statusInscricao);
               // Garante que o progresso está entre 0 e 100
               const progress = Math.max(0, Math.min(100, rawProgress));
@@ -397,12 +415,21 @@ export function CursosTurmasTab({
                     <div className="mt-3 space-y-2">
                       <div className="flex items-center gap-2 text-xs text-gray-600">
                         <Calendar className="h-3.5 w-3.5 text-gray-400" />
-                        <span>{"—"}</span> {/* dataInicio não disponível em CursoAlunoTurmaResumo */}
+                        <span>
+                          Inscrito em {formatDate(inscricao.criadoEm || inscricao.dataInscricao)}
+                        </span>
                       </div>
 
                       <div className="flex items-center gap-2 text-xs text-gray-600">
                         <Users className="h-3.5 w-3.5 text-gray-400" />
-                        <span>Turma {"—"}</span> {/* codigo não disponível em CursoAlunoTurmaResumo */}
+                        <span>
+                          Turma{" "}
+                          {inscricao.turma
+                            ? [inscricao.turma.codigo, inscricao.turma.nome]
+                                .filter(Boolean)
+                                .join(" - ")
+                            : "—"}
+                        </span>
                       </div>
                     </div>
 

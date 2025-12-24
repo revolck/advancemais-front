@@ -96,11 +96,19 @@ export function getStatusBadge(status?: string) {
       label: "Bloqueado",
       color: "bg-red-50/90 text-red-600 border-red-200",
     },
+    INSCRITO: {
+      label: "Inscrito",
+      color: "bg-blue-50/90 text-blue-700 border-blue-200",
+    },
     MATRICULADO: {
       label: "Inscrito",
       color: "bg-blue-50/90 text-blue-700 border-blue-200",
     },
     EM_ANDAMENTO: {
+      label: "Em andamento",
+      color: "bg-amber-50/90 text-amber-700 border-amber-200",
+    },
+    EM_CURSO: {
       label: "Em andamento",
       color: "bg-amber-50/90 text-amber-700 border-amber-200",
     },

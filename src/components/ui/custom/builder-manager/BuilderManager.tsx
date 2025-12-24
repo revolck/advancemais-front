@@ -62,6 +62,8 @@ interface BuilderManagerProps {
   template?: BuilderTemplate;
   instructorOptions?: Array<{ value: string; label: string }>;
   modalidade?: "ONLINE" | "PRESENCIAL" | "LIVE" | "SEMIPRESENCIAL" | null;
+  periodMinDate?: Date;
+  periodMaxDate?: Date;
 }
 
 export function BuilderManager({
@@ -71,6 +73,8 @@ export function BuilderManager({
   template,
   instructorOptions,
   modalidade = null,
+  periodMinDate,
+  periodMaxDate,
 }: BuilderManagerProps) {
   const [dragId, setDragId] = useState<string | null>(null); // arraste nativo da paleta
   const [hoverModuleId, setHoverModuleId] = useState<string | null>(null); // destaque do alvo
@@ -142,8 +146,31 @@ export function BuilderManager({
     return () => window.removeEventListener("keydown", handler);
   }, [isPanelOpen]);
 
-  const modules = value.modules || [];
-  const standaloneItems = value.standaloneItems || [];
+  const rawModules = value.modules || [];
+  const rawStandaloneItems = value.standaloneItems || [];
+  const allowedItemTypes = React.useMemo(
+    () => ["AULA", "ATIVIDADE", "PROVA"] as const,
+    []
+  );
+
+  const modules = React.useMemo(
+    () =>
+      rawModules.map((m) => ({
+        ...m,
+        items: m.items.filter((it) =>
+          allowedItemTypes.includes(it.type as (typeof allowedItemTypes)[number])
+        ),
+      })),
+    [rawModules, allowedItemTypes]
+  );
+
+  const standaloneItems = React.useMemo(
+    () =>
+      rawStandaloneItems.filter((it) =>
+        allowedItemTypes.includes(it.type as (typeof allowedItemTypes)[number])
+      ),
+    [rawStandaloneItems, allowedItemTypes]
+  );
 
   // Agrupa standaloneItems por posição (afterModuleIndex)
   const groupedStandalone = React.useMemo(() => {
@@ -204,7 +231,7 @@ export function BuilderManager({
     // Palette new item
     if (dragId.startsWith("palette-")) {
       const raw = dragId.replace("palette-", "");
-      if (!["AULA", "ATIVIDADE", "PROVA", "TRABALHO"].includes(raw)) return;
+      if (!["AULA", "ATIVIDADE", "PROVA"].includes(raw)) return;
       const type = raw as BuilderItem["type"];
       const newItem: BuilderItem = {
         id: uid("item"),
@@ -213,8 +240,6 @@ export function BuilderManager({
             ? "Prova"
             : type === "ATIVIDADE"
             ? "Atividade"
-            : type === "TRABALHO"
-            ? "Trabalho"
             : "Nova aula",
         type,
       };
@@ -277,7 +302,7 @@ export function BuilderManager({
     }
     if (dragId.startsWith("palette-")) {
       const raw = dragId.replace("palette-", "");
-      if (!["AULA", "ATIVIDADE", "PROVA", "TRABALHO"].includes(raw)) return;
+      if (!["AULA", "ATIVIDADE", "PROVA"].includes(raw)) return;
       const type = raw as BuilderItem["type"];
       const newItem: BuilderItem = {
         id: uid("item"),
@@ -286,8 +311,6 @@ export function BuilderManager({
             ? "Prova"
             : type === "ATIVIDADE"
             ? "Atividade"
-            : type === "TRABALHO"
-            ? "Trabalho"
             : "Nova aula",
         type,
         startDate: null,
@@ -367,8 +390,6 @@ export function BuilderManager({
                     ? "Prova"
                     : type === "ATIVIDADE"
                     ? "Atividade"
-                    : type === "TRABALHO"
-                    ? "Trabalho"
                     : "Nova aula",
                 type,
                 startDate: null,
@@ -391,8 +412,6 @@ export function BuilderManager({
             ? "Prova"
             : type === "ATIVIDADE"
             ? "Atividade"
-            : type === "TRABALHO"
-            ? "Trabalho"
             : "Nova aula",
         type,
         startDate: null,
@@ -421,8 +440,6 @@ export function BuilderManager({
                 ? "Prova"
                 : type === "ATIVIDADE"
                 ? "Atividade"
-                : type === "TRABALHO"
-                ? "Trabalho"
                 : "Nova aula",
             type,
             startDate: null,
@@ -456,8 +473,6 @@ export function BuilderManager({
                     ? "Prova"
                     : type === "ATIVIDADE"
                     ? "Atividade"
-                    : type === "TRABALHO"
-                    ? "Trabalho"
                     : "Nova aula",
                 type,
                 startDate: null,
@@ -2420,7 +2435,6 @@ export function BuilderManager({
               (dragId?.startsWith("palette-AULA") ||
                 dragId?.startsWith("palette-ATIVIDADE") ||
                 dragId?.startsWith("palette-PROVA") ||
-                dragId?.startsWith("palette-TRABALHO") ||
                 (isDragging && activeDragKind === "item")) && (
                 <StandaloneDroppable id="standalone-dropzone">
                   {({ setNodeRef, isOver }) => (
@@ -3229,6 +3243,9 @@ export function BuilderManager({
                 : null
             }
             instructorOptions={instructorOptions}
+            minDate={periodMinDate}
+            maxDate={periodMaxDate}
+            existingModules={modules}
             onSave={(updates) => {
               if (selected?.kind === "module") {
                 onChange({
@@ -3257,8 +3274,33 @@ export function BuilderManager({
                 : null
             }
             modules={modules}
+            standaloneItems={standaloneItems}
             modalidade={modalidade}
             instructorOptions={instructorOptions}
+            minDate={
+              selected?.kind === "item"
+                ? (() => {
+                    const parentModule = modules.find((m) =>
+                      m.items.some((i) => i.id === selected.id)
+                    );
+                    return parentModule?.startDate
+                      ? new Date(parentModule.startDate)
+                      : periodMinDate;
+                  })()
+                : periodMinDate
+            }
+            maxDate={
+              selected?.kind === "item"
+                ? (() => {
+                    const parentModule = modules.find((m) =>
+                      m.items.some((i) => i.id === selected.id)
+                    );
+                    return parentModule?.endDate
+                      ? new Date(parentModule.endDate)
+                      : periodMaxDate;
+                  })()
+                : periodMaxDate
+            }
             onSave={(updates) => {
               if (selected?.kind === "item") {
                 // Verificar se o item está em um módulo ou é standalone

@@ -375,7 +375,7 @@ const RegisterPage = () => {
         confirmarSenha: formData.confirmPassword,
         aceitarTermos: acceptTerms,
         tipoUsuario,
-        supabaseId: `temp-${Date.now()}-${Math.random()
+        authId: `temp-${Date.now()}-${Math.random()
           .toString(36)
           .substr(2, 9)}-${Math.random().toString(36).substr(2, 9)}`,
       };
@@ -398,7 +398,7 @@ const RegisterPage = () => {
         email: maskEmail(payloadForApi.email),
         senha: `***(${payloadForApi.senha.length} chars)`,
         confirmarSenha: `***(${payloadForApi.confirmarSenha.length} chars)`,
-        supabaseId: maskSensitiveValue(payloadForApi.supabaseId || ""),
+        authId: maskSensitiveValue(payloadForApi.authId || ""),
         cpf: payloadForApi.cpf
           ? maskSensitiveValue(payloadForApi.cpf)
           : undefined,
@@ -858,7 +858,7 @@ const RegisterPage = () => {
           </p>
           <div className="flex flex-wrap items-center justify-center text-[12px] sm:text-sm text-white/80">
             <a
-              href="/politica-privacidade"
+              href="https://advancemais.com/politica-privacidade"
               target="_blank"
               rel="noopener noreferrer"
               className="hover:text-white transition-colors px-3"
@@ -870,7 +870,7 @@ const RegisterPage = () => {
               aria-hidden
             ></span>
             <a
-              href="/termos-uso"
+              href="https://advancemais.com/termos-uso"
               target="_blank"
               rel="noopener noreferrer"
               className="hover:text-white transition-colors px-3"
@@ -882,7 +882,7 @@ const RegisterPage = () => {
               aria-hidden
             ></span>
             <a
-              href="/cookies"
+              href="https://advancemais.com/cookies"
               target="_blank"
               rel="noopener noreferrer"
               className="hover:text-white transition-colors px-3"

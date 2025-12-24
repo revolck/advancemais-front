@@ -7,3 +7,7 @@ export * from "./faturamento";
 export * from "./financeiro";
 export * from "./auditoria";
 export * from "./transacoes";
+export * from "./notas";
+export * from "./frequencia";
+export * from "./aulas";
+export * from "./atividades-provas";

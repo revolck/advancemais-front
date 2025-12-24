@@ -144,21 +144,21 @@ export function AlunosDashboard({ className }: { className?: string }) {
   );
 
   const turmasFromAlunos = useMemo(() => {
-    // turma não disponível em AlunoComInscricao.inscricao
-    // Retornando array vazio por enquanto
-    return [];
-    // const map = new Map<string, any>();
-    // alunos.forEach((aluno) => {
-    //   const inscricao = aluno.inscricao;
-    //   if (!inscricao?.curso) return;
-    //   if (selectedCourseId && inscricao.curso.id !== selectedCourseId) {
-    //     return;
-    //   }
-    //   // turma não está disponível no tipo
-    // });
-    // return Array.from(map.values()).sort((a, b) =>
-    //   a.nome.localeCompare(b.nome)
-    // );
+    const map = new Map<string, { id: string; nome: string }>();
+
+    alunos.forEach((aluno) => {
+      const ultimoCurso = aluno.ultimoCurso;
+      const turma = ultimoCurso?.turma;
+      const curso = ultimoCurso?.curso;
+      if (!turma) return;
+      if (selectedCourseId && curso?.id !== selectedCourseId) return;
+
+      map.set(turma.id, { id: turma.id, nome: turma.nome });
+    });
+
+    return Array.from(map.values()).sort((a, b) =>
+      a.nome.localeCompare(b.nome, "pt-BR")
+    );
   }, [alunos, selectedCourseId]);
 
   const turmasSource = useMemo(() => {
@@ -299,8 +299,8 @@ export function AlunosDashboard({ className }: { className?: string }) {
   const sortedAlunos = useMemo(() => {
     const sorted = [...alunos];
     sorted.sort((a, b) => {
-      const nameA = (a.nome || a.id).toLowerCase();
-      const nameB = (b.nome || b.id).toLowerCase();
+      const nameA = (a.nomeCompleto || a.id).toLowerCase();
+      const nameB = (b.nomeCompleto || b.id).toLowerCase();
       if (sortDirection === "asc") {
         return nameA.localeCompare(nameB, "pt-BR");
       } else {

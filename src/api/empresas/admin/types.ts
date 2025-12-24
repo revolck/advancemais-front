@@ -670,7 +670,7 @@ export interface CreateAdminCompanyPayload {
   email: string;
   telefone: string;
   senha: string;
-  supabaseId: string;
+  authId: string;
   cnpj: string;
   cidade: string;
   estado: string;

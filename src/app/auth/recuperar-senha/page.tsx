@@ -367,7 +367,7 @@ export default function PasswordResetPage() {
           </p>
           <div className="mt-3 flex flex-wrap items-center justify-center text-xs text-white/80 sm:text-sm">
             <a
-              href="http://advancemais.com/politica-privacidade"
+              href="https://advancemais.com/politica-privacidade"
               target="_blank"
               rel="noopener noreferrer"
               className="px-3 transition-colors hover:text-white"
@@ -376,7 +376,7 @@ export default function PasswordResetPage() {
             </a>
             <span className="h-4 w-px bg-blue-800/50" aria-hidden />
             <a
-              href="http://advancemais.com/termos-uso"
+              href="https://advancemais.com/termos-uso"
               target="_blank"
               rel="noopener noreferrer"
               className="px-3 transition-colors hover:text-white"
@@ -384,7 +384,12 @@ export default function PasswordResetPage() {
               Termos de Uso
             </a>
             <span className="h-4 w-px bg-blue-800/20" aria-hidden />
-            <a href="#" className="px-3 transition-colors hover:text-white">
+            <a
+              href="https://advancemais.com/cookies"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-3 transition-colors hover:text-white"
+            >
               Preferências de Cookies
             </a>
           </div>

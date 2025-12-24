@@ -334,6 +334,38 @@ export async function updateUserProfile(
   });
 }
 
+/**
+ * PUT /api/v1/usuarios/perfil/alterar-senha
+ * Altera a senha do usuário autenticado
+ *
+ * @param payload - Senha antiga e nova senha
+ * @param token - Token JWT (opcional)
+ * @returns Confirmação da alteração de senha
+ */
+export async function changeUserPassword(
+  payload: {
+    senhaAntiga: string;
+    senhaNova: string;
+    confirmarSenha: string;
+  },
+  token?: string
+): Promise<UsuarioProfileApiResponse> {
+  return apiFetch<UsuarioProfileApiResponse>(
+    usuarioRoutes.profile.changePassword(),
+    {
+      init: {
+        method: "PUT",
+        headers: {
+          ...buildAuthHeaders(token),
+          "Content-Type": apiConfig.headers["Content-Type"],
+        },
+        body: JSON.stringify(payload),
+      },
+      cache: "no-cache",
+    }
+  );
+}
+
 // ============================================================================
 // VERIFICAÇÃO DE EMAIL
 // ============================================================================
@@ -1006,6 +1038,11 @@ export const getProfile = getUserProfile;
 export const updateProfile = updateUserProfile;
 
 /**
+ * Alias para changeUserPassword
+ */
+export const changePassword = changeUserPassword;
+
+/**
  * Alias para verifyUserEmail
  */
 export const verifyEmail = verifyUserEmail;
@@ -1047,6 +1084,7 @@ export const usuarioApi = {
   // Perfil
   getUserProfile,
   updateUserProfile,
+  changeUserPassword,
 
   // Verificação de email
   verifyUserEmail,

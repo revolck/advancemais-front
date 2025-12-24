@@ -16,6 +16,7 @@ import { SimpleTextarea } from "@/components/ui/custom/text-area";
 import { SelectCustom } from "@/components/ui/custom/select";
 import { toastCustom } from "@/components/ui/custom";
 import { updateCurso, type UpdateCursoPayload, type Curso } from "@/api/cursos";
+import { clearApiCache } from "@/api/client";
 import { useCursoCategorias } from "../../lista-cursos/hooks/useCursoCategorias";
 import { useCursoSubcategorias } from "../../lista-cursos/hooks/useCursoSubcategorias";
 import { Label } from "@/components/ui/label";
@@ -26,6 +27,7 @@ import {
 import { uploadImage, deleteImage } from "@/services/upload";
 import { Switch } from "@/components/ui/switch";
 import { queryKeys } from "@/lib/react-query/queryKeys";
+import { optimisticallyUpsertCursoInCursosListQueries } from "../../lista-cursos/utils/cursosQueryCache";
 
 interface EditCursoModalProps {
   isOpen: boolean;
@@ -95,9 +97,7 @@ export function EditCursoModal({
   useEffect(() => {
     if (curso && isOpen) {
       // Determinar tipo de curso
-      const isGratuito =
-        curso.gratuito || (curso.valor === 0 && !curso.gratuito);
-      const tipoCurso: TipoCurso = isGratuito ? "GRATUITO" : "PAGO";
+      const tipoCurso: TipoCurso = curso.gratuito ? "GRATUITO" : "PAGO";
 
       setFormData({
         nome: curso.nome || "",
@@ -146,9 +146,28 @@ export function EditCursoModal({
   // Helper para converter valores monetários
   const parseCurrencyToNumber = (value: string): number => {
     if (!value || value.trim() === "") return 0;
-    const cleanValue = value.replace(/[^\d,.-]/g, "").replace(",", ".");
-    const numValue = parseFloat(cleanValue);
-    return isNaN(numValue) ? 0 : numValue;
+    const filtered = value.replace(/[^\d.,-]/g, "").trim();
+    if (!filtered) return 0;
+
+    const lastComma = filtered.lastIndexOf(",");
+    const lastDot = filtered.lastIndexOf(".");
+
+    let normalized = filtered;
+
+    if (lastComma !== -1 && lastDot !== -1) {
+      if (lastComma > lastDot) {
+        normalized = filtered.replace(/\./g, "").replace(",", ".");
+      } else {
+        normalized = filtered.replace(/,/g, "");
+      }
+    } else if (lastComma !== -1) {
+      normalized = filtered.replace(/\./g, "").replace(",", ".");
+    } else {
+      normalized = filtered.replace(/,/g, "");
+    }
+
+    const numValue = Number.parseFloat(normalized);
+    return Number.isFinite(numValue) ? numValue : 0;
   };
 
   const validateForm = (): boolean => {
@@ -317,7 +336,23 @@ export function EditCursoModal({
       }
 
       // Envia o payload completo para a API
-      await updateCurso(curso.id, payload);
+      const updatedCurso = await updateCurso(curso.id, payload);
+
+      clearApiCache();
+
+      const cursoForCache: Curso = {
+        ...updatedCurso,
+        ...payload,
+        id: String(curso.id),
+        valor: payload.valor ?? updatedCurso.valor,
+        valorPromocional: payload.valorPromocional ?? updatedCurso.valorPromocional,
+        gratuito: Boolean(payload.gratuito),
+      };
+      optimisticallyUpsertCursoInCursosListQueries(
+        queryClient,
+        cursoForCache,
+        "update",
+      );
 
       // Invalida todas as queries de listagem de cursos e detalhes para atualizar
       await queryClient.invalidateQueries({

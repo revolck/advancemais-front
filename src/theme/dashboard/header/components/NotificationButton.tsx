@@ -126,18 +126,21 @@ export function NotificationButton({ className }: NotificationButtonProps) {
   return (
     <>
       <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
-        <DropdownMenuTrigger asChild>
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-            <Button
-              variant="ghost"
-              size="icon"
-              className={cn(
-                "relative h-10 w-10 rounded-lg hover:bg-white/10 active:bg-white/20",
-                "transition-all duration-200 ease-in-out",
-                "focus:outline-none focus:ring-2 focus:ring-white/20",
-                className
-              )}
-            >
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <DropdownMenuTrigger asChild>
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={cn(
+                    "relative h-10 w-10 rounded-lg hover:bg-white/10 active:bg-white/20",
+                    "transition-all duration-200 ease-in-out",
+                    "focus:outline-none focus:ring-2 focus:ring-white/20",
+                    "cursor-pointer",
+                    className
+                  )}
+                >
               <motion.div
                 animate={unreadCount > 0 ? { rotate: [0, 10, -10, 0] } : {}}
                 transition={{
@@ -171,6 +174,11 @@ export function NotificationButton({ className }: NotificationButtonProps) {
             </Button>
           </motion.div>
         </DropdownMenuTrigger>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" sideOffset={8} className="text-white">
+            Notificações
+          </TooltipContent>
+        </Tooltip>
 
         <DropdownMenuContent
           align="end"

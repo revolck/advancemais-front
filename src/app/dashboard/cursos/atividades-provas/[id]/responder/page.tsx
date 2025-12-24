@@ -2,12 +2,14 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, CheckCircle2, ArrowLeft } from "lucide-react";
-import { ButtonCustom, EmptyState } from "@/components/ui/custom";
+import { ButtonCustom, EmptyState, toastCustom } from "@/components/ui/custom";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { listInscricoes } from "@/api/cursos";
 import {
   useQuestoes,
   useRespostas,
@@ -16,6 +18,15 @@ import {
 import { ResponderQuestao } from "@/theme/dashboard/components/admin/lista-atividades-provas/components/ResponderQuestao";
 import { useAuth } from "@/hooks/useAuth";
 import Link from "next/link";
+import {
+  RECUPERACAO_PAGAMENTO_VALOR_CENTS,
+  isRecuperacaoPagamentoPago,
+  registrarRecuperacaoPagamento,
+} from "@/mockData/recuperacaoPagamento";
+import {
+  getNotaForEnrollmentFromStore,
+  getNotasStoreSnapshot,
+} from "@/mockData/notas";
 
 /**
  * Página para aluno responder uma prova
@@ -35,6 +46,60 @@ export default function ResponderProvaPage() {
   
   // Estado para inscricaoId (pode vir da URL ou do usuário)
   const [inscricaoId, setInscricaoId] = useState<string>(inscricaoIdParam);
+  const [paymentsRefresh, setPaymentsRefresh] = useState(0);
+
+  const formatBRL = (cents: number) =>
+    (cents / 100).toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    });
+
+  const inscricoesQuery = useQuery({
+    queryKey: ["recuperacao", "inscricoes", cursoId, turmaId],
+    queryFn: () => listInscricoes(cursoId, turmaId),
+    enabled: Boolean(cursoId && turmaId),
+    staleTime: 30 * 1000,
+    gcTime: 5 * 60 * 1000,
+  });
+
+  const alunoIdFromInscricao = useMemo(() => {
+    const list = inscricoesQuery.data ?? [];
+    const found = list.find((i: any) => i?.id === inscricaoId);
+    return (found?.alunoId as string | undefined) ?? null;
+  }, [inscricoesQuery.data, inscricaoId]);
+
+  const notaFinal = useMemo(() => {
+    void paymentsRefresh;
+    if (!cursoId || !turmaId || !alunoIdFromInscricao) return null;
+    const store = getNotasStoreSnapshot();
+    return (
+      getNotaForEnrollmentFromStore(store, {
+        cursoId,
+        turmaId,
+        alunoId: alunoIdFromInscricao,
+      }).nota ?? 0
+    );
+  }, [alunoIdFromInscricao, cursoId, turmaId, paymentsRefresh]);
+
+  const requiresPayment = useMemo(() => {
+    // Regra: reprovado (<= 6) precisa pagar para responder
+    if (notaFinal === null) return false;
+    return notaFinal <= 6;
+  }, [notaFinal]);
+
+  const isPaid = useMemo(() => {
+    void paymentsRefresh;
+    if (!requiresPayment) return true;
+    if (!cursoId || !turmaId || !provaId || !inscricaoId) return false;
+    return isRecuperacaoPagamentoPago({
+      cursoId,
+      turmaId,
+      provaId,
+      inscricaoId,
+    });
+  }, [cursoId, inscricaoId, provaId, requiresPayment, turmaId, paymentsRefresh]);
+
+  const canAccess = !requiresPayment || isPaid;
 
   // Buscar questões
   const {
@@ -45,7 +110,7 @@ export default function ResponderProvaPage() {
     cursoId,
     turmaId,
     provaId,
-    enabled: !!cursoId && !!turmaId && !!provaId,
+    enabled: !!cursoId && !!turmaId && !!provaId && canAccess,
   });
 
   // Buscar respostas do aluno atual
@@ -59,7 +124,7 @@ export default function ResponderProvaPage() {
     params: {
       inscricaoId: inscricaoId || undefined,
     },
-    enabled: !!cursoId && !!turmaId && !!provaId && !!inscricaoId,
+    enabled: !!cursoId && !!turmaId && !!provaId && !!inscricaoId && canAccess,
   });
 
   const responderQuestao = useResponderQuestao({
@@ -100,6 +165,74 @@ export default function ResponderProvaPage() {
     // Refetch respostas após salvar
     // O hook já invalida o cache automaticamente
   };
+
+  if (inscricoesQuery.isLoading) {
+    return (
+      <div className="space-y-8">
+        <div className="space-y-4">
+          <Skeleton className="h-10 w-1/3" />
+          <Skeleton className="h-40 w-full" />
+        </div>
+      </div>
+    );
+  }
+
+  if (requiresPayment && !isPaid) {
+    return (
+      <div className="space-y-8">
+        <div className="bg-white rounded-xl border border-gray-200 p-6">
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-2">
+              <h1 className="text-xl font-semibold text-gray-900">
+                Pagamento necessário
+              </h1>
+              <p className="text-sm text-gray-600">
+                Alunos com nota final ≤ 6 precisam pagar{" "}
+                <span className="font-semibold">
+                  {formatBRL(RECUPERACAO_PAGAMENTO_VALOR_CENTS)}
+                </span>{" "}
+                para responder esta prova/atividade.
+              </p>
+              <div className="text-xs text-gray-500">
+                Sua nota final atual:{" "}
+                <span className="font-semibold tabular-nums text-gray-800">
+                  {notaFinal?.toLocaleString("pt-BR")}
+                </span>
+              </div>
+            </div>
+            <Link href={`/dashboard/cursos/atividades-provas/${provaId}`}>
+              <ButtonCustom variant="outline" icon="ArrowLeft">
+                Voltar
+              </ButtonCustom>
+            </Link>
+          </div>
+
+          <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
+            <ButtonCustom
+              variant="primary"
+              icon="CreditCard"
+              onClick={() => {
+                registrarRecuperacaoPagamento({
+                  cursoId,
+                  turmaId,
+                  provaId,
+                  inscricaoId,
+                });
+                setPaymentsRefresh((v) => v + 1);
+                toastCustom.success({
+                  title: "Pagamento registrado",
+                  description:
+                    "Pagamento confirmado (mock). Você já pode responder.",
+                });
+              }}
+            >
+              Pagar {formatBRL(RECUPERACAO_PAGAMENTO_VALOR_CENTS)}
+            </ButtonCustom>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (loadingQuestoes || loadingRespostas) {
     return (
@@ -247,4 +380,3 @@ export default function ResponderProvaPage() {
     </div>
   );
 }
-

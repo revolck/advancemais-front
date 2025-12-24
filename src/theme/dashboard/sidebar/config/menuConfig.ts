@@ -108,6 +108,18 @@ const rawMenuSections: MenuSection[] = [
           },
           {
             icon: null,
+            label: "Notas",
+            route: "/dashboard/cursos/notas",
+            permissions: [UserRole.ADMIN, UserRole.MODERADOR],
+          },
+          {
+            icon: null,
+            label: "Frequência",
+            route: "/dashboard/cursos/frequencia",
+            permissions: [UserRole.ADMIN, UserRole.MODERADOR],
+          },
+          {
+            icon: null,
             label: "Certificados",
             route: "/dashboard/cursos/certificados",
             permissions: [UserRole.ADMIN, UserRole.MODERADOR],
@@ -263,16 +275,6 @@ const rawMenuSections: MenuSection[] = [
         submenu: [
           {
             icon: null,
-            label: "Visão geral",
-            route: "/dashboard/cursos/visao-geral",
-            permissions: [
-              UserRole.ADMIN,
-              UserRole.MODERADOR,
-              UserRole.PEDAGOGICO,
-            ],
-          },
-          {
-            icon: null,
             label: "Cursos",
             route: "/dashboard/cursos",
             permissions: [
@@ -325,6 +327,26 @@ const rawMenuSections: MenuSection[] = [
             icon: null,
             label: "Atividades/Provas",
             route: "/dashboard/cursos/atividades-provas",
+            permissions: [
+              UserRole.ADMIN,
+              UserRole.MODERADOR,
+              UserRole.PEDAGOGICO,
+            ],
+          },
+          {
+            icon: null,
+            label: "Notas",
+            route: "/dashboard/cursos/notas",
+            permissions: [
+              UserRole.ADMIN,
+              UserRole.MODERADOR,
+              UserRole.PEDAGOGICO,
+            ],
+          },
+          {
+            icon: null,
+            label: "Frequência",
+            route: "/dashboard/cursos/frequencia",
             permissions: [
               UserRole.ADMIN,
               UserRole.MODERADOR,

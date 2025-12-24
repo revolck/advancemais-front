@@ -18,6 +18,8 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { CalendarCaptionCustom } from "./calendar-caption";
+import { ButtonCustom } from "@/components/ui/custom/button";
 
 export interface DateRange {
   from: Date | null;
@@ -32,8 +34,17 @@ export interface DatePickerRangeCustomProps {
   disabled?: boolean;
   required?: boolean;
   size?: "sm" | "md" | "lg";
+  /** Controla se o calendário exibe dias de outros meses. */
+  showOutsideDays?: boolean;
   minDate?: Date;
   maxDate?: Date;
+  /**
+   * Controle de faixa de anos no seletor (dropdown).
+   * - `old`: prioriza anos anteriores (até o ano atual, por padrão)
+   * - `new`: prioriza anos posteriores (a partir do ano atual, por padrão)
+   * - `default`: permite ambos (1900 → ano atual + 10, por padrão)
+   */
+  years?: "old" | "new" | "default";
   error?: string;
   helperText?: string;
   helperLabel?: string; // Text to show in tooltip next to label
@@ -52,6 +63,33 @@ export interface DatePickerRangeCustomProps {
   popoverMaxWidth?: number;
 }
 
+function resolveYearBounds(params: {
+  years: "old" | "new" | "default";
+  minDate?: Date;
+  maxDate?: Date;
+}): { fromYear: number; toYear: number } {
+  const { years, minDate, maxDate } = params;
+  const nowYear = new Date().getFullYear();
+
+  const minYear = minDate ? minDate.getFullYear() : undefined;
+  const maxYear = maxDate ? maxDate.getFullYear() : undefined;
+
+  let fromYear = minYear ?? 1900;
+  let toYear = maxYear ?? nowYear + 10;
+
+  if (years === "old") {
+    if (!maxYear) toYear = nowYear;
+  }
+  if (years === "new") {
+    if (!minYear) fromYear = nowYear;
+  }
+
+  return {
+    fromYear: Math.min(fromYear, toYear),
+    toYear: Math.max(fromYear, toYear),
+  };
+}
+
 export function DatePickerRangeCustom({
   label,
   value,
@@ -60,8 +98,10 @@ export function DatePickerRangeCustom({
   disabled,
   required,
   size = "md",
+  showOutsideDays = false,
   minDate,
   maxDate,
+  years = "default",
   error,
   helperText,
   helperLabel,
@@ -70,12 +110,17 @@ export function DatePickerRangeCustom({
   format = "dd/MM/yyyy",
   locale = ptBR,
   popoverMatchTriggerWidth = false,
-  popoverWidth = 360,
-  popoverMaxWidth = 420,
+  popoverWidth = 400,
+  popoverMaxWidth = 520,
 }: DatePickerRangeCustomProps) {
   const [open, setOpen] = useState(false);
   const [triggerWidth, setTriggerWidth] = useState<number>(0);
   const triggerRef = useRef<HTMLButtonElement>(null);
+
+  const yearBounds = useMemo(
+    () => resolveYearBounds({ years, minDate, maxDate }),
+    [maxDate, minDate, years]
+  );
 
   const displayValue = useMemo(() => {
     if (!value.from && !value.to) return "";
@@ -104,6 +149,20 @@ export function DatePickerRangeCustom({
       return "";
     }
   }, [value, format, locale]);
+
+  const canSetToday = useMemo(() => {
+    const today = new Date();
+    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    if (minDate) {
+      const minStart = new Date(minDate.getFullYear(), minDate.getMonth(), minDate.getDate());
+      if (todayStart < minStart) return false;
+    }
+    if (maxDate) {
+      const maxStart = new Date(maxDate.getFullYear(), maxDate.getMonth(), maxDate.getDate());
+      if (todayStart > maxStart) return false;
+    }
+    return true;
+  }, [maxDate, minDate]);
 
   // Update trigger width when component mounts or when open state changes
   React.useEffect(() => {
@@ -224,7 +283,10 @@ export function DatePickerRangeCustom({
           style={{
             width: popoverMatchTriggerWidth
               ? triggerWidth > 0
-                ? Math.min(triggerWidth, popoverMaxWidth)
+                ? Math.max(
+                    Math.min(triggerWidth, popoverMaxWidth),
+                    popoverWidth
+                  )
                 : popoverWidth
               : popoverWidth,
             maxWidth: popoverMaxWidth,
@@ -237,6 +299,11 @@ export function DatePickerRangeCustom({
               from: value.from || undefined,
               to: value.to || undefined,
             }}
+            showOutsideDays={showOutsideDays}
+            numberOfMonths={1}
+            captionLayout="buttons"
+            fromYear={yearBounds.fromYear}
+            toYear={yearBounds.toYear}
             onSelect={(range) => {
               if (range?.from) {
                 if (range?.to) {
@@ -251,6 +318,7 @@ export function DatePickerRangeCustom({
             }}
             fromDate={minDate}
             toDate={maxDate}
+            initialFocus
             // Desabilita seleção fora do intervalo permitido
             disabled={[
               ...(minDate
@@ -273,8 +341,39 @@ export function DatePickerRangeCustom({
                 : []),
             ]}
             locale={locale}
+            components={{ Caption: CalendarCaptionCustom }}
+            classNames={{
+              caption: "px-2 pt-2",
+            }}
             className="w-full"
           />
+          <div className="flex items-center justify-between gap-2 border-t border-gray-200 px-3 py-2">
+            <ButtonCustom
+              variant="outline"
+              size="sm"
+              withAnimation={false}
+              disabled={!canSetToday || disabled}
+              onClick={() => {
+                if (!canSetToday) return;
+                const t = new Date();
+                const todayStart = new Date(t.getFullYear(), t.getMonth(), t.getDate());
+                onChange({ from: todayStart, to: todayStart });
+                setOpen(false);
+              }}
+            >
+              Hoje
+            </ButtonCustom>
+            {clearable && (value.from || value.to) && (
+              <ButtonCustom
+                variant="outline"
+                size="sm"
+                withAnimation={false}
+                onClick={() => onChange({ from: null, to: null })}
+              >
+                Limpar
+              </ButtonCustom>
+            )}
+          </div>
         </PopoverContent>
       </Popover>
 

@@ -27,11 +27,6 @@ export const ITEM_TYPE_LABELS: Record<
     plural: "Atividades",
     icon: "ClipboardList",
   },
-  TRABALHO: {
-    singular: "Trabalho",
-    plural: "Trabalhos",
-    icon: "Briefcase",
-  },
 };
 
 /**
@@ -59,7 +54,6 @@ export const ITEM_TYPE_COLORS: Record<BuilderItemType, string> = {
   AULA: "bg-blue-500/10 text-blue-600 border-blue-500/20",
   PROVA: "bg-rose-500/10 text-rose-600 border-rose-500/20",
   ATIVIDADE: "bg-amber-500/10 text-amber-600 border-amber-500/20",
-  TRABALHO: "bg-purple-500/10 text-purple-600 border-purple-500/20",
 };
 
 /**
@@ -78,10 +72,6 @@ export const TYPE_META: Record<
     label: "Prova",
     cls: "bg-rose-50 text-rose-700 border-rose-200",
   },
-  TRABALHO: {
-    label: "Trabalho",
-    cls: "bg-purple-50 text-purple-700 border-purple-200",
-  },
 };
 
 /**
@@ -91,7 +81,6 @@ export const TYPE_ICON_CLS: Record<BuilderItemType, string> = {
   AULA: "text-blue-700",
   ATIVIDADE: "text-amber-700",
   PROVA: "text-rose-700",
-  TRABALHO: "text-purple-700",
 };
 
 /**
@@ -103,8 +92,6 @@ export function getIconForType(type: BuilderItemType): string {
       return "FileText";
     case "ATIVIDADE":
       return "Paperclip";
-    case "TRABALHO":
-      return "Briefcase";
     default:
       return "GraduationCap";
   }
@@ -148,14 +135,6 @@ export const ITEM_TYPE_STYLES: Record<
     iconColor: "text-rose-600",
     selectedRing: "ring-rose-300",
   },
-  TRABALHO: {
-    border: "border-purple-200",
-    bg: "bg-purple-50/50",
-    hoverBg: "hover:bg-purple-50",
-    iconBg: "bg-purple-100",
-    iconColor: "text-purple-600",
-    selectedRing: "ring-purple-300",
-  },
 };
 
 /**
@@ -182,12 +161,6 @@ export const DRAG_OVERLAY_STYLES: Record<
     border: "border-rose-300",
     text: "text-rose-600",
     icon: "FileText",
-  },
-  TRABALHO: {
-    bg: "bg-purple-100",
-    border: "border-purple-300",
-    text: "text-purple-600",
-    icon: "Briefcase",
   },
 };
 
@@ -222,7 +195,6 @@ export const PLACEHOLDERS = {
     AULA: "Ex: Introdução ao tema",
     PROVA: "Ex: Prova do módulo",
     ATIVIDADE: "Ex: Atividade do módulo",
-    TRABALHO: "Ex: Trabalho prático",
   },
   SELECT_ACTIVITY: "Selecione uma atividade",
   SELECT_EXAM: "Selecione uma prova",

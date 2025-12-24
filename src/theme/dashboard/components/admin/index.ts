@@ -27,6 +27,8 @@ export { TurmasDashboard } from "./lista-turmas/TurmasDashboard";
 export { InstrutoresDashboard } from "./lista-instrutores/InstrutoresDashboard";
 export { UsuariosDashboard } from "./lista-usuarios/UsuariosDashboard";
 export { AtividadesProvasDashboard } from "./lista-atividades-provas/AtividadesProvasDashboard";
+export { NotasDashboard } from "./lista-notas/NotasDashboard";
+export { FrequenciaDashboard } from "./lista-frequencia/FrequenciaDashboard";
 export { ProvaDetailsView } from "./prova-details";
 export { CertificadosDashboard } from "./lista-certificados/CertificadosDashboard";
 export { EstagiosDashboard } from "./lista-estagios/EstagiosDashboard";

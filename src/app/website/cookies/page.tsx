@@ -70,7 +70,7 @@ export default function CookiesPage() {
       content: [
         "Alguns cookies são colocados por serviços de terceiros que aparecem em nossas páginas. Por exemplo, podemos usar serviços de análise como Google Analytics para nos ajudar a entender como os visitantes usam nosso site. Esses serviços podem definir seus próprios cookies em seu dispositivo.",
         "Também podemos usar serviços de publicidade de terceiros para exibir anúncios relevantes. Esses serviços podem usar cookies para rastrear suas atividades online em diferentes sites para construir um perfil de seus interesses.",
-        "Não temos controle sobre os cookies definidos por terceiros. Recomendamos que você verifique os sites de terceiros para obter mais informações sobre seus cookies e como gerenciá-los.",
+        "A Advance+ não tem controle sobre as práticas de tratamento de dados realizadas por terceiros, sendo estes responsáveis pelo cumprimento da legislação aplicável. Não temos controle sobre os cookies definidos por terceiros. Recomendamos que você verifique os sites de terceiros para obter mais informações sobre seus cookies e como gerenciá-los.",
       ],
     },
     {
@@ -85,7 +85,7 @@ export default function CookiesPage() {
       title: "Cookies e dados pessoais",
       content: [
         "Alguns cookies podem coletar informações que são consideradas dados pessoais sob a Lei Geral de Proteção de Dados (LGPD). Quando isso ocorre, tratamos essas informações de acordo com nossa Política de Privacidade.",
-        "Para cookies que processam dados pessoais, temos bases legais adequadas, que podem incluir seu consentimento, execução de contrato ou legítimo interesse, conforme descrito em nossa Política de Privacidade.",
+        "Cookies essenciais são utilizados com base no legítimo interesse da plataforma (art. 7º, IX, da LGPD), por serem necessários ao funcionamento e segurança do serviço. Cookies funcionais, analíticos e de publicidade são utilizados mediante consentimento do titular, quando exigido pela legislação.",
         "Você tem o direito de acessar, corrigir, excluir ou portar dados pessoais coletados através de cookies, nos termos da LGPD. Para exercer esses direitos, entre em contato conosco através dos canais indicados.",
       ],
     },

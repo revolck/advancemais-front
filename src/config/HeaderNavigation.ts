@@ -35,10 +35,4 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
     href: "/vagas",
     type: "link",
   },
-  {
-    key: "blog",
-    label: "Blog",
-    href: "/blog",
-    type: "link",
-  },
 ];

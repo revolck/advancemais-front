@@ -61,6 +61,50 @@ function buildHeaders(
   };
 }
 
+function normalizeMoneyValue(value: unknown): number {
+  if (value == null) return 0;
+
+  if (typeof value === "object") {
+    const maybeDecimal = (value as any)?.$numberDecimal;
+    if (typeof maybeDecimal === "string") {
+      value = maybeDecimal;
+    }
+  }
+
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : 0;
+  }
+
+  if (typeof value !== "string") return 0;
+
+  const raw = value.trim();
+  if (!raw) return 0;
+
+  const filtered = raw.replace(/[^\d.,-]/g, "");
+  const lastComma = filtered.lastIndexOf(",");
+  const lastDot = filtered.lastIndexOf(".");
+
+  let normalized = filtered;
+
+  if (lastComma !== -1 && lastDot !== -1) {
+    // Usa o separador mais à direita como decimal e remove o outro como milhar
+    if (lastComma > lastDot) {
+      normalized = filtered.replace(/\./g, "").replace(",", ".");
+    } else {
+      normalized = filtered.replace(/,/g, "");
+    }
+  } else if (lastComma !== -1) {
+    // Apenas vírgula presente: padrão pt-BR
+    normalized = filtered.replace(/\./g, "").replace(",", ".");
+  } else {
+    // Apenas ponto ou nenhum separador: padrão en-US ou inteiro
+    normalized = filtered.replace(/,/g, "");
+  }
+
+  const parsed = Number.parseFloat(normalized);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
 export async function getCursosMeta(
   init?: RequestInit
 ): Promise<CursosModuleMeta> {
@@ -108,10 +152,12 @@ export async function listCursos(
   // Mapeia os campos de precificação para garantir valores padrão
   const cursosNormalizados: Curso[] = (response.data ?? []).map((curso) => ({
     ...curso,
-    valor: Number(curso.valor ?? 0),
+    valor: normalizeMoneyValue((curso as any).valor ?? (curso as any).preco),
     valorPromocional:
-      curso.valorPromocional != null
-        ? Number(curso.valorPromocional)
+      (curso as any).valorPromocional != null || (curso as any).precoPromocional != null
+        ? normalizeMoneyValue(
+            (curso as any).valorPromocional ?? (curso as any).precoPromocional
+          ) || undefined
         : undefined,
     gratuito: Boolean(curso.gratuito ?? false),
   }));
@@ -405,10 +451,12 @@ export async function getCursoById(
           ? Number(response.subcategoriaId)
           : undefined,
       // Campos de precificação
-      valor: Number(response.valor ?? 0),
+      valor: normalizeMoneyValue(response.valor ?? (response as any).preco),
       valorPromocional:
-        response.valorPromocional != null
-          ? Number(response.valorPromocional)
+        response.valorPromocional != null || (response as any).precoPromocional != null
+          ? normalizeMoneyValue(
+              response.valorPromocional ?? (response as any).precoPromocional
+            ) || undefined
           : undefined,
       gratuito: Boolean(response.gratuito ?? false),
       // Nota: Métodos de pagamento são gerenciados pelo Mercado Pago
@@ -1117,14 +1165,35 @@ export async function listAlunosComInscricao(
       retries: 1, // Reduz retries para listagens (são requisições rápidas)
     });
 
-    // Mapeamento da resposta
+    const raw: any = response as any;
+    const rawPagination: any = raw?.pagination ?? {};
+
+    const page = Number(rawPagination?.page ?? params?.page ?? 1);
+    const pageSize = Number(
+      rawPagination?.pageSize ?? rawPagination?.limit ?? params?.limit ?? 50
+    );
+    const total = Number(rawPagination?.total ?? 0);
+    const inferredTotalPages =
+      total > 0 ? Math.ceil(total / Math.max(1, pageSize)) : 1;
+    const totalPages = Math.max(
+      1,
+      Number(rawPagination?.totalPages ?? rawPagination?.pages ?? inferredTotalPages)
+    );
+
+    const data = Array.isArray(raw?.data)
+      ? (raw.data as AlunoComInscricao[])
+      : Array.isArray(raw?.alunos)
+      ? (raw.alunos as AlunoComInscricao[])
+      : [];
+
+    // Mapeamento/normalização da resposta
     return {
-      data: response.data || [],
+      data,
       pagination: {
-        page: response.pagination?.page || 1,
-        pageSize: response.pagination?.pageSize || 50,
-        total: response.pagination?.total || 0,
-        totalPages: response.pagination?.totalPages || 0,
+        page,
+        pageSize,
+        total,
+        totalPages,
       },
     };
   } catch (error: any) {
@@ -1147,7 +1216,7 @@ export async function getCursoAlunoDetalhes(
 ): Promise<CursoAlunoDetalhesResponse> {
   // Preferir as rotas unificadas do módulo de Cursos
   const url = cursosRoutes.alunos.get(alunoId);
-  return apiFetch<CursoAlunoDetalhesResponse>(url, {
+  const response = await apiFetch<any>(url, {
     init: {
       method: "GET",
       ...init,
@@ -1155,6 +1224,92 @@ export async function getCursoAlunoDetalhes(
     },
     cache: "no-cache",
   });
+
+  const raw: any = response;
+  const rawData: any = raw?.data;
+  if (!rawData || typeof rawData !== "object") {
+    return {
+      success: Boolean(raw?.success ?? true),
+      data: rawData,
+    } as CursoAlunoDetalhesResponse;
+  }
+
+  const nomeFromApi =
+    typeof rawData.nome === "string"
+      ? rawData.nome
+      : typeof rawData.nomeCompleto === "string"
+      ? rawData.nomeCompleto
+      : "";
+
+  const normalizedData: CursoAlunoDetalhes = {
+    ...rawData,
+    nome: nomeFromApi.trim() || rawData.id || "—",
+    email: typeof rawData.email === "string" ? rawData.email : "",
+    codigo:
+      typeof rawData.codigo === "string"
+        ? rawData.codigo
+        : typeof rawData.codUsuario === "string"
+        ? rawData.codUsuario
+        : undefined,
+    enderecos: Array.isArray(rawData.enderecos) ? rawData.enderecos : [],
+    inscricoes: Array.isArray(rawData.inscricoes)
+      ? rawData.inscricoes.map((inscricao: any) => {
+          const statusInscricao =
+            typeof inscricao?.statusInscricao === "string"
+              ? inscricao.statusInscricao
+              : typeof inscricao?.status === "string"
+              ? inscricao.status
+              : undefined;
+
+          const criadoEm =
+            typeof inscricao?.criadoEm === "string"
+              ? inscricao.criadoEm
+              : typeof inscricao?.dataInscricao === "string"
+              ? inscricao.dataInscricao
+              : undefined;
+
+          const turma = inscricao?.turma;
+          const curso = inscricao?.curso;
+          const progressoRaw = inscricao?.progresso;
+          const progresso =
+            typeof progressoRaw === "number"
+              ? progressoRaw
+              : typeof progressoRaw === "string"
+              ? Number(progressoRaw)
+              : undefined;
+
+          return {
+            ...inscricao,
+            statusInscricao,
+            criadoEm,
+            progresso:
+              typeof progresso === "number" && Number.isFinite(progresso)
+                ? progresso
+                : inscricao?.progresso,
+            turma:
+              turma && typeof turma === "object"
+                ? turma
+                : undefined,
+            curso:
+              curso && typeof curso === "object"
+                ? curso
+                : undefined,
+          };
+        })
+      : [],
+    totalInscricoes:
+      typeof rawData.totalInscricoes === "number"
+        ? rawData.totalInscricoes
+        : Array.isArray(rawData.inscricoes)
+        ? rawData.inscricoes.length
+        : 0,
+    criadoEm: typeof rawData.criadoEm === "string" ? rawData.criadoEm : "",
+  };
+
+  return {
+    success: Boolean(raw?.success ?? true),
+    data: normalizedData,
+  };
 }
 
 export async function getVisaoGeral(

@@ -13,7 +13,7 @@ import {
   type QuestaoItem,
   type TextoItem,
 } from "@/components/ui/custom";
-import { DatePickerCustom } from "@/components/ui/custom/date-picker";
+import { DatePickerRangeCustom } from "@/components/ui/custom/date-picker";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -88,7 +88,8 @@ interface FormData {
   moduloId: string;
   modalidade: Modalidade | "";
   instrutorId: string;
-  dataAula: Date | null;
+  dataInicio: Date | null;
+  dataFim: Date | null;
   horaInicio: string;
   horaFim: string;
   duracaoMinutos: string;
@@ -112,7 +113,8 @@ const initialFormData: FormData = {
   moduloId: "",
   modalidade: "",
   instrutorId: "",
-  dataAula: null,
+  dataInicio: null,
+  dataFim: null,
   horaInicio: "",
   horaFim: "",
   duracaoMinutos: "",
@@ -126,6 +128,7 @@ export interface CreateProvaFormProps {
   mode?: "create" | "edit";
   provaId?: string;
   initialData?: TurmaProva;
+  defaultTipo?: "PROVA" | "ATIVIDADE";
   onSuccess?: () => void;
   onCancel?: () => void;
 }
@@ -134,12 +137,18 @@ export function CreateProvaForm({
   mode = "create",
   provaId,
   initialData,
+  defaultTipo,
   onSuccess,
   onCancel,
 }: CreateProvaFormProps) {
   const queryClient = useQueryClient();
   const { user } = useAuth();
-  const [formData, setFormData] = useState<FormData>(initialFormData);
+  const [formData, setFormData] = useState<FormData>(() => {
+    if (mode === "create" && defaultTipo) {
+      return { ...initialFormData, tipo: defaultTipo };
+    }
+    return initialFormData;
+  });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [loadingStep, setLoadingStep] = useState<string>("");
@@ -214,8 +223,9 @@ export function CreateProvaForm({
     if (mode === "edit") {
       if (initialData && initialData.id) {
         const prova = initialData;
-        // Extrair data da dataInicio para dataAula (assumindo mesma data)
-        const dataAula = prova.dataInicio ? new Date(prova.dataInicio) : null;
+        // Extrair datas de início e fim
+        const dataInicio = prova.dataInicio ? new Date(prova.dataInicio) : null;
+        const dataFim = prova.dataFim ? new Date(prova.dataFim) : null;
 
         setFormData({
           tipo: (prova.tipo === "PROVA" || prova.tipo === "ATIVIDADE"
@@ -236,7 +246,8 @@ export function CreateProvaForm({
           moduloId: prova.moduloId || "",
           modalidade: (prova.modalidade as Modalidade) || "",
           instrutorId: prova.instrutorId || "",
-          dataAula: dataAula,
+          dataInicio: dataInicio,
+          dataFim: dataFim,
           horaInicio: (prova as any).horaInicio || "",
           horaFim: (prova as any).horaFim || "",
           duracaoMinutos: (prova as any).duracaoMinutos?.toString() || "",
@@ -354,9 +365,21 @@ export function CreateProvaForm({
       newErrors.modalidade = "Modalidade é obrigatória";
     }
 
-    // Data é obrigatória
-    if (!formData.dataAula) {
-      newErrors.dataAula = "Data é obrigatória";
+    // Data de início é obrigatória
+    if (!formData.dataInicio) {
+      newErrors.dataInicio = "Data de início é obrigatória";
+    }
+
+    // Data de fim é obrigatória
+    if (!formData.dataFim) {
+      newErrors.dataFim = "Data de término é obrigatória";
+    }
+
+    // Validar que data de fim é após data de início
+    if (formData.dataInicio && formData.dataFim) {
+      if (formData.dataFim < formData.dataInicio) {
+        newErrors.dataFim = "Data de término deve ser após a data de início";
+      }
     }
 
     // Hora de início é obrigatória
@@ -486,7 +509,7 @@ export function CreateProvaForm({
     try {
       // Calcular duração quando há período (horaInicio e horaFim)
       let duracaoMinutos = Number(formData.duracaoMinutos) || 60;
-      if (formData.dataAula && formData.horaInicio && formData.horaFim) {
+      if (formData.dataInicio && formData.horaInicio && formData.horaFim) {
         const [horaIni, minIni] = formData.horaInicio.split(":").map(Number);
         const [horaFimNum, minFim] = formData.horaFim.split(":").map(Number);
 
@@ -501,14 +524,12 @@ export function CreateProvaForm({
         }
       }
 
-      const dataInicio =
-        formData.dataAula && formData.horaInicio
-          ? formatDateForAPI(formData.dataAula)
-          : undefined;
-      const dataFim =
-        formData.dataAula && formData.horaFim
-          ? formatDateForAPI(formData.dataAula)
-          : undefined;
+      const dataInicio = formData.dataInicio
+        ? formatDateForAPI(formData.dataInicio)
+        : undefined;
+      const dataFim = formData.dataFim
+        ? formatDateForAPI(formData.dataFim)
+        : undefined;
 
       const payload: CreateProvaPayload | UpdateProvaPayload = {
         titulo: formData.titulo.trim(),
@@ -1262,18 +1283,25 @@ export function CreateProvaForm({
               )}
             </div>
 
-            {/* Linha 4: Data, Horários e Obrigatória */}
+            {/* Linha 4: Período (Data Início e Fim), Horários e Obrigatória */}
             <div className="flex flex-col md:flex-row gap-4 w-full">
-              {/* Data da Prova/Atividade */}
+              {/* Período da Prova/Atividade (Data Início e Fim) */}
               <div className="flex-1 min-w-0">
-                <DatePickerCustom
-                  label="Data"
-                  value={formData.dataAula}
-                  onChange={(date) => handleInputChange("dataAula", date)}
-                  placeholder="Selecione a data"
-                  error={errors.dataAula}
+                <DatePickerRangeCustom
+                  label="Período"
+                  value={{
+                    from: formData.dataInicio,
+                    to: formData.dataFim,
+                  }}
+                  onChange={(range) => {
+                    handleInputChange("dataInicio", range.from);
+                    handleInputChange("dataFim", range.to);
+                  }}
+                  placeholder="Selecione o período"
+                  error={errors.dataInicio || errors.dataFim}
                   minDate={getTomorrowDate()}
                   required
+                  clearable
                 />
               </div>
 

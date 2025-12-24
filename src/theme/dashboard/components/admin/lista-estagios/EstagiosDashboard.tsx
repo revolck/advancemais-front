@@ -22,8 +22,26 @@ import { useTurmaOptions } from "../lista-alunos/hooks/useTurmaOptions";
 import { listInscricoes } from "@/api/cursos";
 import type { TurmaEstagio } from "@/api/cursos";
 import type { FilterField } from "@/components/ui/custom/filters";
+import type { DateRange } from "@/components/ui/custom/date-picker";
+import {
+  DEFAULT_SEARCH_MIN_LENGTH,
+  getNormalizedSearchOrUndefined,
+  getSearchValidationMessage,
+} from "../shared/filterUtils";
 import { EstagioRow } from "./components/EstagioRow";
 import { EstagioTableSkeleton } from "./components/EstagioTableSkeleton";
+
+const SEARCH_HELPER_TEXT = "Pesquise por nome, código do aluno ou CPF.";
+
+const createEmptyDateRange = (): DateRange => ({
+  from: null,
+  to: null,
+});
+
+const cloneDateRange = (range: DateRange): DateRange => ({
+  from: range.from ? new Date(range.from) : null,
+  to: range.to ? new Date(range.to) : null,
+});
 
 export interface EstagiosDashboardProps {
   className?: string;
@@ -32,6 +50,14 @@ export interface EstagiosDashboardProps {
 export function EstagiosDashboard({ className }: EstagiosDashboardProps) {
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
   const [selectedTurmaId, setSelectedTurmaId] = useState<string | null>(null);
+  const [pendingSearchTerm, setPendingSearchTerm] = useState("");
+  const [appliedSearchTerm, setAppliedSearchTerm] = useState("");
+  const [pendingDateRange, setPendingDateRange] = useState<DateRange>(() =>
+    createEmptyDateRange()
+  );
+  const [appliedDateRange, setAppliedDateRange] = useState<DateRange>(() =>
+    createEmptyDateRange()
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [estagios, setEstagios] = useState<TurmaEstagio[]>([]);
@@ -50,8 +76,46 @@ export function EstagiosDashboard({ className }: EstagiosDashboardProps) {
   const { cursos } = useCursosForSelect();
   const { turmas } = useTurmaOptions(selectedCourseId);
 
+  const searchValidationMessage = useMemo(
+    () => getSearchValidationMessage(pendingSearchTerm),
+    [pendingSearchTerm]
+  );
+  const isSearchInputValid = !searchValidationMessage;
+
+  const normalizedSearch = useMemo(
+    () =>
+      getNormalizedSearchOrUndefined(
+        appliedSearchTerm,
+        DEFAULT_SEARCH_MIN_LENGTH
+      ),
+    [appliedSearchTerm]
+  );
+
+  const handleSearchSubmit = useCallback(
+    (rawValue?: string) => {
+      const value = rawValue ?? pendingSearchTerm;
+      const validationMessage = getSearchValidationMessage(value);
+      if (validationMessage) return;
+      const trimmedValue = value.trim();
+      setPendingSearchTerm(value);
+      setAppliedSearchTerm(trimmedValue);
+      setCurrentPage(1);
+    },
+    [pendingSearchTerm]
+  );
+
   const runFetch = useCallback(async () => {
     if (!selectedCourseId || !selectedTurmaId) return;
+    
+    // Aplicar filtros antes de buscar
+    const validationMessage = getSearchValidationMessage(pendingSearchTerm);
+    if (!validationMessage) {
+      setAppliedSearchTerm(pendingSearchTerm.trim());
+    } else {
+      setAppliedSearchTerm("");
+    }
+    setAppliedDateRange(cloneDateRange(pendingDateRange));
+    
     setLoading(true);
     setError(null);
     setHasFetched(true);
@@ -60,12 +124,13 @@ export function EstagiosDashboard({ className }: EstagiosDashboardProps) {
       const normalized: TurmaEstagio[] = [];
       
       (inscricoes || []).forEach((inscricao: any, inscricaoIndex: number) => {
-        const alunoInfo: TurmaEstagio["aluno"] | undefined =
+        const alunoInfo: TurmaEstagio["aluno"] & { cpf?: string } | undefined =
           inscricao?.aluno
             ? {
                 id: String(inscricao.aluno.id ?? inscricao.alunoId ?? inscricao.id ?? inscricaoIndex),
                 nomeCompleto: inscricao.aluno.nome ?? inscricao.aluno.nomeCompleto ?? "",
                 email: inscricao.aluno.email ?? "",
+                ...(inscricao.aluno.cpf ? { cpf: inscricao.aluno.cpf } : {}),
               }
             : inscricao?.alunoId
             ? { id: String(inscricao.alunoId), nomeCompleto: "", email: "" }
@@ -123,7 +188,7 @@ export function EstagiosDashboard({ className }: EstagiosDashboardProps) {
     } finally {
       setLoading(false);
     }
-  }, [selectedCourseId, selectedTurmaId]);
+  }, [selectedCourseId, selectedTurmaId, pendingDateRange, pendingSearchTerm]);
 
   // Sorting functions
   const setSort = (field: SortField, direction: SortDirection) => {
@@ -145,6 +210,7 @@ export function EstagiosDashboard({ className }: EstagiosDashboardProps) {
 
   const sortList = useCallback(
     <T extends TurmaEstagio>(list: T[]) => {
+      if (!Array.isArray(list)) return [];
       if (!sortField) return list;
       const arr = [...list];
       arr.sort((a, b) => {
@@ -166,7 +232,76 @@ export function EstagiosDashboard({ className }: EstagiosDashboardProps) {
     [sortDirection, sortField]
   );
 
-  const sortedEstagios = useMemo(() => sortList(estagios), [estagios, sortList]);
+  // Filtrar por busca (nome, código, CPF)
+  const filteredBySearchEstagios = useMemo(() => {
+    if (!Array.isArray(estagios)) {
+      return [];
+    }
+
+    if (!normalizedSearch) {
+      return estagios;
+    }
+
+    const searchLower = normalizedSearch.toLowerCase();
+
+    return estagios.filter((estagio) => {
+      // Buscar por nome do aluno
+      const alunoNome = (estagio.aluno?.nomeCompleto || estagio.aluno?.email || "").toLowerCase();
+      if (alunoNome.includes(searchLower)) return true;
+
+      // Buscar por email do aluno
+      const alunoEmail = (estagio.aluno?.email || "").toLowerCase();
+      if (alunoEmail.includes(searchLower)) return true;
+
+      // Buscar por código do aluno (alunoId)
+      const alunoId = estagio.alunoId?.toLowerCase() || "";
+      if (alunoId.includes(searchLower)) return true;
+
+      // Buscar por CPF do aluno (se disponível)
+      const alunoCpf = (estagio.aluno as any)?.cpf?.replace(/\D/g, "") || "";
+      const searchCpf = searchLower.replace(/\D/g, "");
+      if (alunoCpf && searchCpf && alunoCpf.includes(searchCpf)) return true;
+
+      return false;
+    });
+  }, [estagios, normalizedSearch]);
+
+  // Filtrar por data de criação
+  const filteredByDateEstagios = useMemo(() => {
+    if (!Array.isArray(filteredBySearchEstagios)) {
+      return [];
+    }
+
+    if (!appliedDateRange.from && !appliedDateRange.to) {
+      return filteredBySearchEstagios;
+    }
+
+    return filteredBySearchEstagios.filter((estagio) => {
+      if (!estagio.criadoEm) return false;
+
+      const criadoEm = new Date(estagio.criadoEm);
+      criadoEm.setHours(0, 0, 0, 0);
+
+      if (appliedDateRange.from) {
+        const fromDate = new Date(appliedDateRange.from);
+        fromDate.setHours(0, 0, 0, 0);
+        if (criadoEm < fromDate) return false;
+      }
+
+      if (appliedDateRange.to) {
+        const toDate = new Date(appliedDateRange.to);
+        toDate.setHours(23, 59, 59, 999);
+        if (criadoEm > toDate) return false;
+      }
+
+      return true;
+    });
+  }, [filteredBySearchEstagios, appliedDateRange]);
+
+  const sortedEstagios = useMemo(
+    () => sortList(filteredByDateEstagios),
+    [filteredByDateEstagios, sortList]
+  );
 
   // Paginação local
   const totalItems = sortedEstagios.length;
@@ -214,6 +349,12 @@ export function EstagiosDashboard({ className }: EstagiosDashboardProps) {
           : "Selecione um curso primeiro",
         disabled: !selectedCourseId || turmas.length === 0,
       },
+      {
+        key: "dateRange",
+        label: "Data de criação",
+        type: "date-range",
+        placeholder: "Selecionar período",
+      },
     ],
     [cursos, turmas, selectedCourseId]
   );
@@ -222,23 +363,25 @@ export function EstagiosDashboard({ className }: EstagiosDashboardProps) {
     () => ({
       curso: selectedCourseId,
       turma: selectedTurmaId,
+      dateRange: pendingDateRange,
     }),
-    [selectedCourseId, selectedTurmaId]
+    [selectedCourseId, selectedTurmaId, pendingDateRange]
   );
 
   const showEmptyState =
     !loading &&
     (!selectedCourseId ||
       !selectedTurmaId ||
-      (hasFetched && estagios.length === 0));
+      sortedEstagios.length === 0);
 
-  const showTable = !showEmptyState && (loading || estagios.length > 0);
+  const showTable = !showEmptyState && (loading || (hasFetched && sortedEstagios.length > 0));
 
   return (
     <div className={cn("min-h-full", className)}>
       <div className="border-b border-gray-200 top-0 z-10">
         <div className="py-4">
           <FilterBar
+            className="[&>div]:lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,1fr)_auto]"
             fields={filterFields}
             values={filterValues}
             onChange={(key, value) => {
@@ -254,6 +397,26 @@ export function EstagiosDashboard({ className }: EstagiosDashboardProps) {
                 setEstagios([]);
                 setHasFetched(false);
               }
+              if (key === "dateRange") {
+                setPendingDateRange(
+                  (value as DateRange) || createEmptyDateRange()
+                );
+              }
+            }}
+            search={{
+              label: "Pesquisar aluno",
+              value: pendingSearchTerm,
+              onChange: (value) => setPendingSearchTerm(value),
+              placeholder: "Nome, código do aluno ou CPF...",
+              onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleSearchSubmit((e.target as HTMLInputElement).value);
+                }
+              },
+              error: searchValidationMessage,
+              helperText: SEARCH_HELPER_TEXT,
+              helperPlacement: "tooltip",
             }}
             rightActions={
               <ButtonCustom
@@ -262,6 +425,7 @@ export function EstagiosDashboard({ className }: EstagiosDashboardProps) {
                 onClick={runFetch}
                 disabled={!selectedCourseId || !selectedTurmaId || loading}
                 isLoading={loading}
+                className="md:w-full xl:w-auto"
               >
                 Pesquisar
               </ButtonCustom>
@@ -270,8 +434,9 @@ export function EstagiosDashboard({ className }: EstagiosDashboardProps) {
         </div>
       </div>
 
-      <div className="py-6">
-        {showTable && (
+      {(showTable || showEmptyState) && (
+        <div className="py-6">
+          {showTable && (
           <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
             <div className="overflow-x-auto">
               <Table className="min-w-[800px]">
@@ -563,30 +728,31 @@ export function EstagiosDashboard({ className }: EstagiosDashboardProps) {
               </div>
             )}
           </div>
-        )}
+          )}
 
-        {showEmptyState && (
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-            <EmptyState
-              fullHeight
-              maxContentWidth="sm"
-              illustration="books"
-              illustrationAlt="Ilustração de estágios"
-              title={
-                !selectedCourseId || !selectedTurmaId
-                  ? "Selecione curso e turma"
-                  : "Nenhum estágio encontrado"
-              }
-              description={
-                !selectedCourseId || !selectedTurmaId
-                  ? "Selecione o curso e a turma para listar os estágios disponíveis."
-                  : error ||
-                    "Nenhum estágio encontrado para os filtros aplicados. Tente ajustar sua busca."
-              }
-            />
-          </div>
-        )}
-      </div>
+          {showEmptyState && (
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+              <EmptyState
+                fullHeight
+                maxContentWidth="sm"
+                illustration="books"
+                illustrationAlt="Ilustração de estágios"
+                title={
+                  !selectedCourseId || !selectedTurmaId
+                    ? "Selecione curso e turma"
+                    : "Nenhum estágio encontrado"
+                }
+                description={
+                  !selectedCourseId || !selectedTurmaId
+                    ? "Selecione o curso e a turma para listar os estágios disponíveis."
+                    : error ||
+                      "Nenhum estágio encontrado para os filtros aplicados. Tente ajustar sua busca."
+                }
+              />
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
