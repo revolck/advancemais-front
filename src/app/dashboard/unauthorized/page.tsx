@@ -16,7 +16,6 @@ export default function UnauthorizedPage() {
         .find((row) => row.startsWith("user_role="))
         ?.split("=")[1] || "não definido";
     // Migração de papéis para compatibilidade
-    if (userRole === "RECRUTADOR") userRole = "SETOR_DE_VAGAS";
     if (userRole === "PSICOLOGO") userRole = "RECRUTADOR";
     setRole(getRoleLabel(userRole));
   }, []);

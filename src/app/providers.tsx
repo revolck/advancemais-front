@@ -3,6 +3,7 @@
 import { QueryClient, QueryClientConfig, QueryClientProvider } from "@tanstack/react-query";
 import { ReactNode, useState } from "react";
 import { MercadoPagoProvider } from "@/lib/mercadopago";
+import { CookieConsentProvider } from "@/components/cookies/CookieConsentProvider";
 
 const queryClientConfig: QueryClientConfig = {
   defaultOptions: {
@@ -25,9 +26,8 @@ export function AppProviders({ children }: { children: ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       <MercadoPagoProvider>
-        {children}
+        <CookieConsentProvider>{children}</CookieConsentProvider>
       </MercadoPagoProvider>
     </QueryClientProvider>
   );
 }
-

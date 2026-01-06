@@ -3,6 +3,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
+import Image from "next/image";
 import {
   QrCode,
   Copy,
@@ -162,15 +163,17 @@ export const PixSuccessScreen: React.FC<PixSuccessScreenProps> = ({
             </div>
 
             {pixQrCode && (
-              <div className="bg-white border-2 border-zinc-100 p-6 rounded-2xl mb-6 flex justify-center">
-                <img
+              <div className="bg-white border-2 border-zinc-100 p-6 rounded-2xl mb-6 flex justify-center relative w-56 h-56">
+                <Image
                   src={
                     pixQrCode.startsWith("data:")
                       ? pixQrCode
                       : `data:image/png;base64,${pixQrCode}`
                   }
                   alt="QR Code PIX"
-                  className="w-56 h-56"
+                  fill
+                  className="object-contain"
+                  unoptimized
                 />
               </div>
             )}

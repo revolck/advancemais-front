@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useMemo, useRef } from "react";
 import { usePageTitle } from "@/hooks/usePageTitle";
+import { useCookieConsent } from "@/components/cookies/CookieConsentProvider";
 import {
   Building2,
   FileText,
@@ -17,6 +18,7 @@ import Link from "next/link";
 import { CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { ButtonCustom } from "@/components/ui/custom";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -34,6 +36,8 @@ import {
 export default function CookiesPage() {
   // Configura o título da página
   usePageTitle("Preferências de Cookies");
+
+  const { openPreferences } = useCookieConsent();
 
   const effectiveDate = "23/09/2025";
   const lastUpdated = "23/09/2025";
@@ -347,6 +351,18 @@ export default function CookiesPage() {
                 pode gerenciar suas preferências para controlar quais cookies
                 são armazenados no seu dispositivo.
               </p>
+            </div>
+
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <ButtonCustom
+                variant="outline"
+                size="sm"
+                withAnimation={false}
+                onClick={openPreferences}
+                className="border-white/30 bg-white/10 text-white hover:bg-white/15 hover:text-white"
+              >
+                Gerenciar preferências
+              </ButtonCustom>
             </div>
           </div>
         </div>

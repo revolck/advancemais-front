@@ -21,6 +21,10 @@ import { useMemo, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Pencil } from "lucide-react";
 import type { FileUploadItem } from "@/components/ui/custom/file-upload/types";
+import { deleteFile, uploadImage } from "@/services/upload/uploadService";
+
+const MAX_AVATAR_SIZE = 1 * 1024 * 1024;
+const REQUIRED_AVATAR_DIMENSION = 250;
 
 export default function PerfilPage() {
   const queryClient = useQueryClient();
@@ -33,10 +37,25 @@ export default function PerfilPage() {
   } | null>(null);
   const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
   const [avatarFiles, setAvatarFiles] = useState<FileUploadItem[]>([]);
+  const [pendingAvatarDelete, setPendingAvatarDelete] = useState(false);
 
-  // Validação de dimensões da imagem
-  const validateImageDimensions = useCallback(
-    (file: File): Promise<{ isValid: boolean; error?: string }> => {
+  const validateAvatarFile = useCallback(
+    async (file: File): Promise<{ isValid: boolean; error?: string }> => {
+      if (file.size > MAX_AVATAR_SIZE) {
+        return {
+          isValid: false,
+          error: "A imagem deve ter no máximo 1 MB.",
+        };
+      }
+
+      const ext = file.name.split(".").pop()?.toLowerCase();
+      if (!ext || !["jpg", "jpeg", "png"].includes(ext)) {
+        return {
+          isValid: false,
+          error: "Formato inválido. Envie JPG ou PNG.",
+        };
+      }
+
       return new Promise((resolve) => {
         const img = new Image();
         const url = URL.createObjectURL(file);
@@ -46,10 +65,17 @@ export default function PerfilPage() {
           const width = img.width;
           const height = img.height;
 
-          if (width !== 250 || height !== 250) {
+          const isSquare = width === height;
+          if (
+            !isSquare ||
+            width < 100 ||
+            height < 100 ||
+            width > REQUIRED_AVATAR_DIMENSION ||
+            height > REQUIRED_AVATAR_DIMENSION
+          ) {
             resolve({
               isValid: false,
-              error: `A imagem deve ter exatamente 250x250 pixels. Dimensões atuais: ${width}x${height}px`,
+              error: `A imagem deve ser quadrada (100x100 a 250x250). Dimensões atuais: ${width}x${height}px`,
             });
           } else {
             resolve({ isValid: true });
@@ -74,16 +100,14 @@ export default function PerfilPage() {
     async (newFiles: FileUploadItem[]) => {
       if (newFiles.length === 0) return;
 
-      const file = newFiles[0];
-      if (!file.file) return;
+      const fileItem = newFiles[0];
+      if (!fileItem.file) return;
 
-      // Validar dimensões
-      const validation = await validateImageDimensions(file.file);
+      const validation = await validateAvatarFile(fileItem.file);
       if (!validation.isValid) {
-        // Atualizar o arquivo com erro
         setAvatarFiles([
           {
-            ...file,
+            ...fileItem,
             status: "failed",
             error: validation.error,
           },
@@ -91,10 +115,10 @@ export default function PerfilPage() {
         return;
       }
 
-      // Se passou na validação, adicionar normalmente
+      setPendingAvatarDelete(false);
       setAvatarFiles(newFiles);
     },
-    [validateImageDimensions]
+    [validateAvatarFile]
   );
 
   const handleActionsChange = useCallback(
@@ -265,7 +289,11 @@ export default function PerfilPage() {
     );
   }
 
-  const emailVerified = Boolean(profile.emailVerificado);
+  const hasNewAvatarFile =
+    avatarFiles.length > 0 &&
+    avatarFiles[0]?.file &&
+    avatarFiles[0]?.status !== "failed";
+  const canSaveAvatar = pendingAvatarDelete || hasNewAvatarFile;
   const lastLoginLabel = profile.ultimoLogin
     ? new Date(profile.ultimoLogin).toLocaleString("pt-BR")
     : null;
@@ -278,6 +306,7 @@ export default function PerfilPage() {
             <div className="relative shrink-0">
               <AvatarCustom
                 name={profile.nomeCompleto}
+                src={profile.avatarUrl ?? undefined}
                 size="xl"
                 withBorder
                 className="cursor-pointer transition-opacity hover:opacity-90"
@@ -338,42 +367,56 @@ export default function PerfilPage() {
       >
         <ModalContentWrapper>
           <ModalHeader>
-            <ModalTitle>Alterar foto de perfil</ModalTitle>
+            <ModalTitle className="mb-0!">Alterar foto de perfil</ModalTitle>
+            <p className="text-xs! text-gray-600! mt-0!">
+              A imagem precisa ser PNG ou JPG e deve respeitar as dimensões
+              mínimas de 100x100 e máximas de 250x250 pixels.
+            </p>
           </ModalHeader>
           <ModalBody>
-            <p className="text-xs! text-gray-600! mt-0! mb-2! justify-center! items-center! flex!">
-              A imagem deve ser PNG ou JPG e ter exatamente 250x250 pixels.
-            </p>
             <div className="space-y-4">
               <FileUpload
                 files={avatarFiles}
                 multiple={false}
                 maxFiles={1}
                 validation={{
-                  maxSize: 1 * 1024 * 1024, // 5MB
-                  accept: [".jpg", ".png"], // Apenas PNG e JPG
+                  maxSize: 1 * 1024 * 1024, // 1MB
+                  accept: [".jpg", ".jpeg", ".png"], // Apenas PNG e JPG
                   maxFiles: 1,
                 }}
-                autoUpload={true}
-                deleteOnRemove={true}
+                autoUpload={false}
+                deleteOnRemove={false}
                 showPreview={true}
                 showProgress={true}
                 onFilesChange={(files) => setAvatarFiles(files)}
                 onFilesAdded={handleFilesAdded}
-                onUploadComplete={(file) => {
-                  // Avatar upload concluído
+                onFileRemove={() => {
+                  setAvatarFiles([]);
                 }}
-                publicUrl="usuarios/avatar"
               />
             </div>
           </ModalBody>
           <ModalFooter>
+            {profile.avatarUrl && (
+              <ButtonCustom
+                variant="outline"
+                size="md"
+                onClick={() => {
+                  setAvatarFiles([]);
+                  setPendingAvatarDelete(true);
+                }}
+                disabled={updateProfileMutation.isPending}
+              >
+                Remover foto
+              </ButtonCustom>
+            )}
             <ButtonCustom
               variant="outline"
               size="md"
               onClick={() => {
                 setIsAvatarModalOpen(false);
                 setAvatarFiles([]);
+                setPendingAvatarDelete(false);
               }}
             >
               Cancelar
@@ -382,19 +425,76 @@ export default function PerfilPage() {
               variant="primary"
               size="md"
               onClick={async () => {
-                if (avatarFiles.length > 0 && avatarFiles[0].uploadedUrl) {
-                  try {
+                if (!canSaveAvatar) return;
+                try {
+                  if (pendingAvatarDelete) {
+                    if (profile.avatarUrl) {
+                      await deleteFile(profile.avatarUrl);
+                    }
                     await updateProfileMutation.mutateAsync({
-                      avatarUrl: avatarFiles[0].uploadedUrl,
+                      avatarUrl: null,
                     } as any);
                     setIsAvatarModalOpen(false);
                     setAvatarFiles([]);
-                  } catch (error) {
-                    console.error("Erro ao atualizar avatar:", error);
+                    setPendingAvatarDelete(false);
+                    return;
                   }
+
+                  const fileItem = avatarFiles[0];
+                  if (!fileItem?.file) return;
+
+                  setAvatarFiles([
+                    {
+                      ...fileItem,
+                      status: "uploading",
+                      progress: 30,
+                    },
+                  ]);
+
+                  let uploadedUrl: string | null = null;
+                  try {
+                    const result = await uploadImage(
+                      fileItem.file,
+                      "usuarios/avatar"
+                    );
+                    uploadedUrl = result.url;
+                    setAvatarFiles([
+                      {
+                        ...fileItem,
+                        status: "completed",
+                        progress: 100,
+                        uploadedUrl: result.url,
+                      },
+                    ]);
+
+                    await updateProfileMutation.mutateAsync({
+                      avatarUrl: result.url,
+                    } as any);
+                  } catch (error) {
+                    if (uploadedUrl) {
+                      await deleteFile(uploadedUrl);
+                    }
+                    throw error;
+                  }
+
+                  setIsAvatarModalOpen(false);
+                  setAvatarFiles([]);
+                } catch (error) {
+                  setAvatarFiles((prev) =>
+                    prev.length > 0
+                      ? [
+                          {
+                            ...prev[0],
+                            status: "failed",
+                            error: "Falha ao salvar a imagem. Tente novamente.",
+                          },
+                        ]
+                      : prev
+                  );
+                  console.error("Erro ao atualizar avatar:", error);
                 }
               }}
-              disabled={avatarFiles.length === 0 || !avatarFiles[0].uploadedUrl}
+              disabled={!canSaveAvatar}
               isLoading={updateProfileMutation.isPending}
             >
               Salvar

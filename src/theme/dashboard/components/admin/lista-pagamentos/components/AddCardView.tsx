@@ -114,17 +114,6 @@ export function AddCardView({ onBack, onSuccess }: AddCardViewProps) {
   const { tokenize, isTokenizing, error: mpError } = useCardToken();
   const { company } = useTenantCompany();
 
-  // Pré-preencher CNPJ da empresa
-  useEffect(() => {
-    if (company?.cnpj) {
-      setDocumentType("CNPJ");
-      const maskService = MaskService.getInstance();
-      const formatted = maskService.processInput(company.cnpj, "cnpj");
-      setDocumentNumber(formatted);
-      validateDocument(formatted, "CNPJ");
-    }
-  }, [company?.cnpj]);
-
   // Validação do documento
   const validateDocument = useCallback((doc: string, type: "CPF" | "CNPJ") => {
     const clean = doc.replace(/\D/g, "");
@@ -149,6 +138,17 @@ export function AddCardView({ onBack, onSuccess }: AddCardViewProps) {
       return false;
     }
   }, []);
+
+  // Pré-preencher CNPJ da empresa
+  useEffect(() => {
+    if (company?.cnpj) {
+      setDocumentType("CNPJ");
+      const maskService = MaskService.getInstance();
+      const formatted = maskService.processInput(company.cnpj, "cnpj");
+      setDocumentNumber(formatted);
+      validateDocument(formatted, "CNPJ");
+    }
+  }, [company?.cnpj, validateDocument]);
 
   const handleDocumentTypeChange = (type: "CPF" | "CNPJ") => {
     if (documentType !== type) {

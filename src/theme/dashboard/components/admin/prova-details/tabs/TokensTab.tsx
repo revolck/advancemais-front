@@ -66,7 +66,7 @@ export function TokensTab({ cursoId, turmaId, provaId }: TokensTabProps) {
     staleTime: 2 * 60 * 1000, // 2 minutos
   });
 
-  const tokens = tokensResponse?.data || [];
+  const tokens = useMemo(() => tokensResponse?.data || [], [tokensResponse?.data]);
 
   // Verificar permissões de acesso
   const canViewAllTokens = useMemo(() => {

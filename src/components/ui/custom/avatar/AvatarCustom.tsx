@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { avatarCustomVariants, statusIndicatorVariants } from "./variants";
 import { getInitials, getAvatarColor } from "./utils";
@@ -21,6 +21,7 @@ const AvatarCustom = React.forwardRef<HTMLDivElement, AvatarCustomProps>(
       onClick,
       withBorder = false,
       isLoading = false,
+      src,
       ...props
     },
     ref
@@ -63,6 +64,7 @@ const AvatarCustom = React.forwardRef<HTMLDivElement, AvatarCustomProps>(
         {...props}
       >
         <Avatar className="size-full">
+          {src && <AvatarImage src={src} alt={actualAlt} />}
           <AvatarFallback
             className={cn(
               "font-semibold border-0",

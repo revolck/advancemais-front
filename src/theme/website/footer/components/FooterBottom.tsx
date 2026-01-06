@@ -4,6 +4,7 @@ import React from "react";
 import Link from "next/link";
 import type { FooterLink } from "../types";
 import { APP_VERSION } from "@/lib/constants";
+import { useCookieConsent } from "@/components/cookies/CookieConsentProvider";
 
 interface FooterBottomProps {
   legal: FooterLink[];
@@ -28,6 +29,8 @@ export const FooterBottom: React.FC<FooterBottomProps> = ({
   copyright,
   address,
 }) => {
+  const { openPreferences } = useCookieConsent();
+
   return (
     <div className="mt-6 border-t border-white/5 pt-8 mb-[-20px]">
       <div className="text-center space-y-3">
@@ -40,12 +43,28 @@ export const FooterBottom: React.FC<FooterBottomProps> = ({
         <nav className="flex flex-wrap justify-center gap-4 text-sm">
           {legal.map((link, index) => {
             const getIconEmoji = getIcon(link.icon);
+            const opensPreferences = link.href === "/cookies";
 
             return (
               <Link
                 key={index}
                 href={link.href}
                 className="text-gray-400 hover:text-white hover:underline transition-colors duration-200 flex items-center gap-1"
+                onClick={(event) => {
+                  if (!opensPreferences) return;
+                  if (
+                    event.defaultPrevented ||
+                    event.button !== 0 ||
+                    event.metaKey ||
+                    event.altKey ||
+                    event.ctrlKey ||
+                    event.shiftKey
+                  ) {
+                    return;
+                  }
+                  event.preventDefault();
+                  openPreferences();
+                }}
               >
                 {getIconEmoji && <span>{getIconEmoji()}</span>}
                 <span>{link.label}</span>

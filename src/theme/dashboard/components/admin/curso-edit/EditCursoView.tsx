@@ -6,8 +6,8 @@ import type { Curso } from "@/api/cursos";
 
 interface EditCursoViewProps {
   curso: Curso & {
-    categoria?: { id: number; nome: string };
-    subcategoria?: { id: number; nome: string };
+    categoria?: { id: number | string; nome: string };
+    subcategoria?: { id: number | string; nome: string };
     estagioObrigatorio?: boolean;
   };
 }

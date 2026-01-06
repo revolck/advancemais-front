@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
-// TODO: Remover import de mockData quando a API estiver retornando dados reais
-import { generateMockFaturamentoData } from "@/mockData/faturamento";
+import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import {
   Award,
@@ -27,10 +26,15 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { InteractiveLineChart } from "@/components/ui/custom/charts-custom/components/InteractiveLineChart";
 import type { ChartConfig } from "@/components/ui/chart";
 import type { MetricConfig } from "@/components/ui/custom/charts-custom/components/InteractiveLineChart";
-import type { VisaoGeralFaturamento } from "@/api/cursos";
+import { getVisaoGeralFaturamento } from "@/api/cursos";
+import type {
+  VisaoGeralFaturamentoPeriod,
+  VisaoGeralFaturamentoTendenciasData,
+} from "@/api/cursos";
+import type { DateRange } from "@/components/ui/custom/date-picker";
+import { format as formatDate } from "date-fns";
 
 interface FaturamentoSectionProps {
-  data: any;
   isLoading?: boolean;
 }
 
@@ -64,58 +68,94 @@ const formatDateTime = (dateString: string): string => {
   });
 };
 
-export function FaturamentoSection({
-  data,
-  isLoading,
-}: FaturamentoSectionProps) {
-  // Gerar dados históricos simulados para o gráfico interativo
-  // TODO: Remover uso de mockData quando a API retornar dados históricos reais
-  // Movido para antes do return condicional para evitar hook condicional
+export function FaturamentoSection({ isLoading }: FaturamentoSectionProps) {
+  const [periodType, setPeriodType] =
+    useState<VisaoGeralFaturamentoPeriod>("month");
+  const [dateRange, setDateRange] = useState<DateRange>({
+    from: null,
+    to: null,
+  });
+  const minSelectableDate = useMemo(() => new Date(2025, 0, 1), []);
+  const maxSelectableDate = useMemo(() => new Date(), []);
+
+  const customStartDate = dateRange.from
+    ? formatDate(dateRange.from, "yyyy-MM-dd")
+    : undefined;
+  const customEndDate = dateRange.to
+    ? formatDate(dateRange.to, "yyyy-MM-dd")
+    : undefined;
+
+  const isCustomReady =
+    periodType !== "custom" ||
+    (Boolean(customStartDate) && Boolean(customEndDate));
+
+  const {
+    data: faturamentoResponse,
+    isLoading: isLoadingFaturamento,
+    isFetching: isFetchingFaturamento,
+    error: faturamentoError,
+    refetch: refetchFaturamento,
+  } = useQuery({
+    queryKey: [
+      "cursos-visao-geral-faturamento",
+      {
+        periodType,
+        customStartDate,
+        customEndDate,
+        tz: "America/Sao_Paulo",
+        top: 10,
+      },
+    ],
+    queryFn: async () => {
+      const res = await getVisaoGeralFaturamento({
+        period: periodType,
+        startDate: periodType === "custom" ? customStartDate : undefined,
+        endDate: periodType === "custom" ? customEndDate : undefined,
+        tz: "America/Sao_Paulo",
+        top: 10,
+      });
+      if (!res?.success || !res.data) {
+        throw new Error("Resposta inválida da API de faturamento.");
+      }
+      return res.data;
+    },
+    enabled: !isLoading && isCustomReady,
+    staleTime: 1000 * 60 * 2,
+    refetchOnWindowFocus: false,
+    retry: 1,
+  });
+
+  const data: VisaoGeralFaturamentoTendenciasData | undefined =
+    faturamentoResponse;
+  const cursoMaiorFaturamento = data?.cursoMaiorFaturamento;
+  const sectionIsLoading =
+    Boolean(isLoading) ||
+    isLoadingFaturamento ||
+    (isFetchingFaturamento && !data);
+
   const historicalData = useMemo(() => {
-    if (isLoading || !data) return [];
-    // Usar dados mockados temporariamente
-    // Quando a API estiver pronta, substituir por: data.historicalData || []
-    const mockData = generateMockFaturamentoData();
+    return data?.historicalData ?? [];
+  }, [data]);
 
-    // Adicionar horários simulados para melhor visualização quando filtrar por dia
-    // Os dados são gerados com horários distribuídos ao longo do dia
-    const dataWithHours = mockData.map((item, index) => {
-      const date = new Date(item.date);
-      // Distribuir horários ao longo do dia (de 8h às 20h para parecer mais realista)
-      const hour = 8 + Math.floor((index * 12) / mockData.length); // 8h às 20h
-      const minute = Math.floor((index * 60) % 60);
-      date.setHours(hour, minute, 0, 0);
-
-      return {
-        ...item,
-        date: date.toISOString(), // Incluir horário completo
-      };
-    });
-
-    console.log(
-      "📊 FaturamentoSection: Dados mockados gerados:",
-      dataWithHours.length,
-      "items"
-    );
-    console.log("📊 FaturamentoSection: Primeiro item:", dataWithHours[0]);
-    return dataWithHours;
-  }, [isLoading, data]);
+  const topCursosFaturamento = useMemo(() => {
+    return data?.topCursosFaturamento ?? [];
+  }, [data]);
 
   // Dados para gráfico de barras dos top cursos
   const topCursosChartData = useMemo(() => {
-    if (isLoading || !data) return [];
-    const cursos = data.topCursosFaturamento ?? data.cursos ?? [];
+    if (sectionIsLoading || !data) return [];
+    const cursos = topCursosFaturamento;
     return cursos.slice(0, 5).map((curso: any) => ({
       name:
         (curso.cursoNome ?? curso.nome ?? "").length > 20
           ? (curso.cursoNome ?? curso.nome ?? "").substring(0, 20) + "..."
-          : (curso.cursoNome ?? curso.nome ?? ""),
+          : curso.cursoNome ?? curso.nome ?? "",
       valor: curso.totalFaturamento ?? curso.faturamento ?? 0,
       transacoes: curso.totalTransacoes ?? 0,
     }));
-  }, [isLoading, data]);
+  }, [sectionIsLoading, data, topCursosFaturamento]);
 
-  if (isLoading) {
+  if (sectionIsLoading) {
     return (
       <div className="space-y-6">
         <div className="bg-white rounded-xl p-6">
@@ -135,39 +175,55 @@ export function FaturamentoSection({
     );
   }
 
+  if (faturamentoError) {
+    return (
+      <div className="bg-white rounded-xl border border-gray-200 p-6">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <h3 className="text-lg font-bold text-gray-900">
+              Tendências de Faturamento
+            </h3>
+            <p className="text-sm text-gray-600">
+              Não foi possível carregar os dados de faturamento.
+            </p>
+          </div>
+          <button
+            onClick={() => refetchFaturamento()}
+            className="px-4 py-2 bg-[var(--primary-color)] text-white rounded-xl hover:opacity-90 transition-all font-medium"
+          >
+            Tentar novamente
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   // Configuração de métricas para o gráfico interativo
   const faturamentoMetrics: MetricConfig[] = [
     {
       key: "faturamento",
       label: "Faturamento",
-      value: data.faturamentoMesAtual,
-      previousValue: data.faturamentoMesAnterior,
+      value: data?.faturamentoMesAtual ?? 0,
+      previousValue: data?.faturamentoMesAnterior ?? 0,
       format: (val) => formatCurrency(val),
+      showChange: true,
+      showComparison: true,
     },
     {
       key: "transacoes",
       label: "Transações",
-      value: data.cursoMaiorFaturamento?.totalTransacoes || 0,
-      previousValue: Math.round(
-        (data.cursoMaiorFaturamento?.totalTransacoes || 0) * 0.9
-      ),
+      value: data?.totalTransacoes || 0,
       format: (val) => val.toLocaleString("pt-BR"),
+      showChange: false,
+      showComparison: false,
     },
     {
       key: "transacoesAprovadas",
       label: "Transações Aprovadas",
-      value: data.cursoMaiorFaturamento?.transacoesAprovadas || 0,
-      previousValue: Math.round(
-        (data.cursoMaiorFaturamento?.transacoesAprovadas || 0) * 0.9
-      ),
+      value: data?.transacoesAprovadas || 0,
       format: (val) => val.toLocaleString("pt-BR"),
-    },
-    {
-      key: "cursos",
-      label: "Cursos Ativos",
-      value: data.topCursosFaturamento.length || 0,
-      previousValue: Math.max(0, (data.topCursosFaturamento.length || 0) - 2),
-      format: (val) => val.toLocaleString("pt-BR"),
+      showChange: false,
+      showComparison: false,
     },
   ];
 
@@ -184,10 +240,6 @@ export function FaturamentoSection({
       label: "Transações Aprovadas",
       color: "#8b5cf6",
     },
-    cursos: {
-      label: "Cursos Ativos",
-      color: "#f59e0b",
-    },
   };
 
   return (
@@ -201,6 +253,14 @@ export function FaturamentoSection({
           dateKey="date"
           height={320}
           showPeriodFilter={true}
+          periodType={periodType}
+          onPeriodTypeChange={setPeriodType}
+          dateRange={dateRange}
+          onDateRangeChange={setDateRange}
+          useServerPeriodData={true}
+          datePickerMinDate={minSelectableDate}
+          datePickerMaxDate={maxSelectableDate}
+          datePickerYears="old"
           defaultPeriod="month"
           periodTitle="Tendências de Faturamento"
           periodDescription="Análise temporal dos principais indicadores financeiros"
@@ -208,7 +268,7 @@ export function FaturamentoSection({
       </div>
 
       {/* Curso com Maior Faturamento */}
-      {data.cursoMaiorFaturamento && (
+      {cursoMaiorFaturamento && (
         <div className="bg-gradient-to-br from-amber-50 via-yellow-50/30 to-amber-50 rounded-xl p-6 border border-amber-200/50">
           <div className="flex items-center gap-3 mb-6">
             <div className="p-2.5 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 text-white">
@@ -224,24 +284,20 @@ export function FaturamentoSection({
             </div>
           </div>
 
-          <Link
-            href={`/dashboard/cursos/${data.cursoMaiorFaturamento.cursoId}`}
-          >
+          <Link href={`/dashboard/cursos/${cursoMaiorFaturamento.cursoId}`}>
             <div className="bg-white rounded-xl p-6 border-2 border-amber-200/50 hover:border-amber-300 hover:shadow-lg transition-all duration-200 cursor-pointer group">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
                   <h4 className="font-bold text-xl text-gray-900 mb-2 group-hover:text-amber-700 transition-colors">
-                    {data.cursoMaiorFaturamento.cursoNome}
+                    {cursoMaiorFaturamento.cursoNome}
                   </h4>
                   <p className="text-sm text-gray-500 font-mono">
-                    {data.cursoMaiorFaturamento.cursoCodigo}
+                    {cursoMaiorFaturamento.cursoCodigo}
                   </p>
                 </div>
                 <div className="text-right">
                   <p className="text-3xl font-bold text-amber-600 mb-1">
-                    {formatCurrency(
-                      data.cursoMaiorFaturamento.totalFaturamento
-                    )}
+                    {formatCurrency(cursoMaiorFaturamento.totalFaturamento)}
                   </p>
                   <p className="text-xs text-gray-500">Total faturado</p>
                 </div>
@@ -256,7 +312,7 @@ export function FaturamentoSection({
                     </p>
                   </div>
                   <p className="font-bold text-gray-900 text-lg">
-                    {data.cursoMaiorFaturamento.totalTransacoes}
+                    {cursoMaiorFaturamento.totalTransacoes}
                   </p>
                   <p className="text-xs text-gray-500 mt-1">transações</p>
                 </div>
@@ -268,14 +324,16 @@ export function FaturamentoSection({
                     </p>
                   </div>
                   <p className="font-bold text-emerald-600 text-lg">
-                    {data.cursoMaiorFaturamento.transacoesAprovadas}
+                    {cursoMaiorFaturamento.transacoesAprovadas}
                   </p>
                   <p className="text-xs text-gray-500 mt-1">
-                    {(
-                      (data.cursoMaiorFaturamento.transacoesAprovadas /
-                        data.cursoMaiorFaturamento.totalTransacoes) *
-                      100
-                    ).toFixed(1)}
+                    {cursoMaiorFaturamento.totalTransacoes > 0
+                      ? (
+                          (cursoMaiorFaturamento.transacoesAprovadas /
+                            cursoMaiorFaturamento.totalTransacoes) *
+                          100
+                        ).toFixed(1)
+                      : "0.0"}
                     % de aprovação
                   </p>
                 </div>
@@ -287,10 +345,12 @@ export function FaturamentoSection({
                     </p>
                   </div>
                   <p className="font-bold text-amber-600 text-lg">
-                    {data.cursoMaiorFaturamento.transacoesPendentes}
+                    {cursoMaiorFaturamento.transacoesPendentes}
                   </p>
                   <p className="text-xs text-gray-500 mt-1">
-                    {formatDateTime(data.cursoMaiorFaturamento.ultimaTransacao)}
+                    {cursoMaiorFaturamento.ultimaTransacao
+                      ? formatDateTime(cursoMaiorFaturamento.ultimaTransacao)
+                      : "-"}
                   </p>
                 </div>
               </div>
@@ -300,7 +360,7 @@ export function FaturamentoSection({
       )}
 
       {/* Top 10 Cursos com Gráfico */}
-      {data.topCursosFaturamento.length > 0 && (
+      {topCursosFaturamento.length > 0 && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Gráfico dos Top 5 */}
           <div className="bg-white rounded-xl border border-gray-200 p-6">
@@ -403,7 +463,7 @@ export function FaturamentoSection({
               </p>
             </div>
             <div className="space-y-2 max-h-[320px] overflow-y-auto pr-2">
-              {(data.topCursosFaturamento ?? data.cursos ?? []).map((curso: any, index: number) => (
+              {topCursosFaturamento.map((curso: any, index: number) => (
                 <Link
                   key={curso.cursoId ?? curso.id ?? index}
                   href={`/dashboard/cursos/${curso.cursoId ?? curso.id}`}
@@ -435,7 +495,9 @@ export function FaturamentoSection({
                     </div>
                     <div className="text-right flex-shrink-0 ml-4">
                       <p className="font-bold text-gray-900 text-base">
-                        {formatCurrency(curso.totalFaturamento ?? curso.faturamento ?? 0)}
+                        {formatCurrency(
+                          curso.totalFaturamento ?? curso.faturamento ?? 0
+                        )}
                       </p>
                       <p className="text-xs text-gray-500">
                         {curso.totalTransacoes ?? 0} trans.

@@ -4,16 +4,32 @@ export interface Curso {
   nome: string;
   codigo: string;
   descricao: string;
+  descricaoHtml?: string;
   cargaHoraria: number;
-  categoriaId: number;
+  categoriaId: number | string;
   statusPadrao: "PUBLICADO" | "RASCUNHO";
   criadoEm: string;
   atualizadoEm: string;
   imagemUrl?: string;
-  subcategoriaId?: number;
+  subcategoriaId?: number | string;
   valor: number;
   valorPromocional?: number;
   gratuito: boolean;
+  estagioObrigatorio?: boolean;
+  notaMinima?: number;
+  frequenciaMinimaPct?: number;
+  categoria?: { id: string; nome: string };
+  subcategoria?: { id: string; nome: string };
+  turmasCount?: number;
+}
+
+// Meta do curso (contagens para validação)
+export interface CursoMeta {
+  cursoId: string;
+  templatesAulasCount: number;
+  templatesAvaliacoesCount: number;
+  turmasCount: number;
+  inscricoesAtivas: number;
 }
 
 export interface CreateCursoPayload {
@@ -149,11 +165,12 @@ export interface CreateInscricaoPayload {
 }
 
 export type StatusInscricao =
+  | "AGUARDANDO_PAGAMENTO"
   | "INSCRITO"
   | "EM_ANDAMENTO"
+  | "EM_ESTAGIO"
   | "CONCLUIDO"
   | "REPROVADO"
-  | "EM_ESTAGIO"
   | "CANCELADO"
   | "TRANCADO";
 
@@ -184,6 +201,7 @@ export interface TurmaProva {
   nome?: string;
   descricao?: string;
   tipo?: string;
+  recuperacaoFinal?: boolean;
   status?: ProvaStatus;
   data?: string;
   dataInicio?: string;
@@ -206,6 +224,7 @@ export interface CreateProvaPayload {
   titulo: string;
   etiqueta?: string;
   tipo?: "PROVA" | "ATIVIDADE";
+  recuperacaoFinal?: boolean;
   tipoAtividade?: "QUESTOES" | "TEXTO"; // Apenas para ATIVIDADE
   peso?: number;
   valeNota?: boolean;
@@ -300,6 +319,10 @@ export interface TurmaCertificado {
   turmaId: string;
   alunoId: string;
   emitidoEm: string;
+}
+
+export interface CreateCertificadoPayload {
+  alunoId: string;
 }
 
 // Alunos
@@ -460,6 +483,53 @@ export interface CursoFaturamento {
   faturamento: number;
 }
 
+export type VisaoGeralFaturamentoPeriod =
+  | "day"
+  | "week"
+  | "month"
+  | "year"
+  | "custom";
+
+export interface VisaoGeralFaturamentoHistoricalPoint
+  extends Record<string, string | number> {
+  date: string; // day: YYYY-MM-DDTHH:00:00 | week/month/custom: YYYY-MM-DD | year: YYYY-MM
+  faturamento: number;
+  transacoes: number;
+  transacoesAprovadas: number;
+  cursos: number;
+}
+
+export interface VisaoGeralFaturamentoTopCurso {
+  cursoId: string | number;
+  cursoNome: string;
+  cursoCodigo?: string;
+  totalFaturamento: number;
+  totalTransacoes: number;
+  transacoesAprovadas: number;
+  transacoesPendentes: number;
+  ultimaTransacao?: string;
+}
+
+export interface VisaoGeralFaturamentoTendenciasData {
+  period: VisaoGeralFaturamentoPeriod;
+  startDate: string; // YYYY-MM-DD
+  endDate: string; // YYYY-MM-DD
+  faturamentoMesAtual: number;
+  faturamentoMesAnterior: number;
+  totalTransacoes: number;
+  transacoesAprovadas: number;
+  cursosAtivos: number;
+  historicalData: VisaoGeralFaturamentoHistoricalPoint[];
+  topCursosFaturamento: VisaoGeralFaturamentoTopCurso[];
+  cursoMaiorFaturamento?: VisaoGeralFaturamentoTopCurso;
+}
+
+export interface VisaoGeralFaturamentoTendenciasResponse {
+  success: boolean;
+  data: VisaoGeralFaturamentoTendenciasData;
+  message?: string;
+}
+
 export interface VisaoGeralPerformance {
   taxaConclusao: number;
   cursos: CursoPerformance[];
@@ -557,4 +627,587 @@ export interface TurmaEstagio {
     nomeCompleto: string;
     email: string;
   };
+}
+
+export interface CreateEstagioPayload {
+  empresaNome: string;
+  empresaTelefone: string;
+  cep: string;
+  rua: string;
+  numero: string;
+  dataInicioPrevista: string; // yyyy-mm-dd
+  dataFimPrevista: string; // yyyy-mm-dd
+  horarioInicio: string; // HH:mm
+  horarioFim: string; // HH:mm
+}
+
+// ===================================
+// FREQUÊNCIA (API Real)
+// ===================================
+
+export type FrequenciaStatus = "PRESENTE" | "AUSENTE" | "JUSTIFICADO" | "ATRASADO";
+
+export interface Frequencia {
+  id: string;
+  cursoId: string;
+  turmaId: string;
+  aulaId: string;
+  inscricaoId: string;
+  status: FrequenciaStatus;
+  justificativa?: string | null;
+  observacoes?: string | null;
+  dataReferencia: string;
+  criadoEm: string;
+  aluno?: {
+    id: string;
+    nome: string;
+  };
+}
+
+export interface FrequenciaResumoItem {
+  alunoId: string;
+  alunoNome: string;
+  alunoCodigo?: string;
+  totalAulas: number;
+  presencas: number;
+  ausencias: number;
+  atrasados: number;
+  justificadas: number;
+  taxaPresencaPct: number;
+}
+
+export interface FrequenciaResumoResponse {
+  success: boolean;
+  data: {
+    totalAulasNoPeriodo: number;
+    items: FrequenciaResumoItem[];
+    pagination: {
+      page: number;
+      pageSize: number;
+      total: number;
+      totalPages: number;
+    };
+  };
+}
+
+export interface ListFrequenciasParams {
+  aulaId?: string;
+  inscricaoId?: string;
+  status?: FrequenciaStatus;
+  dataInicio?: string;
+  dataFim?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface ListFrequenciaResumoParams {
+  periodo?: "TOTAL" | "DIA" | "SEMANA" | "MES";
+  anchorDate?: string; // YYYY-MM-DD
+  search?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface CreateFrequenciaPayload {
+  inscricaoId: string;
+  aulaId: string;
+  status: FrequenciaStatus;
+  justificativa?: string | null;
+  observacoes?: string | null;
+  dataReferencia: string;
+}
+
+export interface UpdateFrequenciaPayload {
+  status: FrequenciaStatus;
+  justificativa?: string | null;
+}
+
+// ===================================
+// NOTAS (API Real)
+// ===================================
+
+export type NotaOrigemTipo = "PROVA" | "ATIVIDADE" | "AULA" | "OUTRO";
+export type NotaHistoryAction = "ADDED" | "REMOVED";
+
+export interface NotaOrigem {
+  tipo: NotaOrigemTipo;
+  id?: string | null;
+  titulo?: string | null;
+}
+
+export interface NotaHistoryEvent {
+  id: string;
+  action: NotaHistoryAction;
+  at: string;
+  nota: number;
+}
+
+export interface NotaLancamento {
+  cursoId: string;
+  turmaId: string;
+  inscricaoId: string;
+  alunoId: string;
+  alunoNome: string;
+  nota: number | null;
+  atualizadoEm: string;
+  motivo?: string | null;
+  origem?: NotaOrigem | null;
+  isManual: boolean;
+  history?: NotaHistoryEvent[];
+}
+
+export interface ListNotasParams {
+  turmaIds: string; // CSV de IDs
+  search?: string;
+  page?: number;
+  pageSize?: number;
+  orderBy?: "alunoNome" | "nota" | "atualizadoEm";
+  order?: "asc" | "desc";
+}
+
+export interface ListNotasResponse {
+  success: boolean;
+  data: {
+    items: NotaLancamento[];
+    pagination: {
+      page: number;
+      pageSize: number;
+      total: number;
+      totalPages: number;
+    };
+  };
+}
+
+export interface CreateNotaPayload {
+  alunoId: string;
+  nota: number;
+  motivo: string;
+  origem?: NotaOrigem | null;
+}
+
+export interface DeleteNotasParams {
+  alunoId: string;
+}
+
+// ===================================
+// AVALIAÇÕES (Biblioteca Global)
+// ===================================
+
+export type AvaliacaoTipo = "PROVA" | "ATIVIDADE";
+export type AvaliacaoTipoAtividade = "QUESTOES" | "PERGUNTA_RESPOSTA";
+export type AvaliacaoStatus = "RASCUNHO" | "PUBLICADA" | "EM_ANDAMENTO" | "CONCLUIDA" | "CANCELADA";
+export type AvaliacaoModalidade = "ONLINE" | "PRESENCIAL" | "AO_VIVO" | "LIVE" | "SEMIPRESENCIAL";
+export type AvaliacaoQuestaoTipo = "MULTIPLA_ESCOLHA" | "TEXTO" | "ANEXO";
+
+// Alternativa para criação (sem IDs)
+export interface AvaliacaoAlternativaInput {
+  texto: string;
+  correta: boolean;
+}
+
+// Alternativa retornada pela API (com IDs)
+export interface AvaliacaoAlternativa {
+  id: string;
+  questaoId: string;
+  texto: string;
+  ordem: number;
+  correta: boolean;
+}
+
+// Questão para criação (sem IDs)
+export interface AvaliacaoQuestaoInput {
+  enunciado: string;
+  tipo: AvaliacaoQuestaoTipo;
+  obrigatoria?: boolean;
+  alternativas: AvaliacaoAlternativaInput[];
+}
+
+// Questão retornada pela API (com IDs)
+export interface AvaliacaoQuestao {
+  id: string;
+  provaId: string;
+  enunciado: string;
+  tipo: AvaliacaoQuestaoTipo;
+  ordem: number;
+  peso?: number | null;
+  obrigatoria: boolean;
+  alternativas?: AvaliacaoAlternativa[];
+}
+
+// Legado - manter para compatibilidade
+export interface AvaliacaoQuestaoLegacy {
+  id: string;
+  titulo: string;
+  alternativas: { id: string; texto: string }[];
+  respostaCorreta: string;
+}
+
+export interface Avaliacao {
+  id: string;
+  codigo?: string;
+  cursoId: string;
+  turmaId?: string | null;
+  tipo: AvaliacaoTipo;
+  tipoAtividade?: AvaliacaoTipoAtividade | null;
+  titulo: string;
+  descricao?: string;
+  etiqueta?: string;
+  status: AvaliacaoStatus;
+  modalidade: AvaliacaoModalidade;
+  instrutorId?: string | null;
+  obrigatoria: boolean;
+  moduloId?: string | null;
+  dataInicio?: string;
+  dataFim?: string;
+  horaInicio?: string; // Formato HH:mm
+  horaTermino?: string; // Formato HH:mm
+  duracaoMinutos?: number;
+  valeNota: boolean;
+  peso?: number;
+  valePonto: boolean;
+  recuperacaoFinal?: boolean;
+  valorRecuperacaoFinal?: number;
+  questoes?: AvaliacaoQuestao[] | AvaliacaoQuestaoLegacy[];
+  criadoPorId?: string;
+  criadoEm: string;
+  atualizadoEm?: string;
+  ativo?: boolean;
+  localizacao?: "TURMA" | "MODULO";
+  ordem?: number;
+  // Campos de visão geral (retornados pela API)
+  nome?: string; // Alias de titulo
+  // curso pode ser string (legado) ou objeto { id, codigo, nome }
+  curso?: string | { id: string; codigo: string; nome: string } | null;
+  cursoNome?: string | null; // Alias de curso.nome
+  // turma pode ser string (legado) ou objeto { id, codigo, nome, modalidade? }
+  turma?: string | { id: string; codigo: string; nome: string; modalidade?: string } | null;
+  turmaNome?: string | null; // Alias de turma.nome
+  // instrutor pode ser objeto completo
+  instrutor?: {
+    id: string;
+    nome: string;
+    email: string;
+    role: string;
+  } | null;
+  data?: string; // Alias de criadoEm
+  pesoNota?: number; // Alias de peso
+  criadoPor?: {
+    nome: string | null;
+    avatarUrl: string | null;
+    cpf: string | null;
+  } | null;
+}
+
+export interface ListAvaliacoesParams {
+  cursoId?: string;
+  turmaId?: string;
+  semTurma?: boolean;
+  tipo?: AvaliacaoTipo;
+  status?: AvaliacaoStatus;
+  search?: string;
+  page?: number;
+  pageSize?: number;
+  orderBy?: string;
+  order?: "asc" | "desc";
+}
+
+export interface ListAvaliacoesResponse {
+  success: boolean;
+  data: Avaliacao[];
+  pagination?: {
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+export interface CreateAvaliacaoPayload {
+  // Campos obrigatórios
+  cursoId: string;
+  tipo: AvaliacaoTipo;
+  titulo: string;
+  peso: number; // 0 a 10, aceita decimais
+  dataInicio: string; // YYYY-MM-DD
+  dataFim: string; // YYYY-MM-DD
+  horaInicio: string; // HH:mm
+  horaTermino: string; // HH:mm
+
+  // Campos opcionais
+  turmaId?: string | null;
+  instrutorId?: string | null;
+  tipoAtividade?: AvaliacaoTipoAtividade; // Obrigatório quando tipo=ATIVIDADE
+  descricao?: string; // Obrigatório quando tipoAtividade=PERGUNTA_RESPOSTA (máx 500 chars)
+  etiqueta?: string;
+  valeNota?: boolean;
+  valePonto?: boolean; // Padrão: true
+  modalidade?: AvaliacaoModalidade; // Herdada da turma se vinculada
+  duracaoMinutos?: number;
+  obrigatoria?: boolean; // Padrão: true
+  status?: AvaliacaoStatus; // Padrão: RASCUNHO
+  recuperacaoFinal?: boolean; // Apenas para PROVA, requer valePonto=true
+
+  // Questões - obrigatório para PROVA e ATIVIDADE tipo QUESTOES (1 a 10 questões)
+  questoes?: AvaliacaoQuestaoInput[];
+}
+
+export type UpdateAvaliacaoPayload = Partial<CreateAvaliacaoPayload>;
+
+export interface CloneAvaliacaoPayload {
+  avaliacaoId: string;
+}
+
+// ===================================
+// ESTÁGIOS (Atualizado com listagem global)
+// ===================================
+
+export type EstagioStatus =
+  | "PENDENTE"
+  | "EM_ANDAMENTO"
+  | "CONCLUIDO"
+  | "APROVADO"
+  | "REPROVADO"
+  | "CANCELADO";
+
+export interface Estagio {
+  id: string;
+  cursoId: string;
+  turmaId: string;
+  inscricaoId: string;
+  alunoId: string;
+  empresaNome: string;
+  empresaTelefone?: string;
+  cep: string;
+  rua: string;
+  numero: string;
+  dataInicioPrevista: string;
+  dataFimPrevista: string;
+  horarioInicio: string;
+  horarioFim: string;
+  status: EstagioStatus;
+  compareceu?: boolean | null;
+  aprovado?: boolean | null;
+  observacoes?: string | null;
+  criadoEm: string;
+  atualizadoEm?: string;
+  aluno?: {
+    id: string;
+    nomeCompleto: string;
+    email: string;
+  };
+}
+
+export interface ListEstagiosParams {
+  cursoId?: string;
+  turmaId?: string;
+  status?: EstagioStatus;
+  search?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface ListEstagiosResponse {
+  success: boolean;
+  data: Estagio[];
+  pagination?: {
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+export interface UpdateEstagioStatusPayload {
+  status: EstagioStatus;
+  compareceu?: boolean;
+  observacoes?: string;
+}
+
+// ===================================
+// CERTIFICADOS (Atualizado)
+// ===================================
+
+export interface Certificado {
+  id: string;
+  codigo: string;
+  cursoId: string;
+  turmaId: string;
+  inscricaoId: string;
+  alunoId: string;
+  emitidoEm: string;
+  pdfUrl?: string;
+  templateId?: string;
+}
+
+export interface CertificadoVerificacao {
+  id: string;
+  codigo: string;
+  valido: boolean;
+  aluno: string;
+  curso: string;
+  cargaHoraria: number;
+  emitidoEm: string;
+}
+
+// ===================================
+// AGENDA
+// ===================================
+
+export type AgendaEventoTipo =
+  | "AULA"
+  | "PROVA"
+  | "ATIVIDADE"
+  | "ANIVERSARIO"
+  | "TURMA_INICIO"
+  | "TURMA_FIM";
+
+export type AulaModalidade = "ONLINE" | "PRESENCIAL" | "AO_VIVO" | "SEMIPRESENCIAL";
+
+export interface AgendaEvento {
+  id: string;
+  tipo: AgendaEventoTipo;
+  titulo: string;
+  descricao?: string;
+  dataInicio?: string;
+  dataFim?: string;
+  data?: string;
+  cor?: string;
+  cursoId?: string | null;
+  turmaId?: string | null;
+  aulaId?: string | null;
+  avaliacaoId?: string | null;
+  modalidade?: AulaModalidade;
+  meetUrl?: string;
+}
+
+export interface ListAgendaParams {
+  dataInicio?: string;
+  dataFim?: string;
+  turmaId?: string;
+  tipo?: AgendaEventoTipo;
+}
+
+// ===================================
+// CHECKOUT
+// ===================================
+
+export interface CheckoutPayload {
+  cursoId: string;
+  turmaId: string;
+  alunoId: string;
+  email: string;
+  nome: string;
+}
+
+export interface CheckoutResponse {
+  success: boolean;
+  data: {
+    checkoutUrl: string;
+    paymentId: string;
+    preferenceId: string;
+  };
+}
+
+export interface CheckoutPagamentoStatus {
+  paymentId: string;
+  status: string;
+  statusDetail: string;
+  valor: number;
+  cursoId: string;
+  turmaId: string;
+}
+
+export interface VagasDisponiveis {
+  vagasTotais: number;
+  vagasOcupadas: number;
+  vagasDisponiveis: number;
+  temVagas: boolean;
+}
+
+// ===================================
+// MATERIAIS DE AULA
+// ===================================
+
+export type MaterialTipo = "ARQUIVO" | "LINK" | "TEXTO";
+
+export interface AulaMaterial {
+  id: string;
+  aulaId: string;
+  tipo: MaterialTipo;
+  titulo: string;
+  descricao?: string;
+  obrigatorio: boolean;
+  ordem: number;
+  arquivoUrl?: string;
+  arquivoNome?: string;
+  arquivoTamanho?: number;
+  arquivoMimeType?: string;
+  linkUrl?: string;
+  conteudoHtml?: string;
+}
+
+export interface CreateMaterialPayload {
+  titulo: string;
+  descricao?: string;
+  tipo: MaterialTipo;
+  obrigatorio?: boolean;
+  arquivoUrl?: string;
+  arquivoNome?: string;
+  arquivoTamanho?: number;
+  arquivoMimeType?: string;
+  linkUrl?: string;
+  conteudoHtml?: string;
+}
+
+export type UpdateMaterialPayload = Partial<CreateMaterialPayload>;
+
+export interface ReordenarMateriaisPayload {
+  ordens: Array<{ id: string; ordem: number }>;
+}
+
+// ===================================
+// CATEGORIAS
+// ===================================
+
+export interface Subcategoria {
+  id: string;
+  nome: string;
+}
+
+export interface Categoria {
+  id: string;
+  nome: string;
+  descricao?: string;
+  icone?: string;
+  cor?: string;
+  subcategorias?: Subcategoria[];
+}
+
+// ===================================
+// PAGINAÇÃO GENÉRICA
+// ===================================
+
+export interface Pagination {
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+}
+
+export interface PaginatedResponse<T> {
+  success: true;
+  data: T[];
+  pagination: Pagination;
+}
+
+export interface ApiResponse<T> {
+  success: true;
+  data: T;
+}
+
+export interface ApiError {
+  success: false;
+  code: string;
+  message: string;
+  details?: Record<string, unknown>;
 }

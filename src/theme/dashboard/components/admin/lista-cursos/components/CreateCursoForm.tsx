@@ -93,8 +93,8 @@ export interface CreateCursoFormProps {
   mode?: "create" | "edit";
   cursoId?: string;
   initialData?: Curso & {
-    categoria?: { id: number; nome: string };
-    subcategoria?: { id: number; nome: string };
+    categoria?: { id: number | string; nome: string };
+    subcategoria?: { id: number | string; nome: string };
     estagioObrigatorio?: boolean;
   };
   onSuccess?: () => void;

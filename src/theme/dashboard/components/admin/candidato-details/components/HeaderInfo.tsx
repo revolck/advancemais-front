@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { AvatarCustom } from "@/components/ui/custom/avatar";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -39,6 +39,9 @@ export function HeaderInfo({
   onUpdateStatus,
 }: HeaderInfoProps) {
   const [isActionsOpen, setIsActionsOpen] = useState(false);
+  const hasEditActions = Boolean(onEditCandidato || onEditEndereco || onResetSenha);
+  const hasBlockActions = Boolean(onBloquearCandidato || onDesbloquearCandidato);
+  const hasAnyActions = hasEditActions || hasBlockActions;
   const normalized = candidato.status?.toUpperCase();
   const isBloqueado = normalized === "BLOQUEADO";
   const isAtivo = normalized === "ATIVO";
@@ -58,15 +61,13 @@ export function HeaderInfo({
       <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex items-center gap-5">
           <div className="relative">
-            <Avatar className="h-20 w-20 shrink-0 text-base">
-              <AvatarImage
-                src={candidato.avatarUrl || undefined}
-                alt={candidato.nomeCompleto}
-              />
-              <AvatarFallback className="bg-primary/10 text-primary/80 text-base font-semibold">
-                {getCandidatoInitials(candidato.nomeCompleto)}
-              </AvatarFallback>
-            </Avatar>
+            <AvatarCustom
+              name={candidato.nomeCompleto || "Candidato"}
+              src={candidato.avatarUrl || undefined}
+              size="xl"
+              showStatus={false}
+              className="text-base"
+            />
             <Tooltip>
               <TooltipTrigger asChild>
                 <span
@@ -119,72 +120,76 @@ export function HeaderInfo({
         </div>
 
         <div className="flex w-full flex-col items-stretch gap-2 sm:w-auto sm:flex-row sm:items-center">
-          <DropdownMenu open={isActionsOpen} onOpenChange={setIsActionsOpen}>
-            <DropdownMenuTrigger asChild>
-              <Button
-                aria-expanded={isActionsOpen}
-                className="flex items-center gap-2 rounded-full bg-[var(--primary-color)] px-6 py-2 text-sm font-semibold text-white hover:bg-[var(--primary-color)]/90 cursor-pointer"
-              >
-                Ações
-                <ChevronDown
-                  className={cn(
-                    "h-4 w-4 transition-transform duration-200",
-                    isActionsOpen ? "rotate-180" : "rotate-0"
-                  )}
-                  aria-hidden="true"
-                />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              {onEditCandidato && (
-                <DropdownMenuItem
-                  onSelect={onEditCandidato}
-                  className="cursor-pointer"
+          {hasAnyActions && (
+            <DropdownMenu open={isActionsOpen} onOpenChange={setIsActionsOpen}>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  aria-expanded={isActionsOpen}
+                  className="flex items-center gap-2 rounded-full bg-[var(--primary-color)] px-6 py-2 text-sm font-semibold text-white hover:bg-[var(--primary-color)]/90 cursor-pointer"
                 >
-                  <UserCog className="h-4 w-4 text-gray-500" />
-                  <span>Editar informações</span>
-                </DropdownMenuItem>
-              )}
-              {onEditEndereco && (
-                <DropdownMenuItem
-                  onSelect={onEditEndereco}
-                  className="cursor-pointer"
-                >
-                  <MapPin className="h-4 w-4 text-gray-500" />
-                  <span>Editar endereço</span>
-                </DropdownMenuItem>
-              )}
-              {onResetSenha && (
-                <DropdownMenuItem
-                  onSelect={onResetSenha}
-                  className="cursor-pointer"
-                >
-                  <Shield className="h-4 w-4 text-gray-500" />
-                  <span>Resetar senha</span>
-                </DropdownMenuItem>
-              )}
-              <DropdownMenuSeparator />
-              {isBloqueado
-                ? onDesbloquearCandidato && (
-                    <DropdownMenuItem
-                      onSelect={onDesbloquearCandidato}
-                      className="cursor-pointer"
-                    >
-                      <ShieldOff className="h-4 w-4 text-gray-500" />
-                      <span>Desbloquear candidato</span>
-                    </DropdownMenuItem>
-                  )
-                : onBloquearCandidato && (
-                    <DropdownMenuItem
-                      onSelect={onBloquearCandidato}
-                      className="cursor-pointer"
-                    >
-                      <Ban className="h-4 w-4 text-gray-500" />
-                      <span>Bloquear candidato</span>
-                    </DropdownMenuItem>
-                  )}
-            </DropdownMenuContent>
-          </DropdownMenu>
+                  Ações
+                  <ChevronDown
+                    className={cn(
+                      "h-4 w-4 transition-transform duration-200",
+                      isActionsOpen ? "rotate-180" : "rotate-0"
+                    )}
+                    aria-hidden="true"
+                  />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                {onEditCandidato && (
+                  <DropdownMenuItem
+                    onSelect={onEditCandidato}
+                    className="cursor-pointer"
+                  >
+                    <UserCog className="h-4 w-4 text-gray-500" />
+                    <span>Editar informações</span>
+                  </DropdownMenuItem>
+                )}
+                {onEditEndereco && (
+                  <DropdownMenuItem
+                    onSelect={onEditEndereco}
+                    className="cursor-pointer"
+                  >
+                    <MapPin className="h-4 w-4 text-gray-500" />
+                    <span>Editar endereço</span>
+                  </DropdownMenuItem>
+                )}
+                {onResetSenha && (
+                  <DropdownMenuItem
+                    onSelect={onResetSenha}
+                    className="cursor-pointer"
+                  >
+                    <Shield className="h-4 w-4 text-gray-500" />
+                    <span>Resetar senha</span>
+                  </DropdownMenuItem>
+                )}
+
+                {hasEditActions && hasBlockActions && <DropdownMenuSeparator />}
+
+                {isBloqueado
+                  ? onDesbloquearCandidato && (
+                      <DropdownMenuItem
+                        onSelect={onDesbloquearCandidato}
+                        className="cursor-pointer"
+                      >
+                        <ShieldOff className="h-4 w-4 text-gray-500" />
+                        <span>Desbloquear candidato</span>
+                      </DropdownMenuItem>
+                    )
+                  : onBloquearCandidato && (
+                      <DropdownMenuItem
+                        onSelect={onBloquearCandidato}
+                        className="cursor-pointer"
+                      >
+                        <Ban className="h-4 w-4 text-gray-500" />
+                        <span>Bloquear candidato</span>
+                      </DropdownMenuItem>
+                    )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
           <Button
             asChild
             variant="outline"

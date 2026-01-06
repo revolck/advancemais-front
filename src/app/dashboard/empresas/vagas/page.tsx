@@ -13,7 +13,8 @@ const ALLOWED_ROLES = new Set<UserRole>([
   UserRole.ADMIN,
   UserRole.MODERADOR,
   UserRole.SETOR_DE_VAGAS,
-  UserRole.EMPRESA, // Adicionada role EMPRESA
+  UserRole.EMPRESA,
+  UserRole.RECRUTADOR,
 ]);
 
 export default function DashboardVagasPage() {

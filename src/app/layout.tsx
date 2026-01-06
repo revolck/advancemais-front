@@ -1,9 +1,8 @@
 // src/app/layout.tsx
 import type { Metadata, Viewport } from "next";
-import { Analytics } from "@vercel/analytics/next";
-import { SpeedInsights } from "@vercel/speed-insights/next";
 import "@/styles/globals.css";
 import { AppProviders } from "./providers";
+import { ConsentAwareVercelAnalytics } from "@/components/cookies/ConsentAwareVercelAnalytics";
 
 /**
  * Layout raiz global da aplicação
@@ -55,11 +54,10 @@ export default function RootLayout({
           <div id="root-container" className="min-h-screen">
             {children}
           </div>
+          <ConsentAwareVercelAnalytics />
         </AppProviders>
         <div id="modal-portal" />
         <div id="tooltip-portal" />
-        <Analytics />
-        <SpeedInsights />
       </body>
     </html>
   );

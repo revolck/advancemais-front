@@ -294,6 +294,10 @@ export function CandidatoDetailsView({
 
   // Verifica se o usuário é SETOR_DE_VAGAS para ocultar a aba de cursos
   const isSetorDeVagas = userRole === UserRole.SETOR_DE_VAGAS;
+  const canManageCandidato =
+    userRole === UserRole.ADMIN ||
+    userRole === UserRole.MODERADOR ||
+    userRole === UserRole.PEDAGOGICO;
 
   const tabs: HorizontalTabItem[] = [
     {
@@ -357,66 +361,82 @@ export function CandidatoDetailsView({
 
       <HeaderInfo
         candidato={candidatoData}
-        onEditCandidato={() => setIsEditModalOpen(true)}
-        onEditEndereco={() => setIsEditEnderecoOpen(true)}
-        onResetSenha={() => setIsResetSenhaOpen(true)}
-        onBloquearCandidato={() => setIsBloquearModalOpen(true)}
-        onDesbloquearCandidato={() => setIsDesbloquearModalOpen(true)}
+        onEditCandidato={
+          canManageCandidato ? () => setIsEditModalOpen(true) : undefined
+        }
+        onEditEndereco={
+          canManageCandidato ? () => setIsEditEnderecoOpen(true) : undefined
+        }
+        onResetSenha={
+          canManageCandidato ? () => setIsResetSenhaOpen(true) : undefined
+        }
+        onBloquearCandidato={
+          canManageCandidato ? () => setIsBloquearModalOpen(true) : undefined
+        }
+        onDesbloquearCandidato={
+          canManageCandidato
+            ? () => setIsDesbloquearModalOpen(true)
+            : undefined
+        }
         onUpdateStatus={handleUpdateStatus}
       />
 
       <HorizontalTabs items={tabs} defaultValue="sobre" />
 
-      <EditarCandidatoModal
-        isOpen={isEditModalOpen}
-        onOpenChange={setIsEditModalOpen}
-        candidato={candidatoData}
-        onConfirm={async (payload) => {
-          await editCandidatoMutation.mutateAsync(payload);
-        }}
-      />
+      {canManageCandidato && (
+        <>
+          <EditarCandidatoModal
+            isOpen={isEditModalOpen}
+            onOpenChange={setIsEditModalOpen}
+            candidato={candidatoData}
+            onConfirm={async (payload) => {
+              await editCandidatoMutation.mutateAsync(payload);
+            }}
+          />
 
-      <EditarCandidatoEnderecoModal
-        isOpen={isEditEnderecoOpen}
-        onOpenChange={setIsEditEnderecoOpen}
-        candidato={candidatoData}
-        onConfirm={async (endereco) => {
-          await editCandidatoMutation.mutateAsync(endereco as any);
-        }}
-      />
+          <EditarCandidatoEnderecoModal
+            isOpen={isEditEnderecoOpen}
+            onOpenChange={setIsEditEnderecoOpen}
+            candidato={candidatoData}
+            onConfirm={async (endereco) => {
+              await editCandidatoMutation.mutateAsync(endereco as any);
+            }}
+          />
 
-      <ResetarSenhaCandidatoModal
-        isOpen={isResetSenhaOpen}
-        onOpenChange={setIsResetSenhaOpen}
-        email={candidatoData.email}
-        allowManual={true}
-        onManualSubmit={async (senha, confirmarSenha) => {
-          await editCandidatoMutation.mutateAsync(
-            { senha, confirmarSenha } as any
-          );
-        }}
-      />
+          <ResetarSenhaCandidatoModal
+            isOpen={isResetSenhaOpen}
+            onOpenChange={setIsResetSenhaOpen}
+            email={candidatoData.email}
+            allowManual={true}
+            onManualSubmit={async (senha, confirmarSenha) => {
+              await editCandidatoMutation.mutateAsync(
+                { senha, confirmarSenha } as any
+              );
+            }}
+          />
 
-      <BloquearCandidatoModal
-        isOpen={isBloquearModalOpen}
-        onOpenChange={setIsBloquearModalOpen}
-        candidatoNome={candidatoData.nomeCompleto}
-        onConfirm={async (payload: BloquearCandidatoData) => {
-          await bloquearCandidatoMutation.mutateAsync({
-            motivo: payload.motivo,
-            duracao: payload.dias,
-          });
-        }}
-      />
+          <BloquearCandidatoModal
+            isOpen={isBloquearModalOpen}
+            onOpenChange={setIsBloquearModalOpen}
+            candidatoNome={candidatoData.nomeCompleto}
+            onConfirm={async (payload: BloquearCandidatoData) => {
+              await bloquearCandidatoMutation.mutateAsync({
+                motivo: payload.motivo,
+                duracao: payload.dias,
+              });
+            }}
+          />
 
-      <DesbloquearCandidatoModal
-        isOpen={isDesbloquearModalOpen}
-        onOpenChange={setIsDesbloquearModalOpen}
-        candidatoNome={candidatoData.nomeCompleto}
-        onConfirm={async () => {
-          await desbloquearCandidatoMutation.mutateAsync();
-        }}
-      />
+          <DesbloquearCandidatoModal
+            isOpen={isDesbloquearModalOpen}
+            onOpenChange={setIsDesbloquearModalOpen}
+            candidatoNome={candidatoData.nomeCompleto}
+            onConfirm={async () => {
+              await desbloquearCandidatoMutation.mutateAsync();
+            }}
+          />
+        </>
+      )}
     </div>
   );
 }

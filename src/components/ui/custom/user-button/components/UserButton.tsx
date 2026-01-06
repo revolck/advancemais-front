@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,6 +16,7 @@ import { Icon } from "@/components/ui/custom/Icons";
 import { cn } from "@/lib/utils";
 import { getUserProfile, logoutUserSession } from "@/api/usuarios";
 import { logoutUser } from "@/lib/auth";
+import { useQuery } from "@tanstack/react-query";
 
 export interface UserButtonProps {
   className?: string;
@@ -27,6 +28,8 @@ interface User {
   lastName?: string;
   email: string;
   plan: "free" | "pro" | "enterprise";
+  avatarUrl?: string | null;
+  role?: string;
 }
 
 const UserButtonSkeleton = () => (
@@ -42,57 +45,64 @@ const UserButtonSkeleton = () => (
 export function UserButton({ className, onNavigate }: UserButtonProps) {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const token = document.cookie
-          .split("; ")
-          .find((row) => row.startsWith("token="))
-          ?.split("=")[1];
-
-        if (!token) {
-          setIsLoading(false);
-          return;
-        }
-
-        const profile = await getUserProfile(token);
-        if (
-          !profile?.success ||
-          !("usuario" in profile) ||
-          !profile.usuario?.email
-        ) {
-          setIsLoading(false);
-          return;
-        }
-
-        const full = profile.usuario.nomeCompleto?.trim();
-        const parts = full ? full.split(" ") : [];
-        const firstName = parts[0] || profile.usuario.email.split("@")[0];
-        const lastName = parts.slice(1).join(" ") || undefined;
-
-        setUser({
-          firstName,
-          lastName,
-          email: profile.usuario.email,
-          plan: "free", // Plano padrão - propriedade plano não está disponível no tipo atual
-        });
-      } catch (error) {
-        console.error("Erro ao carregar perfil:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchUser();
+  const token = useMemo(() => {
+    if (typeof document === "undefined") return undefined;
+    return document.cookie
+      .split("; ")
+      .find((row) => row.startsWith("token="))
+      ?.split("=")[1];
   }, []);
 
-  const menuItems = [
-    { key: "profile", icon: "User" as const, label: "Perfil" },
-  ];
+  const { data: profileResponse, isLoading } = useQuery({
+    queryKey: ["user-profile"],
+    queryFn: async () => {
+      if (!token) {
+        throw new Error("Token não encontrado");
+      }
+      return getUserProfile(token);
+    },
+    enabled: Boolean(token),
+    staleTime: 5 * 60 * 1000,
+    retry: 2,
+  });
+
+  const user: User | null = useMemo(() => {
+    if (
+      !profileResponse ||
+      !("usuario" in profileResponse) ||
+      !profileResponse.usuario?.email
+    ) {
+      return null;
+    }
+
+    const full = profileResponse.usuario.nomeCompleto?.trim();
+    const parts = full ? full.split(" ") : [];
+    const firstName =
+      parts[0] || profileResponse.usuario.email.split("@")[0];
+    const lastName = parts.slice(1).join(" ") || undefined;
+
+    return {
+      firstName,
+      lastName,
+      email: profileResponse.usuario.email,
+      plan: "free",
+      avatarUrl: profileResponse.usuario.avatarUrl ?? null,
+      role: profileResponse.usuario.role,
+    };
+  }, [profileResponse]);
+
+  const menuItems = useMemo(() => {
+    if (user?.role === "EMPRESA") {
+      return [
+        { key: "upgrade", icon: "Sparkles" as const, label: "Fazer upgrade agora" },
+        { key: "profile", icon: "User" as const, label: "Perfil" },
+        { key: "subscription", icon: "CreditCard" as const, label: "Assinatura" },
+      ];
+    }
+
+    return [{ key: "profile", icon: "User" as const, label: "Perfil" }];
+  }, [user?.role]);
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
@@ -118,7 +128,11 @@ export function UserButton({ className, onNavigate }: UserButtonProps) {
     } else {
       // Navegação padrão baseada na chave
       if (key === "profile") {
-        router.push("/dashboard/perfil");
+        router.push("/perfil");
+      } else if (key === "upgrade") {
+        router.push("/dashboard/upgrade");
+      } else if (key === "subscription") {
+        router.push("/dashboard/empresas/pagamentos");
       }
     }
   };
@@ -168,7 +182,12 @@ export function UserButton({ className, onNavigate }: UserButtonProps) {
           )}
         >
           <div className="flex items-center gap-2">
-              <AvatarCustom name={displayName} size="sm" showStatus={false} />
+              <AvatarCustom
+                name={displayName}
+                size="sm"
+                showStatus={false}
+                src={user?.avatarUrl ?? undefined}
+              />
             <div className="hidden md:flex flex-col leading-tight max-w-[160px] text-left">
               <span className="text-sm font-semibold truncate text-[var(--secondary-color)]">
                 Bem-vindo(a), {displayName}

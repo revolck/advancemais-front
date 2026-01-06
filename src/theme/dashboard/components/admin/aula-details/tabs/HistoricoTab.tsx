@@ -255,7 +255,7 @@ export function HistoricoTab({
   }, [historico]);
 
   const handleFilterChange = useCallback(
-    (key: string, value: string | string[] | DateRange | null) => {
+    (key: string, value: string | string[] | DateRange | Date | null) => {
       setFilters((prev) => {
         if (key === "periodo" && value === null) {
           return {

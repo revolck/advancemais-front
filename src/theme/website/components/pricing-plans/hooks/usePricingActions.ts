@@ -299,7 +299,11 @@ export function usePricingActions(): UsePricingActionsReturn {
         sessionStorage.setItem("pendingPlanId", plan.id);
         sessionStorage.setItem("pendingPlanName", plan.title);
         sessionStorage.setItem("pendingPlanPrice", plan.price);
-        router.push("/auth/login?redirect=/planos");
+        const redirect =
+          typeof window !== "undefined"
+            ? `${window.location.pathname}${window.location.search}`
+            : "/planos";
+        router.push(`/auth/login?redirect=${encodeURIComponent(redirect)}`);
         return;
       }
 

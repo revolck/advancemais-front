@@ -4,6 +4,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { getUserProfile } from "@/api/usuarios";
+import { getVisaoGeralEmpresa } from "@/api/empresas/dashboard";
 import { formatCNPJ, formatCPF } from "../utils/formatters";
 import type { PayerAddress } from "../components/PayerDataForm";
 
@@ -37,6 +38,20 @@ export function useCheckoutData() {
   // Ref para evitar chamadas duplicadas em StrictMode
   const hasFetched = useRef(false);
 
+  function onlyDigits(value: unknown): string {
+    if (value === null || value === undefined) return "";
+    return String(value).replace(/\D/g, "");
+  }
+
+  function applyDocumentAutofill(type: "CPF" | "CNPJ", digits: string) {
+    if (!digits) return;
+    const expectedLength = type === "CPF" ? 11 : 14;
+    if (digits.length !== expectedLength) return;
+
+    setDocumentType(type);
+    setPayerDocument(type === "CPF" ? formatCPF(digits) : formatCNPJ(digits));
+  }
+
   // Busca dados do perfil do usuário logado
   useEffect(() => {
     if (hasFetched.current) return;
@@ -58,7 +73,7 @@ export function useCheckoutData() {
 
         if (profile?.success && "usuario" in profile && profile.usuario) {
           const usuario = profile.usuario as any;
-          const { id, email, nomeCompleto, role } = usuario;
+          const { id, email, nomeCompleto, role, tipoUsuario } = usuario;
 
           // Armazena o userId
           if (id) {
@@ -67,41 +82,79 @@ export function useCheckoutData() {
 
           // Preenche email
           if (email) {
-            setPayerEmail(email);
+            setPayerEmail((current) => current || email);
           }
 
           // Preenche nome no cartão
           if (nomeCompleto) {
-            setCardHolder(nomeCompleto.toUpperCase());
+            setCardHolder((current) => current || nomeCompleto.toUpperCase());
           }
 
           // Tenta obter CNPJ/CPF do perfil
           // O backend pode retornar esses campos dependendo do tipo de usuário
-          const cnpj = usuario.cnpj || usuario.documento;
-          const cpf = usuario.cpf;
-          const razaoSocial = usuario.razaoSocial || usuario.nomeEmpresa;
+          const cnpjDigits = onlyDigits(
+            usuario.cnpj ??
+              usuario.documento ??
+              usuario.documentoCnpj ??
+              usuario.cnpjEmpresa ??
+              usuario.empresa?.cnpj
+          );
+          const cpfDigits = onlyDigits(
+            usuario.cpf ?? usuario.documentoCpf ?? usuario.cpfCnpj
+          );
+          const razaoSocial =
+            usuario.razaoSocial || usuario.nomeEmpresa || usuario.empresa?.nome;
 
           // Se for empresa e tiver razão social, usa como nome no cartão
           if (role === "EMPRESA" && razaoSocial) {
             setCardHolder(razaoSocial.toUpperCase());
           }
 
-          // Preenche documento
-          if (cnpj && cnpj.length >= 14) {
-            setDocumentType("CNPJ");
-            setPayerDocument(formatCNPJ(cnpj.replace(/\D/g, "")));
-          } else if (cpf && cpf.length >= 11) {
-            setDocumentType("CPF");
-            setPayerDocument(formatCPF(cpf.replace(/\D/g, "")));
+          // Preenche documento (não sobrescreve se o usuário já digitou)
+          if (!payerDocument) {
+            const isCompany =
+              role === "EMPRESA" || tipoUsuario === "PESSOA_JURIDICA";
+
+            if (isCompany && cnpjDigits.length === 14) {
+              applyDocumentAutofill("CNPJ", cnpjDigits);
+            } else if (!isCompany && cpfDigits.length === 11) {
+              applyDocumentAutofill("CPF", cpfDigits);
+            } else if (cnpjDigits.length === 14) {
+              applyDocumentAutofill("CNPJ", cnpjDigits);
+            } else if (cpfDigits.length === 11) {
+              applyDocumentAutofill("CPF", cpfDigits);
+            } else if (isCompany) {
+              // Fallback: tenta buscar dados da empresa (cnpj) no dashboard
+              try {
+                const visao = await getVisaoGeralEmpresa();
+                const dashboardCnpjDigits = onlyDigits(
+                  visao?.data?.empresa?.cnpj
+                );
+                if (dashboardCnpjDigits.length === 14) {
+                  applyDocumentAutofill("CNPJ", dashboardCnpjDigits);
+                }
+              } catch {
+                // não bloqueia o checkout
+              }
+            }
           }
 
           // Preenche endereço se disponível no perfil
-          const cep = usuario.cep;
-          const logradouro = usuario.logradouro;
-          const numeroEndereco = usuario.numeroEndereco;
-          const bairro = usuario.bairro;
-          const cidade = usuario.cidade;
-          const estado = usuario.estado;
+          const primaryAddress =
+            Array.isArray(usuario.enderecos) && usuario.enderecos.length > 0
+              ? usuario.enderecos.find((e: any) => e?.principal) ||
+                usuario.enderecos[0]
+              : null;
+
+          const cep = primaryAddress?.cep || usuario.cep;
+          const logradouro = primaryAddress?.logradouro || usuario.logradouro;
+          const numeroEndereco =
+            primaryAddress?.numero ||
+            primaryAddress?.streetNumber ||
+            usuario.numeroEndereco;
+          const bairro = primaryAddress?.bairro || usuario.bairro;
+          const cidade = primaryAddress?.cidade || usuario.cidade;
+          const estado = primaryAddress?.estado || usuario.estado;
 
           if (cep || logradouro || cidade) {
             setPayerAddress({
@@ -122,7 +175,7 @@ export function useCheckoutData() {
     };
 
     fetchUserProfile();
-  }, []);
+  }, [payerDocument]);
 
   return {
     userId,

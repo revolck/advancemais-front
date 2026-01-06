@@ -21,7 +21,7 @@ import {
   type DateRange,
 } from "@/components/ui/custom/date-picker";
 import { ButtonCustom } from "@/components/ui/custom";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { AvatarCustom } from "@/components/ui/custom/avatar";
 import { ChevronRight, Calendar, Building2, X } from "lucide-react";
 import {
   Tooltip,
@@ -164,7 +164,10 @@ export function CandidaturasTab({
     staleTime: 5 * 60 * 1000,
   });
 
-  const todasCandidaturas: Candidatura[] = candidatoData?.candidaturas || [];
+  const todasCandidaturas: Candidatura[] = useMemo(
+    () => candidatoData?.candidaturas || [],
+    [candidatoData?.candidaturas]
+  );
 
   // Sincronizar estados pending com applied quando os dados mudarem
   useEffect(() => {
@@ -180,7 +183,14 @@ export function CandidaturasTab({
     ) {
       setPendingDateRange(appliedDateRange);
     }
-  }, [appliedStatus, appliedEmpresa, appliedDateRange]);
+  }, [
+    appliedStatus,
+    appliedEmpresa,
+    appliedDateRange,
+    pendingStatus,
+    pendingEmpresa,
+    pendingDateRange,
+  ]);
 
   // Opções de status únicos
   const statusOptions = useMemo(() => {
@@ -629,15 +639,12 @@ export function CandidaturasTab({
 
                       <TableCell className="py-4">
                         <div className="flex items-center gap-3">
-                          <Avatar className="h-8 w-8 flex-shrink-0">
-                            <AvatarImage
-                              src={empresa?.logoUrl || undefined}
-                              alt={empresaNome}
-                            />
-                            <AvatarFallback className="bg-gray-100 text-gray-600 text-xs">
-                              {getEmpresaInitials(empresaNome)}
-                            </AvatarFallback>
-                          </Avatar>
+                          <AvatarCustom
+                            name={empresaNome || "Empresa"}
+                            src={empresa?.logoUrl || undefined}
+                            size="sm"
+                            showStatus={false}
+                          />
                           <div className="flex flex-col min-w-0">
                             <span className="text-sm font-medium text-gray-900 truncate">
                               {empresaNome}

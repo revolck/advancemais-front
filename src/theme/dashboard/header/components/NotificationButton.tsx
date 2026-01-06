@@ -32,6 +32,7 @@ import {
   SISTEMA_TYPES,
   formatRelativeTime,
   PRIORITY_COLORS,
+  getNotificationAction,
 } from "@/theme/dashboard/utils/notifications";
 import {
   Tooltip,
@@ -57,7 +58,7 @@ export function NotificationButton({ className }: NotificationButtonProps) {
 
   const { data, isLoading, isError, isFetching, refetch } =
     useNotifications(listParams);
-  const allNotifications = data?.data ?? [];
+  const allNotifications = useMemo(() => data?.data ?? [], [data?.data]);
   const unreadCount = getUnreadCount(data) ?? 0;
 
   // Filtrar notificações por categoria
@@ -90,12 +91,13 @@ export function NotificationButton({ className }: NotificationButtonProps) {
     const hasLongMessage = notification.mensagem.length > 100;
     const hasExtraData =
       notification.dados && Object.keys(notification.dados).length > 0;
+    const action = getNotificationAction(notification);
 
     if (hasLongMessage || hasExtraData) {
       setSelectedNotification(notification);
-    } else if (notification.linkAcao) {
+    } else if (action.href) {
       setIsOpen(false);
-      router.push(notification.linkAcao);
+      router.push(action.href);
     }
   };
 
@@ -109,10 +111,15 @@ export function NotificationButton({ className }: NotificationButtonProps) {
   const handleModalClose = () => setSelectedNotification(null);
 
   const handleModalAction = () => {
-    if (selectedNotification?.linkAcao) {
+    if (selectedNotification) {
+      const action = getNotificationAction(selectedNotification);
+      if (!action.href) {
+        setSelectedNotification(null);
+        return;
+      }
       setSelectedNotification(null);
       setIsOpen(false);
-      router.push(selectedNotification.linkAcao);
+      router.push(action.href);
     } else {
       setSelectedNotification(null);
     }
@@ -435,17 +442,18 @@ export function NotificationButton({ className }: NotificationButtonProps) {
 
                           {/* Botões de ação */}
                           <div className="flex items-center gap-1">
-                            {notification.linkAcao && (
+                            {getNotificationAction(notification).href && (
                               <ButtonCustom
                                 variant="primary"
                                 size="sm"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  router.push(notification.linkAcao!);
+                                  const action = getNotificationAction(notification);
+                                  if (action.href) router.push(action.href);
                                 }}
                                 className="!h-6 !text-[10px] !px-2"
                               >
-                                Ver vaga
+                                {getNotificationAction(notification).label ?? "Ver detalhes"}
                               </ButtonCustom>
                             )}
 
@@ -599,9 +607,9 @@ export function NotificationButton({ className }: NotificationButtonProps) {
               <ButtonCustom variant="ghost" onClick={handleModalClose}>
                 Fechar
               </ButtonCustom>
-              {selectedNotification.linkAcao && (
+              {getNotificationAction(selectedNotification).href && (
                 <ButtonCustom variant="primary" onClick={handleModalAction}>
-                  Ver detalhes
+                  {getNotificationAction(selectedNotification).label ?? "Ver detalhes"}
                 </ButtonCustom>
               )}
             </ModalFooter>

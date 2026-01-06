@@ -1,9 +1,11 @@
-import type React from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { headers } from "next/headers";
-import type { CourseData } from "@/theme/website/components/course/types";
+import type {
+  CourseData,
+  CourseTurmaPublica,
+} from "@/theme/website/components/course/types";
 import { ButtonCustom } from "@/components/ui/custom/button";
 import {
   Clock,
@@ -12,21 +14,120 @@ import {
   BookOpen,
   Users,
   CalendarDays,
-  CheckCircle2,
-  Sparkles,
   DollarSign,
   Gift,
   Percent,
+  CheckCircle2,
+  CreditCard,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { ShareJobButton } from "@/theme/website/components/career-opportunities/components/ShareJobButton";
 import { env } from "@/lib/env";
 import { stripHtmlTags } from "@/lib/utils";
 import Image from "next/image";
+import { CourseTurmasPurchaseSection } from "@/theme/website/components/course/components/CourseTurmasPurchaseSection";
+import { HtmlContent } from "@/components/ui/custom/html-content";
 
 type CursoApiResponse =
   | (Record<string, any> & { id: string; statusPadrao?: string })
   | null;
+
+function normalizeTurmasPublicadas(curso: any): CourseTurmaPublica[] {
+  const rawCandidates: any[] =
+    (Array.isArray(curso?.turmasPublicadas) && curso.turmasPublicadas) ||
+    (Array.isArray(curso?.turmas) && curso.turmas) ||
+    (Array.isArray(curso?.Turmas) && curso.Turmas) ||
+    (Array.isArray(curso?.data?.turmas) && curso.data.turmas) ||
+    [];
+
+  const normalized: CourseTurmaPublica[] = [];
+
+  rawCandidates.forEach((turma) => {
+    if (!turma) return;
+    const id = turma.id?.toString?.() ?? "";
+    if (!id) return;
+
+    const dataInicio =
+      turma.dataInicio ||
+      turma.dataInicioPrevista ||
+      turma.inicioEm ||
+      turma.inicio ||
+      turma.dataInicioAtividades;
+    const dataFim =
+      turma.dataFim ||
+      turma.dataFimPrevista ||
+      turma.fimEm ||
+      turma.fim ||
+      turma.dataFimAtividades;
+
+    const dataInscricaoInicio =
+      turma.dataInscricaoInicio ||
+      turma.inscricoesInicio ||
+      turma.inscricaoInicio ||
+      turma.inscricaoInicioEm;
+    const dataInscricaoFim =
+      turma.dataInscricaoFim ||
+      turma.inscricoesFim ||
+      turma.inscricaoFim ||
+      turma.inscricaoFimEm;
+
+    const vagas =
+      turma.vagasDisponiveis ??
+      turma.vagas ??
+      turma.quantidadeVagas ??
+      turma.limiteVagas ??
+      undefined;
+
+    const vagasTotais =
+      turma.vagasTotais ??
+      turma.totalVagas ??
+      turma.quantidadeVagasTotais ??
+      turma.limiteVagas ??
+      undefined;
+
+    const vagasDisponiveis =
+      turma.vagasDisponiveis ??
+      turma.disponiveis ??
+      turma.vagasDisponiveisCalculadas ??
+      undefined;
+
+    const valor =
+      turma.valor != null
+        ? Number(turma.valor)
+        : turma.preco != null
+        ? Number(turma.preco)
+        : undefined;
+    const valorPromocional =
+      turma.valorPromocional != null
+        ? Number(turma.valorPromocional)
+        : undefined;
+    const gratuito =
+      turma.gratuito != null ? Boolean(turma.gratuito) : undefined;
+
+    normalized.push({
+      id,
+      nome: turma.nome || turma.titulo || turma.codigo || undefined,
+      dataInicio: dataInicio ? String(dataInicio) : undefined,
+      dataFim: dataFim ? String(dataFim) : undefined,
+      dataInscricaoInicio: dataInscricaoInicio
+        ? String(dataInscricaoInicio)
+        : undefined,
+      dataInscricaoFim: dataInscricaoFim ? String(dataInscricaoFim) : undefined,
+      metodo: turma.metodo || turma.modalidade || turma.tipo || undefined,
+      turno: turma.turno || undefined,
+      status: turma.status || turma.statusPadrao || undefined,
+      vagasTotais: typeof vagasTotais === "number" ? vagasTotais : undefined,
+      vagasDisponiveis:
+        typeof vagasDisponiveis === "number" ? vagasDisponiveis : undefined,
+      vagas: typeof vagas === "number" ? vagas : undefined,
+      valor,
+      valorPromocional,
+      gratuito,
+    });
+  });
+
+  return normalized;
+}
 
 function normalizeCourse(curso: any): CourseData {
   return {
@@ -49,6 +150,7 @@ function normalizeCourse(curso: any): CourseData {
         ? Number(curso.valorPromocional)
         : undefined,
     gratuito: Boolean(curso.gratuito ?? false),
+    turmasPublicadas: normalizeTurmasPublicadas(curso),
   };
 }
 
@@ -66,7 +168,7 @@ function resolveApiUrl(path: string, origin: string): string {
 
 async function fetchCursoById(
   id: string,
-  origin: string,
+  origin: string
 ): Promise<CourseData | null> {
   const normalize = (data: any): any => {
     if (!data) return null;
@@ -99,19 +201,14 @@ async function fetchCursoById(
     }
   };
 
-  const uuidRegex =
-    /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
-  const looksLikeUuid = uuidRegex.test(id);
   let curso: CursoApiResponse = null;
 
-  if (looksLikeUuid) {
-    curso = await doFetch(
-      `/api/v1/cursos/publico/cursos/${encodeURIComponent(id)}`,
-    );
-  }
+  curso = await doFetch(
+    `/api/v1/cursos/publico/cursos/${encodeURIComponent(id)}`
+  );
 
   if (!curso) {
-    curso = await doFetch(`/api/v1/cursos/cursos/${encodeURIComponent(id)}`);
+    curso = await doFetch(`/api/v1/cursos/${encodeURIComponent(id)}`);
   }
 
   if (!curso) return null;
@@ -144,7 +241,8 @@ export async function generateMetadata({
   return {
     title: `${course.nome} | Cursos | Advance+`,
     description:
-      stripHtmlTags(course.descricao)?.slice(0, 155) ?? `Detalhes do curso ${course.nome}`,
+      stripHtmlTags(course.descricao)?.slice(0, 155) ??
+      `Detalhes do curso ${course.nome}`,
   };
 }
 
@@ -166,6 +264,14 @@ export default async function CourseDetailsPage({
   if (!course) {
     notFound();
   }
+
+  const descricaoText = stripHtmlTags(course.descricao)?.trim() ?? "";
+  const descricaoHtml = course.descricao?.trim() ?? "";
+  const isHtmlDescription = Boolean(descricaoHtml && /<[^>]+>/.test(descricaoHtml));
+  const descricaoResumo =
+    descricaoText.length > 220
+      ? `${descricaoText.slice(0, 220).trim()}…`
+      : descricaoText;
 
   // Formatar valor
   const formatCurrency = (value: number): string => {
@@ -189,205 +295,354 @@ export default async function CourseDetailsPage({
 
   const desconto = calcularDesconto();
 
-  const infoCards = [
-    { label: "Categoria", value: course.categoria, icon: BookOpen },
-    { label: "Carga horária", value: `${course.cargaHoraria}h`, icon: Clock },
-    {
-      label: "Turmas disponíveis",
-      value: course.totalTurmas
-        ? `${course.totalTurmas} turma${course.totalTurmas > 1 ? "s" : ""}`
-        : null,
-      icon: Users,
-    },
-    {
-      label: "Tipo de curso",
-      value: course.gratuito ? "Gratuito" : "Pago",
-      icon: course.gratuito ? Gift : DollarSign,
-      badge: course.gratuito ? (
-        <Badge
-          variant="outline"
-          className="bg-emerald-50 text-emerald-700 border-emerald-200"
-        >
-          <Gift className="h-3 w-3 mr-1" />
-          Gratuito
-        </Badge>
-      ) : null,
-    },
-    {
-      label: "Valor",
-      value:
-        !course.gratuito && course.valor > 0
-          ? formatCurrency(course.valor)
-          : null,
-      icon: DollarSign,
-      badge:
-        course.valorPromocional && course.valorPromocional < course.valor ? (
-          <div className="flex flex-col gap-1">
-            <span className="text-xs line-through text-gray-400">
-              {formatCurrency(course.valor)}
-            </span>
-            <span className="text-sm font-semibold text-emerald-600">
-              {formatCurrency(course.valorPromocional)}
-            </span>
-          </div>
-        ) : null,
-    },
-    {
-      label: "Desconto",
-      value: desconto ? `${desconto.toFixed(0)}% OFF` : null,
-      icon: Percent,
-      badge: desconto ? (
-        <Badge
-          variant="outline"
-          className="bg-red-50 text-red-700 border-red-200"
-        >
-          {desconto.toFixed(0)}% OFF
-        </Badge>
-      ) : null,
-    },
-    {
-      label: "Estágio obrigatório",
-      value: course.estagioObrigatorio ? "Sim" : null,
-      icon: Award,
-    },
-    {
-      label: "Publicado em",
-      value: course.criadoEm
-        ? new Date(course.criadoEm).toLocaleDateString("pt-BR")
-        : null,
-      icon: CalendarDays,
-    },
-  ]
-    .filter((item) => Boolean(item.value))
-    .map((item) => ({
-      ...item,
-      value: item.value as string,
-    })) as {
-    label: string;
-    value: string;
-    icon: React.ElementType;
-  }[];
+  const precoBase =
+    course.valorPromocional != null &&
+    course.valorPromocional > 0 &&
+    course.valor > 0 &&
+    course.valorPromocional < course.valor
+      ? course.valorPromocional
+      : course.valor;
+
+  const hasPromo =
+    !course.gratuito &&
+    course.valorPromocional != null &&
+    course.valorPromocional > 0 &&
+    course.valor > 0 &&
+    course.valorPromocional < course.valor;
+
+  const hasCoursePrice =
+    (course.valor != null && course.valor > 0) ||
+    (course.valorPromocional != null && course.valorPromocional > 0);
+
+  const precoLabel = course.gratuito
+    ? "Gratuito"
+    : hasCoursePrice
+    ? formatCurrency(precoBase)
+    : "Consulte a turma";
+
+  const precoSubLabel = course.gratuito
+    ? "Sem custo para matrícula"
+    : !hasCoursePrice
+    ? "Valor definido por turma"
+    : hasPromo && desconto
+    ? `De ${formatCurrency(course.valor)} • ${desconto.toFixed(0)}% OFF`
+    : "Preço base do curso";
+
+  const parseTurmaDate = (value?: string): Date | null => {
+    if (!value) return null;
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  };
+
+  const nextTurmaInfo = (() => {
+    const turmas = course.turmasPublicadas ?? [];
+    if (turmas.length === 0) {
+      return {
+        label: "Sem turmas",
+        subLabel: "Aguarde novas turmas",
+      };
+    }
+
+    const dates = turmas
+      .map((turma) => parseTurmaDate(turma.dataInicio))
+      .filter((date): date is Date => Boolean(date))
+      .sort((a, b) => a.getTime() - b.getTime());
+
+    if (dates.length === 0) {
+      return {
+        label: "A confirmar",
+        subLabel: "Datas serão divulgadas",
+      };
+    }
+
+    const now = new Date();
+    const nextFuture = dates.find((date) => date.getTime() >= now.getTime());
+    if (nextFuture) {
+      return {
+        label: nextFuture.toLocaleDateString("pt-BR"),
+        subLabel: "Próxima data de início",
+      };
+    }
+
+    return {
+      label: "Novas turmas em breve",
+      subLabel: "Consulte a lista abaixo",
+    };
+  })();
+
+  // Backwards-compat: evita ReferenceError caso algum bundle antigo ainda
+  // referencie os nomes anteriores durante hot reload.
+  const nextTurmaLabel = nextTurmaInfo.label;
+  const nextTurmaSubLabel = nextTurmaInfo.subLabel;
 
   return (
-    <div className="min-h-screen bg-white">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-5">
-        <header className="space-y-6 border-b border-gray-100 pb-8">
-          <div className="flex items-center justify-between text-sm text-gray-500">
-            <Link
-              href="/cursos"
-              className="inline-flex items-center gap-2 font-semibold text-gray-700 hover:text-gray-900"
-            >
-              <ArrowLeft className="w-4 h-4" /> Todos os cursos
-            </Link>
+    <div className="min-h-screen bg-slate-50">
+      <section className="relative overflow-hidden bg-[var(--primary-color)]">
+        {course.imagemUrl ? (
+          <div className="absolute inset-0 z-0 pointer-events-none">
+            {course.imagemUrl.includes("via.placeholder.com") ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={course.imagemUrl}
+                alt=""
+                aria-hidden="true"
+                className="h-full w-full object-cover opacity-15 blur-[1px] scale-110"
+              />
+            ) : (
+              <Image
+                src={course.imagemUrl}
+                alt=""
+                aria-hidden="true"
+                fill
+                priority
+                sizes="100vw"
+                className="object-cover opacity-15 blur-[1px] scale-110"
+              />
+            )}
           </div>
-          <div className="flex flex-col gap-5">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-center gap-4">
-                {course.imagemUrl && (
-                  <div className="w-14 h-14 rounded-2xl border border-gray-200 bg-gray-50 flex items-center justify-center overflow-hidden">
-                    {course.imagemUrl.includes("via.placeholder.com") ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={course.imagemUrl}
-                        alt={course.nome}
-                        className="object-cover w-full h-full"
-                      />
-                    ) : (
-                      <Image
-                        src={course.imagemUrl}
-                        alt={course.nome}
-                        width={56}
-                        height={56}
-                        className="object-cover w-full h-full"
-                      />
-                    )}
-                  </div>
-                )}
-                <div>
-                  <p className="!text-xs !font-semibold !uppercase !text-gray-400 !mb-0">
-                    {course.categoria}
-                  </p>
-                  <h3 className="!mb-0">{course.nome}</h3>
-                </div>
-              </div>
-              <div className="flex flex-wrap gap-3">
-                <ShareJobButton
-                  url={`${origin}/cursos/${course.id}`}
-                  title={course.nome}
-                  description={stripHtmlTags(course.descricao)}
-                />
-                <ButtonCustom
-                  asChild
-                  variant="default"
-                  className="rounded-full text-sm"
-                >
-                  <a
-                    href={`/dashboard/cursos/${course.id}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    Inscrever-se
-                  </a>
-                </ButtonCustom>
-              </div>
+        ) : null}
+
+        <div className="absolute inset-0 z-10 bg-gradient-to-br from-[var(--primary-color)]/95 via-[var(--primary-color)]/80 to-slate-950/70" />
+        <div className="absolute -top-40 -right-40 z-20 h-[520px] w-[520px] rounded-full bg-white/10 blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-40 -left-40 z-20 h-[520px] w-[520px] rounded-full bg-white/10 blur-3xl pointer-events-none" />
+
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-14 relative z-30">
+          <div className="flex flex-col gap-8">
+            <div className="flex items-center justify-between gap-4">
+              <nav className="flex items-center gap-2 text-sm text-white/80">
+                <Link href="/" className="hover:text-white">
+                  Home
+                </Link>
+                <span className="text-white/50">/</span>
+                <Link href="/cursos" className="hover:text-white">
+                  Cursos
+                </Link>
+                <span className="text-white/50">/</span>
+                <span className="text-white/90 truncate max-w-[220px] sm:max-w-[420px]">
+                  {course.nome}
+                </span>
+              </nav>
+
+              <Link
+                href="/cursos"
+                className="hidden sm:inline-flex items-center gap-2 text-sm font-semibold text-white/90 hover:text-white"
+              >
+                <ArrowLeft className="w-4 h-4" /> Voltar
+              </Link>
             </div>
-          </div>
-        </header>
 
-        <div className="lg:grid lg:grid-cols-[minmax(0,7fr)_3fr] lg:gap-10 space-y-10 lg:space-y-0">
-          <main className="space-y-8">
-            <section className="space-y-3">
-              <h6 className="uppercase text-gray-500">Sobre o curso</h6>
-              <p className="!text-gray-700 !leading-relaxed !whitespace-pre-line">
-                {stripHtmlTags(course.descricao) ||
-                  "Informações detalhadas sobre o curso em breve."}
-              </p>
-            </section>
-
-            {course.estagioObrigatorio && (
-              <section className="space-y-2">
-                <div className="flex items-center gap-2 text-gray-500">
-                  <h6 className="uppercase text-gray-500">
-                    Estágio obrigatório
-                  </h6>
+            <div className="flex flex-col items-center text-center gap-7">
+              <div className="w-full max-w-3xl space-y-6">
+                <div className="flex flex-wrap items-center justify-center gap-2">
+                  <Badge className="bg-white/15 text-white hover:bg-white/20 border border-white/15">
+                    {course.categoria}
+                  </Badge>
+                  {course.subcategoria ? (
+                    <Badge
+                      variant="outline"
+                      className="bg-white/10 text-white border-white/20"
+                    >
+                      {course.subcategoria}
+                    </Badge>
+                  ) : null}
+                  {course.gratuito ? (
+                    <Badge className="bg-emerald-500/20 text-white border border-emerald-300/30">
+                      <Gift className="h-3 w-3 mr-1" /> Gratuito
+                    </Badge>
+                  ) : null}
+                  {desconto ? (
+                    <Badge className="bg-red-500/20 text-white border border-red-300/30">
+                      <Percent className="h-3 w-3 mr-1" /> {desconto.toFixed(0)}
+                      % OFF
+                    </Badge>
+                  ) : null}
+                  {course.estagioObrigatorio ? (
+                    <Badge className="bg-purple-500/20 text-white border border-purple-300/30">
+                      <Award className="h-3 w-3 mr-1" /> Estágio obrigatório
+                    </Badge>
+                  ) : null}
                 </div>
-                <div className="flex items-start gap-3 text-sm text-gray-700 bg-purple-50 border border-purple-200 rounded-xl p-4">
-                  <Award className="mt-0.5 h-5 w-5 text-purple-600" />
-                  <span className="leading-relaxed">
-                    Este curso inclui estágio obrigatório como parte da
-                    formação.
+
+                <div className="space-y-3">
+                  <h1 className="!text-3xl sm:!text-4xl !font-semibold !text-white !leading-tight !mb-0">
+                    {course.nome}
+                  </h1>
+                  <p className="!text-white/80 !text-sm !leading-relaxed !max-w-prose !mx-auto">
+                    {descricaoResumo || "Detalhes do curso em breve."}
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap items-center justify-center gap-3">
+                  <ShareJobButton
+                    url={`${origin}/cursos/${course.id}`}
+                    title={course.nome}
+                    description={descricaoText}
+                  />
+                  <ButtonCustom
+                    asChild
+                    variant="secondary"
+                    className="!rounded-full text-sm"
+                  >
+                    <a href="#turmas">Ver turmas</a>
+                  </ButtonCustom>
+                </div>
+
+                <div className="flex flex-wrap justify-center gap-2 text-sm mb-20">
+                  <span className="inline-flex items-center gap-2 rounded-full bg-white/10 text-white/90 px-3 py-1 border border-white/15">
+                    <Clock className="h-4 w-4" />
+                    {course.cargaHoraria}h
+                  </span>
+                  <span className="inline-flex items-center gap-2 rounded-full bg-white/10 text-white/90 px-3 py-1 border border-white/15">
+                    <Users className="h-4 w-4" />
+                    {course.totalTurmas} turma
+                    {course.totalTurmas === 1 ? "" : "s"}
+                  </span>
+                  <span className="inline-flex items-center gap-2 rounded-full bg-white/10 text-white/90 px-3 py-1 border border-white/15">
+                    <DollarSign className="h-4 w-4" />
+                    {precoLabel}
                   </span>
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 -mt-10 sm:-mt-14 pb-14 relative z-10 space-y-10">
+        <section className="rounded-3xl border border-gray-200/70 bg-white p-6 sm:p-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            {[
+              {
+                label: "Categoria",
+                value: course.categoria,
+                subValue: course.subcategoria || undefined,
+                icon: BookOpen,
+              },
+              {
+                label: "Carga horária",
+                value: `${course.cargaHoraria}h`,
+                subValue: "Carga horária total",
+                icon: Clock,
+              },
+              {
+                label: "Próxima turma",
+                value: nextTurmaLabel,
+                subValue: nextTurmaSubLabel,
+                icon: CalendarDays,
+              },
+              {
+                label: "Valor",
+                value: precoLabel,
+                subValue: precoSubLabel,
+                icon: course.gratuito ? Gift : DollarSign,
+              },
+            ].map(({ label, value, subValue, icon: Icon }) => (
+              <div
+                key={`overview-${label}`}
+                className="group relative overflow-hidden rounded-2xl border border-gray-200/70 bg-white p-4 transition hover:shadow-sm hover:border-[var(--primary-color)]/25"
+              >
+                <div className="absolute inset-0 opacity-0 transition-opacity group-hover:opacity-100 bg-gradient-to-br from-[var(--primary-color)]/[0.06] via-transparent to-transparent" />
+                <div className="relative flex items-start gap-3">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[var(--primary-color)]/10 text-[var(--primary-color)]">
+                    <Icon className="size-5" aria-hidden="true" />
+                  </span>
+                  <div className="min-w-0">
+                    <div className="text-[11px] font-semibold tracking-wide uppercase text-gray-500">
+                      {label}
+                    </div>
+                    <div className="mt-1 text-base font-semibold text-gray-900 truncate">
+                      {value}
+                    </div>
+                    {subValue ? (
+                      <div className="mt-0.5 text-xs text-gray-500 truncate">
+                        {subValue}
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_380px] gap-8 items-start">
+          <main className="space-y-8">
+            <section className="rounded-3xl border border-gray-200/70 bg-white p-6 sm:p-8">
+              <div className="flex flex-col gap-2">
+                <h4 className="!text-lg !font-semibold !text-gray-900 !mb-0">
+                  Sobre o curso
+                </h4>
+              </div>
+              <div className="mt-3">
+                {descricaoHtml ? (
+                  isHtmlDescription ? (
+                    <HtmlContent html={descricaoHtml} />
+                  ) : (
+                    <p className="text-gray-700 leading-relaxed whitespace-pre-line">
+                      {descricaoText}
+                    </p>
+                  )
+                ) : (
+                  <p className="text-gray-700 leading-relaxed">
+                    Informações detalhadas sobre o curso em breve.
+                  </p>
+                )}
+              </div>
+            </section>
+
+            <section className="rounded-3xl border border-gray-200/70 bg-white p-6 sm:p-8">
+              <h4 className="mb-0!">Como funciona</h4>
+
+              <ul className="mt-5 space-y-3 text-sm text-gray-700">
+                <li className="flex items-start gap-3">
+                  <span className="mt-0.5 flex h-9 w-9 items-center justify-center rounded-2xl bg-gray-50 border border-gray-200/70 text-gray-700">
+                    <Users className="h-4 w-4" />
+                  </span>
+                  <span>Escolha a turma com datas, vagas e valor.</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="mt-0.5 flex h-9 w-9 items-center justify-center rounded-2xl bg-gray-50 border border-gray-200/70 text-gray-700">
+                    <CreditCard className="h-4 w-4" />
+                  </span>
+                  <span>
+                    Finalize a matrícula (gratuito) ou compre o acesso online.
+                  </span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="mt-0.5 flex h-9 w-9 items-center justify-center rounded-2xl bg-gray-50 border border-gray-200/70 text-gray-700">
+                    <CheckCircle2 className="h-4 w-4" />
+                  </span>
+                  <span>Acesse o curso na Academia após a confirmação.</span>
+                </li>
+              </ul>
+            </section>
+
+            {course.estagioObrigatorio ? (
+              <section className="rounded-3xl border border-purple-200 bg-purple-50 p-6 sm:p-8">
+                <div className="flex items-start gap-3">
+                  <div className="mt-0.5 flex h-10 w-10 items-center justify-center rounded-2xl bg-white border border-purple-200 text-purple-700">
+                    <Award className="h-5 w-5" />
+                  </div>
+                  <div className="space-y-1">
+                    <h3 className="!text-lg !font-semibold !text-gray-900 !mb-0">
+                      Estágio obrigatório
+                    </h3>
+                    <p className="!text-sm !text-gray-700 !leading-relaxed">
+                      Este curso inclui estágio obrigatório como parte da
+                      formação.
+                    </p>
+                  </div>
+                </div>
               </section>
-            )}
+            ) : null}
           </main>
 
-          <aside className="lg:pl-4">
-            <div className="rounded-2xl border border-gray-200/60 bg-white p-6">
-              <h4 className="text-sm font-medium text-gray-900 mb-4">
-                Informações
-              </h4>
-              <dl className="space-y-4 text-sm text-gray-700">
-                {infoCards.map(({ label, value, icon: Icon, badge }: any) => (
-                  <div
-                    key={`aside-${label}`}
-                    className="flex items-start gap-3"
-                  >
-                    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-600">
-                      <Icon className="size-4" aria-hidden="true" />
-                    </span>
-                    <div className="flex flex-col">
-                      <dt className="text-xs font-medium uppercase text-gray-600">
-                        {label}
-                      </dt>
-                      <dd className="text-sm font-medium text-gray-900">
-                        {badge || value || "—"}
-                      </dd>
-                    </div>
-                  </div>
-                ))}
-              </dl>
-            </div>
+          <aside className="lg:sticky lg:top-6 h-fit space-y-4">
+            <CourseTurmasPurchaseSection
+              variant="sidebar"
+              course={course}
+              turmas={course.turmasPublicadas ?? []}
+            />
           </aside>
         </div>
       </div>

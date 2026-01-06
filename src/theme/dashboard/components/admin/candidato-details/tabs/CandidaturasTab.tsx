@@ -2,6 +2,9 @@
 
 import { useMemo, useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useUserRole } from "@/hooks/useUserRole";
+import { UserRole } from "@/config/roles";
+import { useTenantCompany } from "@/hooks/useTenantCompany";
 import { EmptyState } from "@/components/ui/custom";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -21,7 +24,7 @@ import {
   type DateRange,
 } from "@/components/ui/custom/date-picker";
 import { ButtonCustom } from "@/components/ui/custom";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { AvatarCustom } from "@/components/ui/custom/avatar";
 import { ChevronRight, Calendar } from "lucide-react";
 import {
   Tooltip,
@@ -94,12 +97,32 @@ const getStatusLabel = (status: string) => {
   }
 };
 
+const canViewAllCompanies = (role: UserRole | null) =>
+  role === UserRole.ADMIN ||
+  role === UserRole.MODERADOR ||
+  role === UserRole.PEDAGOGICO ||
+  role === UserRole.SETOR_DE_VAGAS;
+
+const shouldScopeToCompany = (role: UserRole | null) =>
+  role === UserRole.EMPRESA || role === UserRole.RECRUTADOR;
+
+const matchCompany = (candidatura: Candidatura, companyId: string) =>
+  candidatura.empresaUsuarioId === companyId ||
+  candidatura.empresa?.id === companyId ||
+  candidatura.vaga?.usuarioId === companyId;
+
 export function CandidaturasTab({
   candidato,
   candidaturas = [],
   onUpdateStatus,
   isLoading = false,
 }: CandidaturasTabProps) {
+  const role = useUserRole();
+  const isPrivileged = canViewAllCompanies(role);
+  const scopedCompany = shouldScopeToCompany(role);
+  const { tenantId: companyId, isLoading: isLoadingCompany } =
+    useTenantCompany(scopedCompany);
+
   // Estados de filtros (pendentes)
   const [pendingSearchTerm, setPendingSearchTerm] = useState("");
   const [pendingStatus, setPendingStatus] = useState<string | null>(null);
@@ -126,7 +149,7 @@ export function CandidaturasTab({
     isLoading: isLoadingCandidato,
     error,
   } = useQuery({
-    queryKey: ["candidato-candidaturas", candidato.id],
+    queryKey: ["candidato-candidaturas", candidato.id, scopedCompany ? companyId : "all"],
     queryFn: async () => {
       try {
         console.log("🔍 Buscando candidaturas para candidato:", candidato.id);
@@ -135,6 +158,17 @@ export function CandidaturasTab({
         if (!candidatoCompleto) {
           console.warn("⚠️ Candidato não encontrado para ID:", candidato.id);
           return null;
+        }
+
+        if (scopedCompany && !isPrivileged) {
+          if (!companyId) {
+            return { ...candidatoCompleto, candidaturas: [] };
+          }
+          const candidaturasScoped =
+            candidatoCompleto.candidaturas?.filter((item) =>
+              matchCompany(item as Candidatura, companyId)
+            ) ?? [];
+          return { ...candidatoCompleto, candidaturas: candidaturasScoped };
         }
 
         console.log("✅ Candidato encontrado:", {
@@ -157,11 +191,20 @@ export function CandidaturasTab({
         return null;
       }
     },
-    enabled: !!candidato.id,
+    enabled: Boolean(candidato.id) && (!scopedCompany || isPrivileged || Boolean(companyId)),
     staleTime: 5 * 60 * 1000,
   });
 
-  const todasCandidaturas: Candidatura[] = candidatoData?.candidaturas || [];
+  const todasCandidaturas: Candidatura[] = useMemo(
+    () => candidatoData?.candidaturas || [],
+    [candidatoData?.candidaturas]
+  );
+
+  const candidaturasVisiveis = useMemo(() => {
+    if (!scopedCompany || isPrivileged) return todasCandidaturas;
+    if (!companyId) return [];
+    return todasCandidaturas.filter((item) => matchCompany(item, companyId));
+  }, [companyId, isPrivileged, scopedCompany, todasCandidaturas]);
 
   // Sincronizar estados pending com applied quando os dados mudarem
   useEffect(() => {
@@ -177,12 +220,26 @@ export function CandidaturasTab({
     ) {
       setPendingDateRange(appliedDateRange);
     }
-  }, [appliedStatus, appliedEmpresa, appliedDateRange]);
+  }, [
+    appliedStatus,
+    appliedEmpresa,
+    appliedDateRange,
+    pendingStatus,
+    pendingEmpresa,
+    pendingDateRange,
+  ]);
+
+  useEffect(() => {
+    if (scopedCompany && !isPrivileged) {
+      setAppliedEmpresa(null);
+      setPendingEmpresa(null);
+    }
+  }, [isPrivileged, scopedCompany]);
 
   // Opções de status únicos
   const statusOptions = useMemo(() => {
     const statuses = new Set<string>();
-    todasCandidaturas.forEach((c) => {
+    candidaturasVisiveis.forEach((c) => {
       if (c.status) statuses.add(c.status);
     });
     return Array.from(statuses)
@@ -191,12 +248,12 @@ export function CandidaturasTab({
         value: status,
         label: getStatusLabel(status),
       }));
-  }, [todasCandidaturas]);
+  }, [candidaturasVisiveis]);
 
   // Opções de empresas únicas
   const empresaOptions = useMemo(() => {
     const empresas = new Map<string, string>();
-    todasCandidaturas.forEach((c) => {
+    candidaturasVisiveis.forEach((c) => {
       const empresaNome = c.empresa?.nomeCompleto || c.empresa?.nome;
       if (empresaNome && c.empresa?.id) {
         empresas.set(c.empresa.id, empresaNome);
@@ -208,7 +265,7 @@ export function CandidaturasTab({
         value: id,
         label: nome,
       }));
-  }, [todasCandidaturas]);
+  }, [candidaturasVisiveis]);
 
   // Função para aplicar apenas o filtro de pesquisa (nome/código)
   const handleSearch = () => {
@@ -258,7 +315,7 @@ export function CandidaturasTab({
 
   // Aplicar filtros
   const candidaturasFiltradas = useMemo(() => {
-    return todasCandidaturas.filter((candidatura) => {
+    return candidaturasVisiveis.filter((candidatura) => {
       // Filtro por nome da vaga ou código
       if (appliedSearchTerm) {
         const vagaTitulo = candidatura.vaga?.titulo?.toLowerCase() || "";
@@ -278,7 +335,11 @@ export function CandidaturasTab({
       }
 
       // Filtro por empresa
-      if (appliedEmpresa && candidatura.empresa?.id !== appliedEmpresa) {
+      if (
+        !scopedCompany &&
+        appliedEmpresa &&
+        candidatura.empresa?.id !== appliedEmpresa
+      ) {
         return false;
       }
 
@@ -303,11 +364,12 @@ export function CandidaturasTab({
       return true;
     });
   }, [
-    todasCandidaturas,
+    candidaturasVisiveis,
     appliedSearchTerm,
     appliedStatus,
     appliedEmpresa,
     appliedDateRange,
+    scopedCompany,
   ]);
 
   // Paginação
@@ -327,7 +389,7 @@ export function CandidaturasTab({
   // Verificar se há mudanças pendentes apenas no campo de pesquisa
   const hasPendingSearchChanges = pendingSearchTerm !== appliedSearchTerm;
 
-  if (isLoading || isLoadingCandidato) {
+  if (isLoading || isLoadingCandidato || (scopedCompany && isLoadingCompany)) {
     return (
       <div className="space-y-4">
         {/* Filtros com skeleton */}
@@ -349,9 +411,11 @@ export function CandidaturasTab({
             </div>
 
             {/* Skeleton do filtro de empresa */}
-            <div className="w-full sm:w-[calc(50%-0.375rem)] md:w-[300px] lg:w-[300px] flex-shrink-0">
-              <Skeleton className="h-10 w-full bg-gray-200 rounded-md" />
-            </div>
+            {!scopedCompany && (
+              <div className="w-full sm:w-[calc(50%-0.375rem)] md:w-[300px] lg:w-[300px] flex-shrink-0">
+                <Skeleton className="h-10 w-full bg-gray-200 rounded-md" />
+              </div>
+            )}
 
             {/* Skeleton do botão pesquisar */}
             <div className="w-full sm:w-full md:w-auto lg:w-auto flex-shrink-0">
@@ -434,7 +498,7 @@ export function CandidaturasTab({
   }
 
   // Se não há candidaturas totais (sem filtros), mostrar EmptyState
-  if (todasCandidaturas.length === 0) {
+  if (candidaturasVisiveis.length === 0) {
     return (
       <EmptyState
         illustration="fileNotFound"
@@ -537,17 +601,19 @@ export function CandidaturasTab({
           </div>
 
           {/* Filtro por empresa */}
-          <div className="w-full sm:w-[calc(50%-0.375rem)] md:w-[300px] lg:w-[300px] flex-shrink-0">
-            <SelectCustom
-              mode="single"
-              options={empresaOptions}
-              value={appliedEmpresa}
-              onChange={handleEmpresaChange}
-              placeholder="Filtrar por empresa"
-              size="md"
-              fullWidth
-            />
-          </div>
+          {!scopedCompany && (
+            <div className="w-full sm:w-[calc(50%-0.375rem)] md:w-[300px] lg:w-[300px] flex-shrink-0">
+              <SelectCustom
+                mode="single"
+                options={empresaOptions}
+                value={appliedEmpresa}
+                onChange={handleEmpresaChange}
+                placeholder="Filtrar por empresa"
+                size="md"
+                fullWidth
+              />
+            </div>
+          )}
 
           {/* Botão pesquisar */}
           <div className="w-full sm:w-full md:w-auto lg:w-auto flex-shrink-0">
@@ -626,15 +692,12 @@ export function CandidaturasTab({
 
                       <TableCell className="py-4">
                         <div className="flex items-center gap-3">
-                          <Avatar className="h-8 w-8 flex-shrink-0">
-                            <AvatarImage
-                              src={empresa?.logoUrl || undefined}
-                              alt={empresaNome}
-                            />
-                            <AvatarFallback className="bg-gray-100 text-gray-600 text-xs">
-                              {getEmpresaInitials(empresaNome)}
-                            </AvatarFallback>
-                          </Avatar>
+                          <AvatarCustom
+                            name={empresaNome || "Empresa"}
+                            src={empresa?.logoUrl || undefined}
+                            size="sm"
+                            showStatus={false}
+                          />
                           <div className="flex flex-col min-w-0">
                             <span className="text-sm font-medium text-gray-900 truncate">
                               {empresaNome}

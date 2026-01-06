@@ -45,7 +45,6 @@ export function useUsuarioDashboardData(
       const params: ListUsuariosParams = {
         page: currentFilters.page,
         limit: currentFilters.pageSize,
-        pageSize: currentFilters.pageSize,
       };
 
       // Apenas adiciona filtros se tiverem valores válidos

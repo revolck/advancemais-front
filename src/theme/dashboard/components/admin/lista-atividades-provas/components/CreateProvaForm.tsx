@@ -23,6 +23,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import {
   createProva,
+  createAvaliacao,
   updateProva,
   listModulos,
   listInscricoes,
@@ -37,6 +38,7 @@ import {
   type TurmaSelectOption,
 } from "../hooks/useTurmasForSelect";
 import { useInstrutoresForSelect } from "../hooks/useInstrutoresForSelect";
+import { useCursosForSelect } from "../hooks/useCursosForSelect";
 import { useAuth } from "@/hooks/useAuth";
 import { queryKeys } from "@/lib/react-query/queryKeys";
 import { useQuery } from "@tanstack/react-query";
@@ -83,7 +85,9 @@ interface FormData {
   valeNota: boolean;
   peso: string;
   valePonto: boolean;
+  recuperacaoFinal: boolean;
   localizacao: "TURMA" | "MODULO" | "";
+  cursoId: string; // Usado quando não há turma (template)
   turmaId: string;
   moduloId: string;
   modalidade: Modalidade | "";
@@ -108,7 +112,9 @@ const initialFormData: FormData = {
   valeNota: true,
   peso: "",
   valePonto: true,
+  recuperacaoFinal: false,
   localizacao: "TURMA",
+  cursoId: "",
   turmaId: "",
   moduloId: "",
   modalidade: "",
@@ -154,11 +160,13 @@ export function CreateProvaForm({
   const [loadingStep, setLoadingStep] = useState<string>("");
   const [isInitializing, setIsInitializing] = useState(mode === "edit");
 
+  const { cursos, isLoading: loadingCursos } = useCursosForSelect();
   const {
     turmas,
     isLoading: loadingTurmas,
     rawData: turmasRawData,
-  } = useTurmasForSelect();
+    error: turmasError,
+  } = useTurmasForSelect(formData.cursoId || null); // Filtra turmas pelo curso selecionado
   const { instrutores, isLoading: loadingInstrutores } =
     useInstrutoresForSelect();
 
@@ -190,15 +198,45 @@ export function CreateProvaForm({
     return metodoToModalidade[turmaSelecionada.metodo] || null;
   }, [formData.turmaId, turmasRawData]);
 
-  // Quando a turma mudar, atualizar a modalidade automaticamente
+  // Obter instrutorId da turma selecionada
+  const instrutorIdFromTurma = React.useMemo(() => {
+    if (!formData.turmaId || !turmasRawData) return null;
+    const turmaSelecionada = turmasRawData.find(
+      (t) => t.id === formData.turmaId
+    );
+    return turmaSelecionada?.instrutorId || null;
+  }, [formData.turmaId, turmasRawData]);
+
+  // Quando a turma mudar, atualizar a modalidade e instrutor automaticamente
   useEffect(() => {
-    if (modalidadeFromTurma && formData.turmaId) {
+    if (formData.turmaId) {
+      setFormData((prev) => {
+        const updates: Partial<FormData> = {};
+        
+        // Herdar modalidade da turma
+        if (modalidadeFromTurma) {
+          updates.modalidade = modalidadeFromTurma;
+        }
+        
+        // Herdar instrutor da turma apenas se não houver instrutor selecionado
+        if (instrutorIdFromTurma && !prev.instrutorId) {
+          updates.instrutorId = instrutorIdFromTurma;
+        }
+        
+        return { ...prev, ...updates };
+      });
+    }
+  }, [modalidadeFromTurma, instrutorIdFromTurma, formData.turmaId]);
+
+  // Auto-fill de instrutorId para role INSTRUTOR
+  useEffect(() => {
+    if (user?.role === "INSTRUTOR" && user?.id && !formData.instrutorId) {
       setFormData((prev) => ({
         ...prev,
-        modalidade: modalidadeFromTurma,
+        instrutorId: user.id,
       }));
     }
-  }, [modalidadeFromTurma, formData.turmaId]);
+  }, [user?.role, user?.id, formData.instrutorId]);
 
   // Buscar módulos da turma quando localização for MODULO
   const { data: modulosDaTurma, isLoading: loadingModulos } = useQuery({
@@ -241,7 +279,9 @@ export function CreateProvaForm({
             (prova as any).valeNota !== false
               ? true
               : prova.valePonto !== false,
+          recuperacaoFinal: (prova as any).recuperacaoFinal === true,
           localizacao: prova.localizacao || "TURMA",
+          cursoId: (prova as any).cursoId || "",
           turmaId: prova.turmaId || "",
           moduloId: prova.moduloId || "",
           modalidade: (prova.modalidade as Modalidade) || "",
@@ -280,6 +320,9 @@ export function CreateProvaForm({
     }
   }, [formData.turmaId, formData.status]);
 
+  const isRecuperacaoFinalProva =
+    formData.tipo === "PROVA" && formData.recuperacaoFinal === true;
+
   const handleInputChange = (field: keyof FormData, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) {
@@ -292,10 +335,17 @@ export function CreateProvaForm({
   };
 
   const handleTurmaChange = (turmaId: string | null) => {
+    // Buscar a turma selecionada para obter o cursoId
+    const turmaSelecionada = turmasRawData?.find((t) => t.id === turmaId);
+    
     setFormData((prev) => ({
       ...prev,
       turmaId: turmaId || "",
       moduloId: "", // Limpar módulo quando turma mudar
+      // Se TEM turma, preencher cursoId automaticamente
+      ...(turmaId && turmaSelecionada && {
+        cursoId: turmaSelecionada.cursoId,
+      }),
       // Se não tem turma, limpar localização e modalidade
       ...((!turmaId || turmaId === "") && {
         localizacao: "" as "TURMA" | "MODULO" | "",
@@ -307,6 +357,7 @@ export function CreateProvaForm({
       setErrors((prev) => {
         const newErrors = { ...prev };
         delete newErrors.turmaId;
+        delete newErrors.cursoId; // Limpar erro de cursoId também
         return newErrors;
       });
     }
@@ -326,6 +377,7 @@ export function CreateProvaForm({
       newErrors.titulo = "Título é obrigatório";
     }
 
+    // Curso NÃO é obrigatório
     // Turma NÃO é obrigatória
 
     // Vale nota é obrigatório (sempre terá um valor, então não precisa validar)
@@ -537,6 +589,9 @@ export function CreateProvaForm({
         tipo: formData.tipo
           ? (formData.tipo as "PROVA" | "ATIVIDADE")
           : undefined,
+        ...(formData.tipo === "PROVA" && {
+          recuperacaoFinal: formData.recuperacaoFinal,
+        }),
         peso: formData.peso ? Number(formData.peso) : undefined,
         valeNota: formData.valeNota,
         // Se vale nota, sempre conta para média (valePonto = true)
@@ -578,18 +633,8 @@ export function CreateProvaForm({
           }),
       };
 
-      // Validar se temos turma (necessário para vincular ao curso)
-      if (!formData.turmaId) {
-        toastCustom.error(
-          "Para cadastrar é necessário selecionar uma turma. A turma vincula a prova/atividade ao curso."
-        );
-        setIsLoading(false);
-        setLoadingStep("");
-        return;
-      }
-
-      // Validar se temos cursoId da turma
-      if (!cursoIdFromTurma) {
+      // Se TEM turma: validar cursoId da turma
+      if (formData.turmaId && !cursoIdFromTurma) {
         toastCustom.error(
           "Não foi possível identificar o curso da turma selecionada. Por favor, selecione uma turma válida."
         );
@@ -599,11 +644,31 @@ export function CreateProvaForm({
       }
 
       if (mode === "create") {
-        const provaCriada = await createProva(
-          cursoIdFromTurma,
-          formData.turmaId,
-          payload as CreateProvaPayload
-        );
+        let provaCriada: any;
+
+        // Se TEM turma: usar endpoint antigo (vinculado a turma)
+        if (formData.turmaId && cursoIdFromTurma) {
+          provaCriada = await createProva(
+            cursoIdFromTurma,
+            formData.turmaId,
+            payload as CreateProvaPayload
+          );
+        } 
+        // Se NÃO TEM turma: usar endpoint novo (template/biblioteca)
+        else {
+          // Preparar payload para createAvaliacao (endpoint global)
+          // Remove campos específicos de turma (localizacao, moduloId, horaFim)
+          const { localizacao, moduloId, horaFim, ...payloadSemCamposDeTurma } = payload as any;
+          
+          const avaliacaoPayload: any = {
+            ...payloadSemCamposDeTurma,
+            cursoId: formData.cursoId || null, // Pode ser null
+            turmaId: null,
+            horaTermino: formData.horaFim, // API espera horaTermino ao invés de horaFim
+          };
+
+          provaCriada = await createAvaliacao(avaliacaoPayload);
+        }
         const tipoLabel =
           formData.tipo === "PROVA"
             ? "Prova"
@@ -615,13 +680,13 @@ export function CreateProvaForm({
         const modalidadeOnlineOuAoVivo =
           formData.modalidade === "ONLINE" || formData.modalidade === "AO_VIVO";
 
-        if (modalidadeOnlineOuAoVivo && provaCriada.id && formData.turmaId) {
+        if (modalidadeOnlineOuAoVivo && provaCriada.id && formData.turmaId && cursoIdFromTurma) {
           setLoadingStep("Gerando tokens únicos para os alunos...");
 
           try {
             // Buscar todas as inscrições da turma
             const inscricoes = await listInscricoes(
-              cursoIdFromTurma,
+              cursoIdFromTurma!,
               formData.turmaId
             );
 
@@ -629,7 +694,7 @@ export function CreateProvaForm({
               // Gerar token para cada inscrição
               const promises = inscricoes.map((inscricao) =>
                 createProvaToken(
-                  cursoIdFromTurma,
+                  cursoIdFromTurma!,
                   formData.turmaId,
                   provaCriada.id,
                   { inscricaoId: inscricao.id }
@@ -663,6 +728,9 @@ export function CreateProvaForm({
       } else {
         if (!provaId) {
           throw new Error("ID da prova é necessário para edição");
+        }
+        if (!cursoIdFromTurma || !formData.turmaId) {
+          throw new Error("Curso e turma são necessários para edição");
         }
         await updateProva(
           cursoIdFromTurma,
@@ -882,10 +950,13 @@ export function CreateProvaForm({
                       handleInputChange("tipoAtividade", "");
                       handleInputChange("texto", { titulo: "" });
                     } else if (novoTipo === "ATIVIDADE") {
+                      handleInputChange("recuperacaoFinal", false);
                       // Limpar questões se não for tipo questões
                       if (formData.tipoAtividade !== "QUESTOES") {
                         handleInputChange("questoes", []);
                       }
+                    } else {
+                      handleInputChange("recuperacaoFinal", false);
                     }
                   }}
                   error={errors.tipo}
@@ -918,32 +989,85 @@ export function CreateProvaForm({
                   maxLength={200}
                 />
               </div>
+
+              {/* Recuperação final - apenas para PROVA */}
+              {formData.tipo === "PROVA" && (
+                <div className="flex-[0.4] min-w-0">
+                  <SelectCustom
+                    label="Recuperação final?"
+                    required
+                    options={[
+                      { value: "false", label: "Não" },
+                      { value: "true", label: "Sim" },
+                    ]}
+                    value={String(formData.recuperacaoFinal)}
+                    onChange={(val) =>
+                      {
+                        const isRecuperacaoFinal = val === "true";
+                        handleInputChange("recuperacaoFinal", isRecuperacaoFinal);
+                        if (isRecuperacaoFinal) {
+                          handleInputChange("valeNota", true);
+                          handleInputChange("valePonto", true);
+                          if (!formData.etiqueta || formData.etiqueta.trim() === "") {
+                            handleInputChange("etiqueta", "REC");
+                          }
+                        }
+                      }}
+                  />
+                </div>
+              )}
             </div>
 
-            {/* Linha 2: Turma, Vale nota, Etiqueta e Peso */}
+            {/* Linha 2: Curso, Turma, Vale nota, Etiqueta e Peso */}
             <div className="flex flex-col md:flex-row gap-4 w-full">
-              {/* Campo Turma - não obrigatório */}
+              {/* Campo Curso - Opcional */}
               <div className="flex-1 min-w-0">
-                {loadingTurmas ? (
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium text-gray-700">
-                      Turma
-                    </Label>
-                    <Skeleton className="h-10 w-full rounded-md" />
-                  </div>
-                ) : (
-                  <SelectCustom
-                    label="Turma"
-                    placeholder="Selecione a turma"
-                    options={[
-                      { value: "", label: "Sem turma (vincular depois)" },
-                      ...turmas,
-                    ]}
-                    value={formData.turmaId}
-                    onChange={handleTurmaChange}
-                    error={errors.turmaId}
-                  />
-                )}
+                <SelectCustom
+                  label="Curso"
+                  placeholder={
+                    loadingCursos
+                      ? "Carregando cursos..."
+                      : cursos.length === 0
+                      ? "Nenhum curso disponível"
+                      : "Selecione o curso"
+                  }
+                  options={[
+                    { value: "", label: "Sem curso (vincular depois)" },
+                    ...cursos,
+                  ]}
+                  value={formData.cursoId}
+                  onChange={(value) => {
+                    handleInputChange("cursoId", value);
+                    // Limpar turma quando curso mudar
+                    if (formData.turmaId) {
+                      handleInputChange("turmaId", "");
+                    }
+                  }}
+                  error={errors.cursoId}
+                  disabled={loadingCursos}
+                />
+              </div>
+
+              {/* Campo Turma - Opcional */}
+              <div className="flex-1 min-w-0">
+                <SelectCustom
+                  label="Turma"
+                  placeholder={
+                    loadingTurmas
+                      ? "Carregando turmas..."
+                      : turmas.length === 0
+                      ? "Nenhuma turma disponível"
+                      : "Selecione a turma"
+                  }
+                  options={[
+                    { value: "", label: "Sem turma (vincular depois)" },
+                    ...turmas,
+                  ]}
+                  value={formData.turmaId}
+                  onChange={handleTurmaChange}
+                  error={errors.turmaId}
+                  disabled={loadingTurmas}
+                />
               </div>
 
               {/* Vale nota */}
@@ -957,6 +1081,12 @@ export function CreateProvaForm({
                   required
                   value={String(formData.valeNota)}
                   onChange={(val) => {
+                    if (formData.tipo === "PROVA" && formData.recuperacaoFinal) {
+                      // Recuperação final sempre vale nota/ponto
+                      handleInputChange("valeNota", true);
+                      handleInputChange("valePonto", true);
+                      return;
+                    }
                     const valeNota = val === "true";
                     handleInputChange("valeNota", valeNota);
                     // Se vale nota, sempre conta para média (valePonto = true)
@@ -969,6 +1099,7 @@ export function CreateProvaForm({
                       handleInputChange("valePonto", false);
                     }
                   }}
+                  disabled={formData.tipo === "PROVA" && formData.recuperacaoFinal}
                 />
               </div>
 
@@ -1205,11 +1336,6 @@ export function CreateProvaForm({
                   error={errors.modalidade}
                   required
                   disabled={!!formData.turmaId && !!modalidadeFromTurma}
-                  helperText={
-                    formData.turmaId && modalidadeFromTurma
-                      ? "Modalidade definida pela turma selecionada"
-                      : undefined
-                  }
                 />
               </div>
 
@@ -1235,6 +1361,12 @@ export function CreateProvaForm({
                       handleInputChange("instrutorId", value || "")
                     }
                     error={errors.instrutorId}
+                    disabled={user?.role === "INSTRUTOR"}
+                    helperText={
+                      user?.role === "INSTRUTOR"
+                        ? "Seu ID será automaticamente atribuído"
+                        : undefined
+                    }
                   />
                 )}
               </div>

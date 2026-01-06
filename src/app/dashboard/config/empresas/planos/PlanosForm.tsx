@@ -20,7 +20,7 @@ function mapFromBackend(item: PlanoEmpresarialBackendResponse): ListItem {
   return {
     id: item.id,
     title: item.nome,
-    description: item.descricao,
+    description: item.descricao ?? "",
     status: true, // Planos sempre ativos
     createdAt: item.criadoEm,
     updatedAt: item.atualizadoEm,
@@ -94,9 +94,6 @@ export default function PlanosForm() {
         if (!data.title?.trim()) {
           throw new Error("Nome do plano é obrigatório");
         }
-        if (!data.description?.trim()) {
-          throw new Error("Descrição é obrigatória");
-        }
 
         // Converter valor monetário de string para number
         const valorNumerico =
@@ -110,12 +107,13 @@ export default function PlanosForm() {
 
         // Preparar dados
         const vagaEmDestaque = data.vagaEmDestaque === "sim";
+        const descricao = data.description?.trim();
 
         // Construir payload
         const payload: any = {
           icon: data.icon.trim(),
           nome: data.title.trim(),
-          descricao: data.description.trim(),
+          ...(descricao ? { descricao } : {}),
           valor: valorNumerico.toString(),
           desconto: Number(data.desconto) || 0,
           quantidadeVagas: Number(data.quantidadeVagas) || 1,

@@ -19,13 +19,14 @@ import { toastCustom } from "@/components/ui/custom/toast";
 import type { UsuarioProfileResponse } from "@/api/usuarios/types";
 import { changeUserPassword } from "@/api/usuarios";
 import { lookupCep, normalizeCep, isValidCep } from "@/lib/cep";
+import { MaskService } from "@/services";
 
 // Schema de validação
 const profileSchema = z.object({
   nomeCompleto: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
   email: z.string().email("Email inválido"),
-  telefone: z.string().optional(),
-  dataNasc: z.string().optional(),
+  telefone: z.string().min(1, "Telefone é obrigatório"),
+  dataNasc: z.string().min(1, "Data de nascimento é obrigatória"),
   genero: z.string().optional(),
   descricao: z.string().optional(),
   socialLinks: z.record(z.string()),
@@ -66,10 +67,14 @@ const GENERO_OPTIONS: SelectOption[] = [
   { value: "MASCULINO", label: "Masculino" },
   { value: "FEMININO", label: "Feminino" },
   { value: "OUTRO", label: "Outro" },
-  // A API já apareceu com variações diferentes desse enum no projeto.
   { value: "PREFIRO_NAO_INFORMAR", label: "Prefiro não informar" },
-  { value: "NAO_INFORMADO", label: "Prefiro não informar" },
 ];
+
+function normalizeGeneroValue(value?: string | null): string {
+  const normalized = value ? String(value).trim() : "";
+  if (!normalized) return "";
+  return normalized === "NAO_INFORMADO" ? "PREFIRO_NAO_INFORMAR" : normalized;
+}
 
 // Schema de validação para senha
 const passwordSchema = z
@@ -137,6 +142,11 @@ export function ProfileForm({
   renderActions,
   onActionsChange,
 }: ProfileFormProps) {
+  const minBirthDate = useMemo(() => {
+    const today = new Date();
+    return new Date(today.getFullYear() - 70, today.getMonth(), today.getDate());
+  }, []);
+  const maskService = useMemo(() => MaskService.getInstance(), []);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmittingPassword, setIsSubmittingPassword] = useState(false);
   const [isSubmittingAddress, setIsSubmittingAddress] = useState(false);
@@ -246,14 +256,17 @@ export function ProfileForm({
     // Buscar campos em informacoes ou diretamente no objeto
     // Tratar null como string vazia para garantir que os valores sejam aplicados
     const informacoes = profileAny.informacoes || {};
-    const telefone = (profileAny.telefone ?? informacoes.telefone) || "";
+    const telefoneRaw = (profileAny.telefone ?? informacoes.telefone) || "";
+    const telefone = telefoneRaw
+      ? maskService.processInput(telefoneRaw, "phone")
+      : "";
 
     // Gênero - verificar em múltiplos lugares
     // Usar valor vazio se for null ou undefined
     const genero = profileAny.genero
-      ? String(profileAny.genero).trim()
+      ? normalizeGeneroValue(profileAny.genero)
       : informacoes.genero
-      ? String(informacoes.genero).trim()
+      ? normalizeGeneroValue(informacoes.genero)
       : "";
 
     const descricao = (profileAny.descricao ?? informacoes.descricao) || "";
@@ -282,7 +295,7 @@ export function ProfileForm({
     // Log para debug
     console.log("🔍 Valores iniciais do perfil carregados:", newValues);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profile?.id]);
+  }, [profile?.id, profile?.atualizadoEm, maskService, reset]);
 
   const onFormSubmit = async (data: ProfileFormData) => {
     if (!isDirty) {
@@ -315,7 +328,7 @@ export function ProfileForm({
 
       // Gênero - enviar se tiver valor válido
       if (data.genero && String(data.genero).trim() !== "") {
-        const generoValue = String(data.genero).trim();
+        const generoValue = normalizeGeneroValue(data.genero);
         payload.genero = generoValue;
         console.log("👤 Enviando genero:", generoValue);
       }
@@ -548,7 +561,6 @@ export function ProfileForm({
       };
       resetAddress(addressValues);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile?.id, profile?.enderecos, resetAddress]);
 
   // Notifica mudanças nas ações apenas quando isDirty ou isSubmitting mudarem
@@ -679,6 +691,7 @@ export function ProfileForm({
                         ref={field.ref}
                         name={field.name}
                         label="Telefone/Whatsapp"
+                        required
                         type="tel"
                         value={(field.value as string) ?? ""}
                         onChange={field.onChange}
@@ -710,6 +723,7 @@ export function ProfileForm({
                       return (
                         <DatePickerCustom
                           label="Data de nascimento"
+                          required
                           value={validDate}
                           onChange={(date) => {
                             if (date && !isNaN(date.getTime())) {
@@ -721,6 +735,7 @@ export function ProfileForm({
                           placeholder="Selecione a data de nascimento"
                           error={errors.dataNasc?.message}
                           maxDate={new Date()} // Não permite datas futuras
+                          minDate={minBirthDate}
                         />
                       );
                     }}
@@ -926,7 +941,7 @@ export function ProfileForm({
                     )}
                   />
 
-                  <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="grid gap-4 sm:grid-cols-3">
                     <Controller
                       control={addressControl}
                       name="bairro"
@@ -961,27 +976,26 @@ export function ProfileForm({
                         />
                       )}
                     />
+                    <Controller
+                      control={addressControl}
+                      name="estado"
+                      render={({ field }) => (
+                        <InputCustom
+                          ref={field.ref}
+                          name={field.name}
+                          label="Estado"
+                          value={field.value ?? ""}
+                          onChange={field.onChange}
+                          onBlur={field.onBlur}
+                          disabled={isSubmittingAddress}
+                          error={addressErrors.estado?.message}
+                          icon="MapPin"
+                          maxLength={2}
+                          placeholder="Ex: RJ"
+                        />
+                      )}
+                    />
                   </div>
-
-                  <Controller
-                    control={addressControl}
-                    name="estado"
-                    render={({ field }) => (
-                      <InputCustom
-                        ref={field.ref}
-                        name={field.name}
-                        label="Estado"
-                        value={field.value ?? ""}
-                        onChange={field.onChange}
-                        onBlur={field.onBlur}
-                        disabled={isSubmittingAddress}
-                        error={addressErrors.estado?.message}
-                        icon="MapPin"
-                        maxLength={2}
-                        placeholder="Ex: RJ"
-                      />
-                    )}
-                  />
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-3 justify-end items-center pt-4 border-t border-gray-200">

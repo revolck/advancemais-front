@@ -49,7 +49,8 @@ export type IconName =
   | "Tag"
   | "GraduationCap"
   | "CreditCard"
-  | "ClipboardList";
+  | "ClipboardList"
+  | "Award";
 
 export interface BreadcrumbItem {
   label: string;
@@ -246,6 +247,101 @@ export const breadcrumbConfig: Record<string, BreadcrumbConfig> = {
       { label: "Assinatura", icon: "CreditCard" },
     ],
   },
+  "/dashboard/upgrade": {
+    title: "Upgrade do plano",
+    items: [
+      { label: "Dashboard", href: "/", icon: "Home" },
+      { label: "Empresas", href: "/dashboard/empresas", icon: "Building2" },
+      {
+        label: "Assinatura",
+        href: "/dashboard/empresas/pagamentos",
+        icon: "CreditCard",
+      },
+      { label: "Upgrade", icon: "Star" },
+    ],
+  },
+  "/dashboard/checkout": {
+    title: "Checkout",
+    items: [
+      { label: "Dashboard", href: "/", icon: "Home" },
+      { label: "Empresas", href: "/dashboard/empresas", icon: "Building2" },
+      {
+        label: "Assinatura",
+        href: "/dashboard/empresas/pagamentos",
+        icon: "CreditCard",
+      },
+      { label: "Checkout", icon: "CreditCard" },
+    ],
+  },
+  "/dashboard/checkout/sucesso": {
+    title: "Checkout",
+    items: [
+      { label: "Dashboard", href: "/", icon: "Home" },
+      { label: "Empresas", href: "/dashboard/empresas", icon: "Building2" },
+      {
+        label: "Assinatura",
+        href: "/dashboard/empresas/pagamentos",
+        icon: "CreditCard",
+      },
+      { label: "Checkout", href: "/dashboard/checkout", icon: "CreditCard" },
+      { label: "Sucesso", icon: "Check" },
+    ],
+  },
+  "/dashboard/checkout/pendente": {
+    title: "Checkout",
+    items: [
+      { label: "Dashboard", href: "/", icon: "Home" },
+      { label: "Empresas", href: "/dashboard/empresas", icon: "Building2" },
+      {
+        label: "Assinatura",
+        href: "/dashboard/empresas/pagamentos",
+        icon: "CreditCard",
+      },
+      { label: "Checkout", href: "/dashboard/checkout", icon: "CreditCard" },
+      { label: "Pendente", icon: "Clock" },
+    ],
+  },
+  "/dashboard/checkout/falha": {
+    title: "Checkout",
+    items: [
+      { label: "Dashboard", href: "/", icon: "Home" },
+      { label: "Empresas", href: "/dashboard/empresas", icon: "Building2" },
+      {
+        label: "Assinatura",
+        href: "/dashboard/empresas/pagamentos",
+        icon: "CreditCard",
+      },
+      { label: "Checkout", href: "/dashboard/checkout", icon: "CreditCard" },
+      { label: "Falha", icon: "AlertCircle" },
+    ],
+  },
+  "/dashboard/checkout/curso/sucesso": {
+    title: "Checkout",
+    items: [
+      { label: "Dashboard", href: "/", icon: "Home" },
+      { label: "Cursos", href: "/dashboard/cursos", icon: "BookOpen" },
+      { label: "Checkout", icon: "CreditCard" },
+      { label: "Sucesso", icon: "Check" },
+    ],
+  },
+  "/dashboard/checkout/curso/pendente": {
+    title: "Checkout",
+    items: [
+      { label: "Dashboard", href: "/", icon: "Home" },
+      { label: "Cursos", href: "/dashboard/cursos", icon: "BookOpen" },
+      { label: "Checkout", icon: "CreditCard" },
+      { label: "Pendente", icon: "Clock" },
+    ],
+  },
+  "/dashboard/checkout/curso/falha": {
+    title: "Checkout",
+    items: [
+      { label: "Dashboard", href: "/", icon: "Home" },
+      { label: "Cursos", href: "/dashboard/cursos", icon: "BookOpen" },
+      { label: "Checkout", icon: "CreditCard" },
+      { label: "Falha", icon: "AlertCircle" },
+    ],
+  },
   "/dashboard/cursos": {
     title: "Cursos",
     items: [
@@ -315,6 +411,38 @@ export const breadcrumbConfig: Record<string, BreadcrumbConfig> = {
       { label: "Alunos", icon: "Users" },
     ],
   },
+  "/dashboard/cursos/alunos/notas": {
+    title: "Notas",
+    items: [
+      { label: "Dashboard", href: "/", icon: "Home" },
+      { label: "Cursos", href: "/dashboard/cursos", icon: "BookOpen" },
+      { label: "Notas", icon: "ClipboardList" },
+    ],
+  },
+  "/dashboard/cursos/alunos/frequencia": {
+    title: "Frequência",
+    items: [
+      { label: "Dashboard", href: "/", icon: "Home" },
+      { label: "Cursos", href: "/dashboard/cursos", icon: "BookOpen" },
+      { label: "Frequência", icon: "Clock" },
+    ],
+  },
+  "/dashboard/cursos/alunos/certificados": {
+    title: "Certificados",
+    items: [
+      { label: "Dashboard", href: "/", icon: "Home" },
+      { label: "Cursos", href: "/dashboard/cursos", icon: "BookOpen" },
+      { label: "Certificados", icon: "Award" },
+    ],
+  },
+  "/dashboard/cursos/alunos/estagios": {
+    title: "Estágios",
+    items: [
+      { label: "Dashboard", href: "/", icon: "Home" },
+      { label: "Cursos", href: "/dashboard/cursos", icon: "BookOpen" },
+      { label: "Estágios", icon: "Briefcase" },
+    ],
+  },
   "/dashboard/cursos/instrutores": {
     title: "Instrutores",
     items: [
@@ -363,12 +491,30 @@ export const breadcrumbConfig: Record<string, BreadcrumbConfig> = {
       { label: "Certificados" },
     ],
   },
+  "/dashboard/cursos/certificados/cadastrar": {
+    title: "Cadastrar certificado",
+    items: [
+      { label: "Dashboard", href: "/", icon: "Home" },
+      { label: "Cursos", href: "/dashboard/cursos", icon: "BookOpen" },
+      { label: "Certificados", href: "/dashboard/cursos/certificados" },
+      { label: "Cadastrar", icon: "FileText" },
+    ],
+  },
   "/dashboard/cursos/estagios": {
     title: "Estágios",
     items: [
       { label: "Dashboard", href: "/", icon: "Home" },
       { label: "Cursos", href: "/dashboard/cursos", icon: "BookOpen" },
       { label: "Estágios" },
+    ],
+  },
+  "/dashboard/cursos/estagios/cadastrar": {
+    title: "Cadastrar estágio",
+    items: [
+      { label: "Dashboard", href: "/", icon: "Home" },
+      { label: "Cursos", href: "/dashboard/cursos", icon: "BookOpen" },
+      { label: "Estágios", href: "/dashboard/cursos/estagios" },
+      { label: "Cadastrar", icon: "FileText" },
     ],
   },
   "/dashboard/cursos/agenda": {
@@ -438,13 +584,13 @@ export const breadcrumbConfig: Record<string, BreadcrumbConfig> = {
 // Hook para filtrar "Empresas" do breadcrumb para role EMPRESA
 function filterBreadcrumbForEmpresa(
   config: BreadcrumbConfig,
-  isEmpresaRole: boolean
+  isEmpresaRole: boolean,
 ): BreadcrumbConfig {
   if (!isEmpresaRole) return config;
 
   // Remove o item "Empresas" do breadcrumb para role EMPRESA
   const filteredItems = config.items.filter(
-    (item) => item.label !== "Empresas"
+    (item) => item.label !== "Empresas",
   );
 
   return {
@@ -486,7 +632,7 @@ export function useBreadcrumb(): BreadcrumbConfig {
           { label: "Detalhes do Candidato", icon: "Eye" },
         ],
       },
-      isEmpresaRole
+      isEmpresaRole,
     );
   }
 
@@ -506,7 +652,7 @@ export function useBreadcrumb(): BreadcrumbConfig {
           { label: "Detalhes da Vaga", icon: "Eye" },
         ],
       },
-      isEmpresaRole
+      isEmpresaRole,
     );
   }
 
@@ -521,7 +667,7 @@ export function useBreadcrumb(): BreadcrumbConfig {
           { label: "Detalhes da Empresa", icon: "Eye" },
         ],
       },
-      isEmpresaRole
+      isEmpresaRole,
     );
   }
 
@@ -539,7 +685,7 @@ export function useBreadcrumb(): BreadcrumbConfig {
           { label: "Visualizando empresa", icon: "Eye" },
         ],
       },
-      isEmpresaRole
+      isEmpresaRole,
     );
   }
 
@@ -673,7 +819,7 @@ export function useBreadcrumb(): BreadcrumbConfig {
     if (breadcrumbConfig[currentPath]) {
       return filterBreadcrumbForEmpresa(
         breadcrumbConfig[currentPath],
-        isEmpresaRole
+        isEmpresaRole,
       );
     }
   }

@@ -51,6 +51,15 @@ export function UsuarioTable({
   isNavigating = false,
   onNavigateStart,
 }: UsuarioTableProps) {
+  const startItem =
+    pagination && usuarios.length > 0
+      ? Math.min((pagination.page - 1) * pagination.pageSize + 1, pagination.total)
+      : 0;
+  const endItem =
+    pagination && usuarios.length > 0
+      ? Math.min(startItem + usuarios.length - 1, pagination.total)
+      : 0;
+
   return (
     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
       <div className="overflow-x-auto">
@@ -144,8 +153,7 @@ export function UsuarioTable({
         <div className="flex flex-col gap-4 px-6 py-4 border-t border-gray-200 bg-gray-50/30 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2 text-sm text-gray-600">
             <span>
-              Mostrando {Math.min((pagination.page - 1) * pagination.pageSize + 1, pagination.total)}{" "}
-              a {Math.min(pagination.page * pagination.pageSize, pagination.total)} de {pagination.total}{" "}
+              Mostrando {startItem} a {endItem} de {pagination.total}{" "}
               usuário{pagination.total === 1 ? "" : "s"}
             </span>
           </div>

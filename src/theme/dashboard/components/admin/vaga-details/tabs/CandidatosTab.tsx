@@ -14,7 +14,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { formatDate } from "../utils";
 import { getInitials } from "../utils/formatters";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { AvatarCustom } from "@/components/ui/custom/avatar";
 import {
   Table,
   TableHeader,
@@ -672,15 +672,12 @@ export function CandidatosTab({ vaga }: AboutTabProps) {
         {/* Nome do Candidato */}
         <td className="px-4 py-3">
           <div className="flex items-center gap-3">
-            <Avatar className="h-10 w-10 shrink-0">
-              <AvatarImage
-                src={candidato.avatarUrl || undefined}
-                alt={candidato.nome}
-              />
-              <AvatarFallback className="bg-primary/10 text-primary/80 text-xs font-semibold">
-                {getInitials(candidato.nome)}
-              </AvatarFallback>
-            </Avatar>
+            <AvatarCustom
+              name={candidato.nome}
+              src={candidato.avatarUrl || undefined}
+              size="sm"
+              showStatus={false}
+            />
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 mb-1">
                 <div className="font-bold text-gray-900 truncate text-sm">

@@ -4,7 +4,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   XCircle,
@@ -27,10 +27,15 @@ import {
 export default function CheckoutFalhaPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const pathname = usePathname() || "";
   const [mounted, setMounted] = useState(false);
   const [isVerifying, setIsVerifying] = useState(true);
   const [hasAccess, setHasAccess] = useState(false);
   const [isRetrying, setIsRetrying] = useState(false);
+  const plansPath =
+    pathname === "/dashboard" || pathname.startsWith("/dashboard/")
+      ? "/dashboard/upgrade"
+      : "/recrutamento";
 
   // Parâmetros da URL
   const paymentId = searchParams.get("payment_id");
@@ -50,14 +55,14 @@ export default function CheckoutFalhaPage() {
         setMounted(true);
       } else {
         // Redireciona para página de planos
-        router.replace("/recrutamento");
+        router.replace(plansPath);
       }
     };
 
     // Pequeno delay para garantir que estamos no cliente
     const timer = setTimeout(checkAccess, 100);
     return () => clearTimeout(timer);
-  }, [searchParams, router]);
+  }, [searchParams, router, plansPath]);
 
   // Mapeia razões de falha para mensagens amigáveis
   const getFailureMessage = useCallback(() => {
@@ -85,7 +90,7 @@ export default function CheckoutFalhaPage() {
   const handleRetry = useCallback(async () => {
     // Se não temos informações do plano, redireciona para a página de planos
     if (!planId || !planName || !planPrice) {
-      router.push("/recrutamento");
+      router.push(plansPath);
       return;
     }
 
@@ -98,7 +103,7 @@ export default function CheckoutFalhaPage() {
         productId: planId,
         productName: decodeURIComponent(planName),
         productPrice: parseFloat(planPrice),
-        originUrl: "/recrutamento",
+        originUrl: plansPath,
       });
 
       // Redireciona para o checkout com a nova sessão
@@ -111,9 +116,9 @@ export default function CheckoutFalhaPage() {
           "Não foi possível criar uma nova sessão. Tente selecionar o plano novamente.",
       });
       setIsRetrying(false);
-      router.push("/recrutamento");
+      router.push(plansPath);
     }
-  }, [planId, planName, planPrice, router]);
+  }, [planId, planName, planPrice, router, plansPath]);
 
   const suggestions = [
     {

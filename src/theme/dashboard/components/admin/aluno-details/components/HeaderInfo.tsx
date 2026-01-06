@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { AvatarCustom } from "@/components/ui/custom/avatar";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -58,15 +58,13 @@ export function HeaderInfo({
       <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex items-center gap-5">
           <div className="relative">
-            <Avatar className="h-20 w-20 shrink-0 text-base">
-              <AvatarImage
-                src={aluno.avatarUrl || undefined}
-                alt={alunoNome}
-              />
-              <AvatarFallback className="bg-primary/10 text-primary/80 text-base font-semibold">
-                {getAlunoInitials(alunoNome)}
-              </AvatarFallback>
-            </Avatar>
+            <AvatarCustom
+              name={alunoNome}
+              src={aluno.avatarUrl || undefined}
+              size="xl"
+              showStatus={false}
+              className="text-base"
+            />
             <Tooltip>
               <TooltipTrigger asChild>
                 <span

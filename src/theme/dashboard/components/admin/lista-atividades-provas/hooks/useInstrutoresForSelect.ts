@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { listInstrutores, type Instrutor } from "@/api/usuarios";
+import { listAvaliacoesInstrutores } from "@/api/cursos";
 
 interface SelectOption {
   value: string;
@@ -9,29 +9,23 @@ interface SelectOption {
 }
 
 /**
- * Hook para buscar instrutores para o select
- * Usado por Admin/Moderador/Pedagógico para selecionar instrutor da aula
+ * Hook para buscar instrutores para o select de avaliações
+ * Usa o endpoint específico para avaliações que retorna apenas instrutores ativos
  */
 export function useInstrutoresForSelect() {
   const { data, isLoading, error } = useQuery({
-    queryKey: ["instrutores-select"],
+    queryKey: ["avaliacoes-instrutores"],
     queryFn: async () => {
-      // Busca todos os instrutores ativos
-      const response = await listInstrutores({
-        limit: 100,
-        status: "ATIVO",
-      });
-      return response;
+      const response = await listAvaliacoesInstrutores();
+      return response.instrutores || [];
     },
     staleTime: 5 * 60 * 1000, // 5 minutos
   });
 
-  const instrutores: SelectOption[] = (data?.data || []).map(
-    (instrutor: Instrutor) => ({
-      value: instrutor.id,
-      label: instrutor.nomeCompleto,
-    })
-  );
+  const instrutores: SelectOption[] = (data || []).map((instrutor) => ({
+    value: instrutor.id,
+    label: instrutor.nomeCompleto,
+  }));
 
   return {
     instrutores,
@@ -39,4 +33,3 @@ export function useInstrutoresForSelect() {
     error,
   };
 }
-

@@ -803,7 +803,6 @@ export async function listUsuarios(
   const limitValue = params?.limit ?? params?.pageSize;
   if (limitValue) {
     queryParams.set("limit", String(limitValue));
-    queryParams.set("pageSize", String(limitValue));
   }
   if (params?.status) queryParams.set("status", params.status);
   if (params?.role) queryParams.set("role", params.role);

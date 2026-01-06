@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -28,14 +27,6 @@ interface HeaderInfoProps {
   onEditTurma?: () => void;
 }
 
-function getInitials(name: string): string {
-  const words = name.trim().split(/\s+/);
-  if (words.length >= 2) {
-    return (words[0][0] + words[words.length - 1][0]).toUpperCase();
-  }
-  return name.substring(0, 2).toUpperCase();
-}
-
 export function HeaderInfo({
   turma,
   cursoId,
@@ -58,14 +49,7 @@ export function HeaderInfo({
   return (
     <section className="relative overflow-hidden rounded-3xl bg-white">
       <div className="relative flex flex-col gap-6 px-6 py-6 sm:px-8 sm:py-8 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex items-center gap-5">
-          <div className="relative">
-            <Avatar className="h-20 w-20 shrink-0 text-base">
-              <AvatarFallback className="bg-primary/10 text-primary/80 text-base font-semibold">
-                {getInitials(turma.nome)}
-              </AvatarFallback>
-            </Avatar>
-          </div>
+        <div className="flex items-center gap-3">
           <div className="space-y-0">
             <div className="flex items-center gap-3">
               <h3 className="font-semibold !mb-0">{turma.nome}</h3>
@@ -122,4 +106,3 @@ export function HeaderInfo({
     </section>
   );
 }
-

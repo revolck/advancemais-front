@@ -16,6 +16,9 @@ export type NotificacaoTipo =
   | "ASSINATURA_RENOVADA"
   | "PAGAMENTO_APROVADO"
   | "PAGAMENTO_RECUSADO"
+  | "RECUPERACAO_FINAL_PAGAMENTO_PENDENTE"
+  | "RECUPERACAO_FINAL_PAGAMENTO_APROVADO"
+  | "RECUPERACAO_FINAL_PAGAMENTO_RECUSADO"
   | "SISTEMA";
 
 export interface NotificacaoVaga {
@@ -81,4 +84,3 @@ export interface ArquivarNotificacoesResponse {
   success: boolean;
   arquivadas: number;
 }
-

@@ -11,7 +11,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { AvatarCustom } from "@/components/ui/custom/avatar";
 import { Button } from "@/components/ui/button";
 import { TableRow, TableCell } from "@/components/ui/table";
 import {
@@ -234,15 +234,12 @@ export const CompanyRow: React.FC<CompanyRowProps> = ({
     >
       <TableCell className="py-4 min-w-[280px] max-w-[320px]">
         <div className="flex items-center gap-3">
-          <Avatar className="h-8 w-8 flex-shrink-0">
-            <AvatarImage
-              src={partnership.empresa.avatarUrl || undefined}
-              alt={partnership.empresa.nome}
-            />
-            <AvatarFallback className="bg-gray-100 text-gray-600 text-xs font-medium">
-              {partnership.empresa.nome.substring(0, 2).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
+          <AvatarCustom
+            name={partnership.empresa.nome || "Empresa"}
+            src={partnership.empresa.avatarUrl || undefined}
+            size="sm"
+            showStatus={false}
+          />
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 mb-1">
               <div className="font-bold text-gray-900 truncate text-sm">

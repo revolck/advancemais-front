@@ -856,10 +856,10 @@ export function CursosDashboard({
                       <CursoRow
                         key={curso.id}
                         curso={curso}
-                        categoriaName={categoriaNameById[curso.categoriaId]}
+                        categoriaName={categoriaNameById[Number(curso.categoriaId)]}
                         subcategoriaName={
                           curso.subcategoriaId
-                            ? subcategoriaNameById[curso.subcategoriaId]
+                            ? subcategoriaNameById[Number(curso.subcategoriaId)]
                             : null
                         }
                         isDisabled={isNavigating}

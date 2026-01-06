@@ -58,7 +58,7 @@ function normalizeList(value: any): string[] {
 function mapVagaToJob(vaga: any): JobData {
   const empresaAnonima = Boolean(vaga?.modoAnonimo);
   const empresa = empresaAnonima
-    ? "Oportunidade confidencial"
+    ? "Empresa anônima"
     : vaga?.empresa?.nome || "Empresa";
   const empresaLogo = empresaAnonima
     ? undefined
@@ -200,11 +200,14 @@ async function fetchVagaByIdOrSlug(
         id: listBySlug?.id?.toString() || "",
         slug: listBySlug?.slug || undefined,
         titulo: listBySlug?.titulo || "Vaga",
-        empresa: listBySlug?.empresa?.nome || "Empresa confidencial",
-        empresaLogo:
-          listBySlug?.empresa?.avatarUrl ||
-          listBySlug?.empresa?.logoUrl ||
-          undefined,
+        empresa: Boolean(listBySlug?.empresa?.modoAnonimo)
+          ? "Empresa anônima"
+          : listBySlug?.empresa?.nome || "Empresa",
+        empresaLogo: Boolean(listBySlug?.empresa?.modoAnonimo)
+          ? undefined
+          : listBySlug?.empresa?.avatarUrl ||
+            listBySlug?.empresa?.logoUrl ||
+            undefined,
         empresaAnonima: Boolean(listBySlug?.empresa?.modoAnonimo),
         localizacao: localizacao || "Não informado",
         tipoContrato: listBySlug?.regimeDeTrabalho || "Não informado",
@@ -349,7 +352,7 @@ export default async function JobDetailsPage({
                     src={job.empresaLogo}
                     alt={
                       job.empresaAnonima
-                        ? "Logo empresa confidencial"
+                        ? "Logo empresa anônima"
                         : `Logo ${job.empresa}`
                     }
                     size={56}
@@ -357,7 +360,7 @@ export default async function JobDetailsPage({
                 </div>
                 <div>
                   <p className="!text-xs !font-semibold !uppercase !text-gray-400 !mb-0">
-                    {job.empresaAnonima ? "Empresa confidencial" : job.empresa}
+                    {job.empresaAnonima ? "Empresa anônima" : job.empresa}
                   </p>
                   <h3 className="!mb-0">{job.titulo}</h3>
                 </div>

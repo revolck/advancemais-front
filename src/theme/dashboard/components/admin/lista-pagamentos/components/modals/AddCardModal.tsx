@@ -140,17 +140,6 @@ export function AddCardModal({
   const { tokenize, isTokenizing, error: mpError } = useCardToken();
   const { company } = useTenantCompany();
 
-  // Pré-preencher CNPJ da empresa
-  useEffect(() => {
-    if (isOpen && company?.cnpj) {
-      setDocumentType("CNPJ");
-      const maskService = MaskService.getInstance();
-      const formatted = maskService.processInput(company.cnpj, "cnpj");
-      setDocumentNumber(formatted);
-      validateDocument(formatted, "CNPJ");
-    }
-  }, [isOpen, company?.cnpj]);
-
   // Validação do documento
   const validateDocument = useCallback((doc: string, type: "CPF" | "CNPJ") => {
     const clean = doc.replace(/\D/g, "");
@@ -176,6 +165,17 @@ export function AddCardModal({
       return false;
     }
   }, []);
+
+  // Pré-preencher CNPJ da empresa
+  useEffect(() => {
+    if (isOpen && company?.cnpj) {
+      setDocumentType("CNPJ");
+      const maskService = MaskService.getInstance();
+      const formatted = maskService.processInput(company.cnpj, "cnpj");
+      setDocumentNumber(formatted);
+      validateDocument(formatted, "CNPJ");
+    }
+  }, [isOpen, company?.cnpj, validateDocument]);
 
   const handleDocumentTypeChange = (type: "CPF" | "CNPJ") => {
     if (documentType !== type) {

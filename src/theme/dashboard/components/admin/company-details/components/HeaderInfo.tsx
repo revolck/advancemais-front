@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { AvatarCustom } from "@/components/ui/custom/avatar";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -124,15 +124,13 @@ export function HeaderInfo({
       <div className="relative flex flex-col gap-6 px-6 py-6 sm:px-8 sm:py-8 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex items-center gap-5">
           <div className="relative">
-            <Avatar className="h-20 w-20 shrink-0 text-base">
-              <AvatarImage
-                src={company.avatarUrl || undefined}
-                alt={company.nome}
-              />
-              <AvatarFallback className="bg-primary/10 text-primary/80 text-base font-semibold">
-                {getInitials(company.nome)}
-              </AvatarFallback>
-            </Avatar>
+            <AvatarCustom
+              name={company.nome || "Empresa"}
+              src={company.avatarUrl || undefined}
+              size="xl"
+              showStatus={false}
+              className="text-base"
+            />
             <Tooltip>
               <TooltipTrigger asChild>
                 <span

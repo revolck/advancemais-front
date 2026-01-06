@@ -221,4 +221,3 @@ export async function getSetorDeVagasMetricas(
 }
 
 export type * from "./types";
-

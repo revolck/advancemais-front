@@ -20,10 +20,11 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { User, ChevronRight, Mail, Calendar, ChevronUp, ChevronDown } from "lucide-react";
+import { ChevronRight, Mail, Calendar, ChevronUp, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import type { TurmaInscricao } from "@/api/cursos";
+import { AvatarCustom } from "@/components/ui/custom/avatar";
 
 interface InscricoesTabProps {
   inscricoes: TurmaInscricao[];
@@ -381,7 +382,16 @@ export function InscricoesTab({
                 >
                   <TableCell className="py-4">
                     <div className="flex items-center gap-3">
-                      <User className="h-4 w-4 flex-shrink-0 text-gray-400" />
+                      <AvatarCustom
+                        name={
+                          inscricao.aluno?.nomeCompleto ||
+                          inscricao.aluno?.nome ||
+                          "Aluno"
+                        }
+                        src={(inscricao.aluno as any)?.avatarUrl ?? undefined}
+                        size="sm"
+                        showStatus={false}
+                      />
                       <div className="flex items-center gap-2">
                         <span className="text-sm text-gray-900 font-medium">
                           {inscricao.aluno?.nomeCompleto ||

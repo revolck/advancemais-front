@@ -17,8 +17,8 @@ export interface MenuItem {
 
 export const MENU_UPGRADE: MenuItem[] = [
   {
-    label: "Fazer upgrade para Pro",
-    href: "/upgrade",
+    label: "Fazer upgrade agora",
+    href: "/dashboard/upgrade",
     icon: SparklesIcon,
   },
 ];

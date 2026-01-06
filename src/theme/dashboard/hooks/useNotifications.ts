@@ -24,16 +24,21 @@ const NOTIFICATIONS_COUNTER_KEY = "notifications-counter";
  * Hook para listar notificações.
  * - retry: false - API já faz 3 tentativas internamente
  * - refetchInterval só ativo quando a query tem sucesso (evita loop de erros)
+ * - Se params for undefined, a query não é executada (enabled: false)
  */
 export function useNotifications(params?: ListarNotificacoesParams) {
   const serializedParams = useMemo(
-    () => (params ? JSON.stringify(params) : "default"),
+    () => (params ? JSON.stringify(params) : null),
     [params]
   );
 
+  // Se params for undefined, não executa a query
+  const isEnabled = params !== undefined;
+
   return useQuery({
-    queryKey: [NOTIFICATIONS_QUERY_KEY, serializedParams],
+    queryKey: [NOTIFICATIONS_QUERY_KEY, serializedParams ?? "disabled"],
     queryFn: () => listNotificacoes(params),
+    enabled: isEnabled,
     retry: false, // API já faz retry interno
     refetchInterval: (query) => (query.state.status === "success" ? 30000 : false),
     refetchOnWindowFocus: false,

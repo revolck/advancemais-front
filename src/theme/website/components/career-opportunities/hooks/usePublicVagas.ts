@@ -16,13 +16,16 @@ import type { JobData, JobFilters } from "../types";
 function mapVagaToJobData(
   vaga: VagaPublicaItem & { inseridaEm?: string }
 ): JobData {
+  const empresaAnonima = Boolean(vaga.empresa?.modoAnonimo);
   return {
     id: (vaga.id || "").toString(),
     slug: vaga.slug || undefined,
     titulo: vaga.titulo,
-    empresa: vaga.empresa?.nome || "Empresa confidencial",
-    empresaLogo: vaga.empresa?.logoUrl || vaga.empresa?.avatarUrl || undefined,
-    empresaAnonima: vaga.empresa?.modoAnonimo ?? false,
+    empresa: empresaAnonima ? "Empresa anônima" : vaga.empresa?.nome || "Empresa",
+    empresaLogo: empresaAnonima
+      ? undefined
+      : vaga.empresa?.logoUrl || vaga.empresa?.avatarUrl || undefined,
+    empresaAnonima,
     localizacao: vaga.cidade && vaga.estado 
       ? `${vaga.cidade}, ${vaga.estado}` 
       : vaga.cidade || vaga.estado || "Não informado",
@@ -160,4 +163,3 @@ export function usePublicVagas(
     setPage: setCurrentPage,
   };
 }
-

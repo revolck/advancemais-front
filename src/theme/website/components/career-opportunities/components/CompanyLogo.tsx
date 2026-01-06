@@ -1,7 +1,7 @@
 "use client";
 
-import Image from "next/image";
 import React from "react";
+import Image from "next/image";
 
 interface CompanyLogoProps {
   src?: string | null;
@@ -22,7 +22,7 @@ export function CompanyLogo({ src, alt, size = 56 }: CompanyLogoProps) {
       height={size}
       className="w-full h-full object-cover"
       onError={() => setHasError(true)}
+      unoptimized={effectiveSrc.startsWith("http")}
     />
   );
 }
-

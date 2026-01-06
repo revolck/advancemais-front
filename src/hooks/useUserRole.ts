@@ -14,9 +14,6 @@ function getRoleFromCookie(): UserRole | null {
   if (!cookie) return null;
 
   // Migração de papéis: manter compatibilidade com cookies antigos
-  if (cookie === "RECRUTADOR") {
-    return UserRole.SETOR_DE_VAGAS;
-  }
   if (cookie === "PSICOLOGO") {
     return UserRole.RECRUTADOR;
   }

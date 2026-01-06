@@ -3,21 +3,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { listTurmas } from "@/api/cursos";
 import type { SelectOption } from "@/components/ui/custom/select/types";
-import { getMockTurmasForFrequencia } from "@/mockData/frequencia";
 
 async function fetchTurmasForSelect(cursoId: string): Promise<SelectOption[]> {
-  try {
-    const turmas = await listTurmas(cursoId);
-    const fromApi = (turmas ?? [])
-      .map((t) => ({ value: String(t.id), label: t.nome }))
-      .sort((a, b) => a.label.localeCompare(b.label, "pt-BR"));
-    if (fromApi.length > 0) return fromApi;
-  } catch {
-    // ignore
-  }
-
-  return getMockTurmasForFrequencia(cursoId)
-    .map((t) => ({ value: t.id, label: t.nome }))
+  const turmas = await listTurmas(cursoId);
+  return (turmas ?? [])
+    .map((t) => ({ value: String(t.id), label: t.nome }))
     .sort((a, b) => a.label.localeCompare(b.label, "pt-BR"));
 }
 

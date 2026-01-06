@@ -67,3 +67,5 @@ export * from "./users-list";
 export * from "./calendar";
 
 export * from "./aulas-provas";
+
+export * from "./RecuperacaoFinalPagamentoModal";

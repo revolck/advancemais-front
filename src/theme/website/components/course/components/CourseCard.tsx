@@ -119,7 +119,12 @@ const getDefaultColor = (
   return colors[index];
 };
 
-export function CourseCard({ course, index, onViewDetails }: CourseCardProps) {
+export function CourseCard({
+  course,
+  index,
+  onViewDetails,
+  onEnroll,
+}: CourseCardProps) {
   const categoryColor = getCategoryColor(course.categoria);
 
   // Formatar valor para exibição
@@ -286,7 +291,7 @@ export function CourseCard({ course, index, onViewDetails }: CourseCardProps) {
           <ButtonCustom
             variant="primary"
             className="flex-1 group/btn"
-            onClick={() => console.log("Inscrever-se:", course.id)}
+            onClick={() => onEnroll?.(course)}
           >
             Inscrever-se
             <ArrowRight className="size-4 transition-transform duration-200 ease-out group-hover/btn:translate-x-0.5" />

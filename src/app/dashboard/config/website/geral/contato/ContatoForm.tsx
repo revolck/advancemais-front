@@ -5,11 +5,11 @@ import { InputCustom, ButtonCustom } from "@/components/ui/custom";
 import { toastCustom } from "@/components/ui/custom/toast";
 import {
   listInformacoesGerais,
-  createInformacoesGerais,
   updateInformacoesGerais,
 } from "@/api/websites/components/informacoes-gerais";
 import type { InformacoesGeraisBackendResponse } from "@/api/websites/components/informacoes-gerais/types";
 import { Skeleton } from "@/components/ui/skeleton";
+import { MaskService } from "@/services";
 
 interface ContatoState {
   telefone1: string;
@@ -17,6 +17,8 @@ interface ContatoState {
   whatsapp: string;
   email: string;
 }
+
+const maskService = MaskService.getInstance();
 
 export default function ContatoForm() {
   const [state, setState] = useState<ContatoState>({
@@ -40,9 +42,15 @@ export default function ContatoForm() {
         if (first && mounted) {
           setId(first.id);
           setState({
-            telefone1: first.telefone1 ?? "",
-            telefone2: first.telefone2 ?? "",
-            whatsapp: first.whatsapp ?? "",
+            telefone1: first.telefone1
+              ? maskService.applyMask(String(first.telefone1), "phone")
+              : "",
+            telefone2: first.telefone2
+              ? maskService.applyMask(String(first.telefone2), "phone")
+              : "",
+            whatsapp: first.whatsapp
+              ? maskService.applyMask(String(first.whatsapp), "phone")
+              : "",
             email: first.email ?? "",
           });
         }
@@ -68,13 +76,32 @@ export default function ContatoForm() {
       toastCustom.error("Preencha os campos obrigatórios");
       return;
     }
+    if (!maskService.validate(state.telefone1, "phone")) {
+      toastCustom.error("Informe um Telefone (1) válido com DDD");
+      return;
+    }
+    if (state.telefone2 && !maskService.validate(state.telefone2, "phone")) {
+      toastCustom.error("Informe um Telefone (2) válido com DDD");
+      return;
+    }
+    if (!maskService.validate(state.whatsapp, "phone")) {
+      toastCustom.error("Informe um WhatsApp válido com DDD");
+      return;
+    }
     setIsSaving(true);
     try {
       if (!id) {
         toastCustom.error("Nenhum registro base encontrado para atualizar.");
         return;
       }
-      await updateInformacoesGerais(id, state);
+      await updateInformacoesGerais(id, {
+        telefone1: maskService.removeMask(state.telefone1, "phone"),
+        telefone2: state.telefone2
+          ? maskService.removeMask(state.telefone2, "phone")
+          : "",
+        whatsapp: maskService.removeMask(state.whatsapp, "phone"),
+        email: state.email,
+      });
       toastCustom.success("Contatos salvos");
     } catch {
       toastCustom.error("Erro ao salvar contatos");

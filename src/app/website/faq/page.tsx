@@ -30,7 +30,8 @@ export default function FaqPage() {
   const sections: Array<{
     title: string;
     content: string[];
-  }> = [
+  }> = useMemo(
+    () => [
     {
       title: "Sobre a Plataforma",
       content: [
@@ -92,7 +93,9 @@ export default function FaqPage() {
         "Sim, você pode solicitar a exclusão da sua conta e dados pessoais. Entre em contato conosco através dos canais de atendimento para fazer essa solicitação.",
       ],
     },
-  ];
+  ],
+    []
+  );
 
   const makeSectionId = (title: string) =>
     title

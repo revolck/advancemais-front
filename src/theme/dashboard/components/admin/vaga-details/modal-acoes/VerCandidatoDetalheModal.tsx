@@ -1,12 +1,12 @@
 "use client";
 
-import Image from "next/image";
 import {
   ModalCustom,
   ModalContentWrapper,
   ModalBody,
   ModalFooter,
 } from "@/components/ui/custom/modal";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { HorizontalTabs } from "@/components/ui/custom";
@@ -635,20 +635,16 @@ export function VerCandidatoDetalheModal({
             {/* Avatar */}
             <div className="w-[13%] flex-shrink-0">
               <div className="relative w-full aspect-square rounded-lg overflow-hidden border border-slate-200/70 bg-white">
-                {avatarUrl ? (
-                  <Image
-                    src={avatarUrl}
-                    alt={nome}
-                    fill
-                    className="object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-[var(--primary-color)]">
+                <Avatar className="h-full w-full rounded-lg">
+                  {avatarUrl && (
+                    <AvatarImage src={avatarUrl} alt={nome} />
+                  )}
+                  <AvatarFallback className="rounded-lg bg-[var(--primary-color)]">
                     <span className="text-2xl font-semibold text-[var(--secondary-color)]">
                       {initials}
                     </span>
-                  </div>
-                )}
+                  </AvatarFallback>
+                </Avatar>
               </div>
             </div>
 

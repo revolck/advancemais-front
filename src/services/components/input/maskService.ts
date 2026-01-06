@@ -71,7 +71,7 @@ class MaskService {
     numeric: /^[0-9]+$/,
     alphanumeric: /^[a-zA-Z0-9]+$/,
     password: /^.{6,}$/, // Mínimo 6 caracteres
-    phone: /^\(\d{2}\) \d{5}-\d{4}$/,
+    phone: /^\(\d{2}\) \d{4,5}-\d{4}$/,
     cpf: /^\d{3}\.\d{3}\.\d{3}-\d{2}$/,
     cnpj: /^\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}$/,
     cep: /^\d{5}-\d{3}$/,
@@ -117,6 +117,20 @@ class MaskService {
     // Tipos sem máscara retornam o valor original
     if (["email", "password", "numeric", "alphanumeric"].includes(maskType)) {
       return value;
+    }
+
+    if (maskType === "phone") {
+      const digits = value.replace(/[^\d]/g, "");
+      const normalized =
+        digits.startsWith("55") && digits.length > 11 ? digits.slice(2) : digits;
+
+      const phoneMask =
+        normalized.length > 10 ? "(99) 99999-9999" : "(99) 9999-9999";
+
+      return this.applyMask(normalized, "custom", {
+        mask: phoneMask,
+        alwaysShowMask: false,
+      });
     }
 
     const config = this.getMaskConfig(maskType, customConfig);

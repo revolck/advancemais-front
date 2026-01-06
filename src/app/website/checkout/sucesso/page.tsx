@@ -4,7 +4,7 @@
 
 import React, { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   CheckCircle2,
@@ -138,12 +138,17 @@ const ConfettiExplosion = ({ isActive }: { isActive: boolean }) => {
 export default function CheckoutSucessoPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const pathname = usePathname() || "";
   const [isVerifying, setIsVerifying] = useState(true);
   const [hasAccess, setHasAccess] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
   const [confettiKey, setConfettiKey] = useState(0);
 
   const paymentId = searchParams.get("payment_id");
+  const plansPath =
+    pathname === "/dashboard" || pathname.startsWith("/dashboard/")
+      ? "/dashboard/upgrade"
+      : "/recrutamento";
 
   // Verifica se o usuário tem acesso válido à página
   useEffect(() => {
@@ -158,14 +163,14 @@ export default function CheckoutSucessoPage() {
         setTimeout(() => setShowConfetti(true), 500);
       } else {
         // Redireciona para página de planos
-        router.replace("/recrutamento");
+        router.replace(plansPath);
       }
     };
 
     // Pequeno delay para garantir que estamos no cliente
     const timer = setTimeout(checkAccess, 100);
     return () => clearTimeout(timer);
-  }, [searchParams, router]);
+  }, [searchParams, router, plansPath]);
 
   // Função para disparar mais confetes
   const triggerConfetti = useCallback(() => {

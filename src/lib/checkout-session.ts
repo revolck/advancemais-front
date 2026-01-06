@@ -307,6 +307,10 @@ export function getCheckoutUrl(session: CheckoutSession): string {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");
 
+  const isDashboardOrigin =
+    session.originUrl === "/dashboard" || session.originUrl.startsWith("/dashboard/");
+  const checkoutPath = isDashboardOrigin ? "/dashboard/checkout" : "/checkout";
+
   // Salva o token de segurança na sessão
   const sessions = getStoredSessions();
   if (sessions[session.sessionId]) {
@@ -324,7 +328,7 @@ export function getCheckoutUrl(session: CheckoutSession): string {
     plan: planSlug,
   });
 
-  return `/checkout?${params.toString()}`;
+  return `${checkoutPath}?${params.toString()}`;
 }
 
 /**

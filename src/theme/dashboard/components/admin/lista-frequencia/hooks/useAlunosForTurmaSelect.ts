@@ -3,7 +3,6 @@
 import { useQuery } from "@tanstack/react-query";
 import type { SelectOption } from "@/components/ui/custom/select/types";
 import { listInscricoes, type TurmaInscricao } from "@/api/cursos";
-import { getMockAlunosForTurma } from "@/mockData/notas";
 
 function buildAlunoOption(inscricao: TurmaInscricao): SelectOption {
   const nome =
@@ -24,32 +23,11 @@ export function useAlunosForTurmaSelect(params: {
   const query = useQuery<SelectOption[], Error>({
     queryKey: ["frequencia", "alunos-for-select", cursoId, turmaId],
     queryFn: async () => {
-      let inscricoes: TurmaInscricao[] = [];
-      try {
-        inscricoes =
-          (await listInscricoes(cursoId as string, turmaId as string)) ?? [];
-      } catch {
-        inscricoes = [];
-      }
-      const fromApi = (inscricoes ?? [])
+      const inscricoes =
+        (await listInscricoes(cursoId as string, turmaId as string)) ?? [];
+      return (inscricoes ?? [])
         .filter((i) => Boolean(i?.alunoId))
         .map(buildAlunoOption)
-        .sort((a, b) =>
-          a.label.localeCompare(b.label, "pt-BR", { sensitivity: "base" })
-        );
-
-      if (fromApi.length > 0) return fromApi;
-
-      const mock = getMockAlunosForTurma({
-        cursoId: cursoId as string,
-        turmaId: turmaId as string,
-        count: 20,
-      });
-      return mock
-        .map((a) => ({
-          value: a.alunoId,
-          label: `${a.alunoNome} • ${a.alunoId}`,
-        }))
         .sort((a, b) =>
           a.label.localeCompare(b.label, "pt-BR", { sensitivity: "base" })
         );

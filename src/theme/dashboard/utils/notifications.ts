@@ -1,5 +1,6 @@
 import type {
   NotificacaoPrioridade,
+  Notificacao,
   NotificacaoTipo,
 } from "@/api/notificacoes/types";
 import { formatDistanceToNow } from "date-fns";
@@ -88,6 +89,30 @@ export const TYPE_META: Record<
     tagBg: "bg-red-50",
     tagText: "text-red-700",
   },
+  RECUPERACAO_FINAL_PAGAMENTO_PENDENTE: {
+    label: "Recuperação final",
+    icon: "AlertTriangle",
+    bgColor: "bg-amber-100",
+    textColor: "text-amber-700",
+    tagBg: "bg-amber-50",
+    tagText: "text-amber-700",
+  },
+  RECUPERACAO_FINAL_PAGAMENTO_APROVADO: {
+    label: "Recuperação final",
+    icon: "BadgeCheck",
+    bgColor: "bg-emerald-100",
+    textColor: "text-emerald-600",
+    tagBg: "bg-emerald-50",
+    tagText: "text-emerald-700",
+  },
+  RECUPERACAO_FINAL_PAGAMENTO_RECUSADO: {
+    label: "Recuperação final",
+    icon: "XCircle",
+    bgColor: "bg-red-100",
+    textColor: "text-red-600",
+    tagBg: "bg-red-50",
+    tagText: "text-red-700",
+  },
   SISTEMA: {
     label: "Sistema",
     icon: "Bell",
@@ -111,6 +136,9 @@ export const SISTEMA_TYPES: NotificacaoTipo[] = [
   "ASSINATURA_RENOVADA",
   "PAGAMENTO_APROVADO",
   "PAGAMENTO_RECUSADO",
+  "RECUPERACAO_FINAL_PAGAMENTO_PENDENTE",
+  "RECUPERACAO_FINAL_PAGAMENTO_APROVADO",
+  "RECUPERACAO_FINAL_PAGAMENTO_RECUSADO",
   "SISTEMA",
 ];
 
@@ -126,3 +154,65 @@ export function formatRelativeTime(date?: string | null): string {
   }
 }
 
+function readString(data: Record<string, unknown> | null | undefined, key: string) {
+  const value = data?.[key];
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function readNumber(data: Record<string, unknown> | null | undefined, key: string) {
+  const value = data?.[key];
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string") {
+    const n = Number(value);
+    return Number.isFinite(n) ? n : null;
+  }
+  return null;
+}
+
+export function getNotificationAction(notification: Notificacao): {
+  href?: string;
+  label?: string;
+} {
+  const explicitHref =
+    typeof notification.linkAcao === "string" && notification.linkAcao.trim()
+      ? notification.linkAcao.trim()
+      : null;
+
+  if (explicitHref) {
+    return {
+      href: explicitHref,
+      label:
+        notification.tipo === "RECUPERACAO_FINAL_PAGAMENTO_PENDENTE"
+          ? "Pagar"
+          : notification.tipo.startsWith("VAGA_") ||
+            notification.tipo === "NOVO_CANDIDATO" ||
+            notification.tipo === "VAGA_PREENCHIDA"
+          ? "Ver vaga"
+          : "Ver detalhes",
+    };
+  }
+
+  if (notification.tipo === "RECUPERACAO_FINAL_PAGAMENTO_PENDENTE") {
+    const dados = notification.dados ?? null;
+    const cursoId = readString(dados, "cursoId");
+    const turmaId = readString(dados, "turmaId");
+    const provaId = readString(dados, "provaId");
+    const valor = readNumber(dados, "valor") ?? 50;
+    const titulo = readString(dados, "titulo") || notification.titulo;
+    const returnTo = readString(dados, "returnTo");
+
+    const sp = new URLSearchParams();
+    sp.set("tipo", "recuperacao-final");
+    sp.set("notificacaoId", notification.id);
+    if (cursoId) sp.set("cursoId", cursoId);
+    if (turmaId) sp.set("turmaId", turmaId);
+    if (provaId) sp.set("provaId", provaId);
+    if (Number.isFinite(valor)) sp.set("valor", String(valor));
+    if (titulo) sp.set("titulo", titulo);
+    if (returnTo) sp.set("returnTo", returnTo);
+
+    return { href: `/dashboard/cursos/pagamentos?${sp.toString()}`, label: "Pagar" };
+  }
+
+  return {};
+}

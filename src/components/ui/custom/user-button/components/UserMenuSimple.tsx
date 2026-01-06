@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useMemo } from "react";
 import { ChevronDown } from "lucide-react";
 import Link from "next/link";
 import { MENU_ACCOUNT, MENU_LOGOUT, MENU_UPGRADE } from "../constants";
@@ -18,6 +18,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { getUserProfile, logoutUserSession } from "@/api/usuarios";
 import { logoutUser } from "@/lib/auth";
+import { useQuery } from "@tanstack/react-query";
 
 interface User {
   name: string;
@@ -29,52 +30,50 @@ interface User {
 export default function UserMenuSimple() {
   const [open, setOpen] = React.useState(false);
   const [user, setUser] = React.useState<User | null>(null);
-  const [isLoading, setIsLoading] = React.useState(true);
   const [isLoggingOut, setIsLoggingOut] = React.useState(false);
 
-  React.useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const token = document.cookie
-          .split("; ")
-          .find((row) => row.startsWith("token="))
-          ?.split("=")[1];
-
-        if (!token) {
-          setIsLoading(false);
-          return;
-        }
-
-        const profile = await getUserProfile(token);
-        if (
-          !profile?.success ||
-          !("usuario" in profile) ||
-          !profile.usuario?.email
-        ) {
-          setIsLoading(false);
-          return;
-        }
-
-        const fullName = profile.usuario.nomeCompleto?.trim();
-        const name =
-          fullName && fullName.length > 0
-            ? fullName
-            : profile.usuario.email.split("@")[0];
-        setUser({
-          name,
-          email: profile.usuario.email,
-          avatar: undefined, // imagemPerfil não está disponível no tipo atual
-          role: profile.usuario.role,
-        });
-      } catch (error) {
-        console.error("Erro ao carregar perfil:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchUser();
+  const token = useMemo(() => {
+    if (typeof document === "undefined") return undefined;
+    return document.cookie
+      .split("; ")
+      .find((row) => row.startsWith("token="))
+      ?.split("=")[1];
   }, []);
+
+  const { data: profileResponse, isLoading } = useQuery({
+    queryKey: ["user-profile"],
+    queryFn: async () => {
+      if (!token) {
+        throw new Error("Token não encontrado");
+      }
+      return getUserProfile(token);
+    },
+    enabled: Boolean(token),
+    staleTime: 5 * 60 * 1000,
+    retry: 2,
+  });
+
+  React.useEffect(() => {
+    if (
+      !profileResponse ||
+      !("usuario" in profileResponse) ||
+      !profileResponse.usuario?.email
+    ) {
+      return;
+    }
+
+    const fullName = profileResponse.usuario.nomeCompleto?.trim();
+    const name =
+      fullName && fullName.length > 0
+        ? fullName
+        : profileResponse.usuario.email.split("@")[0];
+    setUser({
+      name,
+      email: profileResponse.usuario.email,
+      avatar: profileResponse.usuario.avatarUrl ?? undefined,
+      role: profileResponse.usuario.role,
+    });
+  }, [profileResponse]);
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
@@ -198,14 +197,23 @@ export default function UserMenuSimple() {
               );
             }
             return true;
-          }).map((item) => (
-            <DropdownMenuItem key={item.href} asChild>
-              <Link href={item.href} className="cursor-pointer">
-                <item.icon className="size-4" />
-                <span>{item.label}</span>
-              </Link>
-            </DropdownMenuItem>
-          ))}
+          }).map((item) => {
+            const resolvedItem =
+              item.label === "Pagamentos"
+                ? user.role === "EMPRESA"
+                  ? { ...item, label: "Assinatura", href: "/dashboard/empresas/pagamentos" }
+                  : { ...item, href: "/dashboard/cursos/pagamentos" }
+                : item;
+
+            return (
+              <DropdownMenuItem key={resolvedItem.href} asChild>
+                <Link href={resolvedItem.href} className="cursor-pointer">
+                  <resolvedItem.icon className="size-4" />
+                  <span>{resolvedItem.label}</span>
+                </Link>
+              </DropdownMenuItem>
+            );
+          })}
         </DropdownMenuGroup>
 
         <DropdownMenuSeparator />

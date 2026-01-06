@@ -202,9 +202,9 @@ const FileUploadItemComponent: React.FC<FileUploadItemProps> = ({
 
       {/* File Info */}
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-[-20px]">
+        <div className="flex items-center gap-2 mb-1">
           <p
-            className="font-medium text-xs text-foreground truncate max-w-[240px]"
+            className="font-medium! text-xs! text-foreground! truncate! max-w-[240px]! mb-0!"
             title={file.name}
           >
             {file.name}
@@ -215,12 +215,13 @@ const FileUploadItemComponent: React.FC<FileUploadItemProps> = ({
             getStatusIcon()}
         </div>
 
-        <div className="mt-0 text-[11px] text-muted-foreground">
-          <div>
-            {" "}
+        <div className="text-[11px] text-muted-foreground space-y-0.5">
+          <div className="mb-0!">
             Tamanho: {displaySize > 0 ? formatFileSize(displaySize) : "—"}
           </div>
-          <div> Data de upload: {file.uploadDate.toLocaleDateString()}</div>
+          <div className="mb-0!">
+            Data de upload: {file.uploadDate.toLocaleDateString()}
+          </div>
         </div>
 
         {/* Status & Progress */}

@@ -1,5 +1,6 @@
 /**
  * Rotas para API de Cursos (catálogo, turmas, aulas, avaliações, etc.)
+ * Atualizado para API v3
  */
 
 const BASE = "/api/v1/cursos" as const;
@@ -18,6 +19,8 @@ export const cursosRoutes = {
     get: (cursoId: number | string) => `${BASE}/${cursoId}`,
     update: (cursoId: number | string) => `${BASE}/${cursoId}`,
     delete: (cursoId: number | string) => `${BASE}/${cursoId}`,
+    meta: (cursoId: number | string) => `${BASE}/${cursoId}/meta`,
+    notas: (cursoId: number | string) => `${BASE}/${cursoId}/notas`,
     inscricoes: {
       list: (cursoId: number | string) => `${BASE}/${cursoId}/inscricoes`,
     },
@@ -123,6 +126,8 @@ export const cursosRoutes = {
           `${BASE}/${cursoId}/turmas/${turmaId}/frequencias`,
         create: (cursoId: number | string, turmaId: string) =>
           `${BASE}/${cursoId}/turmas/${turmaId}/frequencias`,
+        resumo: (cursoId: number | string, turmaId: string) =>
+          `${BASE}/${cursoId}/turmas/${turmaId}/frequencias/resumo`,
         get: (
           cursoId: number | string,
           turmaId: string,
@@ -139,6 +144,12 @@ export const cursosRoutes = {
           frequenciaId: string
         ) => `${BASE}/${cursoId}/turmas/${turmaId}/frequencias/${frequenciaId}`,
       },
+      avaliacoes: {
+        clone: (cursoId: number | string, turmaId: string) =>
+          `${BASE}/${cursoId}/turmas/${turmaId}/avaliacoes/clone`,
+      },
+      vagas: (cursoId: number | string, turmaId: string) =>
+        `${BASE}/${cursoId}/turmas/${turmaId}/vagas`,
       certificados: {
         list: (cursoId: number | string, turmaId: string) =>
           `${BASE}/${cursoId}/turmas/${turmaId}/certificados`,
@@ -224,7 +235,61 @@ export const cursosRoutes = {
     verificarPorCodigo: (codigo: string) =>
       `${BASE}/certificados/codigo/${codigo}`,
   },
+  // Avaliações (biblioteca global)
+  avaliacoes: {
+    list: () => `${BASE}/avaliacoes`,
+    create: () => `${BASE}/avaliacoes`,
+    get: (avaliacaoId: string) => `${BASE}/avaliacoes/${avaliacaoId}`,
+    update: (avaliacaoId: string) => `${BASE}/avaliacoes/${avaliacaoId}`,
+    delete: (avaliacaoId: string) => `${BASE}/avaliacoes/${avaliacaoId}`,
+    turmas: () => `${BASE}/avaliacoes/turmas`,
+    instrutores: () => `${BASE}/avaliacoes/instrutores`,
+  },
+  // Aulas (biblioteca global)
+  aulas: {
+    list: () => `${BASE}/aulas`,
+    create: () => `${BASE}/aulas`,
+    get: (aulaId: string) => `${BASE}/aulas/${aulaId}`,
+    update: (aulaId: string) => `${BASE}/aulas/${aulaId}`,
+    delete: (aulaId: string) => `${BASE}/aulas/${aulaId}`,
+    publicar: (aulaId: string) => `${BASE}/aulas/${aulaId}/publicar`,
+    materiais: {
+      list: (aulaId: string) => `${BASE}/aulas/${aulaId}/materiais`,
+      create: (aulaId: string) => `${BASE}/aulas/${aulaId}/materiais`,
+      update: (aulaId: string, materialId: string) =>
+        `${BASE}/aulas/${aulaId}/materiais/${materialId}`,
+      delete: (aulaId: string, materialId: string) =>
+        `${BASE}/aulas/${aulaId}/materiais/${materialId}`,
+      reordenar: (aulaId: string) =>
+        `${BASE}/aulas/${aulaId}/materiais/reordenar`,
+      gerarToken: (aulaId: string, materialId: string) =>
+        `${BASE}/aulas/${aulaId}/materiais/${materialId}/gerar-token`,
+    },
+    progresso: (aulaId: string) => `${BASE}/aulas/${aulaId}/progresso`,
+    presenca: (aulaId: string) => `${BASE}/aulas/${aulaId}/presenca`,
+  },
+  // Estágios (listagem global e status)
+  estagiosGlobal: {
+    list: () => `${BASE}/estagios`,
+    updateStatus: (estagioId: string) =>
+      `${BASE}/estagios/${estagioId}/status`,
+  },
+  // Checkout
+  checkout: {
+    iniciar: () => `${BASE}/checkout`,
+    webhook: () => `${BASE}/checkout/webhook`,
+    validarToken: (token: string) => `${BASE}/checkout/validar-token/${token}`,
+    pagamento: (paymentId: string) => `${BASE}/checkout/pagamento/${paymentId}`,
+  },
+  // Agenda
+  agenda: () => `${BASE}/agenda`,
+  // Categorias
+  categorias: {
+    list: () => `${BASE}/categorias`,
+    get: (categoriaId: string) => `${BASE}/categorias/${categoriaId}`,
+  },
   visaoGeral: () => `${BASE}/visaogeral`,
+  visaoGeralFaturamento: () => `${BASE}/visaogeral/faturamento`,
 } as const;
 
 export default cursosRoutes;

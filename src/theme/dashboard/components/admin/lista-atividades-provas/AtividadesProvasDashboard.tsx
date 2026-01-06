@@ -18,7 +18,10 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useTurmasForSelect } from "./hooks/useTurmasForSelect";
-import { useProvasDashboardQuery } from "./hooks/useProvasDashboardQuery";
+import {
+  useAvaliacoesDashboardQuery,
+  type AvaliacaoListItem,
+} from "./hooks/useAvaliacoesDashboardQuery";
 import { AtividadeProvaRow } from "./components/AtividadeProvaRow";
 import { AtividadeProvaTableSkeleton } from "./components/AtividadeProvaTableSkeleton";
 import type { FilterField } from "@/components/ui/custom/filters";
@@ -27,13 +30,19 @@ import {
   getNormalizedSearchOrUndefined,
   getSearchValidationMessage,
 } from "../shared/filterUtils";
+import type { AvaliacaoStatus, AvaliacaoTipo } from "@/api/cursos";
 
-const PROVA_STATUS_OPTIONS = [
+const PROVA_STATUS_OPTIONS: { value: AvaliacaoStatus; label: string }[] = [
   { value: "RASCUNHO", label: "Rascunho" },
   { value: "PUBLICADA", label: "Publicada" },
   { value: "EM_ANDAMENTO", label: "Em Andamento" },
   { value: "CONCLUIDA", label: "Concluída" },
   { value: "CANCELADA", label: "Cancelada" },
+];
+
+const PROVA_TIPO_OPTIONS: { value: AvaliacaoTipo; label: string }[] = [
+  { value: "PROVA", label: "Prova" },
+  { value: "ATIVIDADE", label: "Atividade" },
 ];
 
 const SEARCH_HELPER_TEXT = "Pesquise pelo título da atividade/prova.";
@@ -46,7 +55,10 @@ export function AtividadesProvasDashboard({
   const [pendingSearchTerm, setPendingSearchTerm] = useState("");
   const [appliedSearchTerm, setAppliedSearchTerm] = useState("");
   const [selectedTurmaId, setSelectedTurmaId] = useState<string | null>(null);
-  const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
+  const [selectedStatus, setSelectedStatus] = useState<AvaliacaoStatus | null>(
+    null
+  );
+  const [selectedTipo, setSelectedTipo] = useState<AvaliacaoTipo | null>(null);
   const [isNavigating, setIsNavigating] = useState(false);
 
   const handleNavigateStart = useCallback(() => {
@@ -66,37 +78,35 @@ export function AtividadesProvasDashboard({
 
   const { turmas, rawData, isLoading: loadingTurmas } = useTurmasForSelect();
 
-  // Extrair cursoId da turma selecionada se houver
-  const selectedTurma = useMemo(() => {
-    if (!selectedTurmaId || !turmas) return null;
-    return turmas.find((t) => t.value === selectedTurmaId);
-  }, [selectedTurmaId, turmas]);
-
   // Buscar cursoId do rawData
   const selectedTurmaRaw = useMemo(() => {
     if (!selectedTurmaId || !rawData) return null;
     return rawData.find((t) => t.id === selectedTurmaId);
   }, [selectedTurmaId, rawData]);
 
-  const provasQuery = useProvasDashboardQuery({
+  // Usar o hook correto que utiliza a API global de avaliações
+  const avaliacoesQuery = useAvaliacoesDashboardQuery({
+    cursoId: selectedTurmaRaw?.cursoId?.toString() ?? null,
     turmaId: selectedTurmaId,
-    cursoId: selectedTurmaRaw?.cursoId || null,
+    tipo: selectedTipo,
+    status: selectedStatus,
     search: appliedSearchTerm || undefined,
     page: currentPage,
     pageSize,
-    orderBy: sortField || "titulo", // Padrão: ordenar por título
-    order: sortDirection, // Padrão: DESC (mais novo primeiro)
+    orderBy: sortField || "criadoEm",
+    order: sortDirection,
   });
-  const provas = useMemo(
-    () => provasQuery.data?.data ?? [],
-    [provasQuery.data]
+
+  const avaliacoes = useMemo(
+    () => avaliacoesQuery.data?.items ?? [],
+    [avaliacoesQuery.data]
   );
-  const pagination = provasQuery.data?.pagination;
-  const isLoading = provasQuery.status === "pending";
-  const isFetching = provasQuery.isFetching;
+  const pagination = avaliacoesQuery.data?.pagination;
+  const isLoading = avaliacoesQuery.status === "pending";
+  const isFetching = avaliacoesQuery.isFetching;
   const errorMessage =
-    provasQuery.status === "error"
-      ? provasQuery.error?.message ??
+    avaliacoesQuery.status === "error"
+      ? avaliacoesQuery.error?.message ??
         "Não foi possível carregar as atividades/provas."
       : null;
   const hasError = Boolean(errorMessage);
@@ -180,41 +190,15 @@ export function AtividadesProvasDashboard({
     } catch {}
   }, [sortField, sortDirection]);
 
-  const sortList = useCallback(
-    <T extends { titulo?: string; criadoEm?: string | null }>(list: T[]) => {
-      if (!sortField) return list;
-      const arr = [...list];
-      arr.sort((a, b) => {
-        if (sortField === "titulo") {
-          const aTitulo = a.titulo?.toLocaleLowerCase?.() ?? "";
-          const bTitulo = b.titulo?.toLocaleLowerCase?.() ?? "";
-          const cmp = aTitulo.localeCompare(bTitulo, "pt-BR", {
-            sensitivity: "base",
-          });
-          return sortDirection === "asc" ? cmp : -cmp;
-        }
-        if (sortField === "criadoEm") {
-          const aTime = a.criadoEm ? new Date(a.criadoEm).getTime() : 0;
-          const bTime = b.criadoEm ? new Date(b.criadoEm).getTime() : 0;
-          const cmp = aTime - bTime;
-          return sortDirection === "asc" ? cmp : -cmp;
-        }
-        return 0;
-      });
-      return arr;
-    },
-    [sortDirection, sortField]
-  );
-
   // A API já faz paginação, filtros, busca e ordenação no backend
   // Não precisa ordenar client-side, a API já retorna ordenado conforme orderBy e order
-  const filteredProvas = provas; // A API já retorna ordenado
+  const filteredAvaliacoes = avaliacoes;
 
   // Usa paginação da API ao invés de client-side
-  const totalItems = pagination?.total ?? filteredProvas.length;
+  const totalItems = pagination?.total ?? filteredAvaliacoes.length;
   const totalPages =
     pagination?.totalPages ?? Math.max(1, Math.ceil(totalItems / pageSize));
-  const paginatedProvas = filteredProvas; // A API já retorna apenas os itens da página atual
+  const paginatedAvaliacoes = filteredAvaliacoes; // A API já retorna apenas os itens da página atual
 
   // Páginas visíveis para paginação
   const visiblePages = useMemo(() => {
@@ -246,22 +230,24 @@ export function AtividadesProvasDashboard({
   // Reset página quando filtros mudam
   useEffect(() => {
     setCurrentPage(1);
-  }, [appliedSearchTerm, selectedTurmaId, selectedStatuses]);
+  }, [appliedSearchTerm, selectedTurmaId, selectedStatus, selectedTipo]);
 
   // Ajusta página atual se necessário (apenas se totalPages mudou e currentPage está fora do range)
   useEffect(() => {
     if (totalPages > 0 && currentPage > totalPages) {
       setCurrentPage(Math.max(1, totalPages));
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [totalPages]); // Removido currentPage das dependências para evitar loop
 
-  const shouldShowSkeleton = isLoading || (isFetching && provas.length === 0);
+  const shouldShowSkeleton =
+    isLoading || (isFetching && avaliacoes.length === 0);
   const canDisplayTable =
-    !hasError && (shouldShowSkeleton || filteredProvas.length > 0);
+    !hasError && (shouldShowSkeleton || filteredAvaliacoes.length > 0);
   const showEmptyState =
-    !hasError && !shouldShowSkeleton && filteredProvas.length === 0;
+    !hasError && !shouldShowSkeleton && filteredAvaliacoes.length === 0;
 
-  // Ordem dos campos: turma na primeira linha; modalidade, status, obrigatoria na segunda
+  // Ordem dos campos: turma, tipo, status
   const filterFields: FilterField[] = useMemo(
     () => [
       {
@@ -271,11 +257,16 @@ export function AtividadesProvasDashboard({
         placeholder: loadingTurmas ? "Carregando..." : "Selecionar",
       },
       {
+        key: "tipo",
+        label: "Tipo",
+        options: PROVA_TIPO_OPTIONS,
+        placeholder: "Todos",
+      },
+      {
         key: "status",
         label: "Status",
-        mode: "multiple" as const,
         options: PROVA_STATUS_OPTIONS,
-        placeholder: "Selecionar",
+        placeholder: "Todos",
       },
     ],
     [turmas, loadingTurmas]
@@ -284,9 +275,10 @@ export function AtividadesProvasDashboard({
   const filterValues = useMemo(
     () => ({
       turmaId: selectedTurmaId,
-      status: selectedStatuses,
+      tipo: selectedTipo,
+      status: selectedStatus,
     }),
-    [selectedTurmaId, selectedStatuses]
+    [selectedTurmaId, selectedTipo, selectedStatus]
   );
 
   return (
@@ -311,7 +303,7 @@ export function AtividadesProvasDashboard({
       <div className="border-b border-gray-200 top-0 z-10">
         <div className="py-4">
           <FilterBar
-            className="[&>div]:lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_auto]"
+            gridClassName="lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,0.7fr)_minmax(0,0.7fr)_auto]"
             fields={filterFields}
             values={filterValues}
             onChange={(key, value) => {
@@ -319,10 +311,12 @@ export function AtividadesProvasDashboard({
                 setSelectedTurmaId((value as string) || null);
                 setCurrentPage(1);
               }
+              if (key === "tipo") {
+                setSelectedTipo((value as AvaliacaoTipo) || null);
+                setCurrentPage(1);
+              }
               if (key === "status") {
-                setSelectedStatuses(
-                  Array.isArray(value) ? (value as string[]) : []
-                );
+                setSelectedStatus((value as AvaliacaoStatus) || null);
                 setCurrentPage(1);
               }
             }}
@@ -330,7 +324,8 @@ export function AtividadesProvasDashboard({
               setPendingSearchTerm("");
               setAppliedSearchTerm("");
               setSelectedTurmaId(null);
-              setSelectedStatuses([]);
+              setSelectedTipo(null);
+              setSelectedStatus(null);
               setCurrentPage(1);
             }}
             search={{
@@ -370,7 +365,7 @@ export function AtividadesProvasDashboard({
             <ButtonCustom
               size="sm"
               variant="ghost"
-              onClick={() => provasQuery.refetch()}
+              onClick={() => avaliacoesQuery.refetch()}
             >
               Tentar novamente
             </ButtonCustom>
@@ -467,13 +462,8 @@ export function AtividadesProvasDashboard({
                       </div>
                     </div>
                   </TableHead>
-                  {!selectedTurmaId && (
-                    <TableHead className="font-medium text-gray-700 py-4 px-3">
-                      Turma
-                    </TableHead>
-                  )}
                   <TableHead className="font-medium text-gray-700 py-4 px-3">
-                    Curso
+                    Cursos/Turmas
                   </TableHead>
                   <TableHead className="font-medium text-gray-700 py-4 px-3">
                     Status
@@ -482,10 +472,7 @@ export function AtividadesProvasDashboard({
                     Data
                   </TableHead>
                   <TableHead className="font-medium text-gray-700 py-4 px-3 text-center whitespace-nowrap">
-                    Peso
-                  </TableHead>
-                  <TableHead className="font-medium text-gray-700 py-4 px-3 text-center whitespace-nowrap">
-                    Vale Ponto
+                    Peso / Vale Ponto
                   </TableHead>
                   <TableHead
                     className="font-medium text-gray-700 py-4 px-2 whitespace-nowrap"
@@ -581,11 +568,10 @@ export function AtividadesProvasDashboard({
                 {shouldShowSkeleton ? (
                   <AtividadeProvaTableSkeleton rows={8} />
                 ) : (
-                  paginatedProvas.map((prova) => (
+                  paginatedAvaliacoes.map((avaliacao) => (
                     <AtividadeProvaRow
-                      key={prova.id}
-                      aula={prova}
-                      showTurma={!selectedTurmaId}
+                      key={avaliacao.id}
+                      avaliacao={avaliacao}
                       isDisabled={isNavigating}
                       onNavigateStart={handleNavigateStart}
                     />

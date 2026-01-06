@@ -3,7 +3,7 @@
 "use client";
 
 import React, { Suspense, useEffect, useState } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { CheckoutView } from "@/theme/website/components/checkout";
 import { Lock, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
@@ -11,19 +11,24 @@ import { motion } from "framer-motion";
 function CheckoutContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const pathname = usePathname() || "";
   const [isVerifying, setIsVerifying] = useState(true);
 
   const sessionId = searchParams.get("sid");
   const token = searchParams.get("token");
   const ref = searchParams.get("ref");
   const plan = searchParams.get("plan");
+  const plansPath =
+    pathname === "/dashboard" || pathname.startsWith("/dashboard/")
+      ? "/dashboard/upgrade"
+      : "/recrutamento";
 
   // Verifica se tem os parâmetros necessários e redireciona se não tiver
   useEffect(() => {
     const checkAccess = () => {
       if (!sessionId || !token) {
         // Redireciona para a página de planos
-        router.replace("/recrutamento");
+        router.replace(plansPath);
         return;
       }
 
@@ -34,7 +39,7 @@ function CheckoutContent() {
     // Pequeno delay para garantir que estamos no cliente
     const timer = setTimeout(checkAccess, 100);
     return () => clearTimeout(timer);
-  }, [sessionId, token, router]);
+  }, [sessionId, token, router, plansPath]);
 
   // Estado de verificação - mostra loading enquanto valida
   if (isVerifying) {

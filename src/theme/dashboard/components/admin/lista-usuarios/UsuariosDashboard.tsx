@@ -185,7 +185,7 @@ export function UsuariosDashboard({
   );
 
   const handleFilterChange = useCallback(
-    (key: string, value: string | string[] | DateRange | null) => {
+    (key: string, value: string | string[] | DateRange | Date | null) => {
       setIsFiltering(true); // Ativar loading imediatamente
       if (key === "role") {
         const roles = (value as string[]) || [];

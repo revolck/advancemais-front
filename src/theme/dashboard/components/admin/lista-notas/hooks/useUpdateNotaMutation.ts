@@ -2,12 +2,11 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
-  upsertNotaForEnrollment,
-  upsertNotaWithContextForEnrollment,
-  deleteManualNotaForEnrollment,
-  type NotaOrigemRef,
-  type NotaStorageRecord,
-} from "@/mockData/notas";
+  createNota,
+  deleteNotas,
+  type NotaLancamento,
+  type NotaOrigem,
+} from "@/api/cursos";
 
 export interface UpdateNotaVariables {
   cursoId: string;
@@ -15,28 +14,27 @@ export interface UpdateNotaVariables {
   alunoId: string;
   nota: number | null;
   motivo?: string | null;
-  origem?: NotaOrigemRef | null;
+  origem?: NotaOrigem | null;
 }
 
 export function useUpdateNotaMutation() {
   const queryClient = useQueryClient();
 
-  return useMutation<NotaStorageRecord | null, Error, UpdateNotaVariables>({
+  return useMutation<NotaLancamento | null, Error, UpdateNotaVariables>({
     mutationFn: async ({ cursoId, turmaId, alunoId, nota, motivo, origem }) => {
+      // Se nota for null, remove os lançamentos manuais do aluno
       if (nota === null) {
-        return deleteManualNotaForEnrollment({ cursoId, turmaId, alunoId });
+        await deleteNotas(cursoId, turmaId, { alunoId });
+        return null;
       }
-      if (motivo !== undefined || origem !== undefined) {
-        return upsertNotaWithContextForEnrollment({
-          cursoId,
-          turmaId,
-          alunoId,
-          nota,
-          motivo,
-          origem,
-        });
-      }
-      return upsertNotaForEnrollment({ cursoId, turmaId, alunoId, nota });
+
+      // Cria lançamento de nota manual (incremental)
+      return createNota(cursoId, turmaId, {
+        alunoId,
+        nota,
+        motivo: motivo ?? "Lançamento manual",
+        origem,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notas", "dashboard"] });

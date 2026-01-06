@@ -243,6 +243,7 @@ export function AulasDashboard({ className }: { className?: string }) {
     if (totalPages > 0 && currentPage > totalPages) {
       setCurrentPage(Math.max(1, totalPages));
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [totalPages]); // Removido currentPage das dependências para evitar loop
 
   const shouldShowSkeleton = isLoading || (isFetching && aulas.length === 0);

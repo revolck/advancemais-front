@@ -12,7 +12,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { AvatarCustom } from "@/components/ui/custom/avatar";
 import { Button } from "@/components/ui/button";
 import { ChevronRight, Loader2 } from "lucide-react";
 
@@ -113,15 +113,12 @@ export function InstrutorRow({
     >
       <TableCell className="py-4">
         <div className="flex items-center gap-3">
-          <Avatar className="h-8 w-8 flex-shrink-0">
-            <AvatarImage
-              src={instrutor.avatarUrl || undefined}
-              alt={instrutor.nomeCompleto}
-            />
-            <AvatarFallback className="bg-gray-100 text-gray-600 text-xs font-medium">
-              {getInitials(instrutor.nomeCompleto)}
-            </AvatarFallback>
-          </Avatar>
+          <AvatarCustom
+            name={instrutor.nomeCompleto || instrutor.id}
+            src={instrutor.avatarUrl || undefined}
+            size="sm"
+            showStatus={false}
+          />
           <div className="min-w-0">
             <div className="flex items-center gap-2 mb-1">
               <div className="text-sm text-gray-900 font-medium truncate max-w-[220px]">

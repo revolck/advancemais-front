@@ -405,7 +405,7 @@ export function HistoryTab({
   });
 
   const isLoading = externalLoading || isLoadingAuditoria;
-  const auditoria = response?.data || [];
+  const auditoria = useMemo(() => response?.data || [], [response?.data]);
   const pagination = response?.pagination;
 
   // Filtrar dados baseado nos filtros
@@ -482,7 +482,7 @@ export function HistoryTab({
   }, [auditoria]);
 
   const handleFilterChange = useCallback(
-    (key: string, value: string | string[] | DateRange | null) => {
+    (key: string, value: string | string[] | DateRange | Date | null) => {
       setFilters((prev) => {
         // Se for período e receber null, manter a estrutura correta
         if (key === "periodo" && value === null) {

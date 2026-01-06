@@ -678,10 +678,12 @@ export function ViewCurriculoModal({
             }}
           >
             {avatarDisplay ? (
-              <img
+              <Image
                 src={avatarDisplay}
                 alt={usuarioNome}
-                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                fill
+                unoptimized={avatarDisplay.startsWith("data:")}
+                style={{ objectFit: "cover" }}
               />
             ) : (
               initials

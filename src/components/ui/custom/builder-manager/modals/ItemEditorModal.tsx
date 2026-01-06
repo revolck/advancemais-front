@@ -127,6 +127,8 @@ export function ItemEditorModal({
     item?.type === "ATIVIDADE" || item?.type === "PROVA"
       ? MOCK_ATIVIDADES_PROVAS.find((x) => x.id === platformActivityId)
       : null;
+  const selectedIsRecuperacaoFinal =
+    item?.type === "PROVA" && (selectedAvaliacao as any)?.recuperacaoFinal === true;
   const isSelectedAulaCompatible =
     !modalidade || !selectedAula ? true : selectedAula.modalidade === modalidade;
 
@@ -449,7 +451,16 @@ export function ItemEditorModal({
                       <span className="font-medium text-foreground">Status:</span>{" "}
                       {selectedAvaliacao.status}
                     </span>
+                    {item.type === "PROVA" && (
+                      <span>
+                        <span className="font-medium text-foreground">
+                          Recuperação final:
+                        </span>{" "}
+                        {selectedIsRecuperacaoFinal ? "Sim" : "Não"}
+                      </span>
+                    )}
                   </div>
+
                 </div>
               )}
 

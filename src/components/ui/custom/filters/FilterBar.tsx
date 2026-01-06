@@ -6,7 +6,10 @@ import { InputCustom } from "@/components/ui/custom/input";
 import { Label } from "@/components/ui/label";
 import { X, Info, AlertTriangle } from "lucide-react";
 import { SelectCustom } from "@/components/ui/custom/select";
-import { DatePickerRangeCustom } from "@/components/ui/custom/date-picker";
+import {
+  DatePickerCustom,
+  DatePickerRangeCustom,
+} from "@/components/ui/custom/date-picker";
 import {
   Tooltip,
   TooltipContent,
@@ -20,6 +23,7 @@ function valueIsEmpty(value: unknown): boolean {
   if (value === undefined || value === null) return true;
   if (Array.isArray(value)) return value.length === 0;
   if (typeof value === "string") return value.length === 0;
+  if (value instanceof Date) return Number.isNaN(value.getTime());
   if (typeof value === "object" && "from" in value && "to" in value) {
     const dateRange = value as DateRange;
     return !dateRange.from && !dateRange.to;
@@ -29,9 +33,10 @@ function valueIsEmpty(value: unknown): boolean {
 
 function findLabel(
   field: FilterField,
-  value: string | DateRange | null
+  value: string | DateRange | Date | null
 ): string | null {
   if (!value) return null;
+  if (value instanceof Date) return value.toLocaleDateString("pt-BR");
   if (typeof value === "object" && "from" in value && "to" in value) {
     const dateRange = value as DateRange;
     if (dateRange.from && dateRange.to) {
@@ -51,6 +56,8 @@ function findLabel(
 
 export function FilterBar({
   className,
+  gridClassName,
+  rightActionsClassName,
   fields,
   values,
   onChange,
@@ -100,7 +107,7 @@ export function FilterBar({
           <TooltipContent
             sideOffset={6}
             align="start"
-            className="max-w-xs bg-destructive text-xs font-medium leading-relaxed text-white shadow-lg"
+            className="max-w-xs bg-destructive text-xs font-medium leading-relaxed text-white"
             arrowClassName="bg-destructive fill-destructive"
           >
             {search.error}
@@ -123,6 +130,7 @@ export function FilterBar({
           | string
           | string[]
           | DateRange
+          | Date
           | null
           | undefined,
       }))
@@ -133,7 +141,10 @@ export function FilterBar({
           const arr = (value as string[]).map((v) => findLabel(field, v) ?? v);
           return { key: field.key, label: `${field.label}: ${arr.join(", ")}` };
         }
-        const label = findLabel(field, (value as string | DateRange) ?? null);
+        const label = findLabel(
+          field,
+          (value as string | DateRange | Date) ?? null
+        );
         return { key: field.key, label: `${field.label}: ${label ?? "-"}` };
       });
   }, [fields, values]);
@@ -145,21 +156,44 @@ export function FilterBar({
         className
       )}
     >
-      <div className={cn(
-        "grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.2fr)_auto] lg:items-end lg:gap-3 xl:gap-4",
-        className?.includes("lg:grid-cols") ? (() => {
-          const match = className.match(/lg:grid-cols-\[([^\]]+)\]/);
-          if (match) {
-            const gridCols = `lg:grid-cols-[${match[1]}]`;
-            const rowRules = className.match(/\[&>div>\*:nth-child\(\d+\)\]:lg:row-start-\d+/g) || [];
-            const colRules = className.match(/\[&>div>\*:nth-child\(\d+\)\]:lg:col-start-\d+/g) || [];
-            const colEndRules = className.match(/\[&>div>\*:nth-child\(\d+\)\]:lg:col-end-\d+/g) || [];
-            const colSpanRules = className.match(/\[&>div>\*:nth-child\(\d+\)\]:lg:col-span-\d+/g) || [];
-            return [gridCols, ...rowRules, ...colRules, ...colEndRules, ...colSpanRules].join(" ");
-          }
-          return "";
-        })() : ""
-      )}>
+      <div
+        className={cn(
+          "grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.2fr)_auto] lg:items-end lg:gap-3 xl:gap-4",
+          gridClassName,
+          className?.includes("lg:grid-cols")
+            ? (() => {
+                const match = className.match(/lg:grid-cols-\[([^\]]+)\]/);
+                if (match) {
+                  const gridCols = `lg:grid-cols-[${match[1]}]`;
+                  const rowRules =
+                    className.match(
+                      /\[&>div>\*:nth-child\(\d+\)\]:lg:row-start-\d+/g
+                    ) || [];
+                  const colRules =
+                    className.match(
+                      /\[&>div>\*:nth-child\(\d+\)\]:lg:col-start-\d+/g
+                    ) || [];
+                  const colEndRules =
+                    className.match(
+                      /\[&>div>\*:nth-child\(\d+\)\]:lg:col-end-\d+/g
+                    ) || [];
+                  const colSpanRules =
+                    className.match(
+                      /\[&>div>\*:nth-child\(\d+\)\]:lg:col-span-\d+/g
+                    ) || [];
+                  return [
+                    gridCols,
+                    ...rowRules,
+                    ...colRules,
+                    ...colEndRules,
+                    ...colSpanRules,
+                  ].join(" ");
+                }
+                return "";
+              })()
+            : ""
+        )}
+      >
         {search && (
           <div className="min-w-0">
             <div className="relative">
@@ -207,8 +241,34 @@ export function FilterBar({
             );
           }
 
+          if (type === "date") {
+            const fieldValue =
+              (values[field.key] as Date | null | undefined) ?? null;
+            const maxDate = field.maxDate ?? new Date();
+            const minDate = field.minDate;
+            const clearable = field.clearable ?? false;
+            return (
+              <div key={field.key} className="min-w-0">
+                <DatePickerCustom
+                  label={field.label}
+                  required={field.required}
+                  value={fieldValue}
+                  onChange={(d) => onChange(field.key, d)}
+                  placeholder={field.placeholder ?? "Selecionar data"}
+                  size="md"
+                  clearable={clearable}
+                  maxDate={maxDate}
+                  minDate={minDate}
+                  disabled={field.disabled}
+                  format="dd/MM/yyyy"
+                />
+              </div>
+            );
+          }
+
           if (type === "text") {
-            const fieldValue = (values[field.key] as string | null | undefined) ?? "";
+            const fieldValue =
+              (values[field.key] as string | null | undefined) ?? "";
             return (
               <div key={field.key} className="min-w-0">
                 {field.label && (
@@ -275,7 +335,7 @@ export function FilterBar({
               )}
               <SelectCustom
                 {...commonProps}
-                key={`${field.key}-${fieldValue ?? 'null'}`} // Força re-render quando valor muda
+                key={`${field.key}-${fieldValue ?? "null"}`} // Força re-render quando valor muda
                 value={fieldValue}
                 onChange={(val) => onChange(field.key, val)}
                 disabled={disabled}
@@ -284,7 +344,12 @@ export function FilterBar({
           );
         })}
         {rightActions && (
-          <div className="flex w-full flex-col items-stretch gap-3 md:col-span-2 md:flex-row md:justify-start xl:col-span-1 xl:flex-col xl:items-end xl:justify-end">
+          <div
+            className={cn(
+              "flex w-full flex-col items-stretch gap-3 md:col-span-2 md:flex-row md:justify-start xl:col-span-1 xl:flex-col xl:items-end xl:justify-end",
+              rightActionsClassName
+            )}
+          >
             {rightActions}
           </div>
         )}

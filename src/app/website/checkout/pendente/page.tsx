@@ -4,7 +4,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   Clock,
@@ -26,9 +26,14 @@ import { canAccessCheckoutResultPage } from "@/lib/checkout-session";
 export default function CheckoutPendentePage() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const pathname = usePathname() || "";
   const [isVerifying, setIsVerifying] = useState(true);
   const [hasAccess, setHasAccess] = useState(false);
   const [copied, setCopied] = useState(false);
+  const plansPath =
+    pathname === "/dashboard" || pathname.startsWith("/dashboard/")
+      ? "/dashboard/upgrade"
+      : "/recrutamento";
 
   const paymentId = searchParams.get("payment_id");
   const preferenceId = searchParams.get("preference_id");
@@ -44,14 +49,14 @@ export default function CheckoutPendentePage() {
         setIsVerifying(false);
       } else {
         // Redireciona para página de planos
-        router.replace("/recrutamento");
+        router.replace(plansPath);
       }
     };
 
     // Pequeno delay para garantir que estamos no cliente
     const timer = setTimeout(checkAccess, 100);
     return () => clearTimeout(timer);
-  }, [searchParams, router]);
+  }, [searchParams, router, plansPath]);
 
   const handleCopyId = () => {
     const idToCopy = paymentId || preferenceId || externalReference;

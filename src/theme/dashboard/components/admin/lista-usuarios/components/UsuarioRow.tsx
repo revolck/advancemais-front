@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { TableCell, TableRow } from "@/components/ui/table";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { AvatarCustom } from "@/components/ui/custom/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -90,15 +90,12 @@ export function UsuarioRow({
     >
       <TableCell className="py-4">
         <div className="flex items-center gap-3">
-          <Avatar className="h-8 w-8 flex-shrink-0">
-            <AvatarImage
-              src={usuario.avatarUrl || undefined}
-              alt={usuario.nomeCompleto}
-            />
-            <AvatarFallback className="bg-gray-100 text-gray-600 text-xs font-medium">
-              {getUsuarioInitials(usuario.nomeCompleto)}
-            </AvatarFallback>
-          </Avatar>
+          <AvatarCustom
+            name={usuario.nomeCompleto || usuario.id}
+            src={usuario.avatarUrl || undefined}
+            size="sm"
+            showStatus={false}
+          />
           <div className="min-w-0">
             <div className="flex items-center gap-2 mb-1">
               <div className="text-sm text-gray-900 font-medium truncate max-w-[220px]">

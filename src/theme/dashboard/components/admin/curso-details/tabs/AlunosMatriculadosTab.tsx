@@ -80,6 +80,7 @@ const STATUS_OPTIONS: Array<{ value: StatusInscricao; label: string }> = [
 
 const getStatusBadgeColor = (status: StatusInscricao): string => {
   const colorMap: Record<StatusInscricao, string> = {
+    AGUARDANDO_PAGAMENTO: "bg-yellow-50 text-yellow-700 border-yellow-200",
     INSCRITO: "bg-blue-50 text-blue-700 border-blue-200",
     EM_ANDAMENTO: "bg-amber-50 text-amber-700 border-amber-200",
     CONCLUIDO: "bg-emerald-50 text-emerald-700 border-emerald-200",
@@ -182,7 +183,7 @@ export function AlunosMatriculadosTab({
   });
 
   const isLoading = externalLoading || isLoadingInscricoes;
-  const inscricoes = response?.data || [];
+  const inscricoes = useMemo(() => response?.data || [], [response?.data]);
   const pagination = response?.pagination;
 
   // Opções de turmas para o filtro
@@ -592,7 +593,7 @@ export function AlunosMatriculadosTab({
         placeholder: "Selecionar localização",
       },
     ],
-    [STATUS_OPTIONS, turmaOptions, cidadesOptions],
+    [turmaOptions, cidadesOptions],
   );
 
   const filterValues = useMemo(

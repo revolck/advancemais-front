@@ -2,7 +2,7 @@ export interface PlanoEmpresarialBackendResponse {
   id: string;
   icon: string;
   nome: string;
-  descricao: string;
+  descricao?: string | null;
   valor: string;
   desconto: number;
   quantidadeVagas: number;
@@ -15,7 +15,7 @@ export interface PlanoEmpresarialBackendResponse {
 export interface CreatePlanoEmpresarialPayload {
   icon: string;
   nome: string;
-  descricao: string;
+  descricao?: string;
   valor: string;
   desconto: number;
   quantidadeVagas: number;

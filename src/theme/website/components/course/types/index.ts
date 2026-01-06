@@ -17,6 +17,25 @@ export interface CourseData {
   valor: number;
   valorPromocional?: number;
   gratuito: boolean;
+  turmasPublicadas?: CourseTurmaPublica[];
+}
+
+export interface CourseTurmaPublica {
+  id: string;
+  nome?: string;
+  dataInicio?: string;
+  dataFim?: string;
+  dataInscricaoInicio?: string;
+  dataInscricaoFim?: string;
+  turno?: string;
+  metodo?: string;
+  status?: string;
+  vagasTotais?: number;
+  vagasDisponiveis?: number;
+  vagas?: number;
+  valor?: number;
+  valorPromocional?: number;
+  gratuito?: boolean;
 }
 
 export interface CourseFilters {
@@ -37,4 +56,5 @@ export interface CourseCardProps {
   course: CourseData;
   index: number;
   onViewDetails?: (course: CourseData) => void;
+  onEnroll?: (course: CourseData) => void;
 }

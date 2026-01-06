@@ -6,6 +6,10 @@ export interface AvatarCustomProps
   extends Omit<HTMLAttributes<HTMLDivElement>, "children">,
     VariantProps<typeof avatarCustomVariants> {
   /**
+   * URL da imagem do avatar
+   */
+  src?: string | null;
+  /**
    * Nome completo da pessoa para gerar iniciais
    * @example "João Feitosa Fernandes" → "JF"
    */

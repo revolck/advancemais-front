@@ -16,8 +16,8 @@ import { AlunosMatriculadosTab } from "./tabs/AlunosMatriculadosTab";
 import { HistoryTab } from "./tabs/HistoryTab";
 
 type CursoDetails = Curso & {
-  categoria?: { id: number; nome: string };
-  subcategoria?: { id: number; nome: string };
+  categoria?: { id: number | string; nome: string };
+  subcategoria?: { id: number | string; nome: string };
   turmas?: CursoTurma[];
   turmasCount?: number;
 };
@@ -159,9 +159,9 @@ export function CursoDetailsView({
   ];
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-0">
       {queryErrorMessage && (
-        <Alert variant="destructive">
+        <Alert variant="destructive" className="mb-8">
           <AlertDescription>{queryErrorMessage}</AlertDescription>
         </Alert>
       )}
@@ -173,7 +173,9 @@ export function CursoDetailsView({
         }}
       />
 
-      <HorizontalTabs items={tabs} defaultValue="sobre" />
+      <div className="mt-8">
+        <HorizontalTabs items={tabs} defaultValue="sobre" />
+      </div>
     </div>
   );
 }

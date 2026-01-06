@@ -19,7 +19,7 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   [UserRole.INSTRUTOR]: "Instrutor",
   [UserRole.EMPRESA]: "Empresa",
   [UserRole.PEDAGOGICO]: "Pedagógico",
-  [UserRole.SETOR_DE_VAGAS]: "SETOR de VAGAS",
+  [UserRole.SETOR_DE_VAGAS]: "Setor de Vagas",
   [UserRole.RECRUTADOR]: "Recrutador",
   [UserRole.ALUNO_CANDIDATO]: "Aluno/Candidato",
 };

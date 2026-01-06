@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import type { Curso } from "@/api/cursos";
 import { Badge } from "@/components/ui/badge";
+import { HtmlContent } from "@/components/ui/custom/html-content";
 
 interface AboutTabProps {
   curso: Curso & {
@@ -37,6 +38,7 @@ export function AboutTab({ curso, isLoading = false }: AboutTabProps) {
   }, []);
 
   const aboutDescription = curso.descricao?.trim();
+  const isHtmlDescription = Boolean(aboutDescription && /<[^>]+>/.test(aboutDescription));
   const isPlaceholderImage =
     curso.imagemUrl?.includes("via.placeholder.com") || false;
 
@@ -230,9 +232,15 @@ export function AboutTab({ curso, isLoading = false }: AboutTabProps) {
     <div className="grid gap-6 lg:grid-cols-[minmax(0,_7fr)_minmax(0,_3fr)]">
       <section className="rounded-2xl border border-gray-200/60 bg-white p-6">
         {aboutDescription ? (
-          <p className="mt-4 whitespace-pre-line !leading-relaxed text-muted-foreground">
-            {aboutDescription}
-          </p>
+          <div className="mt-4">
+            {isHtmlDescription ? (
+              <HtmlContent html={aboutDescription} />
+            ) : (
+              <p className="whitespace-pre-line !leading-relaxed text-muted-foreground">
+                {aboutDescription}
+              </p>
+            )}
+          </div>
         ) : (
           <EmptyState
             illustration="companyDetails"

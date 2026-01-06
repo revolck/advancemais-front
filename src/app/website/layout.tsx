@@ -4,8 +4,8 @@ export const revalidate = 0;
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { listWebsiteScripts } from "@/api/websites/components/scripts";
-import { ScriptInjector } from "@/components/scripts/script-injector";
 import { loadPublishedScripts } from "@/lib/scripts/load-published-scripts";
+import { ConsentAwareScriptInjector } from "@/components/cookies/ConsentAwareScriptInjector";
 
 import LayoutClient from "./layout-client";
 
@@ -73,7 +73,7 @@ export default async function WebsiteLayout({
 
   return (
     <>
-      <ScriptInjector scripts={scripts} />
+      <ConsentAwareScriptInjector scripts={scripts} />
       <LayoutClient>{children}</LayoutClient>
     </>
   );

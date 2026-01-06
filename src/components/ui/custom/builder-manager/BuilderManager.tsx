@@ -146,8 +146,11 @@ export function BuilderManager({
     return () => window.removeEventListener("keydown", handler);
   }, [isPanelOpen]);
 
-  const rawModules = value.modules || [];
-  const rawStandaloneItems = value.standaloneItems || [];
+  const rawModules = React.useMemo(() => value.modules || [], [value.modules]);
+  const rawStandaloneItems = React.useMemo(
+    () => value.standaloneItems || [],
+    [value.standaloneItems]
+  );
   const allowedItemTypes = React.useMemo(
     () => ["AULA", "ATIVIDADE", "PROVA"] as const,
     []

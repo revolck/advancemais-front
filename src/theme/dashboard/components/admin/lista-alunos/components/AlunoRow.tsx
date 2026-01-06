@@ -12,7 +12,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { AvatarCustom } from "@/components/ui/custom/avatar";
 import { Button } from "@/components/ui/button";
 import { ChevronRight, Loader2 } from "lucide-react";
 
@@ -173,15 +173,12 @@ export function AlunoRow({
     >
       <TableCell className="py-4">
         <div className="flex items-center gap-3">
-          <Avatar className="h-8 w-8 flex-shrink-0">
-            <AvatarImage
-              src={(aluno as any)?.avatarUrl || undefined}
-              alt={alunoNome}
-            />
-            <AvatarFallback className="bg-gray-100 text-gray-600 text-xs font-medium">
-              {alunoNome.substring(0, 2).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
+          <AvatarCustom
+            name={alunoNome}
+            src={(aluno as any)?.avatarUrl ?? undefined}
+            size="sm"
+            showStatus={false}
+          />
           <div className="min-w-0">
             <div className="flex items-center gap-2 mb-1">
               <div className="text-sm text-gray-900 font-medium truncate max-w-[220px]">

@@ -50,6 +50,20 @@ export interface FrequenciaComputed {
 }
 
 const STORAGE_KEY = "advancemais.frequencia.v1";
+const HISTORY_KEY = "advancemais.frequencia.history.v1";
+
+const OVERRIDE_ROLES = new Set(["ADMIN", "MODERADOR", "PEDAGOGICO"]);
+
+export interface FrequenciaHistoryEntry {
+  fromStatus: FrequenciaStatus;
+  toStatus: FrequenciaStatus;
+  fromMotivo?: string | null;
+  toMotivo?: string | null;
+  changedAt: string;
+  actorRole?: string | null;
+  actorName?: string | null;
+  overrideReason?: string | null;
+}
 
 const MOCK_CURSOS: MockFrequenciaCursoRef[] = [
   { id: "mock-curso-presencial", nome: "Curso Presencial (Mock)" },
@@ -160,6 +174,78 @@ function writeStore(next: Record<string, FrequenciaStorageRecord>) {
   if (!storage) return;
   try {
     storage.setItem(STORAGE_KEY, JSON.stringify(next));
+  } catch {
+    // ignore
+  }
+}
+
+function readHistoryStore(): Record<string, FrequenciaHistoryEntry[]> {
+  const storage = getStorage();
+  if (!storage) return {};
+  try {
+    const raw = storage.getItem(HISTORY_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    if (!parsed || typeof parsed !== "object") return {};
+    const out: Record<string, FrequenciaHistoryEntry[]> = {};
+
+    Object.entries(parsed).forEach(([k, v]) => {
+      if (!Array.isArray(v)) return;
+      const entries: FrequenciaHistoryEntry[] = [];
+      v.forEach((row) => {
+        if (!row || typeof row !== "object") return;
+        const obj = row as any;
+        const fromStatus = obj.fromStatus as FrequenciaStatus;
+        const toStatus = obj.toStatus as FrequenciaStatus;
+        const changedAt = obj.changedAt;
+        if (
+          (fromStatus !== "PENDENTE" &&
+            fromStatus !== "PRESENTE" &&
+            fromStatus !== "FALTA" &&
+            fromStatus !== "JUSTIFICADA") ||
+          (toStatus !== "PENDENTE" &&
+            toStatus !== "PRESENTE" &&
+            toStatus !== "FALTA" &&
+            toStatus !== "JUSTIFICADA") ||
+          typeof changedAt !== "string"
+        ) {
+          return;
+        }
+        entries.push({
+          fromStatus,
+          toStatus,
+          changedAt,
+          ...(typeof obj.fromMotivo === "string" || obj.fromMotivo === null
+            ? { fromMotivo: obj.fromMotivo }
+            : {}),
+          ...(typeof obj.toMotivo === "string" || obj.toMotivo === null
+            ? { toMotivo: obj.toMotivo }
+            : {}),
+          ...(typeof obj.actorRole === "string" || obj.actorRole === null
+            ? { actorRole: obj.actorRole }
+            : {}),
+          ...(typeof obj.actorName === "string" || obj.actorName === null
+            ? { actorName: obj.actorName }
+            : {}),
+          ...(typeof obj.overrideReason === "string" || obj.overrideReason === null
+            ? { overrideReason: obj.overrideReason }
+            : {}),
+        });
+      });
+      out[k] = entries;
+    });
+
+    return out;
+  } catch {
+    return {};
+  }
+}
+
+function writeHistoryStore(next: Record<string, FrequenciaHistoryEntry[]>) {
+  const storage = getStorage();
+  if (!storage) return;
+  try {
+    storage.setItem(HISTORY_KEY, JSON.stringify(next));
   } catch {
     // ignore
   }
@@ -308,17 +394,69 @@ export function upsertFrequencia(params: {
   alunoId: string;
   status: FrequenciaStatus;
   motivo?: string | null;
+  actorRole?: string | null;
+  actorName?: string | null;
+  overrideReason?: string | null;
 }): FrequenciaStorageRecord {
   const { cursoId, turmaId, aulaId, alunoId, status, motivo } = params;
   const key = buildFrequenciaKey({ cursoId, turmaId, aulaId, alunoId });
   const store = readStore();
+  const previous = store[key];
+  const fromStatus = previous?.status ?? "PENDENTE";
+  const fromMotivo = previous?.motivo ?? null;
+
+  const actorRole = params.actorRole ?? null;
+  const canOverride = actorRole ? OVERRIDE_ROLES.has(actorRole) : false;
+
+  if (fromStatus !== "PENDENTE" && !canOverride) {
+    throw new Error("Frequência já lançada e não pode ser alterada.");
+  }
+
+  const motivoNormalized = typeof motivo === "string" ? motivo.trim() : motivo ?? null;
+  const toMotivo =
+    status === "FALTA" || status === "JUSTIFICADA"
+      ? motivoNormalized || null
+      : null;
+
+  if (status === "FALTA" && !toMotivo) {
+    throw new Error("Informe o motivo da falta.");
+  }
+
+  const isNoop =
+    fromStatus === status && (fromMotivo ?? null) === (toMotivo ?? null) && previous;
+  if (isNoop) return previous;
+
+  const nowIso = new Date().toISOString();
   const record: FrequenciaStorageRecord = {
     status,
     fonte: "MANUAL",
-    marcadoEm: new Date().toISOString(),
-    ...(motivo !== undefined ? { motivo } : {}),
+    marcadoEm: nowIso,
+    ...(toMotivo !== undefined ? { motivo: toMotivo } : {}),
   };
   store[key] = record;
   writeStore(store);
+
+  const historyStore = readHistoryStore();
+  const entries = historyStore[key] ?? [];
+  entries.push({
+    fromStatus,
+    toStatus: status,
+    fromMotivo,
+    toMotivo,
+    changedAt: nowIso,
+    actorRole,
+    actorName: params.actorName ?? null,
+    overrideReason: params.overrideReason ?? null,
+  });
+  historyStore[key] = entries;
+  writeHistoryStore(historyStore);
+
   return record;
+}
+
+export function listFrequenciaHistory(ref: FrequenciaRef): FrequenciaHistoryEntry[] {
+  const key = buildFrequenciaKey(ref);
+  const store = readHistoryStore();
+  const items = store[key] ?? [];
+  return items.slice().sort((a, b) => b.changedAt.localeCompare(a.changedAt));
 }

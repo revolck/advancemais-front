@@ -17,9 +17,12 @@ export interface MetricConfig {
   key: string;
   label: string;
   value: number;
-  previousValue: number;
+  previousValue?: number;
   format: (val: number) => string;
   isNegative?: boolean; // Lower is better (e.g., response time)
+  showChange?: boolean;
+  showComparison?: boolean;
+  comparisonLabel?: string;
 }
 
 export type PeriodType = "day" | "week" | "month" | "year" | "custom";
@@ -37,6 +40,14 @@ export interface InteractiveLineChartProps {
   dateFormatter?: (value: string | number) => string;
   showPeriodFilter?: boolean;
   defaultPeriod?: PeriodType;
+  periodType?: PeriodType;
+  onPeriodTypeChange?: (period: PeriodType) => void;
+  dateRange?: DateRange;
+  onDateRangeChange?: (range: DateRange) => void;
+  useServerPeriodData?: boolean;
+  datePickerMinDate?: Date;
+  datePickerMaxDate?: Date;
+  datePickerYears?: "old" | "new" | "default";
   periodTitle?: string;
   periodDescription?: string;
 }
@@ -83,8 +94,18 @@ const CustomTooltip = ({
 // Helper para parsear data (usado no filtro e formatação)
 function parseDateForFilter(dateStr: string | number): Date | null {
   if (typeof dateStr === "string") {
+    // Formato "YYYY-MM" (bucket mensal vindo da API)
+    const yearMonthMatch = dateStr.match(/^(\d{4})-(\d{2})$/);
+    if (yearMonthMatch) {
+      const year = Number(yearMonthMatch[1]);
+      const month = Number(yearMonthMatch[2]);
+      if (Number.isFinite(year) && Number.isFinite(month)) {
+        return new Date(year, Math.max(0, month - 1), 1);
+      }
+    }
+
     // Se for formato "Mês-YYYY", converter para data válida
-    if (dateStr.includes("-") && dateStr.length < 12) {
+    if (/^[A-Za-z]{3}-\d{4}$/.test(dateStr)) {
       const [month, year] = dateStr.split("-");
       const monthMap: Record<string, number> = {
         Jan: 0,
@@ -122,20 +143,49 @@ export function InteractiveLineChart({
   dateFormatter,
   showPeriodFilter = true,
   defaultPeriod = "month",
+  periodType: externalPeriodType,
+  onPeriodTypeChange,
+  dateRange: externalDateRange,
+  onDateRangeChange,
+  useServerPeriodData = false,
+  datePickerMinDate,
+  datePickerMaxDate,
+  datePickerYears = "default",
   periodTitle,
   periodDescription,
 }: InteractiveLineChartProps) {
   const [internalSelectedMetric, setInternalSelectedMetric] = useState<string>(
     selectedMetric || metrics[0]?.key || ""
   );
-  const [periodType, setPeriodType] = useState<PeriodType>(defaultPeriod);
-  const [dateRange, setDateRange] = useState<DateRange>({
+  const [internalPeriodType, setInternalPeriodType] =
+    useState<PeriodType>(defaultPeriod);
+  const [internalDateRange, setInternalDateRange] = useState<DateRange>({
     from: null,
     to: null,
   });
 
+  const periodType = externalPeriodType ?? internalPeriodType;
+  const dateRange = externalDateRange ?? internalDateRange;
+
   const currentMetric = selectedMetric || internalSelectedMetric;
   const metric = metrics.find((m) => m.key === currentMetric);
+
+  const metricsGridClassName = useMemo(() => {
+    const lgCols =
+      metrics.length >= 4
+        ? "lg:grid-cols-4"
+        : metrics.length === 3
+        ? "lg:grid-cols-3"
+        : "lg:grid-cols-2";
+
+    const smCols = metrics.length === 1 ? "sm:grid-cols-1" : "sm:grid-cols-2";
+
+    return cn(
+      "grid grid-cols-1 gap-px rounded-lg overflow-hidden bg-gray-200/60 mb-6",
+      smCols,
+      lgCols
+    );
+  }, [metrics.length]);
 
   const handleMetricClick = (metricKey: string) => {
     if (onMetricChange) {
@@ -147,12 +197,27 @@ export function InteractiveLineChart({
 
   const handlePeriodChange = (newPeriod: PeriodType) => {
     // Limpar sempre o dateRange ao mudar de período
-    setDateRange({ from: null, to: null });
-    setPeriodType(newPeriod);
+    const clearedRange: DateRange = { from: null, to: null };
+
+    if (onDateRangeChange) {
+      onDateRangeChange(clearedRange);
+    } else {
+      setInternalDateRange(clearedRange);
+    }
+
+    if (onPeriodTypeChange) {
+      onPeriodTypeChange(newPeriod);
+    } else {
+      setInternalPeriodType(newPeriod);
+    }
   };
 
   const handleDateRangeChange = (range: DateRange) => {
-    setDateRange(range);
+    if (onDateRangeChange) {
+      onDateRangeChange(range);
+    } else {
+      setInternalDateRange(range);
+    }
   };
 
   // Converter Date para uso no filtro
@@ -167,9 +232,76 @@ export function InteractiveLineChart({
     { value: "custom", label: "Período" },
   ];
 
+  const effectiveDateKey = dateKey || "date";
+
+  const placeholderChartData = useMemo(() => {
+    const buildPoint = (dateValue: string): Record<string, string | number> => {
+      const point: Record<string, string | number> = {
+        [effectiveDateKey]: dateValue,
+      };
+      metrics.forEach((m) => {
+        point[m.key] = Number.isFinite(m.value) ? m.value : 0;
+      });
+      return point;
+    };
+
+    const now = new Date();
+
+    if (periodType === "custom") {
+      if (!startDate || !endDate) return [];
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      start.setHours(0, 0, 0, 0);
+      end.setHours(0, 0, 0, 0);
+      if (start > end) return [];
+
+      const days = eachDayOfInterval({ start, end });
+      return days.map((d) => buildPoint(format(d, "yyyy-MM-dd")));
+    }
+
+    if (periodType === "day") {
+      const base = new Date(now);
+      base.setHours(0, 0, 0, 0);
+      return Array.from({ length: 24 }, (_, hour) => {
+        const d = new Date(base);
+        d.setHours(hour, 0, 0, 0);
+        return buildPoint(format(d, "yyyy-MM-dd'T'HH:00:00"));
+      });
+    }
+
+    if (periodType === "week") {
+      const weekStart = startOfWeek(now, { weekStartsOn: 0 });
+      const weekEnd = endOfWeek(now, { weekStartsOn: 0 });
+      const days = eachDayOfInterval({ start: weekStart, end: weekEnd });
+      return days.map((d) => buildPoint(format(d, "yyyy-MM-dd")));
+    }
+
+    if (periodType === "year") {
+      const months: Record<string, string | number>[] = [];
+      const year = now.getFullYear();
+      for (let monthIndex = 0; monthIndex < 12; monthIndex++) {
+        const d = new Date(year, monthIndex, 1);
+        months.push(buildPoint(format(d, "yyyy-MM")));
+      }
+      return months;
+    }
+
+    // month (default): dias do mês atual (até hoje) para evitar datas futuras
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const monthEnd = new Date(now);
+    monthStart.setHours(0, 0, 0, 0);
+    monthEnd.setHours(0, 0, 0, 0);
+    const days = eachDayOfInterval({ start: monthStart, end: monthEnd });
+    return days.map((d) => buildPoint(format(d, "yyyy-MM-dd")));
+  }, [periodType, startDate, endDate, metrics, effectiveDateKey]);
+
   const filteredData = useMemo(() => {
     if (!data || data.length === 0) {
       return [];
+    }
+
+    if (useServerPeriodData) {
+      return data;
     }
 
     if (periodType === "custom" && startDate && endDate) {
@@ -325,7 +457,7 @@ export function InteractiveLineChart({
 
     // Fallback: retornar todos os dados
     return data;
-  }, [data, periodType, startDate, endDate, dateKey]);
+  }, [data, periodType, startDate, endDate, dateKey, useServerPeriodData]);
 
   // Formatador dinâmico baseado no período selecionado
   const defaultDateFormatter = useMemo(() => {
@@ -430,6 +562,10 @@ export function InteractiveLineChart({
 
   // Processar dados para semana: garantir que todos os dias da semana apareçam
   const processedDataForWeek = useMemo(() => {
+    if (useServerPeriodData) {
+      return filteredData;
+    }
+
     if (periodType !== "week") {
       return filteredData;
     }
@@ -580,10 +716,14 @@ export function InteractiveLineChart({
     }
 
     return weekData;
-  }, [filteredData, periodType, dateKey, metrics]);
+  }, [filteredData, periodType, dateKey, metrics, useServerPeriodData]);
 
   // Agregar dados para período "year" (mostrar por mês em vez de por dia)
   const aggregatedDataForYear = useMemo(() => {
+    if (useServerPeriodData) {
+      return filteredData;
+    }
+
     if (periodType !== "year" || !filteredData || filteredData.length === 0) {
       return filteredData;
     }
@@ -645,7 +785,7 @@ export function InteractiveLineChart({
         const dateB = parseDateForFilter(b[dateKey] as string)?.getTime() || 0;
         return dateA - dateB;
       });
-  }, [filteredData, periodType, currentMetric, dateKey]);
+  }, [filteredData, periodType, currentMetric, dateKey, useServerPeriodData]);
 
   // Dados finais para o gráfico
   const chartData = useMemo(() => {
@@ -658,13 +798,18 @@ export function InteractiveLineChart({
     return filteredData;
   }, [periodType, aggregatedDataForYear, processedDataForWeek, filteredData]);
 
+  const hasRealChartData = chartData.length > 0;
+  const finalChartData = hasRealChartData ? chartData : placeholderChartData;
+  const isPlaceholderSeries =
+    !hasRealChartData && placeholderChartData.length > 0;
+
   // Calcular domínio do eixo Y dinamicamente baseado nos dados do gráfico
   const yAxisDomain = useMemo(() => {
-    if (!chartData || chartData.length === 0) {
+    if (!finalChartData || finalChartData.length === 0) {
       return [0, 100] as [number, number];
     }
 
-    const values = chartData
+    const values = finalChartData
       .map((item) => {
         const value = item[currentMetric];
         return typeof value === "number"
@@ -703,13 +848,13 @@ export function InteractiveLineChart({
     if (yMin < 0) yMin = 0;
 
     return [yMin, yMax] as [number, number];
-  }, [chartData, currentMetric]);
+  }, [finalChartData, currentMetric]);
 
   // Calcular intervalos inteligentes para o eixo X baseado no período
   const xAxisInterval = useMemo(() => {
-    if (!chartData || chartData.length === 0) return undefined;
+    if (!finalChartData || finalChartData.length === 0) return undefined;
 
-    const dataLength = chartData.length;
+    const dataLength = finalChartData.length;
 
     switch (periodType) {
       case "day":
@@ -738,11 +883,11 @@ export function InteractiveLineChart({
       default:
         return 0;
     }
-  }, [chartData, periodType]);
+  }, [finalChartData, periodType]);
 
   // Ajustar formatador do ano para mostrar meses
   const finalDateFormatter = useMemo(() => {
-    if (periodType === "year" && chartData.length > 0) {
+    if (periodType === "year" && finalChartData.length > 0) {
       return (value: string | number, index?: number) => {
         const date = parseDateForFilter(value);
         if (!date || isNaN(date.getTime())) {
@@ -753,7 +898,7 @@ export function InteractiveLineChart({
       };
     }
     return formatDate;
-  }, [periodType, formatDate, chartData.length]);
+  }, [periodType, formatDate, finalChartData.length]);
 
   return (
     <div className={cn("w-full", className)}>
@@ -761,9 +906,9 @@ export function InteractiveLineChart({
       {showPeriodFilter && (periodTitle || periodDescription) && (
         <div className="flex items-center justify-between mb-6">
           <div>
-            {periodTitle && <h3 className="!mb-0">{periodTitle}</h3>}
+            {periodTitle && <h4 className="!mb-0">{periodTitle}</h4>}
             {periodDescription && (
-              <p className="!text-sm !text-gray-600">{periodDescription}</p>
+              <p className="text-sm!">{periodDescription}</p>
             )}
           </div>
 
@@ -790,6 +935,9 @@ export function InteractiveLineChart({
                   placeholder="Selecione o período"
                   size="md"
                   clearable={true}
+                  minDate={datePickerMinDate}
+                  maxDate={datePickerMaxDate}
+                  years={datePickerYears}
                 />
               </div>
             )}
@@ -798,51 +946,71 @@ export function InteractiveLineChart({
       )}
 
       {/* Metrics Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-0 border border-gray-200/60 rounded-lg overflow-hidden mb-6">
+      <div className={metricsGridClassName}>
         {metrics.map((metricItem) => {
+          const showChange = metricItem.showChange !== false;
+          const showComparison = metricItem.showComparison !== false;
+          const comparisonLabel =
+            metricItem.comparisonLabel || "Período anterior";
+          const previousValue = metricItem.previousValue;
+
           const change =
-            ((metricItem.value - metricItem.previousValue) /
-              metricItem.previousValue) *
-            100;
-          const isPositive = metricItem.isNegative ? change < 0 : change > 0;
+            showChange &&
+            typeof previousValue === "number" &&
+            Number.isFinite(previousValue) &&
+            previousValue !== 0
+              ? ((metricItem.value - previousValue) / previousValue) * 100
+              : null;
+
+          const isPositive =
+            metricItem.isNegative && typeof change === "number"
+              ? change < 0
+              : typeof change === "number"
+              ? change > 0
+              : false;
 
           return (
             <button
               key={metricItem.key}
               onClick={() => handleMetricClick(metricItem.key)}
               className={cn(
-                "cursor-pointer flex-1 text-start p-4 border-r border-gray-200/60 last:border-r-0 border-b border-gray-200/60 sm:border-b-0 sm:even:border-r transition-all hover:bg-gray-50",
-                currentMetric === metricItem.key &&
-                  "bg-blue-50 border-blue-200/60"
+                "cursor-pointer flex-1 text-start p-4 bg-white transition-all hover:bg-gray-50",
+                currentMetric === metricItem.key && "bg-blue-50"
               )}
             >
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm text-gray-600">
                   {metricItem.label}
                 </span>
-                <Badge
-                  variant={isPositive ? "default" : "destructive"}
-                  className={cn(
-                    "text-xs flex items-center gap-1",
-                    isPositive
-                      ? "bg-emerald-100 text-emerald-700 border-emerald-200"
-                      : "bg-red-100 text-red-700 border-red-200"
-                  )}
-                >
-                  {isPositive ? (
-                    <ArrowUp className="size-3" />
-                  ) : (
-                    <ArrowDown className="size-3" />
-                  )}
-                  {Math.abs(change).toFixed(1)}%
-                </Badge>
+                {typeof change === "number" && (
+                  <Badge
+                    variant={isPositive ? "default" : "destructive"}
+                    className={cn(
+                      "text-xs flex items-center gap-1",
+                      isPositive
+                        ? "bg-emerald-100 text-emerald-700 border-emerald-200"
+                        : "bg-red-100 text-red-700 border-red-200"
+                    )}
+                  >
+                    {isPositive ? (
+                      <ArrowUp className="size-3" />
+                    ) : (
+                      <ArrowDown className="size-3" />
+                    )}
+                    {Math.abs(change).toFixed(1)}%
+                  </Badge>
+                )}
               </div>
               <div className="text-2xl font-bold text-gray-900">
                 {metricItem.format(metricItem.value)}
               </div>
-              <div className="text-xs text-gray-500 mt-1">
-                de {metricItem.format(metricItem.previousValue)}
-              </div>
+              {showComparison &&
+                typeof previousValue === "number" &&
+                Number.isFinite(previousValue) && (
+                  <div className="text-xs text-gray-500 mt-1">
+                    {comparisonLabel}: {metricItem.format(previousValue)}
+                  </div>
+                )}
             </button>
           );
         })}
@@ -850,166 +1018,168 @@ export function InteractiveLineChart({
 
       {/* Chart */}
       <div className="bg-white rounded-xl border border-gray-200 p-6">
-        {chartData.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-96 text-gray-500">
-            <p className="mb-2">
-              Nenhum dado disponível para o período selecionado
-            </p>
-            <p className="text-xs text-gray-400">
-              Dados recebidos: {data?.length || 0} | Filtrados:{" "}
-              {chartData.length} | Período: {periodType}
-            </p>
-            {data && data.length > 0 && (
-              <p className="text-xs text-gray-400 mt-2">
-                Primeiro dado: {JSON.stringify(data[0])}
-              </p>
-            )}
-          </div>
-        ) : (
-          <ChartContainer
-            config={config}
-            className={cn(
-              "w-full overflow-visible",
-              "[&_.recharts-curve.recharts-tooltip-cursor]:stroke-gray-300"
-            )}
-            style={{ height: `${height}px` }}
-          >
-            <LineChart
-              data={chartData}
-              margin={{
-                top: 20,
-                right: 20,
-                left: 60,
-                bottom: 20,
-              }}
-              style={{ overflow: "visible" }}
-            >
-              {/* Background pattern for chart area */}
-              <defs>
-                <pattern
-                  id="dotGrid"
-                  x="0"
-                  y="0"
-                  width="20"
-                  height="20"
-                  patternUnits="userSpaceOnUse"
-                >
-                  <circle
-                    cx="10"
-                    cy="10"
-                    r="1"
-                    fill="currentColor"
-                    fillOpacity="0.2"
-                  />
-                </pattern>
-                <filter
-                  id="lineShadow"
-                  x="-100%"
-                  y="-100%"
-                  width="300%"
-                  height="300%"
-                >
-                  <feDropShadow
-                    dx="4"
-                    dy="6"
-                    stdDeviation="25"
-                    floodColor={`${
-                      config[currentMetric as keyof typeof config]?.color ||
-                      "#3b82f6"
-                    }60`}
-                  />
-                </filter>
-                <filter
-                  id="dotShadow"
-                  x="-50%"
-                  y="-50%"
-                  width="200%"
-                  height="200%"
-                >
-                  <feDropShadow
-                    dx="2"
-                    dy="2"
-                    stdDeviation="3"
-                    floodColor="rgba(0,0,0,0.5)"
-                  />
-                </filter>
-              </defs>
-
-              {showGrid && (
-                <rect
-                  x="60px"
-                  y="-20px"
-                  width="calc(100% - 80px)"
-                  height="calc(100% - 10px)"
-                  fill="url(#dotGrid)"
-                  style={{ pointerEvents: "none" }}
-                />
-              )}
-
-              <XAxis
-                dataKey={dateKey}
-                axisLine={true}
-                tickLine={true}
-                tick={{ fontSize: 11, fill: "#6b7280" }}
-                tickMargin={10}
-                interval={xAxisInterval}
-                tickFormatter={(value, index) =>
-                  finalDateFormatter(value, index)
-                }
-                stroke="#e5e7eb"
-                angle={periodType === "year" && chartData.length > 6 ? -45 : 0}
-                textAnchor={
-                  periodType === "year" && chartData.length > 6
-                    ? "end"
-                    : "middle"
-                }
-                height={periodType === "year" && chartData.length > 6 ? 60 : 30}
-              />
-
-              <YAxis
-                axisLine={true}
-                tickLine={true}
-                tick={{ fontSize: 11, fill: "#6b7280" }}
-                tickMargin={10}
-                width={60}
-                domain={yAxisDomain}
-                tickCount={6}
-                allowDecimals={false}
-                tickFormatter={(value) => {
-                  if (!metric) return value.toString();
-                  return metric.format(value);
-                }}
-                stroke="#e5e7eb"
-              />
-
-              <ChartTooltip
-                content={<CustomTooltip metrics={metrics} />}
-                cursor={{ strokeDasharray: "3 3", stroke: "#9ca3af" }}
-              />
-
-              <Line
-                type="monotone"
-                dataKey={currentMetric}
-                stroke={
-                  config[currentMetric as keyof typeof config]?.color ||
-                  "#3b82f6"
-                }
-                strokeWidth={2}
-                filter="url(#lineShadow)"
-                dot={false}
-                activeDot={{
-                  r: 6,
-                  fill:
-                    config[currentMetric as keyof typeof config]?.color ||
-                    "#3b82f6",
-                  stroke: "white",
-                  strokeWidth: 2,
-                  filter: "url(#dotShadow)",
-                }}
-              />
-            </LineChart>
-          </ChartContainer>
+        {!hasRealChartData && (
+          <p className="text-xs! text-gray-500! mb-3!">
+            Sem histórico para o período selecionado. Exibindo valores
+            agregados.
+          </p>
         )}
+        <ChartContainer
+          config={config}
+          className={cn(
+            "w-full overflow-visible",
+            "[&_.recharts-curve.recharts-tooltip-cursor]:stroke-gray-300"
+          )}
+          style={{ height: `${height}px` }}
+        >
+          <LineChart
+            data={finalChartData}
+            margin={{
+              top: 20,
+              right: 20,
+              left: 60,
+              bottom: 20,
+            }}
+            style={{ overflow: "visible" }}
+          >
+            {/* Background pattern for chart area */}
+            <defs>
+              <pattern
+                id="dotGrid"
+                x="0"
+                y="0"
+                width="20"
+                height="20"
+                patternUnits="userSpaceOnUse"
+              >
+                <circle
+                  cx="10"
+                  cy="10"
+                  r="1"
+                  fill="currentColor"
+                  fillOpacity="0.2"
+                />
+              </pattern>
+              <filter
+                id="lineShadow"
+                x="-100%"
+                y="-100%"
+                width="300%"
+                height="300%"
+              >
+                <feDropShadow
+                  dx="4"
+                  dy="6"
+                  stdDeviation="25"
+                  floodColor={`${
+                    config[currentMetric as keyof typeof config]?.color ||
+                    "#3b82f6"
+                  }60`}
+                />
+              </filter>
+              <filter
+                id="dotShadow"
+                x="-50%"
+                y="-50%"
+                width="200%"
+                height="200%"
+              >
+                <feDropShadow
+                  dx="2"
+                  dy="2"
+                  stdDeviation="3"
+                  floodColor="rgba(0,0,0,0.5)"
+                />
+              </filter>
+            </defs>
+
+            {showGrid && (
+              <rect
+                x="60px"
+                y="-20px"
+                width="calc(100% - 80px)"
+                height="calc(100% - 10px)"
+                fill="url(#dotGrid)"
+                style={{ pointerEvents: "none" }}
+              />
+            )}
+
+            <XAxis
+              dataKey={effectiveDateKey}
+              axisLine={true}
+              tickLine={true}
+              tick={{ fontSize: 11, fill: "#6b7280" }}
+              tickMargin={10}
+              interval={xAxisInterval}
+              tickFormatter={(value, index) => finalDateFormatter(value, index)}
+              stroke="#e5e7eb"
+              angle={
+                periodType === "year" && finalChartData.length > 6 ? -45 : 0
+              }
+              textAnchor={
+                periodType === "year" && finalChartData.length > 6
+                  ? "end"
+                  : "middle"
+              }
+              height={
+                periodType === "year" && finalChartData.length > 6 ? 60 : 30
+              }
+            />
+
+            <YAxis
+              axisLine={true}
+              tickLine={true}
+              tick={{ fontSize: 11, fill: "#6b7280" }}
+              tickMargin={10}
+              width={60}
+              domain={yAxisDomain}
+              tickCount={6}
+              allowDecimals={false}
+              tickFormatter={(value) => {
+                if (!metric) return value.toString();
+                return metric.format(value);
+              }}
+              stroke="#e5e7eb"
+            />
+
+            <ChartTooltip
+              content={<CustomTooltip metrics={metrics} />}
+              cursor={{ strokeDasharray: "3 3", stroke: "#9ca3af" }}
+            />
+
+            <Line
+              type="monotone"
+              dataKey={currentMetric}
+              stroke={
+                config[currentMetric as keyof typeof config]?.color || "#3b82f6"
+              }
+              strokeWidth={2}
+              filter={isPlaceholderSeries ? undefined : "url(#lineShadow)"}
+              strokeDasharray={isPlaceholderSeries ? "6 4" : undefined}
+              dot={
+                isPlaceholderSeries
+                  ? {
+                      r: 2,
+                      fill:
+                        config[currentMetric as keyof typeof config]?.color ||
+                        "#3b82f6",
+                      stroke: "white",
+                      strokeWidth: 1,
+                    }
+                  : false
+              }
+              activeDot={{
+                r: 6,
+                fill:
+                  config[currentMetric as keyof typeof config]?.color ||
+                  "#3b82f6",
+                stroke: "white",
+                strokeWidth: 2,
+                filter: "url(#dotShadow)",
+              }}
+            />
+          </LineChart>
+        </ChartContainer>
       </div>
     </div>
   );

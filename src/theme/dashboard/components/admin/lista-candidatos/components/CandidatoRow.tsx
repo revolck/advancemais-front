@@ -2,7 +2,7 @@
 
 import React, { useMemo, useCallback, useState } from "react";
 import { TableCell, TableRow } from "@/components/ui/table";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { AvatarCustom } from "@/components/ui/custom/avatar";
 import { Button } from "@/components/ui/button";
 import {
   ChevronRight,
@@ -240,12 +240,12 @@ export function CandidatoRow({
     >
       <TableCell className="py-4">
         <div className="flex items-start gap-3">
-          <Avatar className="h-10 w-10">
-            <AvatarImage src={candidato.avatarUrl || undefined} />
-            <AvatarFallback className="bg-blue-100 text-blue-600">
-              {getCandidatoInitials(candidato.nomeCompleto)}
-            </AvatarFallback>
-          </Avatar>
+          <AvatarCustom
+            name={candidato.nomeCompleto}
+            src={candidato.avatarUrl || undefined}
+            size="sm"
+            showStatus={false}
+          />
           <div className="flex flex-col">
             <div className="flex items-center gap-2">
               <span className="font-medium text-gray-900">

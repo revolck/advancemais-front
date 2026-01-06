@@ -106,6 +106,12 @@ export function CourseCatalog({
     window.open(detailsUrl, "_blank", "noopener,noreferrer");
   };
 
+  const handleEnroll = (course: CourseData) => {
+    if (typeof window === "undefined") return;
+    if (!course?.id) return;
+    window.location.href = `/cursos/${course.id}#turmas`;
+  };
+
   const handleSearch = () => {
     setIsSearching(true);
     if (apiResult?.refetch) {
@@ -185,6 +191,7 @@ export function CourseCatalog({
                           course={course}
                           index={index}
                           onViewDetails={handleViewDetails}
+                          onEnroll={handleEnroll}
                         />
                       ))
                     : null}

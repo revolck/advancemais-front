@@ -83,4 +83,3 @@ export interface SetorDeVagasMetricas {
 export interface SetorDeVagasMetricasResponse {
   metricasGerais: SetorDeVagasMetricas;
 }
-

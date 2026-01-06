@@ -18,8 +18,8 @@ import { formatCursoStatus, getCursoStatusBadgeClasses } from "../utils";
 
 interface HeaderInfoProps {
   curso: Curso & {
-    categoria?: { id: number; nome: string };
-    subcategoria?: { id: number; nome: string };
+    categoria?: { id: number | string; nome: string };
+    subcategoria?: { id: number | string; nome: string };
   };
   onEditCurso?: () => void;
 }

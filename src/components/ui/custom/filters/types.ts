@@ -3,7 +3,7 @@ import type { DateRange } from "@/components/ui/custom/date-picker";
 import type { MaskType } from "@/types/components/input";
 
 export type FilterMode = "single" | "multiple";
-export type FilterType = "select" | "date-range" | "text";
+export type FilterType = "select" | "date-range" | "date" | "text";
 
 export interface FilterField {
   key: string;
@@ -15,18 +15,24 @@ export interface FilterField {
   disabled?: boolean; // quando true, componente fica desabilitado
   emptyPlaceholder?: string; // placeholder quando não há opções
   mask?: MaskType; // máscara para campos de texto (ex: "money")
+  required?: boolean; // usado principalmente em campos de data/texto
+  minDate?: Date;
+  maxDate?: Date;
+  clearable?: boolean;
 }
 
 export type FilterValues = Record<
   string,
-  string | string[] | DateRange | null | undefined
+  string | string[] | DateRange | Date | null | undefined
 >;
 
 export interface FilterBarProps {
   className?: string;
+  gridClassName?: string;
+  rightActionsClassName?: string;
   fields: FilterField[];
   values: FilterValues;
-  onChange: (key: string, value: string | string[] | DateRange | null) => void;
+  onChange: (key: string, value: string | string[] | DateRange | Date | null) => void;
   onClearAll?: () => void;
   search?: {
     label?: string;

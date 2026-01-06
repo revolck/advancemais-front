@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   ModalCustom,
@@ -50,7 +50,10 @@ export function EditarStatusCandidatoModal({
     staleTime: 5 * 60 * 1000, // Cache de 5 minutos
   });
 
-  const statusList = statusResponse?.data ?? [];
+  const statusList = useMemo(
+    () => statusResponse?.data ?? [],
+    [statusResponse?.data]
+  );
 
   // Converter lista de status para opções do select
   const statusOptions = statusList.map((status) => ({

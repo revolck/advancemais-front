@@ -108,9 +108,19 @@ export function SelectCustom(props: SelectCustomProps) {
 
   // Single and User modes share
   const options = props.mode !== "multiple" ? (props.options as SelectOption[] | UserOption[]) : null;
-  const value = props.mode !== "multiple" ? (props.value as string | null) : null;
+  const value =
+    props.mode !== "multiple" ? ((props.value ?? null) as string | null) : null;
   const onChange = props.mode !== "multiple" ? (props.onChange as (v: string | null) => void) : null;
   const searchableSingle = props.mode !== "multiple" ? ((props as any).searchable ?? true) : false;
+  const selectValue = props.mode !== "multiple" ? value ?? "" : "";
+  const handleCommandWheel = (event: React.WheelEvent<HTMLDivElement>) => {
+    if (!event.currentTarget) return;
+    const { deltaY, deltaX } = event;
+    if (Math.abs(deltaY) <= Math.abs(deltaX)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    event.currentTarget.scrollTop += deltaY;
+  };
   
   // Hooks movidos para fora do condicional para evitar erro de hooks condicionais
   // Usa useMemo para recalcular quando value ou options mudam (apenas para searchable single)
@@ -211,12 +221,16 @@ export function SelectCustom(props: SelectCustomProps) {
                     Nenhuma opção encontrada
                   </div>
                 </CommandEmpty>
-                <CommandList className="max-h-72 overflow-y-auto pr-0 pb-1.5 scrollbar-thin scrollbar-thumb-gray-400/50 hover:scrollbar-thumb-gray-400/70 scrollbar-track-transparent">
+                <CommandList
+                  onWheel={handleCommandWheel}
+                  className="max-h-72 overflow-y-auto pr-0 pb-1.5 scrollbar-thin scrollbar-thumb-gray-400/50 hover:scrollbar-thumb-gray-400/70 scrollbar-track-transparent"
+                >
                   <CommandGroup>
                     {(options as SelectOption[]).map((opt) => (
                       <CommandItem
-                        key={opt.value}
-                        value={opt.label}
+                        key={opt.value || "__select_empty__"}
+                        value={opt.value || "__select_empty__"}
+                        keywords={[opt.label]}
                         disabled={opt.disabled}
                         onSelect={() => {
                           if (onChange) {
@@ -269,7 +283,7 @@ export function SelectCustom(props: SelectCustomProps) {
           </Label>
         )}
         <Select
-          value={value ?? undefined}
+          value={selectValue}
           onValueChange={(v) => {
             if (onChange) {
               onChange(v === "empty" ? null : v || null);
@@ -297,14 +311,12 @@ export function SelectCustom(props: SelectCustomProps) {
                 options={options as UserOption[]}
                 placeholder={placeholder}
               />
-            ) : (
-              <>
-                {disabled && !value && placeholder ? (
-                  <span className="text-muted-foreground">{placeholder}</span>
-            ) : (
+            ) : disabled && !value && placeholder ? (
+              <span className="text-muted-foreground">{placeholder}</span>
+            ) : value ? (
               <SelectValue placeholder={placeholder} />
-                )}
-              </>
+            ) : (
+              <span className="text-muted-foreground">{placeholder}</span>
             )}
           </SelectTrigger>
           <SelectContent
@@ -433,14 +445,18 @@ export function SelectCustom(props: SelectCustomProps) {
                 {multipleValue.length} selecionado{multipleValue.length > 1 ? "s" : ""}
               </div>
             )}
-            <CommandList className="max-h-72 overflow-y-auto pr-0 pb-1.5 scrollbar-thin scrollbar-thumb-gray-400/50 hover:scrollbar-thumb-gray-400/70 scrollbar-track-transparent">
+            <CommandList
+              onWheel={handleCommandWheel}
+              className="max-h-72 overflow-y-auto pr-0 pb-1.5 scrollbar-thin scrollbar-thumb-gray-400/50 hover:scrollbar-thumb-gray-400/70 scrollbar-track-transparent"
+            >
               <CommandGroup>
                 {multipleOptions.map((opt) => {
                   const checked = multipleValue.includes(opt.value);
                   return (
                     <CommandItem
-                      key={opt.value}
-                      value={opt.label}
+                      key={opt.value || "__select_empty__"}
+                      value={opt.value || "__select_empty__"}
+                      keywords={[opt.label]}
                       onSelect={() => {
                         const next = checked
                           ? multipleValue.filter((v) => v !== opt.value)

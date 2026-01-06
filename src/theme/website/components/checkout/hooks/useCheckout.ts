@@ -170,8 +170,8 @@ export function useCheckout(
             nome: response.nome,
             valor: response.valor,
             valorNumerico: parsePrice(response.valor),
-            descricao: response.descricao,
-            icon: response.icon,
+            descricao: response.descricao ?? undefined,
+            icon: response.icon ?? undefined,
           });
         } else {
           setState((s) => ({

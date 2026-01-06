@@ -26,6 +26,7 @@ import {
   TYPE_META,
   VAGA_TYPES,
   formatRelativeTime,
+  getNotificationAction,
 } from "@/theme/dashboard/utils/notifications";
 import { CardsStatistics } from "@/components/ui/custom/cards-statistics";
 import type { StatisticCard } from "@/components/ui/custom/cards-statistics";
@@ -44,7 +45,7 @@ export default function DashboardNotificationsPage() {
 
   const { data, isLoading, isFetching, isError, refetch } =
     useNotifications(listParams);
-  const allNotifications = data?.data ?? [];
+  const allNotifications = useMemo(() => data?.data ?? [], [data?.data]);
   const unreadCount = getUnreadCount(data) ?? 0;
 
   // Mostra skeleton apenas no carregamento inicial (não durante refetch)
@@ -79,11 +80,12 @@ export default function DashboardNotificationsPage() {
     const hasLongMessage = notification.mensagem.length > 120;
     const hasExtraData =
       notification.dados && Object.keys(notification.dados).length > 0;
+    const action = getNotificationAction(notification);
 
     if (hasLongMessage || hasExtraData) {
       setSelectedNotification(notification);
-    } else if (notification.linkAcao) {
-      router.push(notification.linkAcao);
+    } else if (action.href) {
+      router.push(action.href);
     }
   };
 
@@ -110,13 +112,10 @@ export default function DashboardNotificationsPage() {
   const handleModalClose = () => setSelectedNotification(null);
 
   const handleModalAction = () => {
-    if (selectedNotification?.linkAcao) {
-      const route = selectedNotification.linkAcao;
-      setSelectedNotification(null);
-      router.push(route);
-    } else {
-      setSelectedNotification(null);
-    }
+    if (!selectedNotification) return;
+    const action = getNotificationAction(selectedNotification);
+    setSelectedNotification(null);
+    if (action.href) router.push(action.href);
   };
 
   const handleMarkAll = () => {
@@ -480,18 +479,18 @@ export default function DashboardNotificationsPage() {
 
                         {/* Botões de ação */}
                         <div className="flex items-center gap-2">
-                          {/* Ver vaga */}
-                          {notification.linkAcao && (
+                          {getNotificationAction(notification).href && (
                             <ButtonCustom
                               variant="primary"
                               size="sm"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                router.push(notification.linkAcao!);
+                                const action = getNotificationAction(notification);
+                                if (action.href) router.push(action.href);
                               }}
                               className="!h-7 !text-xs !px-3"
                             >
-                              Ver vaga
+                              {getNotificationAction(notification).label ?? "Ver detalhes"}
                             </ButtonCustom>
                           )}
 
@@ -626,9 +625,9 @@ export default function DashboardNotificationsPage() {
               <ButtonCustom variant="ghost" onClick={handleModalClose}>
                 Fechar
               </ButtonCustom>
-              {selectedNotification.linkAcao && (
+              {getNotificationAction(selectedNotification).href && (
                 <ButtonCustom variant="primary" onClick={handleModalAction}>
-                  Ver detalhes
+                  {getNotificationAction(selectedNotification).label ?? "Ver detalhes"}
                 </ButtonCustom>
               )}
             </ModalFooter>

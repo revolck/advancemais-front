@@ -18,6 +18,10 @@ export type MockAtividadeProva = {
   inicio: string; // ISO
   fim: string; // ISO
   status: "RASCUNHO" | "PUBLICADA";
+  // Campos opcionais (compat com provas/atividades reais)
+  recuperacaoFinal?: boolean;
+  valeNota?: boolean;
+  peso?: number;
 };
 
 export const MOCK_ATIVIDADES_PROVAS: MockAtividadeProva[] = [
@@ -60,6 +64,8 @@ export const MOCK_ATIVIDADES_PROVAS: MockAtividadeProva[] = [
     inicio: "2025-12-27T00:00:00.000Z",
     fim: "2025-12-28T23:59:59.999Z",
     status: "RASCUNHO",
+    recuperacaoFinal: true,
+    valeNota: true,
+    peso: 2,
   },
 ];
-

@@ -10,6 +10,8 @@ import {
   VisaoGeralPedagogico,
   VisaoGeralSetorDeVagas,
   VisaoGeralEmpresa,
+  VisaoGeralRecrutador,
+  VisaoGeralAlunoCandidato,
 } from "@/theme/dashboard/components/visao-geral";
 
 export default function DashboardPage() {
@@ -44,6 +46,10 @@ export default function DashboardPage() {
         return <VisaoGeralSetorDeVagas />;
       case UserRole.EMPRESA:
         return <VisaoGeralEmpresa />;
+      case UserRole.RECRUTADOR:
+        return <VisaoGeralRecrutador />;
+      case UserRole.ALUNO_CANDIDATO:
+        return <VisaoGeralAlunoCandidato />;
       default:
         return (
           <div className="rounded-xl border border-gray-200 bg-white p-8 text-center">

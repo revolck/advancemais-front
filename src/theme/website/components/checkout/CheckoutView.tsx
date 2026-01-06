@@ -3,7 +3,7 @@
 "use client";
 
 import React, { useEffect, useState, useCallback, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Clock, CreditCard, Shield } from "lucide-react";
 import { ButtonCustom } from "@/components/ui/custom/button";
@@ -14,7 +14,7 @@ import {
   registerConfirmedPayment,
   type CheckoutSession,
 } from "@/lib/checkout-session";
-import { startCheckout } from "@/api/mercadopago";
+import { createSinglePayment, startCheckout } from "@/api/mercadopago";
 import type { CheckoutIntent, MetodoPagamento } from "@/api/mercadopago/types";
 import { validateCupom } from "@/api/cupons";
 import {
@@ -66,12 +66,45 @@ const useIsRealHttps = () => {
   return isHttps;
 };
 
+function getCookieValue(name: string): string | null {
+  if (typeof document === "undefined") return null;
+  const cookie = document.cookie
+    .split("; ")
+    .find((row) => row.startsWith(`${name}=`));
+  return cookie?.split("=")[1] || null;
+}
+
+const PENDING_COURSE_PURCHASE_KEY = "pending_course_purchase_v1";
+
 export const CheckoutView: React.FC<CheckoutViewProps> = ({
   sessionId,
   securityToken,
   className,
 }) => {
   const router = useRouter();
+  const pathname = usePathname() || "";
+
+  const checkoutRootPath = useMemo(() => {
+    const isDashboardPath =
+      pathname === "/dashboard" || pathname.startsWith("/dashboard/");
+    return isDashboardPath ? "/dashboard/checkout" : "/checkout";
+  }, [pathname]);
+
+  const checkoutResultPaths = useMemo(() => {
+    return {
+      success: `${checkoutRootPath}/sucesso`,
+      failure: `${checkoutRootPath}/falha`,
+      pending: `${checkoutRootPath}/pendente`,
+      courseSuccess: `${checkoutRootPath}/curso/sucesso`,
+      courseFailure: `${checkoutRootPath}/curso/falha`,
+      coursePending: `${checkoutRootPath}/curso/pendente`,
+    };
+  }, [checkoutRootPath]);
+
+  const currentPathWithQuery = useMemo(() => {
+    if (typeof window === "undefined") return checkoutRootPath;
+    return `${window.location.pathname}${window.location.search}`;
+  }, [checkoutRootPath]);
 
   // Dados do checkout
   const {
@@ -242,13 +275,15 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
   const handleSubmitPayment = async () => {
     if (!session) return;
 
+    if (session.productType === "curso") return;
+
     // Verifica se o usuário está autenticado
     if (!userId) {
       toastCustom.error({
         title: "Autenticação necessária",
         description: "Você precisa estar logado para finalizar a compra.",
       });
-      router.push(`/auth/login?redirect=/checkout?sid=${session.sessionId}`);
+      router.push(`/auth/login?redirect=${encodeURIComponent(currentPathWithQuery)}`);
       return;
     }
 
@@ -289,15 +324,15 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
         aceitouTermosUserAgent: navigator.userAgent,
 
         // URLs de retorno (inclui dados do plano para retry em caso de falha)
-        successUrl: `${window.location.origin}/checkout/sucesso`,
-        failureUrl: `${
-          window.location.origin
-        }/checkout/falha?plan_id=${encodeURIComponent(
+        successUrl: `${window.location.origin}${checkoutResultPaths.success}`,
+        failureUrl: `${window.location.origin}${
+          checkoutResultPaths.failure
+        }?plan_id=${encodeURIComponent(
           session.productId
         )}&plan_name=${encodeURIComponent(session.productName)}&plan_price=${
           session.productPrice
         }`,
-        pendingUrl: `${window.location.origin}/checkout/pendente`,
+        pendingUrl: `${window.location.origin}${checkoutResultPaths.pending}`,
       };
 
       // Para pagamento único (PIX/Boleto), informar o tipo de pagamento e dados do pagador
@@ -514,7 +549,7 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
           session?.productName
         );
         router.push(
-          `/checkout/sucesso${
+          `${checkoutResultPaths.success}${
             paymentId !== "internal" ? `?payment_id=${paymentId}` : ""
           }`
         );
@@ -532,7 +567,7 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
           session?.productName
         );
         router.push(
-          `/checkout/pendente${
+          `${checkoutResultPaths.pending}${
             paymentId !== "internal" ? `?payment_id=${paymentId}` : ""
           }`
         );
@@ -558,7 +593,7 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
           session?.productName
         );
         router.push(
-          `/checkout/sucesso${
+          `${checkoutResultPaths.success}${
             subscriptionId !== "subscription"
               ? `?payment_id=${subscriptionId}`
               : ""
@@ -589,9 +624,7 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
             title: "Sessão expirada",
             description: "Você será redirecionado para fazer login novamente.",
           });
-          router.push(
-            `/auth/login?redirect=/checkout?sid=${session.sessionId}`
-          );
+          router.push(`/auth/login?redirect=${encodeURIComponent(currentPathWithQuery)}`);
           return;
         } else if (
           error.message.includes("403") ||
@@ -729,8 +762,8 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
       session?.sessionId,
       session?.productName
     );
-    router.push("/checkout/sucesso");
-  }, [router, session?.sessionId, session?.productName]);
+    router.push(checkoutResultPaths.success);
+  }, [router, session?.sessionId, session?.productName, checkoutResultPaths.success]);
 
   // Callback para ir para a página inicial
   const handleGoHome = useCallback(() => {
@@ -779,6 +812,136 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
     return true;
   };
 
+  const courseMetadata = useMemo(() => {
+    if (!session || session.productType !== "curso") return null;
+
+    const raw = (session.metadata || {}) as Record<string, unknown>;
+    const cursoId = typeof raw.cursoId === "string" ? raw.cursoId : null;
+    const cursoNome = typeof raw.cursoNome === "string" ? raw.cursoNome : null;
+    const turmaIdRaw = typeof raw.turmaId === "string" ? raw.turmaId : null;
+    const turmaNome = typeof raw.turmaNome === "string" ? raw.turmaNome : null;
+    const dataInicio = typeof raw.dataInicio === "string" ? raw.dataInicio : null;
+    const dataFim = typeof raw.dataFim === "string" ? raw.dataFim : null;
+    const maxInstallments =
+      typeof raw.maxInstallments === "number" && raw.maxInstallments > 0
+        ? raw.maxInstallments
+        : 12;
+
+    return {
+      cursoId,
+      cursoNome,
+      turmaId: turmaIdRaw ?? session.productId,
+      turmaNome,
+      dataInicio,
+      dataFim,
+      maxInstallments,
+    };
+  }, [session]);
+
+  const courseCheckoutStartedRef = React.useRef(false);
+
+  const startCourseCheckout = useCallback(async () => {
+    if (!session || session.productType !== "curso") return;
+
+    const token = getCookieValue("token");
+    if (!token) {
+      const redirect = `${window.location.pathname}${window.location.search}`;
+      router.push(`/auth/login?redirect=${encodeURIComponent(redirect)}`);
+      return;
+    }
+
+    if (!userId) {
+      const redirect = `${window.location.pathname}${window.location.search}`;
+      router.push(`/auth/login?redirect=${encodeURIComponent(redirect)}`);
+      return;
+    }
+
+    if (!courseMetadata?.cursoId || !courseMetadata?.turmaId) {
+      toastCustom.error({
+        title: "Sessão inválida",
+        description: "Não foi possível identificar o curso/turma desta compra.",
+      });
+      router.push(session.originUrl || "/cursos");
+      return;
+    }
+
+    if (!session.productPrice || session.productPrice <= 0) {
+      toastCustom.error({
+        title: "Turma gratuita",
+        description: "Esta turma não exige pagamento. Volte para se matricular.",
+      });
+      router.push(session.originUrl || `/cursos/${encodeURIComponent(courseMetadata.cursoId)}#turmas`);
+      return;
+    }
+
+    setIsProcessing(true);
+
+    try {
+      const turmaNome = courseMetadata.turmaNome || "Turma";
+
+      localStorage.setItem(
+        PENDING_COURSE_PURCHASE_KEY,
+        JSON.stringify({
+          cursoId: courseMetadata.cursoId,
+          cursoNome: courseMetadata.cursoNome || "Curso",
+          turmaId: courseMetadata.turmaId,
+          turmaNome,
+          valor: session.productPrice,
+          createdAt: Date.now(),
+        })
+      );
+
+      const baseUrl = window.location.origin;
+      const externalReference = `curso:${courseMetadata.cursoId}:turma:${courseMetadata.turmaId}:session:${session.sessionId}:aluno:${userId}`;
+
+      const response = await createSinglePayment(
+        {
+          usuarioId: userId,
+          items: [
+            {
+              id: courseMetadata.turmaId,
+              title: session.productName,
+              description: "Matrícula em turma (pagamento único)",
+              quantity: 1,
+              unit_price: session.productPrice,
+              currency_id: session.currency || "BRL",
+            },
+          ],
+          installments: courseMetadata.maxInstallments,
+          successUrl: `${baseUrl}${checkoutResultPaths.courseSuccess}`,
+          failureUrl: `${baseUrl}${checkoutResultPaths.courseFailure}`,
+          pendingUrl: `${baseUrl}${checkoutResultPaths.coursePending}`,
+          externalReference,
+          metadata: {
+            checkoutSessionId: session.sessionId,
+            cursoId: courseMetadata.cursoId,
+            turmaId: courseMetadata.turmaId,
+            turmaNome,
+          },
+        },
+        token
+      );
+
+      if (!response?.initPoint) {
+        throw new Error("Não foi possível iniciar o checkout.");
+      }
+
+      window.location.href = response.initPoint;
+    } catch (error: any) {
+      const message =
+        error?.message || "Não foi possível iniciar o pagamento. Tente novamente.";
+      toastCustom.error({ title: "Erro ao iniciar pagamento", description: message });
+      setIsProcessing(false);
+    }
+  }, [courseMetadata, router, session, userId]);
+
+  useEffect(() => {
+    if (!session || session.productType !== "curso") return;
+    if (courseCheckoutStartedRef.current) return;
+    courseCheckoutStartedRef.current = true;
+    startCourseCheckout();
+  }, [session, startCourseCheckout]);
+
   // Loading
   if (isValidating || isDataLoading) {
     return <CheckoutSkeleton />;
@@ -799,8 +962,114 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
             Sua sessão de pagamento expirou por segurança.
           </p>
           <ButtonCustom variant="primary" fullWidth onClick={handleBack}>
-            Voltar aos planos
+            Voltar
           </ButtonCustom>
+        </div>
+      </div>
+    );
+  }
+
+  if (session.productType === "curso") {
+    const startLabel = courseMetadata?.dataInicio
+      ? new Date(courseMetadata.dataInicio).toLocaleDateString("pt-BR")
+      : null;
+    const endLabel = courseMetadata?.dataFim
+      ? new Date(courseMetadata.dataFim).toLocaleDateString("pt-BR")
+      : null;
+    const dateRange =
+      startLabel && endLabel
+        ? `${startLabel} — ${endLabel}`
+        : startLabel
+        ? `Início: ${startLabel}`
+        : null;
+
+    return (
+      <div
+        className={cn(
+          "min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50",
+          className
+        )}
+      >
+        <div className="container mx-auto px-4 py-10">
+          <div className="max-w-2xl mx-auto">
+            <div className="rounded-3xl border border-zinc-100 bg-white shadow-xl shadow-zinc-200/40 overflow-hidden">
+              <div className="px-6 sm:px-8 py-8 bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-700 text-white">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-white/75">
+                      Checkout seguro
+                    </p>
+                    <h1 className="mt-1 text-xl sm:text-2xl font-bold">
+                      {courseMetadata?.cursoNome || session.productName}
+                    </h1>
+                    {courseMetadata?.turmaNome ? (
+                      <p className="mt-1 text-sm text-white/85">
+                        {courseMetadata.turmaNome}
+                      </p>
+                    ) : null}
+                  </div>
+                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/15 backdrop-blur-sm">
+                    <Shield className="h-5 w-5" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="px-6 sm:px-8 py-8 space-y-5">
+                <div className="rounded-2xl border border-zinc-100 bg-zinc-50 p-5">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <div className="text-xs font-semibold uppercase text-zinc-500">
+                        Total
+                      </div>
+                      <div className="mt-1 text-2xl font-bold text-zinc-900">
+                        {formatPrice(session.productPrice || 0)}
+                      </div>
+                      {dateRange ? (
+                        <div className="mt-2 text-sm text-zinc-600">
+                          Período:{" "}
+                          <span className="font-medium">{dateRange}</span>
+                        </div>
+                      ) : null}
+                      <div className="mt-2 text-sm text-zinc-600">
+                        Cartão de crédito em até{" "}
+                        <span className="font-semibold">
+                          {courseMetadata?.maxInstallments || 12}x sem juros
+                        </span>
+                        .
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-zinc-600">
+                      <CreditCard className="h-4 w-4" />
+                      Mercado Pago
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <ButtonCustom
+                    variant="primary"
+                    fullWidth
+                    isLoading={isProcessing}
+                    onClick={startCourseCheckout}
+                  >
+                    Continuar para pagamento
+                  </ButtonCustom>
+                  <ButtonCustom
+                    variant="outline"
+                    fullWidth
+                    disabled={isProcessing}
+                    onClick={handleBack}
+                  >
+                    Voltar
+                  </ButtonCustom>
+                  <p className="text-xs text-zinc-500 text-center">
+                    Você será redirecionado para finalizar o pagamento com
+                    segurança.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );

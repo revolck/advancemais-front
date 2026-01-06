@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ButtonCustom, EmptyState, FilterBar } from "@/components/ui/custom";
 import {
@@ -30,6 +31,8 @@ import {
 } from "../shared/filterUtils";
 import { EstagioRow } from "./components/EstagioRow";
 import { EstagioTableSkeleton } from "./components/EstagioTableSkeleton";
+import { useUserRole } from "@/hooks/useUserRole";
+import { UserRole } from "@/config/roles";
 
 const SEARCH_HELPER_TEXT = "Pesquise por nome, código do aluno ou CPF.";
 
@@ -48,6 +51,16 @@ export interface EstagiosDashboardProps {
 }
 
 export function EstagiosDashboard({ className }: EstagiosDashboardProps) {
+  const role = useUserRole();
+  const router = useRouter();
+  const canCreate = useMemo(
+    () =>
+      role === UserRole.ADMIN ||
+      role === UserRole.MODERADOR ||
+      role === UserRole.PEDAGOGICO,
+    [role]
+  );
+
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
   const [selectedTurmaId, setSelectedTurmaId] = useState<string | null>(null);
   const [pendingSearchTerm, setPendingSearchTerm] = useState("");
@@ -377,7 +390,22 @@ export function EstagiosDashboard({ className }: EstagiosDashboardProps) {
   const showTable = !showEmptyState && (loading || (hasFetched && sortedEstagios.length > 0));
 
   return (
-    <div className={cn("min-h-full", className)}>
+    <div className={cn("min-h-full space-y-4", className)}>
+      {canCreate && (
+        <div className="mb-4 flex flex-col items-stretch gap-3 sm:mb-2 sm:flex-row sm:items-center sm:justify-end">
+          <ButtonCustom
+            variant="primary"
+            size="md"
+            icon="Plus"
+            fullWidth
+            className="sm:w-auto"
+            onClick={() => router.push("/dashboard/cursos/estagios/cadastrar")}
+          >
+            Cadastrar estágio
+          </ButtonCustom>
+        </div>
+      )}
+
       <div className="border-b border-gray-200 top-0 z-10">
         <div className="py-4">
           <FilterBar

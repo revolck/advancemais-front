@@ -267,7 +267,7 @@ export function VisaoGeralDashboard() {
 
       {/* Faturamento - Full Width */}
       <div>
-        <FaturamentoSection data={response.faturamento} isLoading={isLoading} />
+        <FaturamentoSection isLoading={isLoading} />
       </div>
 
       {/* Cursos Cards Grid with Tabs */}
