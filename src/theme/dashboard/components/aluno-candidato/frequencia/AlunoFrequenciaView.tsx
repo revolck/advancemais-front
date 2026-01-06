@@ -59,7 +59,7 @@ interface FrequenciaListItem {
   evidence?: {
     ultimoLogin?: string | null;
     tempoAoVivoMin?: number | null;
-  };
+  } | null;
 }
 
 function getStatusConfig(status: FrequenciaListItem["statusAtual"]) {
@@ -243,7 +243,7 @@ export function AlunoFrequenciaView() {
           justificativa: freq.justificativa,
           observacoes: freq.observacoes,
           dataReferencia: freq.dataReferencia,
-          evidence: freq.evidence,
+          evidence: freq.evidence ?? undefined,
         }));
 
         return { items };

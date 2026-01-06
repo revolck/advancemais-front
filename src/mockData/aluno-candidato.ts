@@ -121,7 +121,7 @@ export interface MockFrequenciaItemData {
   evidence?: {
     ultimoLogin?: string | null;
     tempoAoVivoMin?: number | null;
-  };
+  } | null;
 }
 
 export interface AlunoCandidatoOverviewData {
@@ -767,7 +767,7 @@ export function getMockAlunoNotas(cursoId?: string | null): MockNotaItemData[] {
  */
 export function getMockAlunoFrequencias(
   cursoId?: string | null,
-  aulaId?: string | null,
+  aulaId?: string | null
 ): MockFrequenciaItemData[] {
   const allFrequencias = MOCK_ALUNO_CANDIDATO_DATA.frequencias ?? [];
 
@@ -788,7 +788,7 @@ export function getMockAlunoFrequencias(
  * Retorna os certificados mockados do aluno/candidato
  */
 export function getMockAlunoCertificados(
-  cursoId?: string | null,
+  cursoId?: string | null
 ): MockCertificadoItemData[] {
   const allCertificados = MOCK_ALUNO_CANDIDATO_DATA.certificados ?? [];
 
@@ -917,7 +917,7 @@ const MOCK_ESTAGIOS: MockEstagioItemData[] = [
  * Retorna os estágios mockados do aluno/candidato
  */
 export function getMockAlunoEstagios(
-  cursoId?: string | null,
+  cursoId?: string | null
 ): MockEstagioItemData[] {
   const allEstagios = MOCK_ESTAGIOS;
 

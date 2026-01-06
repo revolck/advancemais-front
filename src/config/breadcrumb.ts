@@ -584,13 +584,13 @@ export const breadcrumbConfig: Record<string, BreadcrumbConfig> = {
 // Hook para filtrar "Empresas" do breadcrumb para role EMPRESA
 function filterBreadcrumbForEmpresa(
   config: BreadcrumbConfig,
-  isEmpresaRole: boolean,
+  isEmpresaRole: boolean
 ): BreadcrumbConfig {
   if (!isEmpresaRole) return config;
 
   // Remove o item "Empresas" do breadcrumb para role EMPRESA
   const filteredItems = config.items.filter(
-    (item) => item.label !== "Empresas",
+    (item) => item.label !== "Empresas"
   );
 
   return {
@@ -632,7 +632,7 @@ export function useBreadcrumb(): BreadcrumbConfig {
           { label: "Detalhes do Candidato", icon: "Eye" },
         ],
       },
-      isEmpresaRole,
+      isEmpresaRole
     );
   }
 
@@ -652,7 +652,7 @@ export function useBreadcrumb(): BreadcrumbConfig {
           { label: "Detalhes da Vaga", icon: "Eye" },
         ],
       },
-      isEmpresaRole,
+      isEmpresaRole
     );
   }
 
@@ -667,7 +667,7 @@ export function useBreadcrumb(): BreadcrumbConfig {
           { label: "Detalhes da Empresa", icon: "Eye" },
         ],
       },
-      isEmpresaRole,
+      isEmpresaRole
     );
   }
 
@@ -685,7 +685,7 @@ export function useBreadcrumb(): BreadcrumbConfig {
           { label: "Visualizando empresa", icon: "Eye" },
         ],
       },
-      isEmpresaRole,
+      isEmpresaRole
     );
   }
 
@@ -819,7 +819,7 @@ export function useBreadcrumb(): BreadcrumbConfig {
     if (breadcrumbConfig[currentPath]) {
       return filterBreadcrumbForEmpresa(
         breadcrumbConfig[currentPath],
-        isEmpresaRole,
+        isEmpresaRole
       );
     }
   }
