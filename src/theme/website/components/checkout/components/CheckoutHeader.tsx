@@ -10,6 +10,8 @@ interface CheckoutHeaderProps {
   seconds: number;
   isLowTime: boolean;
   onBack: () => void;
+  title?: string;
+  subtitle?: string;
 }
 
 export const CheckoutHeader: React.FC<CheckoutHeaderProps> = ({
@@ -17,6 +19,8 @@ export const CheckoutHeader: React.FC<CheckoutHeaderProps> = ({
   seconds,
   isLowTime,
   onBack,
+  title,
+  subtitle,
 }) => {
   return (
     <header className="mb-8">
@@ -35,10 +39,10 @@ export const CheckoutHeader: React.FC<CheckoutHeaderProps> = ({
         <div className="flex items-center justify-between sm:justify-center flex-1 sm:px-4 gap-6">
           <div className="hidden sm:flex flex-col items-center text-center">
             <span className="text-xs uppercase tracking-[0.2em] text-zinc-400">
-              Checkout
+              {title ?? "Checkout"}
             </span>
             <span className="text-sm font-medium text-zinc-500">
-              Complete sua assinatura com segurança
+              {subtitle ?? "Complete sua assinatura com segurança"}
             </span>
             <span className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-emerald-600">
               <Shield className="w-3.5 h-3.5" />
@@ -67,4 +71,3 @@ export const CheckoutHeader: React.FC<CheckoutHeaderProps> = ({
     </header>
   );
 }
-

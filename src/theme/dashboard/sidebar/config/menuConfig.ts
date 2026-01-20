@@ -581,7 +581,7 @@ const rawMenuSections: MenuSection[] = [
           {
             icon: null,
             label: "Cursos",
-            route: "/dashboard/cursos",
+            route: "/dashboard/cursos/alunos/cursos",
             permissions: [UserRole.ALUNO_CANDIDATO],
           },
           {
@@ -624,7 +624,7 @@ const rawMenuSections: MenuSection[] = [
           {
             icon: null,
             label: "Currículo",
-            route: "/dashboard/vagas/curriculo",
+            route: "/dashboard/curriculo",
             permissions: [UserRole.ALUNO_CANDIDATO],
           },
           {
@@ -638,7 +638,7 @@ const rawMenuSections: MenuSection[] = [
       {
         icon: "CreditCard",
         label: "Pagamentos",
-        route: "/dashboard/pagamentos",
+        route: "/dashboard/cursos/pagamentos",
         permissions: [UserRole.ALUNO_CANDIDATO],
       },
     ],

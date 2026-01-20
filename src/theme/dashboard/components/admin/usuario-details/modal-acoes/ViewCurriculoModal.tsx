@@ -127,43 +127,136 @@ export function ViewCurriculoModal({
     });
   }
 
-  if (curriculo.experiencias && curriculo.experiencias.length > 0) {
+  const experienciasArray: any[] = Array.isArray(curriculo.experiencias)
+    ? curriculo.experiencias
+    : (curriculo.experiencias as any)?.experiencias || [];
+
+  const formacaoArray: any[] = Array.isArray((curriculo as any).formacao)
+    ? ((curriculo as any).formacao as any[])
+    : [];
+
+  const cursosCertificacoesFlat: any[] = (() => {
+    const raw: any = (curriculo as any)?.cursosCertificacoes;
+    const cursos = Array.isArray(raw)
+      ? raw
+      : raw && typeof raw === "object" && Array.isArray(raw.cursos)
+        ? raw.cursos
+        : [];
+    const certificacoes =
+      raw && typeof raw === "object" && Array.isArray(raw.certificacoes)
+        ? raw.certificacoes
+        : [];
+
+    const normalizePeriodo = (inicio?: any, fim?: any) => {
+      const start = typeof inicio === "string" ? inicio : "";
+      const end = typeof fim === "string" ? fim : "";
+      if (!start && !end) return "";
+      if (start && end) return `${start} → ${end}`;
+      return start || end;
+    };
+
+    const mappedCursos = (cursos as any[]).map((c) => ({
+      titulo:
+        (typeof c?.titulo === "string" && c.titulo) ||
+        (typeof c?.nome === "string" && c.nome) ||
+        "",
+      instituicao: (typeof c?.instituicao === "string" && c.instituicao) || "",
+      periodo:
+        (typeof c?.periodo === "string" && c.periodo) ||
+        (typeof c?.dataConclusao === "string" && c.dataConclusao) ||
+        "",
+    }));
+
+    const mappedCertificacoes = (certificacoes as any[]).map((c) => ({
+      titulo:
+        (typeof c?.titulo === "string" && c.titulo) ||
+        (typeof c?.nome === "string" && c.nome) ||
+        "",
+      instituicao:
+        (typeof c?.organizacao === "string" && c.organizacao) ||
+        (typeof c?.instituicao === "string" && c.instituicao) ||
+        "",
+      periodo:
+        (typeof c?.periodo === "string" && c.periodo) ||
+        normalizePeriodo(c?.dataEmissao, c?.dataExpiracao) ||
+        (typeof c?.dataEmissao === "string" && c.dataEmissao) ||
+        "",
+    }));
+
+    return [...mappedCursos, ...mappedCertificacoes].filter(
+      (i) => Boolean(i.titulo) || Boolean(i.instituicao) || Boolean(i.periodo)
+    );
+  })();
+
+  const premiosPublicacoesFlat: any[] = (() => {
+    const raw: any = (curriculo as any)?.premiosPublicacoes;
+    const premios = Array.isArray(raw)
+      ? raw
+      : raw && typeof raw === "object" && Array.isArray(raw.premios)
+        ? raw.premios
+        : [];
+    const publicacoes =
+      raw && typeof raw === "object" && Array.isArray(raw.publicacoes)
+        ? raw.publicacoes
+        : [];
+
+    const mappedPremios = (premios as any[]).map((p) => ({
+      titulo: (typeof p?.titulo === "string" && p.titulo) || "",
+      descricao: (typeof p?.descricao === "string" && p.descricao) || "",
+    }));
+
+    const mappedPublicacoes = (publicacoes as any[]).map((p) => {
+      const titulo = (typeof p?.titulo === "string" && p.titulo) || "";
+      const parts = [
+        typeof p?.tipo === "string" ? p.tipo : "",
+        typeof p?.veiculo === "string" ? p.veiculo : "",
+        typeof p?.data === "string" ? p.data : "",
+      ].filter(Boolean);
+      const descricaoBase = parts.join(" • ");
+      const url = typeof p?.url === "string" ? p.url : "";
+      const descricao = [descricaoBase, url].filter(Boolean).join(" • ");
+      return { titulo, descricao };
+    });
+
+    return [...mappedPremios, ...mappedPublicacoes].filter(
+      (i) => Boolean(i.titulo) || Boolean(i.descricao)
+    );
+  })();
+
+  if (experienciasArray.length > 0) {
     contentSections.push({
-      label: `Experiências Profissionais (${curriculo.experiencias.length})`,
-      content: curriculo.experiencias,
+      label: `Experiências Profissionais (${experienciasArray.length})`,
+      content: experienciasArray,
       icon: Briefcase,
       isArray: true,
       isExperienceArray: true,
     });
   }
 
-  if (curriculo.formacao && curriculo.formacao.length > 0) {
+  if (formacaoArray.length > 0) {
     contentSections.push({
-      label: `Formação Acadêmica (${curriculo.formacao.length})`,
-      content: curriculo.formacao,
+      label: `Formação Acadêmica (${formacaoArray.length})`,
+      content: formacaoArray,
       icon: Award,
       isArray: true,
       isEducationArray: true,
     });
   }
 
-  if (
-    curriculo.cursosCertificacoes &&
-    curriculo.cursosCertificacoes.length > 0
-  ) {
+  if (cursosCertificacoesFlat.length > 0) {
     contentSections.push({
-      label: `Cursos e Certificações (${curriculo.cursosCertificacoes.length})`,
-      content: curriculo.cursosCertificacoes,
+      label: `Cursos e Certificações (${cursosCertificacoesFlat.length})`,
+      content: cursosCertificacoesFlat,
       icon: GraduationCap,
       isArray: true,
       isCourseArray: true,
     });
   }
 
-  if (curriculo.premiosPublicacoes && curriculo.premiosPublicacoes.length > 0) {
+  if (premiosPublicacoesFlat.length > 0) {
     contentSections.push({
-      label: `Prêmios e Publicações (${curriculo.premiosPublicacoes.length})`,
-      content: curriculo.premiosPublicacoes,
+      label: `Prêmios e Publicações (${premiosPublicacoesFlat.length})`,
+      content: premiosPublicacoesFlat,
       icon: Trophy,
       isArray: true,
       isAwardArray: true,
@@ -258,9 +351,16 @@ export function ViewCurriculoModal({
                             {item.empresa}
                           </p>
                         )}
-                        {item.periodo && (
+                        {(item.periodo || item.dataInicio || item.dataFim) && (
                           <p className="text-xs text-gray-600">
-                            {item.periodo}
+                            {item.periodo ||
+                              `${item.dataInicio || "—"}${
+                                item.atual
+                                  ? " • Atual"
+                                  : item.dataFim
+                                  ? ` → ${item.dataFim}`
+                                  : ""
+                              }`}
                           </p>
                         )}
                         {item.descricao && (
@@ -286,9 +386,20 @@ export function ViewCurriculoModal({
                             {item.instituicao}
                           </p>
                         )}
-                        {item.periodo && (
+                        {(item.periodo ||
+                          item.dataInicio ||
+                          item.dataFim ||
+                          item.status) && (
                           <p className="text-xs text-gray-600">
-                            {item.periodo}
+                            {item.periodo ||
+                              `${item.dataInicio || "—"}${
+                                item.status === "EM_ANDAMENTO" ||
+                                item.status === "CURSANDO"
+                                  ? " • Em andamento"
+                                  : item.dataFim
+                                  ? ` → ${item.dataFim}`
+                                  : ""
+                              }`}
                           </p>
                         )}
                         {item.descricao && (
@@ -345,15 +456,27 @@ export function ViewCurriculoModal({
                     !section.isEducationArray &&
                     !section.isCourseArray &&
                     !section.isAwardArray &&
-                    (section.content as string[]).map((item, index) => (
-                      <Badge
-                        key={index}
-                        variant="secondary"
-                        className="mr-2 mb-2"
-                      >
-                        {item}
-                      </Badge>
-                    ))}
+                    (section.content as any[]).map((item, index) => {
+                      const label =
+                        typeof item === "string"
+                          ? item
+                          : `${item?.nome ?? "Habilidade"}${
+                              item?.nivel ? ` • ${item.nivel}` : ""
+                            }${
+                              typeof item?.anosExperiencia === "number"
+                                ? ` • ${item.anosExperiencia} ano(s)`
+                                : ""
+                            }`;
+                      return (
+                        <Badge
+                          key={index}
+                          variant="secondary"
+                          className="mr-2 mb-2"
+                        >
+                          {label}
+                        </Badge>
+                      );
+                    })}
                 </div>
               ) : (
                 <p className="mt-1 whitespace-pre-line text-sm text-slate-700">

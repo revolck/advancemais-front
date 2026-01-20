@@ -3,16 +3,37 @@
 "use client";
 
 import React from "react";
-import { QrCode, FileText } from "lucide-react";
+import { QrCode, FileText, CreditCard } from "lucide-react";
 import type { PaymentMethod } from "../types";
 
 interface PaymentMethodInfoProps {
   method: PaymentMethod;
+  showCardInfo?: boolean;
 }
 
 export const PaymentMethodInfo: React.FC<PaymentMethodInfoProps> = ({
   method,
+  showCardInfo = false,
 }) => {
+  if (showCardInfo && (method === "credit" || method === "debit")) {
+    return (
+      <div className="bg-white rounded-2xl border border-zinc-200 p-5 !pb-3">
+        <div className="flex items-start gap-4">
+          <div className="w-12 h-12 bg-sky-100 rounded-xl flex items-center justify-center flex-shrink-0">
+            <CreditCard className="w-6 h-6 text-sky-600" />
+          </div>
+          <div>
+            <h5 className="!mb-0">Pagamento via Cartão</h5>
+            <p className="!text-sm">
+              Você será redirecionado para o Mercado Pago para informar os dados
+              do cartão com segurança.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (method === "pix") {
     return (
       <div className="bg-white rounded-2xl border border-zinc-200 p-5 !pb-3">

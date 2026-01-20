@@ -387,7 +387,7 @@ export function ProfileOnboardingGate() {
                     isLast
                   >
                     <StepperTrigger className="w-full rounded-lg border border-transparent px-3 py-3 text-center transition-all flex flex-col items-center gap-2">
-                      <StepperIndicator className="data-[state=active]:border-[var(--primary-color)]/5 data-[state=active]:bg-[var(--primary-color)]/5 data-[state=active]:text-[var(--primary-color)] data-[state=completed]:border-[var(--primary-color)] data-[state=completed]:bg-[var(--primary-color)] data-[state=completed]:text-white">
+                      <StepperIndicator className="data-[state=active]:border-[var(--primary-color)] data-[state=active]:bg-[var(--primary-color)] data-[state=active]:text-white data-[state=completed]:border-[var(--primary-color)] data-[state=completed]:bg-[var(--primary-color)] data-[state=completed]:text-white">
                         2
                       </StepperIndicator>
                       <div className="min-w-0 text-center">

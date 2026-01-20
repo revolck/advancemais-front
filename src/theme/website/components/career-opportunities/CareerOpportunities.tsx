@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { JobCard } from "./components/JobCard";
 import { HeaderVagas } from "./components/HeaderVagas";
@@ -15,6 +15,86 @@ import { Card, CardContent } from "@/components/ui/card";
 import { RotateCcw } from "lucide-react";
 import type { CareerOpportunitiesProps, JobFilters, JobData } from "./types";
 import { CAREER_CONFIG } from "./constants";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { toastCustom } from "@/components/ui/custom/toast";
+import { UserRole } from "@/config/roles";
+import { useUserRole } from "@/hooks/useUserRole";
+import { aplicarVaga, listCurriculos, verificarCandidatura } from "@/api/candidatos";
+import type { VerificarCandidaturaResponse } from "@/api/candidatos/types";
+
+function isUuid(value: string): boolean {
+  return /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(
+    value,
+  );
+}
+
+function getDefaultCurriculoId(raw: unknown): string | null {
+  if (!Array.isArray(raw)) return null;
+  const items = raw.filter((item) => item && typeof item === "object") as Array<
+    Record<string, any>
+  >;
+  const principal = items.find(
+    (c) => c.principal === true && typeof c.id === "string",
+  );
+  if (principal?.id) return principal.id;
+  const first = items.find((c) => typeof c.id === "string");
+  return first?.id ?? null;
+}
+
+function getHasTokenCookie(): boolean {
+  if (typeof document === "undefined") return false;
+  return document.cookie.split("; ").some((row) => row.startsWith("token="));
+}
+
+function composeLoginUrl(): string {
+  if (typeof window === "undefined") return "/auth/login";
+  const redirectPath = `${window.location.pathname}${window.location.search}`;
+  return `/auth/login?redirect=${encodeURIComponent(redirectPath)}`;
+}
+
+function ApplyAwareJobCard({
+  job,
+  index,
+  canCheckApplied,
+  applyDisabled,
+  applyLabel,
+  onApply,
+  onViewDetails,
+}: {
+  job: JobData;
+  index: number;
+  canCheckApplied: boolean;
+  applyDisabled?: boolean;
+  applyLabel?: string;
+  onApply: (job: JobData) => void;
+  onViewDetails: (job: JobData) => void;
+}) {
+  const shouldCheck = canCheckApplied && isUuid(job.id);
+  const appliedQuery = useQuery<VerificarCandidaturaResponse>({
+    queryKey: ["aluno-candidato", "candidaturas", "verificar", job.id],
+    queryFn: () => verificarCandidatura(job.id, { cache: "no-store" }),
+    enabled: shouldCheck,
+    staleTime: 60 * 1000,
+    retry: 1,
+  });
+
+  const hasApplied = appliedQuery.data?.hasApplied === true;
+
+  return (
+    <JobCard
+      job={job}
+      index={index}
+      onApply={(jobId) => {
+        void jobId;
+        onApply(job);
+      }}
+      onViewDetails={onViewDetails}
+      isApplied={hasApplied}
+      applyDisabled={applyDisabled || appliedQuery.isFetching}
+      applyLabel={appliedQuery.isFetching ? "Verificando..." : applyLabel}
+    />
+  );
+}
 
 const CareerOpportunities: React.FC<CareerOpportunitiesProps> = ({
   className,
@@ -38,6 +118,7 @@ const CareerOpportunities: React.FC<CareerOpportunitiesProps> = ({
   const [sortOrder, setSortOrder] = useState("recent");
   const [regionQuery, setRegionQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   // Sempre chamar os hooks (não condicionalmente)
   const apiResult = usePublicVagas(filters, itemsPerPage, fetchFromApi);
@@ -53,6 +134,20 @@ const CareerOpportunities: React.FC<CareerOpportunitiesProps> = ({
   const currentPage = fetchFromApi ? apiResult.currentPage : 1;
   const totalPages = fetchFromApi ? apiResult.totalPages : 1;
   const setPage = fetchFromApi ? apiResult.setPage : (() => {});
+  const role = useUserRole();
+  const queryClient = useQueryClient();
+  const canCandidateApply = isAuthenticated && role === UserRole.ALUNO_CANDIDATO;
+  const [pendingApplyById, setPendingApplyById] = useState<Record<string, boolean>>(
+    {},
+  );
+
+  useEffect(() => {
+    setIsAuthenticated(getHasTokenCookie());
+    const interval = setInterval(() => {
+      setIsAuthenticated(getHasTokenCookie());
+    }, 1500);
+    return () => clearInterval(interval);
+  }, []);
 
   // Controla quando mostrar skeleton durante busca manual
   const showSkeleton = isLoading || isSearching;
@@ -180,10 +275,130 @@ const CareerOpportunities: React.FC<CareerOpportunitiesProps> = ({
     updateFilters({ [key]: !filters[key] } as Pick<JobFilters, typeof key>);
   };
 
+  const curriculosQuery = useQuery({
+    queryKey: ["aluno-candidato", "curriculos", "for-apply", "website"],
+    queryFn: () => listCurriculos({ cache: "no-store" }),
+    enabled: canCandidateApply,
+    staleTime: 60 * 1000,
+    retry: 1,
+  });
+
+  const defaultCurriculoId = useMemo(() => {
+    return getDefaultCurriculoId(curriculosQuery.data);
+  }, [curriculosQuery.data]);
+  const setPendingApply = useCallback((vagaId: string, pending: boolean) => {
+    setPendingApplyById((prev) => {
+      if (pending) return { ...prev, [vagaId]: true };
+      if (!prev[vagaId]) return prev;
+      const next = { ...prev };
+      delete next[vagaId];
+      return next;
+    });
+  }, []);
+
   // Handlers para ações dos cards
-  const handleApply = (jobId: string) => {
-    console.log("Aplicar para vaga:", jobId);
-    // Implementar lógica de candidatura
+  const handleApply = (jobId: string, jobTitle?: string | null) => {
+    if (!getHasTokenCookie()) {
+      toastCustom.info({
+        title: "Faça login para se candidatar",
+        description: "Entre na sua conta para enviar sua candidatura.",
+        linkText: "Entrar",
+        linkHref: composeLoginUrl(),
+      });
+      if (typeof window !== "undefined") {
+        window.location.href = composeLoginUrl();
+      }
+      return;
+    }
+
+    if (role === null) {
+      toastCustom.info({
+        title: "Carregando sua conta",
+        description: "Aguarde um instante e tente novamente.",
+      });
+      return;
+    }
+
+    if (role && role !== UserRole.ALUNO_CANDIDATO) {
+      toastCustom.error({
+        title: "Acesso restrito",
+        description: "Apenas alunos e candidatos podem se candidatar a vagas.",
+      });
+      return;
+    }
+
+    if (!isUuid(jobId)) {
+      toastCustom.error({
+        title: "Vaga inválida",
+        description: "Não foi possível identificar esta vaga para candidatura.",
+      });
+      return;
+    }
+
+    if (pendingApplyById[jobId]) {
+      return;
+    }
+
+    if (curriculosQuery.isLoading) {
+      toastCustom.info({
+        title: "Carregando currículos",
+        description: "Aguarde um instante e tente novamente.",
+      });
+      return;
+    }
+
+    if (!defaultCurriculoId) {
+      toastCustom.error({
+        title: "Nenhum currículo encontrado",
+        description: "Crie um currículo para conseguir se candidatar às vagas.",
+        linkText: "Criar currículo",
+        linkHref: "/dashboard/curriculo/cadastrar",
+      });
+      return;
+    }
+
+    setPendingApply(jobId, true);
+
+    aplicarVaga({ vagaId: jobId, curriculoId: defaultCurriculoId })
+      .then(() => {
+        queryClient.setQueryData(
+          ["aluno-candidato", "candidaturas", "verificar", jobId],
+          { hasApplied: true },
+        );
+        queryClient.invalidateQueries({
+          queryKey: ["aluno-candidato", "candidaturas", "verificar", jobId],
+        });
+
+        toastCustom.success({
+          title: "Candidatura enviada",
+          description: jobTitle
+            ? `Sua candidatura para "${jobTitle}" foi registrada com sucesso.`
+            : "Sua candidatura foi registrada com sucesso.",
+        });
+      })
+      .catch((error: any) => {
+        const code = error?.details?.code || error?.code;
+        const message = error?.details?.message || error?.message;
+
+        if (code === "APPLY_ERROR" && typeof message === "string") {
+          toastCustom.error({
+            title: "Não foi possível se candidatar",
+            description: message,
+          });
+          return;
+        }
+
+        toastCustom.error({
+          title: "Erro ao se candidatar",
+          description:
+            typeof message === "string" && message.length > 0
+              ? message
+              : "Tente novamente em instantes.",
+        });
+      })
+      .finally(() => {
+        setPendingApply(jobId, false);
+      });
   };
 
   const handleViewDetails = (job: JobData) => {
@@ -314,11 +529,25 @@ const CareerOpportunities: React.FC<CareerOpportunitiesProps> = ({
                     ))
                   : shouldShowData
                   ? filteredData.map((job, index) => (
-                <JobCard
+                <ApplyAwareJobCard
                   key={job.id}
                   job={job}
                   index={index}
-                  onApply={handleApply}
+                  canCheckApplied={canCandidateApply}
+                  applyDisabled={
+                    Boolean(pendingApplyById[job.id]) ||
+                    (isAuthenticated && role === null)
+                  }
+                  applyLabel={
+                    isAuthenticated && role === null
+                      ? "Carregando..."
+                      : pendingApplyById[job.id]
+                        ? "Enviando..."
+                        : "Candidatar-se"
+                  }
+                  onApply={(selectedJob) =>
+                    handleApply(selectedJob.id, selectedJob.titulo ?? null)
+                  }
                   onViewDetails={handleViewDetails}
                 />
               ))

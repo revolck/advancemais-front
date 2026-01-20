@@ -31,14 +31,14 @@ export default function DashboardAgendaPage() {
     }
 
     if (ALLOWED_ROLES.has(role)) {
-      return (
-        <>
-          <FullCalendarStyles />
-          <div className="space-y-8">
-            <AgendaCursosCalendar />
-          </div>
-        </>
-      );
+  return (
+    <>
+      <FullCalendarStyles />
+      <div className="space-y-8">
+        <AgendaCursosCalendar />
+      </div>
+    </>
+  );
     }
 
     return null;

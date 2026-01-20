@@ -1,26 +1,37 @@
 "use client";
 
-import React, { useCallback, useMemo, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { CheckCircle2, CreditCard, ShieldAlert, Clock } from "lucide-react";
-import { ButtonCustom, toastCustom } from "@/components/ui/custom";
-import { createSinglePayment } from "@/api/mercadopago";
-import { getUserProfile } from "@/api/usuarios";
+import React, { useState, useMemo, useCallback, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import {
+  Wallet,
+  Clock,
+  CalendarCheck,
+  AlertCircle,
+  Search,
+  BookOpen,
+  Receipt,
+  Calendar,
+} from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { ButtonCustom, FilterBar, EmptyState } from "@/components/ui/custom";
+import { VerticalTabs } from "@/components/ui/custom/vertical-tabs";
+import type { VerticalTabItem } from "@/components/ui/custom/vertical-tabs";
+import { CardsStatistics } from "@/components/ui/custom/cards-statistics";
+import type { StatisticCard } from "@/components/ui/custom/cards-statistics";
+import type { FilterField } from "@/components/ui/custom/filters";
+import type { DateRange } from "@/components/ui/custom/date-picker";
+import { PagamentoCursoTable } from "./components/PagamentoCursoTable";
+import { PixModal, BoletoModal } from "@/theme/dashboard/components/admin/lista-pagamentos/components/modals";
+import { usePagamentosCursosData } from "./hooks/usePagamentosCursosData";
+import { STATUS_OPTIONS, METODO_OPTIONS } from "@/theme/dashboard/components/admin/lista-pagamentos/constants";
+import type { PagamentosCursosDashboardProps, PagamentoCurso } from "./types";
 import { cn } from "@/lib/utils";
-
-const PENDING_CURSOS_PAYMENT_KEY = "pending_dashboard_cursos_payment_v1";
-
-type PaymentContext = {
-  tipo: "recuperacao-final";
-  titulo?: string | null;
-  valor: number;
-  cursoId?: string | null;
-  turmaId?: string | null;
-  provaId?: string | null;
-  notificacaoId?: string | null;
-  returnTo?: string | null;
-  createdAt: number;
-};
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { MaskService } from "@/services";
+import { getMockPagamentosCursos } from "@/mockData/pagamentos-cursos";
+import { createCheckoutAndGetUrl } from "@/lib/checkout-session";
+import { toastCustom } from "@/components/ui/custom/toast";
 
 function getCookieValue(name: string): string | null {
   if (typeof document === "undefined") return null;
@@ -30,239 +41,650 @@ function getCookieValue(name: string): string | null {
   return cookie?.split("=")[1] || null;
 }
 
-function readNumber(value: string | null, fallback: number) {
-  if (!value) return fallback;
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : fallback;
-}
+const createEmptyDateRange = (): DateRange => ({ from: null, to: null });
 
-export function PagamentosCursosDashboard() {
+export function PagamentosCursosDashboard({
+  className,
+}: PagamentosCursosDashboardProps) {
   const router = useRouter();
-  const searchParams = useSearchParams();
+  const { data, isLoading, error, filters, updateFilters, loadPage } =
+    usePagamentosCursosData();
 
-  const [isStarting, setIsStarting] = useState(false);
+  // Buscar pagamentos pendentes (antes de definir aba padrão) - apenas os que estão realmente abertos para pagamento
+  // Exclui os que já foram pagos e estão em processamento (que têm PIX/Boleto gerado)
+  const pagamentosPendentes = useMemo(() => {
+    const allData = getMockPagamentosCursos();
+    return allData.pagamentos.filter(
+      (p) => p.status === "PENDENTE" && 
+             !p.detalhes?.pix && 
+             !p.detalhes?.boleto &&
+             p.tipoPagamento === "recuperacao-final"
+    );
+  }, []);
 
-  const context = useMemo<PaymentContext>(() => {
-    const tipo =
-      (searchParams.get("tipo") as PaymentContext["tipo"] | null) ??
-      "recuperacao-final";
+  // Estado da aba ativa - padrão "pendentes" se houver pagamentos pendentes
+  const [activeTab, setActiveTab] = useState(() => 
+    pagamentosPendentes.length > 0 ? "pendentes" : "historico"
+  );
 
-    const titulo = searchParams.get("titulo");
-    const valor = readNumber(searchParams.get("valor"), 50);
+  const pagamentos = useMemo(() => data?.pagamentos ?? [], [data?.pagamentos]);
+  const resumo = data?.resumo;
+  const pagination = data?.pagination;
 
-    return {
-      tipo,
-      titulo,
-      valor,
-      cursoId: searchParams.get("cursoId"),
-      turmaId: searchParams.get("turmaId"),
-      provaId: searchParams.get("provaId"),
-      notificacaoId: searchParams.get("notificacaoId"),
-      returnTo: searchParams.get("returnTo"),
-      createdAt: Date.now(),
-    };
-  }, [searchParams]);
+  // Estados de filtro
+  const [selectedMetodo, setSelectedMetodo] = useState<string[]>([]);
+  const [selectedStatus, setSelectedStatus] = useState<string[]>([]);
+  const [pendingDateRange, setPendingDateRange] = useState<DateRange>(
+    createEmptyDateRange()
+  );
+  // Valores pendentes (digitados pelo usuário, ainda não aplicados)
+  const [pendingValorMin, setPendingValorMin] = useState<string>("");
+  const [pendingValorMax, setPendingValorMax] = useState<string>("");
+  // Valores aplicados (enviados para a API)
+  const [valorMin, setValorMin] = useState<string>("");
+  const [valorMax, setValorMax] = useState<string>("");
 
-  const formattedAmount = useMemo(() => {
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(context.valor);
-  }, [context.valor]);
+  const maskService = MaskService.getInstance();
 
-  const pageTitle = useMemo(() => {
-    if (context.tipo === "recuperacao-final") return "Pagamento • Recuperação final";
-    return "Pagamento";
-  }, [context.tipo]);
+  // Estados das modais
+  const [selectedPagamento, setSelectedPagamento] = useState<PagamentoCurso | null>(
+    null
+  );
+  const [isPixModalOpen, setIsPixModalOpen] = useState(false);
+  const [isBoletoModalOpen, setIsBoletoModalOpen] = useState(false);
 
-  const handleStartPayment = useCallback(async () => {
-    if (isStarting) return;
-    setIsStarting(true);
+  // Buscar cursos únicos para filtro
+  const cursoOptions = useMemo(() => {
+    const allData = getMockPagamentosCursos();
+    const cursosMap = new Map<string, { value: string; label: string }>();
+    
+    allData.pagamentos.forEach((p) => {
+      if (p.curso && !cursosMap.has(p.curso.id)) {
+        cursosMap.set(p.curso.id, {
+          value: p.curso.id,
+          label: p.curso.nome,
+        });
+      }
+    });
+
+    return Array.from(cursosMap.values()).sort((a, b) =>
+      a.label.localeCompare(b.label, "pt-BR")
+    );
+  }, []);
+
+  // Cards de resumo
+  const summaryCards = useMemo((): StatisticCard[] => {
+    if (!resumo) return [];
+
+    const formatCurrency = (value: number) =>
+      new Intl.NumberFormat("pt-BR", {
+        style: "currency",
+        currency: "BRL",
+      }).format(value);
+
+    return [
+      {
+        icon: Wallet,
+        iconBg: "bg-emerald-100 text-emerald-600",
+        value: formatCurrency(resumo.totalPago),
+        label: "Total Pago",
+        cardBg: "bg-emerald-50/50",
+      },
+      {
+        icon: Clock,
+        iconBg: "bg-amber-100 text-amber-600",
+        value: formatCurrency(resumo.totalPendente),
+        label: "Pendente",
+        cardBg: "bg-amber-50/50",
+      },
+      {
+        icon: CalendarCheck,
+        iconBg: "bg-violet-100 text-violet-600",
+        value: resumo.ultimoPagamento
+          ? format(new Date(resumo.ultimoPagamento), "dd/MM/yyyy", {
+              locale: ptBR,
+            })
+          : "—",
+        label: "Último Pagamento",
+        cardBg: "bg-violet-50/50",
+      },
+    ];
+  }, [resumo]);
+
+  // Configuração dos filtros
+  const filterFields: FilterField[] = useMemo(
+    () => [
+      {
+        key: "metodo",
+        label: "Método",
+        mode: "single",
+        options: METODO_OPTIONS,
+        placeholder: "Todos",
+      },
+      {
+        key: "status",
+        label: "Status",
+        mode: "single",
+        options: STATUS_OPTIONS,
+        placeholder: "Todos",
+      },
+      {
+        key: "curso",
+        label: "Curso",
+        mode: "single",
+        options: cursoOptions,
+        placeholder: "Todos",
+      },
+      {
+        key: "dateRange",
+        label: "Período",
+        type: "date-range",
+        placeholder: "Selecionar período",
+      },
+      {
+        key: "valorMin",
+        label: "Valor mínimo",
+        type: "text",
+        placeholder: "R$ 0,00",
+        mask: "money",
+      },
+      {
+        key: "valorMax",
+        label: "Valor máximo",
+        type: "text",
+        placeholder: "R$ 1000,00",
+        mask: "money",
+      },
+    ],
+    [cursoOptions]
+  );
+
+  const filterValues = useMemo(
+    () => ({
+      metodo: selectedMetodo[0] ?? null,
+      status: selectedStatus[0] ?? null,
+      curso: null, // Pode adicionar filtro de curso depois
+      dateRange: pendingDateRange,
+      valorMin: pendingValorMin ?? "",
+      valorMax: pendingValorMax ?? "",
+    }),
+    [
+      selectedMetodo,
+      selectedStatus,
+      pendingDateRange,
+      pendingValorMin,
+      pendingValorMax,
+    ]
+  );
+
+  // Handlers
+  const handleFilterChange = useCallback(
+    (key: string, value: unknown) => {
+      if (key === "metodo") {
+        const metodoValue = value as string | null;
+        setSelectedMetodo(metodoValue ? [metodoValue] : []);
+        updateFilters({
+          metodo: metodoValue || undefined,
+          page: 1,
+        });
+      } else if (key === "status") {
+        const statusValue = value as string | null;
+        setSelectedStatus(statusValue ? [statusValue] : []);
+        updateFilters({
+          status: statusValue as any,
+          page: 1,
+        });
+      } else if (key === "curso") {
+        const cursoValue = value as string | null;
+        updateFilters({
+          cursoId: cursoValue || undefined,
+          page: 1,
+        });
+      } else if (key === "dateRange") {
+        const range = value as DateRange | null;
+        setPendingDateRange(range ?? createEmptyDateRange());
+        updateFilters({
+          dataInicio: range?.from
+            ? new Date(range.from).toISOString().split("T")[0]
+            : undefined,
+          dataFim: range?.to
+            ? new Date(range.to).toISOString().split("T")[0]
+            : undefined,
+          page: 1,
+        });
+      } else if (key === "valorMin") {
+        const val = value as string;
+        setPendingValorMin(val);
+      } else if (key === "valorMax") {
+        const val = value as string;
+        setPendingValorMax(val);
+      }
+    },
+    [updateFilters]
+  );
+
+  // Função para aplicar os filtros de valor quando o botão "Pesquisar" for clicado
+  const handleSearch = useCallback(() => {
+    // Remove a máscara dos valores antes de enviar
+    const valorMinUnmasked = pendingValorMin
+      ? maskService.removeMask(pendingValorMin, "money")
+      : "";
+    const valorMaxUnmasked = pendingValorMax
+      ? maskService.removeMask(pendingValorMax, "money")
+      : "";
+
+    // Aplica os valores aos estados aplicados
+    setValorMin(pendingValorMin);
+    setValorMax(pendingValorMax);
+
+    // Atualiza os filtros na API
+    updateFilters({
+      valorMin: valorMinUnmasked ? parseFloat(valorMinUnmasked) : undefined,
+      valorMax: valorMaxUnmasked ? parseFloat(valorMaxUnmasked) : undefined,
+      page: 1,
+    });
+  }, [pendingValorMin, pendingValorMax, updateFilters, maskService]);
+
+  const handleClearAll = useCallback(() => {
+    setSelectedMetodo([]);
+    setSelectedStatus([]);
+    setPendingDateRange(createEmptyDateRange());
+    setPendingValorMin("");
+    setPendingValorMax("");
+    setValorMin("");
+    setValorMax("");
+    updateFilters({
+      metodo: undefined,
+      status: undefined,
+      cursoId: undefined,
+      dataInicio: undefined,
+      dataFim: undefined,
+      valorMin: undefined,
+      valorMax: undefined,
+      page: 1,
+    });
+  }, [updateFilters]);
+
+  const handlePageChange = (page: number) => {
+    loadPage(page);
+  };
+
+  const handleViewPix = (pagamento: PagamentoCurso) => {
+    setSelectedPagamento(pagamento);
+    setIsPixModalOpen(true);
+  };
+
+  const handleViewBoleto = (pagamento: PagamentoCurso) => {
+    setSelectedPagamento(pagamento);
+    setIsBoletoModalOpen(true);
+  };
+
+  const handlePayRecuperacao = useCallback((pagamento: PagamentoCurso) => {
+    // Verificar autenticação antes de criar checkout
+    const token = getCookieValue("token");
+    if (!token) {
+      toastCustom.error({
+        title: "Autenticação necessária",
+        description: "Você precisa estar autenticado para realizar o pagamento.",
+      });
+      return;
+    }
+
+    if (!pagamento.prova?.id || !pagamento.curso?.id || !pagamento.turma?.id) {
+      toastCustom.error({
+        title: "Erro",
+        description: "Dados incompletos do pagamento. Não é possível iniciar o checkout.",
+      });
+      return;
+    }
 
     try {
-      const token = getCookieValue("token");
-      if (!token) {
-        const redirect = `${window.location.pathname}${window.location.search}`;
-        router.push(`/auth/login?redirect=${encodeURIComponent(redirect)}`);
-        setIsStarting(false);
-        return;
-      }
-
-      const profile = await getUserProfile();
-      if (!profile?.success || !("usuario" in profile)) {
-        throw new Error("Não foi possível identificar o usuário.");
-      }
-
-      const userId = profile.usuario?.id;
-      if (!userId) throw new Error("Usuário inválido.");
-
-      const baseUrl = window.location.origin;
-      const returnTo = context.returnTo || "/dashboard";
-      const queryReturnTo = `?returnTo=${encodeURIComponent(returnTo)}`;
-
-      const externalReferenceParts = [
-        `tipo:${context.tipo}`,
-        context.cursoId ? `curso:${context.cursoId}` : null,
-        context.turmaId ? `turma:${context.turmaId}` : null,
-        context.provaId ? `prova:${context.provaId}` : null,
-        context.notificacaoId ? `notificacao:${context.notificacaoId}` : null,
-        `aluno:${userId}`,
-      ].filter(Boolean) as string[];
-
-      const title =
-        context.titulo?.trim() || "Prova de recuperação final (pagamento único)";
-
-      localStorage.setItem(PENDING_CURSOS_PAYMENT_KEY, JSON.stringify(context));
-
-      const response = await createSinglePayment(
-        {
-          usuarioId: userId,
-          items: [
-            {
-              id:
-                context.provaId ||
-                context.turmaId ||
-                context.cursoId ||
-                "recuperacao-final",
-              title,
-              description:
-                context.tipo === "recuperacao-final"
-                  ? "Liberação de prova de recuperação final (pagamento único)"
-                  : "Pagamento único",
-              quantity: 1,
-              unit_price: context.valor,
-              currency_id: "BRL",
-            },
-          ],
-          successUrl: `${baseUrl}/dashboard/cursos/pagamentos/sucesso${queryReturnTo}`,
-          failureUrl: `${baseUrl}/dashboard/cursos/pagamentos/falha${queryReturnTo}`,
-          pendingUrl: `${baseUrl}/dashboard/cursos/pagamentos/pendente${queryReturnTo}`,
-          externalReference: externalReferenceParts.join(":"),
-          metadata: {
-            tipo: context.tipo,
-            cursoId: context.cursoId,
-            turmaId: context.turmaId,
-            provaId: context.provaId,
-            notificacaoId: context.notificacaoId,
-            returnTo,
-          },
+      const { url } = createCheckoutAndGetUrl({
+        // Pagamento de curso (recuperação final) usa Checkout Pro (redirect) e
+        // retorna para páginas de resultado em `/dashboard/cursos/pagamentos/*`.
+        productType: "curso_pagamento",
+        productId: pagamento.prova.id,
+        productName: pagamento.prova.titulo,
+        productPrice: pagamento.valor || 50.0,
+        currency: "BRL",
+        originUrl: "/dashboard/cursos/pagamentos?tab=pendentes",
+        metadata: {
+          tipoPagamento: "recuperacao-final",
+          tipo: "recuperacao-final",
+          titulo: pagamento.prova.titulo,
+          valor: pagamento.valor || 50.0,
+          cursoId: pagamento.curso.id,
+          cursoNome: pagamento.curso.nome,
+          turmaId: pagamento.turma.id,
+          turmaNome: pagamento.turma.nome,
+          provaId: pagamento.prova.id,
+          provaTitulo: pagamento.prova.titulo,
         },
-        token
-      );
+      });
 
-      if (!response?.initPoint) {
-        throw new Error("Não foi possível iniciar o pagamento.");
-      }
-
-      window.location.href = response.initPoint;
+      router.push(url);
     } catch (error: any) {
       toastCustom.error({
         title: "Erro ao iniciar pagamento",
-        description:
-          error?.message || "Não foi possível iniciar o pagamento. Tente novamente.",
+        description: error?.message || "Não foi possível iniciar o checkout. Tente novamente.",
       });
-      setIsStarting(false);
     }
-  }, [context, isStarting, router]);
+  }, [router]);
+
+  // Paginação
+  const currentPage = pagination?.page ?? filters.page ?? 1;
+  const pageSize = pagination?.pageSize ?? filters.pageSize ?? 10;
+  const totalItems = pagination?.total ?? pagamentos.length;
+  const totalPages = pagination?.totalPages ?? Math.ceil(totalItems / pageSize);
+
+  const visiblePages = useMemo(() => {
+    const pages: number[] = [];
+    if (totalPages <= 5) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+      return pages;
+    }
+
+    const start = Math.max(1, currentPage - 2);
+    const end = Math.min(totalPages, start + 4);
+    const adjustedStart = Math.max(1, end - 4);
+
+    for (let i = adjustedStart; i <= end; i++) {
+      pages.push(i);
+    }
+
+    return pages;
+  }, [currentPage, totalPages]);
+
+  const startItem = totalItems === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+  const endItem = Math.min(currentPage * pageSize, totalItems);
+
+  // Conteúdo da aba "Histórico"
+  const historicoContent = (
+    <div className="space-y-6">
+      {/* Cards de Resumo */}
+      <CardsStatistics
+        cards={summaryCards}
+        gridClassName="grid-cols-1 sm:grid-cols-3"
+      />
+
+      {/* Filtros */}
+      <FilterBar
+        className="w-full lg:grid-cols-[repeat(12,minmax(0,1fr))] [&>div>*:nth-child(1)]:lg:col-span-4 [&>div>*:nth-child(2)]:lg:col-span-4 [&>div>*:nth-child(3)]:lg:col-span-4 [&>div>*:nth-child(4)]:lg:col-span-6 [&>div>*:nth-child(4)]:lg:row-start-2 [&>div>*:nth-child(5)]:lg:col-span-3 [&>div>*:nth-child(5)]:lg:row-start-2 [&>div>*:nth-child(6)]:lg:col-span-3 [&>div>*:nth-child(6)]:lg:row-start-2 [&>div>*:nth-child(7)]:lg:col-span-3 [&>div>*:nth-child(7)]:lg:row-start-2"
+        fields={filterFields}
+        values={filterValues}
+        onChange={handleFilterChange}
+        onClearAll={handleClearAll}
+        rightActions={
+          <ButtonCustom
+            variant="primary"
+            size="md"
+            onClick={handleSearch}
+            className="w-full lg:w-auto"
+          >
+            <Search className="h-4 w-4 mr-2" />
+            Pesquisar
+          </ButtonCustom>
+        }
+      />
+
+      {/* Tabela de Pagamentos */}
+      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <div className="overflow-x-auto">
+          <PagamentoCursoTable
+            pagamentos={pagamentos}
+            isLoading={isLoading}
+            showActions={false}
+          />
+        </div>
+
+        {/* Paginação */}
+        {(isLoading || totalItems > 0) && (
+          <div className="flex flex-col gap-4 px-6 py-4 border-t border-gray-200 bg-gray-50/30 sm:flex-row sm:items-center sm:justify-between">
+            <div className="text-sm text-gray-600">
+              {totalItems === 0
+                ? "Nenhum pagamento listado"
+                : `Mostrando ${startItem} a ${endItem} de ${totalItems} pagamento${
+                    totalItems === 1 ? "" : "s"
+                  }`}
+            </div>
+
+            {totalPages > 1 && (
+              <div className="flex items-center gap-2">
+                <ButtonCustom
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1 || isLoading}
+                  className="h-8 px-3"
+                >
+                  Anterior
+                </ButtonCustom>
+
+                {visiblePages[0] > 1 && (
+                  <>
+                    <ButtonCustom
+                      variant={currentPage === 1 ? "primary" : "outline"}
+                      size="sm"
+                      onClick={() => handlePageChange(1)}
+                      className="h-8 w-8 p-0"
+                      disabled={isLoading}
+                    >
+                      1
+                    </ButtonCustom>
+                    {visiblePages[0] > 2 && (
+                      <span className="text-gray-400">...</span>
+                    )}
+                  </>
+                )}
+
+                {visiblePages.map((page) => (
+                  <ButtonCustom
+                    key={page}
+                    variant={currentPage === page ? "primary" : "outline"}
+                    size="sm"
+                    onClick={() => handlePageChange(page)}
+                    className="h-8 w-8 p-0"
+                    disabled={isLoading}
+                  >
+                    {page}
+                  </ButtonCustom>
+                ))}
+
+                {visiblePages[visiblePages.length - 1] < totalPages && (
+                  <>
+                    {visiblePages[visiblePages.length - 1] < totalPages - 1 && (
+                      <span className="text-gray-400">...</span>
+                    )}
+                    <ButtonCustom
+                      variant={
+                        currentPage === totalPages ? "primary" : "outline"
+                      }
+                      size="sm"
+                      onClick={() => handlePageChange(totalPages)}
+                      className="h-8 w-8 p-0"
+                      disabled={isLoading}
+                    >
+                      {totalPages}
+                    </ButtonCustom>
+                  </>
+                )}
+
+                <ButtonCustom
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages || isLoading}
+                  className="h-8 px-3"
+                >
+                  Próxima
+                </ButtonCustom>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  // Conteúdo da aba "Pendentes"
+  const pendentesContent = (
+    <div className="space-y-6">
+      {pagamentosPendentes.length === 0 ? (
+        <div className="py-16">
+          <EmptyState
+            title="Nenhum pagamento pendente"
+            description="Não há pagamentos pendentes no momento."
+            illustration="myFiles"
+          />
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {pagamentosPendentes.map((pagamento) => {
+            const descricaoProva = pagamento.prova?.titulo || "Recuperação Final";
+            const cursoNome = pagamento.curso?.nome;
+            const turmaNome = pagamento.turma?.nome;
+            
+            const validadeFormatada = pagamento.validadeAte
+              ? format(new Date(pagamento.validadeAte), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })
+              : null;
+
+            return (
+              <div
+                key={pagamento.id}
+                className="bg-white rounded-2xl border border-gray-200 p-6"
+              >
+                <div className="flex items-center justify-between gap-6">
+                  {/* Conteúdo principal - Foco no valor */}
+                  <div className="flex-1 min-w-0">
+                    {/* Valor em destaque */}
+                    <div className="mb-4">
+                      <div className="text-4xl font-bold text-gray-900 leading-tight">
+                        {pagamento.valorFormatado || new Intl.NumberFormat("pt-BR", {
+                          style: "currency",
+                          currency: "BRL",
+                        }).format(pagamento.valor || 0)}
+                      </div>
+                    </div>
+
+                    {/* Informações secundárias */}
+                    <div className="space-y-2">
+                      <div className="text-base font-semibold text-gray-900">
+                        {descricaoProva}
+                      </div>
+                      
+                      {(cursoNome || turmaNome) && (
+                        <div className="text-sm text-gray-500">
+                          {cursoNome && <span>{cursoNome}</span>}
+                          {cursoNome && turmaNome && <span> • </span>}
+                          {turmaNome && <span>{turmaNome}</span>}
+                        </div>
+                      )}
+
+                      {validadeFormatada && (
+                        <div className="flex items-center gap-1.5 text-xs text-amber-600 font-medium">
+                          <Clock className="h-3.5 w-3.5" />
+                          <span>Válido até {validadeFormatada}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Botão de ação */}
+                  <div className="flex-shrink-0">
+                    <ButtonCustom
+                      variant="primary"
+                      size="lg"
+                      onClick={() => handlePayRecuperacao(pagamento)}
+                      className="min-w-[120px]"
+                    >
+                      Pagar
+                    </ButtonCustom>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+
+  // Tabs do VerticalTabs
+  const tabs: VerticalTabItem[] = [
+    {
+      value: "pendentes",
+      label: "Pendentes",
+      icon: "Clock",
+      badge: pagamentosPendentes.length > 0 ? pagamentosPendentes.length : undefined,
+      content: pendentesContent,
+    },
+    {
+      value: "historico",
+      label: "Histórico",
+      icon: "Receipt",
+      content: historicoContent,
+    },
+  ];
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h1 className="text-xl font-semibold text-gray-900">{pageTitle}</h1>
-          <p className="text-sm text-gray-600">
-            Pagamento único via Mercado Pago (Pix, boleto ou cartão).
-          </p>
+    <div className={cn("min-h-full", className)}>
+      {error && (
+        <Alert variant="destructive" className="mb-6">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>Erro ao carregar dados: {error}</AlertDescription>
+        </Alert>
+      )}
+
+      <div className="bg-white rounded-3xl p-5 h-full min-h-[calc(100vh-8rem)] flex flex-col">
+        <div className="flex-1 min-h-0">
+          <VerticalTabs
+            items={tabs}
+            value={activeTab}
+            onValueChange={setActiveTab}
+            variant="spacious"
+            size="sm"
+            withAnimation
+            showIndicator
+            tabsWidth="md"
+            classNames={{
+              root: "h-full",
+              contentWrapper: "h-full overflow-hidden",
+              tabsContent: "h-full overflow-auto py-6 px-2",
+              tabsList: "p-2",
+              tabsTrigger: "mb-1",
+            }}
+          />
         </div>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-3">
-        <div className="lg:col-span-2 rounded-3xl border border-gray-200/80 bg-white p-6">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <div className="text-sm font-semibold text-gray-900">
-                {context.titulo?.trim() || "Recuperação final"}
-              </div>
-              <div className="mt-1 text-sm text-gray-600">
-                Para alunos com média abaixo de 7. Após a aprovação, a prova é liberada
-                automaticamente.
-              </div>
-            </div>
-            <div className="rounded-2xl bg-amber-50 text-amber-800 px-3 py-2 text-xs font-semibold">
-              {formattedAmount}
-            </div>
-          </div>
+      {/* Modals */}
+      {selectedPagamento?.detalhes?.pix && (
+        <PixModal
+          isOpen={isPixModalOpen}
+          onClose={() => {
+            setIsPixModalOpen(false);
+            setSelectedPagamento(null);
+          }}
+          pix={selectedPagamento.detalhes.pix as any}
+          valor={selectedPagamento.valorFormatado}
+        />
+      )}
 
-          <div className="mt-5 grid gap-3 sm:grid-cols-3">
-            <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
-              <div className="flex items-center gap-2 text-sm font-semibold text-gray-900">
-                <CreditCard className="h-4 w-4 text-gray-600" />
-                Cartão
-              </div>
-              <div className="mt-1 text-xs text-gray-600">
-                Crédito ou débito (via Checkout Pro).
-              </div>
-            </div>
-            <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
-              <div className="flex items-center gap-2 text-sm font-semibold text-gray-900">
-                <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                Pix
-              </div>
-              <div className="mt-1 text-xs text-gray-600">
-                Confirmação rápida, geralmente em minutos.
-              </div>
-            </div>
-            <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
-              <div className="flex items-center gap-2 text-sm font-semibold text-gray-900">
-                <Clock className="h-4 w-4 text-amber-600" />
-                Boleto
-              </div>
-              <div className="mt-1 text-xs text-gray-600">
-                Pode levar até 2 dias úteis para compensar.
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end">
-            <ButtonCustom
-              variant="ghost"
-              onClick={() => router.push(context.returnTo || "/dashboard")}
-              disabled={isStarting}
-            >
-              Voltar
-            </ButtonCustom>
-            <ButtonCustom
-              variant="primary"
-              onClick={handleStartPayment}
-              disabled={isStarting}
-              icon={isStarting ? "Loader2" : "CreditCard"}
-              className={cn(isStarting && "[&_svg]:animate-spin")}
-            >
-              Pagar agora
-            </ButtonCustom>
-          </div>
-        </div>
-
-        <div className="rounded-3xl border border-gray-200/80 bg-white p-6 space-y-3">
-          <div className="flex items-start gap-2">
-            <ShieldAlert className="h-5 w-5 text-gray-700 mt-0.5" />
-            <div>
-              <div className="text-sm font-semibold text-gray-900">
-                Importante
-              </div>
-              <div className="text-xs text-gray-600">
-                Guarde o identificador do pagamento caso precise de suporte.
-              </div>
-            </div>
-          </div>
-          <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4 text-sm text-gray-700">
-            A liberação pode ocorrer imediatamente (Pix/cartão) ou após compensação
-            (boleto).
-          </div>
-        </div>
-      </div>
+      {selectedPagamento?.detalhes?.boleto && (
+        <BoletoModal
+          isOpen={isBoletoModalOpen}
+          onClose={() => {
+            setIsBoletoModalOpen(false);
+            setSelectedPagamento(null);
+          }}
+          boleto={selectedPagamento.detalhes.boleto as any}
+          valor={selectedPagamento.valorFormatado}
+        />
+      )}
     </div>
   );
 }
 
-export { PENDING_CURSOS_PAYMENT_KEY };
+export { PENDING_CURSOS_PAYMENT_KEY } from "@/lib/pending-storage-keys";

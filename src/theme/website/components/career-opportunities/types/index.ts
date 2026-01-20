@@ -123,6 +123,9 @@ export interface JobCardProps {
   index: number;
   onApply?: (jobId: string) => void;
   onViewDetails?: (job: JobData) => void;
+  isApplied?: boolean;
+  applyDisabled?: boolean;
+  applyLabel?: string;
 }
 
 export interface JobFiltersProps {

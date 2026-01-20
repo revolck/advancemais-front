@@ -69,10 +69,18 @@ export interface Curriculo {
   };
   preferencias: any | null;
   habilidades: {
-    tecnicas: string[];
+    tecnicas: Array<
+      | string
+      | {
+          nome: string;
+          nivel: string;
+          anosExperiencia?: number;
+        }
+    >;
+    comportamentais?: string[];
   };
   idiomas: Idioma[];
-  experiencias: any[];
+  experiencias: any[] | { experiencias: any[] };
   formacao: any[];
   cursosCertificacoes: any[];
   premiosPublicacoes: any[];
@@ -102,6 +110,14 @@ export interface Candidatura {
   curriculo: Curriculo | null;
   vaga: VagaInfo | null;
   empresa: EmpresaInfo | null;
+}
+
+export interface CurriculosListFilters {
+  busca?: string;
+  principal?: boolean;
+  autorizaContato?: boolean;
+  salarioMinimo?: number;
+  salarioMaximo?: number;
 }
 
 export interface VagaInfo {
@@ -220,6 +236,25 @@ export interface AplicarVagaResponse {
   atualizadaEm: string;
   consentimentos?: Record<string, any>;
   cartaApresentacao?: string;
+}
+
+export interface CandidaturaVerificadaStatus {
+  id: string;
+  nome: string;
+  descricao?: string;
+}
+
+export interface CandidaturaVerificada {
+  id: string;
+  vagaId: string;
+  curriculoId?: string | null;
+  status?: CandidaturaVerificadaStatus;
+  aplicadaEm?: string;
+}
+
+export interface VerificarCandidaturaResponse {
+  hasApplied: boolean;
+  candidatura?: CandidaturaVerificada;
 }
 
 export type CandidaturaStatus =
@@ -535,10 +570,6 @@ export interface AtualizarCandidaturaResponse {
   success: boolean;
   candidatura: CandidaturaDetalhe;
 }
-
-
-
-
 
 
 

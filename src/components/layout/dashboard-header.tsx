@@ -4,8 +4,11 @@ import { useBreadcrumb } from "@/config/breadcrumb";
 import { DashboardBreadcrumb } from "./dashboard-breadcrumb";
 import { DashboardDateTime } from "./dashboard-datetime";
 import { cn } from "@/lib/utils";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter, useParams } from "next/navigation";
 import { useUserName } from "@/hooks/useUserName";
+import { ArrowLeft } from "lucide-react";
+import { useMemo } from "react";
+import { getMockAlunoCursos } from "@/mockData/aluno-candidato";
 
 interface DashboardHeaderProps {
   title?: string;
@@ -22,6 +25,8 @@ export function DashboardHeader({
 }: DashboardHeaderProps) {
   const { title, items } = useBreadcrumb();
   const pathname = usePathname();
+  const router = useRouter();
+  const params = useParams();
   const { userName, userGender } = useUserName();
   const displayTitle = customTitle || title;
 
@@ -33,6 +38,29 @@ export function DashboardHeader({
     pathname === "/" ||
     pathname === "/dashboard" ||
     (title === "Dashboard" && items.length === 1);
+
+  // Verifica se está na página de estrutura do curso
+  const isEstruturaCursoPage = pathname?.match(
+    /^\/dashboard\/cursos\/alunos\/cursos\/[^/]+\/[^/]+$/
+  );
+
+  // Verifica se está na página de aula individual
+  const isAulaPage = pathname?.match(
+    /^\/dashboard\/cursos\/alunos\/cursos\/[^/]+\/[^/]+\/[^/]+$/
+  );
+
+  // Buscar tipo de turma para exibir badge de modalidade
+  const turmaTipo = useMemo(() => {
+    if (!isEstruturaCursoPage || !params) return null;
+    const cursoId = params.cursoId as string;
+    const turmaId = params.turmaId as string;
+    if (!cursoId || !turmaId) return null;
+    const cursos = getMockAlunoCursos();
+    const curso = cursos.find(
+      (c) => c.cursoId === cursoId && c.turmaId === turmaId
+    );
+    return curso?.turmaTipo || null;
+  }, [isEstruturaCursoPage, params]);
 
   // Monta o título com saudação personalizada por gênero
   const finalTitle = (() => {
@@ -47,10 +75,40 @@ export function DashboardHeader({
   return (
     <header className={cn("flex items-center justify-between pb-6", className)}>
       {/* Lado esquerdo - Título */}
-      <div className="flex items-center">
-        <h1 className="!text-2xl font-semibold text-gray-800 tracking-tight">
-          {finalTitle}
-        </h1>
+      <div className="flex items-center gap-3">
+        {(isEstruturaCursoPage || isAulaPage) && (
+          <button
+            onClick={() => router.back()}
+            className="flex items-center mt-[-15px] justify-center w-6 h-6 shrink-0 self-center"
+            aria-label="Voltar para página anterior"
+          >
+            <ArrowLeft className="h-4 w-4 text-[var(--primary-color)] cursor-pointer hover:text-[var(--secondary-color)] transition-all duration-200 " />
+          </button>
+        )}
+        <div className="flex items-center gap-3">
+          <h1 className="!text-2xl font-semibold text-gray-800 tracking-tight leading-tight">
+            {finalTitle}
+          </h1>
+          {/* Badge de modalidade para cursos */}
+          {turmaTipo && (
+            <span
+              className={cn(
+                "px-2.5 py-1 rounded-md text-xs! font-semibold! capitalize shrink-0 mt-[-12px]",
+                turmaTipo === "ONLINE"
+                  ? "bg-blue-100 text-blue-700 border border-blue-200"
+                  : turmaTipo === "AO_VIVO"
+                  ? "bg-purple-100 text-purple-700 border border-purple-200"
+                  : turmaTipo === "PRESENCIAL"
+                  ? "bg-green-100 text-green-700 border border-green-200"
+                  : turmaTipo === "SEMIPRESENCIAL"
+                  ? "bg-amber-100 text-amber-700 border border-amber-200"
+                  : "bg-gray-100 text-gray-700 border border-gray-200"
+              )}
+            >
+              {turmaTipo.replace("_", " ")}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Lado direito - Data/Hora, Breadcrumb e conteúdo customizável */}

@@ -1,2 +1,2 @@
-export { PagamentosCursosDashboard, PENDING_CURSOS_PAYMENT_KEY } from "./PagamentosCursosDashboard";
-
+export { PagamentosCursosDashboard } from "./PagamentosCursosDashboard";
+export { PENDING_CURSOS_PAYMENT_KEY } from "@/lib/pending-storage-keys";

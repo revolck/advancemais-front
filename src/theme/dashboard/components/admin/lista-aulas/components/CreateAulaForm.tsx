@@ -639,6 +639,8 @@ export function CreateAulaForm({
         newErrors.youtubeUrl =
           "Link do YouTube é obrigatório para aulas online";
       }
+      // ONLINE NÃO pode ter Google Meet (apenas AO_VIVO e SEMIPRESENCIAL com tipoLink MEET)
+      // Validação removida: meetUrl não é um campo do formulário, é criado automaticamente pela API
     }
 
     if (formData.modalidade === "PRESENCIAL") {

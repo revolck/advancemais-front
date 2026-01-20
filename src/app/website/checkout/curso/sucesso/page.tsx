@@ -7,8 +7,7 @@ import { CheckCircle2, GraduationCap, Lock, ArrowLeft } from "lucide-react";
 import { ButtonCustom, toastCustom } from "@/components/ui/custom";
 import { getUserProfile } from "@/api/usuarios";
 import { createInscricao } from "@/api/cursos";
-
-const PENDING_COURSE_PURCHASE_KEY = "pending_course_purchase_v1";
+import { PENDING_COURSE_PURCHASE_KEY } from "@/lib/pending-storage-keys";
 
 function getCookieValue(name: string): string | null {
   if (typeof document === "undefined") return null;
@@ -171,4 +170,3 @@ export default function CheckoutCursoSucessoPage() {
     </div>
   );
 }
-

@@ -10,15 +10,21 @@ interface OrderSummaryProps {
   productName: string;
   price: number;
   appliedCoupon: AppliedCoupon | null;
+  itemLabel?: string;
+  totalSuffix?: string | null;
 }
 
 export const OrderSummary: React.FC<OrderSummaryProps> = ({
   productName,
   price,
   appliedCoupon,
+  itemLabel,
+  totalSuffix,
 }) => {
   const discount = appliedCoupon?.discount || 0;
   const total = price - discount;
+  const resolvedItemLabel = itemLabel ?? `Plano ${productName}`;
+  const resolvedTotalSuffix = totalSuffix === undefined ? "/mês" : totalSuffix;
 
   return (
     <div className="bg-white rounded-2xl border border-zinc-200 p-6">
@@ -26,7 +32,7 @@ export const OrderSummary: React.FC<OrderSummaryProps> = ({
 
       <div className="space-y-4">
         <div className="flex justify-between text-sm">
-          <span className="text-zinc-500">Plano {productName}</span>
+          <span className="text-zinc-500">{resolvedItemLabel}</span>
           <span className="text-zinc-900 font-medium">
             {formatPrice(price)}
           </span>
@@ -50,7 +56,11 @@ export const OrderSummary: React.FC<OrderSummaryProps> = ({
               <span className="text-2xl font-bold text-zinc-900">
                 {formatPrice(total)}
               </span>
-              <span className="text-zinc-400 text-sm">/mês</span>
+              {resolvedTotalSuffix ? (
+                <span className="text-zinc-400 text-sm">
+                  {resolvedTotalSuffix}
+                </span>
+              ) : null}
             </div>
           </div>
         </div>

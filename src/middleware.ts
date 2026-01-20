@@ -33,6 +33,7 @@ const SYSTEM_CONFIG = {
     "/",
     "/sobre",
     "/recrutamento",
+    "/vagas",
     "/fale-conosco",
     "/cursos",
     "/solucoes",

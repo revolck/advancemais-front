@@ -4,7 +4,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { headers } from "next/headers";
 import type { JobData } from "@/theme/website/components/career-opportunities/types";
-import { ButtonCustom } from "@/components/ui/custom/button";
 import {
   MapPin,
   DollarSign,
@@ -14,17 +13,14 @@ import {
   Award,
   Clock,
   ArrowLeft,
-  Link2,
   CheckCircle2,
   Sparkles,
   CalendarDays,
 } from "lucide-react";
 import { CompanyLogo } from "@/theme/website/components/career-opportunities/components/CompanyLogo";
 import { ShareJobButton } from "@/theme/website/components/career-opportunities/components/ShareJobButton";
+import { VagaApplyAction } from "@/theme/website/components/career-opportunities/components/VagaApplyAction";
 import { env } from "@/lib/env";
-
-const APPLY_FALLBACK =
-  "mailto:talentos@advancemais.com?subject=Interesse%20em%20vaga";
 
 type VagaApiResponse =
   | (Record<string, any> & { id: string; slug?: string; status?: string })
@@ -328,7 +324,6 @@ export default async function JobDetailsPage({
     icon: React.ElementType;
   }[];
 
-  const applyLink = job.urlCandidatura || APPLY_FALLBACK;
   const requirements = job.requisitos ?? [];
   const benefits = job.beneficios ?? [];
 
@@ -371,15 +366,11 @@ export default async function JobDetailsPage({
                   title={job.titulo}
                   description={job.descricao}
                 />
-                <ButtonCustom
-                  asChild
-                  variant="default"
-                  className="rounded-full text-sm"
-                >
-                  <a href={applyLink} target="_blank" rel="noopener noreferrer">
-                    Candidatar-se
-                  </a>
-                </ButtonCustom>
+                <VagaApplyAction
+                  vagaId={job.id}
+                  vagaTitulo={job.titulo}
+                  className="!bg-[#1f8454] hover:!bg-[#16603d] !text-white rounded-full text-sm"
+                />
               </div>
             </div>
           </div>

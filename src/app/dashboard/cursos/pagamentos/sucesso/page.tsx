@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { CheckCircle2, ArrowLeft } from "lucide-react";
 import { ButtonCustom } from "@/components/ui/custom";
-import { PENDING_CURSOS_PAYMENT_KEY } from "@/theme/dashboard/components/admin/pagamentos-cursos";
+import { PENDING_CURSOS_PAYMENT_KEY } from "@/lib/pending-storage-keys";
 
 export default function PagamentosCursosSucessoPage() {
   const searchParams = useSearchParams();
@@ -111,4 +111,3 @@ export default function PagamentosCursosSucessoPage() {
     </div>
   );
 }
-

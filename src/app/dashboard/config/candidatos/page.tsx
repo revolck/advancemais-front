@@ -2,10 +2,24 @@
 
 import React from "react";
 import { VerticalTabs, type VerticalTabItem } from "@/components/ui/custom";
+import { AreasInteresseForm } from "./areas-interesse/AreasInteresseForm";
+import { SubareasInteresseForm } from "./subareas-interesse/SubareasInteresseForm";
 import { StatusProcessosForm } from "./status-processos/StatusProcessosForm";
 
 export default function CandidatosDashboardPage() {
   const items: VerticalTabItem[] = [
+    {
+      value: "areas-interesse",
+      label: "Áreas de interesse",
+      icon: "Tags",
+      content: <AreasInteresseForm />,
+    },
+    {
+      value: "subareas-interesse",
+      label: "Subáreas de interesse",
+      icon: "ListTree",
+      content: <SubareasInteresseForm />,
+    },
     {
       value: "status-processos",
       label: "Status de Processos",
@@ -19,7 +33,7 @@ export default function CandidatosDashboardPage() {
       <div className="flex-1 min-h-0">
         <VerticalTabs
           items={items}
-          defaultValue="status-processos"
+          defaultValue="areas-interesse"
           variant="spacious"
           size="sm"
           withAnimation

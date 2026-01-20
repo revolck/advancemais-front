@@ -57,6 +57,11 @@ export interface SinglePaymentIntent {
   usuarioId: string;
   /** Items do pagamento */
   items: PaymentItem[];
+  /** Token do cartão (opcional, quando pagamento direto estiver habilitado no backend) */
+  card?: {
+    token: string;
+    installments?: number;
+  };
   /** Dados do pagador */
   payer?: PaymentPayer;
   /** URL de redirecionamento em caso de sucesso */
@@ -462,4 +467,3 @@ export type MercadoPagoErrorCode =
   | "INVALID_SIGNATURE"
   | "LOG_NOT_FOUND"
   | "FORBIDDEN";
-

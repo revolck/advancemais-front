@@ -54,6 +54,115 @@ export function ViewCurriculoModal({
   usuarioNome,
   usuarioData,
 }: ViewCurriculoModalProps) {
+  const formacaoArray = useMemo<any[]>(() => {
+    const raw: any = (curriculo as any)?.formacao;
+    return Array.isArray(raw) ? raw : [];
+  }, [curriculo]);
+
+  const experienciasArray = useMemo(() => {
+    const raw: any = (curriculo as any)?.experiencias;
+    if (Array.isArray(raw)) return raw;
+    if (raw && typeof raw === "object" && Array.isArray(raw.experiencias)) {
+      return raw.experiencias;
+    }
+    return [];
+  }, [curriculo]);
+
+  const cursosCertificacoesFlat = useMemo(() => {
+    const raw: any = (curriculo as any)?.cursosCertificacoes;
+    const cursos = Array.isArray(raw)
+      ? raw
+      : raw && typeof raw === "object" && Array.isArray(raw.cursos)
+        ? raw.cursos
+        : [];
+    const certificacoes =
+      raw && typeof raw === "object" && Array.isArray(raw.certificacoes)
+        ? raw.certificacoes
+        : [];
+
+    const normalizePeriodo = (inicio?: any, fim?: any) => {
+      const start = typeof inicio === "string" ? inicio : "";
+      const end = typeof fim === "string" ? fim : "";
+      if (!start && !end) return "";
+      if (start && end) return `${start} → ${end}`;
+      return start || end;
+    };
+
+    const mappedCursos = (cursos as any[]).map((c) => {
+      const titulo =
+        (typeof c?.titulo === "string" && c.titulo) ||
+        (typeof c?.nome === "string" && c.nome) ||
+        "";
+      const instituicao =
+        (typeof c?.instituicao === "string" && c.instituicao) || "";
+      const periodo =
+        (typeof c?.periodo === "string" && c.periodo) ||
+        (typeof c?.dataConclusao === "string" && c.dataConclusao) ||
+        "";
+      return { titulo, instituicao, periodo, kind: "curso" as const };
+    });
+
+    const mappedCertificacoes = (certificacoes as any[]).map((c) => {
+      const titulo =
+        (typeof c?.titulo === "string" && c.titulo) ||
+        (typeof c?.nome === "string" && c.nome) ||
+        "";
+      const instituicao =
+        (typeof c?.organizacao === "string" && c.organizacao) ||
+        (typeof c?.instituicao === "string" && c.instituicao) ||
+        "";
+      const periodo =
+        (typeof c?.periodo === "string" && c.periodo) ||
+        normalizePeriodo(c?.dataEmissao, c?.dataExpiracao) ||
+        (typeof c?.dataEmissao === "string" && c.dataEmissao) ||
+        "";
+      return { titulo, instituicao, periodo, kind: "certificacao" as const };
+    });
+
+    return [...mappedCursos, ...mappedCertificacoes].filter(
+      (i) => Boolean(i.titulo) || Boolean(i.instituicao) || Boolean(i.periodo),
+    );
+  }, [curriculo]);
+
+  const premiosPublicacoesFlat = useMemo(() => {
+    const raw: any = (curriculo as any)?.premiosPublicacoes;
+    const premios = Array.isArray(raw)
+      ? raw
+      : raw && typeof raw === "object" && Array.isArray(raw.premios)
+        ? raw.premios
+        : [];
+    const publicacoes =
+      raw && typeof raw === "object" && Array.isArray(raw.publicacoes)
+        ? raw.publicacoes
+        : [];
+
+    const mappedPremios = (premios as any[]).map((p) => ({
+      titulo: (typeof p?.titulo === "string" && p.titulo) || "",
+      descricao: (typeof p?.descricao === "string" && p.descricao) || "",
+      kind: "premio" as const,
+    }));
+
+    const mappedPublicacoes = (publicacoes as any[]).map((p) => {
+      const titulo = (typeof p?.titulo === "string" && p.titulo) || "";
+      const parts = [
+        typeof p?.tipo === "string" ? p.tipo : "",
+        typeof p?.veiculo === "string" ? p.veiculo : "",
+        typeof p?.data === "string" ? p.data : "",
+      ].filter(Boolean);
+      const descricaoBase = parts.join(" • ");
+      const url = typeof p?.url === "string" ? p.url : "";
+      const descricao = [descricaoBase, url].filter(Boolean).join(" • ");
+      return { titulo, descricao, kind: "publicacao" as const };
+    });
+
+    return [...mappedPremios, ...mappedPublicacoes].filter(
+      (i) => Boolean(i.titulo) || Boolean(i.descricao),
+    );
+  }, [curriculo]);
+
+  const cursosCertificacoesCount = cursosCertificacoesFlat.length;
+  const premiosPublicacoesCount = premiosPublicacoesFlat.length;
+
   const pdfRef = useRef<HTMLDivElement>(null);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [avatarDataUrl, setAvatarDataUrl] = useState<string | null>(null);
@@ -126,7 +235,7 @@ export function ViewCurriculoModal({
             reader.onloadend = () => resolve(reader.result as string);
             reader.onerror = reject;
             reader.readAsDataURL(blob);
-          })
+          }),
       )
       .then((dataUrl) => {
         if (isMounted) {
@@ -221,8 +330,8 @@ export function ViewCurriculoModal({
       contactItems.length === 1
         ? "grid-cols-1"
         : contactItems.length === 3
-        ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
-        : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4";
+          ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+          : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4";
 
     return (
       <div className={`grid ${gridCols} gap-3 mt-2`}>
@@ -305,8 +414,8 @@ export function ViewCurriculoModal({
   // Aba Experiência
   const experienciaContent = (
     <div className="space-y-8">
-      {Array.isArray(curriculo.experiencias) && curriculo.experiencias.length > 0 ? (
-        curriculo.experiencias.map((exp, index) => (
+      {experienciasArray.length > 0 ? (
+        experienciasArray.map((exp: any, index: number) => (
           <div key={index} className="relative">
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1 min-w-0">
@@ -317,9 +426,20 @@ export function ViewCurriculoModal({
                       {exp.empresa}
                     </p>
                   )}
-                  {exp.periodo && <p>{exp.periodo}</p>}
+                  {(exp.periodo || exp.dataInicio || exp.dataFim) && (
+                    <p>
+                      {exp.periodo ||
+                        `${exp.dataInicio || "—"}${
+                          exp.atual
+                            ? " • Atual"
+                            : exp.dataFim
+                              ? ` → ${exp.dataFim}`
+                              : ""
+                        }`}
+                    </p>
+                  )}
                   {exp.descricao && <p className="!mb-0">{exp.descricao}</p>}
-                  {index < curriculo.experiencias.length - 1 && (
+                  {index < experienciasArray.length - 1 && (
                     <div className="absolute -bottom-4 left-0 right-0 h-px bg-gray-100" />
                   )}
                 </div>
@@ -343,14 +463,14 @@ export function ViewCurriculoModal({
   // Aba Formação
   const formacaoContent = (
     <div className="space-y-10">
-      {curriculo.formacao && curriculo.formacao.length > 0 && (
+      {formacaoArray.length > 0 && (
         <div>
           <h5 className="!mb-0 flex items-center gap-2">
             <GraduationCap className="h-5 w-5 text-[var(--secondary-color)]" />
             Formação Acadêmica
           </h5>
           <div className="space-y-8 ml-3 mt-4 border-l border-slate-200/60 pl-4">
-            {curriculo.formacao.map((form, index) => (
+            {formacaoArray.map((form: any, index: number) => (
               <div key={index} className="relative">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
@@ -361,9 +481,20 @@ export function ViewCurriculoModal({
                       </p>
                     )}
                   </div>
-                  {form.periodo && (
+                  {(form.periodo ||
+                    form.dataInicio ||
+                    form.dataFim ||
+                    form.status) && (
                     <span className="text-xs text-gray-500 whitespace-nowrap font-medium">
-                      {form.periodo}
+                      {form.periodo ||
+                        `${form.dataInicio || "—"}${
+                          form.status === "EM_ANDAMENTO" ||
+                          form.status === "CURSANDO"
+                            ? " • Em andamento"
+                            : form.dataFim
+                              ? ` → ${form.dataFim}`
+                              : ""
+                        }`}
                     </span>
                   )}
                 </div>
@@ -372,7 +503,7 @@ export function ViewCurriculoModal({
                     {form.descricao}
                   </p>
                 )}
-                {index < curriculo.formacao.length - 1 && (
+                {index < formacaoArray.length - 1 && (
                   <div className="absolute -bottom-4 left-0 right-0 h-px bg-gray-100" />
                 )}
               </div>
@@ -381,56 +512,53 @@ export function ViewCurriculoModal({
         </div>
       )}
 
-      {curriculo.cursosCertificacoes &&
-        curriculo.cursosCertificacoes.length > 0 && (
-          <div>
-            <h5 className="!mb-0 flex items-center gap-2">
-              <Award className="h-4 w-4 text-[var(--secondary-color)]" />
-              Cursos e Certificações
-            </h5>
-            <div className="space-y-8 ml-3 mt-4 border-l border-slate-200/60 pl-4">
-              {curriculo.cursosCertificacoes.map((curso, index) => (
-                <div key={index} className="relative">
-                  <div className="flex items-start justify-between gap-4 mb-2">
-                    <div className="flex-1 min-w-0">
-                      {curso.titulo && (
-                        <h4 className="text-sm font-semibold text-gray-900 mb-1">
-                          {curso.titulo}
-                        </h4>
-                      )}
-                      {curso.instituicao && (
-                        <p className="text-sm text-gray-600 font-medium">
-                          {curso.instituicao}
-                        </p>
-                      )}
-                    </div>
-                    {curso.periodo && (
-                      <span className="text-xs text-gray-500 whitespace-nowrap font-medium">
-                        {curso.periodo}
-                      </span>
+      {cursosCertificacoesCount > 0 && (
+        <div>
+          <h5 className="!mb-0 flex items-center gap-2">
+            <Award className="h-4 w-4 text-[var(--secondary-color)]" />
+            Cursos e Certificações
+          </h5>
+          <div className="space-y-8 ml-3 mt-4 border-l border-slate-200/60 pl-4">
+            {cursosCertificacoesFlat.map((curso: any, index: number) => (
+              <div key={index} className="relative">
+                <div className="flex items-start justify-between gap-4 mb-2">
+                  <div className="flex-1 min-w-0">
+                    {curso.titulo && (
+                      <h4 className="text-sm font-semibold text-gray-900 mb-1">
+                        {curso.titulo}
+                      </h4>
+                    )}
+                    {curso.instituicao && (
+                      <p className="text-sm text-gray-600 font-medium">
+                        {curso.instituicao}
+                      </p>
                     )}
                   </div>
-                  {index < curriculo.cursosCertificacoes.length - 1 && (
-                    <div className="absolute -bottom-4 left-0 right-0 h-px bg-gray-100" />
+                  {curso.periodo && (
+                    <span className="text-xs text-gray-500 whitespace-nowrap font-medium">
+                      {curso.periodo}
+                    </span>
                   )}
                 </div>
-              ))}
-            </div>
+                {index < cursosCertificacoesFlat.length - 1 && (
+                  <div className="absolute -bottom-4 left-0 right-0 h-px bg-gray-100" />
+                )}
+              </div>
+            ))}
           </div>
-        )}
+        </div>
+      )}
 
-      {(!curriculo.formacao || curriculo.formacao.length === 0) &&
-        (!curriculo.cursosCertificacoes ||
-          curriculo.cursosCertificacoes.length === 0) && (
-          <EmptyState
-            illustration="fileNotFound"
-            illustrationAlt="Nenhuma formação"
-            title="Nenhuma formação cadastrada"
-            description="Este currículo ainda não possui formação acadêmica ou cursos cadastrados."
-            maxContentWidth="md"
-            size="sm"
-          />
-        )}
+      {formacaoArray.length === 0 && cursosCertificacoesCount === 0 && (
+        <EmptyState
+          illustration="fileNotFound"
+          illustrationAlt="Nenhuma formação"
+          title="Nenhuma formação cadastrada"
+          description="Este currículo ainda não possui formação acadêmica ou cursos cadastrados."
+          maxContentWidth="md"
+          size="sm"
+        />
+      )}
     </div>
   );
 
@@ -445,15 +573,27 @@ export function ViewCurriculoModal({
               Habilidades Técnicas
             </h5>
             <div className="flex flex-wrap gap-2.5">
-              {curriculo.habilidades.tecnicas.map((habilidade, index) => (
-                <Badge
-                  key={index}
-                  variant="outline"
-                  className="text-xs font-medium border-[var(--primary-color)]/20 text-[var(--primary-color)] bg-[var(--primary-color)]/5 hover:bg-[var(--primary-color)]/10 hover:border-[var(--primary-color)]/30 transition-all px-3 py-1.5 rounded-md"
-                >
-                  {habilidade}
-                </Badge>
-              ))}
+              {curriculo.habilidades.tecnicas.map((habilidade, index) => {
+                const label =
+                  typeof habilidade === "string"
+                    ? habilidade
+                    : `${habilidade?.nome ?? "Habilidade"}${
+                        habilidade?.nivel ? ` • ${habilidade.nivel}` : ""
+                      }${
+                        typeof habilidade?.anosExperiencia === "number"
+                          ? ` • ${habilidade.anosExperiencia} ano(s)`
+                          : ""
+                      }`;
+                return (
+                  <Badge
+                    key={index}
+                    variant="outline"
+                    className="text-xs font-medium border-[var(--primary-color)]/20 text-[var(--primary-color)] bg-[var(--primary-color)]/5 hover:bg-[var(--primary-color)]/10 hover:border-[var(--primary-color)]/30 transition-all px-3 py-1.5 rounded-md"
+                  >
+                    {label}
+                  </Badge>
+                );
+              })}
             </div>
           </div>
         )}
@@ -482,32 +622,30 @@ export function ViewCurriculoModal({
         </div>
       )}
 
-      {Array.isArray(curriculo.premiosPublicacoes) &&
-        curriculo.premiosPublicacoes.length > 0 && (
-          <div>
-            <h5 className="!mb-6 flex items-center gap-2">
-              <Trophy className="h-4 w-4 text-[var(--primary-color)]" />
-              Prêmios e Publicações
-            </h5>
-            <div className="space-y-8">
-              {curriculo.premiosPublicacoes.map((premio, index) => (
-                <div key={index} className="relative">
-                  {premio.titulo && <h6 className="!mb-2">{premio.titulo}</h6>}
-                  {premio.descricao && <p>{premio.descricao}</p>}
-                  {index < curriculo.premiosPublicacoes.length - 1 && (
-                    <div className="absolute -bottom-4 left-0 right-0 h-px bg-gray-100" />
-                  )}
-                </div>
-              ))}
-            </div>
+      {premiosPublicacoesCount > 0 && (
+        <div>
+          <h5 className="!mb-6 flex items-center gap-2">
+            <Trophy className="h-4 w-4 text-[var(--primary-color)]" />
+            Prêmios e Publicações
+          </h5>
+          <div className="space-y-8">
+            {premiosPublicacoesFlat.map((premio: any, index: number) => (
+              <div key={index} className="relative">
+                {premio.titulo && <h6 className="!mb-2">{premio.titulo}</h6>}
+                {premio.descricao && <p>{premio.descricao}</p>}
+                {index < premiosPublicacoesFlat.length - 1 && (
+                  <div className="absolute -bottom-4 left-0 right-0 h-px bg-gray-100" />
+                )}
+              </div>
+            ))}
           </div>
-        )}
+        </div>
+      )}
 
       {(!Array.isArray(curriculo.habilidades?.tecnicas) ||
         curriculo.habilidades.tecnicas.length === 0) &&
         (!Array.isArray(curriculo.idiomas) || curriculo.idiomas.length === 0) &&
-        (!Array.isArray(curriculo.premiosPublicacoes) ||
-          curriculo.premiosPublicacoes.length === 0) && (
+        premiosPublicacoesCount === 0 && (
           <EmptyState
             illustration="fileNotFound"
             illustrationAlt="Nenhuma habilidade"
@@ -533,9 +671,7 @@ export function ViewCurriculoModal({
       label: "Experiência",
       icon: "Briefcase",
       badge:
-        Array.isArray(curriculo.experiencias) && curriculo.experiencias.length > 0
-          ? curriculo.experiencias.length
-          : undefined,
+        experienciasArray.length > 0 ? experienciasArray.length : undefined,
       content: experienciaContent,
     },
     {
@@ -543,15 +679,8 @@ export function ViewCurriculoModal({
       label: "Formação",
       icon: "GraduationCap",
       badge:
-        (Array.isArray(curriculo.formacao) ? curriculo.formacao.length : 0) +
-          (Array.isArray(curriculo.cursosCertificacoes)
-            ? curriculo.cursosCertificacoes.length
-            : 0) >
-        0
-          ? (Array.isArray(curriculo.formacao) ? curriculo.formacao.length : 0) +
-            (Array.isArray(curriculo.cursosCertificacoes)
-              ? curriculo.cursosCertificacoes.length
-              : 0)
+        (formacaoArray.length || 0) + cursosCertificacoesCount > 0
+          ? (formacaoArray.length || 0) + cursosCertificacoesCount
           : undefined,
       content: formacaoContent,
     },
@@ -755,7 +884,7 @@ export function ViewCurriculoModal({
             </section>
           )}
 
-          {Array.isArray(curriculo.experiencias) && curriculo.experiencias.length > 0 && (
+          {experienciasArray.length > 0 && (
             <section>
               <h2 style={{ fontSize: "12px", letterSpacing: "0.1em" }}>
                 EXPERIÊNCIA
@@ -768,7 +897,7 @@ export function ViewCurriculoModal({
                   gap: "16px",
                 }}
               >
-                {curriculo.experiencias.map((exp, index) => (
+                {experienciasArray.map((exp: any, index: number) => (
                   <div key={`exp-pdf-${index}`}>
                     <div
                       style={{
@@ -779,7 +908,14 @@ export function ViewCurriculoModal({
                     >
                       <span>{exp.cargo}</span>
                       <span style={{ fontSize: "11px", color: "#6b7280" }}>
-                        {exp.periodo}
+                        {exp.periodo ||
+                          `${exp.dataInicio || "—"}${
+                            exp.atual
+                              ? " • Atual"
+                              : exp.dataFim
+                                ? ` → ${exp.dataFim}`
+                                : ""
+                          }`}
                       </span>
                     </div>
                     {exp.empresa && (
@@ -796,7 +932,7 @@ export function ViewCurriculoModal({
             </section>
           )}
 
-          {Array.isArray(curriculo.formacao) && curriculo.formacao.length > 0 && (
+          {formacaoArray.length > 0 && (
             <section>
               <h2 style={{ fontSize: "12px", letterSpacing: "0.1em" }}>
                 FORMAÇÃO
@@ -809,7 +945,7 @@ export function ViewCurriculoModal({
                   gap: "16px",
                 }}
               >
-                {curriculo.formacao.map((form, index) => (
+                {formacaoArray.map((form: any, index: number) => (
                   <div key={`edu-${index}`}>
                     <div
                       style={{
@@ -820,7 +956,15 @@ export function ViewCurriculoModal({
                     >
                       <span>{form.curso}</span>
                       <span style={{ fontSize: "11px", color: "#6b7280" }}>
-                        {form.periodo}
+                        {form.periodo ||
+                          `${form.dataInicio || "—"}${
+                            form.status === "EM_ANDAMENTO" ||
+                            form.status === "CURSANDO"
+                              ? " • Em andamento"
+                              : form.dataFim
+                                ? ` → ${form.dataFim}`
+                                : ""
+                          }`}
                       </span>
                     </div>
                     {form.instituicao && (
@@ -837,44 +981,43 @@ export function ViewCurriculoModal({
             </section>
           )}
 
-          {Array.isArray(curriculo.cursosCertificacoes) &&
-            curriculo.cursosCertificacoes.length > 0 && (
-              <section>
-                <h2 style={{ fontSize: "12px", letterSpacing: "0.1em" }}>
-                  CURSOS E CERTIFICAÇÕES
-                </h2>
-                <div
-                  style={{
-                    marginTop: "12px",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "16px",
-                  }}
-                >
-                  {curriculo.cursosCertificacoes.map((curso, index) => (
-                    <div key={`curso-${index}`}>
-                      <div style={{ fontWeight: 600 }}>{curso.titulo}</div>
-                      {curso.instituicao && (
-                        <p style={{ margin: "2px 0", color: "#6b7280" }}>
-                          {curso.instituicao}
-                        </p>
-                      )}
-                      {curso.periodo && (
-                        <p
-                          style={{
-                            margin: 0,
-                            fontSize: "12px",
-                            color: "#6b7280",
-                          }}
-                        >
-                          {curso.periodo}
-                        </p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </section>
-            )}
+          {cursosCertificacoesCount > 0 && (
+            <section>
+              <h2 style={{ fontSize: "12px", letterSpacing: "0.1em" }}>
+                CURSOS E CERTIFICAÇÕES
+              </h2>
+              <div
+                style={{
+                  marginTop: "12px",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "16px",
+                }}
+              >
+                {cursosCertificacoesFlat.map((curso: any, index: number) => (
+                  <div key={`curso-${index}`}>
+                    <div style={{ fontWeight: 600 }}>{curso.titulo}</div>
+                    {curso.instituicao && (
+                      <p style={{ margin: "2px 0", color: "#6b7280" }}>
+                        {curso.instituicao}
+                      </p>
+                    )}
+                    {curso.periodo && (
+                      <p
+                        style={{
+                          margin: 0,
+                          fontSize: "12px",
+                          color: "#6b7280",
+                        }}
+                      >
+                        {curso.periodo}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
 
           {Array.isArray(curriculo.habilidades?.tecnicas) &&
             curriculo.habilidades.tecnicas.length > 0 && (
@@ -883,7 +1026,19 @@ export function ViewCurriculoModal({
                   HABILIDADES TÉCNICAS
                 </h2>
                 <p style={{ marginTop: "8px" }}>
-                  {curriculo.habilidades.tecnicas.join(" • ")}
+                  {curriculo.habilidades.tecnicas
+                    .map((habilidade) =>
+                      typeof habilidade === "string"
+                        ? habilidade
+                        : `${habilidade?.nome ?? "Habilidade"}${
+                            habilidade?.nivel ? ` • ${habilidade.nivel}` : ""
+                          }${
+                            typeof habilidade?.anosExperiencia === "number"
+                              ? ` • ${habilidade.anosExperiencia} ano(s)`
+                              : ""
+                          }`,
+                    )
+                    .join(" • ")}
                 </p>
               </section>
             )}
@@ -918,35 +1073,34 @@ export function ViewCurriculoModal({
             </section>
           )}
 
-          {Array.isArray(curriculo.premiosPublicacoes) &&
-            curriculo.premiosPublicacoes.length > 0 && (
-              <section>
-                <h2 style={{ fontSize: "12px", letterSpacing: "0.1em" }}>
-                  PRÊMIOS E PUBLICAÇÕES
-                </h2>
-                <div
-                  style={{
-                    marginTop: "12px",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "16px",
-                  }}
-                >
-                  {curriculo.premiosPublicacoes.map((premio, index) => (
-                    <div key={`award-${index}`}>
-                      {premio.titulo && (
-                        <p style={{ margin: 0, fontWeight: 600 }}>
-                          {premio.titulo}
-                        </p>
-                      )}
-                      {premio.descricao && (
-                        <p style={{ margin: "4px 0 0" }}>{premio.descricao}</p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </section>
-            )}
+          {premiosPublicacoesCount > 0 && (
+            <section>
+              <h2 style={{ fontSize: "12px", letterSpacing: "0.1em" }}>
+                PRÊMIOS E PUBLICAÇÕES
+              </h2>
+              <div
+                style={{
+                  marginTop: "12px",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "16px",
+                }}
+              >
+                {premiosPublicacoesFlat.map((premio: any, index: number) => (
+                  <div key={`award-${index}`}>
+                    {premio.titulo && (
+                      <p style={{ margin: 0, fontWeight: 600 }}>
+                        {premio.titulo}
+                      </p>
+                    )}
+                    {premio.descricao && (
+                      <p style={{ margin: "4px 0 0" }}>{premio.descricao}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
         </div>
       </div>
     </>

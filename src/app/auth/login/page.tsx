@@ -121,12 +121,19 @@ const SignInPageDemo = () => {
         const protocol = window.location.protocol;
         const port = window.location.port ? `:${window.location.port}` : "";
         toastCustom.success("Login realizado com sucesso!");
+        const redirectParam = searchParams?.get("redirect");
+        const safeRedirect =
+          typeof redirectParam === "string" &&
+          redirectParam.startsWith("/") &&
+          !redirectParam.startsWith("//")
+            ? redirectParam
+            : "/";
 
         // Redirect após delay - formulário permanece bloqueado
         setTimeout(() => {
           window.location.href = isLocalhost
-            ? "/"
-            : `${protocol}//app.${baseDomain}${port}/`;
+            ? safeRedirect
+            : `${protocol}//app.${baseDomain}${port}${safeRedirect}`;
         }, 1000);
       } catch (error) {
         // ❌ Erro no login - formulário será desbloqueado

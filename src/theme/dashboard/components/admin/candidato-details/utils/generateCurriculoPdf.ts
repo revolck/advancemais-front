@@ -92,6 +92,103 @@ function createPdfElement(
     font-size: 13px;
   `;
 
+  const formacaoArray: any[] = Array.isArray((curriculo as any)?.formacao)
+    ? ((curriculo as any).formacao as any[])
+    : [];
+
+  const cursosCertificacoesFlat: Array<{
+    titulo?: string;
+    instituicao?: string;
+    periodo?: string;
+  }> = (() => {
+    const raw: any = (curriculo as any)?.cursosCertificacoes;
+    const cursos = Array.isArray(raw)
+      ? raw
+      : raw && typeof raw === "object" && Array.isArray(raw.cursos)
+        ? raw.cursos
+        : [];
+    const certificacoes =
+      raw && typeof raw === "object" && Array.isArray(raw.certificacoes)
+        ? raw.certificacoes
+        : [];
+
+    const normalizePeriodo = (inicio?: any, fim?: any) => {
+      const start = typeof inicio === "string" ? inicio : "";
+      const end = typeof fim === "string" ? fim : "";
+      if (!start && !end) return "";
+      if (start && end) return `${start} → ${end}`;
+      return start || end;
+    };
+
+    const mappedCursos = (cursos as any[]).map((c) => ({
+      titulo:
+        (typeof c?.titulo === "string" && c.titulo) ||
+        (typeof c?.nome === "string" && c.nome) ||
+        "",
+      instituicao: (typeof c?.instituicao === "string" && c.instituicao) || "",
+      periodo:
+        (typeof c?.periodo === "string" && c.periodo) ||
+        (typeof c?.dataConclusao === "string" && c.dataConclusao) ||
+        "",
+    }));
+
+    const mappedCertificacoes = (certificacoes as any[]).map((c) => ({
+      titulo:
+        (typeof c?.titulo === "string" && c.titulo) ||
+        (typeof c?.nome === "string" && c.nome) ||
+        "",
+      instituicao:
+        (typeof c?.organizacao === "string" && c.organizacao) ||
+        (typeof c?.instituicao === "string" && c.instituicao) ||
+        "",
+      periodo:
+        (typeof c?.periodo === "string" && c.periodo) ||
+        normalizePeriodo(c?.dataEmissao, c?.dataExpiracao) ||
+        (typeof c?.dataEmissao === "string" && c.dataEmissao) ||
+        "",
+    }));
+
+    return [...mappedCursos, ...mappedCertificacoes].filter(
+      (i) => Boolean(i.titulo) || Boolean(i.instituicao) || Boolean(i.periodo)
+    );
+  })();
+
+  const premiosPublicacoesFlat: Array<{ titulo?: string; descricao?: string }> =
+    (() => {
+      const raw: any = (curriculo as any)?.premiosPublicacoes;
+      const premios = Array.isArray(raw)
+        ? raw
+        : raw && typeof raw === "object" && Array.isArray(raw.premios)
+          ? raw.premios
+          : [];
+      const publicacoes =
+        raw && typeof raw === "object" && Array.isArray(raw.publicacoes)
+          ? raw.publicacoes
+          : [];
+
+      const mappedPremios = (premios as any[]).map((p) => ({
+        titulo: (typeof p?.titulo === "string" && p.titulo) || "",
+        descricao: (typeof p?.descricao === "string" && p.descricao) || "",
+      }));
+
+      const mappedPublicacoes = (publicacoes as any[]).map((p) => {
+        const titulo = (typeof p?.titulo === "string" && p.titulo) || "";
+        const parts = [
+          typeof p?.tipo === "string" ? p.tipo : "",
+          typeof p?.veiculo === "string" ? p.veiculo : "",
+          typeof p?.data === "string" ? p.data : "",
+        ].filter(Boolean);
+        const descricaoBase = parts.join(" • ");
+        const url = typeof p?.url === "string" ? p.url : "";
+        const descricao = [descricaoBase, url].filter(Boolean).join(" • ");
+        return { titulo, descricao };
+      });
+
+      return [...mappedPremios, ...mappedPublicacoes].filter(
+        (i) => Boolean(i.titulo) || Boolean(i.descricao)
+      );
+    })();
+
   // ==================== HEADER COM BACKGROUND ELEGANTE ====================
   const header = document.createElement("div");
   header.style.cssText = `
@@ -292,8 +389,12 @@ function createPdfElement(
     content.appendChild(section);
   }
 
+  const experienciasArray: any[] = Array.isArray(curriculo.experiencias)
+    ? curriculo.experiencias
+    : (curriculo.experiencias as any)?.experiencias || [];
+
   // Experiências
-  if (curriculo.experiencias && curriculo.experiencias.length > 0) {
+  if (experienciasArray.length > 0) {
     const section = createSection("Experiência Profissional", "💼");
     const timeline = document.createElement("div");
     timeline.style.cssText = `
@@ -302,7 +403,7 @@ function createPdfElement(
       gap: 24px;
     `;
 
-    curriculo.experiencias.forEach((exp, index) => {
+    experienciasArray.forEach((exp, index) => {
       const expItem = document.createElement("div");
       expItem.style.cssText = `
         position: relative;
@@ -356,7 +457,11 @@ function createPdfElement(
         font-weight: 600;
         white-space: nowrap;
       `;
-      periodo.textContent = exp.periodo || "Período não informado";
+      periodo.textContent =
+        exp.periodo ||
+        `${exp.dataInicio || "—"}${
+          exp.atual ? " • Atual" : exp.dataFim ? ` → ${exp.dataFim}` : ""
+        }`;
 
       headerDiv.appendChild(leftHeader);
       headerDiv.appendChild(periodo);
@@ -384,7 +489,7 @@ function createPdfElement(
   }
 
   // Formação
-  if (curriculo.formacao && curriculo.formacao.length > 0) {
+  if (formacaoArray.length > 0) {
     const section = createSection("Formação Acadêmica", "🎓");
     const formacaoList = document.createElement("div");
     formacaoList.style.cssText = `
@@ -393,7 +498,7 @@ function createPdfElement(
       gap: 20px;
     `;
 
-    curriculo.formacao.forEach((form, index) => {
+    formacaoArray.forEach((form, index) => {
       const formItem = document.createElement("div");
       formItem.style.cssText = `
         padding: 20px;
@@ -445,7 +550,15 @@ function createPdfElement(
         font-weight: 600;
         white-space: nowrap;
       `;
-      periodo.textContent = form.periodo || "Período não informado";
+      periodo.textContent =
+        form.periodo ||
+        `${form.dataInicio || "—"}${
+          form.status === "EM_ANDAMENTO" || form.status === "CURSANDO"
+            ? " • Em andamento"
+            : form.dataFim
+              ? ` → ${form.dataFim}`
+              : ""
+        }`;
 
       headerDiv.appendChild(leftHeader);
       headerDiv.appendChild(periodo);
@@ -471,10 +584,7 @@ function createPdfElement(
   }
 
   // Cursos e Certificações
-  if (
-    curriculo.cursosCertificacoes &&
-    curriculo.cursosCertificacoes.length > 0
-  ) {
+  if (cursosCertificacoesFlat.length > 0) {
     const section = createSection("Cursos & Certificações", "📜");
     const cursosList = document.createElement("div");
     cursosList.style.cssText = `
@@ -483,7 +593,7 @@ function createPdfElement(
       gap: 16px;
     `;
 
-    curriculo.cursosCertificacoes.forEach((curso) => {
+    cursosCertificacoesFlat.forEach((curso) => {
       const cursoItem = document.createElement("div");
       cursoItem.style.cssText = `
         padding: 16px;
@@ -500,7 +610,7 @@ function createPdfElement(
         color: #001a57;
         margin-bottom: 6px;
       `;
-      titulo.textContent = curso.titulo;
+      titulo.textContent = curso.titulo ?? "Curso";
       cursoItem.appendChild(titulo);
 
       if (curso.instituicao) {
@@ -546,6 +656,16 @@ function createPdfElement(
     `;
 
     curriculo.habilidades.tecnicas.forEach((skill) => {
+      const label =
+        typeof skill === "string"
+          ? skill
+          : `${skill?.nome ?? "Habilidade"}${
+              skill?.nivel ? ` • ${skill.nivel}` : ""
+            }${
+              typeof skill?.anosExperiencia === "number"
+                ? ` • ${skill.anosExperiencia} ano(s)`
+                : ""
+            }`;
       const badge = document.createElement("span");
       badge.style.cssText = `
         display: inline-block;
@@ -557,7 +677,7 @@ function createPdfElement(
         font-weight: 600;
         box-shadow: 0 2px 8px rgba(0, 26, 87, 0.2);
       `;
-      badge.textContent = skill;
+      badge.textContent = label;
       skillsContainer.appendChild(badge);
     });
 
@@ -617,10 +737,7 @@ function createPdfElement(
   }
 
   // Prêmios e Publicações
-  if (
-    curriculo.premiosPublicacoes &&
-    curriculo.premiosPublicacoes.length > 0
-  ) {
+  if (premiosPublicacoesFlat.length > 0) {
     const section = createSection("Prêmios & Publicações", "🏆");
     const premiosList = document.createElement("div");
     premiosList.style.cssText = `
@@ -629,7 +746,7 @@ function createPdfElement(
       gap: 16px;
     `;
 
-    curriculo.premiosPublicacoes.forEach((premio) => {
+    premiosPublicacoesFlat.forEach((premio) => {
       const premioItem = document.createElement("div");
       premioItem.style.cssText = `
         padding: 16px;

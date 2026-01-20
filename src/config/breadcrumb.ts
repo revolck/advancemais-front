@@ -3,6 +3,12 @@
 import { usePathname } from "next/navigation";
 import { useUserRole } from "@/hooks/useUserRole";
 import { UserRole } from "@/config/roles";
+import { useMemo } from "react";
+import {
+  getMockAlunoCursos,
+  getMockTurmaEstrutura,
+  getMockAtividadeById,
+} from "@/mockData/aluno-candidato";
 
 export type IconName =
   | "Home"
@@ -411,6 +417,14 @@ export const breadcrumbConfig: Record<string, BreadcrumbConfig> = {
       { label: "Alunos", icon: "Users" },
     ],
   },
+  "/dashboard/cursos/alunos/cursos": {
+    title: "Cursos",
+    items: [
+      { label: "Dashboard", href: "/", icon: "Home" },
+      { label: "Cursos", href: "/dashboard/cursos", icon: "BookOpen" },
+      { label: "Cursos", icon: "BookOpen" },
+    ],
+  },
   "/dashboard/cursos/alunos/notas": {
     title: "Notas",
     items: [
@@ -531,6 +545,29 @@ export const breadcrumbConfig: Record<string, BreadcrumbConfig> = {
       { label: "Dashboard", href: "/", icon: "Home" },
       { label: "Cursos", href: "/dashboard/cursos", icon: "BookOpen" },
       { label: "Cadastrar", icon: "FileText" },
+    ],
+  },
+  "/dashboard/cursos/pagamentos": {
+    title: "Pagamentos",
+    items: [
+      { label: "Dashboard", href: "/", icon: "Home" },
+      { label: "Cursos", href: "/dashboard/cursos", icon: "BookOpen" },
+      { label: "Pagamentos", icon: "CreditCard" },
+    ],
+  },
+  "/dashboard/curriculo": {
+    title: "Meus Currículos",
+    items: [
+      { label: "Dashboard", href: "/", icon: "Home" },
+      { label: "Currículo", icon: "FileText" },
+    ],
+  },
+  "/dashboard/curriculo/cadastrar": {
+    title: "Criar Currículo",
+    items: [
+      { label: "Dashboard", href: "/", icon: "Home" },
+      { label: "Currículo", href: "/dashboard/curriculo", icon: "FileText" },
+      { label: "Criar", icon: "Plus" },
     ],
   },
   "/config/candidatos": {
@@ -697,6 +734,148 @@ export function useBreadcrumb(): BreadcrumbConfig {
         { label: "Dashboard", href: "/", icon: "Home" },
         { label: "Usuários", href: "/dashboard/usuarios", icon: "Users" },
         { label: "Detalhes do Usuário", icon: "Eye" },
+      ],
+    };
+  }
+
+  // Item individual do aluno (aula/atividade/prova): /dashboard/cursos/alunos/cursos/[cursoId]/[turmaId]/[itemId]
+  if (
+    cleanPathname.match(
+      /^\/dashboard\/cursos\/alunos\/cursos\/[^/]+\/[^/]+\/[^/]+$/
+    )
+  ) {
+    // Extrair cursoId e aulaId da URL
+    const match = cleanPathname.match(
+      /^\/dashboard\/cursos\/alunos\/cursos\/([^/]+)\/([^/]+)\/([^/]+)$/
+    );
+    const cursoIdFromPath = match ? match[1] : null;
+    const turmaIdFromPath = match ? match[2] : null;
+    const aulaIdFromPath = match ? match[3] : null;
+
+    // Buscar nome do curso e do item (aula/prova/atividade) nos dados mockados
+    let cursoNome = "Curso";
+    let itemNome = "Aula";
+    if (cursoIdFromPath && turmaIdFromPath && aulaIdFromPath && typeof window !== "undefined") {
+      try {
+        const cursos = getMockAlunoCursos();
+        const curso = cursos.find((c: any) => c.cursoId === cursoIdFromPath);
+        if (curso?.cursoNome) {
+          cursoNome = curso.cursoNome;
+        }
+
+        // Buscar nome do item na estrutura da turma
+        const estrutura = getMockTurmaEstrutura(cursoIdFromPath, turmaIdFromPath);
+        if (estrutura) {
+          // Buscar em todos os módulos
+          for (const modulo of estrutura.modules || []) {
+            const item = modulo.items.find(
+              (i: any) => i.aulaId === aulaIdFromPath || i.id === aulaIdFromPath
+            );
+            if (item) {
+              itemNome = item.title;
+              // Se for atividade, tentar buscar o nome da atividade mockada
+              if (item.type === "ATIVIDADE" && item.platformActivityId) {
+                try {
+                  const atividade = getMockAtividadeById(item.platformActivityId);
+                  if (atividade?.titulo) {
+                    itemNome = atividade.titulo;
+                  }
+                } catch (e) {
+                  // Mantém o título do item
+                }
+              }
+              break;
+            }
+          }
+
+          // Se não encontrou nos módulos, buscar nos itens avulsos
+          if (itemNome === "Aula" && estrutura.standaloneItems) {
+            const item = estrutura.standaloneItems.find(
+              (i: any) => i.aulaId === aulaIdFromPath || i.id === aulaIdFromPath
+            );
+            if (item) {
+              itemNome = item.title;
+              // Se for atividade, tentar buscar o nome da atividade mockada
+              if (item.type === "ATIVIDADE" && item.platformActivityId) {
+                try {
+                  const atividade = getMockAtividadeById(item.platformActivityId);
+                  if (atividade?.titulo) {
+                    itemNome = atividade.titulo;
+                  }
+                } catch (e) {
+                  // Mantém o título do item
+                }
+              }
+            }
+          }
+        }
+        
+        // Se ainda não encontrou, tentar buscar diretamente como atividade
+        if (itemNome === "Aula" && aulaIdFromPath?.startsWith("atividade-")) {
+          try {
+            const atividade = getMockAtividadeById(aulaIdFromPath);
+            if (atividade?.titulo) {
+              itemNome = atividade.titulo;
+            }
+          } catch (e) {
+            // Mantém "Aula"
+          }
+        }
+      } catch (e) {
+        // Fallback - mantém "Curso" e "Aula" se não conseguir buscar
+        cursoNome = "Curso";
+        itemNome = "Aula";
+      }
+    }
+
+    return {
+      title: itemNome,
+      items: [
+        { label: "Dashboard", href: "/", icon: "Home" },
+        { label: "Cursos", href: "/dashboard/cursos", icon: "BookOpen" },
+        {
+          label: cursoNome,
+          href: `/dashboard/cursos/alunos/cursos/${cursoIdFromPath}/${turmaIdFromPath}`,
+          icon: "BookOpen",
+        },
+        { label: itemNome, icon: "BookOpen" },
+      ],
+    };
+  }
+
+  // Estrutura de turma do aluno: /dashboard/cursos/alunos/cursos/[cursoId]/[turmaId]
+  if (
+    cleanPathname.match(
+      /^\/dashboard\/cursos\/alunos\/cursos\/[^/]+\/[^/]+$/
+    )
+  ) {
+    // Extrair cursoId da URL para buscar o nome do curso
+    const match = cleanPathname.match(
+      /^\/dashboard\/cursos\/alunos\/cursos\/([^/]+)\/[^/]+$/
+    );
+    const cursoIdFromPath = match ? match[1] : null;
+
+    // Buscar nome do curso nos dados mockados
+    let cursoNome = "Curso";
+    if (cursoIdFromPath && typeof window !== "undefined") {
+      try {
+        const cursos = getMockAlunoCursos();
+        const curso = cursos.find((c: any) => c.cursoId === cursoIdFromPath);
+        if (curso?.cursoNome) {
+          cursoNome = curso.cursoNome;
+        }
+      } catch (e) {
+        // Fallback - mantém "Curso" se não conseguir buscar
+        cursoNome = "Curso";
+      }
+    }
+
+    return {
+      title: cursoNome,
+      items: [
+        { label: "Dashboard", href: "/", icon: "Home" },
+        { label: "Cursos", href: "/dashboard/cursos", icon: "BookOpen" },
+        { label: cursoNome, icon: "BookOpen" },
       ],
     };
   }

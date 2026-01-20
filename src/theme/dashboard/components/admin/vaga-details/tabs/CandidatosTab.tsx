@@ -161,15 +161,15 @@ function getExperienciaSummary(candidato: CandidatoOverview): string {
   // Pega o currículo principal ou o primeiro disponível
   const curriculo = curriculos.find((c) => c.principal) || curriculos[0];
 
-  if (
-    !curriculo ||
-    !curriculo.experiencias ||
-    curriculo.experiencias.length === 0
-  ) {
+  const experienciasRaw: any = (curriculo as any)?.experiencias;
+  const experiencias: any[] = Array.isArray(experienciasRaw)
+    ? experienciasRaw
+    : experienciasRaw?.experiencias || [];
+
+  if (!curriculo || experiencias.length === 0) {
     return "—";
   }
 
-  const experiencias = curriculo.experiencias;
   const totalExp = experiencias.length;
 
   if (totalExp === 1) {

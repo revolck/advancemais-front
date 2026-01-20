@@ -17,10 +17,10 @@ export interface Aula {
   titulo: string;
   descricao: string; // ✅ Obrigatório
   modalidade: Modalidade;
-  tipoLink?: TipoLink;
-  youtubeUrl?: string;
-  meetUrl?: string;
-  meetEventId?: string;
+  tipoLink?: TipoLink; // Apenas para SEMIPRESENCIAL: "MEET" | "YOUTUBE"
+  youtubeUrl?: string; // ✅ Apenas para ONLINE ou SEMIPRESENCIAL (tipoLink === "YOUTUBE")
+  meetUrl?: string; // ✅ Apenas para AO_VIVO ou SEMIPRESENCIAL (tipoLink === "MEET") - NÃO para ONLINE
+  meetEventId?: string; // ID do evento no Google Calendar (quando criado via integração)
   sala?: string; // ✅ Sala física (apenas PRESENCIAL)
   obrigatoria: boolean;
   duracaoMinutos: number; // ✅ Obrigatório

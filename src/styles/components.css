@@ -315,3 +315,10 @@
 .rich-textarea-content br {
   line-height: 1.5;
 }
+
+/* Animação da barra de progresso */
+@keyframes progress {
+  from {
+    width: 0%;
+  }
+}

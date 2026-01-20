@@ -8,10 +8,12 @@ export const CANDIDATOS_ROUTES = {
   RECEBIDAS: "/api/v1/candidatos/candidaturas/recebidas",
   CANDIDATURA: (id: string) => `/api/v1/candidatos/candidaturas/${id}`,
   STATUS_DISPONIVEIS: "/api/v1/candidatos/candidaturas/status-disponiveis",
+  VERIFICAR_CANDIDATURA: "/api/v1/candidatos/candidaturas/verificar",
 
   // Candidatos - Currículos
   CURRICULOS: "/api/v1/candidatos/curriculos",
   CURRICULO: (id: string) => `/api/v1/candidatos/curriculos/${id}`,
+  CURRICULO_PRINCIPAL: (id: string) => `/api/v1/candidatos/curriculos/${id}/principal`,
   // NOTA: CURRICULO_PDF removido - endpoint não existe no backend
   // Use generateCurriculoPdf para gerar PDFs no frontend
 

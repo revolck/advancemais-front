@@ -69,6 +69,7 @@ interface CertificadoListItem {
 
 export function AlunoCertificadosView() {
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
+  const [selectedTurmaId, setSelectedTurmaId] = useState<string | null>(null);
   const [selectedDateRange, setSelectedDateRange] = useState<DateRange>(
     createEmptyDateRange()
   );
@@ -88,9 +89,9 @@ export function AlunoCertificadosView() {
 
   // Buscar certificados (mockados por enquanto)
   const { data: todasCertificados, isLoading } = useQuery({
-    queryKey: ["aluno-certificados", selectedCourseId],
+    queryKey: ["aluno-certificados"],
     queryFn: async () => {
-      return getMockAlunoCertificados(selectedCourseId || undefined);
+      return getMockAlunoCertificados();
     },
     enabled: true,
     staleTime: 5 * 60 * 1000,
@@ -112,6 +113,27 @@ export function AlunoCertificadosView() {
     return Array.from(cursosMap.values());
   }, [todasCertificados]);
 
+  // Extrair turmas únicas de acordo com o curso selecionado
+  const turmasUnicas = useMemo(() => {
+    if (!selectedCourseId) return [];
+    const certificados = todasCertificados ?? [];
+    if (certificados.length === 0) return [];
+
+    const turmasMap = new Map<string, { value: string; label: string }>();
+    certificados
+      .filter((cert) => cert.cursoId === selectedCourseId)
+      .forEach((cert) => {
+        if (!turmasMap.has(cert.turmaId)) {
+          turmasMap.set(cert.turmaId, {
+            value: cert.turmaId,
+            label: cert.turmaNome,
+          });
+        }
+      });
+
+    return Array.from(turmasMap.values());
+  }, [selectedCourseId, todasCertificados]);
+
   // Filtrar certificados
   const certificadosFiltradas = useMemo(() => {
     const certificados = todasCertificados ?? [];
@@ -119,6 +141,10 @@ export function AlunoCertificadosView() {
 
     if (selectedCourseId) {
       filtered = filtered.filter((cert) => cert.cursoId === selectedCourseId);
+    }
+
+    if (selectedTurmaId) {
+      filtered = filtered.filter((cert) => cert.turmaId === selectedTurmaId);
     }
 
     if (selectedDateRange.from || selectedDateRange.to) {
@@ -160,6 +186,7 @@ export function AlunoCertificadosView() {
   }, [
     todasCertificados,
     selectedCourseId,
+    selectedTurmaId,
     selectedDateRange.from,
     selectedDateRange.to,
   ]);
@@ -179,7 +206,17 @@ export function AlunoCertificadosView() {
   // Reset página quando filtro muda
   useEffect(() => {
     setCurrentPage(1);
-  }, [selectedCourseId, selectedDateRange.from, selectedDateRange.to]);
+  }, [
+    selectedCourseId,
+    selectedTurmaId,
+    selectedDateRange.from,
+    selectedDateRange.to,
+  ]);
+
+  // Reset turma ao trocar/limpar curso
+  useEffect(() => {
+    setSelectedTurmaId(null);
+  }, [selectedCourseId]);
 
   const showEmptyState = !isLoading && certificadosFiltradas.length === 0;
   const shouldShowFilters = true;
@@ -196,21 +233,33 @@ export function AlunoCertificadosView() {
         emptyPlaceholder: "Sem cursos disponíveis",
       },
       {
+        key: "turmaId",
+        label: "Turma",
+        mode: "single" as const,
+        options: turmasUnicas,
+        placeholder: selectedCourseId ? "Selecionar" : "Selecione um curso",
+        disabled: !selectedCourseId,
+        emptyPlaceholder: selectedCourseId
+          ? "Sem turmas disponíveis"
+          : "Selecione um curso primeiro",
+      },
+      {
         key: "periodo",
         label: "Período",
         type: "date-range" as const,
         placeholder: "Selecionar período",
       },
     ],
-    [cursosUnicos]
+    [cursosUnicos, selectedCourseId, turmasUnicas]
   );
 
   const filterValues = useMemo(
     () => ({
       cursoId: selectedCourseId,
+      turmaId: selectedTurmaId,
       periodo: selectedDateRange,
     }),
-    [selectedCourseId, selectedDateRange]
+    [selectedCourseId, selectedDateRange, selectedTurmaId]
   );
 
   const [selectedCertificado, setSelectedCertificado] =
@@ -329,12 +378,15 @@ export function AlunoCertificadosView() {
       {shouldShowFilters && (
         <div>
           <FilterBar
-            className="[&>div]:lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)_auto]"
+            className="[&>div]:lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.2fr)_auto]"
             fields={filterFields}
             values={filterValues}
             onChange={(key, value) => {
               if (key === "cursoId") {
                 setSelectedCourseId((value as string) || null);
+              }
+              if (key === "turmaId") {
+                setSelectedTurmaId((value as string) || null);
               }
               if (key === "periodo") {
                 setSelectedDateRange(
@@ -344,6 +396,7 @@ export function AlunoCertificadosView() {
             }}
             onClearAll={() => {
               setSelectedCourseId(null);
+              setSelectedTurmaId(null);
               setSelectedDateRange(createEmptyDateRange());
             }}
           />
@@ -370,7 +423,10 @@ export function AlunoCertificadosView() {
             illustration="fileNotFound"
             title="Nenhum certificado encontrado"
             description={
-              selectedCourseId || selectedDateRange.from || selectedDateRange.to
+              selectedCourseId ||
+              selectedTurmaId ||
+              selectedDateRange.from ||
+              selectedDateRange.to
                 ? "Nenhum certificado encontrado com os filtros aplicados. Tente ajustar os filtros."
                 : "Você ainda não possui certificados emitidos"
             }

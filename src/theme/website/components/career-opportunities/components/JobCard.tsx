@@ -16,6 +16,7 @@ import {
   User,
   Monitor,
   Briefcase,
+  CheckCircle2,
 } from "lucide-react";
 import type { JobCardProps } from "../types";
 
@@ -24,6 +25,9 @@ export const JobCard: React.FC<JobCardProps> = ({
   index,
   onApply,
   onViewDetails,
+  isApplied,
+  applyDisabled,
+  applyLabel,
 }) => {
   const [logoError, setLogoError] = useState(false);
 
@@ -73,12 +77,20 @@ export const JobCard: React.FC<JobCardProps> = ({
               </h3>
             </div>
           </div>
-          {job.destaque && (
-            <span className="text-xs font-semibold text-[#1f8454] bg-[#1f8454]/10 px-3 py-1 rounded-full flex items-center gap-1">
-              <Star className="w-3 h-3" />
-              Destaque
-            </span>
-          )}
+          <div className="flex items-center gap-2">
+            {job.destaque && (
+              <span className="text-xs font-semibold text-[#1f8454] bg-[#1f8454]/10 px-3 py-1 rounded-full flex items-center gap-1">
+                <Star className="w-3 h-3" />
+                Destaque
+              </span>
+            )}
+            {isApplied && (
+              <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full flex items-center gap-1 border border-emerald-100">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                Já se candidatou
+              </span>
+            )}
+          </div>
         </div>
 
         <div className="flex flex-wrap gap-2">
@@ -114,13 +126,16 @@ export const JobCard: React.FC<JobCardProps> = ({
             >
               Ver detalhes
             </ButtonCustom>
-            <ButtonCustom
-              variant="default"
-              onClick={handleApply}
-              className="bg-[#1f8454] hover:bg-[#16603d] text-white rounded-full"
-            >
-              Candidatar-se
-            </ButtonCustom>
+            {!isApplied && (
+              <ButtonCustom
+                variant="default"
+                onClick={handleApply}
+                disabled={applyDisabled}
+                className="bg-[#1f8454] hover:bg-[#16603d] text-white rounded-full"
+              >
+                {applyLabel || "Candidatar-se"}
+              </ButtonCustom>
+            )}
           </div>
         </div>
       </CardContent>

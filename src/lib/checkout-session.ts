@@ -22,7 +22,7 @@ function generateUUID(): string {
 }
 
 // Tipos de produto suportados pelo checkout
-export type CheckoutProductType = "plano" | "curso" | "assinatura";
+export type CheckoutProductType = "plano" | "curso" | "curso_pagamento" | "assinatura";
 
 // Status da sessão de checkout
 export type CheckoutSessionStatus =
@@ -287,8 +287,8 @@ export function removeCheckoutSession(sessionId: string): void {
 /**
  * Gera um token de segurança único para a URL
  */
-function generateSecurityToken(): string {
-  const timestamp = Date.now().toString(36);
+function generateSecurityToken(refTimestamp?: string): string {
+  const timestamp = refTimestamp ?? Date.now().toString(36);
   const random = Math.random().toString(36).substring(2, 10);
   return `${timestamp}${random}`;
 }
@@ -298,8 +298,10 @@ function generateSecurityToken(): string {
  * Formato: /checkout?sid={sessionId}&token={securityToken}&ref={timestamp}&plan={planSlug}
  */
 export function getCheckoutUrl(session: CheckoutSession): string {
-  const securityToken = generateSecurityToken();
-  const timestamp = Date.now().toString(36);
+  // `ref` é a parte "timestamp" do token, seguindo o padrão:
+  // token = {ref}{random}
+  const ref = Date.now().toString(36);
+  const securityToken = generateSecurityToken(ref);
   const planSlug = session.productName
     .toLowerCase()
     .normalize("NFD")
@@ -324,7 +326,7 @@ export function getCheckoutUrl(session: CheckoutSession): string {
   const params = new URLSearchParams({
     sid: session.sessionId,
     token: securityToken,
-    ref: timestamp,
+    ref,
     plan: planSlug,
   });
 

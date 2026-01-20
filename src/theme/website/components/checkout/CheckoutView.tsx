@@ -14,8 +14,16 @@ import {
   registerConfirmedPayment,
   type CheckoutSession,
 } from "@/lib/checkout-session";
+import {
+  PENDING_COURSE_PURCHASE_KEY,
+  PENDING_CURSOS_PAYMENT_KEY,
+} from "@/lib/pending-storage-keys";
 import { createSinglePayment, startCheckout } from "@/api/mercadopago";
-import type { CheckoutIntent, MetodoPagamento } from "@/api/mercadopago/types";
+import type {
+  CheckoutIntent,
+  MetodoPagamento,
+  PaymentPayer,
+} from "@/api/mercadopago/types";
 import { validateCupom } from "@/api/cupons";
 import {
   formatPrice,
@@ -73,8 +81,6 @@ function getCookieValue(name: string): string | null {
     .find((row) => row.startsWith(`${name}=`));
   return cookie?.split("=")[1] || null;
 }
-
-const PENDING_COURSE_PURCHASE_KEY = "pending_course_purchase_v1";
 
 export const CheckoutView: React.FC<CheckoutViewProps> = ({
   sessionId,
@@ -275,7 +281,7 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
   const handleSubmitPayment = async () => {
     if (!session) return;
 
-    if (session.productType === "curso") return;
+    if (session.productType === "curso" || session.productType === "curso_pagamento") return;
 
     // Verifica se o usuário está autenticado
     if (!userId) {
@@ -840,8 +846,9 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
 
   const courseCheckoutStartedRef = React.useRef(false);
 
-  const startCourseCheckout = useCallback(async () => {
+  const startCoursePurchaseCheckout = useCallback(async () => {
     if (!session || session.productType !== "curso") return;
+    if (courseCheckoutStartedRef.current) return;
 
     const token = getCookieValue("token");
     if (!token) {
@@ -849,6 +856,10 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
       router.push(`/auth/login?redirect=${encodeURIComponent(redirect)}`);
       return;
     }
+
+    // Aguarda carregar o perfil antes de concluir que o usuário não está autenticado.
+    // Sem isso, o usuário pode ser redirecionado para login mesmo já estando logado.
+    if (isDataLoading) return;
 
     if (!userId) {
       const redirect = `${window.location.pathname}${window.location.search}`;
@@ -874,6 +885,7 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
       return;
     }
 
+    courseCheckoutStartedRef.current = true;
     setIsProcessing(true);
 
     try {
@@ -931,16 +943,298 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
       const message =
         error?.message || "Não foi possível iniciar o pagamento. Tente novamente.";
       toastCustom.error({ title: "Erro ao iniciar pagamento", description: message });
+      courseCheckoutStartedRef.current = false;
       setIsProcessing(false);
     }
-  }, [courseMetadata, router, session, userId]);
+  }, [
+    courseMetadata,
+    isDataLoading,
+    router,
+    session,
+    userId,
+    checkoutResultPaths.courseSuccess,
+    checkoutResultPaths.courseFailure,
+    checkoutResultPaths.coursePending,
+  ]);
 
   useEffect(() => {
     if (!session || session.productType !== "curso") return;
+    startCoursePurchaseCheckout();
+  }, [session, startCoursePurchaseCheckout]);
+
+  const coursePaymentMetadata = useMemo(() => {
+    if (!session || session.productType !== "curso_pagamento") return null;
+
+    const raw = (session.metadata || {}) as Record<string, unknown>;
+    const tipo = typeof raw.tipo === "string" ? raw.tipo : null;
+    const titulo =
+      typeof raw.titulo === "string" && raw.titulo.trim()
+        ? raw.titulo.trim()
+        : session.productName;
+    const valor =
+      typeof raw.valor === "number" && Number.isFinite(raw.valor)
+        ? raw.valor
+        : session.productPrice || 0;
+    const cursoId = typeof raw.cursoId === "string" ? raw.cursoId : null;
+    const cursoNome = typeof raw.cursoNome === "string" ? raw.cursoNome : null;
+    const turmaId = typeof raw.turmaId === "string" ? raw.turmaId : null;
+    const turmaNome = typeof raw.turmaNome === "string" ? raw.turmaNome : null;
+    const provaId = typeof raw.provaId === "string" ? raw.provaId : session.productId;
+    const provaTitulo = typeof raw.provaTitulo === "string" ? raw.provaTitulo : null;
+    const maxInstallments =
+      typeof raw.maxInstallments === "number" && raw.maxInstallments > 0
+        ? raw.maxInstallments
+        : 12;
+
+    const returnTo =
+      typeof raw.returnTo === "string" && raw.returnTo.trim()
+        ? raw.returnTo
+        : session.originUrl || "/dashboard/cursos/pagamentos";
+
+    return {
+      tipo,
+      titulo,
+      valor,
+      cursoId,
+      cursoNome,
+      turmaId,
+      turmaNome,
+      provaId,
+      provaTitulo,
+      maxInstallments,
+      returnTo,
+    };
+  }, [session]);
+
+  const startCoursePaymentCheckout = useCallback(async () => {
+    if (!session || session.productType !== "curso_pagamento") return;
     if (courseCheckoutStartedRef.current) return;
+
+	    const token = getCookieValue("token");
+	    if (!token) {
+      const redirect = `${window.location.pathname}${window.location.search}`;
+      router.push(`/auth/login?redirect=${encodeURIComponent(redirect)}`);
+      return;
+    }
+
+    if (isDataLoading) return;
+
+    if (!userId) {
+      const redirect = `${window.location.pathname}${window.location.search}`;
+      router.push(`/auth/login?redirect=${encodeURIComponent(redirect)}`);
+      return;
+    }
+
+    if (!coursePaymentMetadata?.provaId) {
+      toastCustom.error({
+        title: "Sessão inválida",
+        description: "Não foi possível identificar o pagamento desta cobrança.",
+      });
+      router.push(session.originUrl || "/dashboard/cursos/pagamentos");
+      return;
+    }
+
+	    if (!session.productPrice || session.productPrice <= 0) {
+	      toastCustom.error({
+	        title: "Pagamento inválido",
+	        description: "Não foi possível identificar o valor desta cobrança.",
+	      });
+	      router.push(session.originUrl || "/dashboard/cursos/pagamentos");
+	      return;
+	    }
+
+	    if (!payerEmail || !payerDocument) {
+	      toastCustom.error({
+	        title: "Dados obrigatórios",
+	        description: "Preencha e-mail e CPF/CNPJ para continuar.",
+	      });
+	      return;
+	    }
+
+    if (paymentMethod === "boleto") {
+      const hasAddress =
+        payerAddress.zipCode.replace(/\D/g, "").length === 8 &&
+        payerAddress.streetName.trim().length > 0 &&
+        payerAddress.streetNumber.trim().length > 0 &&
+        payerAddress.neighborhood.trim().length > 0 &&
+        payerAddress.city.trim().length > 0 &&
+        payerAddress.federalUnit.trim().length === 2;
+
+	      if (!hasAddress) {
+	        toastCustom.error({
+	          title: "Endereço obrigatório",
+	          description:
+	            "Preencha CEP, logradouro, número, bairro, cidade e UF para gerar o boleto.",
+	        });
+	        return;
+      }
+    }
+
     courseCheckoutStartedRef.current = true;
-    startCourseCheckout();
-  }, [session, startCourseCheckout]);
+    setIsProcessing(true);
+
+    try {
+      const rawPrice = session.productPrice || 0;
+      const discountValue = appliedCoupon?.discount || 0;
+      const discountedPrice = Math.max(0, rawPrice - discountValue);
+
+      const returnTo = coursePaymentMetadata.returnTo;
+      const baseUrl = window.location.origin;
+      const resultBasePath = "/dashboard/cursos/pagamentos";
+      const returnToQuery = encodeURIComponent(returnTo);
+
+      localStorage.setItem(
+        PENDING_CURSOS_PAYMENT_KEY,
+        JSON.stringify({
+          tipo: coursePaymentMetadata.tipo ?? "recuperacao-final",
+          titulo: coursePaymentMetadata.titulo,
+          valor: discountedPrice,
+          cursoId: coursePaymentMetadata.cursoId,
+          turmaId: coursePaymentMetadata.turmaId,
+          provaId: coursePaymentMetadata.provaId,
+          returnTo,
+          createdAt: Date.now(),
+        })
+      );
+
+      const externalReference = [
+        coursePaymentMetadata.tipo ?? "recuperacao-final",
+        coursePaymentMetadata.cursoId ? `curso:${coursePaymentMetadata.cursoId}` : null,
+        coursePaymentMetadata.turmaId ? `turma:${coursePaymentMetadata.turmaId}` : null,
+        `prova:${coursePaymentMetadata.provaId}`,
+        `session:${session.sessionId}`,
+        `aluno:${userId}`,
+      ]
+        .filter(Boolean)
+        .join(":");
+
+	      const excludedPaymentTypes =
+	        paymentMethod === "pix"
+	          ? (["ticket", "credit_card", "debit_card"] as string[])
+	          : paymentMethod === "boleto"
+	          ? (["bank_transfer", "credit_card", "debit_card"] as string[])
+	          : paymentMethod === "credit" || paymentMethod === "debit"
+	          ? (["bank_transfer", "ticket"] as string[])
+	          : undefined;
+
+	      const payer: PaymentPayer = {
+	        email: payerEmail,
+	        identification: {
+	          type: getDocumentType(payerDocument),
+	          number: sanitizeDocument(payerDocument),
+	        },
+	      };
+
+      if (paymentMethod === "boleto") {
+        const streetNumber = Number(
+          payerAddress.streetNumber.replace(/\D/g, "")
+        );
+        payer.address = {
+          zip_code: payerAddress.zipCode.replace(/\D/g, ""),
+          street_name: payerAddress.streetName,
+          street_number: Number.isFinite(streetNumber) ? streetNumber : undefined,
+        };
+      }
+
+      // Tokenização do cartão (apenas em HTTPS real).
+      let cardPayload: { token: string; installments?: number } | undefined;
+      if ((paymentMethod === "credit" || paymentMethod === "debit") && canUseDirectTokenization) {
+        let tokenToUse = cardToken;
+        if (!tokenToUse && cardTokenizeRef.current) {
+          const tokenResult = await cardTokenizeRef.current();
+          if (!tokenResult.success || !tokenResult.token) {
+            setIsProcessing(false);
+            courseCheckoutStartedRef.current = false;
+            return;
+          }
+          tokenToUse = tokenResult.token;
+          setCardToken(tokenResult.token);
+          setCardLastFour(tokenResult.lastFourDigits || null);
+          setCardBrand(tokenResult.cardBrand || null);
+        }
+
+        if (!tokenToUse) {
+          toastCustom.error({
+            title: "Erro no cartão",
+            description:
+              "Não foi possível processar os dados do cartão. Verifique as informações.",
+          });
+          setIsProcessing(false);
+          courseCheckoutStartedRef.current = false;
+          return;
+        }
+
+        cardPayload = { token: tokenToUse, installments: 1 };
+      }
+
+      const response = await createSinglePayment(
+        {
+          usuarioId: userId,
+          items: [
+            {
+              id: coursePaymentMetadata.provaId,
+              title: coursePaymentMetadata.titulo,
+              description: "Prova de recuperação final (pagamento único)",
+              quantity: 1,
+              unit_price: discountedPrice,
+              currency_id: session.currency || "BRL",
+            },
+          ],
+          installments: coursePaymentMetadata.maxInstallments,
+          ...(cardPayload ? { card: cardPayload } : {}),
+          payer,
+          excludedPaymentTypes,
+          successUrl: `${baseUrl}${resultBasePath}/sucesso?returnTo=${returnToQuery}`,
+          failureUrl: `${baseUrl}${resultBasePath}/falha?returnTo=${returnToQuery}`,
+          pendingUrl: `${baseUrl}${resultBasePath}/pendente?returnTo=${returnToQuery}`,
+          externalReference,
+          metadata: {
+            checkoutSessionId: session.sessionId,
+            tipoPagamento: coursePaymentMetadata.tipo ?? "recuperacao-final",
+            cursoId: coursePaymentMetadata.cursoId,
+            turmaId: coursePaymentMetadata.turmaId,
+            provaId: coursePaymentMetadata.provaId,
+            provaTitulo: coursePaymentMetadata.provaTitulo ?? coursePaymentMetadata.titulo,
+            selectedPaymentMethod: paymentMethod,
+            cupomCodigo: appliedCoupon?.code ?? null,
+            cupomDesconto: discountValue || 0,
+            valorOriginal: rawPrice,
+            valorFinal: discountedPrice,
+          },
+        },
+        token
+      );
+
+      if (!response?.initPoint) {
+        throw new Error("Não foi possível iniciar o checkout.");
+      }
+
+      window.location.href = response.initPoint;
+    } catch (error: any) {
+      const status = error?.status as number | undefined;
+      const message =
+        status === 404
+          ? "Endpoint não encontrado. Confirme se o backend (API Mercado Pago) está rodando e atualizado."
+          : error?.message || "Não foi possível iniciar o pagamento. Tente novamente.";
+      toastCustom.error({ title: "Erro ao iniciar pagamento", description: message });
+      courseCheckoutStartedRef.current = false;
+      setIsProcessing(false);
+    }
+  }, [
+    coursePaymentMetadata,
+    appliedCoupon?.code,
+    appliedCoupon?.discount,
+    canUseDirectTokenization,
+    isDataLoading,
+    payerAddress,
+    payerDocument,
+    payerEmail,
+    paymentMethod,
+    router,
+    session,
+    userId,
+    cardToken,
+  ]);
 
   // Loading
   if (isValidating || isDataLoading) {
@@ -968,6 +1262,16 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
       </div>
     );
   }
+
+  const price = session.productPrice || 0;
+  const discount = appliedCoupon?.discount || 0;
+  const total = price - discount;
+  const minutes = Math.floor(timeLeft / 60);
+  const seconds = timeLeft % 60;
+  const isLowTime = timeLeft < 300;
+  const isCoursePayment = session.productType === "curso_pagamento";
+  const isTermsRequired = !isCoursePayment;
+  const finalPrice = Math.max(0, price - (appliedCoupon?.discount || 0));
 
   if (session.productType === "curso") {
     const startLabel = courseMetadata?.dataInicio
@@ -1050,7 +1354,7 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
                     variant="primary"
                     fullWidth
                     isLoading={isProcessing}
-                    onClick={startCourseCheckout}
+                    onClick={startCoursePurchaseCheckout}
                   >
                     Continuar para pagamento
                   </ButtonCustom>
@@ -1074,13 +1378,6 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
       </div>
     );
   }
-
-  const price = session.productPrice || 0;
-  const discount = appliedCoupon?.discount || 0;
-  const total = price - discount;
-  const minutes = Math.floor(timeLeft / 60);
-  const seconds = timeLeft % 60;
-  const isLowTime = timeLeft < 300;
 
   // Tela de PIX gerado
   if (pixCode && session) {
@@ -1124,6 +1421,11 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
           seconds={seconds}
           isLowTime={isLowTime}
           onBack={handleBack}
+          subtitle={
+            isCoursePayment
+              ? "Complete seu pagamento com segurança"
+              : undefined
+          }
         />
 
         {/* Conteúdo principal */}
@@ -1169,7 +1471,7 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
                   />
                 )}
 
-                {/* HTTP/Localhost (Desenvolvimento): Aviso de indisponibilidade */}
+                {/* HTTP/Localhost (Desenvolvimento): cartão via redirect (Checkout Pro) */}
                 {isRealHttps === false && (
                   <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6 space-y-4">
                     <div className="flex items-start gap-4">
@@ -1181,16 +1483,16 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
                           Ambiente de Desenvolvimento
                         </h4>
                         <p className="!text-sm !text-amber-700 !leading-relaxed">
-                          Pagamentos com cartão de crédito/débito não estão
-                          disponíveis em ambiente local. O Mercado Pago exige
-                          conexão HTTPS para processar dados de cartão.
+                          Em ambiente local, o pagamento com cartão é finalizado
+                          no Mercado Pago (redirect). Para pagamento direto no
+                          site (tokenização), é necessário HTTPS real.
                         </p>
                       </div>
                     </div>
 
                     <div className="bg-amber-100/50 rounded-lg p-3 space-y-2">
                       <p className="!text-xs !font-medium !text-amber-800">
-                        Para testar pagamentos com cartão:
+                        Para habilitar cartão direto no site:
                       </p>
                       <ul className="text-xs text-amber-700 space-y-1 list-disc list-inside">
                         <li>Faça deploy na Vercel (HTTPS)</li>
@@ -1203,20 +1505,16 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
                         </li>
                       </ul>
                     </div>
-
-                    <div className="flex items-center gap-2 pt-2 border-t border-amber-200">
-                      <Shield className="w-4 h-4 text-amber-600" />
-                      <span className="text-xs text-amber-600">
-                        PIX e Boleto funcionam normalmente em desenvolvimento
-                      </span>
-                    </div>
                   </div>
                 )}
               </>
             )}
 
             {/* Info PIX ou Boleto */}
-            <PaymentMethodInfo method={paymentMethod} />
+            <PaymentMethodInfo
+              method={paymentMethod}
+              showCardInfo={isCoursePayment}
+            />
 
             {/* Dados do pagador */}
             <PayerDataForm
@@ -1234,45 +1532,41 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
             />
 
             {/* Botão de pagamento */}
-            {/* Em desenvolvimento + cartão = botão desabilitado */}
-            {(paymentMethod === "credit" || paymentMethod === "debit") &&
-            isRealHttps === false ? (
-              <ButtonCustom
-                variant="secondary"
-                size="lg"
-                fullWidth
-                disabled={true}
-              >
-                Indisponível em Desenvolvimento
-              </ButtonCustom>
-            ) : (
-              <ButtonCustom
-                variant="primary"
-                size="lg"
-                fullWidth
-                onClick={handleSubmitPayment}
-                isLoading={isProcessing}
-                disabled={!isFormValid() || isProcessing || !hasAcceptedTerms}
-              >
-                {paymentMethod === "pix"
-                  ? "Gerar QR Code PIX"
-                  : paymentMethod === "boleto"
-                  ? "Gerar Boleto"
-                  : // HTTPS: Pagamento direto com cartão
-                    `Pagar ${formatPrice(total)}`}
-              </ButtonCustom>
-            )}
+            <ButtonCustom
+              variant="primary"
+              size="lg"
+              fullWidth
+              onClick={isCoursePayment ? startCoursePaymentCheckout : handleSubmitPayment}
+              isLoading={isProcessing}
+              disabled={
+                !isFormValid() ||
+                isProcessing ||
+                (isTermsRequired && !hasAcceptedTerms)
+              }
+            >
+              {isCoursePayment
+                ? "Continuar para pagamento"
+                : paymentMethod === "pix"
+                ? "Gerar QR Code PIX"
+                : paymentMethod === "boleto"
+                ? "Gerar Boleto"
+                : canUseDirectTokenization
+                ? `Pagar ${formatPrice(total)}`
+                : "Continuar para pagamento"}
+            </ButtonCustom>
 
             {/* Checkbox de consentimento */}
-            <ConsentCheckbox
-              checked={hasAcceptedTerms}
-              onOpenTerms={openTermsModal}
-              onCheckedChange={(checked) => {
-                if (!checked) {
-                  setTermsStatus("none");
-                }
-              }}
-            />
+            {isTermsRequired ? (
+              <ConsentCheckbox
+                checked={hasAcceptedTerms}
+                onOpenTerms={openTermsModal}
+                onCheckedChange={(checked) => {
+                  if (!checked) {
+                    setTermsStatus("none");
+                  }
+                }}
+              />
+            ) : null}
           </div>
 
           {/* Coluna direita - Resumo */}
@@ -1283,6 +1577,12 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
                 productName={session.productName}
                 price={price}
                 appliedCoupon={appliedCoupon}
+                itemLabel={
+                  isCoursePayment
+                    ? coursePaymentMetadata?.titulo || session.productName
+                    : undefined
+                }
+                totalSuffix={isCoursePayment ? null : undefined}
               />
 
               {/* Cupom de desconto */}

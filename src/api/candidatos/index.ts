@@ -11,6 +11,7 @@ import type {
   CandidaturaSimples,
   CandidaturaStatus,
   CandidatosModuleInfoResponse,
+  VerificarCandidaturaResponse,
   // Currículos
   CreateCurriculoPayload,
   UpdateCurriculoPayload,
@@ -28,6 +29,7 @@ import type {
   // Status de candidatura
   StatusCandidaturaDisponivelResponse,
   AtualizarCandidaturaResponse,
+  CurriculosListFilters,
 } from "./types";
 
 function normalizeHeaders(headers?: HeadersInit): Record<string, string> {
@@ -94,11 +96,37 @@ export async function aplicarVaga(
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        ...init?.headers,
+        ...buildAuthHeaders(init?.headers),
       },
       body: JSON.stringify(data),
       ...init,
     },
+  });
+}
+
+/**
+ * Verificar se já existe candidatura para uma vaga
+ * GET /api/v1/candidatos/candidaturas/verificar?vagaId={vagaId}
+ */
+export async function verificarCandidatura(
+  vagaId: string,
+  init?: RequestInit
+): Promise<VerificarCandidaturaResponse> {
+  const searchParams = new URLSearchParams();
+  searchParams.append("vagaId", vagaId);
+
+  const url = `${CANDIDATOS_ROUTES.VERIFICAR_CANDIDATURA}?${searchParams.toString()}`;
+
+  return apiFetch<VerificarCandidaturaResponse>(url, {
+    init: {
+      method: "GET",
+      ...init,
+      headers: buildAuthHeaders(init?.headers),
+    },
+    cache: "no-cache",
+    retries: 1,
+    silence403: true,
+    silence404: true,
   });
 }
 
@@ -362,13 +390,61 @@ export async function cancelarCandidatura(
 // CURRÍCULOS
 // ============================================================================
 
-export async function listCurriculos(init?: RequestInit) {
-  return apiFetch<any[]>(CANDIDATOS_ROUTES.CURRICULOS, {
+function isRequestInit(value: unknown): value is RequestInit {
+  if (!value || typeof value !== "object") return false;
+  const v = value as Record<string, unknown>;
+  return (
+    "method" in v ||
+    "headers" in v ||
+    "body" in v ||
+    "cache" in v ||
+    "signal" in v
+  );
+}
+
+export async function listCurriculos(
+  filters?: CurriculosListFilters,
+  init?: RequestInit
+): Promise<any[]>;
+export async function listCurriculos(init?: RequestInit): Promise<any[]>;
+export async function listCurriculos(
+  arg1?: CurriculosListFilters | RequestInit,
+  arg2?: RequestInit
+) {
+  const filters = isRequestInit(arg1) ? undefined : (arg1 as CurriculosListFilters | undefined);
+  const init = isRequestInit(arg1) ? (arg1 as RequestInit) : arg2;
+
+  const params = new URLSearchParams();
+
+  if (filters?.busca?.trim()) params.append("busca", filters.busca.trim());
+
+  if (filters?.principal !== undefined) {
+    params.append("principal", String(filters.principal));
+  }
+
+  if (filters?.autorizaContato !== undefined) {
+    params.append("autorizaContato", String(filters.autorizaContato));
+  }
+
+  if (typeof filters?.salarioMinimo === "number") {
+    params.append("salarioMinimo", String(filters.salarioMinimo));
+  }
+
+  if (typeof filters?.salarioMaximo === "number") {
+    params.append("salarioMaximo", String(filters.salarioMaximo));
+  }
+
+  const url = `${CANDIDATOS_ROUTES.CURRICULOS}${
+    params.toString() ? `?${params.toString()}` : ""
+  }`;
+
+  return apiFetch<any[]>(url, {
     init: {
       method: "GET",
       ...init,
       headers: buildAuthHeaders(init?.headers),
     },
+    cache: "no-cache",
   });
 }
 
@@ -379,6 +455,7 @@ export async function getCurriculo(id: string, init?: RequestInit) {
       ...init,
       headers: buildAuthHeaders(init?.headers),
     },
+    cache: "no-cache",
   });
 }
 
@@ -417,6 +494,17 @@ export async function updateCurriculo(
       body: JSON.stringify(data),
       ...init,
     },
+  });
+}
+
+export async function setCurriculoPrincipal(id: string, init?: RequestInit) {
+  return apiFetch<any>(CANDIDATOS_ROUTES.CURRICULO_PRINCIPAL(id), {
+    init: {
+      method: "PATCH",
+      ...init,
+      headers: buildAuthHeaders(init?.headers),
+    },
+    cache: "no-cache",
   });
 }
 
