@@ -16,6 +16,10 @@ import type { JobFilters } from "@/theme/website/components/career-opportunities
 import type { JobData } from "@/theme/website/components/career-opportunities/types";
 import { ViewVagaModal } from "./components/ViewVagaModal";
 import { AlunoVagaCard } from "./components/AlunoVagaCard";
+import {
+  SelectCurriculoApplyModal,
+  type CurriculoApplyOption,
+} from "./components/SelectCurriculoApplyModal";
 
 const PAGE_SIZE = 10;
 
@@ -36,6 +40,18 @@ function getDefaultCurriculoId(raw: unknown): string | null {
   if (principal?.id) return principal.id;
   const first = items.find((c) => typeof c.id === "string");
   return first?.id ?? null;
+}
+
+function coerceCurriculoApplyOption(value: unknown): CurriculoApplyOption | null {
+  if (!value || typeof value !== "object") return null;
+  const v = value as Record<string, unknown>;
+  if (typeof v.id !== "string" || typeof v.titulo !== "string") return null;
+  return {
+    id: v.id,
+    titulo: v.titulo,
+    resumo: typeof v.resumo === "string" ? v.resumo : null,
+    principal: typeof v.principal === "boolean" ? v.principal : undefined,
+  };
 }
 
 function buildJobFilters({
@@ -64,6 +80,14 @@ export function AlunoVagasView() {
   const queryClient = useQueryClient();
   const [viewVagaIdOrSlug, setViewVagaIdOrSlug] = useState<string | null>(null);
   const [viewVagaInitialJob, setViewVagaInitialJob] = useState<JobData | null>(
+    null,
+  );
+  const [applyingVagaId, setApplyingVagaId] = useState<string | null>(null);
+  const [applyTarget, setApplyTarget] = useState<{
+    vagaId: string;
+    vagaTitulo?: string | null;
+  } | null>(null);
+  const [selectedCurriculoId, setSelectedCurriculoId] = useState<string | null>(
     null,
   );
 
@@ -114,6 +138,13 @@ export function AlunoVagasView() {
     retry: 1,
   });
 
+  const curriculosOptions = useMemo<CurriculoApplyOption[]>(() => {
+    if (!Array.isArray(curriculosQuery.data)) return [];
+    return curriculosQuery.data
+      .map(coerceCurriculoApplyOption)
+      .filter((v): v is CurriculoApplyOption => Boolean(v));
+  }, [curriculosQuery.data]);
+
   const defaultCurriculoId = useMemo(() => {
     return getDefaultCurriculoId(curriculosQuery.data);
   }, [curriculosQuery.data]);
@@ -127,6 +158,10 @@ export function AlunoVagasView() {
       return aplicarVaga({ vagaId: payload.vagaId, curriculoId: payload.curriculoId });
     },
     onSuccess: (_, variables) => {
+      setApplyingVagaId(null);
+      setApplyTarget(null);
+      setSelectedCurriculoId(null);
+
       queryClient.setQueryData(
         ["aluno-candidato", "candidaturas", "verificar", variables.vagaId],
         { hasApplied: true },
@@ -148,6 +183,8 @@ export function AlunoVagasView() {
       });
     },
     onError: (error: any) => {
+      setApplyingVagaId(null);
+
       const code = error?.details?.code || error?.code;
       const message = error?.details?.message || error?.message;
 
@@ -180,6 +217,10 @@ export function AlunoVagasView() {
         return;
       }
 
+      if (applyMutation.isPending) {
+        return;
+      }
+
       if (curriculosQuery.isLoading) {
         toastCustom.info({
           title: "Carregando currículos",
@@ -188,7 +229,15 @@ export function AlunoVagasView() {
         return;
       }
 
-      if (!defaultCurriculoId) {
+      if (curriculosQuery.isError) {
+        toastCustom.error({
+          title: "Erro ao carregar currículos",
+          description: "Tente novamente em instantes.",
+        });
+        return;
+      }
+
+      if (curriculosOptions.length === 0) {
         toastCustom.error({
           title: "Nenhum currículo encontrado",
           description: "Crie um currículo para conseguir se candidatar às vagas.",
@@ -198,13 +247,33 @@ export function AlunoVagasView() {
         return;
       }
 
-      applyMutation.mutate({
-        vagaId,
-        curriculoId: defaultCurriculoId,
-        vagaTitulo,
-      });
+      if (curriculosOptions.length === 1) {
+        setApplyingVagaId(vagaId);
+        applyMutation.mutate({
+          vagaId,
+          curriculoId: curriculosOptions[0].id,
+          vagaTitulo,
+        });
+        return;
+      }
+
+      const nextDefault =
+        defaultCurriculoId ??
+        curriculosOptions.find((c) => c.principal)?.id ??
+        curriculosOptions[0]?.id ??
+        null;
+
+      setSelectedCurriculoId(nextDefault);
+      setApplyTarget({ vagaId, vagaTitulo });
     },
-    [applyMutation, curriculosQuery.isLoading, defaultCurriculoId],
+    [
+      applyMutation,
+      applyMutation.isPending,
+      curriculosQuery.isError,
+      curriculosQuery.isLoading,
+      curriculosOptions,
+      defaultCurriculoId,
+    ],
   );
 
   const applyFilters = useCallback(() => {
@@ -447,6 +516,8 @@ export function AlunoVagasView() {
                         setViewVagaIdOrSlug(idOrSlug);
                       }}
                       onApply={(jobId) => handleApply(jobId, job.titulo)}
+                      isApplying={applyMutation.isPending}
+                      isApplyingThis={applyMutation.isPending && applyingVagaId === job.id}
                     />
                   ))}
             </div>
@@ -549,6 +620,31 @@ export function AlunoVagasView() {
             setViewVagaIdOrSlug(null);
             setViewVagaInitialJob(null);
           }
+        }}
+      />
+
+      <SelectCurriculoApplyModal
+        isOpen={Boolean(applyTarget)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setApplyTarget(null);
+            setSelectedCurriculoId(null);
+          }
+        }}
+        vagaTitulo={applyTarget?.vagaTitulo}
+        curriculos={curriculosOptions}
+        selectedCurriculoId={selectedCurriculoId}
+        onSelectCurriculoId={setSelectedCurriculoId}
+        isSubmitting={applyMutation.isPending}
+        onConfirm={() => {
+          if (!applyTarget?.vagaId || !selectedCurriculoId) return;
+          if (applyMutation.isPending) return;
+          setApplyingVagaId(applyTarget.vagaId);
+          applyMutation.mutate({
+            vagaId: applyTarget.vagaId,
+            curriculoId: selectedCurriculoId,
+            vagaTitulo: applyTarget.vagaTitulo,
+          });
         }}
       />
     </div>

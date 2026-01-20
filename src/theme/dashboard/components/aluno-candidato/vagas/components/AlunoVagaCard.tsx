@@ -32,6 +32,8 @@ export interface AlunoVagaCardProps {
   index: number;
   onApply?: (jobId: string) => void;
   onViewDetails?: (job: JobData) => void;
+  isApplying?: boolean;
+  isApplyingThis?: boolean;
 }
 
 export function AlunoVagaCard({
@@ -39,6 +41,8 @@ export function AlunoVagaCard({
   index,
   onApply,
   onViewDetails,
+  isApplying,
+  isApplyingThis,
 }: AlunoVagaCardProps) {
   const [logoError, setLogoError] = useState(false);
 
@@ -156,10 +160,14 @@ export function AlunoVagaCard({
               <ButtonCustom
                 variant="default"
                 onClick={handleApply}
-                disabled={appliedQuery.isFetching}
+                disabled={appliedQuery.isFetching || Boolean(isApplying)}
                 className="!bg-[#1f8454] hover:!bg-[#16603d] !text-white"
               >
-                {appliedQuery.isFetching ? "Verificando..." : "Candidatar-se"}
+                {appliedQuery.isFetching
+                  ? "Verificando..."
+                  : isApplyingThis
+                    ? "Enviando..."
+                    : "Candidatar-se"}
               </ButtonCustom>
             )}
           </div>
