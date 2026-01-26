@@ -64,7 +64,7 @@ const EVENT_ICONS = {
 type EventType = keyof typeof EVENT_COLORS;
 
 export function AgendaCursosCalendar() {
-  const today = new Date();
+  const today = useMemo(() => new Date(), []);
   const [currentMonth, setCurrentMonth] = useState(today);
   const [selectedTypes, setSelectedTypes] = useState<EventType[]>([
     "AULA",
@@ -158,7 +158,7 @@ export function AgendaCursosCalendar() {
       }
     }, 100);
     return () => clearTimeout(timer);
-  }, []);
+  }, [today]);
 
   // Handler de clique no evento
   const handleEventClick = (info: EventClickArg) => {

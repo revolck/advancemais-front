@@ -2,11 +2,15 @@ import { useQuery } from "@tanstack/react-query";
 import { listAulas, type AulasListParams, type AulasListResponse } from "@/api/aulas";
 
 interface UseAulasDashboardQueryParams {
+  cursoId?: string | null;
   turmaId?: string | null;
   moduloId?: string | null;
+  instrutorId?: string | null;
   status?: string[];
   modalidade?: string[];
   obrigatoria?: boolean;
+  dataInicio?: string;
+  dataFim?: string;
   search?: string;
   page?: number;
   pageSize?: number;
@@ -23,11 +27,17 @@ export function useAulasDashboardQuery(params: UseAulasDashboardQueryParams) {
         pageSize: params.pageSize ?? 10,
       };
 
+      if (params.cursoId) {
+        apiParams.cursoId = params.cursoId;
+      }
       if (params.turmaId) {
         apiParams.turmaId = params.turmaId;
       }
       if (params.moduloId) {
         apiParams.moduloId = params.moduloId;
+      }
+      if (params.instrutorId) {
+        apiParams.instrutorId = params.instrutorId;
       }
       if (params.status && params.status.length > 0) {
         apiParams.status = params.status as AulasListParams["status"];
@@ -37,6 +47,12 @@ export function useAulasDashboardQuery(params: UseAulasDashboardQueryParams) {
       }
       if (params.obrigatoria !== undefined) {
         apiParams.obrigatoria = params.obrigatoria;
+      }
+      if (params.dataInicio) {
+        apiParams.dataInicio = params.dataInicio;
+      }
+      if (params.dataFim) {
+        apiParams.dataFim = params.dataFim;
       }
       if (params.search) {
         apiParams.search = params.search;
@@ -68,6 +84,4 @@ export function useAulasDashboardQuery(params: UseAulasDashboardQueryParams) {
     gcTime: 60000, // 1 minuto
   });
 }
-
-
 

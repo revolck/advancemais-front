@@ -56,6 +56,7 @@ export interface Aula {
     nome: string;
     email?: string;
     cpf: string; // ✅ CPF do instrutor
+    avatarUrl?: string | null;
   } | null;
   criadoPor: {
     id: string;
@@ -112,25 +113,32 @@ export interface AulaHistorico {
   userAgent?: string;
 }
 
-// Payloads
+// =============================================================================
+// Payloads (POST/PUT /api/v1/cursos/aulas)
+// =============================================================================
+
+// Materiais: URLs do blob storage (até 3 itens)
+export type AulaMaterialInput = string | { url: string; titulo?: string };
+
 export interface CreateAulaPayload {
   titulo: string;
   descricao: string; // ✅ Obrigatório
   modalidade: Modalidade;
   tipoLink?: TipoLink;
-  youtubeUrl?: string;
-  sala?: string; // ⚠️ Opcional (apenas PRESENCIAL)
-  turmaId?: string; // ⚠️ Opcional para Admin/Mod/Ped (pode criar sem turma)
-  instrutorId?: string; // ⚠️ Opcional para Admin/Mod/Ped (pode criar sem instrutor)
-  moduloId?: string;
-  dataInicio?: string; // Condicional por modalidade
-  dataFim?: string; // Condicional por modalidade
+  duracaoMinutos: number; // ✅ Obrigatório (int > 0)
+  obrigatoria: boolean; // ✅ Obrigatório
+  status?: AulaStatus;
+  dataInicio?: string;
+  dataFim?: string;
   horaInicio?: string;
   horaFim?: string;
-  obrigatoria?: boolean;
-  duracaoMinutos?: number; // ⚠️ Opcional (calculado se houver período)
-  status?: "RASCUNHO" | "PUBLICADA";
-  gravarAula?: boolean; // Novo campo (apenas AO_VIVO/SEMIPRESENCIAL com Meet)
+  sala?: string;
+  turmaId?: string | null;
+  instrutorId?: string | null;
+  moduloId?: string | null;
+  gravarAula?: boolean;
+  youtubeUrl?: string;
+  materiais?: AulaMaterialInput[];
 }
 
 export type UpdateAulaPayload = Partial<CreateAulaPayload>;
@@ -151,6 +159,7 @@ export interface RegistrarPresencaPayload {
 export interface AulasListParams {
   page?: number;
   pageSize?: number;
+  cursoId?: string;
   turmaId?: string;
   moduloId?: string;
   instrutorId?: string;
@@ -369,4 +378,3 @@ export interface AulaComMateriais extends Aula {
   materiais: AulaMaterial[];
   apenasMateriaisComplementares: boolean;
 }
-

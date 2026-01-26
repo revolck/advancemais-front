@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   InputCustom,
@@ -26,8 +26,6 @@ import { cn } from "@/lib/utils";
 import {
   createAula,
   updateAula,
-  createMaterialArquivoFromUrl,
-  publicarAula,
   MATERIAIS_CONFIG,
   type CreateAulaPayload,
   type UpdateAulaPayload,
@@ -45,6 +43,7 @@ import {
   type TurmaSelectOption,
 } from "../hooks/useTurmasForSelect";
 import { useInstrutoresForSelect } from "../hooks/useInstrutoresForSelect";
+import { useCursosForSelect } from "../../lista-turmas/hooks/useCursosForSelect";
 import { useAuth } from "@/hooks/useAuth";
 import { queryKeys } from "@/lib/react-query/queryKeys";
 
@@ -139,6 +138,7 @@ export function CreateAulaForm({
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const [formData, setFormData] = useState<FormData>(initialFormData);
+  const [selectedCursoId, setSelectedCursoId] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [loadingStep, setLoadingStep] = useState<string>("");
@@ -147,28 +147,38 @@ export function CreateAulaForm({
   const [isInitializing, setIsInitializing] = useState(mode === "edit");
   const modalidadeAtualizadaRef = useRef(false); // Rastrear se já atualizamos a modalidade
 
-  const { turmas, isLoading: loadingTurmas } = useTurmasForSelect();
-  const { instrutores, isLoading: loadingInstrutores } =
-    useInstrutoresForSelect();
-
   // Verificar roles
   const isInstrutor = user?.role === "INSTRUTOR";
   const isAdminModPed = ["ADMIN", "MODERADOR", "PEDAGOGICO"].includes(
     user?.role || ""
   );
 
+  const { cursos, isLoading: loadingCursos } = useCursosForSelect();
+  const { turmas, isLoading: loadingTurmas } = useTurmasForSelect({
+    cursoId: isAdminModPed ? selectedCursoId : null,
+    enabled: isAdminModPed ? Boolean(selectedCursoId) : true,
+    includeCursoNameInLabel: !isAdminModPed,
+  });
+  const { instrutores, isLoading: loadingInstrutores } =
+    useInstrutoresForSelect();
+
   // Mostrar campo turma apenas se instrutor tem múltiplas turmas ou se é Admin/Mod/Ped
   const showTurmaField = isAdminModPed || turmas.length > 1;
+  const showCursoField = isAdminModPed && showTurmaField;
   // Mostrar campo instrutor apenas para Admin/Mod/Ped
   const showInstrutorField = isAdminModPed;
   // Turma é obrigatória para instrutor
-  const turmaRequired = isInstrutor;
+  const turmaRequired = isInstrutor || (showCursoField && Boolean(selectedCursoId));
+  const turmaDisabled = Boolean(showCursoField && !selectedCursoId);
 
   // Carregar dados iniciais no modo de edição
   useEffect(() => {
     if (mode === "edit") {
       if (initialData && initialData.id) {
         const aula = initialData;
+        setSelectedCursoId(
+          aula.turma?.curso?.id ? String(aula.turma.curso.id) : null
+        );
 
         // ✅ DEBUG: Log para verificar se a descrição está vindo da API
         if (process.env.NODE_ENV === "development") {
@@ -305,6 +315,37 @@ export function CreateAulaForm({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, initialData]); // formData.descricao não é necessário aqui (apenas monitoramento de inicialização)
+
+  const handleCursoChange = useCallback(
+    (cursoId: string | null) => {
+      const nextCursoId = cursoId || null;
+      setSelectedCursoId(nextCursoId);
+
+      setFormData((prev) => {
+        if (!prev.turmaId) return prev;
+        return {
+          ...prev,
+          turmaId: "",
+          modalidade: "",
+          tipoLink: "",
+          youtubeUrl: "",
+          ...(mode === "create" && {
+            dataAula: null,
+            horaInicio: "",
+            horaFim: "",
+          }),
+          gravarAula: false,
+        };
+      });
+
+      setErrors((prev) => {
+        if (!prev.turmaId) return prev;
+        const { turmaId: _turmaId, ...rest } = prev;
+        return rest;
+      });
+    },
+    [mode]
+  );
 
   // Auto-select turma se instrutor tem apenas 1 turma
   useEffect(() => {
@@ -599,142 +640,57 @@ export function CreateAulaForm({
   } => {
     const newErrors: Record<string, string> = {};
 
-    // Validações básicas (sempre obrigatórias)
-    if (!formData.titulo.trim() || formData.titulo.length < 3) {
+    const tituloTrim = formData.titulo.trim();
+    if (!tituloTrim || tituloTrim.length < 3) {
       newErrors.titulo = "Título deve ter no mínimo 3 caracteres";
+    } else if (tituloTrim.length > 255) {
+      newErrors.titulo = "Título deve ter no máximo 255 caracteres";
     }
 
-    if (!formData.descricao.trim() || formData.descricao.length < 10) {
-      newErrors.descricao =
-        "Descrição é obrigatória e deve ter no mínimo 10 caracteres";
+    const descricaoTrim = formData.descricao.trim();
+    if (!descricaoTrim || descricaoTrim.length < 1) {
+      newErrors.descricao = "Descrição é obrigatória";
+    } else if (descricaoTrim.length > 5000) {
+      newErrors.descricao = "Descrição deve ter no máximo 5000 caracteres";
     }
 
     if (!formData.modalidade) {
       newErrors.modalidade = "Selecione a modalidade";
     }
 
-    // Turma é obrigatória apenas para Instrutor
-    if (isInstrutor && !formData.turmaId) {
+    if (turmaRequired && !formData.turmaId) {
       newErrors.turmaId = "Selecione a turma";
     }
 
-    // Duração é obrigatória para modalidades SEM período (ONLINE, SEMIPRESENCIAL com YouTube)
-    // Para modalidades COM período (PRESENCIAL, AO_VIVO), será calculada automaticamente
-    const modalidadeSemPeriodo =
+    if (showTipoLinkField && !formData.tipoLink) {
+      newErrors.tipoLink = "Selecione o tipo de link";
+    }
+
+    if (showPeriodoField) {
+      if (!formData.dataAula) {
+        newErrors.dataAula = "Selecione a data da aula";
+      }
+      if (!formData.horaInicio) {
+        newErrors.horaInicio = "Hora de início é obrigatória";
+      }
+      if (!formData.horaFim) {
+        newErrors.horaFim = "Hora de término é obrigatória";
+      }
+    }
+
+    // Duração é obrigatória (int > 0). Pode ser calculada se houver horário.
+    const duracaoNum = Number.parseInt(formData.duracaoMinutos, 10);
+    const hasHoras = Boolean(formData.horaInicio && formData.horaFim);
+    if ((!Number.isFinite(duracaoNum) || duracaoNum <= 0) && !hasHoras) {
+      newErrors.duracaoMinutos = "Duração é obrigatória e deve ser maior que 0";
+    }
+
+    const youtubeIsRequired =
       formData.modalidade === "ONLINE" ||
-      (formData.modalidade === "SEMIPRESENCIAL" &&
-        formData.tipoLink === "YOUTUBE");
+      (formData.modalidade === "SEMIPRESENCIAL" && formData.tipoLink === "YOUTUBE");
 
-    if (modalidadeSemPeriodo) {
-      if (!formData.duracaoMinutos || Number(formData.duracaoMinutos) <= 0) {
-        newErrors.duracaoMinutos =
-          "Duração é obrigatória e deve ser maior que 0";
-      }
-    }
-
-    // Validações específicas por modalidade
-    if (formData.modalidade === "ONLINE") {
-      // ONLINE: YouTube obrigatório, período NÃO é usado
-      if (!formData.youtubeUrl) {
-        newErrors.youtubeUrl =
-          "Link do YouTube é obrigatório para aulas online";
-      }
-      // ONLINE NÃO pode ter Google Meet (apenas AO_VIVO e SEMIPRESENCIAL com tipoLink MEET)
-      // Validação removida: meetUrl não é um campo do formulário, é criado automaticamente pela API
-    }
-
-    if (formData.modalidade === "PRESENCIAL") {
-      // PRESENCIAL: Data e horários obrigatórios
-      if (!formData.dataAula) {
-        newErrors.dataAula = "Data da aula é obrigatória";
-      }
-      if (!formData.horaInicio) {
-        newErrors.horaInicio = "Hora de início é obrigatória";
-      }
-      if (!formData.horaFim) {
-        newErrors.horaFim = "Hora de término é obrigatória";
-      }
-      if (
-        formData.horaInicio &&
-        formData.horaFim &&
-        formData.horaInicio >= formData.horaFim
-      ) {
-        newErrors.horaFim = "Hora de término deve ser após hora de início";
-      }
-
-      // Verificar se é no futuro (amanhã ou depois)
-      if (formData.dataAula) {
-        const dataAula = new Date(formData.dataAula);
-        dataAula.setHours(0, 0, 0, 0);
-        const amanha = getTomorrowDate();
-
-        if (dataAula < amanha) {
-          newErrors.dataAula = "Aula deve ser agendada para amanhã ou depois";
-        }
-      }
-    }
-
-    if (formData.modalidade === "AO_VIVO") {
-      // AO_VIVO: Data e horários obrigatórios no futuro
-      if (!formData.dataAula) {
-        newErrors.dataAula = "Data da aula ao vivo é obrigatória";
-      }
-      if (!formData.horaInicio) {
-        newErrors.horaInicio = "Hora de início é obrigatória";
-      }
-      if (!formData.horaFim) {
-        newErrors.horaFim = "Hora de término é obrigatória";
-      }
-      if (
-        formData.horaInicio &&
-        formData.horaFim &&
-        formData.horaInicio >= formData.horaFim
-      ) {
-        newErrors.horaFim = "Hora de término deve ser após hora de início";
-      }
-
-      // Verificar se é no futuro (amanhã ou depois)
-      if (formData.dataAula) {
-        const dataAula = new Date(formData.dataAula);
-        dataAula.setHours(0, 0, 0, 0);
-        const amanha = getTomorrowDate();
-
-        if (dataAula < amanha) {
-          newErrors.dataAula = "Aula deve ser agendada para amanhã ou depois";
-        }
-      }
-    }
-
-    if (formData.modalidade === "SEMIPRESENCIAL") {
-      // SEMIPRESENCIAL: Tipo de link obrigatório
-      if (!formData.tipoLink) {
-        newErrors.tipoLink = "Selecione o tipo de link";
-      }
-      if (formData.tipoLink === "YOUTUBE" && !formData.youtubeUrl) {
-        newErrors.youtubeUrl = "Link do YouTube é obrigatório";
-      }
-      if (formData.tipoLink === "MEET") {
-        if (!formData.dataAula) {
-          newErrors.dataAula = "Data da aula é obrigatória";
-        }
-        if (!formData.horaInicio) {
-          newErrors.horaInicio = "Hora de início é obrigatória";
-        }
-        if (!formData.horaFim) {
-          newErrors.horaFim = "Hora de término é obrigatória";
-        }
-
-        // Verificar se é no futuro (amanhã ou depois)
-        if (formData.dataAula) {
-          const dataAula = new Date(formData.dataAula);
-          dataAula.setHours(0, 0, 0, 0);
-          const amanha = getTomorrowDate();
-
-          if (dataAula < amanha) {
-            newErrors.dataAula = "Aula deve ser agendada para amanhã ou depois";
-          }
-        }
-      }
+    if (youtubeIsRequired && !formData.youtubeUrl.trim()) {
+      newErrors.youtubeUrl = "Link do YouTube é obrigatório";
     }
 
     // Validar URL do YouTube
@@ -745,29 +701,24 @@ export function CreateAulaForm({
       }
     }
 
-    setErrors(newErrors);
-    return { valid: Object.keys(newErrors).length === 0, errors: newErrors };
-  };
-
-  /**
-   * Formata uma data para o formato YYYY-MM-DD
-   */
-  const formatDateForAPI = (date: Date | string | null): string | undefined => {
-    if (!date) return undefined;
-
-    const dateObj = typeof date === "string" ? new Date(date) : date;
-
-    // Se já é YYYY-MM-DD, retorna como está
-    if (typeof date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
-      return date;
+    // Validar horas
+    if (!showPeriodoField) {
+      // (opcional) - quando visível apenas por preenchimento manual
+      if (
+        (formData.horaInicio && !formData.horaFim) ||
+        (!formData.horaInicio && formData.horaFim)
+      ) {
+        newErrors.horaFim = "Informe hora de início e término";
+      }
+    }
+    if (formData.horaInicio && formData.horaFim) {
+      if (formData.horaInicio >= formData.horaFim) {
+        newErrors.horaFim = "Hora de término deve ser após hora de início";
+      }
     }
 
-    // Converte para YYYY-MM-DD
-    const year = dateObj.getFullYear();
-    const month = String(dateObj.getMonth() + 1).padStart(2, "0");
-    const day = String(dateObj.getDate()).padStart(2, "0");
-
-    return `${year}-${month}-${day}`;
+    setErrors(newErrors);
+    return { valid: Object.keys(newErrors).length === 0, errors: newErrors };
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -788,205 +739,107 @@ export function CreateAulaForm({
       return;
     }
 
+    const normalizeNullableId = (raw: string): string | null => {
+      const trimmed = raw.trim();
+      return trimmed ? trimmed : null;
+    };
+
+    const computeDuracaoFromHoras = (
+      inicio: string,
+      fim: string
+    ): number | null => {
+      if (!inicio || !fim) return null;
+      const [horaIni, minIni] = inicio.split(":").map(Number);
+      const [horaFim, minFim] = fim.split(":").map(Number);
+      if (
+        [horaIni, minIni, horaFim, minFim].some(
+          (x) => !Number.isFinite(x) || x < 0
+        )
+      ) {
+        return null;
+      }
+      const minutosInicio = horaIni * 60 + minIni;
+      const minutosFim = horaFim * 60 + minFim;
+      const diff = minutosFim - minutosInicio;
+      return diff > 0 ? diff : null;
+    };
+
+    const tituloTrim = formData.titulo.trim();
+    const descricaoTrim = formData.descricao.trim();
+
+    const duracaoFromInput = Number.parseInt(formData.duracaoMinutos, 10);
+    const duracaoFromHoras = computeDuracaoFromHoras(
+      formData.horaInicio,
+      formData.horaFim
+    );
+    const duracaoMinutos =
+      (Number.isFinite(duracaoFromInput) && duracaoFromInput > 0
+        ? duracaoFromInput
+        : null) ?? duracaoFromHoras;
+
+    if (!duracaoMinutos) {
+      setErrors((prev) => ({
+        ...prev,
+        duracaoMinutos: "Duração é obrigatória e deve ser maior que 0",
+      }));
+      toastCustom.error({
+        title: "Verifique os campos obrigatórios",
+        description: "Informe uma duração válida (em minutos).",
+      });
+      return;
+    }
+
+    const turmaId = normalizeNullableId(formData.turmaId);
+    const instrutorId = normalizeNullableId(formData.instrutorId);
+    const moduloId = normalizeNullableId(formData.moduloId);
+    const statusFinal = turmaId ? formData.status : "RASCUNHO";
+
+    const buildIsoFromDateAndTime = (
+      date: Date | null,
+      time: string
+    ): string | undefined => {
+      if (!date) return undefined;
+      if (!time) return undefined;
+      const [hh, mm] = time.split(":").map((v) => Number.parseInt(v, 10));
+      if (!Number.isFinite(hh) || !Number.isFinite(mm)) return undefined;
+      const d = new Date(
+        date.getFullYear(),
+        date.getMonth(),
+        date.getDate(),
+        hh,
+        mm,
+        0,
+        0
+      );
+      return Number.isNaN(d.getTime()) ? undefined : d.toISOString();
+    };
+
+    const dataInicio = buildIsoFromDateAndTime(formData.dataAula, formData.horaInicio);
+    const dataFim = buildIsoFromDateAndTime(formData.dataAula, formData.horaFim);
+
     setIsLoading(true);
 
     try {
-      // Construir dataInicio e dataFim se houver data e horários
-      // Enviar apenas a data (YYYY-MM-DD) e as horas separadamente (HH:MM)
-      let dataInicio: string | undefined;
-      let dataFim: string | undefined;
-      let horaInicio: string | undefined;
-      let horaFim: string | undefined;
-      let hasPeriodo = false;
-
-      if (formData.dataAula && formData.horaInicio && formData.horaFim) {
-        // Data apenas no formato YYYY-MM-DD
-        dataInicio = formatDateForAPI(formData.dataAula);
-
-        // Horas separadas no formato HH:MM
-        horaInicio = formData.horaInicio;
-        horaFim = formData.horaFim;
-
-        // Para dataFim, usar a mesma data (aula acontece em um único dia)
-        // Se precisar de dataFim diferente, seria necessário um campo separado
-        dataFim = formatDateForAPI(formData.dataAula);
-
-        hasPeriodo = true;
-      }
-
       if (mode === "edit" && aulaId) {
-        // Modo de edição
-        // ✅ Detectar se turma foi removida (estava preenchida antes e agora está vazia)
-        const turmaFoiRemovida = initialData?.turma?.id && !formData.turmaId;
-
-        // ✅ Detectar se turma foi adicionada (não tinha antes e agora tem)
-        const turmaFoiAdicionada =
-          !initialData?.turma?.id && !!formData.turmaId;
-
-        // ✅ Detectar se turma foi alterada (tinha uma antes e agora tem outra)
-        const turmaFoiAlterada =
-          initialData?.turma?.id &&
-          formData.turmaId &&
-          initialData.turma.id !== formData.turmaId;
-
-        // Detectar se instrutor foi removido
-        const instrutorFoiRemovido =
-          initialData?.instrutor?.id && !formData.instrutorId;
-
-        // ✅ DEBUG: Log da detecção de mudanças
-        if (process.env.NODE_ENV === "development") {
-          console.log("[UPDATE_AULA] Detecção de mudanças:", {
-            turmaFoiRemovida,
-            turmaFoiAdicionada,
-            turmaFoiAlterada,
-            initialDataTurmaId: initialData?.turma?.id,
-            formDataTurmaId: formData.turmaId,
-            instrutorFoiRemovido,
-            initialDataInstrutorId: initialData?.instrutor?.id,
-            formDataInstrutorId: formData.instrutorId,
-          });
-        }
-
-        // ✅ Determinar o status correto (API atualizada):
-        // - Se não há turma (removida ou nunca teve), status deve ser sempre RASCUNHO
-        // - Se há turma, pode ser PUBLICADA ou RASCUNHO conforme o usuário escolheu (instrutor é opcional)
-        // - Google Meet só será criado quando instrutor for adicionado
-        const statusFinal = !formData.turmaId
-          ? "RASCUNHO" // Sem turma = sempre RASCUNHO
-          : formData.status; // Com turma = pode ser PUBLICADA ou RASCUNHO (instrutor é opcional)
-
-        // ✅ VALIDAÇÃO: Se modalidade é PRESENCIAL e há turmaId, limpar tipoLink e youtubeUrl
-        const isPresencialComTurma =
-          formData.modalidade === "PRESENCIAL" && !!formData.turmaId;
-        const tipoLinkFinal = isPresencialComTurma
-          ? undefined
-          : (formData.tipoLink as TipoLink) || undefined;
-        const youtubeUrlFinal = isPresencialComTurma
-          ? undefined
-          : formData.youtubeUrl || undefined;
-
-        // ✅ Lógica simplificada para turmaId:
-        // - Se turma foi removida (tinha antes e agora não tem), não enviar (API deve tratar como remoção)
-        // - Se turma foi adicionada, alterada ou mantida, SEMPRE enviar o ID
-        // - Se nunca teve turma e continua sem, não enviar (undefined)
-        const turmaIdValue = formData.turmaId?.trim() || "";
-
-        // ✅ DEBUG: Verificar turmaId ANTES de construir payload
-        if (process.env.NODE_ENV === "development") {
-          console.log(
-            "[UPDATE_AULA] Verificação de turmaId ANTES de construir payload:",
-            {
-              formDataTurmaId: formData.turmaId,
-              formDataTurmaIdType: typeof formData.turmaId,
-              turmaIdValue,
-              turmaIdValueLength: turmaIdValue.length,
-              turmaIdValueIsEmpty: turmaIdValue === "",
-              turmaFoiRemovida,
-              turmaFoiAdicionada,
-              turmaFoiAlterada,
-              willIncludeTurmaId: !turmaFoiRemovida && turmaIdValue !== "",
-            }
-          );
-        }
-
-        const turmaIdPayload = turmaFoiRemovida
-          ? {} // ✅ Não enviar quando removido (API deve tratar como remoção)
-          : turmaIdValue !== ""
-          ? { turmaId: turmaIdValue } // ✅ SEMPRE enviar ID quando existe e não está vazio
-          : {}; // ✅ Não enviar se nunca teve turma ou está vazio
-
-        // ✅ DEBUG: Verificar turmaIdPayload DEPOIS de construir
-        if (process.env.NODE_ENV === "development") {
-          console.log("[UPDATE_AULA] turmaIdPayload construído:", {
-            turmaIdPayload,
-            hasTurmaId: "turmaId" in turmaIdPayload,
-            turmaIdValue: turmaIdPayload.turmaId,
-          });
-        }
-
-        // ✅ Lógica simplificada para instrutorId:
-        // - Se instrutor foi removido, não enviar (API deve tratar como remoção)
-        // - Se instrutor foi adicionado ou mantido, enviar o ID
-        // - Se nunca teve instrutor e continua sem, não enviar (undefined)
-        const instrutorIdPayload = instrutorFoiRemovido
-          ? {} // ✅ Não enviar quando removido (API deve tratar como remoção)
-          : formData.instrutorId
-          ? { instrutorId: formData.instrutorId } // ✅ Enviar ID quando existe
-          : {}; // ✅ Não enviar se nunca teve instrutor
-
-        // ✅ Construir payload de forma explícita para garantir que turmaId seja incluído
-        // ✅ Construir payload base primeiro
         const updatePayload: UpdateAulaPayload = {
-          titulo: formData.titulo.trim(),
-          descricao: formData.descricao.trim(),
+          titulo: tituloTrim,
+          descricao: descricaoTrim,
           modalidade: formData.modalidade as Modalidade,
-          tipoLink: tipoLinkFinal,
-          youtubeUrl: youtubeUrlFinal,
-          ...(formData.moduloId && { moduloId: formData.moduloId }),
-          ...(dataInicio && { dataInicio }),
-          ...(dataFim && { dataFim }),
-          ...(horaInicio && { horaInicio }),
-          ...(horaFim && { horaFim }),
+          tipoLink: formData.tipoLink ? (formData.tipoLink as TipoLink) : undefined,
+          youtubeUrl: formData.youtubeUrl ? formData.youtubeUrl : undefined,
+          dataInicio,
+          dataFim,
+          horaInicio: formData.horaInicio || undefined,
+          horaFim: formData.horaFim || undefined,
+          sala: formData.sala || undefined,
+          duracaoMinutos,
           obrigatoria: formData.obrigatoria,
-          ...(hasPeriodo
-            ? {}
-            : { duracaoMinutos: Number(formData.duracaoMinutos) }),
-          // ✅ Status: sempre RASCUNHO se não há turma, caso contrário usa o escolhido pelo usuário (instrutor é opcional)
+          gravarAula: formData.gravarAula,
           status: statusFinal,
-          ...((formData.modalidade === "AO_VIVO" ||
-            (formData.modalidade === "SEMIPRESENCIAL" &&
-              formData.tipoLink === "MEET")) && {
-            gravarAula: formData.gravarAula,
-          }),
+          turmaId,
+          instrutorId,
+          moduloId,
         };
-
-        // ✅ CRÍTICO: Atribuir turmaId e instrutorId DIRETAMENTE após construir o objeto
-        // Isso garante que não sejam sobrescritos por nenhum spread operator
-        if (turmaIdValue !== "" && !turmaFoiRemovida) {
-          (updatePayload as any).turmaId = turmaIdValue;
-        }
-
-        if (
-          formData.instrutorId &&
-          formData.instrutorId.trim() !== "" &&
-          !instrutorFoiRemovido
-        ) {
-          (updatePayload as any).instrutorId = formData.instrutorId.trim();
-        }
-
-        // ✅ DEBUG: Verificar se turmaId está no payload final
-        if (process.env.NODE_ENV === "development") {
-          console.log("[UPDATE_AULA] Payload final verificado:", {
-            hasTurmaId: "turmaId" in updatePayload,
-            turmaIdValue: (updatePayload as any).turmaId,
-            turmaIdType: typeof (updatePayload as any).turmaId,
-            payloadKeys: Object.keys(updatePayload),
-            payloadString: JSON.stringify(updatePayload),
-            turmaIdIndex: Object.keys(updatePayload).indexOf("turmaId"),
-            // ✅ Verificar se turmaId está no JSON stringificado
-            payloadStringIncludesTurmaId:
-              JSON.stringify(updatePayload).includes("turmaId"),
-            payloadStringIncludesTurmaIdValue:
-              JSON.stringify(updatePayload).includes(turmaIdValue),
-          });
-        }
-
-        // ✅ DEBUG: Log completo do payload antes de enviar
-        if (process.env.NODE_ENV === "development") {
-          console.log("[UPDATE_AULA] Payload completo antes de enviar:", {
-            updatePayload,
-            turmaIdNoPayload: updatePayload.turmaId,
-            turmaIdPayload,
-            instrutorIdPayload,
-            turmaFoiRemovida,
-            turmaFoiAdicionada,
-            turmaFoiAlterada,
-            instrutorFoiRemovido,
-            formDataTurmaId: formData.turmaId,
-            initialDataTurmaId: initialData?.turma?.id,
-            payloadString: JSON.stringify(updatePayload),
-          });
-        }
 
         setLoadingStep("Salvando alterações...");
         const updatedAula = await updateAula(aulaId, updatePayload);
@@ -1001,8 +854,6 @@ export function CreateAulaForm({
             status: updatedAula?.status,
             turma: updatedAula?.turma?.nome || null,
             instrutor: updatedAula?.instrutor?.nome || null,
-            dataInicio: updatedAula?.dataInicio,
-            horaInicio: updatedAula?.horaInicio,
             payload: updatePayload,
           });
         }
@@ -1038,53 +889,6 @@ export function CreateAulaForm({
         await new Promise((resolve) => setTimeout(resolve, 300));
       } else {
         // Modo de criação
-        // Calcular duração quando há período (horaInicio e horaFim)
-        let duracaoMinutos = Number(formData.duracaoMinutos) || 60;
-        if (hasPeriodo && horaInicio && horaFim) {
-          const [horaIni, minIni] = horaInicio.split(":").map(Number);
-          const [horaFimNum, minFim] = horaFim.split(":").map(Number);
-
-          const minutosInicio = horaIni * 60 + minIni;
-          const minutosFim = horaFimNum * 60 + minFim;
-
-          // Se horaFim for menor que horaInicio, significa que passou da meia-noite
-          // Mas para aulas do mesmo dia, isso não deve acontecer
-          duracaoMinutos = minutosFim - minutosInicio;
-
-          // Garantir que a duração seja positiva
-          if (duracaoMinutos <= 0) {
-            duracaoMinutos = 60; // Fallback para 1 hora
-          }
-        }
-
-        const createPayload: CreateAulaPayload = {
-          titulo: formData.titulo.trim(),
-          descricao: formData.descricao.trim(),
-          modalidade: formData.modalidade as Modalidade,
-          duracaoMinutos, // OBRIGATÓRIO - sempre enviar
-          // Campos opcionais
-          ...(formData.turmaId && { turmaId: formData.turmaId }), // Opcional para Admin/Mod/Ped
-          ...(formData.tipoLink && { tipoLink: formData.tipoLink as TipoLink }),
-          ...(formData.youtubeUrl && { youtubeUrl: formData.youtubeUrl }),
-          ...(formData.instrutorId && { instrutorId: formData.instrutorId }),
-          ...(formData.moduloId && { moduloId: formData.moduloId }),
-          ...(dataInicio && { dataInicio }),
-          ...(dataFim && { dataFim }),
-          ...(horaInicio && { horaInicio }),
-          ...(horaFim && { horaFim }),
-          ...(formData.sala &&
-            formData.modalidade === "PRESENCIAL" && {
-              sala: formData.sala.trim(),
-            }),
-          obrigatoria: formData.obrigatoria,
-          status: "RASCUNHO", // ✅ SEMPRE criar como RASCUNHO - publicação é feita via endpoint específico
-          ...((formData.modalidade === "AO_VIVO" ||
-            (formData.modalidade === "SEMIPRESENCIAL" &&
-              formData.tipoLink === "MEET")) && {
-            gravarAula: formData.gravarAula,
-          }),
-        };
-
         // Se houver arquivos para anexar, fazer upload para blob ANTES de criar a aula
         const filesWithData = materialFiles.filter((item) => item.file);
         const uploadedFiles: FileUploadResult[] = [];
@@ -1119,7 +923,36 @@ export function CreateAulaForm({
           }
         }
 
-        // Passo 2: Criar a aula
+        const materiais =
+          uploadedFiles.length > 0
+            ? uploadedFiles.map((uploadedFile) => ({
+                url: uploadedFile.url,
+                titulo: uploadedFile.originalName.replace(/\.[^/.]+$/, ""),
+              }))
+            : undefined;
+
+        const createPayload: CreateAulaPayload = {
+          titulo: tituloTrim,
+          descricao: descricaoTrim,
+          modalidade: formData.modalidade as Modalidade,
+          tipoLink: formData.tipoLink ? (formData.tipoLink as TipoLink) : undefined,
+          youtubeUrl: formData.youtubeUrl ? formData.youtubeUrl : undefined,
+          dataInicio,
+          dataFim,
+          horaInicio: formData.horaInicio || undefined,
+          horaFim: formData.horaFim || undefined,
+          sala: formData.sala || undefined,
+          duracaoMinutos,
+          obrigatoria: formData.obrigatoria,
+          gravarAula: formData.gravarAula,
+          status: statusFinal,
+          turmaId,
+          instrutorId,
+          moduloId,
+          ...(materiais ? { materiais } : {}),
+        };
+
+        // Passo 2: Criar a aula (já com materiais)
         setLoadingStep("Criando aula...");
         setUploadProgress(0);
         let response;
@@ -1134,57 +967,15 @@ export function CreateAulaForm({
           throw error;
         }
 
-        // Passo 3: Criar os materiais na API com as URLs do blob
-        if (uploadedFiles.length > 0) {
-          try {
-            setLoadingStep(`Anexando ${uploadedFiles.length} material(is)...`);
-            const materialPromises = uploadedFiles.map((uploadedFile) =>
-              createMaterialArquivoFromUrl(response.aula.id, {
-                titulo: uploadedFile.originalName.replace(/\.[^/.]+$/, ""), // Nome sem extensão
-                arquivoUrl: uploadedFile.url,
-                arquivoNome: uploadedFile.originalName,
-                arquivoTamanho: uploadedFile.size,
-                arquivoMimeType: uploadedFile.mimeType,
-                obrigatorio: false,
-              })
-            );
-
-            await Promise.all(materialPromises);
-            setLoadingStep("Finalizando...");
-            toastCustom.success(
-              `Aula criada com ${uploadedFiles.length} material(is) anexado(s)!`
-            );
-          } catch (error) {
-            // Se falhou ao criar materiais na API, fazer rollback do blob
-            console.error("Erro ao anexar materiais:", error);
-            setLoadingStep("Revertendo upload de arquivos...");
-            await deleteFiles(uploadedFiles.map((f) => f.url));
-            toastCustom.warning(
-              "Aula criada, mas houve erro ao anexar os materiais. Você pode adicioná-los depois na página de detalhes."
-            );
-          }
-        } else {
-          setLoadingStep("Finalizando...");
-          toastCustom.success("Aula criada com sucesso!");
-        }
+        setLoadingStep("Finalizando...");
+        toastCustom.success(
+          uploadedFiles.length > 0
+            ? `Aula criada com ${uploadedFiles.length} material(is)!`
+            : "Aula criada com sucesso!"
+        );
 
         if (response.meetUrl) {
           toastCustom.info(`Sala Google Meet criada: ${response.meetUrl}`);
-        }
-
-        // Se o usuário tinha selecionado "PUBLICADA", publicar automaticamente após criar
-        if (formData.status === "PUBLICADA") {
-          try {
-            setLoadingStep("Publicando aula...");
-            await publicarAula(response.aula.id, true);
-            toastCustom.success("Aula criada e publicada com sucesso!");
-          } catch (error) {
-            // Se falhar ao publicar, a aula já foi criada como RASCUNHO
-            console.error("Erro ao publicar aula:", error);
-            toastCustom.warning(
-              "Aula criada como rascunho. Você pode publicá-la depois na página de detalhes."
-            );
-          }
         }
       }
 
@@ -1412,11 +1203,34 @@ export function CreateAulaForm({
               error={errors.titulo}
               required
               placeholder="Ex.: Introdução ao Node.js"
-              maxLength={200}
+              maxLength={255}
             />
 
-            {/* Linha 1: Turma, Instrutor e Modalidade */}
+            {/* Linha 1: Curso, Turma, Instrutor e Modalidade */}
             <div className="flex flex-col md:flex-row gap-4 w-full">
+              {/* Campo Curso - Apenas para Admin/Mod/Ped (facilita filtrar turmas) */}
+              {showCursoField && (
+                <div className="flex-1 min-w-0">
+                  {loadingCursos ? (
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-gray-700">
+                        Curso
+                      </Label>
+                      <Skeleton className="h-10 w-full rounded-md" />
+                    </div>
+                  ) : (
+                    <SelectCustom
+                      label="Curso"
+                      placeholder="Selecione o curso"
+                      options={cursos}
+                      value={selectedCursoId}
+                      onChange={handleCursoChange}
+                      clearable
+                    />
+                  )}
+                </div>
+              )}
+
               {/* Campo Turma - Oculto se instrutor tem só 1 turma */}
               {showTurmaField && (
                 <div className="flex-1 min-w-0">
@@ -1433,9 +1247,13 @@ export function CreateAulaForm({
                   ) : (
                     <SelectCustom
                       label="Turma"
-                      placeholder="Selecione a turma"
+                      placeholder={
+                        showCursoField && !selectedCursoId
+                          ? "Selecione um curso primeiro"
+                          : "Selecione a turma"
+                      }
                       options={[
-                        ...(isAdminModPed
+                        ...(isAdminModPed && !turmaRequired
                           ? [
                               {
                                 value: "",
@@ -1449,6 +1267,7 @@ export function CreateAulaForm({
                       onChange={handleTurmaChange}
                       error={errors.turmaId}
                       required={turmaRequired}
+                      disabled={turmaDisabled}
                     />
                   )}
                 </div>
@@ -1528,7 +1347,11 @@ export function CreateAulaForm({
                 }
                 placeholder="https://www.youtube.com/watch?v=..."
                 error={errors.youtubeUrl}
-                required
+                required={
+                  formData.modalidade === "ONLINE" ||
+                  (formData.modalidade === "SEMIPRESENCIAL" &&
+                    formData.tipoLink === "YOUTUBE")
+                }
               />
             )}
 
@@ -1572,108 +1395,83 @@ export function CreateAulaForm({
               </div>
             )}
 
-            {/* Linha: Data, Horários e Obrigatória (para modalidades com período) */}
-            {showPeriodoField && (
+            {/* Linha: Data da aula, horários, duração e obrigatória */}
+            {showPeriodoField ? (
               <>
                 <div
                   className={cn(
                     "grid grid-cols-1 gap-4 w-full",
                     formData.modalidade === "PRESENCIAL"
-                      ? "md:grid-cols-5" // Data, Hora Início, Hora Fim, Sala, Obrigatória
-                      : "md:grid-cols-4" // Data, Hora Início, Hora Fim, Obrigatória
+                      ? "md:grid-cols-6"
+                      : "md:grid-cols-5"
                   )}
                 >
-                  {/* Data da Aula */}
-                  <div>
-                    <DatePickerCustom
-                      label="Data da Aula"
-                      value={formData.dataAula}
-                      onChange={(date) => handleInputChange("dataAula", date)}
-                      placeholder="Selecione"
-                      error={errors.dataAula}
-                      required
-                      minDate={getTomorrowDate()}
-                    />
-                  </div>
+                  <DatePickerCustom
+                    label="Data da Aula"
+                    value={formData.dataAula}
+                    onChange={(date) => handleInputChange("dataAula", date)}
+                    placeholder="Selecione"
+                    error={errors.dataAula}
+                    minDate={getTomorrowDate()}
+                    required
+                  />
 
-                  {/* Hora de Início */}
-                  <div>
-                    <TimeInputCustom
-                      label="Hora de Início"
-                      name="horaInicio"
-                      value={formData.horaInicio}
-                      onChange={(value) =>
-                        handleInputChange("horaInicio", value)
-                      }
-                      error={errors.horaInicio}
-                      required
-                      disabled={isLoading}
-                      placeholder="00:00"
-                    />
-                  </div>
+                  <TimeInputCustom
+                    label="Hora de Início"
+                    name="horaInicio"
+                    value={formData.horaInicio}
+                    onChange={(value) => handleInputChange("horaInicio", value)}
+                    error={errors.horaInicio}
+                    disabled={isLoading}
+                    placeholder="00:00"
+                    required
+                  />
 
-                  {/* Hora de Término */}
-                  <div>
-                    <TimeInputCustom
-                      label="Hora de Término"
-                      name="horaFim"
-                      value={formData.horaFim}
-                      onChange={(value) => handleInputChange("horaFim", value)}
-                      error={errors.horaFim}
-                      required
-                      disabled={isLoading}
-                      placeholder="00:00"
-                    />
-                  </div>
+                  <TimeInputCustom
+                    label="Hora de Término"
+                    name="horaFim"
+                    value={formData.horaFim}
+                    onChange={(value) => handleInputChange("horaFim", value)}
+                    error={errors.horaFim}
+                    disabled={isLoading}
+                    placeholder="00:00"
+                    required
+                  />
 
-                  {/* Sala (apenas PRESENCIAL) */}
+                  <InputCustom
+                    label="Duração (minutos)"
+                    type="number"
+                    value={formData.duracaoMinutos}
+                    onChange={(e) =>
+                      handleInputChange("duracaoMinutos", e.target.value)
+                    }
+                    placeholder="Ex: 60"
+                    required
+                    error={errors.duracaoMinutos}
+                  />
+
+                  <SelectCustom
+                    label="Aula obrigatória"
+                    options={[
+                      { value: "true", label: "Sim" },
+                      { value: "false", label: "Não" },
+                    ]}
+                    value={String(formData.obrigatoria)}
+                    onChange={(val) =>
+                      handleInputChange("obrigatoria", val === "true")
+                    }
+                    required
+                  />
+
                   {formData.modalidade === "PRESENCIAL" && (
-                    <div>
-                      <InputCustom
-                        label="Sala"
-                        placeholder="Ex: Lab 101"
-                        value={formData.sala}
-                        onChange={(e) =>
-                          handleInputChange("sala", e.target.value)
-                        }
-                        maxLength={100}
-                      />
-                    </div>
-                  )}
-
-                  {/* Aula Obrigatória */}
-                  <div>
-                    <SelectCustom
-                      label="Aula obrigatória"
-                      options={[
-                        { value: "true", label: "Sim" },
-                        { value: "false", label: "Não" },
-                      ]}
-                      value={String(formData.obrigatoria)}
-                      onChange={(val) =>
-                        handleInputChange("obrigatoria", val === "true")
-                      }
-                      required
+                    <InputCustom
+                      label="Sala"
+                      placeholder="Ex: Lab 101"
+                      value={formData.sala}
+                      onChange={(e) => handleInputChange("sala", e.target.value)}
+                      maxLength={100}
                     />
-                  </div>
-                </div>
-
-                {/* Alerta: Duração será calculada */}
-                <div className="rounded-xl border-2 border-green-200 bg-green-50 p-4">
-                  <div className="flex items-start gap-3">
-                    <div className="shrink-0 w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
-                      <Info className="h-5 w-5 text-green-600" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="text-sm! font-semibold! text-green-900! mb-1!">
-                        Duração
-                      </h4>
-                      <p className="text-sm! text-green-700! mb-0!">
-                        Será calculada automaticamente baseada no horário de
-                        início e término.
-                      </p>
-                    </div>
-                  </div>
+                  )}
                 </div>
 
                 {/* Campo Gravar Aula (apenas para AO_VIVO) */}
@@ -1749,10 +1547,7 @@ export function CreateAulaForm({
                   </label>
                 )}
               </>
-            )}
-
-            {/* Duração e Obrigatória (para modalidades SEM período) */}
-            {!showPeriodoField && (
+            ) : (
               <div className="flex flex-col md:flex-row gap-4 w-full">
                 <div className="flex-[0.5] min-w-0">
                   <InputCustom
@@ -1820,7 +1615,7 @@ export function CreateAulaForm({
                   (e.target as HTMLTextAreaElement).value
                 )
               }
-              maxLength={500}
+              maxLength={5000}
               showCharCount
               error={errors.descricao}
               required

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ButtonCustom, FilterBar, EmptyState } from "@/components/ui/custom";
+import type { DateRange } from "@/components/ui/custom/date-picker";
 import {
   Table,
   TableBody,
@@ -18,6 +19,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useTurmasForSelect } from "./hooks/useTurmasForSelect";
+import { useCursosForSelect } from "../lista-turmas/hooks/useCursosForSelect";
 import { useAulasDashboardQuery } from "./hooks/useAulasDashboardQuery";
 import { AulaRow } from "./components/AulaRow";
 import { AulaTableSkeleton } from "./components/AulaTableSkeleton";
@@ -27,6 +29,9 @@ import {
   getNormalizedSearchOrUndefined,
   getSearchValidationMessage,
 } from "../shared/filterUtils";
+import { useInstrutoresForSelect } from "./hooks/useInstrutoresForSelect";
+
+const createEmptyDateRange = (): DateRange => ({ from: null, to: null });
 
 const AULA_STATUS_OPTIONS = [
   { value: "RASCUNHO", label: "Rascunho" },
@@ -53,7 +58,17 @@ const SEARCH_HELPER_TEXT = "Pesquise pelo título da aula.";
 export function AulasDashboard({ className }: { className?: string }) {
   const [pendingSearchTerm, setPendingSearchTerm] = useState("");
   const [appliedSearchTerm, setAppliedSearchTerm] = useState("");
+  const [selectedCursoId, setSelectedCursoId] = useState<string | null>(null);
   const [selectedTurmaId, setSelectedTurmaId] = useState<string | null>(null);
+  const [pendingPeriodo, setPendingPeriodo] = useState<DateRange>(
+    createEmptyDateRange()
+  );
+  const [appliedPeriodo, setAppliedPeriodo] = useState<DateRange>(
+    createEmptyDateRange()
+  );
+  const [selectedInstrutorId, setSelectedInstrutorId] = useState<string | null>(
+    null
+  );
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
   const [selectedModalidades, setSelectedModalidades] = useState<string[]>([]);
   const [selectedObrigatoria, setSelectedObrigatoria] = useState<string | null>(null);
@@ -74,13 +89,40 @@ export function AulasDashboard({ className }: { className?: string }) {
   const [sortField, setSortField] = useState<SortField>("criadoEm"); // Padrão: ordenar por criação
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc"); // Padrão: mais novo primeiro
 
-  const { turmas, isLoading: loadingTurmas } = useTurmasForSelect();
+  const { cursos, isLoading: loadingCursos } = useCursosForSelect();
+  const { turmas, isLoading: loadingTurmas } = useTurmasForSelect({
+    cursoId: selectedCursoId,
+    enabled: Boolean(selectedCursoId),
+    includeCursoNameInLabel: false,
+  });
+  const { instrutores, isLoading: loadingInstrutores } =
+    useInstrutoresForSelect();
+
+  const dataInicioFiltro = useMemo(
+    () =>
+      appliedPeriodo.from
+        ? new Date(appliedPeriodo.from).toISOString().split("T")[0]
+        : undefined,
+    [appliedPeriodo.from]
+  );
+  const dataFimFiltro = useMemo(
+    () =>
+      appliedPeriodo.to
+        ? new Date(appliedPeriodo.to).toISOString().split("T")[0]
+        : undefined,
+    [appliedPeriodo.to]
+  );
+
   const aulasQuery = useAulasDashboardQuery({
+    cursoId: selectedCursoId,
     turmaId: selectedTurmaId,
+    instrutorId: selectedInstrutorId,
     status: selectedStatuses.length > 0 ? selectedStatuses : undefined,
     modalidade: selectedModalidades.length > 0 ? selectedModalidades : undefined,
     obrigatoria: selectedObrigatoria !== null ? selectedObrigatoria === "true" : undefined,
     search: appliedSearchTerm || undefined,
+    dataInicio: dataInicioFiltro,
+    dataFim: dataFimFiltro,
     page: currentPage,
     pageSize,
     orderBy: sortField || "criadoEm", // Padrão: ordenar por criação
@@ -112,18 +154,13 @@ export function AulasDashboard({ className }: { className?: string }) {
     [appliedSearchTerm]
   );
 
-  const handleSearchSubmit = useCallback(
-    (rawValue?: string) => {
-      const value = rawValue ?? pendingSearchTerm;
-      const validationMessage = getSearchValidationMessage(value);
-      if (validationMessage) return;
-      const trimmedValue = value.trim();
-      setPendingSearchTerm(value);
-      setAppliedSearchTerm(trimmedValue);
-      setCurrentPage(1);
-    },
-    [pendingSearchTerm]
-  );
+  const handleApplySearchAndPeriodo = useCallback(() => {
+    const validationMessage = getSearchValidationMessage(pendingSearchTerm);
+    if (validationMessage) return;
+    setAppliedSearchTerm(pendingSearchTerm.trim());
+    setAppliedPeriodo(pendingPeriodo);
+    setCurrentPage(1);
+  }, [pendingPeriodo, pendingSearchTerm]);
 
   // Sorting functions
   const setSort = useCallback((field: SortField, direction: SortDirection) => {
@@ -236,7 +273,17 @@ export function AulasDashboard({ className }: { className?: string }) {
   // Reset página quando filtros mudam
   useEffect(() => {
     setCurrentPage(1);
-  }, [appliedSearchTerm, selectedTurmaId, selectedStatuses, selectedModalidades, selectedObrigatoria]);
+  }, [
+    appliedSearchTerm,
+    selectedCursoId,
+    selectedInstrutorId,
+    appliedPeriodo.from,
+    appliedPeriodo.to,
+    selectedTurmaId,
+    selectedStatuses,
+    selectedModalidades,
+    selectedObrigatoria,
+  ]);
 
   // Ajusta página atual se necessário (apenas se totalPages mudou e currentPage está fora do range)
   useEffect(() => {
@@ -250,14 +297,30 @@ export function AulasDashboard({ className }: { className?: string }) {
   const canDisplayTable = !hasError && (shouldShowSkeleton || filteredAulas.length > 0);
   const showEmptyState = !hasError && !shouldShowSkeleton && filteredAulas.length === 0;
 
-  // Ordem dos campos: turma na primeira linha; modalidade, status, obrigatoria na segunda
+  // Layout:
+  // Linha 1: Pesquisar, Curso, Turma
+  // Linha 2: Modalidade, Período, Instrutor, Status, Obrigatória, Pesquisar
   const filterFields: FilterField[] = useMemo(
     () => [
       {
+        key: "cursoId",
+        label: "Curso",
+        options: cursos,
+        placeholder: loadingCursos ? "Carregando..." : "Selecionar",
+      },
+      {
         key: "turmaId",
         label: "Turma",
-        options: turmas,
-        placeholder: loadingTurmas ? "Carregando..." : "Selecionar",
+        options: selectedCursoId ? turmas : [],
+        placeholder: !selectedCursoId
+          ? "Selecione um curso"
+          : loadingTurmas
+          ? "Carregando..."
+          : "Selecionar",
+        emptyPlaceholder: selectedCursoId
+          ? "Nenhuma turma disponível"
+          : "Selecione um curso primeiro",
+        disabled: !selectedCursoId || loadingTurmas,
       },
       {
         key: "modalidade",
@@ -265,6 +328,18 @@ export function AulasDashboard({ className }: { className?: string }) {
         mode: "multiple" as const,
         options: MODALIDADE_OPTIONS,
         placeholder: "Selecionar",
+      },
+      {
+        key: "periodo",
+        label: "Período",
+        type: "date-range",
+        placeholder: "Selecionar período",
+      },
+      {
+        key: "instrutorId",
+        label: "Instrutor",
+        options: instrutores,
+        placeholder: loadingInstrutores ? "Carregando..." : "Selecionar",
       },
       {
         key: "status",
@@ -280,17 +355,36 @@ export function AulasDashboard({ className }: { className?: string }) {
         placeholder: "Selecionar",
       },
     ],
-    [turmas, loadingTurmas]
+    [
+      cursos,
+      instrutores,
+      loadingCursos,
+      loadingInstrutores,
+      loadingTurmas,
+      selectedCursoId,
+      turmas,
+    ]
   );
 
   const filterValues = useMemo(
     () => ({
+      cursoId: selectedCursoId,
       turmaId: selectedTurmaId,
+      periodo: pendingPeriodo,
+      instrutorId: selectedInstrutorId,
       modalidade: selectedModalidades,
       status: selectedStatuses,
       obrigatoria: selectedObrigatoria,
     }),
-    [selectedTurmaId, selectedModalidades, selectedStatuses, selectedObrigatoria]
+    [
+      selectedCursoId,
+      selectedTurmaId,
+      selectedInstrutorId,
+      pendingPeriodo,
+      selectedModalidades,
+      selectedStatuses,
+      selectedObrigatoria,
+    ]
   );
 
   return (
@@ -313,12 +407,27 @@ export function AulasDashboard({ className }: { className?: string }) {
       <div className="border-b border-gray-200 top-0 z-10">
         <div className="py-4">
           <FilterBar
-            className="lg:grid-cols-[minmax(0,2fr)_minmax(0,2.5fr)_minmax(0,1.5fr)_auto] [&>div>*:nth-child(2)]:lg:col-start-2 [&>div>*:nth-child(2)]:lg:col-end-4 [&>div>*:nth-child(3)]:lg:row-start-2 [&>div>*:nth-child(3)]:lg:col-start-1 [&>div>*:nth-child(4)]:lg:row-start-2 [&>div>*:nth-child(4)]:lg:col-start-2 [&>div>*:nth-child(5)]:lg:row-start-2 [&>div>*:nth-child(5)]:lg:col-start-3 [&>div>*:nth-child(6)]:lg:row-start-2 [&>div>*:nth-child(6)]:lg:col-start-4"
+            gridClassName="lg:grid-cols-12 lg:[&>*:nth-child(1)]:col-span-4 lg:[&>*:nth-child(2)]:col-span-4 lg:[&>*:nth-child(3)]:col-span-4 lg:[&>*:nth-child(4)]:col-span-2 lg:[&>*:nth-child(5)]:col-span-4 lg:[&>*:nth-child(6)]:col-span-2 lg:[&>*:nth-child(7)]:col-span-2 lg:[&>*:nth-child(8)]:col-span-1 lg:[&>*:nth-child(9)]:col-span-1"
             fields={filterFields}
             values={filterValues}
             onChange={(key, value) => {
+              if (key === "cursoId") {
+                const nextCursoId = (value as string) || null;
+                setSelectedCursoId(nextCursoId);
+                setSelectedTurmaId(null);
+                setCurrentPage(1);
+              }
               if (key === "turmaId") {
                 setSelectedTurmaId((value as string) || null);
+                setCurrentPage(1);
+              }
+              if (key === "periodo") {
+                setPendingPeriodo(
+                  (value as DateRange) || createEmptyDateRange()
+                );
+              }
+              if (key === "instrutorId") {
+                setSelectedInstrutorId((value as string) || null);
                 setCurrentPage(1);
               }
               if (key === "modalidade") {
@@ -337,7 +446,11 @@ export function AulasDashboard({ className }: { className?: string }) {
             onClearAll={() => {
               setPendingSearchTerm("");
               setAppliedSearchTerm("");
+              setSelectedCursoId(null);
               setSelectedTurmaId(null);
+              setPendingPeriodo(createEmptyDateRange());
+              setAppliedPeriodo(createEmptyDateRange());
+              setSelectedInstrutorId(null);
               setSelectedStatuses([]);
               setSelectedModalidades([]);
               setSelectedObrigatoria(null);
@@ -348,12 +461,6 @@ export function AulasDashboard({ className }: { className?: string }) {
               value: pendingSearchTerm,
               onChange: (value) => setPendingSearchTerm(value),
               placeholder: "Buscar por título...",
-              onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  handleSearchSubmit((e.target as HTMLInputElement).value);
-                }
-              },
               error: searchValidationMessage,
               helperText: searchHelperText,
               helperPlacement: "tooltip",
@@ -362,13 +469,14 @@ export function AulasDashboard({ className }: { className?: string }) {
               <ButtonCustom
                 variant="primary"
                 size="lg"
-                onClick={() => handleSearchSubmit()}
+                onClick={() => handleApplySearchAndPeriodo()}
                 disabled={isLoading || !isSearchInputValid}
                 className="md:w-full xl:w-auto"
               >
                 Pesquisar
               </ButtonCustom>
             }
+            rightActionsClassName="lg:col-span-1 lg:items-end lg:justify-end"
           />
         </div>
       </div>
@@ -391,7 +499,7 @@ export function AulasDashboard({ className }: { className?: string }) {
       {canDisplayTable && (
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
           <div className="overflow-x-auto">
-            <Table className="min-w-[900px]">
+            <Table className="min-w-[860px]">
               <TableHeader>
                 <TableRow className="border-gray-200 bg-gray-50/50">
                   <TableHead
@@ -478,13 +586,13 @@ export function AulasDashboard({ className }: { className?: string }) {
                     </div>
                   </TableHead>
                   {!selectedTurmaId && (
-                    <TableHead className="font-medium text-gray-700 py-4 px-3">Turma</TableHead>
+                    <TableHead className="font-medium text-gray-700 py-4 px-3">
+                      Curso/Turma
+                    </TableHead>
                   )}
                   <TableHead className="font-medium text-gray-700 py-4 px-3">Instrutor</TableHead>
                   <TableHead className="font-medium text-gray-700 py-4 px-3">Status</TableHead>
-                  <TableHead className="font-medium text-gray-700 py-4 px-3">Data e Horário</TableHead>
-                  <TableHead className="font-medium text-gray-700 py-4 px-3 text-center whitespace-nowrap">Duração</TableHead>
-                  <TableHead className="font-medium text-gray-700 py-4 px-3 text-center whitespace-nowrap">Obrigatória</TableHead>
+                  <TableHead className="font-medium text-gray-700 py-4 px-3">Data, Horário e Duração</TableHead>
                   <TableHead
                     className="font-medium text-gray-700 py-4 px-2 whitespace-nowrap"
                     aria-sort={
@@ -577,7 +685,7 @@ export function AulasDashboard({ className }: { className?: string }) {
               </TableHeader>
               <TableBody>
                 {shouldShowSkeleton ? (
-                  <AulaTableSkeleton rows={8} />
+                  <AulaTableSkeleton rows={8} showTurma={!selectedTurmaId} />
                 ) : (
                   paginatedAulas.map((a) => (
                     <AulaRow

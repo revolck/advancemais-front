@@ -17,6 +17,12 @@ type TurmaComCurso = CursoTurma & {
   cursoNome?: string;
 };
 
+export interface UseTurmasForSelectOptions {
+  cursoId?: string | number | null;
+  enabled?: boolean;
+  includeCursoNameInLabel?: boolean;
+}
+
 /**
  * Busca todas as turmas de todos os cursos para o select
  */
@@ -72,24 +78,45 @@ async function listAllTurmas(): Promise<TurmaComCurso[]> {
   }
 }
 
-export function useTurmasForSelect() {
+async function listTurmasByCurso(cursoId: string | number): Promise<TurmaComCurso[]> {
+  try {
+    const turmas = await listTurmas(cursoId);
+    return turmas.map((turma) => ({
+      ...turma,
+      cursoId: Number(cursoId),
+    })) as TurmaComCurso[];
+  } catch (error) {
+    console.error("Erro ao buscar turmas do curso:", error);
+    return [];
+  }
+}
+
+export function useTurmasForSelect(options?: UseTurmasForSelectOptions) {
+  const cursoId = options?.cursoId ?? null;
+  const includeCursoNameInLabel =
+    options?.includeCursoNameInLabel ?? cursoId === null;
+  const isEnabled = options?.enabled ?? true;
+
   const query = useQuery({
-    queryKey: ["turmas-for-select"],
-    queryFn: listAllTurmas,
+    queryKey: ["turmas-for-select", cursoId ?? "all"],
+    queryFn: () => (cursoId ? listTurmasByCurso(cursoId) : listAllTurmas()),
+    enabled: isEnabled,
     staleTime: 60000, // 1 minute
   });
 
+  const data = isEnabled ? query.data : undefined;
+
   const turmas: TurmaSelectOption[] =
-    query.data?.map((turma) => ({
+    data?.map((turma) => ({
       value: turma.id,
-      label: `${turma.nome}${turma.cursoNome ? ` - ${turma.cursoNome}` : ""}`,
+      label: `${turma.nome}${includeCursoNameInLabel && turma.cursoNome ? ` - ${turma.cursoNome}` : ""}`,
       metodo: turma.metodo,
     })) ?? [];
 
   return {
     turmas,
-    rawData: query.data,
-    isLoading: query.isLoading,
+    rawData: data,
+    isLoading: isEnabled ? query.isLoading : false,
     error: query.error,
   };
 }

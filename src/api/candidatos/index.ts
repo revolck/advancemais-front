@@ -12,6 +12,7 @@ import type {
   CandidaturaStatus,
   CandidatosModuleInfoResponse,
   VerificarCandidaturaResponse,
+  CandidatoDashboardResponse,
   // Currículos
   CreateCurriculoPayload,
   UpdateCurriculoPayload,
@@ -30,6 +31,8 @@ import type {
   StatusCandidaturaDisponivelResponse,
   AtualizarCandidaturaResponse,
   CurriculosListFilters,
+  CandidatoCursosListFilters,
+  CandidatoCursosResponse,
 } from "./types";
 
 function normalizeHeaders(headers?: HeadersInit): Record<string, string> {
@@ -81,6 +84,25 @@ export async function getCandidatosModuleInfo(
       },
     },
     cache: "no-cache",
+  });
+}
+
+/**
+ * Dashboard do candidato (ALUNO_CANDIDATO)
+ * GET /api/v1/candidatos/dashboard
+ */
+export async function getCandidatoDashboard(
+  init?: RequestInit
+): Promise<CandidatoDashboardResponse> {
+  return apiFetch<CandidatoDashboardResponse>(CANDIDATOS_ROUTES.DASHBOARD, {
+    init: {
+      method: "GET",
+      ...init,
+      headers: buildAuthHeaders(init?.headers),
+    },
+    cache: "no-cache",
+    retries: 1,
+    silence403: true,
   });
 }
 
@@ -720,6 +742,46 @@ export async function listarVagasPublicas(
       ...init,
       headers: { Accept: apiConfig.headers.Accept, ...(init?.headers as any) },
     },
+  });
+}
+
+// ============================================================================
+// CURSOS (ALUNO_CANDIDATO)
+// ============================================================================
+
+/**
+ * Listar cursos do candidato (com filtro por modalidade e paginação)
+ * GET /api/v1/candidatos/cursos
+ */
+export async function listarCursosCandidato(
+  filters?: CandidatoCursosListFilters,
+  init?: RequestInit,
+): Promise<CandidatoCursosResponse> {
+  const params = new URLSearchParams();
+
+  if (filters?.modalidade && filters.modalidade !== "TODOS") {
+    params.append("modalidade", filters.modalidade);
+  }
+  if (typeof filters?.page === "number") {
+    params.append("page", String(filters.page));
+  }
+  if (typeof filters?.limit === "number") {
+    params.append("limit", String(filters.limit));
+  }
+
+  const url = params.toString()
+    ? `${CANDIDATOS_ROUTES.CURSOS}?${params.toString()}`
+    : CANDIDATOS_ROUTES.CURSOS;
+
+  return apiFetch<CandidatoCursosResponse>(url, {
+    init: {
+      method: "GET",
+      ...init,
+      headers: buildAuthHeaders(init?.headers),
+    },
+    cache: "no-cache",
+    retries: 1,
+    silence403: true,
   });
 }
 

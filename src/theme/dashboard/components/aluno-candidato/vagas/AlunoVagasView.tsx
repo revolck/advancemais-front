@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import {
   ButtonCustom,
@@ -78,6 +79,9 @@ function buildJobFilters({
 
 export function AlunoVagasView() {
   const queryClient = useQueryClient();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [viewVagaIdOrSlug, setViewVagaIdOrSlug] = useState<string | null>(null);
   const [viewVagaInitialJob, setViewVagaInitialJob] = useState<JobData | null>(
     null,
@@ -119,6 +123,24 @@ export function AlunoVagasView() {
       senioridade: appliedSenioridade,
     });
   }, [appliedModalidade, appliedRegime, appliedSearchTerm, appliedSenioridade]);
+
+  const viewParam = searchParams.get("view");
+
+  const clearViewParam = useCallback(() => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (!params.has("view")) return;
+    params.delete("view");
+    const next = params.toString();
+    router.replace(next ? `${pathname}?${next}` : pathname, { scroll: false });
+  }, [pathname, router, searchParams]);
+
+  // Permite deep-link: /dashboard/vagas?view={idOrSlug}
+  useEffect(() => {
+    const idOrSlug = (viewParam || "").trim();
+    if (!idOrSlug) return;
+    setViewVagaInitialJob(null);
+    setViewVagaIdOrSlug((prev) => prev ?? idOrSlug);
+  }, [viewParam]);
 
   const {
     filteredData,
@@ -268,7 +290,6 @@ export function AlunoVagasView() {
     },
     [
       applyMutation,
-      applyMutation.isPending,
       curriculosQuery.isError,
       curriculosQuery.isLoading,
       curriculosOptions,
@@ -611,12 +632,14 @@ export function AlunoVagasView() {
         idOrSlug={viewVagaIdOrSlug}
         initialJob={viewVagaInitialJob}
         onApplyClick={(vagaId, vagaTitulo) => {
+          clearViewParam();
           setViewVagaIdOrSlug(null);
           setViewVagaInitialJob(null);
           handleApply(vagaId, vagaTitulo);
         }}
         onOpenChange={(open) => {
           if (!open) {
+            clearViewParam();
             setViewVagaIdOrSlug(null);
             setViewVagaInitialJob(null);
           }

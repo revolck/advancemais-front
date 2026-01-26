@@ -29,6 +29,7 @@ import {
   ChevronDown as ChevronDownIcon,
   Check as CheckIcon,
   Info as InfoIcon,
+  X as XIcon,
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/radix-checkbox";
 import type { SelectCustomProps, SelectOption, UserOption } from "./types";
@@ -90,6 +91,7 @@ export function SelectCustom(props: SelectCustomProps) {
     helperText,
     error,
     disabled,
+    clearable = false,
     size = "md",
     fullWidth = true,
     className,
@@ -111,6 +113,12 @@ export function SelectCustom(props: SelectCustomProps) {
   const value =
     props.mode !== "multiple" ? ((props.value ?? null) as string | null) : null;
   const onChange = props.mode !== "multiple" ? (props.onChange as (v: string | null) => void) : null;
+  const hasValue =
+    props.mode !== "multiple" &&
+    value !== null &&
+    value !== undefined &&
+    value !== "";
+  const canClear = clearable && !disabled && hasValue;
   const searchableSingle = props.mode !== "multiple" ? ((props as any).searchable ?? true) : false;
   const selectValue = props.mode !== "multiple" ? value ?? "" : "";
   const handleCommandWheel = (event: React.WheelEvent<HTMLDivElement>) => {
@@ -176,34 +184,58 @@ export function SelectCustom(props: SelectCustomProps) {
             </Label>
           )}
           <Popover open={open} onOpenChange={setOpen}>
-            <PopoverTrigger asChild>
-              <button
-                type="button"
-                disabled={disabled}
-                className={cn(
-                  "file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground border-input flex min-w-0 items-center rounded-md border bg-transparent px-3 py-0 text-base shadow-none transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm aria-invalid:ring-destructive/20 aria-invalid:border-destructive w-full text-foreground focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] cursor-pointer",
-                  size === "sm" && "h-10",
-                  size === "md" && "h-12",
-                  size === "lg" && "h-14",
-                  error && "border-destructive"
-                )}
-              >
-                <span
+            <div className="relative">
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  disabled={disabled}
                   className={cn(
-                    "truncate text-left flex-1",
-                    !current && "text-muted-foreground"
+                    "file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground border-input flex min-w-0 items-center rounded-md border bg-transparent px-3 py-0 text-base shadow-none transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm aria-invalid:ring-destructive/20 aria-invalid:border-destructive w-full text-foreground focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] cursor-pointer relative",
+                    size === "sm" && "h-10",
+                    size === "md" && "h-12",
+                    size === "lg" && "h-14",
+                    error && "border-destructive",
+                    canClear ? "pr-20" : "pr-10"
                   )}
                 >
-                  {current?.label || placeholder}
-                </span>
-                <ChevronDownIcon
-                  className={cn(
-                    "size-4 opacity-50 transition-transform duration-200",
-                    open && "rotate-180"
-                  )}
-                />
-              </button>
-            </PopoverTrigger>
+                  <span
+                    className={cn(
+                      "truncate text-left flex-1",
+                      !current && "text-muted-foreground"
+                    )}
+                  >
+                    {current?.label || placeholder}
+                  </span>
+                </button>
+              </PopoverTrigger>
+
+              <ChevronDownIcon
+                className={cn(
+                  "pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 opacity-50 transition-transform duration-200",
+                  open && "rotate-180"
+                )}
+              />
+
+              {canClear && (
+                <button
+                  type="button"
+                  className="absolute right-10 top-1/2 -translate-y-1/2 inline-flex h-7 w-7 items-center justify-center rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-700 z-10 cursor-pointer"
+                  aria-label="Limpar seleção"
+                  onPointerDown={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onChange?.(null);
+                    setOpen(false);
+                  }}
+                >
+                  <XIcon className="h-4 w-4" />
+                </button>
+              )}
+            </div>
             <PopoverContent
               className={cn(
                 "z-[120] w-[--radix-popover-trigger-width] min-w-[--radix-popover-trigger-width] rounded-md border border-gray-200 bg-white p-0 shadow-none box-border"
@@ -291,34 +323,60 @@ export function SelectCustom(props: SelectCustomProps) {
           }}
           disabled={disabled}
         >
-          <SelectTrigger
-            id={id}
-            size={size === "sm" ? "sm" : "default"}
-            className={cn(
-              // Alinha visualmente ao InputCustom (altura e tipografia)
-              "file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground border-input flex min-w-0 rounded-md border bg-transparent px-3 py-1 text-base shadow-none transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm aria-invalid:ring-destructive/20 aria-invalid:border-destructive w-full text-foreground focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] focus:border-[var(--primary-color)] cursor-pointer relative",
-              // Força altura equivalente ao InputCustom usando o mesmo seletor de atributo do Radix
-              size === "sm" && "data-[size=sm]:h-10",
-              size === "md" && "data-[size=default]:h-12",
-              size === "lg" && "data-[size=default]:h-14",
-              error && "border-destructive aria-invalid:border-destructive"
+          <div className="relative">
+            <SelectTrigger
+              id={id}
+              size={size === "sm" ? "sm" : "default"}
+              className={cn(
+                // Alinha visualmente ao InputCustom (altura e tipografia)
+                "peer file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground border-input flex min-w-0 rounded-md border bg-transparent px-3 py-1 text-base shadow-none transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm aria-invalid:ring-destructive/20 aria-invalid:border-destructive w-full text-foreground focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] focus:border-[var(--primary-color)] cursor-pointer relative [&>svg]:hidden",
+                // Força altura equivalente ao InputCustom usando o mesmo seletor de atributo do Radix
+                size === "sm" && "data-[size=sm]:h-10",
+                size === "md" && "data-[size=default]:h-12",
+                size === "lg" && "data-[size=default]:h-14",
+                error && "border-destructive aria-invalid:border-destructive",
+                canClear ? "pr-20" : "pr-10"
+              )}
+              aria-required={props.required || undefined}
+            >
+              <div className="flex min-w-0 flex-1 items-center gap-2">
+                {props.mode === "user" ? (
+                  <UserTriggerValue
+                    value={value}
+                    options={options as UserOption[]}
+                    placeholder={placeholder}
+                  />
+                ) : disabled && !value && placeholder ? (
+                  <span className="text-muted-foreground">{placeholder}</span>
+                ) : value ? (
+                  <SelectValue placeholder={placeholder} />
+                ) : (
+                  <span className="text-muted-foreground">{placeholder}</span>
+                )}
+              </div>
+            </SelectTrigger>
+
+            <ChevronDownIcon className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 opacity-50 transition-transform duration-200 peer-data-[state=open]:rotate-180" />
+
+            {canClear && (
+              <button
+                type="button"
+                className="absolute right-10 top-1/2 -translate-y-1/2 inline-flex h-7 w-7 items-center justify-center rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-700 z-10 cursor-pointer"
+                aria-label="Limpar seleção"
+                onPointerDown={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onChange?.(null);
+                }}
+              >
+                <XIcon className="h-4 w-4" />
+              </button>
             )}
-            aria-required={props.required || undefined}
-          >
-            {props.mode === "user" ? (
-              <UserTriggerValue
-                value={value}
-                options={options as UserOption[]}
-                placeholder={placeholder}
-              />
-            ) : disabled && !value && placeholder ? (
-              <span className="text-muted-foreground">{placeholder}</span>
-            ) : value ? (
-              <SelectValue placeholder={placeholder} />
-            ) : (
-              <span className="text-muted-foreground">{placeholder}</span>
-            )}
-          </SelectTrigger>
+          </div>
           <SelectContent
             className={cn(
               "z-[120] w-[--radix-select-trigger-width] max-h-80 rounded-md border border-gray-200 bg-white",

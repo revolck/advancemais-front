@@ -21,6 +21,7 @@ export interface BaseSelectProps extends DivProps {
   helperText?: string;
   error?: string;
   disabled?: boolean;
+  clearable?: boolean;
   size?: "sm" | "md" | "lg";
   fullWidth?: boolean;
   required?: boolean;

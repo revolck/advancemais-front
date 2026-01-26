@@ -1,6 +1,7 @@
 export const CANDIDATOS_ROUTES = {
   // Module info
   BASE: "/api/v1/candidatos",
+  DASHBOARD: "/api/v1/candidatos/dashboard",
   // Candidatos - Candidaturas
   APLICAR: "/api/v1/candidatos/aplicar",
   MINHAS_CANDIDATURAS: "/api/v1/candidatos/candidaturas",
@@ -29,4 +30,7 @@ export const CANDIDATOS_ROUTES = {
 
   // Candidatos - Vagas públicas
   VAGAS_PUBLICAS: "/api/v1/candidatos/vagas",
+
+  // Candidatos - Cursos (ALUNO_CANDIDATO)
+  CURSOS: "/api/v1/candidatos/cursos",
 } as const;

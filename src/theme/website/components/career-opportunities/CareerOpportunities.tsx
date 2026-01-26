@@ -15,12 +15,16 @@ import { Card, CardContent } from "@/components/ui/card";
 import { RotateCcw } from "lucide-react";
 import type { CareerOpportunitiesProps, JobFilters, JobData } from "./types";
 import { CAREER_CONFIG } from "./constants";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueries, useQueryClient } from "@tanstack/react-query";
 import { toastCustom } from "@/components/ui/custom/toast";
 import { UserRole } from "@/config/roles";
 import { useUserRole } from "@/hooks/useUserRole";
 import { aplicarVaga, listCurriculos, verificarCandidatura } from "@/api/candidatos";
 import type { VerificarCandidaturaResponse } from "@/api/candidatos/types";
+import {
+  SelectCurriculoApplyModal,
+  type CurriculoApplyOption,
+} from "./components/SelectCurriculoApplyModal";
 
 function isUuid(value: string): boolean {
   return /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(
@@ -52,48 +56,30 @@ function composeLoginUrl(): string {
   return `/auth/login?redirect=${encodeURIComponent(redirectPath)}`;
 }
 
-function ApplyAwareJobCard({
-  job,
-  index,
-  canCheckApplied,
-  applyDisabled,
-  applyLabel,
-  onApply,
-  onViewDetails,
-}: {
-  job: JobData;
-  index: number;
-  canCheckApplied: boolean;
-  applyDisabled?: boolean;
-  applyLabel?: string;
-  onApply: (job: JobData) => void;
-  onViewDetails: (job: JobData) => void;
-}) {
-  const shouldCheck = canCheckApplied && isUuid(job.id);
-  const appliedQuery = useQuery<VerificarCandidaturaResponse>({
-    queryKey: ["aluno-candidato", "candidaturas", "verificar", job.id],
-    queryFn: () => verificarCandidatura(job.id, { cache: "no-store" }),
-    enabled: shouldCheck,
-    staleTime: 60 * 1000,
-    retry: 1,
-  });
+function coerceCurriculosApplyOptions(raw: unknown): CurriculoApplyOption[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((item): CurriculoApplyOption | null => {
+      if (!item || typeof item !== "object") return null;
+      const obj = item as Record<string, any>;
+      if (typeof obj.id !== "string") return null;
+      const titulo =
+        typeof obj.titulo === "string" && obj.titulo.trim()
+          ? obj.titulo.trim()
+          : "Currículo";
+      const resumo = typeof obj.resumo === "string" ? obj.resumo : null;
+      const principal = obj.principal === true;
+      return { id: obj.id, titulo, resumo, principal };
+    })
+    .filter((v): v is CurriculoApplyOption => v !== null);
+}
 
-  const hasApplied = appliedQuery.data?.hasApplied === true;
-
-  return (
-    <JobCard
-      job={job}
-      index={index}
-      onApply={(jobId) => {
-        void jobId;
-        onApply(job);
-      }}
-      onViewDetails={onViewDetails}
-      isApplied={hasApplied}
-      applyDisabled={applyDisabled || appliedQuery.isFetching}
-      applyLabel={appliedQuery.isFetching ? "Verificando..." : applyLabel}
-    />
-  );
+function getDefaultCurriculoIdFromOptions(
+  options: CurriculoApplyOption[],
+): string | null {
+  if (!options || options.length === 0) return null;
+  const principal = options.find((c) => c.principal);
+  return principal?.id ?? options[0]?.id ?? null;
 }
 
 const CareerOpportunities: React.FC<CareerOpportunitiesProps> = ({
@@ -136,10 +122,21 @@ const CareerOpportunities: React.FC<CareerOpportunitiesProps> = ({
   const setPage = fetchFromApi ? apiResult.setPage : (() => {});
   const role = useUserRole();
   const queryClient = useQueryClient();
+  const userIsCandidate = isAuthenticated && role === UserRole.ALUNO_CANDIDATO;
   const canCandidateApply = isAuthenticated && role === UserRole.ALUNO_CANDIDATO;
   const [pendingApplyById, setPendingApplyById] = useState<Record<string, boolean>>(
     {},
   );
+  const [applyModalTarget, setApplyModalTarget] = useState<{
+    vagaId: string;
+    vagaTitulo?: string | null;
+  } | null>(null);
+  const [selectedCurriculoId, setSelectedCurriculoId] = useState<string | null>(
+    null,
+  );
+  const [validatedJobsSignature, setValidatedJobsSignature] = useState<
+    string | null
+  >(null);
 
   useEffect(() => {
     setIsAuthenticated(getHasTokenCookie());
@@ -148,12 +145,6 @@ const CareerOpportunities: React.FC<CareerOpportunitiesProps> = ({
     }, 1500);
     return () => clearInterval(interval);
   }, []);
-
-  // Controla quando mostrar skeleton durante busca manual
-  const showSkeleton = isLoading || isSearching;
-  
-  // Só mostra dados quando não está carregando e não está buscando
-  const shouldShowData = !isLoading && !isSearching && filteredData.length > 0;
 
   // Contadores de filtros (derivados dos dados carregados)
   const filterCounts = useMemo(() => {
@@ -283,9 +274,84 @@ const CareerOpportunities: React.FC<CareerOpportunitiesProps> = ({
     retry: 1,
   });
 
-  const defaultCurriculoId = useMemo(() => {
-    return getDefaultCurriculoId(curriculosQuery.data);
+  const curriculosApplyOptions = useMemo(() => {
+    return coerceCurriculosApplyOptions(curriculosQuery.data);
   }, [curriculosQuery.data]);
+
+  const defaultCurriculoId = useMemo(() => {
+    const fromRaw = getDefaultCurriculoId(curriculosQuery.data);
+    if (fromRaw) return fromRaw;
+    return getDefaultCurriculoIdFromOptions(curriculosApplyOptions);
+  }, [curriculosApplyOptions, curriculosQuery.data]);
+
+  const appliedChecks = useQueries({
+    queries: filteredData.map((job) => ({
+      queryKey: ["aluno-candidato", "candidaturas", "verificar", job.id],
+      queryFn: () => verificarCandidatura(job.id, { cache: "no-store" }),
+      enabled: userIsCandidate && isUuid(job.id),
+      staleTime: 60 * 1000,
+      retry: 1,
+    })),
+  });
+
+  const isApplyValidationLoading = useMemo(() => {
+    if (!userIsCandidate) return false;
+    if (filteredData.length === 0) return false;
+    return appliedChecks.some((q) => q.isLoading);
+  }, [appliedChecks, filteredData.length, userIsCandidate]);
+
+  const isUserValidationLoading = isAuthenticated && role === null;
+
+  const jobsSignature = useMemo(() => {
+    if (filteredData.length === 0) return "";
+    return filteredData.map((job) => job.id).join("|");
+  }, [filteredData]);
+
+  const isCandidateValidationDone =
+    userIsCandidate && validatedJobsSignature === jobsSignature;
+
+  useEffect(() => {
+    if (!userIsCandidate) {
+      if (validatedJobsSignature !== null) setValidatedJobsSignature(null);
+      return;
+    }
+
+    if (curriculosQuery.isLoading) return;
+    if (isApplyValidationLoading) return;
+
+    // Marca validação concluída para este conjunto de vagas,
+    // evitando voltar para skeleton em refetches (ex: foco/modal).
+    if (validatedJobsSignature !== jobsSignature) {
+      setValidatedJobsSignature(jobsSignature);
+    }
+  }, [
+    curriculosQuery.isLoading,
+    isApplyValidationLoading,
+    jobsSignature,
+    userIsCandidate,
+    validatedJobsSignature,
+  ]);
+
+  // Controla quando mostrar skeleton durante busca/validações iniciais
+  const showSkeleton =
+    isLoading ||
+    isSearching ||
+    isUserValidationLoading ||
+    (!isCandidateValidationDone &&
+      userIsCandidate &&
+      (curriculosQuery.isLoading || isApplyValidationLoading));
+
+  // Só mostra dados quando não está carregando/validando
+  const shouldShowData = !showSkeleton && filteredData.length > 0;
+
+  const hasAppliedByJobId = useMemo(() => {
+    const map = new Map<string, boolean>();
+    filteredData.forEach((job, idx) => {
+      const q = appliedChecks[idx];
+      map.set(job.id, q?.data?.hasApplied === true);
+    });
+    return map;
+  }, [appliedChecks, filteredData]);
   const setPendingApply = useCallback((vagaId: string, pending: boolean) => {
     setPendingApplyById((prev) => {
       if (pending) return { ...prev, [vagaId]: true };
@@ -295,6 +361,60 @@ const CareerOpportunities: React.FC<CareerOpportunitiesProps> = ({
       return next;
     });
   }, []);
+
+  const applyModalSubmitting = Boolean(
+    applyModalTarget?.vagaId && pendingApplyById[applyModalTarget.vagaId],
+  );
+
+  const applyWithCurriculo = useCallback(
+    (jobId: string, jobTitle: string | null | undefined, curriculoId: string) => {
+      setPendingApply(jobId, true);
+
+      aplicarVaga({ vagaId: jobId, curriculoId })
+        .then(() => {
+          queryClient.setQueryData(
+            ["aluno-candidato", "candidaturas", "verificar", jobId],
+            { hasApplied: true },
+          );
+          queryClient.invalidateQueries({
+            queryKey: ["aluno-candidato", "candidaturas", "verificar", jobId],
+          });
+
+          toastCustom.success({
+            title: "Candidatura enviada",
+            description: jobTitle
+              ? `Sua candidatura para "${jobTitle}" foi registrada com sucesso.`
+              : "Sua candidatura foi registrada com sucesso.",
+          });
+
+          setApplyModalTarget(null);
+        })
+        .catch((error: any) => {
+          const code = error?.details?.code || error?.code;
+          const message = error?.details?.message || error?.message;
+
+          if (code === "APPLY_ERROR" && typeof message === "string") {
+            toastCustom.error({
+              title: "Não foi possível se candidatar",
+              description: message,
+            });
+            return;
+          }
+
+          toastCustom.error({
+            title: "Erro ao se candidatar",
+            description:
+              typeof message === "string" && message.length > 0
+                ? message
+                : "Tente novamente em instantes.",
+          });
+        })
+        .finally(() => {
+          setPendingApply(jobId, false);
+        });
+    },
+    [queryClient, setPendingApply],
+  );
 
   // Handlers para ações dos cards
   const handleApply = (jobId: string, jobTitle?: string | null) => {
@@ -357,48 +477,36 @@ const CareerOpportunities: React.FC<CareerOpportunitiesProps> = ({
       return;
     }
 
-    setPendingApply(jobId, true);
+    if (curriculosApplyOptions.length === 1) {
+      const onlyId = curriculosApplyOptions[0]?.id ?? defaultCurriculoId;
+      applyWithCurriculo(jobId, jobTitle, onlyId);
+      return;
+    }
 
-    aplicarVaga({ vagaId: jobId, curriculoId: defaultCurriculoId })
-      .then(() => {
-        queryClient.setQueryData(
-          ["aluno-candidato", "candidaturas", "verificar", jobId],
-          { hasApplied: true },
-        );
-        queryClient.invalidateQueries({
-          queryKey: ["aluno-candidato", "candidaturas", "verificar", jobId],
-        });
-
-        toastCustom.success({
-          title: "Candidatura enviada",
-          description: jobTitle
-            ? `Sua candidatura para "${jobTitle}" foi registrada com sucesso.`
-            : "Sua candidatura foi registrada com sucesso.",
-        });
-      })
-      .catch((error: any) => {
-        const code = error?.details?.code || error?.code;
-        const message = error?.details?.message || error?.message;
-
-        if (code === "APPLY_ERROR" && typeof message === "string") {
-          toastCustom.error({
-            title: "Não foi possível se candidatar",
-            description: message,
-          });
-          return;
-        }
-
-        toastCustom.error({
-          title: "Erro ao se candidatar",
-          description:
-            typeof message === "string" && message.length > 0
-              ? message
-              : "Tente novamente em instantes.",
-        });
-      })
-      .finally(() => {
-        setPendingApply(jobId, false);
+    const scrollX = typeof window !== "undefined" ? window.scrollX : 0;
+    const scrollY = typeof window !== "undefined" ? window.scrollY : 0;
+    setApplyModalTarget({ vagaId: jobId, vagaTitulo: jobTitle ?? null });
+    setSelectedCurriculoId((prev) => {
+      if (prev && curriculosApplyOptions.some((c) => c.id === prev)) return prev;
+      return getDefaultCurriculoIdFromOptions(curriculosApplyOptions);
+    });
+    if (typeof window !== "undefined") {
+      requestAnimationFrame(() => {
+        window.scrollTo(scrollX, scrollY);
+        requestAnimationFrame(() => window.scrollTo(scrollX, scrollY));
       });
+    }
+  };
+
+  const handleConfirmApply = () => {
+    if (!applyModalTarget?.vagaId) return;
+    if (!selectedCurriculoId) return;
+    if (pendingApplyById[applyModalTarget.vagaId]) return;
+    applyWithCurriculo(
+      applyModalTarget.vagaId,
+      applyModalTarget.vagaTitulo,
+      selectedCurriculoId,
+    );
   };
 
   const handleViewDetails = (job: JobData) => {
@@ -529,26 +637,15 @@ const CareerOpportunities: React.FC<CareerOpportunitiesProps> = ({
                     ))
                   : shouldShowData
                   ? filteredData.map((job, index) => (
-                <ApplyAwareJobCard
+                <JobCard
                   key={job.id}
                   job={job}
                   index={index}
-                  canCheckApplied={canCandidateApply}
-                  applyDisabled={
-                    Boolean(pendingApplyById[job.id]) ||
-                    (isAuthenticated && role === null)
-                  }
-                  applyLabel={
-                    isAuthenticated && role === null
-                      ? "Carregando..."
-                      : pendingApplyById[job.id]
-                        ? "Enviando..."
-                        : "Candidatar-se"
-                  }
-                  onApply={(selectedJob) =>
-                    handleApply(selectedJob.id, selectedJob.titulo ?? null)
-                  }
+                  onApply={() => handleApply(job.id, job.titulo ?? null)}
                   onViewDetails={handleViewDetails}
+                  isApplied={hasAppliedByJobId.get(job.id) === true}
+                  applyDisabled={Boolean(pendingApplyById[job.id])}
+                  applyLabel={pendingApplyById[job.id] ? "Enviando..." : "Candidatar-se"}
                 />
               ))
                   : null}
@@ -618,6 +715,20 @@ const CareerOpportunities: React.FC<CareerOpportunitiesProps> = ({
         </div>
       )}
       </section>
+
+      <SelectCurriculoApplyModal
+        isOpen={Boolean(applyModalTarget)}
+        onOpenChange={(open) => {
+          if (applyModalSubmitting) return;
+          if (!open) setApplyModalTarget(null);
+        }}
+        vagaTitulo={applyModalTarget?.vagaTitulo ?? null}
+        curriculos={curriculosApplyOptions}
+        selectedCurriculoId={selectedCurriculoId}
+        onSelectCurriculoId={setSelectedCurriculoId}
+        isSubmitting={applyModalSubmitting}
+        onConfirm={handleConfirmApply}
+      />
     </div>
   );
 };

@@ -10,6 +10,10 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { aplicarVaga, listCurriculos, verificarCandidatura } from "@/api/candidatos";
 import type { VerificarCandidaturaResponse } from "@/api/candidatos/types";
 import { CheckCircle2 } from "lucide-react";
+import {
+  SelectCurriculoApplyModal,
+  type CurriculoApplyOption,
+} from "./SelectCurriculoApplyModal";
 
 function isUuid(value: string): boolean {
   return /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(
@@ -35,6 +39,32 @@ function getDefaultCurriculoId(raw: unknown): string | null {
   return first?.id ?? null;
 }
 
+function coerceCurriculosApplyOptions(raw: unknown): CurriculoApplyOption[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((item): CurriculoApplyOption | null => {
+      if (!item || typeof item !== "object") return null;
+      const obj = item as Record<string, any>;
+      if (typeof obj.id !== "string") return null;
+      const titulo =
+        typeof obj.titulo === "string" && obj.titulo.trim()
+          ? obj.titulo.trim()
+          : "Currículo";
+      const resumo = typeof obj.resumo === "string" ? obj.resumo : null;
+      const principal = obj.principal === true;
+      return { id: obj.id, titulo, resumo, principal };
+    })
+    .filter((v): v is CurriculoApplyOption => v !== null);
+}
+
+function getDefaultCurriculoIdFromOptions(
+  options: CurriculoApplyOption[],
+): string | null {
+  if (!options || options.length === 0) return null;
+  const principal = options.find((c) => c.principal);
+  return principal?.id ?? options[0]?.id ?? null;
+}
+
 function composeLoginUrl(redirectPath: string): string {
   return `/auth/login?redirect=${encodeURIComponent(redirectPath)}`;
 }
@@ -51,6 +81,10 @@ export function VagaApplyAction({
   const role = useUserRole();
   const queryClient = useQueryClient();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isSelectOpen, setIsSelectOpen] = useState(false);
+  const [selectedCurriculoId, setSelectedCurriculoId] = useState<string | null>(
+    null,
+  );
 
   useEffect(() => {
     setIsAuthenticated(getHasTokenCookie());
@@ -85,6 +119,14 @@ export function VagaApplyAction({
     return getDefaultCurriculoId(curriculosQuery.data);
   }, [curriculosQuery.data]);
 
+  const curriculosApplyOptions = useMemo(() => {
+    return coerceCurriculosApplyOptions(curriculosQuery.data);
+  }, [curriculosQuery.data]);
+
+  const defaultCurriculoIdFromOptions = useMemo(() => {
+    return getDefaultCurriculoIdFromOptions(curriculosApplyOptions);
+  }, [curriculosApplyOptions]);
+
   const applyMutation = useMutation({
     mutationFn: async (payload: { vagaId: string; curriculoId: string }) => {
       return aplicarVaga(payload);
@@ -104,6 +146,8 @@ export function VagaApplyAction({
           ? `Sua candidatura para "${vagaTitulo}" foi registrada com sucesso.`
           : "Sua candidatura foi registrada com sucesso.",
       });
+
+      setIsSelectOpen(false);
     },
     onError: (error: any) => {
       const code = error?.details?.code || error?.code;
@@ -170,43 +214,97 @@ export function VagaApplyAction({
   }
 
   return (
-    <ButtonCustom
-      variant="default"
-      onClick={() => {
-        if (!isUuid(vagaId)) {
-          toastCustom.error({
-            title: "Vaga inválida",
-            description: "Não foi possível identificar esta vaga para candidatura.",
-          });
-          return;
-        }
+    <>
+      <ButtonCustom
+        variant="default"
+        onClick={() => {
+          if (!isUuid(vagaId)) {
+            toastCustom.error({
+              title: "Vaga inválida",
+              description:
+                "Não foi possível identificar esta vaga para candidatura.",
+            });
+            return;
+          }
 
-        if (curriculosQuery.isLoading) {
-          toastCustom.info({
-            title: "Carregando currículos",
-            description: "Aguarde um instante e tente novamente.",
-          });
-          return;
-        }
+          if (curriculosQuery.isLoading) {
+            toastCustom.info({
+              title: "Carregando currículos",
+              description: "Aguarde um instante e tente novamente.",
+            });
+            return;
+          }
 
-        if (!defaultCurriculoId) {
-          toastCustom.error({
-            title: "Nenhum currículo encontrado",
-            description: "Crie um currículo para conseguir se candidatar às vagas.",
-            linkText: "Criar currículo",
-            linkHref: "/dashboard/curriculo/cadastrar",
-          });
-          return;
-        }
+          if (curriculosApplyOptions.length === 0) {
+            toastCustom.error({
+              title: "Nenhum currículo encontrado",
+              description: "Crie um currículo para conseguir se candidatar às vagas.",
+              linkText: "Criar currículo",
+              linkHref: "/dashboard/curriculo/cadastrar",
+            });
+            return;
+          }
 
-        applyMutation.mutate({ vagaId, curriculoId: defaultCurriculoId });
-      }}
-      disabled={
-        applyMutation.isPending || appliedQuery.isFetching || curriculosQuery.isLoading
-      }
-      className={className ?? "rounded-full text-sm"}
-    >
-      {applyMutation.isPending ? "Enviando..." : "Candidatar-se"}
-    </ButtonCustom>
+          if (curriculosApplyOptions.length === 1) {
+            const curriculoId =
+              curriculosApplyOptions[0]?.id ??
+              defaultCurriculoId ??
+              defaultCurriculoIdFromOptions;
+            if (!curriculoId) {
+              toastCustom.error({
+                title: "Nenhum currículo encontrado",
+                description:
+                  "Crie um currículo para conseguir se candidatar às vagas.",
+                linkText: "Criar currículo",
+                linkHref: "/dashboard/curriculo/cadastrar",
+              });
+              return;
+            }
+            applyMutation.mutate({ vagaId, curriculoId });
+            return;
+          }
+
+          const scrollX = typeof window !== "undefined" ? window.scrollX : 0;
+          const scrollY = typeof window !== "undefined" ? window.scrollY : 0;
+          setSelectedCurriculoId((prev) => {
+            if (prev && curriculosApplyOptions.some((c) => c.id === prev)) return prev;
+            return defaultCurriculoIdFromOptions;
+          });
+          setIsSelectOpen(true);
+          if (typeof window !== "undefined") {
+            requestAnimationFrame(() => {
+              window.scrollTo(scrollX, scrollY);
+              requestAnimationFrame(() => window.scrollTo(scrollX, scrollY));
+            });
+          }
+        }}
+        disabled={
+          isSelectOpen ||
+          applyMutation.isPending ||
+          appliedQuery.isFetching ||
+          curriculosQuery.isLoading
+        }
+        className={className ?? "rounded-full text-sm"}
+      >
+        {applyMutation.isPending ? "Enviando..." : "Candidatar-se"}
+      </ButtonCustom>
+
+      <SelectCurriculoApplyModal
+        isOpen={isSelectOpen}
+        onOpenChange={(open) => {
+          if (applyMutation.isPending) return;
+          setIsSelectOpen(open);
+        }}
+        vagaTitulo={vagaTitulo ?? null}
+        curriculos={curriculosApplyOptions}
+        selectedCurriculoId={selectedCurriculoId}
+        onSelectCurriculoId={setSelectedCurriculoId}
+        isSubmitting={applyMutation.isPending}
+        onConfirm={() => {
+          if (!selectedCurriculoId) return;
+          applyMutation.mutate({ vagaId, curriculoId: selectedCurriculoId });
+        }}
+      />
+    </>
   );
 }

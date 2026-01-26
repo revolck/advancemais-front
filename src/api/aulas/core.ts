@@ -63,6 +63,7 @@ export async function listAulas(
 
   if (params?.page) searchParams.set("page", String(params.page));
   if (params?.pageSize) searchParams.set("pageSize", String(params.pageSize));
+  if (params?.cursoId) searchParams.set("cursoId", params.cursoId);
   if (params?.turmaId) searchParams.set("turmaId", params.turmaId);
   if (params?.moduloId) searchParams.set("moduloId", params.moduloId);
   if (params?.instrutorId) searchParams.set("instrutorId", params.instrutorId);

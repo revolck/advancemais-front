@@ -131,7 +131,21 @@ function normalizeApiPayload(data: any): any {
 
 async function doFetch(path: string): Promise<VagaApiResponse> {
   try {
-    const res = await fetch(path, { cache: "no-store" });
+    const token =
+      typeof document === "undefined"
+        ? null
+        : document.cookie
+            .split("; ")
+            .find((row) => row.startsWith("token="))
+            ?.split("=")[1] ?? null;
+
+    const res = await fetch(path, {
+      cache: "no-store",
+      credentials: "include",
+      headers: token
+        ? { Authorization: `Bearer ${token}`, Accept: "application/json" }
+        : { Accept: "application/json" },
+    });
     if (!res.ok) return null;
     const data = await res.json();
     return normalizeApiPayload(data);

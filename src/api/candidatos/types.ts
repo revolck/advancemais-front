@@ -120,6 +120,54 @@ export interface CurriculosListFilters {
   salarioMaximo?: number;
 }
 
+// ============================================================================
+// DASHBOARD (ALUNO_CANDIDATO)
+// ============================================================================
+
+export type CandidatoDashboardCursoStatus =
+  | "Concluído"
+  | "Em progresso"
+  | "Cancelado"
+  | "Não iniciado";
+
+export interface CandidatoDashboardMetricas {
+  cursosEmProgresso: number;
+  cursosConcluidos: number;
+  totalCursos: number;
+  totalCandidaturas: number;
+}
+
+export interface CandidatoDashboardCurso {
+  id: string;
+  cursoId: string;
+  turmaId: string;
+  foto: string | null;
+  status: CandidatoDashboardCursoStatus | string;
+  nome: string;
+  descricao: string | null;
+  progresso: number;
+  iniciadoEm: string;
+}
+
+export interface CandidatoDashboardCandidatura {
+  id: string;
+  vagaId: string;
+  nomeVaga: string;
+  empresa: string;
+  local: string;
+  publicadaEm: string;
+  regimeTrabalho: string;
+  modalidade: string;
+  aplicadaEm: string;
+  slug: string;
+}
+
+export interface CandidatoDashboardResponse {
+  metricas: CandidatoDashboardMetricas;
+  cursos: CandidatoDashboardCurso[];
+  candidaturas: CandidatoDashboardCandidatura[];
+}
+
 export interface VagaInfo {
   id: string;
   codigo: string;
@@ -473,6 +521,76 @@ export interface CandidaturaDetalheCurriculo {
   atualizadoEm?: string;
 }
 
+// ============================================================================
+// CURSOS (ALUNO_CANDIDATO)
+// ============================================================================
+
+export type CandidatoCursosModalidadeFilter =
+  | "TODOS"
+  | "ONLINE"
+  | "AO_VIVO"
+  | "PRESENCIAL"
+  | "SEMI_PRESENCIAL";
+
+export interface CandidatoCursosListFilters {
+  modalidade?: CandidatoCursosModalidadeFilter;
+  page?: number;
+  limit?: number;
+}
+
+export interface CandidatoCursosProximaAula {
+  id: string;
+  titulo: string;
+  descricao: string | null;
+  dataInicio: string;
+  dataFim: string | null;
+  modalidade: "LIVE" | "ONLINE" | "PRESENCIAL" | "SEMIPRESENCIAL" | string;
+  urlMeet: string | null;
+  urlVideo: string | null;
+  turma: {
+    id: string;
+    nome: string;
+    curso: {
+      id: string;
+      nome: string;
+    };
+  };
+}
+
+export interface CandidatoCursoItem {
+  id: string;
+  cursoId: string;
+  turmaId: string;
+  foto: string | null;
+  status: string;
+  statusRaw: string;
+  quantidadeAulas: number;
+  nome: string;
+  cargaHoraria: number;
+  progresso: number;
+  notaMedia: number | null;
+  modalidade: string;
+  dataInicio: string | null;
+}
+
+export interface CandidatoCursosPaginacao {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  hasNext: boolean;
+  hasPrev: boolean;
+}
+
+export interface CandidatoCursosResponse {
+  success: boolean;
+  data: {
+    proximaAula: CandidatoCursosProximaAula | null;
+    cursos: CandidatoCursoItem[];
+    paginacao: CandidatoCursosPaginacao;
+  };
+}
+
 export interface CandidaturaDetalheCandidato {
   id: string;
   nome: string;
@@ -570,6 +688,4 @@ export interface AtualizarCandidaturaResponse {
   success: boolean;
   candidatura: CandidaturaDetalhe;
 }
-
-
 
