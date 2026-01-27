@@ -37,9 +37,6 @@ export function AulaTableSkeleton({
             </div>
           </TableCell>
           <TableCell className="py-4 px-3">
-            <Skeleton className="h-6 w-24 rounded-full" />
-          </TableCell>
-          <TableCell className="py-4 px-3">
             <div className="space-y-2">
               <Skeleton className="h-4 w-36" />
               <Skeleton className="h-4 w-28" />

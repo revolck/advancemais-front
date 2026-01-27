@@ -591,7 +591,6 @@ export function AulasDashboard({ className }: { className?: string }) {
                     </TableHead>
                   )}
                   <TableHead className="font-medium text-gray-700 py-4 px-3">Instrutor</TableHead>
-                  <TableHead className="font-medium text-gray-700 py-4 px-3">Status</TableHead>
                   <TableHead className="font-medium text-gray-700 py-4 px-3">Data, Horário e Duração</TableHead>
                   <TableHead
                     className="font-medium text-gray-700 py-4 px-2 whitespace-nowrap"

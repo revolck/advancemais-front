@@ -887,7 +887,7 @@ export async function createProva(
   payload: CreateProvaPayload,
   init?: RequestInit
 ): Promise<TurmaProva> {
-  return apiFetch<TurmaProva>(
+  const response = await apiFetch<any>(
     cursosRoutes.cursos.turmas.provas.create(cursoId, turmaId),
     {
       init: {
@@ -902,6 +902,21 @@ export async function createProva(
       cache: "no-cache",
     }
   );
+
+  // Suporta diferentes formatos de resposta (compat/legado)
+  if (response && typeof response === "object") {
+    if ("data" in response) return (response as any).data as TurmaProva;
+    if ("prova" in response) return (response as any).prova as TurmaProva;
+    if ("success" in response && "data" in response) {
+      return (response as any).data as TurmaProva;
+    }
+  }
+
+  if (!response) {
+    throw new Error("Resposta vazia ao criar prova/atividade.");
+  }
+
+  return response as TurmaProva;
 }
 
 export async function updateProva(
@@ -1652,12 +1667,49 @@ export async function listAvaliacoes(
   init?: RequestInit
 ): Promise<import("./types").ListAvaliacoesResponse> {
   const sp = new URLSearchParams();
-  if (params?.cursoId) sp.set("cursoId", params.cursoId);
-  if (params?.turmaId) sp.set("turmaId", params.turmaId);
-  if (params?.semTurma !== undefined) sp.set("semTurma", String(params.semTurma));
-  if (params?.tipo) sp.set("tipo", params.tipo);
-  if (params?.status) sp.set("status", params.status);
+  const setCsv = (key: string, value: unknown) => {
+    if (!value) return;
+    if (Array.isArray(value)) {
+      const items = value.map(String).filter(Boolean);
+      if (items.length > 0) sp.set(key, items.join(","));
+      return;
+    }
+    if (typeof value === "string" && value.trim()) {
+      sp.set(key, value.trim());
+      return;
+    }
+    sp.set(key, String(value));
+  };
+
+  // Busca
   if (params?.search) sp.set("search", params.search);
+  if (params?.titulo) sp.set("titulo", params.titulo);
+
+  // Curso/Turma/Instrutor
+  if (params?.cursoId) sp.set("cursoId", params.cursoId);
+  if (params?.curso) sp.set("curso", params.curso);
+  if (params?.turmaId) sp.set("turmaId", params.turmaId);
+  if (params?.turma) sp.set("turma", params.turma);
+  if (params?.instrutorId) sp.set("instrutorId", params.instrutorId);
+  if (params?.instrutor) sp.set("instrutor", params.instrutor);
+
+  // Filtros
+  if (params?.tipo) sp.set("tipo", params.tipo);
+  if (params?.tipoAtividade) sp.set("tipoAtividade", params.tipoAtividade);
+  if (params?.modalidade) setCsv("modalidade", params.modalidade);
+  if (params?.status) setCsv("status", params.status);
+  if (params?.obrigatoria !== undefined)
+    sp.set("obrigatoria", String(params.obrigatoria));
+  if (params?.semTurma !== undefined) sp.set("semTurma", String(params.semTurma));
+
+  // Período
+  if (params?.dataInicio) sp.set("dataInicio", params.dataInicio);
+  if (params?.dataFim) sp.set("dataFim", params.dataFim);
+  if (params?.periodoInicio) sp.set("periodoInicio", params.periodoInicio);
+  if (params?.periodoFim) sp.set("periodoFim", params.periodoFim);
+  if (params?.periodo) sp.set("periodo", params.periodo);
+
+  // Paginação / ordenação
   if (params?.page) sp.set("page", String(params.page));
   if (params?.pageSize) sp.set("pageSize", String(params.pageSize));
   if (params?.orderBy) sp.set("orderBy", params.orderBy);
@@ -1673,7 +1725,9 @@ export async function listAvaliacoes(
       ...init,
       headers: buildHeaders(init?.headers, true),
     },
-    cache: "short",
+    // Não cachear aqui: a listagem já é cacheada pelo React Query.
+    // O cache interno do apiFetch pode deixar a lista desatualizada (até dar F5).
+    cache: "no-cache",
   });
 }
 

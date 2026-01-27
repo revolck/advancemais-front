@@ -6,14 +6,20 @@ import {
   type Avaliacao,
   type AvaliacaoTipo,
   type AvaliacaoStatus,
+  type AvaliacaoTipoAtividade,
 } from "@/api/cursos";
 
 export interface NormalizedAvaliacoesFilters {
   cursoId?: string | null;
   turmaId?: string | null;
+  instrutorId?: string | null;
   semTurma?: boolean;
   tipo?: AvaliacaoTipo | null;
-  status?: AvaliacaoStatus | null;
+  tipoAtividade?: AvaliacaoTipoAtividade | null;
+  modalidade?: string[] | null;
+  status?: AvaliacaoStatus | AvaliacaoStatus[] | null;
+  obrigatoria?: boolean | null;
+  periodo?: string | null; // "YYYY-MM-DD,YYYY-MM-DD"
   search?: string;
   page: number;
   pageSize: number;
@@ -104,12 +110,25 @@ async function fetchAvaliacoes(
   filters: NormalizedAvaliacoesFilters
 ): Promise<AvaliacoesQueryResult> {
   try {
+    const statusParam = Array.isArray(filters.status)
+      ? filters.status.join(",")
+      : filters.status ?? undefined;
+    const modalidadeParam =
+      filters.modalidade && filters.modalidade.length > 0
+        ? filters.modalidade.join(",")
+        : undefined;
+
     const response = await listAvaliacoes({
       cursoId: filters.cursoId ?? undefined,
       turmaId: filters.turmaId ?? undefined,
+      instrutorId: filters.instrutorId ?? undefined,
       semTurma: filters.semTurma,
       tipo: filters.tipo ?? undefined,
-      status: filters.status ?? undefined,
+      tipoAtividade: filters.tipoAtividade ?? undefined,
+      modalidade: modalidadeParam,
+      status: statusParam,
+      obrigatoria: filters.obrigatoria ?? undefined,
+      periodo: filters.periodo ?? undefined,
       search: filters.search,
       page: filters.page,
       pageSize: filters.pageSize,
@@ -147,4 +166,3 @@ export function useAvaliacoesDashboardQuery(filters: NormalizedAvaliacoesFilters
     gcTime: 5 * 60 * 1000,
   });
 }
-

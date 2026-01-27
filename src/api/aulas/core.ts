@@ -100,7 +100,9 @@ export async function listAulas(
       ...init,
       headers: buildHeaders(init?.headers, true),
     },
-    cache: "short", // Cache restaurado
+    // Não cachear aqui: a listagem já é cacheada pelo React Query.
+    // O cache interno do apiFetch pode deixar a tela desatualizada após criar/editar (até dar F5).
+    cache: "no-cache",
     retries: 1,
   });
   
@@ -323,7 +325,9 @@ export async function getAulaHistorico(
       ...init,
       headers: buildHeaders(init?.headers, true),
     },
-    cache: "short",
+    // Não cachear aqui: a tela já é cacheada pelo React Query.
+    // O cache interno do apiFetch pode deixar a aba de histórico desatualizada (até dar F5).
+    cache: "no-cache",
   });
 
   // A API retorna { success: true, historico: [...] } ou diretamente { historico: [...] }
@@ -549,7 +553,9 @@ export async function listMateriais(
         ...init,
         headers: buildHeaders(init?.headers, true),
       },
-      cache: "short",
+      // Não cachear aqui: a tela já é cacheada pelo React Query.
+      // O cache interno do apiFetch pode deixar a lista desatualizada após adicionar/remover (até dar F5).
+      cache: "no-cache",
     }
   );
 

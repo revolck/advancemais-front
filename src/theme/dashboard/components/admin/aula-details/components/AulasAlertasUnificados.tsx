@@ -15,9 +15,7 @@ interface AulasAlertasUnificadosProps {
   aula: Aula;
 }
 
-export function AulasAlertasUnificados({
-  aula,
-}: AulasAlertasUnificadosProps) {
+export function AulasAlertasUnificados({ aula }: AulasAlertasUnificadosProps) {
   const { user } = useAuth();
   const [isMounted, setIsMounted] = useState(false);
 
@@ -41,8 +39,36 @@ export function AulasAlertasUnificados({
   const podeAlterar = podeAlterarStatus(
     aula.status,
     isPublicada ? "RASCUNHO" : "PUBLICADA",
-    user?.role
+    user?.role,
   );
+
+  const formatDiasRestantes = (dias?: number) => {
+    if (dias === undefined) return "";
+    if (dias === 0) return "hoje";
+    if (dias === 1) return "em 1 dia";
+    return `em ${dias} dias`;
+  };
+
+  const formatCamposFaltandoPublicacao = (campos: string[]) => {
+    if (campos.length === 0)
+      return "Para publicar, complete os campos obrigatórios.";
+    if (campos.length === 1) {
+      const campo = campos[0];
+      const map: Record<string, string> = {
+        Turma: "Para publicar, selecione uma turma.",
+        "Data de início": "Para publicar, selecione a data da aula.",
+        "YouTube URL": "Para publicar, informe o link do YouTube.",
+        "YouTube URL ou Data de início":
+          "Para publicar, informe o link do YouTube ou selecione a data da aula.",
+        "Título (mínimo 3 caracteres)":
+          "Para publicar, informe um título com pelo menos 3 caracteres.",
+        "Descrição (mínimo 10 caracteres)":
+          "Para publicar, complete a descrição (mínimo 10 caracteres).",
+      };
+      return map[campo] ?? `Para publicar, preencha: ${campo}.`;
+    }
+    return `Para publicar, preencha: ${campos.join(", ")}.`;
+  };
 
   // Coletar todos os problemas
   const problemas: Array<{
@@ -71,7 +97,10 @@ export function AulasAlertasUnificados({
     }
   } else if (isPublicada) {
     // Tentando despublicar
-    if (!validacaoDespublicacao?.podeDespublicar && validacaoDespublicacao?.motivo) {
+    if (
+      !validacaoDespublicacao?.podeDespublicar &&
+      validacaoDespublicacao?.motivo
+    ) {
       problemas.push({
         tipo: "publicacao",
         titulo: "Não é possível despublicar esta aula",
@@ -85,22 +114,27 @@ export function AulasAlertasUnificados({
       if (validacaoPublicacao.camposFaltando.length > 0) {
         problemas.push({
           tipo: "publicacao",
-          titulo: "Não é possível publicar a aula. Campos obrigatórios faltando!",
-          mensagem: validacaoPublicacao.camposFaltando.join(", "),
+          titulo: "Não é possível publicar agora",
+          mensagem: formatCamposFaltandoPublicacao(
+            validacaoPublicacao.camposFaltando,
+          ),
           severidade: "warning",
         });
       } else if (validacaoPublicacao.bloqueios.length > 0) {
         problemas.push({
           tipo: "publicacao",
-          titulo: "A publicação está bloqueada!",
-          mensagem: validacaoPublicacao.bloqueios.join(", "),
+          titulo: "Não é possível publicar agora",
+          mensagem:
+            validacaoPublicacao.bloqueios.length === 1
+              ? `Para publicar, ajuste: ${validacaoPublicacao.bloqueios[0]}.`
+              : `Para publicar, ajuste: ${validacaoPublicacao.bloqueios.join(", ")}.`,
           severidade: "warning",
         });
       } else if (!validacaoPublicacao.podePublicar) {
         problemas.push({
           tipo: "publicacao",
-          titulo: "Não é possível publicar",
-          mensagem: "Esta aula não pode ser publicada no momento",
+          titulo: "Não é possível publicar agora",
+          mensagem: "Tente novamente após concluir os dados da aula.",
           severidade: "info",
         });
       }
@@ -109,13 +143,14 @@ export function AulasAlertasUnificados({
 
   // Problemas de exclusão
   if (!validacaoExclusao.podeExcluir && validacaoExclusao.motivo) {
+    const quando = formatDiasRestantes(validacaoExclusao.diasRestantes);
     problemas.push({
       tipo: "exclusao",
-      titulo: "Não é possível excluir esta aula",
-      mensagem: validacaoExclusao.motivo + 
-        (validacaoExclusao.diasRestantes !== undefined
-          ? ` A aula acontece em ${validacaoExclusao.diasRestantes} dia(s). É necessário aguardar pelo menos 5 dias antes da data da aula.`
-          : ""),
+      titulo: "Não é possível excluir agora",
+      mensagem:
+        validacaoExclusao.diasRestantes !== undefined
+          ? `Exclusão bloqueada: a aula acontece ${quando}. Você pode excluir apenas até 5 dias antes da data.`
+          : validacaoExclusao.motivo,
       severidade: "warning",
     });
   }
@@ -128,12 +163,18 @@ export function AulasAlertasUnificados({
   // Se há apenas um problema, mostrar alerta simples
   if (problemas.length === 1) {
     const problema = problemas[0];
-    const bgColor = problema.severidade === "warning" ? "bg-red-50" : "bg-blue-50";
-    const borderColor = problema.severidade === "warning" ? "border-red-200" : "border-blue-200";
-    const iconColor = problema.severidade === "warning" ? "text-red-600" : "text-blue-600";
-    const titleColor = problema.severidade === "warning" ? "text-red-800" : "text-blue-800";
-    const textColor = problema.severidade === "warning" ? "text-gray-700" : "text-blue-700";
-    const iconBgColor = problema.severidade === "warning" ? "bg-red-100" : "bg-blue-100";
+    const bgColor =
+      problema.severidade === "warning" ? "bg-red-50" : "bg-blue-50";
+    const borderColor =
+      problema.severidade === "warning" ? "border-red-200" : "border-blue-200";
+    const iconColor =
+      problema.severidade === "warning" ? "text-red-600" : "text-blue-600";
+    const titleColor =
+      problema.severidade === "warning" ? "text-red-800" : "text-blue-800";
+    const textColor =
+      problema.severidade === "warning" ? "text-gray-700" : "text-blue-700";
+    const iconBgColor =
+      problema.severidade === "warning" ? "bg-red-100" : "bg-blue-100";
 
     return (
       <div
@@ -176,14 +217,14 @@ export function AulasAlertasUnificados({
   // Determinar título consolidado
   const temPublicacao = problemas.some((p) => p.tipo === "publicacao");
   const temExclusao = problemas.some((p) => p.tipo === "exclusao");
-  
+
   let tituloConsolidado = "";
   if (temPublicacao && temExclusao) {
-    tituloConsolidado = "Ações não disponíveis para esta aula";
+    tituloConsolidado = "Algumas ações estão bloqueadas";
   } else if (temPublicacao) {
-    tituloConsolidado = "Não é possível publicar esta aula";
+    tituloConsolidado = "Publicação bloqueada";
   } else if (temExclusao) {
-    tituloConsolidado = "Não é possível excluir esta aula";
+    tituloConsolidado = "Exclusão bloqueada";
   }
 
   return (
@@ -202,9 +243,11 @@ export function AulasAlertasUnificados({
           >
             {tituloConsolidado}
           </p>
-          <ul className={`text-sm! ${textColor} space-y-1.5 ml-3 mb-0! list-disc`}>
+          <ul
+            className={`text-xs! ${textColor} space-y-1.5 ml-3 mb-0! list-disc`}
+          >
             {problemas.map((problema, index) => (
-              <li key={index} className="leading-normal!">
+              <li key={index} className="leading-normal! mb-0!">
                 {problema.mensagem}
               </li>
             ))}
@@ -214,4 +257,3 @@ export function AulasAlertasUnificados({
     </div>
   );
 }
-

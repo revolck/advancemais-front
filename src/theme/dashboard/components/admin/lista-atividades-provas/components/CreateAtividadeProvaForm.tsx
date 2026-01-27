@@ -665,9 +665,9 @@ export function CreateAtividadeProvaForm({
       return;
     }
 
-    const normalizeNullableId = (raw: string): string | null => {
+    const normalizeOptionalId = (raw: string): string | undefined => {
       const trimmed = raw.trim();
-      return trimmed ? trimmed : null;
+      return trimmed ? trimmed : undefined;
     };
 
     const computeDuracaoFromHoras = (
@@ -715,9 +715,9 @@ export function CreateAtividadeProvaForm({
       return;
     }
 
-    const turmaId = normalizeNullableId(formData.turmaId);
-    const instrutorId = normalizeNullableId(formData.instrutorId);
-    const moduloId = normalizeNullableId(formData.moduloId);
+    const turmaId = normalizeOptionalId(formData.turmaId);
+    const instrutorId = normalizeOptionalId(formData.instrutorId);
+    const moduloId = normalizeOptionalId(formData.moduloId);
     const statusFinal = turmaId ? formData.status : "RASCUNHO";
 
     setIsLoading(true);
@@ -731,9 +731,9 @@ export function CreateAtividadeProvaForm({
           duracaoMinutos,
           obrigatoria: formData.obrigatoria,
           status: statusFinal,
-          turmaId,
-          instrutorId,
-          moduloId,
+          ...(turmaId ? { turmaId } : {}),
+          ...(instrutorId ? { instrutorId } : {}),
+          ...(moduloId ? { moduloId } : {}),
         };
 
         setLoadingStep("Salvando alterações...");
@@ -833,9 +833,9 @@ export function CreateAtividadeProvaForm({
           duracaoMinutos,
           obrigatoria: formData.obrigatoria,
           status: statusFinal,
-          turmaId,
-          instrutorId,
-          moduloId,
+          ...(turmaId ? { turmaId } : {}),
+          ...(instrutorId ? { instrutorId } : {}),
+          ...(moduloId ? { moduloId } : {}),
           ...(materiais ? { materiais } : {}),
         };
 

@@ -69,7 +69,7 @@ function podeExcluirAula(aula: Aula | null): {
   if (diffDays < 5) {
     return {
       pode: false,
-      motivo: `A exclusão deve ser feita com no mínimo 5 dias de antecedência. A aula acontece em ${diffDays} dia(s).`,
+      motivo: "A exclusão só é permitida com pelo menos 5 dias de antecedência.",
     };
   }
 

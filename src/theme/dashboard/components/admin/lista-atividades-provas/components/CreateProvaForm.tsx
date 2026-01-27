@@ -32,6 +32,8 @@ import {
   type UpdateProvaPayload,
   type TurmaProva,
   type CursoModulo,
+  type AvaliacaoQuestaoInput,
+  type CreateAvaliacaoPayload,
 } from "@/api/cursos";
 import {
   useTurmasForSelect,
@@ -75,6 +77,18 @@ const getTomorrowDate = (): Date => {
   tomorrow.setDate(tomorrow.getDate() + 1);
   tomorrow.setHours(0, 0, 0, 0);
   return tomorrow;
+};
+
+const toAvaliacaoQuestoes = (questoes?: QuestaoItem[]): AvaliacaoQuestaoInput[] | undefined => {
+  if (!questoes || questoes.length === 0) return undefined;
+  return questoes.map((q) => ({
+    enunciado: q.titulo.trim(),
+    tipo: "MULTIPLA_ESCOLHA",
+    alternativas: q.alternativas.map((a) => ({
+      texto: a.texto.trim(),
+      correta: q.respostaCorreta === a.id,
+    })),
+  }));
 };
 
 interface FormData {
@@ -382,10 +396,11 @@ export function CreateProvaForm({
 
     // Vale nota é obrigatório (sempre terá um valor, então não precisa validar)
 
-    // Peso é obrigatório SE vale nota for sim
-    if (formData.valeNota) {
+    // Peso é obrigatório SE vale ponto for sim (valeNota implica valePonto=true)
+    const valePontoEfetivo = formData.valeNota ? true : formData.valePonto;
+    if (valePontoEfetivo) {
       if (!formData.peso || formData.peso.trim() === "") {
-        newErrors.peso = "Peso é obrigatório quando vale nota";
+        newErrors.peso = "Peso é obrigatório quando vale ponto";
       } else {
         const pesoNumero = Number(formData.peso);
         if (isNaN(pesoNumero)) {
@@ -453,8 +468,8 @@ export function CreateProvaForm({
 
     // Obrigatória é obrigatório informar (sempre terá um valor, então não precisa validar)
 
-    // Validação específica para atividades (apenas se não for PRESENCIAL)
-    if (formData.tipo === "ATIVIDADE" && formData.modalidade !== "PRESENCIAL") {
+    // Validação específica para atividades
+    if (formData.tipo === "ATIVIDADE") {
       if (!formData.tipoAtividade) {
         newErrors.tipoAtividade = "Tipo de atividade é obrigatório";
       } else {
@@ -491,14 +506,14 @@ export function CreateProvaForm({
           }
         } else if (formData.tipoAtividade === "TEXTO") {
           if (!formData.texto?.titulo?.trim()) {
-            newErrors.textoTitulo = "Título da atividade é obrigatório";
+            newErrors.textoTitulo = "Pergunta é obrigatória";
           }
         }
       }
     }
 
-    // Validação específica para provas (apenas se não for presencial)
-    if (formData.tipo === "PROVA" && formData.modalidade !== "PRESENCIAL") {
+    // Validação específica para provas
+    if (formData.tipo === "PROVA") {
       if (!formData.questoes || formData.questoes.length === 0) {
         newErrors.questoes = "É necessário adicionar pelo menos 1 questão";
       } else {
@@ -609,9 +624,8 @@ export function CreateProvaForm({
         instrutorId: formData.instrutorId || undefined,
         obrigatoria: formData.obrigatoria,
         status: formData.status,
-        // Dados específicos de atividade (apenas se não for PRESENCIAL)
-        ...(formData.tipo === "ATIVIDADE" &&
-          formData.modalidade !== "PRESENCIAL" && {
+        // Dados específicos de atividade (legado)
+        ...(formData.tipo === "ATIVIDADE" && {
             tipoAtividade: formData.tipoAtividade as
               | "QUESTOES"
               | "TEXTO"
@@ -625,10 +639,8 @@ export function CreateProvaForm({
                 texto: formData.texto,
               }),
           }),
-        // Dados específicos de prova (questões se não for presencial)
-        ...(formData.tipo === "PROVA" &&
-          formData.modalidade !== "PRESENCIAL" &&
-          formData.questoes && {
+        // Dados específicos de prova (legado)
+        ...(formData.tipo === "PROVA" && formData.questoes && {
             questoes: formData.questoes,
           }),
       };
@@ -643,28 +655,51 @@ export function CreateProvaForm({
         return;
       }
 
-      if (mode === "create") {
-        let provaCriada: any;
+        if (mode === "create") {
+          let provaCriada: any;
 
-        // Se TEM turma: usar endpoint antigo (vinculado a turma)
-        if (formData.turmaId && cursoIdFromTurma) {
-          provaCriada = await createProva(
-            cursoIdFromTurma,
-            formData.turmaId,
-            payload as CreateProvaPayload
-          );
-        } 
-        // Se NÃO TEM turma: usar endpoint novo (template/biblioteca)
-        else {
-          // Preparar payload para createAvaliacao (endpoint global)
-          // Remove campos específicos de turma (localizacao, moduloId, horaFim)
-          const { localizacao, moduloId, horaFim, ...payloadSemCamposDeTurma } = payload as any;
-          
-          const avaliacaoPayload: any = {
-            ...payloadSemCamposDeTurma,
-            cursoId: formData.cursoId || null, // Pode ser null
-            turmaId: null,
-            horaTermino: formData.horaFim, // API espera horaTermino ao invés de horaFim
+          // Se TEM turma: usar endpoint antigo (vinculado a turma)
+          if (formData.turmaId && cursoIdFromTurma) {
+            provaCriada = await createProva(
+              cursoIdFromTurma,
+              formData.turmaId,
+              payload as CreateProvaPayload
+            );
+          } 
+          // Se NÃO TEM turma: usar endpoint novo (template/biblioteca)
+          else {
+          const valePontoEfetivo = formData.valeNota ? true : formData.valePonto;
+          const tipoAtividadeApi =
+            formData.tipo === "ATIVIDADE" && formData.tipoAtividade
+              ? formData.tipoAtividade === "QUESTOES"
+                ? "QUESTOES"
+                : "PERGUNTA_RESPOSTA"
+              : undefined;
+
+          const avaliacaoPayload: CreateAvaliacaoPayload = {
+            tipo: formData.tipo as "PROVA" | "ATIVIDADE",
+            titulo: formData.titulo.trim(),
+            modalidade: formData.modalidade as any,
+            obrigatoria: formData.obrigatoria,
+            valePonto: valePontoEfetivo,
+            ...(valePontoEfetivo && formData.peso ? { peso: Number(formData.peso) } : {}),
+            etiqueta: formData.etiqueta.trim() || undefined,
+            cursoId: formData.cursoId || undefined,
+            instrutorId: formData.instrutorId || undefined,
+            dataInicio: dataInicio as string,
+            dataFim: dataFim as string,
+            horaInicio: formData.horaInicio,
+            horaTermino: formData.horaFim,
+            ...(duracaoMinutos ? { duracaoMinutos } : {}),
+            ...(formData.tipo === "PROVA" ? { recuperacaoFinal: formData.recuperacaoFinal } : {}),
+            ...(formData.tipo === "ATIVIDADE" ? { tipoAtividade: tipoAtividadeApi as any } : {}),
+            ...(formData.tipo === "ATIVIDADE" && tipoAtividadeApi === "PERGUNTA_RESPOSTA"
+              ? { descricao: formData.texto?.titulo?.trim() || undefined }
+              : {}),
+            ...((formData.tipo === "PROVA" ||
+              (formData.tipo === "ATIVIDADE" && tipoAtividadeApi === "QUESTOES")) && {
+              questoes: toAvaliacaoQuestoes(formData.questoes),
+            }),
           };
 
           provaCriada = await createAvaliacao(avaliacaoPayload);
@@ -679,8 +714,9 @@ export function CreateProvaForm({
         // Se a modalidade for ONLINE ou AO_VIVO, gerar tokens únicos para cada inscrição
         const modalidadeOnlineOuAoVivo =
           formData.modalidade === "ONLINE" || formData.modalidade === "AO_VIVO";
+        const provaCriadaId = (provaCriada as any)?.id as string | undefined;
 
-        if (modalidadeOnlineOuAoVivo && provaCriada.id && formData.turmaId && cursoIdFromTurma) {
+        if (modalidadeOnlineOuAoVivo && provaCriadaId && formData.turmaId && cursoIdFromTurma) {
           setLoadingStep("Gerando tokens únicos para os alunos...");
 
           try {
@@ -696,7 +732,7 @@ export function CreateProvaForm({
                 createProvaToken(
                   cursoIdFromTurma!,
                   formData.turmaId,
-                  provaCriada.id,
+                  provaCriadaId,
                   { inscricaoId: inscricao.id }
                 ).catch((error) => {
                   console.error(
@@ -723,6 +759,11 @@ export function CreateProvaForm({
             );
           }
         } else {
+          if (modalidadeOnlineOuAoVivo && formData.turmaId && cursoIdFromTurma && !provaCriadaId) {
+            console.warn(
+              "[CreateProvaForm] Prova/Atividade criada sem id no retorno. Tokens não serão gerados automaticamente."
+            );
+          }
           toastCustom.success(`${tipoLabel} criada com sucesso!`);
         }
       } else {
@@ -747,8 +788,8 @@ export function CreateProvaForm({
         toastCustom.success(`${tipoLabel} atualizada com sucesso!`);
       }
 
-      // Invalidar cache
-      queryClient.invalidateQueries({ queryKey: ["provas-dashboard"] });
+      // Invalidar cache (listagem de atividades/provas usa essa queryKey)
+      queryClient.invalidateQueries({ queryKey: ["avaliacoes", "dashboard"] });
 
       setIsLoading(false);
       setLoadingStep("");
@@ -1053,6 +1094,9 @@ export function CreateProvaForm({
                 <SelectCustom
                   label="Turma"
                   placeholder={
+                    !formData.cursoId
+                      ? "Selecione um curso primeiro"
+                      : 
                     loadingTurmas
                       ? "Carregando turmas..."
                       : turmas.length === 0
@@ -1066,7 +1110,7 @@ export function CreateProvaForm({
                   value={formData.turmaId}
                   onChange={handleTurmaChange}
                   error={errors.turmaId}
-                  disabled={loadingTurmas}
+                  disabled={loadingTurmas || !formData.cursoId}
                 />
               </div>
 
@@ -1288,33 +1332,32 @@ export function CreateProvaForm({
                 </div>
               )}
 
-              {/* Tipo de Atividade - Apenas para ATIVIDADE e se não for PRESENCIAL */}
-              {formData.tipo === "ATIVIDADE" &&
-                formData.modalidade !== "PRESENCIAL" && (
-                  <div className="flex-1 min-w-0">
-                    <SelectCustom
-                      label="Tipo de Atividade"
-                      placeholder="Selecione o tipo de atividade"
-                      options={TIPO_ATIVIDADE_OPTIONS}
-                      value={formData.tipoAtividade || ""}
-                      onChange={(value) => {
-                        handleInputChange(
-                          "tipoAtividade",
-                          value as "QUESTOES" | "TEXTO" | ""
-                        );
-                        // Limpar dados do tipo anterior ao mudar
-                        if (value !== "QUESTOES") {
-                          handleInputChange("questoes", []);
-                        }
-                        if (value !== "TEXTO") {
-                          handleInputChange("texto", { titulo: "" });
-                        }
-                      }}
-                      error={errors.tipoAtividade}
-                      required
-                    />
-                  </div>
-                )}
+              {/* Tipo de Atividade - Apenas para ATIVIDADE */}
+              {formData.tipo === "ATIVIDADE" && (
+                <div className="flex-1 min-w-0">
+                  <SelectCustom
+                    label="Tipo de Atividade"
+                    placeholder="Selecione o tipo de atividade"
+                    options={TIPO_ATIVIDADE_OPTIONS}
+                    value={formData.tipoAtividade || ""}
+                    onChange={(value) => {
+                      handleInputChange(
+                        "tipoAtividade",
+                        value as "QUESTOES" | "TEXTO" | ""
+                      );
+                      // Limpar dados do tipo anterior ao mudar
+                      if (value !== "QUESTOES") {
+                        handleInputChange("questoes", []);
+                      }
+                      if (value !== "TEXTO") {
+                        handleInputChange("texto", { titulo: "" });
+                      }
+                    }}
+                    error={errors.tipoAtividade}
+                    required
+                  />
+                </div>
+              )}
 
               {/* Modalidade - bloqueada se turma selecionada (vem da turma) */}
               <div className="flex-1 min-w-0">
@@ -1325,12 +1368,6 @@ export function CreateProvaForm({
                   onChange={(value) => {
                     const novaModalidade = value as Modalidade | "";
                     handleInputChange("modalidade", novaModalidade);
-                    // Se mudar para PRESENCIAL, limpar tipo de atividade e dados relacionados
-                    if (novaModalidade === "PRESENCIAL") {
-                      handleInputChange("tipoAtividade", "");
-                      handleInputChange("questoes", []);
-                      handleInputChange("texto", { titulo: "" });
-                    }
                   }}
                   placeholder="Selecione a modalidade"
                   error={errors.modalidade}
@@ -1484,24 +1521,21 @@ export function CreateProvaForm({
               </div>
             </div>
 
-            {/* Builders de Questões - Para PROVA (não presencial) e ATIVIDADE do tipo Questões (não presencial) */}
+            {/* Builders de Questões - Para PROVA e ATIVIDADE do tipo Questões */}
             {(() => {
-              const isPresencial = formData.modalidade === "PRESENCIAL";
-              const isProvaNaoPresencial =
-                formData.tipo === "PROVA" && !isPresencial;
-              const isAtividadeQuestoesNaoPresencial =
+              const isProva = formData.tipo === "PROVA";
+              const isAtividadeQuestoes =
                 formData.tipo === "ATIVIDADE" &&
-                !isPresencial &&
                 formData.tipoAtividade === "QUESTOES";
 
-              if (!isProvaNaoPresencial && !isAtividadeQuestoesNaoPresencial) {
+              if (!isProva && !isAtividadeQuestoes) {
                 return null;
               }
 
               return (
                 <div className="space-y-4">
-                  {/* Builder de Questões para PROVA (apenas se não for presencial) */}
-                  {isProvaNaoPresencial && (
+                  {/* Builder de Questões para PROVA */}
+                  {isProva && (
                     <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
                       <QuestoesBuilder
                         questoes={formData.questoes || []}
@@ -1515,8 +1549,8 @@ export function CreateProvaForm({
                     </div>
                   )}
 
-                  {/* Builder de Questões para ATIVIDADE (apenas se não for presencial) */}
-                  {isAtividadeQuestoesNaoPresencial && (
+                  {/* Builder de Questões para ATIVIDADE */}
+                  {isAtividadeQuestoes && (
                     <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
                       <QuestoesBuilder
                         questoes={formData.questoes || []}
@@ -1533,9 +1567,8 @@ export function CreateProvaForm({
               );
             })()}
 
-            {/* Builder de Texto - Apenas para ATIVIDADE e se não for PRESENCIAL */}
+            {/* Builder de Texto - Apenas para ATIVIDADE */}
             {formData.tipo === "ATIVIDADE" &&
-              formData.modalidade !== "PRESENCIAL" &&
               formData.tipoAtividade === "TEXTO" && (
                 <div className="space-y-4">
                   <TextoBuilder
@@ -1544,18 +1577,6 @@ export function CreateProvaForm({
                   />
                 </div>
               )}
-
-            {/* Alerta para Prova/Atividade Presencial */}
-            {formData.modalidade === "PRESENCIAL" && (
-              <Alert className="border-blue-200 bg-blue-50 rounded-xl">
-                <Info className="h-4 w-4 text-blue-600" />
-                <AlertDescription className="text-blue-800 text-sm!">
-                  {formData.tipo === "PROVA"
-                    ? "Prova presencial será aplicada de forma impressa. Não é necessário cadastrar questões online."
-                    : "Atividade presencial será aplicada de forma impressa. Não é necessário cadastrar tipo de atividade online."}
-                </AlertDescription>
-              </Alert>
-            )}
           </div>
 
           {/* Botões */}

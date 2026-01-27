@@ -98,31 +98,31 @@ export async function apiFetch<T = unknown>(
         let errorMessage = `API responded with ${res.status}: ${res.statusText}`;
         let errorDetails: any = null;
 
+        // Ler o body uma única vez para evitar "body stream already read"
+        let rawBody = "";
         try {
-          const errorData = await res.json();
-          if (errorData && typeof errorData === "object") {
-            // many APIs retornam { message: "..." }
-            errorMessage =
-              (errorData as any).message ||
-              (errorData as any).error ||
-              errorMessage;
-            errorDetails = errorData;
-          }
+          rawBody = await res.text();
         } catch {
-          // tenta obter texto puro caso não seja JSON
+          rawBody = "";
+        }
+
+        if (rawBody) {
+          // Tenta parsear como JSON
           try {
-            const text = await res.text();
-            if (text) {
-              errorMessage = text;
-              // Tenta parsear como JSON se possível
-              try {
-                errorDetails = JSON.parse(text);
-              } catch {
-                errorDetails = { raw: text };
-              }
+            const parsed = JSON.parse(rawBody);
+            if (parsed && typeof parsed === "object") {
+              errorMessage =
+                (parsed as any).message ||
+                (parsed as any).error ||
+                errorMessage;
+              errorDetails = parsed;
+            } else {
+              errorMessage = rawBody;
+              errorDetails = { raw: rawBody };
             }
           } catch {
-            /* ignore */
+            errorMessage = rawBody;
+            errorDetails = { raw: rawBody };
           }
         }
 
@@ -131,9 +131,7 @@ export async function apiFetch<T = unknown>(
           details?: any;
         };
         errorObj.status = res.status;
-        if (errorDetails) {
-          errorObj.details = errorDetails;
-        }
+        if (errorDetails) errorObj.details = errorDetails;
         
         // Silencia 403/404 se a opção estiver ativada (não loga como erro)
         if (env.isDevelopment) {

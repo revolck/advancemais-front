@@ -18,6 +18,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useTurmasForSelect } from "./hooks/useTurmasForSelect";
+import { useCursosForSelect } from "./hooks/useCursosForSelect";
+import { useInstrutoresForSelect } from "./hooks/useInstrutoresForSelect";
 import {
   useAvaliacoesDashboardQuery,
   type AvaliacaoListItem,
@@ -30,7 +32,8 @@ import {
   getNormalizedSearchOrUndefined,
   getSearchValidationMessage,
 } from "../shared/filterUtils";
-import type { AvaliacaoStatus, AvaliacaoTipo } from "@/api/cursos";
+import type { AvaliacaoStatus, AvaliacaoTipo, AvaliacaoTipoAtividade } from "@/api/cursos";
+import type { DateRange } from "@/components/ui/custom/date-picker";
 
 const PROVA_STATUS_OPTIONS: { value: AvaliacaoStatus; label: string }[] = [
   { value: "RASCUNHO", label: "Rascunho" },
@@ -45,7 +48,34 @@ const PROVA_TIPO_OPTIONS: { value: AvaliacaoTipo; label: string }[] = [
   { value: "ATIVIDADE", label: "Atividade" },
 ];
 
+const TIPO_ATIVIDADE_OPTIONS: { value: AvaliacaoTipoAtividade; label: string }[] = [
+  { value: "QUESTOES", label: "Questões" },
+  { value: "PERGUNTA_RESPOSTA", label: "Pergunta e Resposta" },
+];
+
+const MODALIDADE_OPTIONS: { value: string; label: string }[] = [
+  { value: "ONLINE", label: "Online" },
+  { value: "PRESENCIAL", label: "Presencial" },
+  { value: "AO_VIVO", label: "Ao Vivo" },
+  { value: "SEMIPRESENCIAL", label: "Semipresencial" },
+];
+
+const OBRIGATORIA_OPTIONS: { value: string; label: string }[] = [
+  { value: "true", label: "Sim" },
+  { value: "false", label: "Não" },
+];
+
 const SEARCH_HELPER_TEXT = "Pesquise pelo título da atividade/prova.";
+
+const createEmptyDateRange = (): DateRange => ({ from: null, to: null });
+
+const formatDateForAPI = (date: Date | null | undefined): string | null => {
+  if (!date) return null;
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
 
 export function AtividadesProvasDashboard({
   className,
@@ -54,11 +84,17 @@ export function AtividadesProvasDashboard({
 }) {
   const [pendingSearchTerm, setPendingSearchTerm] = useState("");
   const [appliedSearchTerm, setAppliedSearchTerm] = useState("");
+  const [selectedCursoId, setSelectedCursoId] = useState<string | null>(null);
   const [selectedTurmaId, setSelectedTurmaId] = useState<string | null>(null);
-  const [selectedStatus, setSelectedStatus] = useState<AvaliacaoStatus | null>(
-    null
-  );
+  const [selectedInstrutorId, setSelectedInstrutorId] = useState<string | null>(null);
+  const [selectedStatuses, setSelectedStatuses] = useState<AvaliacaoStatus[]>([]);
   const [selectedTipo, setSelectedTipo] = useState<AvaliacaoTipo | null>(null);
+  const [selectedTipoAtividade, setSelectedTipoAtividade] =
+    useState<AvaliacaoTipoAtividade | null>(null);
+  const [selectedModalidades, setSelectedModalidades] = useState<string[]>([]);
+  const [selectedObrigatoria, setSelectedObrigatoria] = useState<string | null>(null);
+  const [pendingPeriodo, setPendingPeriodo] = useState<DateRange>(createEmptyDateRange());
+  const [appliedPeriodo, setAppliedPeriodo] = useState<DateRange>(createEmptyDateRange());
   const [isNavigating, setIsNavigating] = useState(false);
 
   const handleNavigateStart = useCallback(() => {
@@ -76,21 +112,29 @@ export function AtividadesProvasDashboard({
   const [sortField, setSortField] = useState<SortField>("criadoEm"); // Padrão: ordenar por criação
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc"); // Padrão: mais novo primeiro
 
-  const { turmas, rawData, isLoading: loadingTurmas } = useTurmasForSelect();
-
-  // Buscar cursoId do rawData
-  const selectedTurmaRaw = useMemo(() => {
-    if (!selectedTurmaId || !rawData) return null;
-    return rawData.find((t) => t.id === selectedTurmaId);
-  }, [selectedTurmaId, rawData]);
+  const { cursos, isLoading: loadingCursos } = useCursosForSelect();
+  const { instrutores, isLoading: loadingInstrutores } = useInstrutoresForSelect();
+  const { turmas, isLoading: loadingTurmas } = useTurmasForSelect(selectedCursoId);
 
   // Usar o hook correto que utiliza a API global de avaliações
   const avaliacoesQuery = useAvaliacoesDashboardQuery({
-    cursoId: selectedTurmaRaw?.cursoId?.toString() ?? null,
+    cursoId: selectedCursoId ?? null,
     turmaId: selectedTurmaId,
+    instrutorId: selectedInstrutorId,
     tipo: selectedTipo,
-    status: selectedStatus,
-    search: appliedSearchTerm || undefined,
+    tipoAtividade: selectedTipoAtividade,
+    modalidade: selectedModalidades,
+    status: selectedStatuses,
+    obrigatoria:
+      selectedObrigatoria === null ? null : selectedObrigatoria === "true",
+    periodo:
+      appliedPeriodo.from && appliedPeriodo.to
+        ? `${formatDateForAPI(appliedPeriodo.from)},${formatDateForAPI(appliedPeriodo.to)}`
+        : null,
+    search: getNormalizedSearchOrUndefined(
+      appliedSearchTerm,
+      DEFAULT_SEARCH_MIN_LENGTH
+    ),
     page: currentPage,
     pageSize,
     orderBy: sortField || "criadoEm",
@@ -118,15 +162,6 @@ export function AtividadesProvasDashboard({
   const isSearchInputValid = !searchValidationMessage;
   const searchHelperText = SEARCH_HELPER_TEXT;
 
-  const normalizedSearch = useMemo(
-    () =>
-      getNormalizedSearchOrUndefined(
-        appliedSearchTerm,
-        DEFAULT_SEARCH_MIN_LENGTH
-      ),
-    [appliedSearchTerm]
-  );
-
   const handleSearchSubmit = useCallback(
     (rawValue?: string) => {
       const value = rawValue ?? pendingSearchTerm;
@@ -139,6 +174,11 @@ export function AtividadesProvasDashboard({
     },
     [pendingSearchTerm]
   );
+
+  const handleApplyFilters = useCallback(() => {
+    setAppliedPeriodo(pendingPeriodo);
+    handleSearchSubmit();
+  }, [handleSearchSubmit, pendingPeriodo]);
 
   // Sorting functions
   const setSort = useCallback((field: SortField, direction: SortDirection) => {
@@ -227,11 +267,6 @@ export function AtividadesProvasDashboard({
     [currentPage, totalPages]
   );
 
-  // Reset página quando filtros mudam
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [appliedSearchTerm, selectedTurmaId, selectedStatus, selectedTipo]);
-
   // Ajusta página atual se necessário (apenas se totalPages mudou e currentPage está fora do range)
   useEffect(() => {
     if (totalPages > 0 && currentPage > totalPages) {
@@ -251,10 +286,30 @@ export function AtividadesProvasDashboard({
   const filterFields: FilterField[] = useMemo(
     () => [
       {
+        key: "cursoId",
+        label: "Curso",
+        options: cursos,
+        placeholder: loadingCursos ? "Carregando..." : "Selecionar",
+      },
+      {
         key: "turmaId",
         label: "Turma",
-        options: turmas,
-        placeholder: loadingTurmas ? "Carregando..." : "Selecionar",
+        options: selectedCursoId ? turmas : [],
+        placeholder: !selectedCursoId
+          ? "Selecione um curso"
+          : loadingTurmas
+          ? "Carregando..."
+          : "Selecionar",
+        emptyPlaceholder: selectedCursoId
+          ? "Nenhuma turma disponível"
+          : "Selecione um curso primeiro",
+        disabled: !selectedCursoId || loadingTurmas,
+      },
+      {
+        key: "instrutorId",
+        label: "Instrutor",
+        options: instrutores,
+        placeholder: loadingInstrutores ? "Carregando..." : "Selecionar",
       },
       {
         key: "tipo",
@@ -263,22 +318,74 @@ export function AtividadesProvasDashboard({
         placeholder: "Todos",
       },
       {
+        key: "tipoAtividade",
+        label: "Tipo de atividade",
+        options: TIPO_ATIVIDADE_OPTIONS,
+        placeholder: "Todos",
+        disabled: selectedTipo !== "ATIVIDADE",
+      },
+      {
+        key: "modalidade",
+        label: "Modalidade",
+        mode: "multiple" as const,
+        options: MODALIDADE_OPTIONS,
+        placeholder: "Selecionar",
+      },
+      {
+        key: "periodo",
+        label: "Período",
+        type: "date-range",
+        placeholder: "Selecionar período",
+      },
+      {
         key: "status",
         label: "Status",
+        mode: "multiple" as const,
         options: PROVA_STATUS_OPTIONS,
-        placeholder: "Todos",
+        placeholder: "Selecionar",
+      },
+      {
+        key: "obrigatoria",
+        label: "Obrigatória",
+        options: OBRIGATORIA_OPTIONS,
+        placeholder: "Selecionar",
       },
     ],
-    [turmas, loadingTurmas]
+    [
+      cursos,
+      instrutores,
+      loadingCursos,
+      loadingInstrutores,
+      loadingTurmas,
+      selectedCursoId,
+      selectedTipo,
+      turmas,
+    ]
   );
 
   const filterValues = useMemo(
     () => ({
+      cursoId: selectedCursoId,
       turmaId: selectedTurmaId,
       tipo: selectedTipo,
-      status: selectedStatus,
+      tipoAtividade: selectedTipoAtividade,
+      modalidade: selectedModalidades,
+      periodo: pendingPeriodo,
+      instrutorId: selectedInstrutorId,
+      status: selectedStatuses,
+      obrigatoria: selectedObrigatoria,
     }),
-    [selectedTurmaId, selectedTipo, selectedStatus]
+    [
+      pendingPeriodo,
+      selectedCursoId,
+      selectedInstrutorId,
+      selectedModalidades,
+      selectedObrigatoria,
+      selectedStatuses,
+      selectedTipo,
+      selectedTipoAtividade,
+      selectedTurmaId,
+    ]
   );
 
   return (
@@ -303,29 +410,62 @@ export function AtividadesProvasDashboard({
       <div className="border-b border-gray-200 top-0 z-10">
         <div className="py-4">
           <FilterBar
-            gridClassName="lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,0.7fr)_minmax(0,0.7fr)_auto]"
+            gridClassName="lg:grid-cols-12 lg:[&>*:nth-child(1)]:col-span-4 lg:[&>*:nth-child(2)]:col-span-4 lg:[&>*:nth-child(3)]:col-span-4 lg:[&>*:nth-child(4)]:col-span-3 lg:[&>*:nth-child(5)]:col-span-3 lg:[&>*:nth-child(6)]:col-span-2 lg:[&>*:nth-child(7)]:col-span-2 lg:[&>*:nth-child(8)]:col-span-2 lg:[&>*:nth-child(9)]:col-span-2 lg:[&>*:nth-child(10)]:col-span-2"
             fields={filterFields}
             values={filterValues}
             onChange={(key, value) => {
+              if (key === "cursoId") {
+                const nextCursoId = (value as string) || null;
+                setSelectedCursoId(nextCursoId);
+                setSelectedTurmaId(null);
+                setCurrentPage(1);
+              }
               if (key === "turmaId") {
                 setSelectedTurmaId((value as string) || null);
                 setCurrentPage(1);
               }
-              if (key === "tipo") {
-                setSelectedTipo((value as AvaliacaoTipo) || null);
+              if (key === "instrutorId") {
+                setSelectedInstrutorId((value as string) || null);
                 setCurrentPage(1);
               }
+              if (key === "tipo") {
+                setSelectedTipo((value as AvaliacaoTipo) || null);
+                setSelectedTipoAtividade(null);
+                setCurrentPage(1);
+              }
+              if (key === "tipoAtividade") {
+                setSelectedTipoAtividade((value as AvaliacaoTipoAtividade) || null);
+                setCurrentPage(1);
+              }
+              if (key === "modalidade") {
+                setSelectedModalidades(Array.isArray(value) ? (value as string[]) : []);
+                setCurrentPage(1);
+              }
+              if (key === "periodo") {
+                setPendingPeriodo((value as DateRange) || createEmptyDateRange());
+              }
               if (key === "status") {
-                setSelectedStatus((value as AvaliacaoStatus) || null);
+                setSelectedStatuses(Array.isArray(value) ? (value as AvaliacaoStatus[]) : []);
+                setCurrentPage(1);
+              }
+              if (key === "obrigatoria") {
+                setSelectedObrigatoria((value as string) || null);
                 setCurrentPage(1);
               }
             }}
             onClearAll={() => {
               setPendingSearchTerm("");
               setAppliedSearchTerm("");
+              setSelectedCursoId(null);
               setSelectedTurmaId(null);
               setSelectedTipo(null);
-              setSelectedStatus(null);
+              setSelectedTipoAtividade(null);
+              setSelectedModalidades([]);
+              setSelectedInstrutorId(null);
+              setSelectedStatuses([]);
+              setSelectedObrigatoria(null);
+              setPendingPeriodo(createEmptyDateRange());
+              setAppliedPeriodo(createEmptyDateRange());
               setCurrentPage(1);
             }}
             search={{
@@ -347,13 +487,14 @@ export function AtividadesProvasDashboard({
               <ButtonCustom
                 variant="primary"
                 size="lg"
-                onClick={() => handleSearchSubmit()}
+                onClick={() => handleApplyFilters()}
                 disabled={isLoading || !isSearchInputValid}
                 className="md:w-full xl:w-auto"
               >
                 Pesquisar
               </ButtonCustom>
             }
+            rightActionsClassName="lg:col-span-1 lg:items-end lg:justify-end"
           />
         </div>
       </div>

@@ -156,7 +156,7 @@ export function validarExclusao(
     if (diasRestantes < 5 && diasRestantes >= 0) {
       return {
         podeExcluir: false,
-        motivo: `A exclusão deve ser feita com no mínimo 5 dias de antecedência. A aula acontece em ${diasRestantes} dia(s).`,
+        motivo: "A exclusão só é permitida com pelo menos 5 dias de antecedência.",
         diasRestantes,
       };
     }

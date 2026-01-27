@@ -203,6 +203,13 @@ export function AulaRow({
 
             <Badge
               variant="outline"
+              className={cn("text-xs font-medium inline-flex items-center w-fit", getStatusColor(aula.status))}
+            >
+              {getStatusLabel(aula.status)}
+            </Badge>
+
+            <Badge
+              variant="outline"
               className={cn(
                 "text-xs font-medium inline-flex items-center gap-1.5 w-fit",
                 aula.obrigatoria
@@ -292,14 +299,6 @@ export function AulaRow({
         ) : (
           <span className="text-sm text-gray-400">—</span>
         )}
-      </TableCell>
-      <TableCell className="py-4 px-3">
-        <Badge
-          variant="outline"
-          className={cn("text-xs font-medium", getStatusColor(aula.status))}
-        >
-          {getStatusLabel(aula.status)}
-        </Badge>
       </TableCell>
       <TableCell className="py-4 px-3">
         {aula.dataInicio ? (

@@ -59,6 +59,21 @@ const TIPO_LINK_OPTIONS = [
   { value: "MEET", label: "Criar link do Google Meet" },
 ];
 
+function computeDuracaoFromHoras(inicio: string, fim: string): number | null {
+  if (!inicio || !fim) return null;
+  const [horaIni, minIni] = inicio.split(":").map(Number);
+  const [horaFim, minFim] = fim.split(":").map(Number);
+  if (
+    [horaIni, minIni, horaFim, minFim].some((x) => !Number.isFinite(x) || x < 0)
+  ) {
+    return null;
+  }
+  const minutosInicio = horaIni * 60 + minIni;
+  const minutosFim = horaFim * 60 + minFim;
+  const diff = minutosFim - minutosInicio;
+  return diff > 0 ? diff : null;
+}
+
 /**
  * Converte o método da turma para a modalidade da aula
  * Turma: ONLINE | PRESENCIAL | LIVE | SEMIPRESENCIAL
@@ -146,6 +161,7 @@ export function CreateAulaForm({
   const [materialFiles, setMaterialFiles] = useState<FileUploadItem[]>([]);
   const [isInitializing, setIsInitializing] = useState(mode === "edit");
   const modalidadeAtualizadaRef = useRef(false); // Rastrear se já atualizamos a modalidade
+  const duracaoManualOverrideRef = useRef(false);
 
   // Verificar roles
   const isInstrutor = user?.role === "INSTRUTOR";
@@ -500,6 +516,10 @@ export function CreateAulaForm({
   }, [formData.descricao, isInitializing, mode]);
 
   const handleInputChange = (field: keyof FormData, value: any) => {
+    if (field === "duracaoMinutos") {
+      const nextValue = String(value ?? "").trim();
+      duracaoManualOverrideRef.current = Boolean(nextValue);
+    }
     setFormData((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) {
       setErrors((prev) => {
@@ -634,6 +654,36 @@ export function CreateAulaForm({
     formData.modalidade === "AO_VIVO" ||
     (formData.modalidade === "SEMIPRESENCIAL" && formData.tipoLink === "MEET");
 
+  // UX: calcular duração automaticamente quando o usuário informar hora início + hora fim.
+  // Se o usuário editar a duração manualmente, não sobrescreve (até ele limpar o campo).
+  useEffect(() => {
+    if (!showPeriodoField) return;
+
+    const duracao = computeDuracaoFromHoras(
+      formData.horaInicio,
+      formData.horaFim
+    );
+    if (!duracao) return;
+
+    if (duracaoManualOverrideRef.current && formData.duracaoMinutos.trim()) {
+      return;
+    }
+
+    const duracaoStr = String(duracao);
+    setFormData((prev) => {
+      if (duracaoManualOverrideRef.current && prev.duracaoMinutos.trim()) {
+        return prev;
+      }
+      if (prev.duracaoMinutos.trim() === duracaoStr) return prev;
+      return { ...prev, duracaoMinutos: duracaoStr };
+    });
+  }, [
+    formData.horaInicio,
+    formData.horaFim,
+    formData.duracaoMinutos,
+    showPeriodoField,
+  ]);
+
   const validateForm = (): {
     valid: boolean;
     errors: Record<string, string>;
@@ -739,29 +789,9 @@ export function CreateAulaForm({
       return;
     }
 
-    const normalizeNullableId = (raw: string): string | null => {
+    const normalizeOptionalId = (raw: string): string | undefined => {
       const trimmed = raw.trim();
-      return trimmed ? trimmed : null;
-    };
-
-    const computeDuracaoFromHoras = (
-      inicio: string,
-      fim: string
-    ): number | null => {
-      if (!inicio || !fim) return null;
-      const [horaIni, minIni] = inicio.split(":").map(Number);
-      const [horaFim, minFim] = fim.split(":").map(Number);
-      if (
-        [horaIni, minIni, horaFim, minFim].some(
-          (x) => !Number.isFinite(x) || x < 0
-        )
-      ) {
-        return null;
-      }
-      const minutosInicio = horaIni * 60 + minIni;
-      const minutosFim = horaFim * 60 + minFim;
-      const diff = minutosFim - minutosInicio;
-      return diff > 0 ? diff : null;
+      return trimmed ? trimmed : undefined;
     };
 
     const tituloTrim = formData.titulo.trim();
@@ -789,33 +819,32 @@ export function CreateAulaForm({
       return;
     }
 
-    const turmaId = normalizeNullableId(formData.turmaId);
-    const instrutorId = normalizeNullableId(formData.instrutorId);
-    const moduloId = normalizeNullableId(formData.moduloId);
+    const turmaId = normalizeOptionalId(formData.turmaId);
+    const instrutorId = normalizeOptionalId(formData.instrutorId);
+    const moduloId = normalizeOptionalId(formData.moduloId);
     const statusFinal = turmaId ? formData.status : "RASCUNHO";
 
-    const buildIsoFromDateAndTime = (
-      date: Date | null,
-      time: string
-    ): string | undefined => {
+    // API espera data no formato YYYY-MM-DD (sem timezone) e horas separadas (HH:mm)
+    const formatDateToYmd = (date: Date | null): string | undefined => {
       if (!date) return undefined;
-      if (!time) return undefined;
-      const [hh, mm] = time.split(":").map((v) => Number.parseInt(v, 10));
-      if (!Number.isFinite(hh) || !Number.isFinite(mm)) return undefined;
-      const d = new Date(
-        date.getFullYear(),
-        date.getMonth(),
-        date.getDate(),
-        hh,
-        mm,
-        0,
-        0
-      );
-      return Number.isNaN(d.getTime()) ? undefined : d.toISOString();
+      const yyyy = date.getFullYear();
+      const mm = String(date.getMonth() + 1).padStart(2, "0");
+      const dd = String(date.getDate()).padStart(2, "0");
+      return `${yyyy}-${mm}-${dd}`;
     };
 
-    const dataInicio = buildIsoFromDateAndTime(formData.dataAula, formData.horaInicio);
-    const dataFim = buildIsoFromDateAndTime(formData.dataAula, formData.horaFim);
+    const dataInicio = formatDateToYmd(formData.dataAula);
+    const dataFim = formData.horaFim ? formatDateToYmd(formData.dataAula) : undefined;
+    const cursoId = showCursoField ? (selectedCursoId ?? undefined) : undefined;
+    const sala =
+      formData.modalidade === "PRESENCIAL" && formData.sala.trim()
+        ? formData.sala.trim()
+        : undefined;
+    const youtubeUrl =
+      showYouTubeField && formData.youtubeUrl.trim()
+        ? formData.youtubeUrl.trim()
+        : undefined;
+    const shouldSendGravarAula = showGravarAulaField;
 
     setIsLoading(true);
 
@@ -825,20 +854,21 @@ export function CreateAulaForm({
           titulo: tituloTrim,
           descricao: descricaoTrim,
           modalidade: formData.modalidade as Modalidade,
+          cursoId,
           tipoLink: formData.tipoLink ? (formData.tipoLink as TipoLink) : undefined,
-          youtubeUrl: formData.youtubeUrl ? formData.youtubeUrl : undefined,
+          youtubeUrl,
           dataInicio,
           dataFim,
           horaInicio: formData.horaInicio || undefined,
           horaFim: formData.horaFim || undefined,
-          sala: formData.sala || undefined,
+          sala,
           duracaoMinutos,
           obrigatoria: formData.obrigatoria,
-          gravarAula: formData.gravarAula,
+          ...(shouldSendGravarAula ? { gravarAula: formData.gravarAula } : {}),
           status: statusFinal,
-          turmaId,
-          instrutorId,
-          moduloId,
+          ...(turmaId ? { turmaId } : {}),
+          ...(instrutorId ? { instrutorId } : {}),
+          ...(moduloId ? { moduloId } : {}),
         };
 
         setLoadingStep("Salvando alterações...");
@@ -935,20 +965,21 @@ export function CreateAulaForm({
           titulo: tituloTrim,
           descricao: descricaoTrim,
           modalidade: formData.modalidade as Modalidade,
+          cursoId,
           tipoLink: formData.tipoLink ? (formData.tipoLink as TipoLink) : undefined,
-          youtubeUrl: formData.youtubeUrl ? formData.youtubeUrl : undefined,
+          youtubeUrl,
           dataInicio,
           dataFim,
           horaInicio: formData.horaInicio || undefined,
           horaFim: formData.horaFim || undefined,
-          sala: formData.sala || undefined,
+          sala,
           duracaoMinutos,
           obrigatoria: formData.obrigatoria,
-          gravarAula: formData.gravarAula,
+          ...(shouldSendGravarAula ? { gravarAula: formData.gravarAula } : {}),
           status: statusFinal,
-          turmaId,
-          instrutorId,
-          moduloId,
+          ...(turmaId ? { turmaId } : {}),
+          ...(instrutorId ? { instrutorId } : {}),
+          ...(moduloId ? { moduloId } : {}),
           ...(materiais ? { materiais } : {}),
         };
 

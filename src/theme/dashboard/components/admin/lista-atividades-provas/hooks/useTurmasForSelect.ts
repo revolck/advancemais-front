@@ -39,12 +39,13 @@ export function useTurmasForSelect(cursoId?: string | null) {
   const query = useQuery({
     queryKey: ["avaliacoes-turmas", cursoId],
     queryFn: async () => {
+      if (!cursoId) return [];
       // ✅ API implementada: aceita parâmetro cursoId para filtrar turmas
-      const response = await listAvaliacoesTurmas(cursoId || undefined);
+      const response = await listAvaliacoesTurmas(cursoId);
       return response.turmas || [];
     },
     staleTime: 60000, // 1 minute
-    enabled: true, // Sempre habilitado
+    enabled: Boolean(cursoId),
   });
 
   const turmas: TurmaSelectOption[] =

@@ -20,11 +20,6 @@ import {
   TableRow,
   TableCell,
 } from "@/components/ui/table";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { getRoleLabel } from "@/config/roles";
 import {
@@ -67,6 +62,7 @@ const acaoLabels: Record<string, string> = {
   MATERIAL_ADICIONADO: "Material adicionado",
   MATERIAL_REMOVIDO: "Material removido",
   MATERIAL_ATUALIZADO: "Material atualizado",
+  MATERIAIS_REORDENADOS: "Materiais reordenados",
 };
 
 // Cores para badges de ação
@@ -86,8 +82,14 @@ const getAcaoBadgeColor = (acao: string): string => {
     MATERIAL_ADICIONADO: "bg-emerald-50 text-emerald-700 border-emerald-200",
     MATERIAL_REMOVIDO: "bg-orange-50 text-orange-700 border-orange-200",
     MATERIAL_ATUALIZADO: "bg-indigo-50 text-indigo-700 border-indigo-200",
+    MATERIAIS_REORDENADOS: "bg-sky-50 text-sky-700 border-sky-200",
   };
   return colorMap[acao] || "bg-gray-50 text-gray-700 border-gray-200";
+};
+
+const isDeParaChange = (value: unknown): value is { de: any; para: any } => {
+  if (!value || typeof value !== "object") return false;
+  return "de" in value && "para" in value;
 };
 
 // Cores para badges de role
@@ -127,6 +129,180 @@ const formatValue = (value: any): string => {
   }
 
   return String(value);
+};
+
+const getCampoLabel = (campo: string): string | null => {
+  const map: Record<string, string | null> = {
+    // Redundante (já existe coluna "Ação")
+    acao: null,
+    // Aulas
+    titulo: "Título",
+    descricao: "Descrição",
+    modalidade: "Modalidade",
+    status: "Status",
+    turmaId: "Turma",
+    instrutorId: "Instrutor",
+    moduloId: "Módulo",
+    dataInicio: "Data de início",
+    dataFim: "Data de término",
+    horaInicio: "Hora de início",
+    horaFim: "Hora de término",
+    duracaoMinutos: "Duração (min)",
+    obrigatoria: "Obrigatória",
+    sala: "Sala",
+    youtubeUrl: "YouTube",
+    meetUrl: "Google Meet",
+    // Materiais (não mostrar IDs internos)
+    materialId: null,
+    materialTipo: "Tipo",
+    materialTitulo: "Material",
+    arquivoNome: "Arquivo",
+    arquivoMimeType: "Formato",
+    linkUrl: "Link",
+  };
+
+  if (campo in map) return map[campo] ?? null;
+
+  const human = campo
+    .replace(/_/g, " ")
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .trim();
+
+  return human ? human.charAt(0).toUpperCase() + human.slice(1) : null;
+};
+
+const formatCampoValue = (campo: string, value: any): string => {
+  const raw = formatValue(value);
+  if (raw === "(vazio)") return raw;
+
+  const upper = String(value).toUpperCase?.() ?? raw;
+
+  if (campo === "modalidade") {
+    const map: Record<string, string> = {
+      ONLINE: "Online",
+      PRESENCIAL: "Presencial",
+      AO_VIVO: "Ao vivo",
+      SEMIPRESENCIAL: "Semipresencial",
+    };
+    return map[upper] ?? raw;
+  }
+
+  if (campo === "status") {
+    const map: Record<string, string> = {
+      RASCUNHO: "Rascunho",
+      PUBLICADA: "Publicada",
+      EM_ANDAMENTO: "Em andamento",
+      CONCLUIDA: "Concluída",
+      CANCELADA: "Cancelada",
+    };
+    return map[upper] ?? raw;
+  }
+
+  if (campo === "materialTipo") {
+    const map: Record<string, string> = {
+      ARQUIVO: "Arquivo",
+      LINK: "Link",
+      TEXTO: "Texto",
+    };
+    return map[upper] ?? raw;
+  }
+
+  return raw;
+};
+
+const isEmptyFormatted = (v: string) => v === "(vazio)";
+
+const shortenId = (value: any): string | null => {
+  if (typeof value !== "string") return null;
+  const v = value.trim();
+  if (!v) return null;
+  // uuid -> primeiros 8 chars
+  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v)) {
+    return v.slice(0, 8);
+  }
+  return null;
+};
+
+const getEffectiveAcao = (item: AulaHistorico): string => {
+  const campos = item.camposAlterados;
+  if (!campos || typeof campos !== "object") return item.acao;
+  const acaoFromCampos = (campos as any).acao;
+  if (typeof acaoFromCampos === "string" && acaoFromCampos.trim()) {
+    return acaoFromCampos.trim();
+  }
+  return item.acao;
+};
+
+const extractNameFromUrl = (raw: string): string => {
+  try {
+    const url = new URL(raw);
+    const last = url.pathname.split("/").filter(Boolean).pop();
+    return last || url.host;
+  } catch {
+    // fallback simples
+    const parts = raw.split("/").filter(Boolean);
+    return parts[parts.length - 1] || raw;
+  }
+};
+
+const toMaterialNames = (value: any): string[] => {
+  if (!value) return [];
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => {
+        if (typeof item === "string") return extractNameFromUrl(item);
+        if (item && typeof item === "object") {
+          const titulo = (item as any).titulo;
+          const url = (item as any).url;
+          if (typeof titulo === "string" && titulo.trim()) return titulo.trim();
+          if (typeof url === "string" && url.trim()) return extractNameFromUrl(url.trim());
+        }
+        return null;
+      })
+      .filter((x): x is string => Boolean(x));
+  }
+  return [];
+};
+
+const formatMateriaisChange = (de: any, para: any): string | null => {
+  const from = toMaterialNames(de);
+  const to = toMaterialNames(para);
+  if (from.length === 0 && to.length === 0) return null;
+
+  const added = to.filter((x) => !from.includes(x));
+  const removed = from.filter((x) => !to.includes(x));
+
+  const parts: string[] = [];
+  if (added.length > 0) parts.push(`Adicionado: ${added.join(", ")}`);
+  if (removed.length > 0) parts.push(`Removido: ${removed.join(", ")}`);
+  if (parts.length === 0) return null;
+  return parts.join(" • ");
+};
+
+const formatMateriaisReordenados = (items: any): string | null => {
+  if (!Array.isArray(items)) return null;
+  const parts = items
+    .map((m) => {
+      if (!m || typeof m !== "object") return null;
+      const materialTitulo =
+        typeof (m as any).materialTitulo === "string" && (m as any).materialTitulo.trim()
+          ? (m as any).materialTitulo.trim()
+          : null;
+      const materialId = typeof (m as any).materialId === "string" ? (m as any).materialId : null;
+      const short = materialId ? shortenId(materialId) : null;
+      const name = materialTitulo || (short ? `#${short}` : "Material");
+
+      const ordem = (m as any).ordem;
+      if (!isDeParaChange(ordem)) return null;
+      const de = ordem.de;
+      const para = ordem.para;
+      if (de === undefined || para === undefined || de === para) return null;
+      return `${name}: ${de} → ${para}`;
+    })
+    .filter((x): x is string => Boolean(x));
+
+  if (parts.length === 0) return null;
+  return parts.join(" • ");
 };
 
 const formatDate = (dateString: string): string => {
@@ -190,9 +366,10 @@ export function HistoricoTab({
     if (!historico || !Array.isArray(historico)) return [];
 
     return historico.filter((item) => {
+      const effectiveAcao = getEffectiveAcao(item);
       // Filtro por ação
       const matchesAcao =
-        filters.acao.length === 0 || filters.acao.includes(item.acao);
+        filters.acao.length === 0 || filters.acao.includes(effectiveAcao);
 
       // Filtro por alterado por
       const matchesAlteradoPor =
@@ -235,7 +412,11 @@ export function HistoricoTab({
   // Opções para filtros
   const acaoOptions = useMemo(() => {
     if (!historico || !Array.isArray(historico)) return [];
-    const acoes = [...new Set(historico.map((item) => item.acao).filter(Boolean))];
+    const acoes = [
+      ...new Set(
+        historico.map((item) => getEffectiveAcao(item)).filter(Boolean),
+      ),
+    ];
     return acoes.map((acao) => ({
       value: acao,
       label: acaoLabels[acao] || acao,
@@ -451,10 +632,10 @@ export function HistoricoTab({
                     variant="outline"
                     className={cn(
                       "text-xs font-medium",
-                      getAcaoBadgeColor(item.acao),
+                      getAcaoBadgeColor(getEffectiveAcao(item)),
                     )}
                   >
-                    {acaoLabels[item.acao] || item.acao}
+                    {acaoLabels[getEffectiveAcao(item)] || getEffectiveAcao(item)}
                   </Badge>
                 </TableCell>
                 <TableCell className="py-4 text-sm">
@@ -463,31 +644,131 @@ export function HistoricoTab({
                   typeof item.camposAlterados === "object" &&
                   Object.keys(item.camposAlterados).length > 0 ? (
                     <div className="space-y-1">
-                      {Object.entries(item.camposAlterados).map(
-                        ([campo, mudanca]) => {
-                          const { de, para } = mudanca as {
-                            de: any;
-                            para: any;
-                          };
-                          const campoLabel =
-                            campo.charAt(0).toUpperCase() +
-                            campo.slice(1).replace(/([A-Z])/g, " $1");
+                      {Object.entries(item.camposAlterados)
+                        .map(([campo, mudanca]) => {
+                          if (campo === "acao") return null;
+
+                          const changesObj = item.camposAlterados as Record<string, unknown>;
+
+                          const hasMaterialDetail = ["materialTitulo", "arquivoNome", "linkUrl"].some(
+                            (k) => {
+                              const entry = (changesObj as any)[k] as unknown;
+                              if (!isDeParaChange(entry)) return false;
+                              const deTxt = formatCampoValue(k, (entry as any).de);
+                              const paraTxt = formatCampoValue(k, (entry as any).para);
+                              return !isEmptyFormatted(deTxt) || !isEmptyFormatted(paraTxt);
+                            }
+                          );
+
+                          // Esconder id interno quando há detalhe melhor
+                          if (campo === "materialId" && hasMaterialDetail) return null;
+
+                          // Campo especial: materiais
+                          if (campo === "materiais") {
+                            if (Array.isArray(mudanca)) {
+                              const summary = formatMateriaisReordenados(mudanca);
+                              if (!summary) return null;
+                              return (
+                                <div key={campo} className="text-xs">
+                                  <span className="font-medium text-gray-700">
+                                    Materiais:
+                                  </span>{" "}
+                                  <span className="text-gray-700">{summary}</span>
+                                </div>
+                              );
+                            }
+
+                            if (isDeParaChange(mudanca)) {
+                              const summary = formatMateriaisChange(
+                                (mudanca as any).de,
+                                (mudanca as any).para,
+                              );
+                              if (!summary) return null;
+                              return (
+                                <div key={campo} className="text-xs">
+                                  <span className="font-medium text-gray-700">
+                                    Materiais:
+                                  </span>{" "}
+                                  <span className="text-gray-700">{summary}</span>
+                                </div>
+                              );
+                            }
+
+                            return null;
+                          }
+
+                          const label = getCampoLabel(campo);
+                          if (!label) return null;
+
+                          if (!isDeParaChange(mudanca)) return null;
+
+                          const { de, para } = mudanca as { de: any; para: any };
+                          const fromText = formatCampoValue(campo, de);
+                          const toText = formatCampoValue(campo, para);
+
+                          // Evita poluição: (vazio) -> (vazio) e valores idênticos
+                          if (
+                            (isEmptyFormatted(fromText) &&
+                              isEmptyFormatted(toText)) ||
+                            fromText === toText
+                          ) {
+                            return null;
+                          }
+
+                          // Se só houver id de material, mostrar curto pra ficar legível
+                          if (campo === "materialId") {
+                            const shortFrom = shortenId(de);
+                            const shortTo = shortenId(para);
+                            const from = shortFrom ? `#${shortFrom}` : fromText;
+                            const to = shortTo ? `#${shortTo}` : toText;
+                            const content =
+                              isEmptyFormatted(fromText) && !isEmptyFormatted(toText) ? (
+                                <span className="text-green-600">{to}</span>
+                              ) : !isEmptyFormatted(fromText) && isEmptyFormatted(toText) ? (
+                                <span className="text-red-600">{from}</span>
+                              ) : (
+                                <>
+                                  <span className="text-red-600">{from}</span>{" "}
+                                  →{" "}
+                                  <span className="text-green-600">{to}</span>
+                                </>
+                              );
+                            return (
+                              <div key={campo} className="text-xs">
+                                <span className="font-medium text-gray-700">
+                                  Material:
+                                </span>{" "}
+                                {content}
+                              </div>
+                            );
+                          }
+
+                          const content = (() => {
+                            if (isEmptyFormatted(fromText) && !isEmptyFormatted(toText)) {
+                              return <span className="text-green-600">{toText}</span>;
+                            }
+                            if (!isEmptyFormatted(fromText) && isEmptyFormatted(toText)) {
+                              return <span className="text-red-600">{fromText}</span>;
+                            }
+                            return (
+                              <>
+                                <span className="text-red-600">{fromText}</span>{" "}
+                                →{" "}
+                                <span className="text-green-600">{toText}</span>
+                              </>
+                            );
+                          })();
+
                           return (
                             <div key={campo} className="text-xs">
                               <span className="font-medium text-gray-700">
-                                {campoLabel}:
+                                {label}:
                               </span>{" "}
-                              <span className="text-red-600">
-                                {formatValue(de)}
-                              </span>{" "}
-                              →{" "}
-                              <span className="text-green-600">
-                                {formatValue(para)}
-                              </span>
+                              {content}
                             </div>
                           );
-                        },
-                      )}
+                        })
+                        .filter(Boolean)}
                     </div>
                   ) : (
                     <span className="text-gray-400">—</span>

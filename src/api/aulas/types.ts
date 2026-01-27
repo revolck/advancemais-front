@@ -107,7 +107,11 @@ export interface AulaHistorico {
     email?: string;
   };
   acao: string;
-  camposAlterados?: Record<string, { de: unknown; para: unknown }> | null;
+  /**
+   * A API pode retornar tanto o formato antigo (`{ campo: { de, para } }`)
+   * quanto novos formatos (ex.: `acao: string`, `materiais: array` em reordenação).
+   */
+  camposAlterados?: Record<string, unknown> | null;
   criadoEm: string;
   ip?: string;
   userAgent?: string;
@@ -133,9 +137,10 @@ export interface CreateAulaPayload {
   horaInicio?: string;
   horaFim?: string;
   sala?: string;
-  turmaId?: string | null;
-  instrutorId?: string | null;
-  moduloId?: string | null;
+  cursoId?: string;
+  turmaId?: string;
+  instrutorId?: string;
+  moduloId?: string;
   gravarAula?: boolean;
   youtubeUrl?: string;
   materiais?: AulaMaterialInput[];

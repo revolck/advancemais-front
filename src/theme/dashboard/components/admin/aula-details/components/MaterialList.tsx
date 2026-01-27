@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   DndContext,
@@ -24,24 +24,20 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+  ModalContentWrapper,
+  ModalCustom,
+  ModalDescription,
+  ModalFooter,
+  ModalHeader,
+  ModalTitle,
+} from "@/components/ui/custom/modal";
 import {
-  Paperclip,
   GripVertical,
   ExternalLink,
   FileText,
   Trash2,
   Download,
   AlertCircle,
-  Loader2,
 } from "lucide-react";
 import {
   listMateriais,
@@ -49,14 +45,14 @@ import {
   reordenarMateriais,
   gerarTokenDownload,
   formatarTamanhoArquivo,
-  getIconePorMimeType,
 } from "@/api/aulas/core";
 import type { AulaMaterial } from "@/api/aulas/types";
-import { toastCustom } from "@/components/ui/custom";
+import { ButtonCustom, toastCustom } from "@/components/ui/custom";
 import { cn } from "@/lib/utils";
 
 interface MaterialListProps {
   aulaId: string;
+  showHeader?: boolean;
   onMaterialCountChange?: (count: number) => void;
 }
 
@@ -87,19 +83,72 @@ function SortableMaterialItem({
     transition,
   };
 
-  const icone = material.arquivoMimeType
-    ? getIconePorMimeType(material.arquivoMimeType)
-    : material.tipo === "LINK"
-    ? "🔗"
-    : "📝";
+  const tipoBadge = useMemo(() => {
+    if (material.tipo === "LINK") return "Link";
+    const ext = material.arquivoNome?.split(".").pop()?.toUpperCase();
+    return ext || "Arquivo";
+  }, [material.arquivoNome, material.tipo]);
+
+  const tipoBadgeClassName = useMemo(() => {
+    const key = tipoBadge.toUpperCase();
+    const map: Record<string, string> = {
+      LINK: "bg-blue-50 text-blue-700 border-blue-200",
+      PDF: "bg-red-50 text-red-700 border-red-200",
+      DOC: "bg-blue-50 text-blue-700 border-blue-200",
+      DOCX: "bg-blue-50 text-blue-700 border-blue-200",
+      XLS: "bg-emerald-50 text-emerald-700 border-emerald-200",
+      XLSX: "bg-emerald-50 text-emerald-700 border-emerald-200",
+      CSV: "bg-emerald-50 text-emerald-700 border-emerald-200",
+      PPT: "bg-orange-50 text-orange-700 border-orange-200",
+      PPTX: "bg-orange-50 text-orange-700 border-orange-200",
+      ZIP: "bg-amber-50 text-amber-700 border-amber-200",
+      RAR: "bg-amber-50 text-amber-700 border-amber-200",
+      JPG: "bg-purple-50 text-purple-700 border-purple-200",
+      JPEG: "bg-purple-50 text-purple-700 border-purple-200",
+      PNG: "bg-indigo-50 text-indigo-700 border-indigo-200",
+      GIF: "bg-pink-50 text-pink-700 border-pink-200",
+      WEBP: "bg-violet-50 text-violet-700 border-violet-200",
+      SVG: "bg-cyan-50 text-cyan-700 border-cyan-200",
+      MP4: "bg-rose-50 text-rose-700 border-rose-200",
+      MP3: "bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200",
+    };
+    return map[key] || "bg-gray-50 text-gray-700 border-gray-200";
+  }, [tipoBadge]);
+
+  const primaryMeta = useMemo(() => {
+    if (material.tipo === "ARQUIVO") {
+      const size =
+        material.arquivoTamanho !== null &&
+        material.arquivoTamanho !== undefined
+          ? formatarTamanhoArquivo(material.arquivoTamanho)
+          : null;
+      return `${material.arquivoNome || "Arquivo"}${size ? ` • ${size}` : ""}`;
+    }
+
+    if (material.linkUrl) {
+      try {
+        const url = new URL(material.linkUrl);
+        return url.host;
+      } catch {
+        return material.linkUrl;
+      }
+    }
+
+    return null;
+  }, [
+    material.arquivoNome,
+    material.arquivoTamanho,
+    material.linkUrl,
+    material.tipo,
+  ]);
 
   return (
     <div
       ref={setNodeRef}
       style={style}
       className={cn(
-        "flex items-center gap-3 p-4 border rounded-lg bg-white hover:bg-gray-50 transition-colors",
-        isDragging && "opacity-50 shadow-lg z-50"
+        "group flex items-center gap-3 p-4 border border-gray-200/60 rounded-xl bg-white hover:bg-gray-50/60 transition-colors",
+        isDragging && "opacity-50 shadow-lg z-50",
       )}
     >
       {/* Drag handle */}
@@ -107,73 +156,76 @@ function SortableMaterialItem({
         {...attributes}
         {...listeners}
         className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600"
+        aria-label="Arrastar para reordenar"
       >
         <GripVertical className="h-5 w-5" />
       </div>
 
-      {/* Ícone do tipo */}
-      <div className="text-2xl">{icone}</div>
+      {/* Tipo */}
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-600">
+        {material.tipo === "LINK" ? (
+          <ExternalLink className="h-4 w-4" aria-hidden="true" />
+        ) : (
+          <FileText className="h-4 w-4" aria-hidden="true" />
+        )}
+      </div>
 
       {/* Conteúdo */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
-          <h4 className="text-sm font-medium text-gray-900 truncate">
+          <h4 className="text-sm! font-semibold text-gray-900 truncate mb-0!">
             {material.titulo}
           </h4>
-          {material.obrigatorio && (
-            <Badge
-              variant="outline"
-              className="bg-red-50 text-red-700 border-red-200 text-xs"
-            >
-              Obrigatório
-            </Badge>
-          )}
-          <Badge variant="outline" className="text-xs">
-            {material.tipo}
+          <Badge
+            variant="outline"
+            className={cn(
+              "text-[11px]! font-medium px-2 py-0.5 rounded-md",
+              tipoBadgeClassName,
+            )}
+          >
+            {tipoBadge}
           </Badge>
         </div>
-        {material.descricao && (
-          <p className="text-xs text-gray-500 truncate">{material.descricao}</p>
-        )}
-        {material.arquivoNome && (
-          <p className="text-xs text-gray-500">
-            {material.arquivoNome}
-            {material.arquivoTamanho &&
-              ` • ${formatarTamanhoArquivo(material.arquivoTamanho)}`}
-          </p>
-        )}
-        {material.linkUrl && (
-          <a
-            href={material.linkUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs text-blue-600 hover:underline flex items-center gap-1"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {material.linkUrl}
-            <ExternalLink className="h-3 w-3" />
-          </a>
+        {primaryMeta && (
+          <p className="text-xs! text-gray-500 truncate mb-0!">{primaryMeta}</p>
         )}
       </div>
 
       {/* Ações */}
       <div className="flex items-center gap-2">
+        {material.tipo === "LINK" && material.linkUrl && (
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() =>
+              window.open(material.linkUrl!, "_blank", "noopener,noreferrer")
+            }
+            disabled={isDeleting}
+            aria-label="Abrir link"
+            className="h-9 w-9 rounded-lg border border-gray-200/60 bg-white text-gray-600 hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 cursor-pointer"
+          >
+            <ExternalLink className="h-4 w-4" />
+          </Button>
+        )}
         {material.tipo === "ARQUIVO" && (
           <Button
             variant="outline"
-            size="sm"
+            size="icon"
             onClick={() => onDownload(material.id)}
             disabled={isDeleting}
+            aria-label="Baixar arquivo"
+            className="h-9 w-9 rounded-lg border border-gray-200/60 bg-white text-gray-600 hover:bg-gray-50 hover:border-gray-300 cursor-pointer"
           >
             <Download className="h-4 w-4" />
           </Button>
         )}
         <Button
           variant="outline"
-          size="sm"
+          size="icon"
           onClick={() => onDelete(material.id)}
           disabled={isDeleting}
-          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+          className="h-9 w-9 rounded-lg border border-red-200/80 bg-white text-red-600 hover:text-red-700 hover:bg-red-50 hover:border-red-300 cursor-pointer"
+          aria-label="Remover material"
         >
           <Trash2 className="h-4 w-4" />
         </Button>
@@ -184,6 +236,7 @@ function SortableMaterialItem({
 
 export function MaterialList({
   aulaId,
+  showHeader = true,
   onMaterialCountChange,
 }: MaterialListProps) {
   const queryClient = useQueryClient();
@@ -203,17 +256,30 @@ export function MaterialList({
   const materiais = materiaisData?.data || [];
 
   // Notificar mudanças na contagem
-  useState(() => {
+  useEffect(() => {
     onMaterialCountChange?.(materiais.length);
-  });
+  }, [materiais.length, onMaterialCountChange]);
 
   // Mutation para reordenar
   const reordenarMutation = useMutation({
     mutationFn: (ordens: Array<{ id: string; ordem: number }>) =>
       reordenarMateriais(aulaId, { ordens }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["aulaMateriais", aulaId] });
-    },
+	    onSuccess: async () => {
+	      await queryClient.invalidateQueries({
+	        queryKey: ["aulaMateriais", aulaId],
+	      });
+	      await queryClient.refetchQueries({
+	        queryKey: ["aulaMateriais", aulaId],
+	        exact: true,
+	      });
+	      await queryClient.invalidateQueries({
+	        queryKey: ["aulaHistorico", aulaId],
+	      });
+	      await queryClient.refetchQueries({
+	        queryKey: ["aulaHistorico", aulaId],
+	        exact: true,
+	      });
+	    },
     onError: (error: Error) => {
       toastCustom.error(error.message || "Erro ao reordenar materiais");
     },
@@ -222,11 +288,24 @@ export function MaterialList({
   // Mutation para deletar
   const deleteMutation = useMutation({
     mutationFn: (materialId: string) => deleteMaterial(aulaId, materialId),
-    onSuccess: () => {
-      toastCustom.success("Material removido!");
-      queryClient.invalidateQueries({ queryKey: ["aulaMateriais", aulaId] });
-      setDeleteId(null);
-    },
+	    onSuccess: async () => {
+	      toastCustom.success("Material removido!");
+	      await queryClient.invalidateQueries({
+	        queryKey: ["aulaMateriais", aulaId],
+	      });
+	      await queryClient.refetchQueries({
+	        queryKey: ["aulaMateriais", aulaId],
+	        exact: true,
+	      });
+	      await queryClient.invalidateQueries({
+	        queryKey: ["aulaHistorico", aulaId],
+	      });
+	      await queryClient.refetchQueries({
+	        queryKey: ["aulaHistorico", aulaId],
+	        exact: true,
+	      });
+	      setDeleteId(null);
+	    },
     onError: (error: Error) => {
       toastCustom.error(error.message || "Erro ao remover material");
     },
@@ -249,7 +328,7 @@ export function MaterialList({
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
-    })
+    }),
   );
 
   // Handler de drag end
@@ -273,12 +352,14 @@ export function MaterialList({
   if (isLoading) {
     return (
       <div className="space-y-4">
-        <div className="flex items-center gap-2">
-          <Paperclip className="h-5 w-5 text-gray-600" />
-          <h3 className="text-base font-semibold text-gray-900">
-            Materiais Complementares
-          </h3>
-        </div>
+        {showHeader && (
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm! font-semibold text-gray-900 mb-0!">
+              Materiais
+            </h3>
+            <Badge variant="outline">—</Badge>
+          </div>
+        )}
         <div className="space-y-3">
           <Skeleton className="h-20 w-full" />
           <Skeleton className="h-20 w-full" />
@@ -298,90 +379,103 @@ export function MaterialList({
     );
   }
 
-  if (materiais.length === 0) {
-    return null;
-  }
-
   return (
     <>
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Paperclip className="h-5 w-5 text-gray-600" />
-            <h3 className="text-base font-semibold text-gray-900">
-              Materiais Complementares
+        {showHeader && (
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm! font-semibold text-gray-900 mb-0!">
+              Materiais
             </h3>
+            <Badge variant="outline">
+              {materiais.length}/{materiaisData?.limite || 3}
+            </Badge>
           </div>
-          <Badge variant="outline">
-            {materiais.length}/{materiaisData?.limite || 3}
-          </Badge>
-        </div>
-        <p className="text-sm text-gray-500">
-          Arraste para reordenar os materiais
-        </p>
-        <div>
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragEnd={handleDragEnd}
-          >
-            <SortableContext
-              items={materiais.map((m) => m.id)}
-              strategy={verticalListSortingStrategy}
-            >
-              <div className="space-y-3">
-                {materiais.map((material) => (
-                  <SortableMaterialItem
-                    key={material.id}
-                    material={material}
-                    onDelete={setDeleteId}
-                    onDownload={(id) => downloadMutation.mutate(id)}
-                    isDeleting={deleteMutation.isPending}
-                  />
-                ))}
-              </div>
-            </SortableContext>
-          </DndContext>
-        </div>
+        )}
+        {materiais.length === 0 ? (
+          <div className="rounded-xl border border-gray-200/60 bg-gray-50/40 p-5">
+            <p className="text-sm! font-medium text-gray-800 mb-0!">
+              Nenhum material adicionado.
+            </p>
+            <p className="text-xs! text-gray-500 mb-0!">
+              Adicione um arquivo acima para disponibilizar para os alunos.
+            </p>
+          </div>
+        ) : (
+          <>
+            {materiais.length > 1 && (
+              <p className="text-xs! text-gray-500 mb-0!">
+                Arraste para reordenar
+              </p>
+            )}
+            <div>
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
+                <SortableContext
+                  items={materiais.map((m) => m.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <div className="space-y-3">
+                    {materiais.map((material) => (
+                      <SortableMaterialItem
+                        key={material.id}
+                        material={material}
+                        onDelete={setDeleteId}
+                        onDownload={(id) => downloadMutation.mutate(id)}
+                        isDeleting={deleteMutation.isPending}
+                      />
+                    ))}
+                  </div>
+                </SortableContext>
+              </DndContext>
+            </div>
+          </>
+        )}
       </div>
 
-      {/* Dialog de confirmação de exclusão */}
-      <AlertDialog
-        open={!!deleteId}
+      {/* Modal de confirmação de exclusão (UI Custom) */}
+      <ModalCustom
+        isOpen={Boolean(deleteId)}
         onOpenChange={(open) => !open && setDeleteId(null)}
+        size="sm"
+        backdrop="blur"
       >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Remover material?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Esta ação não pode ser desfeita. O material será permanentemente
-              removido.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleteMutation.isPending}>
-              Cancelar
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={(e) => {
-                e.preventDefault();
-                if (deleteId) deleteMutation.mutate(deleteId);
-              }}
-              disabled={deleteMutation.isPending}
-              className="bg-red-600 hover:bg-red-700"
-            >
-              {deleteMutation.isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Removendo...
-                </>
-              ) : (
-                "Remover"
-              )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        <ModalContentWrapper>
+          <ModalHeader className="space-y-1">
+            <ModalTitle>Remover material?</ModalTitle>
+            <ModalDescription>
+              Esta ação não pode ser desfeita. O material será removido da aula.
+            </ModalDescription>
+          </ModalHeader>
+
+          <ModalFooter className="px-1 py-2">
+            <div className="flex w-full justify-end gap-3">
+              <ButtonCustom
+                variant="outline"
+                size="md"
+                onClick={() => setDeleteId(null)}
+                disabled={deleteMutation.isPending}
+              >
+                Cancelar
+              </ButtonCustom>
+              <ButtonCustom
+                variant="danger"
+                size="md"
+                isLoading={deleteMutation.isPending}
+                loadingText="Removendo..."
+                onClick={() => {
+                  if (deleteId) deleteMutation.mutate(deleteId);
+                }}
+              >
+                Remover
+              </ButtonCustom>
+            </div>
+          </ModalFooter>
+        </ModalContentWrapper>
+      </ModalCustom>
     </>
   );
 }

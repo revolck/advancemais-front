@@ -899,15 +899,33 @@ export interface Avaliacao {
 }
 
 export interface ListAvaliacoesParams {
-  cursoId?: string;
-  turmaId?: string;
-  semTurma?: boolean;
-  tipo?: AvaliacaoTipo;
-  status?: AvaliacaoStatus;
-  search?: string;
   page?: number;
   pageSize?: number;
-  orderBy?: string;
+  // Busca
+  search?: string;
+  titulo?: string;
+  // Curso/Turma/Instrutor
+  cursoId?: string;
+  curso?: string; // texto
+  turmaId?: string;
+  turma?: string; // texto
+  instrutorId?: string;
+  instrutor?: string; // texto
+  // Filtros
+  tipo?: AvaliacaoTipo;
+  tipoAtividade?: AvaliacaoTipoAtividade;
+  modalidade?: AvaliacaoModalidade | string; // API aceita CSV
+  status?: AvaliacaoStatus | string; // API aceita CSV
+  obrigatoria?: boolean;
+  semTurma?: boolean;
+  // Período
+  dataInicio?: string;
+  dataFim?: string;
+  periodoInicio?: string;
+  periodoFim?: string;
+  periodo?: string; // "YYYY-MM-DD,YYYY-MM-DD"
+  // Ordenação
+  orderBy?: "criadoEm" | "titulo" | "ordem" | "dataInicio" | string;
   order?: "asc" | "desc";
 }
 
@@ -923,35 +941,35 @@ export interface ListAvaliacoesResponse {
 }
 
 export interface CreateAvaliacaoPayload {
-  // Campos obrigatórios
-  cursoId: string;
+  // Campos obrigatórios (POST/PUT)
   tipo: AvaliacaoTipo;
   titulo: string;
-  peso: number; // 0 a 10, aceita decimais
+  modalidade: AvaliacaoModalidade;
+  obrigatoria: boolean;
+  valePonto: boolean;
   dataInicio: string; // YYYY-MM-DD
   dataFim: string; // YYYY-MM-DD
   horaInicio: string; // HH:mm
   horaTermino: string; // HH:mm
 
   // Campos opcionais
+  cursoId?: string | null;
   turmaId?: string | null;
   instrutorId?: string | null;
-  tipoAtividade?: AvaliacaoTipoAtividade; // Obrigatório quando tipo=ATIVIDADE
-  descricao?: string; // Obrigatório quando tipoAtividade=PERGUNTA_RESPOSTA (máx 500 chars)
   etiqueta?: string;
-  valeNota?: boolean;
-  valePonto?: boolean; // Padrão: true
-  modalidade?: AvaliacaoModalidade; // Herdada da turma se vinculada
+  descricao?: string | null; // PERGUNTA_RESPOSTA (até 5000 chars)
+  tipoAtividade?: AvaliacaoTipoAtividade; // Obrigatório quando tipo=ATIVIDADE
+  peso?: number; // Obrigatório quando valePonto=true (0..10)
   duracaoMinutos?: number;
-  obrigatoria?: boolean; // Padrão: true
-  status?: AvaliacaoStatus; // Padrão: RASCUNHO
-  recuperacaoFinal?: boolean; // Apenas para PROVA, requer valePonto=true
+  recuperacaoFinal?: boolean; // Apenas para PROVA
 
-  // Questões - obrigatório para PROVA e ATIVIDADE tipo QUESTOES (1 a 10 questões)
+  // Questões - obrigatório para PROVA e ATIVIDADE tipo QUESTOES (1..10)
   questoes?: AvaliacaoQuestaoInput[];
 }
 
-export type UpdateAvaliacaoPayload = Partial<CreateAvaliacaoPayload>;
+export type UpdateAvaliacaoPayload = Partial<CreateAvaliacaoPayload> & {
+  status?: AvaliacaoStatus;
+};
 
 export interface CloneAvaliacaoPayload {
   avaliacaoId: string;
