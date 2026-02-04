@@ -395,6 +395,8 @@ function normalizeTurma(turma: any): CursoTurma {
     turno: turma.turno ?? "MANHA",
     metodo: turma.metodo ?? "ONLINE",
     status: turma.status,
+    publicacaoStatus: turma.publicacaoStatus ?? turma.statusPublicacao,
+    publicado: typeof turma.publicado === "boolean" ? turma.publicado : undefined,
     vagasTotais:
       turma.vagasTotais != null ? Number(turma.vagasTotais) : undefined,
     vagasDisponiveis:
@@ -614,6 +616,39 @@ export async function getTurmaById(
 
     throw error;
   }
+}
+
+/**
+ * Publicar ou despublicar uma turma
+ */
+export async function publicarTurma(
+  cursoId: number | string,
+  turmaId: string,
+  publicar: boolean,
+  init?: RequestInit
+): Promise<CursoTurma> {
+  const response = await apiFetch<any>(
+    cursosRoutes.cursos.turmas.publicar(cursoId, turmaId),
+    {
+      init: {
+        method: "PATCH",
+        ...init,
+        headers: buildHeaders(
+          {
+            "Content-Type": "application/json",
+            ...init?.headers,
+          },
+          true
+        ),
+        body: JSON.stringify({ publicar }),
+      },
+      cache: "no-cache",
+    }
+  );
+
+  const turmaData =
+    response?.turma ?? response?.data ?? response?.result ?? response;
+  return normalizeTurma(turmaData);
 }
 
 export async function createTurma(

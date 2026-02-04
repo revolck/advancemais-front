@@ -10,30 +10,27 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { ChevronDown, ChevronLeft, Edit } from "lucide-react";
+import { ChevronDown, ChevronLeft, Edit, Eye, EyeOff, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { CursoTurma } from "@/api/cursos";
+import { usePublicarTurma } from "../hooks";
+import { ConfirmarPublicacaoTurmaModal } from "../modal-acoes";
 import { formatTurmaStatus, getTurmaStatusBadgeClasses } from "../utils";
-
-interface HeaderInfoProps {
-  turma: CursoTurma;
-  cursoId: number;
-  cursoNome?: string;
-  onEditTurma?: () => void;
-}
+import type { HeaderInfoProps } from "../types";
 
 export function HeaderInfo({
   turma,
   cursoId,
-  cursoNome,
   onEditTurma,
 }: HeaderInfoProps) {
   const [isActionsOpen, setIsActionsOpen] = useState(false);
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+
+  const { mutate: publicarOuDespublicar, isPending, isPublished } =
+    usePublicarTurma({
+      cursoId,
+      turma,
+      onSettled: () => setIsConfirmModalOpen(false),
+    });
 
   const statusBadge = (
     <Badge
@@ -77,6 +74,34 @@ export function HeaderInfo({
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuItem
+                onSelect={(e) => {
+                  e.preventDefault();
+                  setIsConfirmModalOpen(true);
+                  setIsActionsOpen(false);
+                }}
+                disabled={isPending}
+                className="cursor-pointer"
+              >
+                {isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
+                    <span>
+                      {isPublished ? "Atualizando..." : "Publicando..."}
+                    </span>
+                  </>
+                ) : isPublished ? (
+                  <>
+                    <EyeOff className="h-4 w-4 text-gray-500" />
+                    <span>Rascunho</span>
+                  </>
+                ) : (
+                  <>
+                    <Eye className="h-4 w-4 text-gray-500" />
+                    <span>Publicar</span>
+                  </>
+                )}
+              </DropdownMenuItem>
+              <DropdownMenuItem
                 onSelect={() => {
                   onEditTurma?.();
                   setIsActionsOpen(false);
@@ -103,6 +128,14 @@ export function HeaderInfo({
           </Button>
         </div>
       </div>
+
+      <ConfirmarPublicacaoTurmaModal
+        isOpen={isConfirmModalOpen}
+        onOpenChange={setIsConfirmModalOpen}
+        isPublished={isPublished}
+        onConfirm={() => publicarOuDespublicar(!isPublished)}
+        isPending={isPending}
+      />
     </section>
   );
 }

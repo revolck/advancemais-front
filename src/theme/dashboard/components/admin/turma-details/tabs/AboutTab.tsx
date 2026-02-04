@@ -1,6 +1,7 @@
 "use client";
 
 import { EmptyState } from "@/components/ui/custom";
+import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   CalendarDays,
@@ -10,9 +11,12 @@ import {
   Users,
   Tag,
   Hash,
+  BadgeCheck,
+  Activity,
   type LucideIcon,
 } from "lucide-react";
 import type { CursoTurma } from "@/api/cursos";
+import { formatTurmaStatus, getTurmaStatusBadgeClasses } from "../utils";
 
 interface AboutTabProps {
   turma: CursoTurma;
@@ -55,21 +59,6 @@ export function AboutTab({
   cursoNome,
   isLoading = false,
 }: AboutTabProps) {
-  const formatDateTime = (dateString?: string) => {
-    if (!dateString) return "—";
-    const date = new Date(dateString);
-    const dateStr = date.toLocaleDateString("pt-BR", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    });
-    const timeStr = date.toLocaleTimeString("pt-BR", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-    return `${dateStr} às ${timeStr}`;
-  };
-
   const formatDate = (dateString?: string) => {
     if (!dateString) return "—";
     const date = new Date(dateString);
@@ -79,6 +68,43 @@ export function AboutTab({
       year: "numeric",
     });
   };
+
+  const formatDateRange = (start?: string, end?: string) => {
+    if (!start && !end) return "—";
+    const startLabel = start ? formatDate(start) : "—";
+    const endLabel = end ? formatDate(end) : "—";
+    return `${startLabel} a ${endLabel}`;
+  };
+
+  const vagasOcupadas = turma.vagasOcupadas ?? turma.inscricoesCount ?? 0;
+  const vagasTotais = turma.vagasTotais;
+  const vagasIlimitadas = Boolean((turma as any)?.vagasIlimitadas);
+  const hasNoInscricoes = vagasTotais === 0 && vagasOcupadas === 0;
+  const vagasDisplay = vagasIlimitadas
+    ? "Ilimitadas"
+    : vagasTotais != null
+      ? `${vagasOcupadas}/${vagasTotais}`
+      : "—";
+
+  const statusNormalized = turma.status?.toUpperCase?.() ?? null;
+  const rawPublication =
+    (turma as any)?.publicacaoStatus ??
+    (turma as any)?.statusPublicacao ??
+    (turma as any)?.publicado;
+  const isPublished =
+    typeof rawPublication === "boolean"
+      ? rawPublication
+      : typeof rawPublication === "string"
+        ? rawPublication.toUpperCase() === "PUBLICADO"
+        : statusNormalized
+          ? statusNormalized !== "RASCUNHO"
+          : null;
+  const publicationStatus =
+    isPublished === null
+      ? null
+      : isPublished
+        ? { label: "Publicado", cls: "bg-green-100 text-green-800 border-green-200" }
+        : { label: "Rascunho", cls: "bg-gray-100 text-gray-700 border-gray-200" };
 
   const aboutSidebar: Array<{
     label: string;
@@ -116,31 +142,52 @@ export function AboutTab({
     },
     {
       label: "Vagas (Inscrições/Total)",
-      value:
-        turma.vagasTotais != null
-          ? `${turma.vagasOcupadas ?? turma.inscricoesCount ?? 0}/${turma.vagasTotais}`
-          : "—",
+      value: hasNoInscricoes ? (
+        <Badge
+          variant="outline"
+          className="border-amber-200 bg-amber-50 text-amber-700"
+        >
+          Nenhuma inscrição
+        </Badge>
+      ) : (
+        vagasDisplay
+      ),
       icon: Users,
     },
     {
-      label: "Data de início",
-      value: formatDate(turma.dataInicio),
+      label: "Data de início/término",
+      value: formatDateRange(turma.dataInicio, turma.dataFim),
       icon: CalendarDays,
     },
     {
-      label: "Data de término",
-      value: formatDate(turma.dataFim),
+      label: "Inscrições (início/fim)",
+      value: formatDateRange(
+        turma.dataInscricaoInicio,
+        turma.dataInscricaoFim
+      ),
       icon: CalendarDays,
     },
     {
-      label: "Inscrições abertas",
-      value: formatDate(turma.dataInscricaoInicio),
-      icon: CalendarDays,
+      label: "Publicação",
+      value: publicationStatus ? (
+        <Badge variant="outline" className={publicationStatus.cls}>
+          {publicationStatus.label}
+        </Badge>
+      ) : (
+        "—"
+      ),
+      icon: BadgeCheck,
     },
     {
-      label: "Inscrições até",
-      value: formatDate(turma.dataInscricaoFim),
-      icon: CalendarDays,
+      label: "Status da turma",
+      value: turma.status ? (
+        <Badge variant="outline" className={getTurmaStatusBadgeClasses(turma.status)}>
+          {formatTurmaStatus(turma.status)}
+        </Badge>
+      ) : (
+        "—"
+      ),
+      icon: Activity,
     },
   ];
 
@@ -209,4 +256,3 @@ export function AboutTab({
     </div>
   );
 }
-

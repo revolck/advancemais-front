@@ -90,6 +90,8 @@ export interface CursoTurma {
   turno: "MANHA" | "TARDE" | "NOITE" | "INTEGRAL";
   metodo: "ONLINE" | "PRESENCIAL" | "LIVE" | "SEMIPRESENCIAL";
   status?: string;
+  publicacaoStatus?: TurmaPublicacaoStatus;
+  publicado?: boolean;
   vagasIlimitadas?: boolean;
   vagasTotais?: number;
   vagasDisponiveis?: number;
@@ -109,6 +111,8 @@ export interface CursoTurma {
   estruturaTipo?: TurmaEstruturaTipo;
   estrutura?: CreateTurmaEstruturaPayload;
 }
+
+export type UpdateTurmaPayload = Partial<CreateTurmaPayload>;
 
 // =============================================================================
 // Vínculo de templates ao curso (pré-requisito de turmas)

@@ -1,0 +1,1 @@
+export { ConfirmarPublicacaoTurmaModal } from "./ConfirmarPublicacaoTurmaModal";
