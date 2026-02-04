@@ -1133,8 +1133,6 @@ export function getMockTurmaEstrutura(
         {
           id: "mod-1",
           title: "Módulo 1: Fundamentos do React",
-          startDate: "2025-01-15",
-          endDate: "2025-02-15",
           items: [
             {
               id: "aula-1",
@@ -1200,8 +1198,6 @@ export function getMockTurmaEstrutura(
         {
           id: "mod-2",
           title: "Módulo 2: Gerenciamento de Estado",
-          startDate: "2025-02-16",
-          endDate: "2025-03-16",
           items: [
             {
               id: "aula-3",
@@ -1241,8 +1237,6 @@ export function getMockTurmaEstrutura(
         {
           id: "mod-1",
           title: "Módulo 1: Fundamentos do TypeScript",
-          startDate: "2025-02-01",
-          endDate: "2025-02-28",
           items: [
             {
               id: "aula-1",
@@ -1273,8 +1267,6 @@ export function getMockTurmaEstrutura(
         {
           id: "mod-1",
           title: "Módulo 1: Fundamentos do Node.js",
-          startDate: "2024-01-01",
-          endDate: "2024-03-01",
           items: [
             {
               id: "aula-pres-1",
@@ -1311,8 +1303,6 @@ export function getMockTurmaEstrutura(
         {
           id: "mod-2",
           title: "Módulo 2: Express e Middlewares",
-          startDate: "2024-03-05",
-          endDate: "2024-05-05",
           items: [
             {
               id: "aula-pres-3",
@@ -1342,8 +1332,6 @@ export function getMockTurmaEstrutura(
         {
           id: "mod-1",
           title: "Módulo 1: Fundamentos do Docker",
-          startDate: "2026-01-14",
-          endDate: "2026-01-20",
           items: [
             {
               id: "aula-docker-1",
@@ -1367,8 +1355,6 @@ export function getMockTurmaEstrutura(
         {
           id: "mod-2",
           title: "Módulo 2: Kubernetes Básico",
-          startDate: "2026-01-21",
-          endDate: "2026-01-31",
           items: [
             {
               id: "aula-k8s-1",
@@ -1398,8 +1384,6 @@ export function getMockTurmaEstrutura(
         {
           id: "mod-1",
           title: "Módulo 1: Vue.js 3 e Composition API",
-          startDate: "2026-01-14",
-          endDate: "2026-01-22",
           items: [
             {
               id: "aula-vue-1",
@@ -1439,8 +1423,6 @@ export function getMockTurmaEstrutura(
         {
           id: "mod-2",
           title: "Módulo 2: Padrões Avançados",
-          startDate: "2026-01-23",
-          endDate: "2026-01-31",
           items: [
             {
               id: "aula-vue-4",

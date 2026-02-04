@@ -10,6 +10,8 @@ import type {
   Curso,
   CreateTurmaPayload,
   CursoTurma,
+  VincularTemplatesAoCursoPayload,
+  VincularTemplatesAoCursoResponse,
   CursoModulo,
   TurmaInscricao,
   CreateInscricaoPayload,
@@ -412,6 +414,8 @@ function normalizeTurma(turma: any): CursoTurma {
     dataFim: turma.dataFim,
     dataInscricaoInicio: turma.dataInscricaoInicio,
     dataInscricaoFim: turma.dataInscricaoFim,
+    estruturaTipo: turma.estruturaTipo,
+    estrutura: turma.estrutura,
     instrutor: turma.instrutor
       ? {
           id: String(turma.instrutor.id ?? ""),
@@ -624,6 +628,25 @@ export async function createTurma(
         { "Content-Type": "application/json", ...init?.headers },
         true
       ),
+      body: JSON.stringify(payload),
+      ...init,
+    },
+    cache: "no-cache",
+  });
+}
+
+// Vínculo de templates ao curso (pré-requisito de turmas)
+export async function vincularTemplatesAoCurso(
+  payload: VincularTemplatesAoCursoPayload,
+  init?: RequestInit
+): Promise<VincularTemplatesAoCursoResponse> {
+  return apiFetch<VincularTemplatesAoCursoResponse>(cursosRoutes.templates.vincular(), {
+    init: {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...normalizeHeaders(init?.headers),
+      },
       body: JSON.stringify(payload),
       ...init,
     },
@@ -1701,6 +1724,8 @@ export async function listAvaliacoes(
   if (params?.obrigatoria !== undefined)
     sp.set("obrigatoria", String(params.obrigatoria));
   if (params?.semTurma !== undefined) sp.set("semTurma", String(params.semTurma));
+  if (params?.includeSemCurso !== undefined)
+    sp.set("includeSemCurso", String(params.includeSemCurso));
 
   // Período
   if (params?.dataInicio) sp.set("dataInicio", params.dataInicio);

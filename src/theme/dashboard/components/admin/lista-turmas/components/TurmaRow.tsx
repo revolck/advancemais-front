@@ -1,10 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
-import { useRouter } from "next/navigation";
+import React from "react";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, User, Users, BookOpen, ChevronRight, Sun, Moon, Clock, Loader2 } from "lucide-react";
+import { Calendar, User, Users, BookOpen, ChevronRight, Sun, Moon, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -12,6 +11,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import Link from "next/link";
 import type { CursoTurma } from "@/api/cursos";
 
 interface TurmaComCurso extends CursoTurma {
@@ -22,8 +22,6 @@ interface TurmaComCurso extends CursoTurma {
 interface TurmaRowProps {
   turma: CursoTurma | TurmaComCurso;
   showCurso?: boolean;
-  isDisabled?: boolean;
-  onNavigateStart?: () => void;
 }
 
 const getStatusLabel = (status?: string) => {
@@ -157,35 +155,14 @@ const getMetodoBadgeColor = (metodo?: string) => {
 export function TurmaRow({ 
   turma, 
   showCurso = false,
-  isDisabled = false,
-  onNavigateStart,
 }: TurmaRowProps) {
-  const router = useRouter();
-  const [isNavigating, setIsNavigating] = useState(false);
   const turmaComCurso = turma as TurmaComCurso;
-  const isRowDisabled = isDisabled || isNavigating;
-
-  const handleNavigate = (e: React.MouseEvent) => {
-    e.preventDefault();
-    if (isRowDisabled) return;
-    
-    setIsNavigating(true);
-    onNavigateStart?.();
-    router.push(`/dashboard/cursos/turmas/${turma.id}`);
-    
-    setTimeout(() => {
-      setIsNavigating(false);
-    }, 5000);
-  };
   
   return (
     <TableRow 
       className={cn(
         "border-gray-100 transition-colors",
-        isRowDisabled 
-          ? "opacity-50 pointer-events-none" 
-          : "hover:bg-gray-50/50",
-        isNavigating && "bg-blue-50/50"
+        "hover:bg-gray-50/50"
       )}
     >
       <TableCell className="py-4">
@@ -263,32 +240,24 @@ export function TurmaRow({
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
+              asChild
               variant="ghost"
               size="icon"
-              onClick={handleNavigate}
-              disabled={isRowDisabled}
               className={cn(
-                "h-8 w-8 rounded-full cursor-pointer",
-                isNavigating 
-                  ? "text-blue-600 bg-blue-100" 
-                  : "text-gray-500 hover:text-white hover:bg-[var(--primary-color)]",
-                "disabled:opacity-50 disabled:cursor-wait"
+                "h-8 w-8 rounded-full cursor-pointer text-gray-500 hover:text-white hover:bg-[var(--primary-color)]"
               )}
               aria-label="Visualizar turma"
             >
-              {isNavigating ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
+              <Link href={`/dashboard/cursos/turmas/${turma.id}`}>
                 <ChevronRight className="h-4 w-4" />
-              )}
+              </Link>
             </Button>
           </TooltipTrigger>
           <TooltipContent sideOffset={8}>
-            {isNavigating ? "Carregando..." : "Visualizar turma"}
+            Visualizar turma
           </TooltipContent>
         </Tooltip>
       </TableCell>
     </TableRow>
   );
 }
-

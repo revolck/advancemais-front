@@ -6,7 +6,8 @@ import { listCursos } from "@/api/cursos";
 
 export function useCursosForSelect() {
   const [options, setOptions] = useState<SelectOption[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  // Começa como `true` para evitar flicker (select vazio) antes do primeiro fetch.
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchCursos = useCallback(async () => {
@@ -28,7 +29,7 @@ export function useCursosForSelect() {
         console.warn("Aviso: falha ao listar cursos:", msg);
         setError(msg || "Erro ao carregar cursos");
       }
-      setOptions([]);
+      // Mantém a lista anterior para não “sumir” a seleção em caso de falha temporária.
     } finally {
       setIsLoading(false);
     }

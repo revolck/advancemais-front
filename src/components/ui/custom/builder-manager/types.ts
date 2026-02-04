@@ -11,10 +11,20 @@ export interface BuilderItem {
   id: string;
   title: string;
   type: BuilderItemType;
+  /**
+   * ID do template (aula/avaliação) escolhido no modal.
+   * - AULA: templateId de /api/v1/cursos/aulas?semTurma=true
+   * - ATIVIDADE/PROVA: templateId de /api/v1/cursos/avaliacoes?semTurma=true
+   */
+  templateId?: string | null;
   startDate?: string | null;
   endDate?: string | null;
   instructorId?: string | null;
+  instructorIds?: string[];
+  // Preferir `obrigatoria` (API v1). Mantém `obrigatorio` por compatibilidade interna.
+  obrigatoria?: boolean;
   obrigatorio?: boolean;
+  recuperacaoFinal?: boolean;
   aulaId?: string | null;
   // Posição do item standalone (quando fora de módulo)
   // -1 = antes de todos, 0 = após módulo 0, 1 = após módulo 1, etc.
@@ -33,12 +43,6 @@ export interface BuilderItem {
 export interface BuilderModule {
   id: string;
   title: string;
-  startDate?: string | null;
-  endDate?: string | null;
-  // suporte a um ou vários instrutores (mantém compat com API antiga)
-  instructorId?: string | null;
-  instructorIds?: string[];
-  obrigatorio?: boolean;
   items: BuilderItem[];
 }
 
@@ -47,44 +51,51 @@ export interface BuilderData {
   standaloneItems?: BuilderItem[]; // para itens fora de módulos (dinâmica)
 }
 
-export type BuilderTemplate = "MODULARIZADA" | "DINAMICA" | "PADRAO";
+export type BuilderTemplate = "MODULAR" | "DINAMICA" | "PADRAO";
 
 export function getDefaultBuilder(template: BuilderTemplate): BuilderData {
   const aula = (n: number): BuilderItem => ({
     id: `aula-${n}-${Math.random().toString(36).slice(2, 7)}`,
     title: `Aula ${n}`,
     type: "AULA",
+    templateId: null,
     startDate: null,
     endDate: null,
     aulaId: null,
+    instructorIds: [],
+    obrigatoria: true,
   });
   const prova = (): BuilderItem => ({
     id: `prova-${Math.random().toString(36).slice(2, 7)}`,
     title: "Prova",
     type: "PROVA",
+    templateId: null,
     startDate: null,
     endDate: null,
+    instructorIds: [],
+    obrigatoria: true,
+    recuperacaoFinal: false,
   });
 
-  if (template === "MODULARIZADA") {
+  if (template === "MODULAR") {
     return {
       modules: [
-        { id: `mod-1`, title: "Módulo 1", items: [aula(1), aula(2)] },
-        { id: `mod-2`, title: "Módulo 2", items: [aula(1), aula(2)] },
+        { id: `mod-1`, title: "Módulo 1", items: [aula(1), prova()] },
       ],
+      standaloneItems: [],
     };
   }
 
   if (template === "DINAMICA") {
     return {
-      modules: [{ id: `mod-1`, title: "Módulo 1", items: [aula(1), aula(2)] }],
-      standaloneItems: [aula(3), prova()],
+      modules: [{ id: `mod-1`, title: "Módulo 1", items: [aula(1), prova()] }],
+      standaloneItems: [aula(2)],
     };
   }
 
   // PADRAO
   return {
     modules: [],
-    standaloneItems: [aula(1), aula(2), aula(3)],
+    standaloneItems: [aula(1), prova()],
   };
 }

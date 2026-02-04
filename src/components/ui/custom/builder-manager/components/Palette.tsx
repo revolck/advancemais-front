@@ -11,6 +11,7 @@ import {
 import type { BuilderItemType } from "../types";
 
 interface PaletteProps {
+  allowModules?: boolean;
   onAddModule: () => void;
   onAddItem: (type: BuilderItemType) => void;
   onDragStart: (type: string) => void;
@@ -21,6 +22,7 @@ interface PaletteProps {
  * Paleta de componentes arrastáveis (Módulo, Aula, Atividade, Prova)
  */
 export function Palette({
+  allowModules = true,
   onAddModule,
   onAddItem,
   onDragStart,
@@ -44,50 +46,51 @@ export function Palette({
       </p>
 
       <div className="space-y-2">
-        {/* Módulo - Card destacado */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <div
-              draggable
-              onDragStart={() => onDragStart("palette-MODULO")}
-              onDragEnd={onDragEnd}
-              onClick={onAddModule}
-              className={cn(
-                "group relative flex items-center gap-3 rounded-xl border p-3 transition-all duration-200",
-                "border-indigo-200 bg-indigo-50/50 hover:bg-indigo-100/70 hover:border-indigo-400",
-                "cursor-grab active:cursor-grabbing"
-              )}
-            >
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-100 group-hover:bg-indigo-200 transition-colors">
-                <Icon name="Boxes" className="h-4.5 w-4.5 text-indigo-600" />
+        {allowModules && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div
+                draggable
+                onDragStart={() => onDragStart("palette-MODULO")}
+                onDragEnd={onDragEnd}
+                onClick={onAddModule}
+                className={cn(
+                  "group relative flex items-center gap-3 rounded-xl border p-3 transition-all duration-200",
+                  "border-indigo-200 bg-indigo-50/50 hover:bg-indigo-100/70 hover:border-indigo-400",
+                  "cursor-grab active:cursor-grabbing"
+                )}
+              >
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-100 group-hover:bg-indigo-200 transition-colors">
+                  <Icon name="Boxes" className="h-4.5 w-4.5 text-indigo-600" />
+                </div>
+                <div className="flex-1 min-w-0 flex flex-col gap-0">
+                  <span className="text-sm! font-medium text-indigo-900 leading-tight!">
+                    Módulo
+                  </span>
+                  <p className="text-[10px]! text-indigo-600/70 truncate leading-tight! mb-0!">
+                    Agrupe aulas e atividades
+                  </p>
+                </div>
+                <Icon
+                  name="GripVertical"
+                  className="h-4 w-4 text-indigo-300 opacity-0 group-hover:opacity-100 transition-opacity"
+                />
               </div>
-              <div className="flex-1 min-w-0 flex flex-col gap-0">
-                <span className="text-sm! font-medium text-indigo-900 leading-tight!">
-                  Módulo
-                </span>
-                <p className="text-[10px]! text-indigo-600/70 truncate leading-tight! mb-0!">
-                  Agrupe aulas e atividades
+            </TooltipTrigger>
+            <TooltipContent side="left" sideOffset={8} className="p-3 max-w-xs">
+              <div className="space-y-1.5 mt-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs mb-0! font-medium text-white">
+                    Módulo
+                  </span>
+                </div>
+                <p className="text-[11px]! text-white/70! mt-[-5px]!">
+                  Agrupa conteúdos relacionados (aulas, atividades e provas)
                 </p>
               </div>
-              <Icon
-                name="GripVertical"
-                className="h-4 w-4 text-indigo-300 opacity-0 group-hover:opacity-100 transition-opacity"
-              />
-            </div>
-          </TooltipTrigger>
-          <TooltipContent side="left" sideOffset={8} className="p-3 max-w-xs">
-            <div className="space-y-1.5 mt-2">
-              <div className="flex items-center gap-2">
-                <span className="text-xs mb-0! font-medium text-white">
-                  Módulo
-                </span>
-              </div>
-              <p className="text-[11px]! text-white/70! mt-[-5px]!">
-                Agrupa conteúdos relacionados (aulas, atividades e provas)
-              </p>
-            </div>
-          </TooltipContent>
-        </Tooltip>
+            </TooltipContent>
+          </Tooltip>
+        )}
 
         {/* Aula - Card com cor azul */}
         <Tooltip>

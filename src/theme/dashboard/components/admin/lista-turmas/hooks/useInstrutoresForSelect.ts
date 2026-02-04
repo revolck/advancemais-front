@@ -2,19 +2,14 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { SelectOption } from "@/components/ui/custom/select/types";
-import { apiFetch } from "@/api/client";
-import { usuarioRoutes } from "@/api/routes";
-import { apiConfig } from "@/lib/env";
+import { listUsuarios } from "@/api/usuarios";
 
-function buildAuthHeaders(): Record<string, string> {
-  if (typeof document === "undefined") return { Accept: apiConfig.headers.Accept };
-  const token = document.cookie
+function getTokenFromCookie(): string | undefined {
+  if (typeof document === "undefined") return undefined;
+  return document.cookie
     .split("; ")
     .find((row) => row.startsWith("token="))
     ?.split("=")[1];
-  return token
-    ? { Accept: apiConfig.headers.Accept, Authorization: `Bearer ${token}` }
-    : { Accept: apiConfig.headers.Accept };
 }
 
 export function useInstrutoresForSelect() {
@@ -27,26 +22,36 @@ export function useInstrutoresForSelect() {
     setIsLoading(true);
     setError(null);
     try {
-      const pageSize = 100;
-      const sp = new URLSearchParams();
-      sp.set("page", "1");
-      sp.set("pageSize", String(pageSize));
-      sp.set("role", "INSTRUTOR");
-      sp.set("status", "ATIVO");
-      const url = `${usuarioRoutes.admin.usuarios.list()}?${sp.toString()}`;
-      const res = await apiFetch<any>(url, {
-        init: { method: "GET", headers: buildAuthHeaders() },
-        cache: "no-cache",
-      });
-      const data = Array.isArray(res) ? res : res?.data || [];
+      const token = getTokenFromCookie();
+      const res = await listUsuarios(
+        { page: 1, pageSize: 100, role: "INSTRUTOR", status: "ATIVO" },
+        token
+      );
+
+      const data: any[] = Array.isArray((res as any)?.usuarios)
+        ? (res as any).usuarios
+        : Array.isArray((res as any)?.data)
+        ? (res as any).data
+        : Array.isArray(res as any)
+        ? (res as any)
+        : [];
+
       const mapped = data
-        .map((u: any) => ({ value: String(u.id), label: u.nome || u.email || u.codUsuario || u.id }))
+        .map((u: any) => ({
+          value: String(u.id),
+          label:
+            u.nomeCompleto ||
+            u.nome ||
+            u.email ||
+            u.codUsuario ||
+            u.id,
+        }))
         .sort((a: SelectOption, b: SelectOption) => a.label.localeCompare(b.label, "pt-BR"));
       setOptions(mapped);
       setRaw(
         data.map((u: any) => ({
           id: String(u.id),
-          nome: u.nome || "—",
+          nome: u.nomeCompleto || u.nome || "—",
           email: u.email || "—",
           codUsuario: u.codUsuario || u.id,
         }))

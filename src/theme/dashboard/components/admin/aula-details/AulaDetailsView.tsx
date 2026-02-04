@@ -48,10 +48,11 @@ export function AulaDetailsView({
     initialData: initialAula ?? undefined,
     retry: initialError ? false : 3,
     enabled: !initialError,
-    staleTime: 0, // Sempre considerar stale para garantir dados atualizados após edição
+    // Evita refetch a cada foco/troca de aba, mas mantém atualização periódica.
+    staleTime: AULA_QUERY_STALE_TIME,
     gcTime: AULA_QUERY_GC_TIME,
-    refetchOnMount: "always", // Sempre refetch quando o componente montar
-    refetchOnWindowFocus: true, // Refetch quando a janela receber foco
+    refetchOnMount: true,
+    refetchOnWindowFocus: true, // Refetch quando a janela receber foco (apenas se stale)
   });
 
   // Forçar refetch quando houver parâmetro refresh na URL (vindo da edição)
@@ -84,13 +85,8 @@ export function AulaDetailsView({
 
   const aula = aulaData ?? initialAula ?? null;
   const isPending = !initialAula && !initialError && isLoading;
-  // isReloading: quando há dados iniciais mas está fazendo refetch para atualizar
-  const isReloading = isFetching && initialAula && status !== "error";
-  // Mostrar skeleton se estiver carregando E não houver dados válidos ainda
-  // OU se estiver fazendo refetch (isReloading) para garantir que os dados sejam atualizados antes de mostrar
-  const shouldShowSkeleton =
-    ((isLoading || isFetching) && !aula && !initialError) ||
-    (isReloading && !aulaData);
+  // Não mostrar skeleton ao voltar para a aba: manter dados e atualizar em background.
+  const shouldShowSkeleton = (isLoading || isFetching) && !aula && !initialError;
 
   // Debug: log dos dados recebidos
   useEffect(() => {
@@ -221,7 +217,7 @@ export function AulaDetailsView({
   const aboutTabContent = (
     <AboutTab
       aula={aula}
-      isLoading={isReloading ?? false}
+      isLoading={false}
       onUpdate={invalidateAula}
     />
   );
@@ -229,7 +225,7 @@ export function AulaDetailsView({
   const materiaisTabContent = <MateriaisTab aulaId={aula.id} />;
 
   const historicoTabContent = (
-    <HistoricoTab aulaId={aula.id} isLoading={isReloading ?? false} />
+    <HistoricoTab aulaId={aula.id} isLoading={false} />
   );
 
   const tabs: HorizontalTabItem[] = [
@@ -262,69 +258,9 @@ export function AulaDetailsView({
       )}
 
       {/* Alertas unificados */}
-      {!isReloading && aula && <AulasAlertasUnificados aula={aula} />}
-
-      {/* Só mostrar conteúdo se não estiver recarregando */}
-      {!isReloading ? (
-        <>
-          <HeaderInfo aula={aula} onUpdate={invalidateAula} />
-          <HorizontalTabs items={tabs} defaultValue="sobre" />
-        </>
-      ) : (
-        // Skeleton durante reload
-        <>
-          {/* Header skeleton */}
-          <div className="bg-white rounded-3xl border border-gray-200 overflow-hidden">
-            <div className="relative flex flex-col gap-6 px-6 py-6 sm:px-8 sm:py-8 lg:flex-row lg:items-center lg:justify-between">
-              <div className="flex-1 min-w-0 space-y-2">
-                <Skeleton className="h-8 w-64" />
-                <Skeleton className="h-6 w-32" />
-              </div>
-              <div className="flex items-center gap-4">
-                <Skeleton className="h-9 w-24" />
-                <Skeleton className="h-9 w-20" />
-              </div>
-            </div>
-          </div>
-
-          {/* Tabs skeleton */}
-          <div className="bg-white rounded-3xl border border-gray-200 overflow-hidden">
-            <div className="p-6 sm:p-7">
-              {/* Tabs header skeleton */}
-              <div className="flex gap-2 mb-6">
-                <Skeleton className="h-9 w-24" />
-                <Skeleton className="h-9 w-32" />
-                <Skeleton className="h-9 w-28" />
-              </div>
-
-              {/* Content skeleton */}
-              <div className="grid gap-6 grid-cols-1 lg:grid-cols-[minmax(0,_7fr)_minmax(0,_3fr)]">
-                {/* Main content skeleton */}
-                <div className="space-y-4">
-                  <Skeleton className="h-6 w-full" />
-                  <Skeleton className="h-6 w-5/6" />
-                  <Skeleton className="h-6 w-4/6" />
-                  <Skeleton className="h-6 w-full" />
-                  <Skeleton className="h-6 w-3/4" />
-                </div>
-
-                {/* Sidebar skeleton */}
-                <div className="space-y-4">
-                  {[1, 2, 3, 4, 5].map((i) => (
-                    <div key={i} className="flex items-start gap-3">
-                      <Skeleton className="h-9 w-9 rounded-lg shrink-0" />
-                      <div className="flex-1 space-y-2">
-                        <Skeleton className="h-4 w-24" />
-                        <Skeleton className="h-5 w-32" />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </>
-      )}
+      {aula && <AulasAlertasUnificados aula={aula} />}
+      <HeaderInfo aula={aula} onUpdate={invalidateAula} />
+      <HorizontalTabs items={tabs} defaultValue="sobre" />
     </div>
   );
 }

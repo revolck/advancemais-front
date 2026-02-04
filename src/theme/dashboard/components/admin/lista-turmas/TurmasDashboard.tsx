@@ -17,6 +17,7 @@ import { useTurmasDashboardQuery } from "./hooks/useTurmasDashboardQuery";
 import { TurmaRow } from "./components/TurmaRow";
 import { TurmaTableSkeleton } from "./components/TurmaTableSkeleton";
 import type { FilterField } from "@/components/ui/custom/filters";
+import type { CursoTurma } from "@/api/cursos";
 import {
   DEFAULT_SEARCH_MIN_LENGTH,
   getNormalizedSearchOrUndefined,
@@ -50,6 +51,11 @@ const METODO_OPTIONS = [
 
 const SEARCH_HELPER_TEXT = "Pesquise por nome ou código da turma.";
 
+type TurmaComCurso = CursoTurma & {
+  cursoId?: number | string;
+  cursoNome?: string;
+};
+
 export function TurmasDashboard({ className }: { className?: string }) {
   const [pendingSearchTerm, setPendingSearchTerm] = useState("");
   const [appliedSearchTerm, setAppliedSearchTerm] = useState("");
@@ -58,12 +64,7 @@ export function TurmasDashboard({ className }: { className?: string }) {
   const [selectedTurnos, setSelectedTurnos] = useState<string[]>([]);
   const [selectedMetodos, setSelectedMetodos] = useState<string[]>([]);
   const [selectedInstrutorId, setSelectedInstrutorId] = useState<string | null>(null);
-  const [isNavigating, setIsNavigating] = useState(false);
-
-  const handleNavigateStart = useCallback(() => {
-    setIsNavigating(true);
-    setTimeout(() => setIsNavigating(false), 5000);
-  }, []);
+  const [optimisticTurma, setOptimisticTurma] = useState<TurmaComCurso | null>(null);
   
   // Pagination
   const [pageSize] = useState(10);
@@ -78,7 +79,16 @@ export function TurmasDashboard({ className }: { className?: string }) {
   const { cursos, isLoading: loadingCursos } = useCursosForSelect();
   const { instrutores, isLoading: loadingInstrutores } = useInstrutoresForSelect();
   const turmasQuery = useTurmasDashboardQuery({ cursoId: selectedCourseId });
-  const turmas = useMemo(() => turmasQuery.data ?? [], [turmasQuery.data]);
+  const turmas = useMemo(() => {
+    const base = turmasQuery.data ?? [];
+    if (!optimisticTurma) return base;
+    const matchesCourse =
+      !selectedCourseId ||
+      String(optimisticTurma.cursoId ?? "") === String(selectedCourseId);
+    if (!matchesCourse) return base;
+    if (base.some((t) => t.id === optimisticTurma.id)) return base;
+    return [optimisticTurma, ...base];
+  }, [optimisticTurma, selectedCourseId, turmasQuery.data]);
   const isLoading = turmasQuery.status === "pending";
   const isFetching = turmasQuery.isFetching;
   const errorMessage =
@@ -102,6 +112,57 @@ export function TurmasDashboard({ className }: { className?: string }) {
       ),
     [appliedSearchTerm]
   );
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const raw = window.sessionStorage.getItem("turma:create:latest");
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as {
+        turma?: CursoTurma;
+        cursoId?: string;
+        cursoNome?: string | null;
+        createdAt?: string;
+      };
+      if (!parsed?.turma?.id) return;
+      if (parsed.createdAt) {
+        const createdAtMs = new Date(parsed.createdAt).getTime();
+        if (Number.isFinite(createdAtMs)) {
+          const ageMs = Date.now() - createdAtMs;
+          if (ageMs > 10 * 60 * 1000) {
+            window.sessionStorage.removeItem("turma:create:latest");
+            return;
+          }
+        }
+      }
+      const cursoNome =
+        parsed.cursoNome ??
+        cursos.find((c) => String(c.value) === String(parsed.cursoId))?.label ??
+        undefined;
+      setOptimisticTurma({
+        ...parsed.turma,
+        cursoId: parsed.cursoId ?? (parsed.turma as any)?.cursoId,
+        cursoNome,
+      });
+    } catch {
+      // ignore
+    }
+  }, [cursos]);
+
+  useEffect(() => {
+    if (!optimisticTurma) return;
+    const hasTurma =
+      (turmasQuery.data ?? []).some((t) => t.id === optimisticTurma.id);
+    if (!hasTurma) return;
+    setOptimisticTurma(null);
+    if (typeof window !== "undefined") {
+      try {
+        window.sessionStorage.removeItem("turma:create:latest");
+      } catch {
+        // ignore
+      }
+    }
+  }, [optimisticTurma, turmasQuery.data]);
 
   const handleSearchSubmit = useCallback(
     (rawValue?: string) => {
@@ -251,8 +312,13 @@ export function TurmasDashboard({ className }: { className?: string }) {
     }
   }, [currentPage, totalPages]);
 
+  const hasOptimisticForView =
+    Boolean(optimisticTurma) &&
+    (!selectedCourseId ||
+      String(optimisticTurma?.cursoId ?? "") === String(selectedCourseId));
   const shouldShowSkeleton =
-    isLoading || (isFetching && turmas.length === 0);
+    !hasOptimisticForView &&
+    (isLoading || (isFetching && (turmasQuery.data ?? []).length === 0));
   const canDisplayTable =
     !hasError &&
     (shouldShowSkeleton || filteredTurmas.length > 0);
@@ -570,8 +636,6 @@ export function TurmasDashboard({ className }: { className?: string }) {
                       key={t.id} 
                       turma={t} 
                       showCurso={!selectedCourseId}
-                      isDisabled={isNavigating}
-                      onNavigateStart={handleNavigateStart}
                     />
                   ))
                 )}

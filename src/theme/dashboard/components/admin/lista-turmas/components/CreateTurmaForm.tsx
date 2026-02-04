@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   ButtonCustom,
   Icon,
@@ -24,7 +24,11 @@ import { DatePickerRangeCustom } from "@/components/ui/custom/date-picker";
 import { SelectCustom } from "@/components/ui/custom/select";
 import { Label } from "@/components/ui/label";
 import { toastCustom } from "@/components/ui/custom";
-import { createTurma, type CreateTurmaPayload } from "@/api/cursos";
+import {
+  createTurma,
+  vincularTemplatesAoCurso,
+  type CreateTurmaPayload,
+} from "@/api/cursos";
 import { BuilderManager } from "@/components/ui/custom/builder-manager/BuilderManager";
 import {
   type BuilderData,
@@ -32,8 +36,8 @@ import {
 } from "@/components/ui/custom/builder-manager/types";
 import { useCursosForSelect } from "../hooks/useCursosForSelect";
 import { useInstrutoresForSelect } from "../hooks/useInstrutoresForSelect";
-import { UserList } from "@/components/ui/custom";
-import { Badge } from "@/components/ui/badge";
+import { useTemplatesForTurma } from "../hooks/useTemplatesForTurma";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface CreateTurmaFormProps {
   onSuccess?: () => void;
@@ -53,14 +57,14 @@ const METODO_OPTIONS = [
   { value: "SEMIPRESENCIAL", label: "Semipresencial" },
 ];
 
-const ADICIONAR_INSTRUTOR_OPTIONS = [
-  { value: "SIM", label: "Adicionar agora" },
-  { value: "NAO", label: "Depois" },
+const STATUS_OPTIONS = [
+  { value: "RASCUNHO", label: "Rascunho" },
+  { value: "PUBLICADO", label: "Publicado" },
 ];
 
 const TEMPLATE_OPTIONS = [
   {
-    value: "MODULARIZADA",
+    value: "MODULAR",
     label: "Modular",
     helper: "Curso organizado por módulos",
   },
@@ -71,7 +75,7 @@ const TEMPLATE_OPTIONS = [
 type TemplateOptionValue = (typeof TEMPLATE_OPTIONS)[number]["value"];
 
 const ACCENT_BY_TEMPLATE: Record<TemplateOptionValue, string> = {
-  MODULARIZADA: "#6366f1", // indigo
+  MODULAR: "#6366f1", // indigo
   DINAMICA: "#06b6d4", // cyan
   PADRAO: "#22c55e", // emerald
 };
@@ -80,13 +84,13 @@ const ACCENTS: Record<
   TemplateOptionValue,
   { solid: string; from: string; to: string }
 > = {
-  MODULARIZADA: { solid: "#6366f1", from: "#a78bfa", to: "#6366f1" }, // violet -> indigo
+  MODULAR: { solid: "#6366f1", from: "#a78bfa", to: "#6366f1" }, // violet -> indigo
   DINAMICA: { solid: "#06b6d4", from: "#67e8f9", to: "#06b6d4" }, // sky -> cyan
   PADRAO: { solid: "#22c55e", from: "#86efac", to: "#22c55e" }, // light emerald -> emerald
 };
 
 const TEMPLATE_PREVIEW: Record<TemplateOptionValue, string> = {
-  MODULARIZADA: "/images/templates/modular.svg",
+  MODULAR: "/images/templates/modular.svg",
   DINAMICA: "/images/templates/dinamica.svg",
   PADRAO: "/images/templates/padrao.svg",
 };
@@ -132,11 +136,11 @@ function TooltipCard({
 }
 
 const TEMPLATE_TOOLTIP: Record<TemplateOptionValue, React.ReactNode> = {
-  MODULARIZADA: (
+  MODULAR: (
     <div className="w-auto">
       <div
         className="text-[13px] font-semibold mt-3"
-        style={{ color: ACCENTS.MODULARIZADA.to }}
+        style={{ color: ACCENTS.MODULAR.to }}
       >
         Estrutura Modular
       </div>
@@ -179,28 +183,32 @@ const TEMPLATE_TOOLTIP: Record<TemplateOptionValue, React.ReactNode> = {
 };
 
 export function CreateTurmaForm({ onSuccess }: CreateTurmaFormProps) {
-  const { cursos, isLoading: loadingCursos } = useCursosForSelect();
-  const { instrutores, isLoading: loadingInstrutores } =
-    useInstrutoresForSelect();
+  const {
+    cursos,
+    isLoading: loadingCursos,
+    error: cursosError,
+    refetch: refetchCursos,
+  } = useCursosForSelect();
+  const { instrutores } = useInstrutoresForSelect();
 
   const [cursoId, setCursoId] = useState<string | null>(null);
+  const {
+    aulas: aulaTemplates,
+    avaliacoes: avaliacaoTemplates,
+    isLoading: loadingTemplates,
+  } = useTemplatesForTurma({ cursoId });
   const [nome, setNome] = useState("");
-  const [instrutorIds, setInstrutorIds] = useState<string[]>([]);
-  const [instrutoresSelecionados, setInstrutoresSelecionados] = useState<any[]>(
-    []
-  );
-  const MAX_INSTRUTOR_BADGES = 4;
   const [turno, setTurno] = useState<string | null>(null);
   const [metodo, setMetodo] = useState<string | null>(null);
-  const [templateTipo, setTemplateTipo] = useState<string | null>(null);
-  const [limitarVagas, setLimitarVagas] = useState<boolean>(false);
+  const [estruturaTipo, setEstruturaTipo] =
+    useState<TemplateOptionValue | null>(null);
+  const [status, setStatus] = useState<"RASCUNHO" | "PUBLICADO">("RASCUNHO");
+  const [vagasIlimitadas, setVagasIlimitadas] = useState<boolean>(true);
   const [vagasTotais, setVagasTotais] = useState<string>("");
   const [curriculum, setCurriculum] = useState<BuilderData>({
     modules: [],
     standaloneItems: [],
   });
-  // Builder agora é apenas no modo lista
-  const [addInstrutorNow, setAddInstrutorNow] = useState<boolean>(false);
   const [dataInicio, setDataInicio] = useState<string>("");
   const [dataFim, setDataFim] = useState<string>("");
   const [dataInscricaoInicio, setDataInscricaoInicio] = useState<string>("");
@@ -214,215 +222,203 @@ export function CreateTurmaForm({ onSuccess }: CreateTurmaFormProps) {
   const isFirstStep = step === 1;
   const isLastStep = step === 4;
 
-  const TEST_MODE = true; // modo teste: desativa validações dos steps
+  const toMs = (iso: string) => new Date(iso).getTime();
 
-  const validate = (): boolean => {
-    if (TEST_MODE) return true;
-    if (!cursoId) {
-      toastCustom.error({
-        title: "Curso obrigatório",
-        description: "Selecione o curso da turma.",
-      });
+  const minDateTurma = useMemo(() => {
+    const base = dataInscricaoFim ? new Date(dataInscricaoFim) : new Date();
+    const d = new Date(base.getFullYear(), base.getMonth(), base.getDate());
+    // Regra: início da turma deve ser APÓS o fim das inscrições
+    d.setDate(d.getDate() + 1);
+    return d;
+  }, [dataInscricaoFim]);
+
+  useEffect(() => {
+    if (!dataInscricaoFim) return;
+    if (!dataInicio && !dataFim) return;
+
+    const min = new Date(
+      minDateTurma.getFullYear(),
+      minDateTurma.getMonth(),
+      minDateTurma.getDate()
+    ).getTime();
+
+    const turmaIni = dataInicio ? toMs(dataInicio) : null;
+    const turmaFim = dataFim ? toMs(dataFim) : null;
+
+    // Se a turma já foi escolhida e ficou inválida após alterar inscrições, limpa.
+    if (
+      (turmaIni != null && turmaIni < min) ||
+      (turmaFim != null && turmaFim < min)
+    ) {
+      setDataInicio("");
+      setDataFim("");
+      toastCustom.error(
+        "O período da turma deve iniciar após o encerramento das inscrições."
+      );
+    }
+  }, [dataFim, dataInicio, dataInscricaoFim, minDateTurma]);
+
+  const validateStep1 = (): boolean => {
+    if (!estruturaTipo) {
+      toastCustom.error("Selecione um tipo de estrutura.");
       return false;
-    }
-    if (!nome.trim()) {
-      toastCustom.error({
-        title: "Nome obrigatório",
-        description: "Informe o nome da turma.",
-      });
-      return false;
-    }
-    if (!turno || !metodo) {
-      toastCustom.error({
-        title: "Turno e modalidade obrigatórios",
-        description: "Selecione o turno e a modalidade.",
-      });
-      return false;
-    }
-    if (!dataInicio || !dataFim) {
-      toastCustom.error({
-        title: "Período da turma obrigatório",
-        description: "Informe o início e término da turma.",
-      });
-      return false;
-    }
-    if (!dataInscricaoInicio || !dataInscricaoFim) {
-      toastCustom.error({
-        title: "Período de inscrições obrigatório",
-        description: "Informe o início e término das inscrições.",
-      });
-      return false;
-    }
-    if (instrutorIds.length === 0) {
-      toastCustom.error({
-        title: "Instrutor obrigatório",
-        description: "Adicione pelo menos um instrutor à turma.",
-      });
-      return false;
-    }
-    if (limitarVagas) {
-      const vagas = Number(vagasTotais);
-      if (!Number.isFinite(vagas) || vagas <= 0) {
-        toastCustom.error({
-          title: "Vagas inválidas",
-          description: "Informe um número de vagas maior que zero.",
-        });
-        return false;
-      }
-    }
-    if (!templateTipo) {
-      toastCustom.error({
-        title: "Tipo de turma obrigatório",
-        description: "Selecione o tipo de template da turma.",
-      });
-      return false;
-    }
-    // Validações básicas de datas
-    const now = Date.now();
-    if (dataInicio) {
-      const start = new Date(dataInicio).getTime();
-      if (start < now) {
-        toastCustom.error({
-          title: "Data inválida",
-          description: "Data de início não pode ser anterior a agora.",
-        });
-        return false;
-      }
-    }
-    if (dataFim) {
-      const end = new Date(dataFim).getTime();
-      if (end < now) {
-        toastCustom.error({
-          title: "Data inválida",
-          description: "Data de término não pode ser anterior a agora.",
-        });
-        return false;
-      }
-    }
-    if (dataInicio && dataFim) {
-      const start = new Date(dataInicio).getTime();
-      const end = new Date(dataFim).getTime();
-      if (start > end) {
-        toastCustom.error({
-          title: "Período inválido",
-          description: "Data de término deve ser após o início.",
-        });
-        return false;
-      }
-    }
-    if (dataInscricaoInicio && new Date(dataInscricaoInicio).getTime() < now) {
-      toastCustom.error({
-        title: "Inscrições inválidas",
-        description: "Início das inscrições não pode ser anterior a agora.",
-      });
-      return false;
-    }
-    if (dataInscricaoFim && new Date(dataInscricaoFim).getTime() < now) {
-      toastCustom.error({
-        title: "Inscrições inválidas",
-        description: "Término das inscrições não pode ser anterior a agora.",
-      });
-      return false;
-    }
-    if (dataInscricaoInicio && dataInscricaoFim) {
-      const s = new Date(dataInscricaoInicio).getTime();
-      const e = new Date(dataInscricaoFim).getTime();
-      if (s > e) {
-        toastCustom.error({
-          title: "Inscrições inválidas",
-          description: "Término das inscrições deve ser após o início.",
-        });
-        return false;
-      }
     }
     return true;
   };
 
-  const validateStep = (current: number): boolean => {
-    if (TEST_MODE) return true;
-    if (current === 1) {
-      if (!templateTipo) {
-        toastCustom.error("Selecione um template de estrutura.");
+  const validateStep2 = (): boolean => {
+    if (!cursoId) {
+      toastCustom.error("Selecione o curso da turma.");
+      return false;
+    }
+
+    const nomeTrim = nome.trim();
+    if (nomeTrim.length < 3 || nomeTrim.length > 255) {
+      toastCustom.error("O nome deve ter entre 3 e 255 caracteres.");
+      return false;
+    }
+
+    if (!turno || !metodo) {
+      toastCustom.error("Selecione turno e modalidade.");
+      return false;
+    }
+
+    if (!dataInscricaoInicio || !dataInscricaoFim) {
+      toastCustom.error("Informe o período de inscrições.");
+      return false;
+    }
+    if (!dataInicio || !dataFim) {
+      toastCustom.error("Informe o período da turma.");
+      return false;
+    }
+
+    const inscrIni = toMs(dataInscricaoInicio);
+    const inscrFim = toMs(dataInscricaoFim);
+    const turmaIni = toMs(dataInicio);
+    const turmaFim = toMs(dataFim);
+
+    if (Number.isNaN(inscrIni) || Number.isNaN(inscrFim)) {
+      toastCustom.error("Período de inscrições inválido.");
+      return false;
+    }
+    if (Number.isNaN(turmaIni) || Number.isNaN(turmaFim)) {
+      toastCustom.error("Período da turma inválido.");
+      return false;
+    }
+
+    if (inscrIni > inscrFim) {
+      toastCustom.error("Inscrições: término deve ser após o início.");
+      return false;
+    }
+    if (turmaIni > turmaFim) {
+      toastCustom.error("Turma: término deve ser após o início.");
+      return false;
+    }
+
+    // Regra do backend: turma não pode iniciar antes do fim das inscrições
+    if (turmaIni <= inscrFim) {
+      toastCustom.error(
+        "A turma não pode iniciar antes do encerramento das inscrições."
+      );
+      return false;
+    }
+
+    if (!vagasIlimitadas) {
+      const vagas = Number(vagasTotais);
+      if (!Number.isInteger(vagas) || vagas <= 0) {
+        toastCustom.error("Informe um número de vagas maior que zero.");
         return false;
       }
+    }
+
+    return true;
+  };
+
+  const validateStep3 = (): boolean => {
+    const standalone = curriculum.standaloneItems || [];
+    const modules = curriculum.modules || [];
+
+    const hasModules = modules.length > 0;
+    const hasStandalone = standalone.length > 0;
+
+    if (estruturaTipo === "MODULAR") {
+      if (!hasModules) {
+        toastCustom.error("Estrutura modular: adicione ao menos 1 módulo.");
+        return false;
+      }
+      if (hasStandalone) {
+        toastCustom.error(
+          "Estrutura modular: itens avulsos não são permitidos."
+        );
+        return false;
+      }
+    }
+
+    if (estruturaTipo === "PADRAO") {
+      if (hasModules) {
+        toastCustom.error("Estrutura padrão: módulos não são permitidos.");
+        return false;
+      }
+      if (!hasStandalone) {
+        toastCustom.error("Estrutura padrão: adicione ao menos 1 item.");
+        return false;
+      }
+    }
+
+    if (estruturaTipo === "DINAMICA") {
+      if (!hasModules && !hasStandalone) {
+        toastCustom.error(
+          "Estrutura dinâmica: adicione ao menos 1 módulo ou item avulso."
+        );
+        return false;
+      }
+    }
+
+    const allItems = [
+      ...modules.flatMap((m) => m.items || []),
+      ...standalone,
+    ];
+
+    if (allItems.length === 0) {
+      toastCustom.error("Adicione itens à estrutura.");
+      return false;
+    }
+
+    const missingTemplate = allItems.find((it) => !it.templateId);
+    if (missingTemplate) {
+      toastCustom.error(
+        "Há itens sem template vinculado. Abra o item e selecione um template."
+      );
+      return false;
+    }
+
+    const hasAula = allItems.some((it) => it.type === "AULA");
+    const hasAvaliacao = allItems.some(
+      (it) => it.type === "PROVA" || it.type === "ATIVIDADE"
+    );
+    if (!hasAula || !hasAvaliacao) {
+      toastCustom.error(
+        "A estrutura deve conter pelo menos 1 AULA e 1 PROVA ou ATIVIDADE."
+      );
+      return false;
+    }
+
+    return true;
+  };
+
+  const validate = (): boolean => {
+    return validateStep1() && validateStep2() && validateStep3();
+  };
+
+  const validateStep = (current: number): boolean => {
+    if (current === 1) {
+      return validateStep1();
     }
     if (current === 2) {
-      if (!cursoId || !nome.trim()) {
-        toastCustom.error("Informe curso e nome da turma.");
-        return false;
-      }
-      if (!turno || !metodo) {
-        toastCustom.error("Informe turno e modalidade.");
-        return false;
-      }
-      if (!dataInicio || !dataFim) {
-        toastCustom.error("Informe o período da turma.");
-        return false;
-      }
-      if (!dataInscricaoInicio || !dataInscricaoFim) {
-        toastCustom.error("Informe o período de inscrições.");
-        return false;
-      }
-      if (instrutorIds.length === 0) {
-        toastCustom.error("Adicione pelo menos um instrutor.");
-        return false;
-      }
-      if (limitarVagas) {
-        const vagas = Number(vagasTotais);
-        if (!Number.isFinite(vagas) || vagas <= 0) {
-          toastCustom.error("Informe um número de vagas maior que zero.");
-          return false;
-        }
-      }
+      return validateStep2();
     }
     if (current === 3) {
-      // Validar se tem pelo menos um módulo ou item na estrutura
-      const hasModules = curriculum.modules && curriculum.modules.length > 0;
-      const hasStandaloneItems =
-        curriculum.standaloneItems && curriculum.standaloneItems.length > 0;
-
-      if (!hasModules && !hasStandaloneItems) {
-        toastCustom.error(
-          "Adicione pelo menos um módulo ou item à estrutura do curso."
-        );
-        return false;
-      }
-
-      // Validar se os módulos têm pelo menos um item (opcional, mas recomendado)
-      if (hasModules) {
-        const emptyModules = curriculum.modules.filter(
-          (m) => !m.items || m.items.length === 0
-        );
-        if (emptyModules.length === curriculum.modules.length) {
-          toastCustom.error(
-            "Adicione pelo menos um item (aula, atividade ou prova) em um dos módulos."
-          );
-          return false;
-        }
-      }
-
-      // Datas opcionais com validação de ordem
-      const now = Date.now();
-      if (dataInicio && new Date(dataInicio).getTime() < now) {
-        toastCustom.error("Início não pode ser anterior a agora.");
-        return false;
-      }
-      if (dataFim && new Date(dataFim).getTime() < now) {
-        toastCustom.error("Término não pode ser anterior a agora.");
-        return false;
-      }
-      if (dataInicio && dataFim && new Date(dataInicio) > new Date(dataFim)) {
-        toastCustom.error("Data de término deve ser após o início.");
-        return false;
-      }
-      if (
-        dataInscricaoInicio &&
-        dataInscricaoFim &&
-        new Date(dataInscricaoInicio) > new Date(dataInscricaoFim)
-      ) {
-        toastCustom.error("Inscrições: término deve ser após o início.");
-        return false;
-      }
+      return validateStep3();
     }
     return true;
   };
@@ -433,77 +429,222 @@ export function CreateTurmaForm({ onSuccess }: CreateTurmaFormProps) {
     setIsSubmitting(true);
     setLoadingStep("Criando turma...");
     try {
+      const isUuid = (value: string) =>
+        /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(
+          value
+        );
+
+      const aulaStatusById = new Map(
+        (aulaTemplates || []).map((a) => [String(a.id), a.status])
+      );
+      const avaliacaoStatusById = new Map(
+        (avaliacaoTemplates || []).map((a) => [String(a.id), a.status])
+      );
+
+      const allItems = [
+        ...curriculum.modules.flatMap((m) => m.items || []),
+        ...(curriculum.standaloneItems || []),
+      ];
+
+      const selectedAulaTemplateIds = new Set(
+        allItems.filter((it) => it.type === "AULA").map((it) => String(it.templateId))
+      );
+      const selectedAvaliacaoTemplateIds = new Set(
+        allItems
+          .filter((it) => it.type === "PROVA" || it.type === "ATIVIDADE")
+          .map((it) => String(it.templateId))
+      );
+
+      const aulasToLink = (aulaTemplates || []).filter(
+        (t) => selectedAulaTemplateIds.has(String(t.id)) && !t.cursoId
+      );
+      const avaliacoesToLink = (avaliacaoTemplates || []).filter(
+        (t) => selectedAvaliacaoTemplateIds.has(String(t.id)) && !t.cursoId
+      );
+
+      if (cursoId && (aulasToLink.length > 0 || avaliacoesToLink.length > 0)) {
+        try {
+          setLoadingStep("Vinculando templates ao curso...");
+          await vincularTemplatesAoCurso({
+            cursoId,
+            ...(aulasToLink.length > 0
+              ? { aulaTemplateIds: aulasToLink.map((t) => String(t.id)) }
+              : {}),
+            ...(avaliacoesToLink.length > 0
+              ? { avaliacaoTemplateIds: avaliacoesToLink.map((t) => String(t.id)) }
+              : {}),
+          });
+        } catch (err: any) {
+          const message = err?.message || "Falha ao vincular templates ao curso.";
+          toastCustom.error({
+            title: "Erro ao vincular templates",
+            description: message,
+          });
+          return;
+        }
+      }
+
       const payload: CreateTurmaPayload = {
+        estruturaTipo: estruturaTipo as any,
         nome: nome.trim(),
-        ...(instrutorIds.length > 0 ? { instrutorId: instrutorIds[0] } : {}),
         turno: turno as any,
         metodo: metodo as any,
-        // Vagas totais: quando ilimitado, usa 999999
-        vagasTotais: limitarVagas ? Number(vagasTotais) : 999999,
-        dataInicio: dataInicio ? new Date(dataInicio).toISOString() : undefined,
-        dataFim: dataFim ? new Date(dataFim).toISOString() : undefined,
-        dataInscricaoInicio: dataInscricaoInicio
-          ? new Date(dataInscricaoInicio).toISOString()
-          : undefined,
-        dataInscricaoFim: dataInscricaoFim
-          ? new Date(dataInscricaoFim).toISOString()
-          : undefined,
+        status,
+        dataInscricaoInicio: new Date(dataInscricaoInicio).toISOString(),
+        dataInscricaoFim: new Date(dataInscricaoFim).toISOString(),
+        dataInicio: new Date(dataInicio).toISOString(),
+        dataFim: new Date(dataFim).toISOString(),
+        vagasIlimitadas,
+        ...(!vagasIlimitadas ? { vagasTotais: Number(vagasTotais) } : {}),
         estrutura: {
-          modules: curriculum.modules.map((m) => {
-            const base: any = {
-              title: (m.title || "").trim() || "Módulo",
-              items: m.items.map((it) => {
-                const itemBase: any = {
-                  title:
-                    it.title.trim() ||
-                    (it.type === "PROVA"
-                      ? "Prova"
-                      : it.type === "ATIVIDADE"
-                      ? "Atividade"
-                      : "Aula"),
-                  type: it.type,
-                };
-                if (it.startDate) itemBase.startDate = it.startDate;
-                if (it.endDate) itemBase.endDate = it.endDate;
-                if (it.instructorId) itemBase.instructorId = it.instructorId;
-                return itemBase;
-              }),
-            };
-            if (m.startDate) base.startDate = m.startDate;
-            if (m.endDate) base.endDate = m.endDate;
-            if (m.instructorIds && m.instructorIds.length > 0)
-              base.instructorIds = m.instructorIds;
-            else if (m.instructorId) base.instructorId = m.instructorId;
-            return base;
-          }),
-          standaloneItems:
-            curriculum.standaloneItems?.map((it) => {
-              const itemBase: any = {
-                title:
-                  it.title.trim() ||
-                  (it.type === "PROVA"
-                    ? "Prova"
-                    : it.type === "ATIVIDADE"
-                    ? "Atividade"
-                    : "Aula"),
-                type: it.type,
-              };
-              if (it.startDate) itemBase.startDate = it.startDate;
-              if (it.endDate) itemBase.endDate = it.endDate;
-              if (it.instructorId) itemBase.instructorId = it.instructorId;
-              return itemBase;
-            }) || [],
+          modules: (curriculum.modules || []).map((m, index) => ({
+            ...(typeof m.id === "string" && isUuid(m.id) ? { id: m.id } : {}),
+            title: (m.title || "").trim() || `Módulo ${index + 1}`,
+            ordem: index + 1,
+            items: (m.items || []).map((it, itemIndex) => ({
+              type: it.type,
+              title:
+                it.title.trim() ||
+              (it.type === "PROVA"
+                ? "Prova"
+                : it.type === "ATIVIDADE"
+                ? "Atividade"
+                : "Aula"),
+              templateId: it.templateId as string,
+              ordem: itemIndex + 1,
+              ...(it.startDate && it.endDate
+                ? { startDate: it.startDate, endDate: it.endDate }
+                : {}),
+              ...(() => {
+                const status =
+                  it.type === "AULA"
+                    ? aulaStatusById.get(String(it.templateId))
+                    : avaliacaoStatusById.get(String(it.templateId));
+                return status && String(status).toUpperCase() === "RASCUNHO"
+                  ? { status: "PUBLICADA" }
+                  : {};
+              })(),
+              obrigatoria: it.obrigatoria ?? it.obrigatorio ?? true,
+              ...(it.instructorIds && it.instructorIds.length > 0
+                ? { instructorIds: it.instructorIds }
+                : it.instructorId
+                ? { instructorIds: [it.instructorId] }
+                : {}),
+              ...(it.type === "PROVA"
+                ? { recuperacaoFinal: Boolean(it.recuperacaoFinal) }
+                : {}),
+            })),
+          })),
+          standaloneItems: (curriculum.standaloneItems || []).map((it, itemIndex) => ({
+            type: it.type,
+            title:
+              it.title.trim() ||
+              (it.type === "PROVA"
+                ? "Prova"
+                : it.type === "ATIVIDADE"
+                ? "Atividade"
+                : "Aula"),
+            templateId: it.templateId as string,
+            ordem: itemIndex + 1,
+            ...(it.startDate && it.endDate
+              ? { startDate: it.startDate, endDate: it.endDate }
+              : {}),
+            ...(() => {
+              const status =
+                it.type === "AULA"
+                  ? aulaStatusById.get(String(it.templateId))
+                  : avaliacaoStatusById.get(String(it.templateId));
+              return status && String(status).toUpperCase() === "RASCUNHO"
+                ? { status: "PUBLICADA" }
+                : {};
+            })(),
+            obrigatoria: it.obrigatoria ?? it.obrigatorio ?? true,
+            ...(it.instructorIds && it.instructorIds.length > 0
+              ? { instructorIds: it.instructorIds }
+              : it.instructorId
+              ? { instructorIds: [it.instructorId] }
+              : {}),
+            ...(it.type === "PROVA"
+              ? { recuperacaoFinal: Boolean(it.recuperacaoFinal) }
+              : {}),
+          })),
         },
       };
+      if (process.env.NODE_ENV === "development") {
+        console.log("[CREATE_TURMA] Enviando payload:", {
+          cursoId,
+          endpoint: `/api/v1/cursos/${cursoId}/turmas`,
+          payload,
+        });
+      }
       setLoadingStep("Salvando turma...");
-      await createTurma(cursoId!, payload);
+      const result = await createTurma(cursoId!, payload);
+      const mapping = (result as any)?.mapping;
+      if (typeof window !== "undefined" && Array.isArray(mapping)) {
+        try {
+          window.sessionStorage.setItem(
+            `turma:create:mapping:${String(result.id)}`,
+            JSON.stringify(mapping)
+          );
+        } catch {
+          // ignore
+        }
+      }
+      if (typeof window !== "undefined") {
+        try {
+          const cursoNome =
+            cursos.find((c) => String(c.value) === String(cursoId))?.label ??
+            null;
+          window.sessionStorage.setItem(
+            "turma:create:latest",
+            JSON.stringify({
+              turma: result,
+              cursoId: String(cursoId),
+              cursoNome,
+              createdAt: new Date().toISOString(),
+            })
+          );
+        } catch {
+          // ignore
+        }
+      }
       setLoadingStep("Finalizando...");
       toastCustom.success({ title: "Turma criada com sucesso" });
       onSuccess?.();
     } catch (err: any) {
+      const statusCode = err?.status as number | undefined;
+      const code = err?.details?.code as string | undefined;
+      const details = err?.details?.details as any;
+
+      if (statusCode === 422 && code === "TURMA_PREREQUISITOS_NAO_ATENDIDOS") {
+        const aulasCount =
+          typeof details?.templatesAulasCount === "number"
+            ? details.templatesAulasCount
+            : null;
+        const avalCount =
+          typeof details?.templatesAvaliacoesCount === "number"
+            ? details.templatesAvaliacoesCount
+            : null;
+
+        setStep(3);
+        toastCustom.error({
+          title: "Pré-requisitos do curso",
+          description:
+            aulasCount != null && avalCount != null
+              ? `Para cadastrar turma, o curso precisa ter pelo menos 1 aula e 1 avaliação vinculadas (Aulas: ${aulasCount}, Avaliações: ${avalCount}).`
+              : err?.message ||
+                "Para cadastrar turma, o curso precisa ter pelo menos 1 aula e 1 avaliação vinculadas.",
+        });
+        return;
+      }
+
       toastCustom.error({
         title: "Erro ao criar turma",
-        description: err?.message || "Tente novamente.",
+        description:
+          statusCode === 422
+            ? err?.message ||
+              "Verifique os pré-requisitos do curso e os campos obrigatórios."
+            : err?.message || "Tente novamente.",
       });
     } finally {
       setIsSubmitting(false);
@@ -595,9 +736,9 @@ export function CreateTurmaForm({ onSuccess }: CreateTurmaFormProps) {
                   aria-label="Estrutura da turma"
                 >
                   {TEMPLATE_OPTIONS.map((opt, idx) => {
-                    const isActive = templateTipo === opt.value;
+                    const isActive = estruturaTipo === opt.value;
                     const theme =
-                      opt.value === "MODULARIZADA"
+                      opt.value === "MODULAR"
                         ? "250 75% 55%"
                         : opt.value === "DINAMICA"
                         ? "190 70% 45%"
@@ -627,7 +768,7 @@ export function CreateTurmaForm({ onSuccess }: CreateTurmaFormProps) {
                             TEMPLATE_TOOLTIP[opt.value as TemplateOptionValue]
                           }
                           onClick={() => {
-                            setTemplateTipo(opt.value);
+                            setEstruturaTipo(opt.value);
                             setCurriculum(getDefaultBuilder(opt.value as any));
                           }}
                           className="min-h-[360px] md:min-h-[420px]"
@@ -642,23 +783,64 @@ export function CreateTurmaForm({ onSuccess }: CreateTurmaFormProps) {
                 <div className="mb-6">
                   <h3 className="!mb-0">Dados iniciais</h3>
                   <p className="!text-sm">
-                    Informe curso, nome, turno, modalidade e vagas. Se desejar,
-                    adicione instrutores.
+                    Informe curso, nome, turno, modalidade e vagas.
                   </p>
                 </div>
                 <div className="space-y-4">
                   {/* Linha 1: Curso e Nome */}
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <SelectCustom
-                      label="Curso"
-                      placeholder={
-                        loadingCursos ? "Carregando..." : "Selecionar"
-                      }
-                      options={cursos}
-                      value={cursoId}
-                      onChange={(v) => setCursoId(v)}
-                      required
-                    />
+                    {loadingCursos ? (
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium required">
+                          Curso
+                        </Label>
+                        <Skeleton className="h-12 w-full" />
+                      </div>
+                    ) : cursosError ? (
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium required">
+                          Curso
+                        </Label>
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1">
+                            <SelectCustom
+                              label={undefined}
+                              placeholder="Erro ao carregar"
+                              options={[]}
+                              value={null}
+                              onChange={() => {}}
+                              disabled
+                              required
+                            />
+                          </div>
+                          <ButtonCustom
+                            type="button"
+                            variant="outline"
+                            size="md"
+                            onClick={() => void refetchCursos()}
+                          >
+                            Recarregar
+                          </ButtonCustom>
+                        </div>
+                      </div>
+                    ) : (
+                      <SelectCustom
+                        label="Curso"
+                        placeholder="Selecionar"
+                        options={cursos}
+                        value={cursoId}
+                        onChange={(v) => {
+                          setCursoId(v);
+                          // Evita manter templateIds de outro curso
+                          if (estruturaTipo) {
+                            setCurriculum(
+                              getDefaultBuilder(estruturaTipo as any)
+                            );
+                          }
+                        }}
+                        required
+                      />
+                    )}
                     <InputCustom
                       label="Nome da Turma"
                       value={nome}
@@ -707,7 +889,7 @@ export function CreateTurmaForm({ onSuccess }: CreateTurmaFormProps) {
                         setDataFim(range.to ? range.to.toISOString() : "");
                       }}
                       helperLabel="Período previsto de início e término das aulas"
-                      minDate={new Date()}
+                      minDate={minDateTurma}
                       required
                       className="md:col-span-2"
                     />
@@ -730,30 +912,31 @@ export function CreateTurmaForm({ onSuccess }: CreateTurmaFormProps) {
                     />
                   </div>
 
-                  {/* Linha 3: Vagas e decisão sobre instrutor */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Linha 3: Vagas e status */}
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <SelectCustom
                       label="Vagas"
                       options={[
                         { value: "ILIMITADAS", label: "Ilimitadas" },
                         { value: "LIMITAR", label: "Limitar vagas" },
                       ]}
-                      value={limitarVagas ? "LIMITAR" : "ILIMITADAS"}
+                      value={vagasIlimitadas ? "ILIMITADAS" : "LIMITAR"}
                       onChange={(v) => {
-                        const nextLimitar = v === "LIMITAR";
-                        setLimitarVagas(nextLimitar);
-                        if (!nextLimitar) setVagasTotais("");
+                        const ilimitadas = v === "ILIMITADAS";
+                        setVagasIlimitadas(ilimitadas);
+                        if (ilimitadas) setVagasTotais("");
                       }}
                       required
                     />
                     <SelectCustom
-                      label="Adicionar instrutor?"
-                      options={ADICIONAR_INSTRUTOR_OPTIONS}
-                      value={addInstrutorNow ? "SIM" : "NAO"}
-                      onChange={(v) => setAddInstrutorNow(v === "SIM")}
+                      label="Status"
+                      placeholder="Selecionar"
+                      options={STATUS_OPTIONS}
+                      value={status}
+                      onChange={(v) => setStatus((v as any) || "RASCUNHO")}
                       required
                     />
-                    {limitarVagas ? (
+                    {!vagasIlimitadas ? (
                       <InputCustom
                         label="Vagas totais"
                         type="number"
@@ -764,29 +947,10 @@ export function CreateTurmaForm({ onSuccess }: CreateTurmaFormProps) {
                         required
                       />
                     ) : (
-                      <div className="hidden md:block" />
+                      <div className="hidden md:block md:col-span-2" />
                     )}
                   </div>
 
-                  {/* Inscrições já estão na primeira linha */}
-                  {addInstrutorNow && (
-                    <div className="mt-2">
-                      <Label className="text-sm font-medium text-gray-700">
-                        Instrutores
-                      </Label>
-                      <UserList
-                        roles={["INSTRUTOR"]}
-                        pageSize={8}
-                        mode="multiple"
-                        value={instrutorIds}
-                        onChange={(v) => setInstrutorIds((v as string[]) || [])}
-                        onSelectionChange={(users) =>
-                          setInstrutoresSelecionados(users as any[])
-                        }
-                        className="mt-2"
-                      />
-                    </div>
-                  )}
                 </div>
               </StepperContent>
 
@@ -800,12 +964,15 @@ export function CreateTurmaForm({ onSuccess }: CreateTurmaFormProps) {
                 <BuilderManager
                   value={curriculum}
                   onChange={setCurriculum}
-                  allowStandaloneItems={true}
-                  template={(templateTipo as any) || undefined}
+                  allowModules={estruturaTipo !== "PADRAO"}
+                  allowStandaloneItems={estruturaTipo !== "MODULAR"}
+                  template={(estruturaTipo as any) || undefined}
                   instructorOptions={instrutores}
                   modalidade={metodo as any}
                   periodMinDate={dataInicio ? new Date(dataInicio) : undefined}
                   periodMaxDate={dataFim ? new Date(dataFim) : undefined}
+                  aulaTemplates={aulaTemplates}
+                  avaliacaoTemplates={avaliacaoTemplates}
                 />
                 {/* Datas removidas desta etapa; Inscrições foram movidas para a etapa 2 */}
               </StepperContent>
@@ -864,58 +1031,33 @@ export function CreateTurmaForm({ onSuccess }: CreateTurmaFormProps) {
                       </div>
                       <div>
                         <span className="text-xs font-medium text-gray-500">
+                          Status
+                        </span>
+                        <div className="mt-1 text-gray-900">
+                          {STATUS_OPTIONS.find((o) => o.value === status)
+                            ?.label || "Rascunho"}
+                        </div>
+                      </div>
+                      <div>
+                        <span className="text-xs font-medium text-gray-500">
                           Vagas
                         </span>
                         <div className="mt-1 text-gray-900">
-                          {limitarVagas && vagasTotais && Number(vagasTotais) > 0
+                          {!vagasIlimitadas &&
+                          vagasTotais &&
+                          Number(vagasTotais) > 0
                             ? vagasTotais
                             : "Ilimitadas"}
-                        </div>
                       </div>
+                    </div>
                       <div>
                         <span className="text-xs font-medium text-gray-500">
                           Tipo de turma
                         </span>
                         <div className="mt-1 text-gray-900">
                           {TEMPLATE_OPTIONS.find(
-                            (o) => o.value === templateTipo
+                            (o) => o.value === estruturaTipo
                           )?.label || "—"}
-                        </div>
-                      </div>
-                      <div className="md:col-span-2">
-                        <span className="text-xs font-medium text-gray-500">
-                          Instrutores
-                        </span>
-                        <div className="mt-1 flex flex-wrap gap-1.5">
-                          {instrutoresSelecionados &&
-                          instrutoresSelecionados.length > 0 ? (
-                            <>
-                              {instrutoresSelecionados
-                                .slice(0, MAX_INSTRUTOR_BADGES)
-                                .map((u) => (
-                                  <Badge
-                                    key={String(u.id)}
-                                    variant="secondary"
-                                    className="text-xs"
-                                  >
-                                    {u?.nome ||
-                                      u?.email ||
-                                      u?.codUsuario ||
-                                      u?.id}
-                                  </Badge>
-                                ))}
-                              {instrutoresSelecionados.length >
-                                MAX_INSTRUTOR_BADGES && (
-                                <Badge variant="outline" className="text-xs">
-                                  +
-                                  {instrutoresSelecionados.length -
-                                    MAX_INSTRUTOR_BADGES}
-                                </Badge>
-                              )}
-                            </>
-                          ) : (
-                            <span className="text-gray-900">—</span>
-                          )}
                         </div>
                       </div>
                       <div className="md:col-span-2">
@@ -1144,8 +1286,8 @@ export function CreateTurmaForm({ onSuccess }: CreateTurmaFormProps) {
                   onClick={() => {
                     if (step === 1) {
                       // Selecionei tipo? Precarregar template na próxima etapa
-                      if (templateTipo) {
-                        setCurriculum(getDefaultBuilder(templateTipo as any));
+                      if (estruturaTipo) {
+                        setCurriculum(getDefaultBuilder(estruturaTipo as any));
                       }
                       if (validateStep(1)) setStep(2);
                     } else if (step === 2) {

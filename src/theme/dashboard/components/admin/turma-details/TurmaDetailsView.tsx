@@ -9,8 +9,11 @@ import type { HorizontalTabItem } from "@/components/ui/custom";
 import type { CursoTurma, TurmaInscricao } from "@/api/cursos";
 import { getTurmaById, listInscricoes } from "@/api/cursos";
 import { queryKeys } from "@/lib/react-query/queryKeys";
+import { UserRole } from "@/config/roles";
+import { useUserRole } from "@/hooks/useUserRole";
 import { HeaderInfo } from "./components/HeaderInfo";
 import { AboutTab } from "./tabs/AboutTab";
+import { EstruturaTab } from "./tabs/EstruturaTab";
 import { InscricoesTab } from "./tabs/InscricoesTab";
 import { HistoryTab } from "./tabs/HistoryTab";
 
@@ -35,6 +38,7 @@ export function TurmaDetailsView({
   auditoria = [],
 }: TurmaDetailsViewProps) {
   const queryClient = useQueryClient();
+  const userRole = useUserRole();
   const queryKey = useMemo(
     () => queryKeys.turmas.detail(cursoId, turmaId),
     [cursoId, turmaId]
@@ -175,6 +179,12 @@ export function TurmaDetailsView({
   );
 
   const inscricoesCount = inscricoesQuery.data?.length ?? 0;
+  const canViewEstrutura =
+    userRole != null
+      ? [UserRole.ADMIN, UserRole.MODERADOR, UserRole.PEDAGOGICO].includes(
+          userRole
+        )
+      : false;
 
   const tabs: HorizontalTabItem[] = [
     {
@@ -190,6 +200,23 @@ export function TurmaDetailsView({
       content: inscricoesTabContent,
       badge: inscricoesCount > 0 ? <span>{inscricoesCount}</span> : null,
     },
+    ...(canViewEstrutura
+      ? [
+          {
+            value: "estrutura",
+            label: "Estrutura",
+            icon: "Layers",
+            content: (
+              <EstruturaTab
+                cursoId={cursoId}
+                turmaId={turmaId}
+                initialEstrutura={turma.estrutura ?? null}
+                estruturaTipo={turma.estruturaTipo ?? null}
+              />
+            ),
+          } as HorizontalTabItem,
+        ]
+      : []),
     {
       value: "historico",
       label: "Histórico",
@@ -221,4 +248,3 @@ export function TurmaDetailsView({
 }
 
 export default TurmaDetailsView;
-

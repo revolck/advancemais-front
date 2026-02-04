@@ -540,19 +540,26 @@ export function CreateAulaForm({
         (modalidade === "ONLINE" || modalidade === "SEMIPRESENCIAL") &&
         (prev.tipoLink || prev.youtubeUrl);
 
+      const nextTipoLink = preservarLinks ? prev.tipoLink : "";
+      const needsPeriodo =
+        modalidade === "PRESENCIAL" ||
+        modalidade === "AO_VIVO" ||
+        (modalidade === "SEMIPRESENCIAL" && nextTipoLink === "MEET");
+
       return {
         ...prev,
         modalidade,
         // ✅ Preservar links se modalidade permite e já existem
-        tipoLink: preservarLinks ? prev.tipoLink : "",
+        tipoLink: nextTipoLink,
         youtubeUrl: preservarLinks ? prev.youtubeUrl : "",
-        // No modo de edição, manter data, hora e descrição se já existirem
-        // No modo de criação, resetar para forçar o usuário a escolher
-        dataAula: mode === "edit" ? prev.dataAula : null,
-        horaInicio: mode === "edit" ? prev.horaInicio : "",
-        horaFim: mode === "edit" ? prev.horaFim : "",
+        // Data/Horas só fazem sentido quando a modalidade exige período
+        dataAula: needsPeriodo ? (mode === "edit" ? prev.dataAula : null) : null,
+        horaInicio: needsPeriodo ? (mode === "edit" ? prev.horaInicio : "") : "",
+        horaFim: needsPeriodo ? (mode === "edit" ? prev.horaFim : "") : "",
         // Manter descrição sempre (tanto em criação quanto em edição)
         descricao: prev.descricao,
+        // Sala só faz sentido no presencial
+        sala: modalidade === "PRESENCIAL" ? prev.sala : "",
         // Se mudar para AO_VIVO, ativar gravarAula por padrão
         gravarAula: modalidade === "AO_VIVO" ? true : prev.gravarAula,
       };
@@ -752,18 +759,11 @@ export function CreateAulaForm({
     }
 
     // Validar horas
-    if (!showPeriodoField) {
-      // (opcional) - quando visível apenas por preenchimento manual
-      if (
-        (formData.horaInicio && !formData.horaFim) ||
-        (!formData.horaInicio && formData.horaFim)
-      ) {
-        newErrors.horaFim = "Informe hora de início e término";
-      }
-    }
-    if (formData.horaInicio && formData.horaFim) {
-      if (formData.horaInicio >= formData.horaFim) {
-        newErrors.horaFim = "Hora de término deve ser após hora de início";
+    if (showPeriodoField) {
+      if (formData.horaInicio && formData.horaFim) {
+        if (formData.horaInicio >= formData.horaFim) {
+          newErrors.horaFim = "Hora de término deve ser após hora de início";
+        }
       }
     }
 
@@ -798,10 +798,9 @@ export function CreateAulaForm({
     const descricaoTrim = formData.descricao.trim();
 
     const duracaoFromInput = Number.parseInt(formData.duracaoMinutos, 10);
-    const duracaoFromHoras = computeDuracaoFromHoras(
-      formData.horaInicio,
-      formData.horaFim
-    );
+    const duracaoFromHoras = showPeriodoField
+      ? computeDuracaoFromHoras(formData.horaInicio, formData.horaFim)
+      : null;
     const duracaoMinutos =
       (Number.isFinite(duracaoFromInput) && duracaoFromInput > 0
         ? duracaoFromInput
@@ -833,8 +832,10 @@ export function CreateAulaForm({
       return `${yyyy}-${mm}-${dd}`;
     };
 
+    const horaInicio = showPeriodoField ? formData.horaInicio || undefined : undefined;
+    const horaFim = showPeriodoField ? formData.horaFim || undefined : undefined;
     const dataInicio = formatDateToYmd(formData.dataAula);
-    const dataFim = formData.horaFim ? formatDateToYmd(formData.dataAula) : undefined;
+    const dataFim = horaFim ? formatDateToYmd(formData.dataAula) : undefined;
     const cursoId = showCursoField ? (selectedCursoId ?? undefined) : undefined;
     const sala =
       formData.modalidade === "PRESENCIAL" && formData.sala.trim()
@@ -859,8 +860,8 @@ export function CreateAulaForm({
           youtubeUrl,
           dataInicio,
           dataFim,
-          horaInicio: formData.horaInicio || undefined,
-          horaFim: formData.horaFim || undefined,
+          horaInicio,
+          horaFim,
           sala,
           duracaoMinutos,
           obrigatoria: formData.obrigatoria,
@@ -970,8 +971,8 @@ export function CreateAulaForm({
           youtubeUrl,
           dataInicio,
           dataFim,
-          horaInicio: formData.horaInicio || undefined,
-          horaFim: formData.horaFim || undefined,
+          horaInicio,
+          horaFim,
           sala,
           duracaoMinutos,
           obrigatoria: formData.obrigatoria,

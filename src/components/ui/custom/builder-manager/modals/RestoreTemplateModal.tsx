@@ -18,7 +18,7 @@ interface RestoreTemplateModalProps {
 }
 
 /**
- * Modal de confirmação para restaurar template original
+ * Modal de confirmação para restaurar estrutura original
  */
 export function RestoreTemplateModal({
   isOpen,
@@ -29,7 +29,7 @@ export function RestoreTemplateModal({
     onConfirm();
     onClose();
     toastCustom.success({
-      description: "Template restaurado com sucesso!",
+      description: "Estrutura restaurada com sucesso!",
     });
   };
 
@@ -43,9 +43,9 @@ export function RestoreTemplateModal({
     >
       <ModalContentWrapper>
         <ModalHeader>
-          <ModalTitle>Restaurar template</ModalTitle>
+          <ModalTitle>Restaurar estrutura</ModalTitle>
           <ModalDescription className="text-gray-500! leading-relaxed! mb-0!">
-            Tem certeza que deseja restaurar o template original? Todas as
+            Tem certeza que deseja restaurar a estrutura original? Todas as
             alterações feitas na estrutura atual serão{" "}
             <span className="font-medium text-red-600">perdidas</span>.
           </ModalDescription>
@@ -84,4 +84,3 @@ export function RestoreTemplateModal({
     </ModalCustom>
   );
 }
-

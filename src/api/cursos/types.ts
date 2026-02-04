@@ -90,11 +90,12 @@ export interface CursoTurma {
   turno: "MANHA" | "TARDE" | "NOITE" | "INTEGRAL";
   metodo: "ONLINE" | "PRESENCIAL" | "LIVE" | "SEMIPRESENCIAL";
   status?: string;
+  vagasIlimitadas?: boolean;
   vagasTotais?: number;
   vagasDisponiveis?: number;
   inscricoesCount?: number;
   vagasOcupadas?: number;
-  vagasDisponiveisCalculadas?: number;
+  vagasDisponiveisCalculadas?: number | null;
   dataInicio?: string;
   dataFim?: string;
   dataInscricaoInicio?: string;
@@ -105,38 +106,96 @@ export interface CursoTurma {
     email?: string;
     codUsuario?: string;
   };
+  estruturaTipo?: TurmaEstruturaTipo;
+  estrutura?: CreateTurmaEstruturaPayload;
+}
+
+// =============================================================================
+// Vínculo de templates ao curso (pré-requisito de turmas)
+// =============================================================================
+
+export interface VincularTemplatesAoCursoPayload {
+  cursoId: string;
+  aulaTemplateIds?: string[];
+  avaliacaoTemplateIds?: string[];
+}
+
+export interface VincularTemplatesAoCursoResponse {
+  success: boolean;
+  data: {
+    updatedAulas: number;
+    updatedAvaliacoes: number;
+  };
+}
+
+export type TurmaEstruturaTipo = "MODULAR" | "DINAMICA" | "PADRAO";
+export type TurmaPublicacaoStatus = "RASCUNHO" | "PUBLICADO";
+export type TurmaStatus =
+  | "RASCUNHO"
+  | "PUBLICADO"
+  | "INSCRICOES_ABERTAS"
+  | "INSCRICOES_ENCERRADAS"
+  | "EM_ANDAMENTO"
+  | "CONCLUIDO";
+
+export interface CreateTurmaEstruturaItemPayload {
+  type: "AULA" | "PROVA" | "ATIVIDADE";
+  title: string;
+  templateId: string;
+  /** Ordem manual do item dentro do módulo/bloco. Se não enviar, o backend usa a ordem da lista. */
+  ordem?: number;
+  startDate?: string | null;
+  endDate?: string | null;
+  instructorIds?: string[];
+  /**
+   * Status opcional do item instanciado.
+   * Útil para publicar automaticamente itens clonados de templates em rascunho.
+   */
+  status?: string;
+  obrigatoria: boolean;
+  recuperacaoFinal?: boolean;
+}
+
+export interface CreateTurmaEstruturaModulePayload {
+  /**
+   * UUID do módulo (opcional; útil em fluxos de edição/reordenação).
+   * Para criação, normalmente não é enviado.
+   */
+  id?: string;
+  title: string;
+  /** Ordem manual do módulo (opcional). Se não enviar, o backend usa a ordem da lista. */
+  ordem?: number;
+  items: CreateTurmaEstruturaItemPayload[];
+}
+
+export interface CreateTurmaEstruturaPayload {
+  modules: CreateTurmaEstruturaModulePayload[];
+  standaloneItems: CreateTurmaEstruturaItemPayload[];
 }
 
 export interface CreateTurmaPayload {
+  estruturaTipo: TurmaEstruturaTipo;
   nome: string;
-  instrutorId?: string;
   turno: "MANHA" | "TARDE" | "NOITE" | "INTEGRAL";
   metodo: "ONLINE" | "PRESENCIAL" | "LIVE" | "SEMIPRESENCIAL";
-  vagasTotais: number;
-  dataInicio?: string;
-  dataFim?: string;
-  dataInscricaoInicio?: string;
-  dataInscricaoFim?: string;
-  estrutura?: {
-    modules: Array<{
-      title: string;
-      startDate?: string | null;
-      endDate?: string | null;
-      instructorId?: string | null;
-      items: Array<{
-        title: string;
-        type: "AULA" | "PROVA" | "ATIVIDADE";
-        startDate?: string | null;
-        endDate?: string | null;
-      }>;
-    }>;
-    standaloneItems?: Array<{
-      title: string;
-      type: "AULA" | "PROVA" | "ATIVIDADE";
-      startDate?: string | null;
-      endDate?: string | null;
-    }>;
-  };
+  dataInscricaoInicio: string;
+  dataInscricaoFim: string;
+  dataInicio: string;
+  dataFim: string;
+  vagasIlimitadas: boolean;
+  vagasTotais?: number;
+  /**
+   * Apenas status inicial de publicação.
+   * Os demais status (INSCRICOES_*, EM_ANDAMENTO, CONCLUIDO) são definidos automaticamente pelo backend conforme datas.
+   */
+  status?: TurmaPublicacaoStatus;
+  instrutorIds?: string[];
+  /**
+   * Compatibilidade com backend legado (instrutor principal).
+   * Quando enviar `instrutorIds`, o backend usa o primeiro como `instrutorId`.
+   */
+  instrutorId?: string;
+  estrutura: CreateTurmaEstruturaPayload;
 }
 
 // Inscrições
@@ -918,6 +977,7 @@ export interface ListAvaliacoesParams {
   status?: AvaliacaoStatus | string; // API aceita CSV
   obrigatoria?: boolean;
   semTurma?: boolean;
+  includeSemCurso?: boolean;
   // Período
   dataInicio?: string;
   dataFim?: string;

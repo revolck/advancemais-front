@@ -178,6 +178,7 @@ export interface AulasListParams {
   order?: "asc" | "desc";
   // Novos filtros
   semTurma?: boolean; // Aulas sem turma vinculada
+  includeSemCurso?: boolean; // Incluir templates sem curso (cursoId=null)
   semInstrutor?: boolean; // Aulas sem instrutor vinculado
 }
 

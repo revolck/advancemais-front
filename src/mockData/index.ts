@@ -10,7 +10,6 @@ export * from "./transacoes";
 export * from "./notas";
 export * from "./frequencia";
 export * from "./aulas";
-export * from "./atividades-provas";
 export * from "./aluno-candidato";
 export * from "./certificados";
 export * from "./pagamentos-cursos";

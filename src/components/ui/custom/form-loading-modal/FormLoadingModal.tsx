@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { createPortal } from "react-dom";
 import { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -51,7 +52,7 @@ export function FormLoadingModal({
 }: FormLoadingModalProps) {
   if (!isLoading) return null;
 
-  return (
+  const content = (
     <div
       className={cn(
         "fixed inset-0 bg-black/20 backdrop-blur-sm z-50 flex items-center justify-center",
@@ -82,5 +83,12 @@ export function FormLoadingModal({
       </div>
     </div>
   );
-}
 
+  // Evita bugs de "fixed" dentro de containers com transform (ex.: framer-motion),
+  // garantindo overlay fullscreen ao renderizar no body.
+  if (typeof document !== "undefined") {
+    return createPortal(content, document.body);
+  }
+
+  return content;
+}

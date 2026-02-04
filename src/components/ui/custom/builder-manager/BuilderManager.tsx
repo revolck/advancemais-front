@@ -3,9 +3,8 @@
 import React, { useState } from "react";
 import { cn } from "@/lib/utils";
 import { ButtonCustom } from "@/components/ui/custom/button";
-import { InputCustom } from "@/components/ui/custom/input";
-import { MultiSelectCustom } from "@/components/ui/custom/multiselect";
 import { Icon } from "@/components/ui/custom/Icons";
+import { Badge } from "@/components/ui/badge";
 import type {
   BuilderData,
   BuilderItem,
@@ -20,7 +19,6 @@ import {
 } from "@/components/ui/tooltip";
 import { toastCustom } from "@/components/ui/custom";
 import {
-  LocalInput,
   SortableItem,
   SortableModule,
   StandaloneDroppable,
@@ -58,23 +56,44 @@ import {
 interface BuilderManagerProps {
   value: BuilderData;
   onChange: (val: BuilderData) => void;
+  allowModules?: boolean;
   allowStandaloneItems?: boolean;
   template?: BuilderTemplate;
   instructorOptions?: Array<{ value: string; label: string }>;
   modalidade?: "ONLINE" | "PRESENCIAL" | "LIVE" | "SEMIPRESENCIAL" | null;
   periodMinDate?: Date;
   periodMaxDate?: Date;
+  aulaTemplates?: Array<{
+    id: string;
+    codigo?: string;
+    titulo: string;
+    modalidade?: string;
+    status?: string;
+    instrutorId?: string | null;
+  }>;
+  avaliacaoTemplates?: Array<{
+    id: string;
+    codigo?: string;
+    titulo: string;
+    tipo: "ATIVIDADE" | "PROVA";
+    modalidade?: string;
+    status?: string;
+    instrutorId?: string | null;
+  }>;
 }
 
 export function BuilderManager({
   value,
   onChange,
+  allowModules = true,
   allowStandaloneItems = false,
   template,
   instructorOptions,
   modalidade = null,
   periodMinDate,
   periodMaxDate,
+  aulaTemplates = [],
+  avaliacaoTemplates = [],
 }: BuilderManagerProps) {
   const [dragId, setDragId] = useState<string | null>(null); // arraste nativo da paleta
   const [hoverModuleId, setHoverModuleId] = useState<string | null>(null); // destaque do alvo
@@ -83,12 +102,6 @@ export function BuilderManager({
     "module" | "item" | null
   >(null);
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
-  const [showModuleDates, setShowModuleDates] = useState<
-    Record<string, boolean>
-  >({});
-  const [showItemDates, setShowItemDates] = useState<Record<string, boolean>>(
-    {}
-  );
   const [insertIndex, setInsertIndex] = useState<number | null>(null); // posição para inserir módulo via paleta
   const [selected, setSelected] = useState<
     { kind: "module"; id: string } | { kind: "item"; id: string } | null
@@ -109,6 +122,63 @@ export function BuilderManager({
     itemTitle: string;
   }>({ isOpen: false, itemId: null, itemTitle: "" });
 
+  const getInstructorLabels = (it: BuilderItem): string[] => {
+    const itemIds = Array.isArray(it.instructorIds)
+      ? it.instructorIds
+      : it.instructorId
+      ? [it.instructorId]
+      : [];
+    const templateInstructorId =
+      it.type === "AULA"
+        ? aulaTemplates.find((t) => t.id === it.templateId)?.instrutorId
+        : avaliacaoTemplates.find((t) => t.id === it.templateId)?.instrutorId;
+    const ids =
+      itemIds.length > 0
+        ? itemIds
+        : templateInstructorId
+        ? [templateInstructorId]
+        : [];
+    if (ids.length === 0) return [];
+    if (!instructorOptions || instructorOptions.length === 0) {
+      return ids.map(String);
+    }
+    return ids.map((id) => {
+      const found = instructorOptions.find(
+        (opt) => String(opt.value) === String(id)
+      );
+      return found?.label || String(id);
+    });
+  };
+
+  const renderInstructorBadge = (it: BuilderItem, className?: string) => {
+    const labels = getInstructorLabels(it);
+    if (labels.length === 0) return null;
+    const tooltipText =
+      labels.length === 1
+        ? labels[0]
+        : `${labels.slice(0, 3).join(", ")}${labels.length > 3 ? "…" : ""}`;
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span
+            className={cn(
+              "inline-flex items-center justify-center rounded-full border border-gray-200 bg-gray-50 p-1 text-gray-500",
+              className
+            )}
+            aria-label="Instrutor vinculado"
+          >
+            <Icon name="User" className="h-3 w-3" />
+          </span>
+        </TooltipTrigger>
+        <TooltipContent sideOffset={6}>
+          {labels.length === 1
+            ? `Instrutor: ${tooltipText}`
+            : `Instrutores: ${tooltipText}`}
+        </TooltipContent>
+      </Tooltip>
+    );
+  };
+
   // Modal de confirmação para restaurar template
   const [confirmRestoreModal, setConfirmRestoreModal] = useState(false);
 
@@ -120,13 +190,6 @@ export function BuilderManager({
   function uid(prefix: string) {
     return `${prefix}-${Math.random().toString(36).slice(2, 9)}`;
   }
-
-  // Mínimo para datetime-local: agora em horário local (YYYY-MM-DDTHH:mm)
-  const nowLocal = React.useMemo(() => {
-    const d = new Date();
-    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-    return d.toISOString().slice(0, 16);
-  }, []);
 
   // Atalho de teclado para salvar (Cmd/Ctrl + S ou Cmd/Ctrl + Enter)
   React.useEffect(() => {
@@ -224,6 +287,15 @@ export function BuilderManager({
     // Se o usuário tentar soltar um MÓDULO dentro do conteúdo do módulo,
     // interpretamos como criar um novo módulo logo abaixo deste módulo.
     if (dragId === "palette-MODULO" || dragId.startsWith("palette-MODULO")) {
+      if (!allowModules) {
+        toastCustom.error({
+          title: "Estrutura padrão",
+          description: "Não é possível adicionar módulos neste tipo de estrutura.",
+        });
+        setDragId(null);
+        setInsertIndex(null);
+        return;
+      }
       const idx = modules.findIndex((m) => m.id === targetModId);
       const insertAt = idx >= 0 ? idx + 1 : modules.length;
       addModuleAt(insertAt);
@@ -245,6 +317,13 @@ export function BuilderManager({
             ? "Atividade"
             : "Nova aula",
         type,
+        templateId: null,
+        startDate: null,
+        endDate: null,
+        instructorId: null,
+        instructorIds: [],
+        obrigatoria: true,
+        ...(type === "PROVA" ? { recuperacaoFinal: false } : {}),
       };
       const targetModIndex = modules.findIndex((m) => m.id === targetModId);
       if (targetModIndex === -1) return;
@@ -316,9 +395,13 @@ export function BuilderManager({
             ? "Atividade"
             : "Nova aula",
         type,
+        templateId: null,
         startDate: null,
         endDate: null,
         instructorId: null,
+        instructorIds: [],
+        obrigatoria: true,
+        ...(type === "PROVA" ? { recuperacaoFinal: false } : {}),
       };
       const nextStandalone = [...(standaloneItems || [])];
       const insertAt =
@@ -359,20 +442,26 @@ export function BuilderManager({
   };
 
   const addModule = () => {
+    if (!allowModules) {
+      toastCustom.error({
+        title: "Estrutura padrão",
+        description: "Não é possível adicionar módulos neste tipo de estrutura.",
+      });
+      return;
+    }
     const newModule: BuilderModule = {
       id: uid("mod"),
       title: `Novo módulo`,
       items: [],
-      instructorIds: [],
     };
     onChange({ ...value, modules: [...modules, newModule] });
   };
   const addModuleAt = (index: number) => {
+    if (!allowModules) return;
     const newModule: BuilderModule = {
       id: uid("mod"),
       title: `Novo módulo`,
       items: [],
-      instructorIds: [],
     };
     const next = [...modules];
     const i = Math.max(0, Math.min(index, next.length));
@@ -395,9 +484,13 @@ export function BuilderManager({
                     ? "Atividade"
                     : "Nova aula",
                 type,
+                templateId: null,
                 startDate: null,
                 endDate: null,
                 instructorId: null,
+                instructorIds: [],
+                obrigatoria: true,
+                ...(type === "PROVA" ? { recuperacaoFinal: false } : {}),
               },
             ],
           }
@@ -417,9 +510,13 @@ export function BuilderManager({
             ? "Atividade"
             : "Nova aula",
         type,
+        templateId: null,
         startDate: null,
         endDate: null,
         instructorId: null,
+        instructorIds: [],
+        obrigatoria: true,
+        ...(type === "PROVA" ? { recuperacaoFinal: false } : {}),
       },
     ];
     onChange({ ...value, standaloneItems: updated });
@@ -445,9 +542,13 @@ export function BuilderManager({
                 ? "Atividade"
                 : "Nova aula",
             type,
+            templateId: null,
             startDate: null,
             endDate: null,
             instructorId: null,
+            instructorIds: [],
+            obrigatoria: true,
+            ...(type === "PROVA" ? { recuperacaoFinal: false } : {}),
           },
         ];
         onChange({ ...value, standaloneItems: nextStandalone });
@@ -478,9 +579,13 @@ export function BuilderManager({
                     ? "Atividade"
                     : "Nova aula",
                 type,
+                templateId: null,
                 startDate: null,
                 endDate: null,
                 instructorId: null,
+                instructorIds: [],
+                obrigatoria: true,
+                ...(type === "PROVA" ? { recuperacaoFinal: false } : {}),
               },
             ],
           }
@@ -504,38 +609,6 @@ export function BuilderManager({
     onChange({ ...value, modules: next });
   };
 
-  const setModuleTitle = (modId: string, title: string) => {
-    onChange({
-      ...value,
-      modules: modules.map((m) => (m.id === modId ? { ...m, title } : m)),
-    });
-  };
-  const setModuleDates = (
-    modId: string,
-    startDate: string | null,
-    endDate: string | null
-  ) => {
-    onChange({
-      ...value,
-      modules: modules.map((m) =>
-        m.id === modId ? { ...m, startDate, endDate } : m
-      ),
-    });
-  };
-  const setItemTitle = (itemId: string, title: string) => {
-    const nextModules = modules.map((m) => ({
-      ...m,
-      items: m.items.map((it) => (it.id === itemId ? { ...it, title } : it)),
-    }));
-    const nextStandalone = standaloneItems.map((it) =>
-      it.id === itemId ? { ...it, title } : it
-    );
-    onChange({
-      ...value,
-      modules: nextModules,
-      standaloneItems: nextStandalone,
-    });
-  };
   const setItemDates = (
     itemId: string,
     startDate: string | null,
@@ -1129,13 +1202,17 @@ export function BuilderManager({
                               />
                             </div>
                             <div className="flex-1 min-w-0 flex flex-col gap-0">
-                              <LocalInput
-                                className="w-full bg-transparent outline-none text-sm! font-medium text-gray-900 leading-tight! mb-0!"
-                                value={standaloneIt.title}
-                                onChange={(newTitle) =>
-                                  setItemTitle(standaloneIt.id, newTitle)
-                                }
-                              />
+                              <div className="flex items-center gap-2 min-w-0">
+                                <span
+                                  className="flex-1 min-w-0 text-sm font-medium text-gray-900 truncate"
+                                  contentEditable={false}
+                                >
+                                  {standaloneIt.title ||
+                                    TYPE_META[standaloneIt.type]?.label ||
+                                    "Item"}
+                                </span>
+                                {renderInstructorBadge(standaloneIt, "ml-1")}
+                              </div>
                               <span className="text-[10px]! text-emerald-600 font-medium leading-tight! mb-0!">
                                 📍 Antes de todos os módulos
                               </span>
@@ -1441,14 +1518,9 @@ export function BuilderManager({
                                   {mod.items.length === 1 ? "item" : "itens"}
                                 </span>
                               </div>
-                              <LocalInput
-                                className="w-full bg-transparent outline-none text-base! font-semibold text-gray-900 placeholder:text-gray-400 leading-tight! -mt-0.5"
-                                value={mod.title}
-                                placeholder="Nome do módulo"
-                                onChange={(newTitle) =>
-                                  setModuleTitle(mod.id, newTitle)
-                                }
-                              />
+                              <span className="text-base font-semibold text-gray-900 truncate -mt-0.5">
+                                {mod.title || "Nome do módulo"}
+                              </span>
                             </div>
 
                             {/* Ações do módulo */}
@@ -1537,92 +1609,7 @@ export function BuilderManager({
                               </Tooltip>
                             </div>
                           </div>
-                          {/* Instrutores do módulo */}
-                          {instructorOptions &&
-                            instructorOptions.length > 0 && (
-                              <div className="mt-3 pt-3 border-t border-indigo-100/50">
-                                <MultiSelectCustom
-                                  label=""
-                                  placeholder="👤 Adicionar instrutores ao módulo..."
-                                  value={(mod.instructorIds || []).map((id) => {
-                                    const opt = instructorOptions.find(
-                                      (o) => String(o.value) === String(id)
-                                    );
-                                    return {
-                                      value: String(id),
-                                      label: opt?.label || String(id),
-                                    };
-                                  })}
-                                  onChange={(opts) => {
-                                    const ids = (opts || []).map((o: any) =>
-                                      String(o.value)
-                                    );
-                                    onChange({
-                                      ...value,
-                                      modules: modules.map((m) =>
-                                        m.id === mod.id
-                                          ? { ...m, instructorIds: ids }
-                                          : m
-                                      ),
-                                    });
-                                  }}
-                                  options={instructorOptions.map((o) => ({
-                                    value: String(o.value),
-                                    label: o.label,
-                                  }))}
-                                  onSearchSync={(term) =>
-                                    instructorOptions
-                                      .filter((o) =>
-                                        !term
-                                          ? true
-                                          : o.label
-                                              .toLowerCase()
-                                              .includes(term.toLowerCase()) ||
-                                            String(o.value)
-                                              .toLowerCase()
-                                              .includes(term.toLowerCase())
-                                      )
-                                      .map((o) => ({
-                                        value: String(o.value),
-                                        label: o.label,
-                                      }))
-                                  }
-                                  maxVisibleTags={4}
-                                />
-                              </div>
-                            )}
                         </div>
-                        {!collapsedModules[mod.id] &&
-                          showModuleDates[mod.id] && (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 px-3 pb-3">
-                              <InputCustom
-                                label="Início do módulo"
-                                type="datetime-local"
-                                value={mod.startDate || ""}
-                                min={nowLocal}
-                                onChange={(e) =>
-                                  setModuleDates(
-                                    mod.id,
-                                    e.target.value || null,
-                                    mod.endDate || null
-                                  )
-                                }
-                              />
-                              <InputCustom
-                                label="Fim do módulo"
-                                type="datetime-local"
-                                value={mod.endDate || ""}
-                                min={nowLocal}
-                                onChange={(e) =>
-                                  setModuleDates(
-                                    mod.id,
-                                    mod.startDate || null,
-                                    e.target.value || null
-                                  )
-                                }
-                              />
-                            </div>
-                          )}
                         {!collapsedModules[mod.id] && (
                           <div
                             className="p-3 space-y-2"
@@ -1997,29 +1984,29 @@ export function BuilderManager({
                                                     </div>
                                                     {/* Título editável */}
                                                     <div className="flex-1 min-w-0 flex flex-col gap-0">
-                                                      <LocalInput
-                                                        className="w-full bg-transparent outline-none text-sm! font-medium text-gray-900 truncate leading-tight!"
-                                                        value={it.title}
-                                                        placeholder={
-                                                          TYPE_META[it.type]
-                                                            ?.label || "Aula"
-                                                        }
-                                                        onChange={(newTitle) =>
-                                                          setItemTitle(
-                                                            it.id,
-                                                            newTitle
-                                                          )
-                                                        }
-                                                      />
-                                                      <span
-                                                        className={cn(
-                                                          "text-[10px]! font-medium leading-tight! -mt-0.5",
-                                                          itemStyle.iconColor
-                                                        )}
-                                                      >
-                                                        {TYPE_META[it.type]
-                                                          ?.label || "Aula"}
-                                                      </span>
+                                                      <div className="flex items-center gap-2 min-w-0">
+                                                        <span
+                                                          className="flex-1 min-w-0 text-sm font-medium text-gray-900 truncate"
+                                                          contentEditable={false}
+                                                        >
+                                                          {it.title ||
+                                                            TYPE_META[it.type]
+                                                              ?.label ||
+                                                            "Aula"}
+                                                        </span>
+                                                        {renderInstructorBadge(it, "ml-1")}
+                                                      </div>
+                                                      <div className="flex items-center gap-2 -mt-0.5">
+                                                        <span
+                                                          className={cn(
+                                                            "text-[10px]! font-medium leading-tight!",
+                                                            itemStyle.iconColor
+                                                          )}
+                                                        >
+                                                          {TYPE_META[it.type]
+                                                            ?.label || "Aula"}
+                                                        </span>
+                                                      </div>
                                                     </div>
                                                   </div>
                                                   {/* Ações - aparecem no hover */}
@@ -2234,13 +2221,17 @@ export function BuilderManager({
                                   />
                                 </div>
                                 <div className="flex-1 min-w-0 flex flex-col gap-0">
-                                  <LocalInput
-                                    className="w-full bg-transparent outline-none text-sm! font-medium text-gray-900 leading-tight! mb-0!"
-                                    value={standaloneIt.title}
-                                    onChange={(newTitle) =>
-                                      setItemTitle(standaloneIt.id, newTitle)
-                                    }
-                                  />
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <span
+                                      className="flex-1 min-w-0 text-sm font-medium text-gray-900 truncate"
+                                      contentEditable={false}
+                                    >
+                                      {standaloneIt.title ||
+                                        TYPE_META[standaloneIt.type]?.label ||
+                                        "Item"}
+                                    </span>
+                                    {renderInstructorBadge(standaloneIt, "ml-1")}
+                                  </div>
                                   <span className="text-[10px]! text-emerald-600 font-medium leading-tight! mb-0!">
                                     📍 Após{" "}
                                     {mod.title || `Módulo ${modIndex + 1}`}
@@ -2617,13 +2608,15 @@ export function BuilderManager({
                                   </span>
                                 );
                               })()}
-                              <LocalInput
-                                className="flex-1 bg-transparent outline-none text-sm cursor-text"
-                                value={it.title}
-                                onChange={(newTitle) =>
-                                  setItemTitle(it.id, newTitle)
-                                }
-                              />
+                              <span className="flex-1 min-w-0 text-sm text-gray-900 truncate">
+                                {it.title ||
+                                  (it.type === "PROVA"
+                                    ? "Prova"
+                                    : it.type === "ATIVIDADE"
+                                    ? "Atividade"
+                                    : "Aula")}
+                              </span>
+                              {renderInstructorBadge(it, "ml-2")}
                               <div className="flex items-center gap-1">
                                 {modules.length > 0 && (
                                   <Tooltip>
@@ -2973,13 +2966,15 @@ export function BuilderManager({
                                       </span>
                                     );
                                   })()}
-                                  <LocalInput
-                                    className="flex-1 bg-transparent outline-none text-sm cursor-text"
-                                    value={it.title}
-                                    onChange={(newTitle) =>
-                                      setItemTitle(it.id, newTitle)
-                                    }
-                                  />
+                                  <span className="flex-1 min-w-0 text-sm text-gray-900 truncate">
+                                    {it.title ||
+                                      (it.type === "PROVA"
+                                        ? "Prova"
+                                        : it.type === "ATIVIDADE"
+                                        ? "Atividade"
+                                        : "Aula")}
+                                  </span>
+                                  {renderInstructorBadge(it, "ml-2")}
                                   <div className="flex items-center gap-1">
                                     <Tooltip>
                                       <TooltipTrigger asChild>
@@ -3229,6 +3224,7 @@ export function BuilderManager({
         <div className="space-y-4">
           {/* Paleta de componentes (lateral) - Design minimalista e futurista */}
           <Palette
+            allowModules={allowModules}
             onAddModule={addModule}
             onAddItem={addToLastModuleAndEdit}
             onDragStart={setDragId}
@@ -3245,10 +3241,6 @@ export function BuilderManager({
                 ? modules.find((m) => m.id === selected.id) || null
                 : null
             }
-            instructorOptions={instructorOptions}
-            minDate={periodMinDate}
-            maxDate={periodMaxDate}
-            existingModules={modules}
             onSave={(updates) => {
               if (selected?.kind === "module") {
                 onChange({
@@ -3265,79 +3257,59 @@ export function BuilderManager({
             onClose={() => setIsPanelOpen(false)}
           />
 
-          <ItemEditorModal
-            isOpen={isPanelOpen && selected?.kind === "item"}
-            item={
-              selected?.kind === "item"
-                ? modules
-                    .flatMap((m) => m.items)
-                    .find((i) => i.id === selected.id) ||
-                  standaloneItems.find((i) => i.id === selected.id) ||
-                  null
-                : null
-            }
-            modules={modules}
-            standaloneItems={standaloneItems}
-            modalidade={modalidade}
-            instructorOptions={instructorOptions}
-            minDate={
-              selected?.kind === "item"
-                ? (() => {
-                    const parentModule = modules.find((m) =>
-                      m.items.some((i) => i.id === selected.id)
-                    );
-                    return parentModule?.startDate
-                      ? new Date(parentModule.startDate)
-                      : periodMinDate;
-                  })()
-                : periodMinDate
-            }
-            maxDate={
-              selected?.kind === "item"
-                ? (() => {
-                    const parentModule = modules.find((m) =>
-                      m.items.some((i) => i.id === selected.id)
-                    );
-                    return parentModule?.endDate
-                      ? new Date(parentModule.endDate)
-                      : periodMaxDate;
-                  })()
-                : periodMaxDate
-            }
-            onSave={(updates) => {
-              if (selected?.kind === "item") {
-                // Verificar se o item está em um módulo ou é standalone
-                const isStandalone = standaloneItems.some(
-                  (i) => i.id === selected.id
-                );
+	          <ItemEditorModal
+	            isOpen={isPanelOpen && selected?.kind === "item"}
+	            item={
+	              selected?.kind === "item"
+	                ? modules
+	                    .flatMap((m) => m.items)
+	                    .find((i) => i.id === selected.id) ||
+	                  standaloneItems.find((i) => i.id === selected.id) ||
+	                  null
+	                : null
+	            }
+	            modules={modules}
+	            standaloneItems={standaloneItems}
+	            modalidade={modalidade}
+	            instructorOptions={instructorOptions}
+	            aulaTemplates={aulaTemplates}
+	            avaliacaoTemplates={avaliacaoTemplates}
+	            minDate={periodMinDate}
+	            maxDate={periodMaxDate}
+	            onSave={(updates) => {
+	              if (selected?.kind === "item") {
+	                // Verificar se o item está em um módulo ou é standalone
+	                const isStandalone = standaloneItems.some(
+	                  (i) => i.id === selected.id
+	                );
 
-                if (isStandalone) {
-                  // Atualizar standaloneItems
-                  onChange({
-                    ...value,
-                    standaloneItems: standaloneItems.map((x) =>
-                      x.id === selected.id ? { ...x, ...updates } : x
-                    ),
-                  });
-                } else {
-                  // Atualizar item dentro de módulo
-                  onChange({
-                    ...value,
-                    modules: modules.map((m) => ({
-                      ...m,
-                      items: m.items.map((x) =>
-                        x.id === selected.id ? { ...x, ...updates } : x
-                      ),
-                    })),
-                  });
-                }
-                toastCustom.success({
-                  description: "Alterações salvas com sucesso!",
-                });
-              }
-            }}
-            onClose={() => setIsPanelOpen(false)}
-          />
+	                if (isStandalone) {
+	                  // Atualizar standaloneItems
+	                  onChange({
+	                    ...value,
+	                    standaloneItems: standaloneItems.map((x) =>
+	                      x.id === selected.id ? { ...x, ...updates } : x
+	                    ),
+	                  });
+	                } else {
+	                  // Atualizar item dentro de módulo
+	                  onChange({
+	                    ...value,
+	                    modules: modules.map((m) => ({
+	                      ...m,
+	                      items: m.items.map((x) =>
+	                        x.id === selected.id ? { ...x, ...updates } : x
+	                      ),
+	                    })),
+	                  });
+	                }
+	                toastCustom.success({
+	                  description: "Alterações salvas com sucesso!",
+	                });
+	              }
+	            }}
+	            onClose={() => setIsPanelOpen(false)}
+	          />
 
           {/* Modal de confirmação de exclusão - Componentizada */}
           <DeleteConfirmModal

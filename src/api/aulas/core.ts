@@ -75,6 +75,15 @@ export async function listAulas(
   }
   if (params?.dataInicio) searchParams.set("dataInicio", params.dataInicio);
   if (params?.dataFim) searchParams.set("dataFim", params.dataFim);
+  if (params?.semTurma !== undefined) {
+    searchParams.set("semTurma", String(params.semTurma));
+  }
+  if (params?.includeSemCurso !== undefined) {
+    searchParams.set("includeSemCurso", String(params.includeSemCurso));
+  }
+  if (params?.semInstrutor !== undefined) {
+    searchParams.set("semInstrutor", String(params.semInstrutor));
+  }
 
   // Modalidade pode ser array
   if (params?.modalidade) {

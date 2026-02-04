@@ -10,12 +10,13 @@ import {
   BookOpen,
   CheckCircle2,
   Circle,
+  Building2,
   type LucideIcon,
 } from "lucide-react";
 import type { Aula } from "@/api/aulas";
 import { Badge } from "@/components/ui/badge";
 import { stripHtmlTags } from "@/lib/utils";
-import { getModalidadeIcon, getModalidadeBadgeColor, getModalidadeLabel, formatDate, formatTime } from "../utils";
+import { getModalidadeIcon, getModalidadeBadgeColor, getModalidadeLabel, formatDate, formatDateTime, formatTime } from "../utils";
 
 interface AboutTabProps {
   aula: Aula;
@@ -87,10 +88,24 @@ export function AboutTab({ aula, isLoading = false }: AboutTabProps) {
         : "Turma não vinculada",
       icon: BookOpen,
     },
+    ...(aula.modalidade === "PRESENCIAL"
+      ? [
+          {
+            label: "Sala",
+            value: aula.sala?.trim() ? aula.sala : "Sala não definida",
+            icon: Building2,
+          } as const,
+        ]
+      : []),
     {
       label: "Instrutor",
       value: aula.instrutor?.nome || "—",
       icon: User,
+    },
+    {
+      label: "Criado em",
+      value: aula.criadoEm ? formatDateTime(aula.criadoEm) : "—",
+      icon: Calendar,
     },
     {
       label: "Duração",
@@ -294,10 +309,10 @@ export function AboutTab({ aula, isLoading = false }: AboutTabProps) {
                     <info.icon className="h-4 w-4" aria-hidden="true" />
                   </span>
                   <div className="flex flex-1 flex-col gap-1 min-w-0">
-                    <dt className="text-xs font-medium text-gray-500">
+                    <dt className="text-xs! font-medium text-gray-500">
                       {info.label}
                     </dt>
-                    <dd className="text-sm font-medium text-gray-900 break-words">
+                    <dd className="text-sm! font-medium text-gray-900 break-words">
                       {info.value ?? "—"}
                     </dd>
                   </div>
@@ -309,6 +324,4 @@ export function AboutTab({ aula, isLoading = false }: AboutTabProps) {
     </div>
   );
 }
-
-
 

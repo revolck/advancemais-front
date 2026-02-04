@@ -174,14 +174,26 @@ export function AulaRow({
         isNavigating && "bg-blue-50/50"
       )}
     >
-      <TableCell className="py-4 px-3">
-        <div className="space-y-1.5">
-          <div className="flex items-center gap-2">
-            <span className="font-medium text-gray-900">{aula.titulo}</span>
-            {aula.codigo && (
-              <code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded font-mono text-gray-500 shrink-0">
-                {aula.codigo}
-              </code>
+	      <TableCell className="py-4 px-3">
+	        <div className="space-y-1.5">
+	          <div className="flex items-center gap-2">
+	            <Tooltip>
+	              <TooltipTrigger asChild>
+	                <span className="font-medium text-gray-900 cursor-help">
+	                  {aula.titulo}
+	                </span>
+	              </TooltipTrigger>
+	              <TooltipContent sideOffset={8}>
+	                <div className="text-xs">
+	                  <span className="font-medium">Criado em:</span>{" "}
+	                  {formatDate(aula.criadoEm)}
+	                </div>
+	              </TooltipContent>
+	            </Tooltip>
+	            {aula.codigo && (
+	              <code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded font-mono text-gray-500 shrink-0">
+	                {aula.codigo}
+	              </code>
             )}
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -363,18 +375,12 @@ export function AulaRow({
               </div>
             )}
           </div>
-        )}
-      </TableCell>
-      <TableCell className="py-4 px-2 whitespace-nowrap">
-        <div className="flex items-center gap-1.5 text-sm text-gray-600">
-          <Calendar className="h-4 w-4 text-gray-400 flex-shrink-0" />
-          <span>{formatDate(aula.criadoEm)}</span>
-        </div>
-      </TableCell>
-      <TableCell className="py-4 pl-1 pr-3 text-right w-10">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
+	        )}
+	      </TableCell>
+	      <TableCell className="py-4 pl-1 pr-3 text-right w-10">
+	        <Tooltip>
+	          <TooltipTrigger asChild>
+	            <Button
               variant="ghost"
               size="icon"
               onClick={handleNavigate}

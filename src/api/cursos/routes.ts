@@ -8,6 +8,9 @@ const BASE = "/api/v1/cursos" as const;
 export const cursosRoutes = {
   base: () => BASE,
   meta: () => `${BASE}/meta`,
+  templates: {
+    vincular: () => `${BASE}/templates/vincular`,
+  },
   alunos: {
     list: () => `${BASE}/alunos`,
     get: (alunoId: string) => `${BASE}/alunos/${alunoId}`,
