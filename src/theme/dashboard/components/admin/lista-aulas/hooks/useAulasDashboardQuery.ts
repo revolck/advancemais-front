@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { listAulas, type AulasListParams, type AulasListResponse } from "@/api/aulas";
 
 interface UseAulasDashboardQueryParams {
@@ -64,24 +64,12 @@ export function useAulasDashboardQuery(params: UseAulasDashboardQueryParams) {
         apiParams.order = params.order;
       }
 
-      const response = await listAulas(apiParams);
-      
-      // Debug: Log para verificar o que a API está retornando (apenas em desenvolvimento)
-      if (process.env.NODE_ENV === "development") {
-        console.log("[AULAS_QUERY] Parâmetros enviados:", apiParams);
-        console.log("[AULAS_QUERY] Resposta da API:", {
-          total: response.pagination?.total,
-          totalPages: response.pagination?.totalPages,
-          page: response.pagination?.page,
-          pageSize: response.pagination?.pageSize,
-          dataLength: response.data?.length,
-        });
-      }
-
-      return response;
+      return listAulas(apiParams);
     },
-    staleTime: 30000, // 30 seconds - cache restaurado
-    gcTime: 60000, // 1 minuto
+    placeholderData: keepPreviousData,
+    staleTime: 30 * 1000,
+    gcTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 }
-

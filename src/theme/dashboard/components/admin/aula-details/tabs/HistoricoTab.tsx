@@ -354,9 +354,10 @@ export function HistoricoTab({
   } = useQuery<AulaHistorico[], Error>({
     queryKey: ["aulaHistorico", aulaId],
     queryFn: () => getAulaHistorico(aulaId),
-    staleTime: 0, // Sempre busca dados frescos
-    refetchOnWindowFocus: true,
-    refetchOnMount: true,
+    staleTime: 30 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
   });
 
   const isLoading = externalLoading || isLoadingHistorico;

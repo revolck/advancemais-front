@@ -22,7 +22,7 @@ interface AulaDetailsViewProps {
   initialError?: Error;
 }
 
-const AULA_QUERY_STALE_TIME = 5 * 60 * 1000; // 5 minutos
+const AULA_QUERY_STALE_TIME = 30 * 1000; // 30 segundos
 const AULA_QUERY_GC_TIME = 30 * 60 * 1000; // 30 minutos
 
 export function AulaDetailsView({
@@ -43,16 +43,15 @@ export function AulaDetailsView({
     refetch,
   } = useQuery<Aula, Error>({
     queryKey,
-    // Usar noCache para garantir dados frescos após edições
-    queryFn: () => getAulaById(aulaId, undefined, { noCache: true }),
+    queryFn: () => getAulaById(aulaId),
     initialData: initialAula ?? undefined,
     retry: initialError ? false : 3,
     enabled: !initialError,
-    // Evita refetch a cada foco/troca de aba, mas mantém atualização periódica.
     staleTime: AULA_QUERY_STALE_TIME,
     gcTime: AULA_QUERY_GC_TIME,
-    refetchOnMount: true,
-    refetchOnWindowFocus: true, // Refetch quando a janela receber foco (apenas se stale)
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 
   // Forçar refetch quando houver parâmetro refresh na URL (vindo da edição)
@@ -88,28 +87,6 @@ export function AulaDetailsView({
   // Não mostrar skeleton ao voltar para a aba: manter dados e atualizar em background.
   const shouldShowSkeleton = (isLoading || isFetching) && !aula && !initialError;
 
-  // Debug: log dos dados recebidos
-  useEffect(() => {
-    if (aula) {
-      console.log("[AulaDetailsView] Dados da aula recebidos:", {
-        id: aula.id,
-        titulo: aula.titulo,
-        descricao: aula.descricao,
-        descricaoLength: aula.descricao?.length || 0,
-        descricaoType: typeof aula.descricao,
-        descricaoIsEmpty: !aula.descricao || aula.descricao.trim() === "",
-        modalidade: aula.modalidade,
-        turma: aula.turma,
-        instrutor: aula.instrutor,
-        dataInicio: aula.dataInicio,
-        dataFim: aula.dataFim,
-        horaInicio: aula.horaInicio,
-        horaFim: aula.horaFim,
-        duracaoMinutos: aula.duracaoMinutos,
-        status: aula.status,
-      });
-    }
-  }, [aula]);
   const queryErrorMessage =
     status === "error" || initialError
       ? error?.message ??

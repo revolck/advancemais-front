@@ -250,7 +250,10 @@ export function MaterialList({
   } = useQuery({
     queryKey: ["aulaMateriais", aulaId],
     queryFn: () => listMateriais(aulaId),
-    staleTime: 1000 * 60 * 2, // 2 minutos
+    staleTime: 30 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
   });
 
   const materiais = materiaisData?.data || [];

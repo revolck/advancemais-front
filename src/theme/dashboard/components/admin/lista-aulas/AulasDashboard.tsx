@@ -212,32 +212,6 @@ export function AulasDashboard({ className }: { className?: string }) {
     } catch {}
   }, [sortField, sortDirection]);
 
-  const sortList = useCallback(
-    <T extends { titulo?: string; criadoEm?: string | null }>(list: T[]) => {
-      if (!sortField) return list;
-      const arr = [...list];
-      arr.sort((a, b) => {
-        if (sortField === "titulo") {
-          const aTitulo = a.titulo?.toLocaleLowerCase?.() ?? "";
-          const bTitulo = b.titulo?.toLocaleLowerCase?.() ?? "";
-          const cmp = aTitulo.localeCompare(bTitulo, "pt-BR", {
-            sensitivity: "base",
-          });
-          return sortDirection === "asc" ? cmp : -cmp;
-        }
-        if (sortField === "criadoEm") {
-          const aTime = a.criadoEm ? new Date(a.criadoEm).getTime() : 0;
-          const bTime = b.criadoEm ? new Date(b.criadoEm).getTime() : 0;
-          const cmp = aTime - bTime;
-          return sortDirection === "asc" ? cmp : -cmp;
-        }
-        return 0;
-      });
-      return arr;
-    },
-    [sortDirection, sortField]
-  );
-
   // A API já faz paginação, filtros, busca e ordenação no backend
   // Não precisa ordenar client-side, a API já retorna ordenado conforme orderBy e order
   const filteredAulas = aulas; // A API já retorna ordenado
@@ -264,10 +238,9 @@ export function AulasDashboard({ className }: { className?: string }) {
   const handlePageChange = useCallback(
     (page: number) => {
       const nextPage = Math.max(1, Math.min(page, totalPages));
-      console.log("[PAGINATION] Mudando página:", { de: currentPage, para: nextPage, totalPages });
       setCurrentPage(nextPage);
     },
-    [currentPage, totalPages]
+    [totalPages]
   );
 
   // Reset página quando filtros mudam
