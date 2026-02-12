@@ -55,10 +55,12 @@ const categoriasQueryOptions = {
     const response = await listCategorias({ pageSize: 100, page: 1 });
     return extractCategorias(response);
   },
-  staleTime: 10 * 60 * 1000,
-  gcTime: 30 * 60 * 1000,
+  staleTime: 60 * 1000,
+  gcTime: 10 * 60 * 1000,
   retry: 1,
   refetchOnWindowFocus: false,
+  refetchOnReconnect: false,
+  refetchOnMount: false,
 } as const;
 
 function useCursoCategoriasData() {
@@ -146,10 +148,12 @@ export function useCursoSubcategorias(categoriaId: number | null) {
       return extractSubcategorias(response);
     },
     enabled: needsFallback,
-    staleTime: 10 * 60 * 1000,
-    gcTime: 30 * 60 * 1000,
+    staleTime: 60 * 1000,
+    gcTime: 10 * 60 * 1000,
     retry: 1,
     refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchOnMount: false,
   });
 
   const subcategorias: SubcategoriaCurso[] = useMemo(() => {
@@ -236,10 +240,12 @@ export function useAllSubcategorias() {
       return results.flat();
     },
     enabled: needsFallback,
-    staleTime: 10 * 60 * 1000,
-    gcTime: 30 * 60 * 1000,
+    staleTime: 60 * 1000,
+    gcTime: 10 * 60 * 1000,
     retry: 1,
     refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchOnMount: false,
   });
 
   const subcategoriasCompletas = useMemo(() => {

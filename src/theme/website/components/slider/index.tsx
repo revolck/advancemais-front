@@ -15,11 +15,5 @@ export { SliderControls } from "./components/SliderControls";
 export { SliderSkeleton } from "./components/SliderSkeleton";
 export { SliderError } from "./components/SliderError";
 
-// Hooks (para criar versões customizadas)
-export { useSlider } from "./hooks/useSlider";
-export { useSliderAutoplay } from "./hooks/useSliderAutoplay";
-export { useSliderKeyboard } from "./hooks/useSliderKeyboard";
-export { useSliderIntersection } from "./hooks/useSliderIntersection";
-
 // Tipos (para TypeScript)
 export type { SlideData, SliderConfig, SliderContainerProps } from "./types";

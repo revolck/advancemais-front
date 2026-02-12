@@ -43,6 +43,8 @@ const nextConfig = {
     ],
     // Formatos suportados
     formats: ["image/webp", "image/avif"],
+    // Qualidades permitidas (compatível com Next.js 16+)
+    qualities: [50, 60, 75, 85, 90, 100],
     // Tamanhos de dispositivo para responsive
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
   },

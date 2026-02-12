@@ -63,9 +63,15 @@ export function useAlunosDashboardQuery(filters: NormalizedAlunosFilters) {
       const alunos = response.data ?? [];
       const apiPagination = response.pagination;
 
-      const page = apiPagination?.page ?? filters.page;
-      const pageSize = apiPagination?.pageSize ?? filters.pageSize;
-      const total = apiPagination?.total ?? alunos.length;
+      const page = Math.max(1, Number(filters.page) || 1);
+      const rawPageSize = Number(apiPagination?.pageSize ?? filters.pageSize);
+      const pageSize =
+        Number.isFinite(rawPageSize) && rawPageSize > 0
+          ? rawPageSize
+          : filters.pageSize;
+      const rawTotal = Number(apiPagination?.total);
+      const total =
+        Number.isFinite(rawTotal) && rawTotal >= 0 ? rawTotal : alunos.length;
       const totalPages =
         apiPagination?.totalPages && apiPagination.totalPages > 0
           ? apiPagination.totalPages

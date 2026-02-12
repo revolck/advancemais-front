@@ -26,7 +26,7 @@ interface TurmaDetailsViewProps {
   cursoNome?: string;
 }
 
-const TURMA_QUERY_STALE_TIME = 20 * 1000;
+const TURMA_QUERY_STALE_TIME = 30 * 1000;
 const TURMA_QUERY_GC_TIME = 30 * 60 * 1000;
 const INSCRICOES_PAGE_SIZE = 50;
 const INSCRICOES_HISTORY_PAGE_SIZE = 200;
@@ -182,12 +182,18 @@ export function TurmaDetailsView({
     isLoading,
   } = useQuery<CursoTurma, Error>({
     queryKey,
-    queryFn: () => getTurmaById(cursoId, turmaId),
+    queryFn: () =>
+      getTurmaById(cursoId, turmaId, {
+        includeAlunos: false,
+        includeEstrutura: false,
+      }),
     initialData: initialTurma ?? undefined,
     retry: initialError ? false : 3, // Não tenta novamente se já veio com erro do servidor
     enabled: !initialError, // Não tenta buscar se já há erro inicial
     staleTime: TURMA_QUERY_STALE_TIME,
     gcTime: TURMA_QUERY_GC_TIME,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 
   // Resolve turma atual para usar no enabled da query de inscrições
@@ -255,6 +261,7 @@ export function TurmaDetailsView({
     gcTime: TURMA_QUERY_GC_TIME,
     refetchOnMount: false,
     refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
     retry: (failureCount, error) => {
       // Não tenta novamente se for 404 (endpoint não existe ou não há inscrições)
       const apiError = error as { status?: number };
@@ -287,6 +294,8 @@ export function TurmaDetailsView({
     enabled: false,
     staleTime: 15 * 1000,
     gcTime: TURMA_QUERY_GC_TIME,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
     retry: (failureCount, error) => {
       const apiError = error as { status?: number };
       if (apiError?.status === 404) {
@@ -314,6 +323,7 @@ export function TurmaDetailsView({
     gcTime: TURMA_QUERY_GC_TIME,
     refetchOnMount: false,
     refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
     retry: (failureCount, error) => {
       const apiError = error as { status?: number };
       if (apiError?.status === 404) {

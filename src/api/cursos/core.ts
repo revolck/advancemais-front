@@ -1551,9 +1551,10 @@ export async function getVisaoGeral(
       headers: buildHeaders(init?.headers, true),
       ...init,
     },
-    cache: "medium", // Cache de 30 minutos para melhorar performance
-    timeout: 60000, // Timeout de 60 segundos (maior que o padrão de 15s)
-    retries: 2, // Reduz retries para evitar espera desnecessária
+    // Evita cache longo no cliente para aproveitar o cache curto e invalidável do backend.
+    cache: "no-cache",
+    timeout: 60000,
+    retries: 1,
   });
 }
 
@@ -1588,7 +1589,8 @@ export async function getVisaoGeralFaturamento(
         headers: buildHeaders(init?.headers, true),
         ...init,
       },
-      cache: "short",
+      // Usa sempre rede para respeitar filtros/período e delega cache ao backend.
+      cache: "no-cache",
       timeout: 60000,
       retries: 1,
     }

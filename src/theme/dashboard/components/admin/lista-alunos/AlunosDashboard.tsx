@@ -218,16 +218,26 @@ export function AlunosDashboard({ className }: { className?: string }) {
     setCurrentPage(1);
   }, [selectedStatuses, selectedCourseId, selectedTurmaId, selectedCidades]);
 
-  const alunosPagination = alunosQuery.data?.pagination ?? {
-    page: normalizedFilters.page,
-    pageSize: normalizedFilters.pageSize,
-    total: alunos.length,
-    totalPages: Math.max(
-      1,
-      Math.ceil(alunos.length / normalizedFilters.pageSize)
-    ),
-  };
-  const pagination = alunosPagination;
+  const alunosPagination = useMemo(
+    () =>
+      alunosQuery.data?.pagination ?? {
+        page: normalizedFilters.page,
+        pageSize: normalizedFilters.pageSize,
+        total: alunos.length,
+        totalPages: Math.max(
+          1,
+          Math.ceil(alunos.length / normalizedFilters.pageSize)
+        ),
+      },
+    [alunosQuery.data?.pagination, normalizedFilters.page, normalizedFilters.pageSize, alunos.length]
+  );
+  const pagination = useMemo(
+    () => ({
+      ...alunosPagination,
+      page: currentPage,
+    }),
+    [alunosPagination, currentPage]
+  );
 
   useEffect(() => {
     if (currentPage > alunosPagination.totalPages) {
@@ -486,10 +496,7 @@ export function AlunosDashboard({ className }: { className?: string }) {
                     Localização
                   </TableHead>
                   <TableHead className="font-medium text-gray-700">
-                    Curso
-                  </TableHead>
-                  <TableHead className="font-medium text-gray-700">
-                    Turma
+                    Curso/Turma
                   </TableHead>
                   <TableHead className="font-medium text-gray-700">
                     Status
@@ -572,10 +579,7 @@ export function AlunosDashboard({ className }: { className?: string }) {
                     Localização
                   </TableHead>
                   <TableHead className="font-medium text-gray-700">
-                    Curso
-                  </TableHead>
-                  <TableHead className="font-medium text-gray-700">
-                    Turma
+                    Curso/Turma
                   </TableHead>
                   <TableHead className="font-medium text-gray-700">
                     Status

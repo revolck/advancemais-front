@@ -6,9 +6,9 @@ import type { SelectOption } from "@/components/ui/custom/select/types";
 
 async function fetchCursosForSelect(): Promise<SelectOption[]> {
   try {
-    // ✅ API implementada: aceita pageSize=1000 e filtra por statusPadrao
+    // Busca enxuta para first load de selects.
     const res = await listCursos({ 
-      pageSize: 1000, 
+      pageSize: 200, 
       statusPadrao: "PUBLICADO" 
     });
     
@@ -25,12 +25,13 @@ async function fetchCursosForSelect(): Promise<SelectOption[]> {
 
 export function useCursosForSelect() {
   const query = useQuery({
-    queryKey: ["atividades-provas", "cursos-for-select"],
+    queryKey: ["cursos", "for-select", "publicado"],
     queryFn: fetchCursosForSelect,
-    staleTime: 5 * 60 * 1000,
-    gcTime: 30 * 60 * 1000,
+    staleTime: 60 * 1000,
+    gcTime: 10 * 60 * 1000,
     retry: false, // Não retentar em caso de erro
     refetchOnWindowFocus: false, // Não buscar novamente ao focar janela
+    refetchOnReconnect: false,
   });
 
   return {
@@ -39,4 +40,3 @@ export function useCursosForSelect() {
     error: query.error,
   };
 }
-

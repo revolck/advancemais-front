@@ -4,6 +4,73 @@ import { Page, expect } from '@playwright/test';
  * Helper para preencher o formulário de cadastro de aula
  */
 
+const OPENED_SELECT_OPTIONS = '[role="option"]:visible, [cmdk-item]:visible';
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+async function getFieldContainer(page: Page, labelText: string) {
+  const label = page
+    .locator('label')
+    .filter({ hasText: new RegExp(`^\\s*${escapeRegExp(labelText)}\\s*$`, 'i') })
+    .first();
+  await expect(label).toBeVisible({ timeout: 15000 });
+  return label.locator('xpath=ancestor::div[contains(@class, "space-y-2")][1]');
+}
+
+async function getSelectTrigger(
+  page: Page,
+  labelText: string,
+  options?: { waitEnabled?: boolean }
+) {
+  const container = await getFieldContainer(page, labelText);
+  const trigger = container
+    .locator('button[role="combobox"], button[type="button"]:not([aria-label="Limpar seleção"])')
+    .first();
+  await expect(trigger).toBeVisible({ timeout: 15000 });
+  if (options?.waitEnabled ?? true) {
+    await expect(trigger).toBeEnabled({ timeout: 20000 });
+  }
+  return trigger;
+}
+
+async function openSelect(page: Page, labelText: string, options?: { waitEnabled?: boolean }) {
+  const trigger = await getSelectTrigger(page, labelText, options);
+  await trigger.click();
+  const allOptions = page.locator(OPENED_SELECT_OPTIONS);
+  await expect(allOptions.first()).toBeVisible({ timeout: 10000 });
+  return allOptions;
+}
+
+async function selectFirstVisibleOption(
+  options: ReturnType<Page['locator']>,
+  opts?: { skipTexts?: string[] }
+) {
+  const skipTexts = (opts?.skipTexts ?? []).map((text) => text.toLowerCase());
+  const count = await options.count();
+  for (let index = 0; index < count; index += 1) {
+    const option = options.nth(index);
+    const isDisabled =
+      (await option.getAttribute('aria-disabled')) === 'true' ||
+      (await option.getAttribute('data-disabled')) !== null;
+    if (isDisabled) {
+      continue;
+    }
+    const text = ((await option.textContent()) ?? '').trim();
+    const normalizedText = text.toLowerCase();
+    if (!text || normalizedText.includes('selecione')) {
+      continue;
+    }
+    if (skipTexts.some((skipText) => normalizedText.includes(skipText))) {
+      continue;
+    }
+    await option.click();
+    return true;
+  }
+  return false;
+}
+
 /**
  * Preenche campos básicos obrigatórios da aula
  */
@@ -80,38 +147,20 @@ export async function selecionarModalidade(
   page: Page,
   modalidade: 'ONLINE' | 'PRESENCIAL' | 'AO_VIVO' | 'SEMIPRESENCIAL'
 ) {
-  // Encontrar o select de modalidade pelo label
-  const modalidadeLabel = page.locator('label:has-text("Modalidade")').first();
-  
-  // Encontrar o botão trigger do select (pode estar em diferentes níveis)
-  const selectTrigger = modalidadeLabel
-    .locator('..')
-    .locator('..')
-    .locator('button[role="combobox"], button:has([data-radix-collection-item])')
-    .first();
-  
-  await selectTrigger.click();
-  
-  // Aguardar o popover aparecer
-  await page.waitForTimeout(500);
-  
-  // Selecionar a opção no CommandItem
+  const options = await openSelect(page, 'Modalidade');
+
   const modalidadeOptions: Record<string, string> = {
     ONLINE: 'Online (YouTube)',
     PRESENCIAL: 'Presencial',
     AO_VIVO: 'Ao Vivo (Google Meet)',
     SEMIPRESENCIAL: 'Semipresencial',
   };
-  
-  // Procurar pelo CommandItem dentro do Popover
-  const option = page
-    .locator('[role="option"]')
+
+  const option = options
     .filter({ hasText: modalidadeOptions[modalidade] })
     .first();
-  
+  await expect(option).toBeVisible({ timeout: 10000 });
   await option.click();
-  
-  // Aguardar o select fechar
   await page.waitForTimeout(500);
 }
 
@@ -141,26 +190,13 @@ export async function preencherYouTubeUrl(page: Page, url: string = 'https://www
  * Seleciona tipo de link para semipresencial
  */
 export async function selecionarTipoLink(page: Page, tipo: 'YOUTUBE' | 'MEET') {
-  const tipoLinkLabel = page.locator('label:has-text("Tipo de Link")').first();
-  
-  const selectTrigger = tipoLinkLabel
-    .locator('..')
-    .locator('..')
-    .locator('button[role="combobox"], button:has([data-radix-collection-item])')
-    .first();
-  
-  await selectTrigger.click();
-  
-  await page.waitForTimeout(500);
-  
-  const optionText = tipo === 'YOUTUBE' ? 'Link do YouTube' : 'Criar link do Google Meet';
-  const option = page
-    .locator('[role="option"]')
-    .filter({ hasText: optionText })
-    .first();
-  
+  const options = await openSelect(page, 'Tipo de Link');
+  const optionText = tipo === 'YOUTUBE'
+    ? /link do youtube|youtube/i
+    : /google meet|meet/i;
+  const option = options.filter({ hasText: optionText }).first();
+  await expect(option).toBeVisible({ timeout: 10000 });
   await option.click();
-  
   await page.waitForTimeout(500);
 }
 
@@ -168,82 +204,47 @@ export async function selecionarTipoLink(page: Page, tipo: 'YOUTUBE' | 'MEET') {
  * Seleciona curso
  */
 export async function selecionarCurso(page: Page, nomeCurso?: string) {
-  const cursoLabel = page.locator('label:has-text("Curso")').first();
-  
-  const selectTrigger = cursoLabel
-    .locator('..')
-    .locator('..')
-    .locator('button[role="combobox"], button:has([data-radix-collection-item])')
-    .first();
-  
-  await selectTrigger.click();
-  
-  await page.waitForTimeout(500);
-  
+  const options = await openSelect(page, 'Curso');
   if (nomeCurso) {
-    const option = page
-      .locator('[role="option"]')
+    const option = options
       .filter({ hasText: nomeCurso })
       .first();
+    await expect(option).toBeVisible({ timeout: 10000 });
     await option.click();
   } else {
-    // Seleciona o primeiro curso disponível (pular se houver opção vazia)
-    const options = page.locator('[role="option"]');
-    const count = await options.count();
-    if (count > 0) {
-      const firstText = await options.first().textContent();
-      if (firstText?.trim() && !firstText.includes('Selecione')) {
-        await options.first().click();
-      } else if (count > 1) {
-        await options.nth(1).click();
-      }
+    const picked = await selectFirstVisibleOption(options, {
+      skipTexts: ['sem curso'],
+    });
+    if (!picked) {
+      throw new Error('Nenhuma opção de curso válida encontrada no select');
     }
   }
-  
-  await page.waitForTimeout(1000); // Aguardar carregar turmas
+
+  // Aguarda turma ficar habilitada após seleção de curso
+  const turmaTrigger = await getSelectTrigger(page, 'Turma', { waitEnabled: false });
+  await expect(turmaTrigger).toBeEnabled({ timeout: 20000 });
+  await page.waitForTimeout(300);
 }
 
 /**
  * Seleciona turma
  */
 export async function selecionarTurma(page: Page, nomeTurma?: string) {
-  // Aguardar o campo de turma estar disponível
-  await page.waitForTimeout(500);
-  
-  const turmaLabel = page.locator('label:has-text("Turma")').first();
-  
-  const selectTrigger = turmaLabel
-    .locator('..')
-    .locator('..')
-    .locator('button[role="combobox"], button:has([data-radix-collection-item])')
-    .first();
-  
-  await selectTrigger.click();
-  
-  await page.waitForTimeout(500);
-  
+  const options = await openSelect(page, 'Turma');
   if (nomeTurma) {
-    const option = page
-      .locator('[role="option"]')
+    const option = options
       .filter({ hasText: nomeTurma })
       .first();
+    await expect(option).toBeVisible({ timeout: 10000 });
     await option.click();
   } else {
-    // Seleciona a primeira turma disponível (não "Sem turma")
-    const options = page.locator('[role="option"]');
-    const count = await options.count();
-    if (count > 0) {
-      const firstOptionText = await options.first().textContent();
-      if (firstOptionText?.includes('Sem turma') && count > 1) {
-        await options.nth(1).click();
-      } else if (firstOptionText?.trim() && !firstOptionText.includes('Selecione')) {
-        await options.first().click();
-      } else if (count > 1) {
-        await options.nth(1).click();
-      }
+    const picked = await selectFirstVisibleOption(options, {
+      skipTexts: ['sem turma'],
+    });
+    if (!picked) {
+      throw new Error('Nenhuma turma válida encontrada no select');
     }
   }
-  
   await page.waitForTimeout(500);
 }
 
@@ -251,37 +252,19 @@ export async function selecionarTurma(page: Page, nomeTurma?: string) {
  * Seleciona instrutor
  */
 export async function selecionarInstrutor(page: Page, nomeInstrutor?: string) {
-  const instrutorLabel = page.locator('label:has-text("Instrutor")').first();
-  
-  const selectTrigger = instrutorLabel
-    .locator('..')
-    .locator('..')
-    .locator('button[role="combobox"], button:has([data-radix-collection-item])')
-    .first();
-  
-  await selectTrigger.click();
-  
-  await page.waitForTimeout(500);
-  
+  const options = await openSelect(page, 'Instrutor');
   if (nomeInstrutor) {
-    const option = page
-      .locator('[role="option"]')
+    const option = options
       .filter({ hasText: nomeInstrutor })
       .first();
+    await expect(option).toBeVisible({ timeout: 10000 });
     await option.click();
   } else {
-    // Seleciona o primeiro instrutor disponível (não "Sem instrutor")
-    const options = page.locator('[role="option"]');
-    const count = await options.count();
-    if (count > 0) {
-      const firstOptionText = await options.first().textContent();
-      if (firstOptionText?.includes('Sem instrutor') && count > 1) {
-        await options.nth(1).click(); // Pular "Sem instrutor"
-      } else if (firstOptionText?.trim() && !firstOptionText.includes('Selecione')) {
-        await options.first().click();
-      } else if (count > 1) {
-        await options.nth(1).click();
-      }
+    const picked = await selectFirstVisibleOption(options, {
+      skipTexts: ['sem instrutor'],
+    });
+    if (!picked) {
+      throw new Error('Nenhum instrutor válido encontrado no select');
     }
   }
   
@@ -320,6 +303,12 @@ export async function preencherPeriodo(
   const dataFormatada = data.toISOString().split('T')[0];
   
   // Se for um date picker customizado, pode precisar clicar primeiro
+  const dataInputCount = await dataInput.count();
+  if (dataInputCount === 0) {
+    // Em alguns fluxos (ex.: semipresencial + YouTube) não há período.
+    return;
+  }
+
   await dataInput.click();
   await dataInput.fill(dataFormatada);
   await page.keyboard.press('Enter');

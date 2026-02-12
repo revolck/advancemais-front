@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useMemo, useCallback } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ListManager } from "@/components/ui/custom/list-manager/ListManager";
 import type { ListItem } from "@/components/ui/custom/list-manager/types";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -75,38 +76,36 @@ function mapToBackend(item: ListItem): CupomDesconto {
 }
 
 export function CuponsForm() {
-  const [initialCupons, setInitialCupons] = useState<ListItem[]>([]);
-  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const queryClient = useQueryClient();
 
-  // Carregar dados iniciais
-  useEffect(() => {
-    let mounted = true;
-
-    const loadInitialData = async () => {
-      try {
-        setIsInitialLoading(true);
-        const data = await listCupons();
-        const mapped = Array.isArray(data) ? data.map(mapFromBackend) : [];
-
-        if (mounted) {
-          setInitialCupons(mapped);
-        }
-      } catch (error) {
-        console.error("Erro ao carregar cupons:", error);
-        toastCustom.error("Não foi possível carregar os cupons de desconto");
-      } finally {
-        if (mounted) {
-          setIsInitialLoading(false);
-        }
+  const {
+    data: cuponsData,
+    isLoading: isInitialLoading,
+    isError: isInitialError,
+    error: cuponsError,
+  } = useQuery({
+    queryKey: ["cupons", "list"],
+    queryFn: async () => {
+      const data = await listCupons();
+      if (!Array.isArray(data)) {
+        throw new Error(data.message || "Não foi possível carregar os cupons");
       }
-    };
+      return data;
+    },
+    staleTime: 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
 
-    loadInitialData();
+  const initialCupons = useMemo(
+    () => (cuponsData ?? []).map(mapFromBackend),
+    [cuponsData]
+  );
 
-    return () => {
-      mounted = false;
-    };
-  }, []);
+  useEffect(() => {
+    if (!isInitialError) return;
+    console.error("Erro ao carregar cupons:", cuponsError);
+    toastCustom.error("Não foi possível carregar os cupons de desconto");
+  }, [isInitialError, cuponsError]);
 
   const handleCreate = useCallback(
     async (data: Omit<ListItem, "id" | "createdAt">): Promise<ListItem> => {
@@ -114,9 +113,6 @@ export function CuponsForm() {
         // Validação de campos obrigatórios
         if (!data.title?.trim()) {
           throw new Error("Código do cupom é obrigatório");
-        }
-        if (!data.description?.trim()) {
-          throw new Error("Descrição é obrigatória");
         }
 
         const response = await createCupom({
@@ -146,6 +142,7 @@ export function CuponsForm() {
 
         const newItem = mapFromBackend(response as CupomDesconto);
         toastCustom.success(`Cupom "${data.title}" criado com sucesso`);
+        await queryClient.invalidateQueries({ queryKey: ["cupons", "list"] });
 
         return newItem;
       } catch (error) {
@@ -156,7 +153,7 @@ export function CuponsForm() {
         throw error;
       }
     },
-    []
+    [queryClient]
   );
 
   const handleUpdate = useCallback(
@@ -166,13 +163,9 @@ export function CuponsForm() {
         if (!updates.title?.trim()) {
           throw new Error("Código do cupom é obrigatório");
         }
-        if (!updates.description?.trim()) {
-          throw new Error("Descrição é obrigatória");
-        }
 
         const response = await updateCupom(id, {
           codigo: updates.title,
-          descricao: updates.description,
           tipoDesconto: updates.tipoDesconto,
           valorPercentual: updates.valorPercentual,
           valorFixo: updates.valorFixo,
@@ -197,6 +190,10 @@ export function CuponsForm() {
 
         const updatedItem = mapFromBackend(response as CupomDesconto);
         toastCustom.success(`Cupom "${updates.title}" atualizado com sucesso`);
+        await queryClient.invalidateQueries({ queryKey: ["cupons", "list"] });
+        await queryClient.invalidateQueries({
+          queryKey: ["cupons", "detail", id],
+        });
 
         return updatedItem;
       } catch (error) {
@@ -207,13 +204,17 @@ export function CuponsForm() {
         throw error;
       }
     },
-    []
+    [queryClient]
   );
 
   const handleDelete = useCallback(async (id: string): Promise<void> => {
     try {
       await deleteCupom(id);
       toastCustom.success("Cupom excluído com sucesso");
+      await queryClient.invalidateQueries({ queryKey: ["cupons", "list"] });
+      await queryClient.invalidateQueries({
+        queryKey: ["cupons", "detail", id],
+      });
     } catch (error) {
       console.error("Erro ao excluir cupom:", error);
       const errorMessage =
@@ -221,7 +222,7 @@ export function CuponsForm() {
       toastCustom.error(errorMessage);
       throw error;
     }
-  }, []);
+  }, [queryClient]);
 
   // Renderizar item do cupom
   const renderItem = useCallback(

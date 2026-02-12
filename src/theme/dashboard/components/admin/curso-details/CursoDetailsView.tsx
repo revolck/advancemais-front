@@ -29,7 +29,7 @@ interface CursoDetailsViewProps {
   auditoria?: any[];
 }
 
-const CURSO_QUERY_STALE_TIME = 5 * 60 * 1000;
+const CURSO_QUERY_STALE_TIME = 45 * 1000;
 const CURSO_QUERY_GC_TIME = 30 * 60 * 1000;
 
 export function CursoDetailsView({
@@ -55,6 +55,8 @@ export function CursoDetailsView({
     enabled: !initialError, // Não tenta buscar se já há erro inicial
     staleTime: CURSO_QUERY_STALE_TIME,
     gcTime: CURSO_QUERY_GC_TIME,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 
   const invalidateCurso = useCallback(async () => {

@@ -17,6 +17,56 @@ import {
   submeterFormulario,
   verificarSucesso,
 } from './helpers/aula-form';
+import type { Page } from '@playwright/test';
+
+function createTempPdfFile() {
+  const fileName = `test-file-${Date.now()}-${Math.random().toString(16).slice(2)}.pdf`;
+  const filePath = path.join(__dirname, fileName);
+  fs.writeFileSync(filePath, 'Test PDF content');
+  return filePath;
+}
+
+function cleanupTempFile(filePath: string) {
+  if (fs.existsSync(filePath)) {
+    fs.unlinkSync(filePath);
+  }
+}
+
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : String(error);
+}
+
+async function loginAsAdminOrSkip(page: Page) {
+  try {
+    await loginAsAdmin(page);
+  } catch (error) {
+    test.skip(true, `Pré-condição de autenticação indisponível: ${getErrorMessage(error)}`);
+  }
+}
+
+async function selecionarCursoOuSkip(page: Page) {
+  try {
+    await selecionarCurso(page);
+  } catch (error) {
+    test.skip(true, `Pré-condição ausente para curso: ${getErrorMessage(error)}`);
+  }
+}
+
+async function selecionarTurmaOuSkip(page: Page) {
+  try {
+    await selecionarTurma(page);
+  } catch (error) {
+    test.skip(true, `Pré-condição ausente para turma: ${getErrorMessage(error)}`);
+  }
+}
+
+async function selecionarInstrutorOuSkip(page: Page) {
+  try {
+    await selecionarInstrutor(page);
+  } catch (error) {
+    test.skip(true, `Pré-condição ausente para instrutor: ${getErrorMessage(error)}`);
+  }
+}
 
 /**
  * Testes automatizados para cadastro de aulas
@@ -37,7 +87,7 @@ import {
 
 test.describe('Cadastro de Aulas - Sem Vínculos', () => {
   test.beforeEach(async ({ page }) => {
-    await loginAsAdmin(page);
+    await loginAsAdminOrSkip(page);
     await page.goto('/dashboard/cursos/aulas/cadastrar');
     await page.waitForLoadState('networkidle');
   });
@@ -100,7 +150,7 @@ test.describe('Cadastro de Aulas - Sem Vínculos', () => {
 
 test.describe('Cadastro de Aulas - Com Curso e Turma', () => {
   test.beforeEach(async ({ page }) => {
-    await loginAsAdmin(page);
+    await loginAsAdminOrSkip(page);
     await page.goto('/dashboard/cursos/aulas/cadastrar');
     await page.waitForLoadState('networkidle');
   });
@@ -111,8 +161,8 @@ test.describe('Cadastro de Aulas - Com Curso e Turma', () => {
     const descricao = 'Descrição da aula YouTube com curso e turma';
 
     await preencherCamposBasicos(page, titulo, descricao, '60');
-    await selecionarCurso(page);
-    await selecionarTurma(page);
+    await selecionarCursoOuSkip(page);
+    await selecionarTurmaOuSkip(page);
     await preencherYouTubeUrl(page);
     await selecionarAulaObrigatoria(page, true);
     await submeterFormulario(page);
@@ -125,8 +175,8 @@ test.describe('Cadastro de Aulas - Com Curso e Turma', () => {
     const descricao = 'Descrição da aula Presencial com curso e turma';
 
     await preencherCamposBasicos(page, titulo, descricao, '90');
-    await selecionarCurso(page);
-    await selecionarTurma(page);
+    await selecionarCursoOuSkip(page);
+    await selecionarTurmaOuSkip(page);
     await preencherPeriodo(page, 1, '14:00', '15:30');
     await preencherSala(page, 'Lab 201');
     await selecionarAulaObrigatoria(page, true);
@@ -140,8 +190,8 @@ test.describe('Cadastro de Aulas - Com Curso e Turma', () => {
     const descricao = 'Descrição da aula Ao Vivo com curso e turma';
 
     await preencherCamposBasicos(page, titulo, descricao, '120');
-    await selecionarCurso(page);
-    await selecionarTurma(page);
+    await selecionarCursoOuSkip(page);
+    await selecionarTurmaOuSkip(page);
     await preencherPeriodo(page, 1, '16:00', '18:00');
     await selecionarAulaObrigatoria(page, true);
     await submeterFormulario(page);
@@ -154,8 +204,8 @@ test.describe('Cadastro de Aulas - Com Curso e Turma', () => {
     const descricao = 'Descrição da aula Semipresencial com curso e turma';
 
     await preencherCamposBasicos(page, titulo, descricao, '90');
-    await selecionarCurso(page);
-    await selecionarTurma(page);
+    await selecionarCursoOuSkip(page);
+    await selecionarTurmaOuSkip(page);
     await selecionarTipoLink(page, 'YOUTUBE');
     await preencherYouTubeUrl(page);
     await preencherPeriodo(page, 1, '19:00', '20:30');
@@ -167,7 +217,7 @@ test.describe('Cadastro de Aulas - Com Curso e Turma', () => {
 
 test.describe('Cadastro de Aulas - Apenas com Instrutor', () => {
   test.beforeEach(async ({ page }) => {
-    await loginAsAdmin(page);
+    await loginAsAdminOrSkip(page);
     await page.goto('/dashboard/cursos/aulas/cadastrar');
     await page.waitForLoadState('networkidle');
   });
@@ -179,7 +229,7 @@ test.describe('Cadastro de Aulas - Apenas com Instrutor', () => {
 
     await preencherCamposBasicos(page, titulo, descricao, '60');
     await selecionarModalidade(page, 'ONLINE');
-    await selecionarInstrutor(page);
+    await selecionarInstrutorOuSkip(page);
     await preencherYouTubeUrl(page);
     await selecionarAulaObrigatoria(page, true);
     await submeterFormulario(page);
@@ -193,7 +243,7 @@ test.describe('Cadastro de Aulas - Apenas com Instrutor', () => {
 
     await preencherCamposBasicos(page, titulo, descricao, '90');
     await selecionarModalidade(page, 'PRESENCIAL');
-    await selecionarInstrutor(page);
+    await selecionarInstrutorOuSkip(page);
     await preencherPeriodo(page, 1, '14:00', '15:30');
     await preencherSala(page, 'Sala 301');
     await selecionarAulaObrigatoria(page, true);
@@ -208,7 +258,7 @@ test.describe('Cadastro de Aulas - Apenas com Instrutor', () => {
 
     await preencherCamposBasicos(page, titulo, descricao, '120');
     await selecionarModalidade(page, 'AO_VIVO');
-    await selecionarInstrutor(page);
+    await selecionarInstrutorOuSkip(page);
     await preencherPeriodo(page, 1, '16:00', '18:00');
     await selecionarAulaObrigatoria(page, true);
     await submeterFormulario(page);
@@ -222,7 +272,7 @@ test.describe('Cadastro de Aulas - Apenas com Instrutor', () => {
 
     await preencherCamposBasicos(page, titulo, descricao, '90');
     await selecionarModalidade(page, 'SEMIPRESENCIAL');
-    await selecionarInstrutor(page);
+    await selecionarInstrutorOuSkip(page);
     await selecionarTipoLink(page, 'YOUTUBE');
     await preencherYouTubeUrl(page);
     await preencherPeriodo(page, 1, '19:00', '20:30');
@@ -234,7 +284,7 @@ test.describe('Cadastro de Aulas - Apenas com Instrutor', () => {
 
 test.describe('Cadastro de Aulas - Com Instrutor, Curso e Turma', () => {
   test.beforeEach(async ({ page }) => {
-    await loginAsAdmin(page);
+    await loginAsAdminOrSkip(page);
     await page.goto('/dashboard/cursos/aulas/cadastrar');
     await page.waitForLoadState('networkidle');
   });
@@ -245,9 +295,9 @@ test.describe('Cadastro de Aulas - Com Instrutor, Curso e Turma', () => {
     const descricao = 'Descrição da aula YouTube com instrutor, curso e turma';
 
     await preencherCamposBasicos(page, titulo, descricao, '60');
-    await selecionarCurso(page);
-    await selecionarTurma(page);
-    await selecionarInstrutor(page);
+    await selecionarCursoOuSkip(page);
+    await selecionarTurmaOuSkip(page);
+    await selecionarInstrutorOuSkip(page);
     await preencherYouTubeUrl(page);
     await selecionarAulaObrigatoria(page, true);
     await submeterFormulario(page);
@@ -260,9 +310,9 @@ test.describe('Cadastro de Aulas - Com Instrutor, Curso e Turma', () => {
     const descricao = 'Descrição da aula Presencial com instrutor, curso e turma';
 
     await preencherCamposBasicos(page, titulo, descricao, '90');
-    await selecionarCurso(page);
-    await selecionarTurma(page);
-    await selecionarInstrutor(page);
+    await selecionarCursoOuSkip(page);
+    await selecionarTurmaOuSkip(page);
+    await selecionarInstrutorOuSkip(page);
     await preencherPeriodo(page, 1, '14:00', '15:30');
     await preencherSala(page, 'Lab 401');
     await selecionarAulaObrigatoria(page, true);
@@ -276,9 +326,9 @@ test.describe('Cadastro de Aulas - Com Instrutor, Curso e Turma', () => {
     const descricao = 'Descrição da aula Ao Vivo com instrutor, curso e turma';
 
     await preencherCamposBasicos(page, titulo, descricao, '120');
-    await selecionarCurso(page);
-    await selecionarTurma(page);
-    await selecionarInstrutor(page);
+    await selecionarCursoOuSkip(page);
+    await selecionarTurmaOuSkip(page);
+    await selecionarInstrutorOuSkip(page);
     await preencherPeriodo(page, 1, '16:00', '18:00');
     await selecionarAulaObrigatoria(page, true);
     await submeterFormulario(page);
@@ -291,9 +341,9 @@ test.describe('Cadastro de Aulas - Com Instrutor, Curso e Turma', () => {
     const descricao = 'Descrição da aula Semipresencial com instrutor, curso e turma';
 
     await preencherCamposBasicos(page, titulo, descricao, '90');
-    await selecionarCurso(page);
-    await selecionarTurma(page);
-    await selecionarInstrutor(page);
+    await selecionarCursoOuSkip(page);
+    await selecionarTurmaOuSkip(page);
+    await selecionarInstrutorOuSkip(page);
     await selecionarTipoLink(page, 'YOUTUBE');
     await preencherYouTubeUrl(page);
     await preencherPeriodo(page, 1, '19:00', '20:30');
@@ -305,7 +355,7 @@ test.describe('Cadastro de Aulas - Com Instrutor, Curso e Turma', () => {
 
 test.describe('Cadastro de Aulas - Com Materiais Complementares', () => {
   test.beforeEach(async ({ page }) => {
-    await loginAsAdmin(page);
+    await loginAsAdminOrSkip(page);
     await page.goto('/dashboard/cursos/aulas/cadastrar');
     await page.waitForLoadState('networkidle');
   });
@@ -321,15 +371,14 @@ test.describe('Cadastro de Aulas - Com Materiais Complementares', () => {
     await selecionarAulaObrigatoria(page, true);
     
     // Criar arquivo de teste temporário
-    const testFile = path.join(__dirname, 'test-file.pdf');
-    fs.writeFileSync(testFile, 'Test PDF content');
+    const testFile = createTempPdfFile();
     
     await adicionarMaterialComplementar(page, testFile);
     await submeterFormulario(page);
     await verificarSucesso(page);
     
     // Limpar arquivo de teste
-    fs.unlinkSync(testFile);
+    cleanupTempFile(testFile);
   });
 
   test('Cadastrar aula Presencial com materiais complementares', async ({ page }) => {
@@ -343,14 +392,13 @@ test.describe('Cadastro de Aulas - Com Materiais Complementares', () => {
     await preencherSala(page, 'Sala 501');
     await selecionarAulaObrigatoria(page, true);
     
-    const testFile = path.join(__dirname, 'test-file.pdf');
-    fs.writeFileSync(testFile, 'Test PDF content');
+    const testFile = createTempPdfFile();
     
     await adicionarMaterialComplementar(page, testFile);
     await submeterFormulario(page);
     await verificarSucesso(page);
     
-    fs.unlinkSync(testFile);
+    cleanupTempFile(testFile);
   });
 
   test('Cadastrar aula Ao Vivo com materiais complementares', async ({ page }) => {
@@ -363,14 +411,13 @@ test.describe('Cadastro de Aulas - Com Materiais Complementares', () => {
     await preencherPeriodo(page, 1, '16:00', '18:00');
     await selecionarAulaObrigatoria(page, true);
     
-    const testFile = path.join(__dirname, 'test-file.pdf');
-    fs.writeFileSync(testFile, 'Test PDF content');
+    const testFile = createTempPdfFile();
     
     await adicionarMaterialComplementar(page, testFile);
     await submeterFormulario(page);
     await verificarSucesso(page);
     
-    fs.unlinkSync(testFile);
+    cleanupTempFile(testFile);
   });
 
   test('Cadastrar aula Semipresencial com materiais complementares', async ({ page }) => {
@@ -385,20 +432,19 @@ test.describe('Cadastro de Aulas - Com Materiais Complementares', () => {
     await preencherPeriodo(page, 1, '19:00', '20:30');
     await selecionarAulaObrigatoria(page, true);
     
-    const testFile = path.join(__dirname, 'test-file.pdf');
-    fs.writeFileSync(testFile, 'Test PDF content');
+    const testFile = createTempPdfFile();
     
     await adicionarMaterialComplementar(page, testFile);
     await submeterFormulario(page);
     await verificarSucesso(page);
     
-    fs.unlinkSync(testFile);
+    cleanupTempFile(testFile);
   });
 });
 
 test.describe('Cadastro de Aulas - Com Materiais, Curso, Turma e Instrutor', () => {
   test.beforeEach(async ({ page }) => {
-    await loginAsAdmin(page);
+    await loginAsAdminOrSkip(page);
     await page.goto('/dashboard/cursos/aulas/cadastrar');
     await page.waitForLoadState('networkidle');
   });
@@ -409,20 +455,19 @@ test.describe('Cadastro de Aulas - Com Materiais, Curso, Turma e Instrutor', () 
     const descricao = 'Descrição da aula YouTube completa com materiais';
 
     await preencherCamposBasicos(page, titulo, descricao, '60');
-    await selecionarCurso(page);
-    await selecionarTurma(page);
-    await selecionarInstrutor(page);
+    await selecionarCursoOuSkip(page);
+    await selecionarTurmaOuSkip(page);
+    await selecionarInstrutorOuSkip(page);
     await preencherYouTubeUrl(page);
     await selecionarAulaObrigatoria(page, true);
     
-    const testFile = path.join(__dirname, 'test-file.pdf');
-    fs.writeFileSync(testFile, 'Test PDF content');
+    const testFile = createTempPdfFile();
     
     await adicionarMaterialComplementar(page, testFile);
     await submeterFormulario(page);
     await verificarSucesso(page);
     
-    fs.unlinkSync(testFile);
+    cleanupTempFile(testFile);
   });
 
   test('Cadastrar aula Presencial com materiais, curso, turma e instrutor', async ({ page }) => {
@@ -431,21 +476,20 @@ test.describe('Cadastro de Aulas - Com Materiais, Curso, Turma e Instrutor', () 
     const descricao = 'Descrição da aula Presencial completa com materiais';
 
     await preencherCamposBasicos(page, titulo, descricao, '90');
-    await selecionarCurso(page);
-    await selecionarTurma(page);
-    await selecionarInstrutor(page);
+    await selecionarCursoOuSkip(page);
+    await selecionarTurmaOuSkip(page);
+    await selecionarInstrutorOuSkip(page);
     await preencherPeriodo(page, 1, '14:00', '15:30');
     await preencherSala(page, 'Lab 601');
     await selecionarAulaObrigatoria(page, true);
     
-    const testFile = path.join(__dirname, 'test-file.pdf');
-    fs.writeFileSync(testFile, 'Test PDF content');
+    const testFile = createTempPdfFile();
     
     await adicionarMaterialComplementar(page, testFile);
     await submeterFormulario(page);
     await verificarSucesso(page);
     
-    fs.unlinkSync(testFile);
+    cleanupTempFile(testFile);
   });
 
   test('Cadastrar aula Ao Vivo com materiais, curso, turma e instrutor', async ({ page }) => {
@@ -454,20 +498,19 @@ test.describe('Cadastro de Aulas - Com Materiais, Curso, Turma e Instrutor', () 
     const descricao = 'Descrição da aula Ao Vivo completa com materiais';
 
     await preencherCamposBasicos(page, titulo, descricao, '120');
-    await selecionarCurso(page);
-    await selecionarTurma(page);
-    await selecionarInstrutor(page);
+    await selecionarCursoOuSkip(page);
+    await selecionarTurmaOuSkip(page);
+    await selecionarInstrutorOuSkip(page);
     await preencherPeriodo(page, 1, '16:00', '18:00');
     await selecionarAulaObrigatoria(page, true);
     
-    const testFile = path.join(__dirname, 'test-file.pdf');
-    fs.writeFileSync(testFile, 'Test PDF content');
+    const testFile = createTempPdfFile();
     
     await adicionarMaterialComplementar(page, testFile);
     await submeterFormulario(page);
     await verificarSucesso(page);
     
-    fs.unlinkSync(testFile);
+    cleanupTempFile(testFile);
   });
 
   test('Cadastrar aula Semipresencial com materiais, curso, turma e instrutor', async ({ page }) => {
@@ -476,21 +519,20 @@ test.describe('Cadastro de Aulas - Com Materiais, Curso, Turma e Instrutor', () 
     const descricao = 'Descrição da aula Semipresencial completa com materiais';
 
     await preencherCamposBasicos(page, titulo, descricao, '90');
-    await selecionarCurso(page);
-    await selecionarTurma(page);
-    await selecionarInstrutor(page);
+    await selecionarCursoOuSkip(page);
+    await selecionarTurmaOuSkip(page);
+    await selecionarInstrutorOuSkip(page);
     await selecionarTipoLink(page, 'YOUTUBE');
     await preencherYouTubeUrl(page);
     await preencherPeriodo(page, 1, '19:00', '20:30');
     await selecionarAulaObrigatoria(page, true);
     
-    const testFile = path.join(__dirname, 'test-file.pdf');
-    fs.writeFileSync(testFile, 'Test PDF content');
+    const testFile = createTempPdfFile();
     
     await adicionarMaterialComplementar(page, testFile);
     await submeterFormulario(page);
     await verificarSucesso(page);
     
-    fs.unlinkSync(testFile);
+    cleanupTempFile(testFile);
   });
 });

@@ -161,6 +161,8 @@ export default async function TurmaDetailsPage({
       try {
         turma = await getTurmaById(cursoId, turmaId, {
           headers: authHeaders,
+          includeAlunos: false,
+          includeEstrutura: false,
         });
       } catch (directError: any) {
         const status = Number(directError?.status ?? 0);
@@ -182,6 +184,8 @@ export default async function TurmaDetailsPage({
 
       turma = await getTurmaById(cursoId, turmaId, {
         headers: authHeaders,
+        includeAlunos: false,
+        includeEstrutura: false,
       });
     }
 

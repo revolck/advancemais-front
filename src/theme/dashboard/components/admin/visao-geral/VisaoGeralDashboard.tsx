@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   BookOpen,
   CheckCircle,
@@ -45,6 +45,9 @@ import { PerformanceSection } from "./components/PerformanceSection";
 import { CursosCardsGrid } from "./components/CursosCardsGrid";
 
 export function VisaoGeralDashboard() {
+  const [shouldLoadFaturamento, setShouldLoadFaturamento] = useState(false);
+  const faturamentoContainerRef = useRef<HTMLDivElement | null>(null);
+
   const {
     data: response,
     isLoading,
@@ -59,11 +62,78 @@ export function VisaoGeralDashboard() {
       }
       return result.data;
     },
-    staleTime: 10 * 60 * 1000, // 10 minutos (aumentado para aproveitar cache da API)
-    gcTime: 15 * 60 * 1000, // Mantém em cache por 15 minutos
+    staleTime: 30 * 1000,
+    gcTime: 5 * 60 * 1000,
     retry: 1, // Reduz retries para evitar espera desnecessária
     refetchOnWindowFocus: false, // Não refaz fetch ao focar na janela
   });
+
+  useEffect(() => {
+    if (shouldLoadFaturamento) return;
+    if (isLoading) return;
+    const target = faturamentoContainerRef.current;
+    if (!target) return;
+
+    const enableFaturamento = () => setShouldLoadFaturamento(true);
+    const isNearViewport = () => {
+      const rect = target.getBoundingClientRect();
+      const viewportHeight =
+        window.innerHeight || document.documentElement.clientHeight;
+
+      return rect.top <= viewportHeight + 320 && rect.bottom >= -320;
+    };
+
+    // Se já estiver próximo da viewport, dispara imediatamente.
+    if (isNearViewport()) {
+      enableFaturamento();
+      return;
+    }
+
+    let rafId: number | null = null;
+    const handleScrollOrResize = () => {
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+      }
+
+      rafId = requestAnimationFrame(() => {
+        if (isNearViewport()) {
+          enableFaturamento();
+        }
+      });
+    };
+
+    let observer: IntersectionObserver | null = null;
+    if (typeof IntersectionObserver !== "undefined") {
+      observer = new IntersectionObserver(
+        ([entry]) => {
+          if (entry.isIntersecting) {
+            enableFaturamento();
+          }
+        },
+        // Pré-carrega pouco antes de entrar na viewport para evitar sensação de atraso.
+        { rootMargin: "300px 0px 300px 0px" }
+      );
+      observer.observe(target);
+    }
+
+    window.addEventListener("scroll", handleScrollOrResize, { passive: true });
+    window.addEventListener("resize", handleScrollOrResize);
+
+    // Segurança: evita estado preso caso observer não dispare no ambiente.
+    const fallbackTimer = window.setTimeout(enableFaturamento, 1500);
+
+    return () => {
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+      }
+      clearTimeout(fallbackTimer);
+      window.removeEventListener("scroll", handleScrollOrResize);
+      window.removeEventListener("resize", handleScrollOrResize);
+      if (observer) {
+        observer.disconnect();
+      }
+    };
+  }, [shouldLoadFaturamento, isLoading]);
 
   const primaryMetrics = useMemo((): StatisticCard[] => {
     if (!response?.metricasGerais) return [];
@@ -266,8 +336,15 @@ export function VisaoGeralDashboard() {
       </div>
 
       {/* Faturamento - Full Width */}
-      <div>
-        <FaturamentoSection isLoading={isLoading} />
+      <div
+        ref={faturamentoContainerRef}
+        onMouseEnter={() => setShouldLoadFaturamento(true)}
+        onFocusCapture={() => setShouldLoadFaturamento(true)}
+      >
+        <FaturamentoSection
+          isLoading={isLoading}
+          enabled={shouldLoadFaturamento}
+        />
       </div>
 
       {/* Cursos Cards Grid with Tabs */}

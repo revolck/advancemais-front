@@ -145,7 +145,9 @@ export function AlunoRow({
 
   const alunoNome = aluno.nomeCompleto || aluno.id;
   const cursoNome = ultimoCurso?.curso?.nome;
+  const cursoCodigo = ultimoCurso?.curso?.codigo;
   const turmaNome = ultimoCurso?.turma?.nome;
+  const turmaCodigo = ultimoCurso?.turma?.codigo;
   const statusInscricao = ultimoCurso?.statusInscricao;
 
   const handleNavigate = (e: React.MouseEvent) => {
@@ -226,49 +228,42 @@ export function AlunoRow({
         )}
       </TableCell>
       <TableCell className="py-4">
-        {cursoNome ? (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div className="flex items-center gap-2 max-w-[240px]">
-                <Icon
-                  name="BookOpen"
-                  size={16}
-                  className="text-gray-400 flex-shrink-0"
-                />
-                <div
-                  className="text-sm text-gray-900 truncate"
-                  title={cursoNome}
-                >
-                  {cursoNome}
-                </div>
+        {cursoNome || turmaNome ? (
+          <div className="flex items-start gap-2 max-w-[320px]">
+            <Icon
+              name="BookOpen"
+              size={16}
+              className="text-gray-400 shrink-0 mt-0.5"
+            />
+            <div className="min-w-0 space-y-1">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="text-[11px] text-gray-500 shrink-0">
+                  Curso
+                </span>
+                <span className="text-sm text-gray-700 truncate min-w-0">
+                  {cursoNome || "—"}
+                </span>
+                {cursoCodigo && (
+                  <code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded font-mono text-gray-500 shrink-0">
+                    {cursoCodigo}
+                  </code>
+                )}
               </div>
-            </TooltipTrigger>
-            <TooltipContent sideOffset={6}>{cursoNome}</TooltipContent>
-          </Tooltip>
-        ) : (
-          <div className="text-sm text-gray-500">—</div>
-        )}
-      </TableCell>
-      <TableCell className="py-4">
-        {turmaNome ? (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div className="flex items-center gap-2 max-w-[240px]">
-                <Icon
-                  name="Users"
-                  size={16}
-                  className="text-gray-400 flex-shrink-0"
-                />
-                <div
-                  className="text-sm text-gray-900 truncate"
-                  title={turmaNome}
-                >
-                  {turmaNome}
-                </div>
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="text-[11px] text-gray-500 shrink-0">
+                  Turma
+                </span>
+                <span className="text-sm text-gray-700 truncate min-w-0">
+                  {turmaNome || "—"}
+                </span>
+                {turmaCodigo && (
+                  <code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded font-mono text-gray-500 shrink-0">
+                    {turmaCodigo}
+                  </code>
+                )}
               </div>
-            </TooltipTrigger>
-            <TooltipContent sideOffset={6}>{turmaNome}</TooltipContent>
-          </Tooltip>
+            </div>
+          </div>
         ) : (
           <div className="text-sm text-gray-500">—</div>
         )}

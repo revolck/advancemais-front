@@ -14,10 +14,12 @@ async function fetchCursosForSelect(): Promise<SelectOption[]> {
 
 export function useCursosForSelect() {
   const query = useQuery({
-    queryKey: ["frequencia", "cursos-for-select"],
+    queryKey: ["cursos", "for-select", "all"],
     queryFn: fetchCursosForSelect,
-    staleTime: 5 * 60 * 1000,
-    gcTime: 30 * 60 * 1000,
+    staleTime: 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 
   return {

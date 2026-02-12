@@ -13,11 +13,13 @@ async function fetchTurmasForSelect(cursoId: string): Promise<SelectOption[]> {
 
 export function useTurmasForSelect(cursoId: string | null) {
   const query = useQuery({
-    queryKey: ["notas", "turmas-for-select", cursoId],
+    queryKey: ["turmas", "for-select", cursoId],
     queryFn: () => fetchTurmasForSelect(cursoId as string),
     enabled: Boolean(cursoId),
-    staleTime: 60 * 1000,
+    staleTime: 30 * 1000,
     gcTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 
   return {
@@ -26,4 +28,3 @@ export function useTurmasForSelect(cursoId: string | null) {
     error: query.error,
   };
 }
-

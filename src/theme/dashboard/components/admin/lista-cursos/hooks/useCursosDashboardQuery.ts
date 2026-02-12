@@ -87,7 +87,9 @@ export function useCursosDashboardQuery(
     },
     enabled,
     placeholderData: keepPreviousData,
-    staleTime: 60 * 1000,
+    staleTime: 45 * 1000,
     gcTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 }

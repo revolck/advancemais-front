@@ -12,6 +12,7 @@ import {
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import {
   BarChart,
   Bar,
@@ -36,6 +37,7 @@ import { format as formatDate } from "date-fns";
 
 interface FaturamentoSectionProps {
   isLoading?: boolean;
+  enabled?: boolean;
 }
 
 const formatCurrency = (value: number): string => {
@@ -68,7 +70,10 @@ const formatDateTime = (dateString: string): string => {
   });
 };
 
-export function FaturamentoSection({ isLoading }: FaturamentoSectionProps) {
+export function FaturamentoSection({
+  isLoading,
+  enabled = true,
+}: FaturamentoSectionProps) {
   const [periodType, setPeriodType] =
     useState<VisaoGeralFaturamentoPeriod>("month");
   const [dateRange, setDateRange] = useState<DateRange>({
@@ -85,9 +90,12 @@ export function FaturamentoSection({ isLoading }: FaturamentoSectionProps) {
     ? formatDate(dateRange.to, "yyyy-MM-dd")
     : undefined;
 
+  const debouncedPeriodType = useDebouncedValue(periodType, 400);
+  const debouncedCustomStartDate = useDebouncedValue(customStartDate, 400);
+  const debouncedCustomEndDate = useDebouncedValue(customEndDate, 400);
   const isCustomReady =
-    periodType !== "custom" ||
-    (Boolean(customStartDate) && Boolean(customEndDate));
+    debouncedPeriodType !== "custom" ||
+    (Boolean(debouncedCustomStartDate) && Boolean(debouncedCustomEndDate));
 
   const {
     data: faturamentoResponse,
@@ -99,18 +107,24 @@ export function FaturamentoSection({ isLoading }: FaturamentoSectionProps) {
     queryKey: [
       "cursos-visao-geral-faturamento",
       {
-        periodType,
-        customStartDate,
-        customEndDate,
+        periodType: debouncedPeriodType,
+        customStartDate: debouncedCustomStartDate,
+        customEndDate: debouncedCustomEndDate,
         tz: "America/Sao_Paulo",
         top: 10,
       },
     ],
     queryFn: async () => {
       const res = await getVisaoGeralFaturamento({
-        period: periodType,
-        startDate: periodType === "custom" ? customStartDate : undefined,
-        endDate: periodType === "custom" ? customEndDate : undefined,
+        period: debouncedPeriodType,
+        startDate:
+          debouncedPeriodType === "custom"
+            ? debouncedCustomStartDate
+            : undefined,
+        endDate:
+          debouncedPeriodType === "custom"
+            ? debouncedCustomEndDate
+            : undefined,
         tz: "America/Sao_Paulo",
         top: 10,
       });
@@ -119,8 +133,8 @@ export function FaturamentoSection({ isLoading }: FaturamentoSectionProps) {
       }
       return res.data;
     },
-    enabled: !isLoading && isCustomReady,
-    staleTime: 1000 * 60 * 2,
+    enabled: enabled && !isLoading && isCustomReady,
+    staleTime: 30 * 1000,
     refetchOnWindowFocus: false,
     retry: 1,
   });
@@ -154,6 +168,26 @@ export function FaturamentoSection({ isLoading }: FaturamentoSectionProps) {
       transacoes: curso.totalTransacoes ?? 0,
     }));
   }, [sectionIsLoading, data, topCursosFaturamento]);
+
+  if (!enabled) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-white rounded-xl p-6 border border-gray-200">
+          <div className="flex items-center justify-between gap-4 mb-6">
+            <div>
+              <h3 className="text-lg font-bold text-gray-900">
+                Tendências de Faturamento
+              </h3>
+              <p className="text-sm text-gray-600">
+                Dados serão carregados ao visualizar esta seção.
+              </p>
+            </div>
+          </div>
+          <Skeleton className="h-64 rounded-xl" />
+        </div>
+      </div>
+    );
+  }
 
   if (sectionIsLoading) {
     return (

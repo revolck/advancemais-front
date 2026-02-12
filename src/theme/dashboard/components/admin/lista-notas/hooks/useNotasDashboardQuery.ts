@@ -109,7 +109,9 @@ export function useNotasDashboardQuery(filters: NormalizedNotasFilters) {
     queryFn: () => fetchNotasDashboard(filters),
     enabled: Boolean(filters.cursoId && filters.turmaIds.length > 0),
     placeholderData: keepPreviousData,
-    staleTime: 60 * 1000,
+    staleTime: 30 * 1000,
     gcTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 }

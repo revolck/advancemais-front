@@ -1,43 +1,30 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import type { SelectOption } from "@/components/ui/custom/select/types";
 import { listCursos } from "@/api/cursos";
 
 export function useCursosForSelect() {
-  const [options, setOptions] = useState<SelectOption[]>([]);
-  // Começa como `true` para evitar flicker (select vazio) antes do primeiro fetch.
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchCursos = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const res = await listCursos({ page: 1, pageSize: 100 });
+  const query = useQuery<SelectOption[], Error>({
+    queryKey: ["cursos", "for-select", "all"],
+    queryFn: async () => {
+      const res = await listCursos({ page: 1, pageSize: 200 });
       const data = res?.data || [];
-      const mapped = data
+      return data
         .map((c) => ({ value: String(c.id), label: c.nome }))
         .sort((a, b) => a.label.localeCompare(b.label, "pt-BR"));
-      setOptions(mapped);
-    } catch (err) {
-      const status = (err as any)?.status as number | undefined;
-      const msg = err instanceof Error ? err.message : String(err);
-      if (status === 404 || /não encontrado|not found/i.test(msg)) {
-        setError(null);
-      } else {
-        console.warn("Aviso: falha ao listar cursos:", msg);
-        setError(msg || "Erro ao carregar cursos");
-      }
-      // Mantém a lista anterior para não “sumir” a seleção em caso de falha temporária.
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+    },
+    staleTime: 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    retry: 1,
+  });
 
-  useEffect(() => {
-    fetchCursos();
-  }, [fetchCursos]);
-
-  return { cursos: options, isLoading, error, refetch: fetchCursos };
+  return {
+    cursos: query.data ?? [],
+    isLoading: query.isLoading,
+    error: query.error?.message ?? null,
+    refetch: query.refetch,
+  };
 }

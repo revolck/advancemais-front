@@ -16,6 +16,8 @@ type TurmaComCurso = CursoTurma & {
   cursoId?: number;
   cursoNome?: string;
 };
+const CURSOS_PAGE_SIZE = 200;
+const TURMAS_FETCH_CONCURRENCY = 5;
 
 export interface UseTurmasForSelectOptions {
   cursoId?: string | number | null;
@@ -30,12 +32,11 @@ async function listAllTurmas(): Promise<TurmaComCurso[]> {
   try {
     // Busca todos os cursos com paginação
     let page = 1;
-    const pageSize = 50;
     let allCursos: { id: string | number; nome: string }[] = [];
     let hasMore = true;
     
     while (hasMore) {
-      const cursosResponse = await listCursos({ page, pageSize });
+      const cursosResponse = await listCursos({ page, pageSize: CURSOS_PAGE_SIZE });
       const cursos = cursosResponse.data || [];
       allCursos = [...allCursos, ...cursos];
       
@@ -46,22 +47,26 @@ async function listAllTurmas(): Promise<TurmaComCurso[]> {
       if (page > 100) break; // Limite de segurança
     }
     
-    // Busca turmas de todos os cursos e adiciona informações do curso
-    const turmasPromises = allCursos.map(async (curso) => {
-      try {
-        const turmas = await listTurmas(curso.id);
-        // Adiciona informações do curso a cada turma
-        return turmas.map((turma) => ({
-          ...turma,
-          cursoId: Number(curso.id),
-          cursoNome: curso.nome,
-        })) as TurmaComCurso[];
-      } catch {
-        return [];
-      }
-    });
-    
-    const turmasResults = await Promise.all(turmasPromises);
+    // Busca turmas com concorrência limitada para evitar burst de requests
+    const turmasResults: TurmaComCurso[][] = [];
+    for (let i = 0; i < allCursos.length; i += TURMAS_FETCH_CONCURRENCY) {
+      const chunk = allCursos.slice(i, i + TURMAS_FETCH_CONCURRENCY);
+      const chunkResults = await Promise.all(
+        chunk.map(async (curso) => {
+          try {
+            const turmas = await listTurmas(curso.id);
+            return turmas.map((turma) => ({
+              ...turma,
+              cursoId: Number(curso.id),
+              cursoNome: curso.nome,
+            })) as TurmaComCurso[];
+          } catch {
+            return [];
+          }
+        })
+      );
+      turmasResults.push(...chunkResults);
+    }
     
     // Remove duplicatas e retorna todas as turmas
     const uniqueTurmas = new Map<string, TurmaComCurso>();
@@ -98,10 +103,12 @@ export function useTurmasForSelect(options?: UseTurmasForSelectOptions) {
   const isEnabled = options?.enabled ?? true;
 
   const query = useQuery({
-    queryKey: ["turmas-for-select", cursoId ?? "all"],
+    queryKey: ["turmas", "for-select", cursoId ?? "all"],
     queryFn: () => (cursoId ? listTurmasByCurso(cursoId) : listAllTurmas()),
     enabled: isEnabled,
-    staleTime: 60000, // 1 minute
+    staleTime: 30 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 
   const data = isEnabled ? query.data : undefined;

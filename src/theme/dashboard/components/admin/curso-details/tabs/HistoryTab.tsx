@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState, useMemo, useCallback, useEffect } from "react";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { EmptyState } from "@/components/ui/custom";
 import { ButtonCustom } from "@/components/ui/custom/button";
 import { Badge } from "@/components/ui/badge";
@@ -193,13 +193,15 @@ export function HistoryTab({
   });
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+  const [shouldLoadCategoryLookup, setShouldLoadCategoryLookup] =
+    useState(false);
 
   // Buscar categorias e subcategorias para mapear IDs para nomes
   const { data: categoriasData } = useQuery({
     queryKey: ["categorias-cursos"],
     queryFn: async () => {
       try {
-        const response = await listCategorias({ pageSize: 1000 });
+        const response = await listCategorias({ pageSize: 200 });
         // A resposta pode ser um array ou um objeto com data
         if (Array.isArray(response)) {
           return response;
@@ -218,7 +220,11 @@ export function HistoryTab({
         return [];
       }
     },
-    staleTime: 5 * 60 * 1000, // Cache por 5 minutos
+    enabled: shouldLoadCategoryLookup,
+    staleTime: 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchOnMount: false,
   });
 
   // Buscar subcategorias de todas as categorias para garantir mapeamento completo
@@ -241,7 +247,7 @@ export function HistoryTab({
               cat && typeof cat === "object" && "id" in cat,
           )
           .map((cat: CategoriaCurso) =>
-            listSubcategorias(cat.id, { pageSize: 1000 })
+            listSubcategorias(cat.id, { pageSize: 200 })
               .then((result) => {
                 // Garantir que o resultado é um array válido
                 if (Array.isArray(result)) {
@@ -271,10 +277,14 @@ export function HistoryTab({
       }
     },
     enabled:
+      shouldLoadCategoryLookup &&
       !!categoriasData &&
       Array.isArray(categoriasData) &&
       categoriasData.length > 0,
-    staleTime: 5 * 60 * 1000, // Cache por 5 minutos
+    staleTime: 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchOnMount: false,
   });
 
   // Criar mapas separados para lookup rápido de categorias e subcategorias
@@ -399,10 +409,23 @@ export function HistoryTab({
       }
     },
     enabled: !!cursoId,
-    staleTime: 0, // Sempre busca dados frescos
-    refetchOnWindowFocus: true, // Refaz fetch ao focar na janela para pegar atualizações
-    refetchOnMount: true, // Refaz fetch ao montar o componente
+    placeholderData: keepPreviousData,
+    staleTime: 30 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchOnMount: false,
   });
+
+  useEffect(() => {
+    if (shouldLoadCategoryLookup) return;
+    const hasCategoryFields = (response?.data ?? []).some(
+      (item) =>
+        item?.campo === "categoriaId" || item?.campo === "subcategoriaId",
+    );
+    if (hasCategoryFields) {
+      setShouldLoadCategoryLookup(true);
+    }
+  }, [response?.data, shouldLoadCategoryLookup]);
 
   const isLoading = externalLoading || isLoadingAuditoria;
   const auditoria = useMemo(() => response?.data || [], [response?.data]);
