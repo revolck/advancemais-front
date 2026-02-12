@@ -31,17 +31,29 @@ function ConsultoriaSkeleton({ className = "" }: { className?: string }) {
 
 interface ConsultoriaSectionProps {
   className?: string;
+  fetchFromApi?: boolean;
+  staticData?: ConsultoriaApiResponse;
   onDataLoaded?: (data: ConsultoriaApiResponse) => void;
   onError?: (error: string) => void;
 }
 
-function useConsultoriaLoading() {
-  const [data, setData] = useState<ConsultoriaApiResponse | null>(null);
+function useConsultoriaLoading(
+  fetchFromApi: boolean = true,
+  staticData?: ConsultoriaApiResponse,
+) {
+  const [data, setData] = useState<ConsultoriaApiResponse | null>(staticData ?? null);
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(fetchFromApi);
   const [retryCount, setRetryCount] = useState(0);
 
   const fetchData = useCallback(async () => {
+    if (!fetchFromApi) {
+      setData(staticData ?? null);
+      setError(null);
+      setIsLoading(false);
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
     try {
@@ -53,7 +65,7 @@ function useConsultoriaLoading() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [fetchFromApi, staticData]);
 
   const retry = useCallback(() => {
     setRetryCount((prev) => prev + 1);
@@ -84,10 +96,15 @@ function useConsultoriaLoading() {
 
 export default function ConsultoriaSection({
   className = "",
+  fetchFromApi = true,
+  staticData,
   onDataLoaded,
   onError,
 }: ConsultoriaSectionProps) {
-  const { data, error, isLoading, hasAutoRetried } = useConsultoriaLoading();
+  const { data, error, isLoading, hasAutoRetried } = useConsultoriaLoading(
+    fetchFromApi,
+    staticData,
+  );
   const { markAsLoaded, reportError } = useLoadingStatus({
     componentName: "Consultoria",
   });

@@ -31,3 +31,45 @@ export interface WebsiteReorderPayload {
   ordem: number;
 }
 
+export type WebsiteSiteDataStatus =
+  | "PUBLICADO"
+  | "RASCUNHO"
+  | "ALL"
+  | "TODOS"
+  | "true"
+  | "false";
+
+export type WebsiteSiteDataSection =
+  | "sobre"
+  | "slider"
+  | "banner"
+  | "logoEnterprises"
+  | "consultoria"
+  | "recrutamento"
+  | "sobreEmpresa"
+  | "team"
+  | "diferenciais"
+  | "planinhas"
+  | "advanceAjuda"
+  | "recrutamentoSelecao"
+  | "sistema"
+  | "treinamentoCompany"
+  | "conexaoForte"
+  | "treinamentosInCompany"
+  | "headerPages"
+  | "depoimentos"
+  | "informacoesGerais"
+  | "imagemLogin"
+  | "scripts";
+
+export interface GetWebsiteSiteDataParams {
+  status?: WebsiteSiteDataStatus;
+  sections?: WebsiteSiteDataSection[];
+}
+
+export interface WebsiteSiteDataResponse {
+  statusFilter: string;
+  sections: string[];
+  generatedAt: string;
+  data: Record<string, unknown>;
+}

@@ -10,33 +10,39 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ChevronDown, ChevronLeft, Edit, Eye, EyeOff, Loader2 } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronLeft,
+  Edit,
+  Eye,
+  EyeOff,
+  Loader2,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePublicarTurma } from "../hooks";
 import { ConfirmarPublicacaoTurmaModal } from "../modal-acoes";
 import { formatTurmaStatus, getTurmaStatusBadgeClasses } from "../utils";
 import type { HeaderInfoProps } from "../types";
 
-export function HeaderInfo({
-  turma,
-  cursoId,
-  onEditTurma,
-}: HeaderInfoProps) {
+export function HeaderInfo({ turma, cursoId, onEditTurma }: HeaderInfoProps) {
   const [isActionsOpen, setIsActionsOpen] = useState(false);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
 
-  const { mutate: publicarOuDespublicar, isPending, isPublished } =
-    usePublicarTurma({
-      cursoId,
-      turma,
-      onSettled: () => setIsConfirmModalOpen(false),
-    });
+  const {
+    mutate: publicarOuDespublicar,
+    isPending,
+    isPublished,
+  } = usePublicarTurma({
+    cursoId,
+    turma,
+    onSettled: () => setIsConfirmModalOpen(false),
+  });
 
   const statusBadge = (
     <Badge
       className={cn(
         "inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-wide",
-        getTurmaStatusBadgeClasses(turma.status)
+        getTurmaStatusBadgeClasses(turma.status),
       )}
     >
       {formatTurmaStatus(turma.status)}
@@ -66,7 +72,7 @@ export function HeaderInfo({
                 <ChevronDown
                   className={cn(
                     "h-4 w-4 transition-transform duration-200",
-                    isActionsOpen ? "rotate-180" : "rotate-0"
+                    isActionsOpen ? "rotate-180" : "rotate-0",
                   )}
                   aria-hidden="true"
                 />
@@ -102,14 +108,23 @@ export function HeaderInfo({
                 )}
               </DropdownMenuItem>
               <DropdownMenuItem
-                onSelect={() => {
-                  onEditTurma?.();
+                onSelect={(event) => {
+                  event.preventDefault();
                   setIsActionsOpen(false);
+                  if (onEditTurma) {
+                    onEditTurma();
+                    return;
+                  }
+                  window.location.assign(
+                    `/dashboard/cursos/turmas/${turma.id}/editar?cursoId=${encodeURIComponent(
+                      String(cursoId)
+                    )}`
+                  );
                 }}
                 className="cursor-pointer"
               >
                 <Edit className="h-4 w-4 text-gray-500" />
-                <span>Editar turma</span>
+                <span>Editar</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

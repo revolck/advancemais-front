@@ -7,7 +7,7 @@ import { toastCustom } from "@/components/ui/custom";
 import { queryKeys } from "@/lib/react-query/queryKeys";
 
 export interface UsePublicarTurmaParams {
-  cursoId: number;
+  cursoId: number | string;
   turma: CursoTurma;
   /** Callback opcional (ex.: fechar modal de confirmação) */
   onSettled?: () => void;

@@ -36,18 +36,30 @@ function AboutSkeleton({ className = "" }: { className?: string }) {
 // Main component interfaces
 interface AboutSectionProps {
   className?: string;
+  fetchFromApi?: boolean;
+  staticData?: AboutApiResponse;
   onDataLoaded?: (data: AboutApiResponse) => void;
   onError?: (error: string) => void;
 }
 
 // Hook personalizado para gerenciar loading status
-function useAboutLoading() {
-  const [data, setData] = useState<AboutApiResponse | null>(null);
+function useAboutLoading(
+  fetchFromApi: boolean = true,
+  staticData?: AboutApiResponse,
+) {
+  const [data, setData] = useState<AboutApiResponse | null>(staticData ?? null);
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(fetchFromApi);
   const [retryCount, setRetryCount] = useState(0);
 
   const fetchData = useCallback(async () => {
+    if (!fetchFromApi) {
+      setData(staticData ?? null);
+      setError(null);
+      setIsLoading(false);
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
 
@@ -64,7 +76,7 @@ function useAboutLoading() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [fetchFromApi, staticData]);
 
   const retry = useCallback(() => {
     setRetryCount((prev) => prev + 1);
@@ -100,10 +112,15 @@ function useAboutLoading() {
 // Main About Section component
 export default function AboutSection({
   className = "",
+  fetchFromApi = true,
+  staticData,
   onDataLoaded,
   onError,
 }: AboutSectionProps) {
-  const { data, error, isLoading, hasAutoRetried } = useAboutLoading();
+  const { data, error, isLoading, hasAutoRetried } = useAboutLoading(
+    fetchFromApi,
+    staticData,
+  );
   const { markAsLoaded, reportError } = useLoadingStatus({
     componentName: "About",
   });

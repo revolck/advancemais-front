@@ -157,6 +157,11 @@ export function TurmaRow({
   showCurso = false,
 }: TurmaRowProps) {
   const turmaComCurso = turma as TurmaComCurso;
+  const turmaDetailsHref = turmaComCurso.cursoId
+    ? `/dashboard/cursos/turmas/${turma.id}?cursoId=${encodeURIComponent(
+        String(turmaComCurso.cursoId)
+      )}`
+    : `/dashboard/cursos/turmas/${turma.id}`;
   
   return (
     <TableRow 
@@ -248,7 +253,7 @@ export function TurmaRow({
               )}
               aria-label="Visualizar turma"
             >
-              <Link href={`/dashboard/cursos/turmas/${turma.id}`}>
+              <Link href={turmaDetailsHref}>
                 <ChevronRight className="h-4 w-4" />
               </Link>
             </Button>

@@ -9,11 +9,13 @@ import { getBannerDataClient } from "@/api/websites/components/banner";
 const BannersGroup: React.FC<BannersGroupProps> = ({
   className = "",
   title = "Impulsione você e sua empresa",
+  fetchFromApi = true,
+  staticData,
 }) => {
   // Hook para detectar mobile - versão simplificada
   const [isMobile, setIsMobile] = useState(false);
-  const [banners, setBanners] = useState<BannerItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [banners, setBanners] = useState<BannerItem[]>(staticData ?? []);
+  const [isLoading, setIsLoading] = useState(fetchFromApi);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -28,6 +30,12 @@ const BannersGroup: React.FC<BannersGroupProps> = ({
 
   // Carrega banners da API
   useEffect(() => {
+    if (!fetchFromApi) {
+      setBanners((staticData ?? []).sort((a, b) => a.position - b.position));
+      setIsLoading(false);
+      return;
+    }
+
     let active = true;
     (async () => {
       try {
@@ -43,7 +51,7 @@ const BannersGroup: React.FC<BannersGroupProps> = ({
     return () => {
       active = false;
     };
-  }, []);
+  }, [fetchFromApi, staticData]);
 
   return (
     <section className={`relative py-12 mt-[-40px] mb-5 ${className}`}>

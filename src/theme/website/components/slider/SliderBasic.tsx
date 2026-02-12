@@ -10,9 +10,19 @@ import { getSliderDataClient } from "@/api/websites/components/slider";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { SlideData } from "./types";
 
-const SliderBasic: React.FC = () => {
+interface SliderBasicProps {
+  fetchFromApi?: boolean;
+  staticData?: SlideData[];
+  staticDataMobile?: SlideData[];
+}
+
+const SliderBasic: React.FC<SliderBasicProps> = ({
+  fetchFromApi = true,
+  staticData,
+  staticDataMobile,
+}) => {
   const [slides, setSlides] = useState<SlideData[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(fetchFromApi);
 
   const {
     emblaRef,
@@ -30,6 +40,20 @@ const SliderBasic: React.FC = () => {
 
   // Carrega slides da API conforme orientação (DESKTOP / TABLET_MOBILE)
   useEffect(() => {
+    if (!fetchFromApi) {
+      if (isMobile) {
+        setSlides(
+          staticDataMobile && staticDataMobile.length > 0
+            ? staticDataMobile
+            : (staticData ?? []),
+        );
+      } else {
+        setSlides(staticData ?? []);
+      }
+      setIsLoading(false);
+      return;
+    }
+
     let active = true;
     (async () => {
       try {
@@ -53,7 +77,7 @@ const SliderBasic: React.FC = () => {
     return () => {
       active = false;
     };
-  }, [isMobile]);
+  }, [fetchFromApi, isMobile, staticData, staticDataMobile]);
 
   // Re-inicializa o Embla quando os slides mudam
   useEffect(() => {

@@ -11,6 +11,7 @@ import { EmptyState } from "@/components/ui/custom";
 import { ButtonCustom } from "@/components/ui/custom/button";
 import { cn } from "@/lib/utils";
 import {
+  getTurmaById,
   listModulos,
   listProvas,
   type CreateTurmaEstruturaPayload,
@@ -52,7 +53,7 @@ interface EstruturaData {
 }
 
 interface EstruturaTabProps {
-  cursoId: number;
+  cursoId: number | string;
   turmaId: string;
   initialEstrutura?: CreateTurmaEstruturaPayload | null;
   estruturaTipo?: TurmaEstruturaTipo | null;
@@ -228,8 +229,19 @@ const mapProvaToItem = (prova: any): EstruturaItem => ({
         : null,
 });
 
-async function fetchEstrutura(
-  cursoId: number,
+const hasAnyStructure = (
+  estrutura: EstruturaData | null,
+): estrutura is EstruturaData => {
+  if (!estrutura) return false;
+  return (
+    estrutura.modules.length > 0 ||
+    estrutura.standaloneItems.length > 0 ||
+    estrutura.modules.some((module) => module.items.length > 0)
+  );
+};
+
+async function fetchEstruturaLegacy(
+  cursoId: number | string,
   turmaId: string,
 ): Promise<EstruturaData> {
   const safeList = async <T,>(promise: Promise<T>, fallback: T): Promise<T> => {
@@ -313,13 +325,39 @@ async function fetchEstrutura(
   };
 }
 
+async function fetchEstrutura(
+  cursoId: number | string,
+  turmaId: string,
+): Promise<EstruturaData> {
+  try {
+    const turma = await getTurmaById(cursoId, turmaId, {
+      includeAlunos: false,
+      includeEstrutura: true,
+    });
+
+    const estruturaFromDetail = buildFromPayload(turma.estrutura ?? null);
+    if (hasAnyStructure(estruturaFromDetail)) {
+      return estruturaFromDetail;
+    }
+  } catch (error: any) {
+    const status = Number(error?.status ?? 0);
+    if (status && status < 500) {
+      return fetchEstruturaLegacy(cursoId, turmaId);
+    }
+    throw error;
+  }
+
+  return fetchEstruturaLegacy(cursoId, turmaId);
+}
+
 export function EstruturaTab({
   cursoId,
   turmaId,
   initialEstrutura,
   estruturaTipo,
 }: EstruturaTabProps) {
-  const { rawInstrutores } = useInstrutoresForSelect();
+  const { rawInstrutores, isLoading: isInstrutoresLoading } =
+    useInstrutoresForSelect();
   const instructorNameById = useMemo(() => {
     const map = new Map<string, string>();
     rawInstrutores.forEach((instrutor) => {
@@ -335,24 +373,29 @@ export function EstruturaTab({
     () => buildFromPayload(initialEstrutura),
     [initialEstrutura],
   );
+  const hasInitialStructure = useMemo(
+    () => hasAnyStructure(initialData),
+    [initialData],
+  );
 
   const { data, isLoading, isFetching, error } = useQuery<EstruturaData>({
     queryKey: ["admin-turma-estrutura", String(cursoId), turmaId],
     queryFn: () => fetchEstrutura(cursoId, turmaId),
     enabled: Boolean(cursoId && turmaId),
-    initialData: initialData ?? undefined,
-    staleTime: 5 * 60 * 1000,
+    initialData: hasInitialStructure ? initialData ?? undefined : undefined,
+    staleTime: 20 * 1000,
   });
 
-  const estrutura = data ?? { modules: [], standaloneItems: [] };
+  const estrutura = useMemo(
+    () => data ?? { modules: [], standaloneItems: [] },
+    [data]
+  );
   const resolvedEstrutura = useMemo(() => {
     const resolveName = (item: EstruturaItem) => {
       if (item.instructorName) return item.instructorName;
       if (item.instructorId) {
-        return (
-          instructorNameById.get(String(item.instructorId)) ??
-          String(item.instructorId)
-        );
+        const name = instructorNameById.get(String(item.instructorId));
+        return name ?? null;
       }
       return null;
     };
@@ -376,7 +419,7 @@ export function EstruturaTab({
     resolvedEstrutura.modules.reduce((acc, mod) => acc + mod.items.length, 0) +
     resolvedEstrutura.standaloneItems.length;
 
-  const shouldShowSkeleton = isLoading || (isFetching && !initialData);
+  const shouldShowSkeleton = isLoading || (isFetching && !hasInitialStructure);
 
   if (shouldShowSkeleton) {
     return (
@@ -568,7 +611,11 @@ export function EstruturaTab({
                             <div className="mt-1 flex flex-wrap items-center gap-3 text-[11px] text-slate-500">
                               <span className="inline-flex items-center gap-1">
                                 <Icon name="User" className="h-3 w-3" />
-                                {item.instructorName || "Instrutor não definido"}
+                                {item.instructorId && isInstrutoresLoading ? (
+                                  <Skeleton className="h-3 w-28 inline-block" />
+                                ) : (
+                                  item.instructorName || "Instrutor não definido"
+                                )}
                               </span>
                               {attachmentsLabel && (
                                 <span className="inline-flex items-center gap-1">
@@ -697,7 +744,11 @@ export function EstruturaTab({
                           <div className="mt-1 flex flex-wrap items-center gap-3 text-[11px] text-slate-500">
                             <span className="inline-flex items-center gap-1">
                               <Icon name="User" className="h-3 w-3" />
-                              {item.instructorName || "Instrutor não definido"}
+                              {item.instructorId && isInstrutoresLoading ? (
+                                <Skeleton className="h-3 w-28 inline-block" />
+                              ) : (
+                                item.instructorName || "Instrutor não definido"
+                              )}
                             </span>
                             {attachmentsLabel && (
                               <span className="inline-flex items-center gap-1">

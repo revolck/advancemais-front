@@ -2,7 +2,12 @@ import { apiFetch } from "@/api/client";
 import { websiteRoutes } from "@/api/routes";
 import { apiConfig } from "@/lib/env";
 
-import type { WebsiteModuleInfoResponse, WebsiteReorderPayload } from "./types";
+import type {
+  GetWebsiteSiteDataParams,
+  WebsiteModuleInfoResponse,
+  WebsiteReorderPayload,
+  WebsiteSiteDataResponse,
+} from "./types";
 
 const ACCEPT_HEADER = { Accept: apiConfig.headers.Accept } as const;
 const JSON_HEADERS = {
@@ -12,6 +17,30 @@ const JSON_HEADERS = {
 
 export async function getWebsiteModuleInfo(): Promise<WebsiteModuleInfoResponse> {
   return apiFetch<WebsiteModuleInfoResponse>(websiteRoutes.info(), {
+    init: {
+      method: "GET",
+      headers: ACCEPT_HEADER,
+    },
+    cache: "no-cache",
+  });
+}
+
+export async function getWebsiteSiteData(
+  params?: GetWebsiteSiteDataParams,
+): Promise<WebsiteSiteDataResponse> {
+  const searchParams = new URLSearchParams();
+
+  if (params?.status) {
+    searchParams.set("status", params.status);
+  }
+
+  if (params?.sections?.length) {
+    searchParams.set("sections", params.sections.join(","));
+  }
+
+  const endpoint = websiteRoutes.siteData.list(searchParams.toString());
+
+  return apiFetch<WebsiteSiteDataResponse>(endpoint, {
     init: {
       method: "GET",
       headers: ACCEPT_HEADER,
@@ -73,4 +102,3 @@ export async function reorderWebsiteItem(
 }
 
 export * from "./types";
-

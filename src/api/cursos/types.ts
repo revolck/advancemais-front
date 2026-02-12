@@ -108,8 +108,17 @@ export interface CursoTurma {
     email?: string;
     codUsuario?: string;
   };
+  criadoPorId?: string;
+  criadoEm?: string;
+  editadoPorId?: string;
+  editadoEm?: string;
   estruturaTipo?: TurmaEstruturaTipo;
   estrutura?: CreateTurmaEstruturaPayload;
+  aulas?: Array<Record<string, unknown>>;
+  provas?: Array<Record<string, unknown>>;
+  itens?: Array<Record<string, unknown>>;
+  instrutores?: Array<Record<string, unknown>>;
+  alunos?: Array<Record<string, unknown>>;
 }
 
 export type UpdateTurmaPayload = Partial<CreateTurmaPayload>;
@@ -207,12 +216,20 @@ export interface TurmaInscricao {
   id: string;
   alunoId: string;
   status?: string;
+  statusInscricao?: string;
+  statusPagamento?: string;
+  progresso?: number;
   criadoEm?: string;
   observacoes?: string;
   aluno?: {
     id: string;
     nome?: string;
     nomeCompleto?: string;
+    email?: string;
+    cpf?: string;
+    avatarUrl?: string;
+    codigo?: string;
+    codUsuario?: string;
   };
   curso?: {
     id: string;
@@ -241,12 +258,21 @@ export interface InscricaoCurso {
   id: string;
   alunoId: string;
   statusInscricao: StatusInscricao;
+  statusPagamento?: string;
   criadoEm: string;
   progresso: number;
   aluno: {
     id: string;
     nomeCompleto: string;
     email: string;
+    cpf?: string;
+    avatarUrl?: string;
+    codigo?: string;
+    codUsuario?: string;
+  };
+  turma?: {
+    id: string;
+    nome?: string;
   };
 }
 
@@ -627,9 +653,21 @@ export interface ListInscricoesCursoParams {
   page?: number;
   pageSize?: number;
   status?: string | string[];
+  statusPagamento?: string | string[];
+  includeProgress?: boolean;
   search?: string;
   turmaId?: string | string[];
   cidade?: string | string[];
+}
+
+export interface GetTurmaByIdParams {
+  includeAlunos?: boolean;
+  includeEstrutura?: boolean;
+}
+
+export interface ListTurmasParams {
+  page?: number;
+  pageSize?: number;
 }
 
 export interface ListInscricoesCursoResponse {

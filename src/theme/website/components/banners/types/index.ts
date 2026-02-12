@@ -15,4 +15,6 @@ export interface BannerCardProps {
 export interface BannersGroupProps {
   className?: string;
   title?: string;
+  fetchFromApi?: boolean;
+  staticData?: BannerItem[];
 }

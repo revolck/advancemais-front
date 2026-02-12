@@ -380,6 +380,15 @@ export const breadcrumbConfig: Record<string, BreadcrumbConfig> = {
       { label: "Cadastrar", icon: "FileText" },
     ],
   },
+  "/dashboard/cursos/turmas/[turmaId]/editar": {
+    title: "Editar Turma",
+    items: [
+      { label: "Dashboard", href: "/", icon: "Home" },
+      { label: "Cursos", href: "/dashboard/cursos", icon: "BookOpen" },
+      { label: "Turmas", href: "/dashboard/cursos/turmas", icon: "Users" },
+      { label: "Editar", icon: "Edit" },
+    ],
+  },
   // Detalhes de turma: /dashboard/cursos/turmas/[turmaId]
   // Nota: Esta configuração estática não funciona para rotas dinâmicas
   // O breadcrumb é resolvido dinamicamente pelo regex abaixo
@@ -918,6 +927,19 @@ export function useBreadcrumb(): BreadcrumbConfig {
     };
   }
 
+  // Edição de turma: /dashboard/cursos/turmas/[turmaId]/editar
+  if (cleanPathname.match(/^\/dashboard\/cursos\/turmas\/[^/]+\/editar$/)) {
+    return {
+      title: "Editar Turma",
+      items: [
+        { label: "Dashboard", href: "/", icon: "Home" },
+        { label: "Cursos", href: "/dashboard/cursos", icon: "BookOpen" },
+        { label: "Turmas", href: "/dashboard/cursos/turmas", icon: "Users" },
+        { label: "Editar", icon: "Edit" },
+      ],
+    };
+  }
+
   // Detalhes de turma: /dashboard/cursos/turmas/[turmaId] (nova rota)
   if (cleanPathname.match(/^\/dashboard\/cursos\/turmas\/[^/]+$/)) {
     return {
@@ -927,6 +949,19 @@ export function useBreadcrumb(): BreadcrumbConfig {
         { label: "Cursos", href: "/dashboard/cursos", icon: "BookOpen" },
         { label: "Turmas", href: "/dashboard/cursos/turmas", icon: "Users" },
         { label: "Detalhes da Turma", icon: "Eye" },
+      ],
+    };
+  }
+
+  // Rota antiga de edição de turma: /dashboard/cursos/[id]/turmas/[turmaId]/editar
+  if (cleanPathname.match(/^\/dashboard\/cursos\/\d+\/turmas\/[^/]+\/editar$/)) {
+    return {
+      title: "Editar Turma",
+      items: [
+        { label: "Dashboard", href: "/dashboard", icon: "Home" },
+        { label: "Cursos", href: "/dashboard/cursos", icon: "BookOpen" },
+        { label: "Turmas", href: "/dashboard/cursos/turmas", icon: "Users" },
+        { label: "Editar", icon: "Edit" },
       ],
     };
   }

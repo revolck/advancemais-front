@@ -241,7 +241,11 @@ export function TurmasTab({ turmas, cursoId }: TurmasTabProps) {
                         className="h-8 w-8 rounded-full text-gray-500 hover:text-white hover:bg-[var(--primary-color)]"
                         aria-label="Visualizar turma"
                       >
-                        <Link href={`/dashboard/cursos/turmas/${turma.id}`}>
+                        <Link
+                          href={`/dashboard/cursos/turmas/${turma.id}?cursoId=${encodeURIComponent(
+                            String(cursoId)
+                          )}`}
+                        >
                           <ChevronRight className="h-4 w-4" />
                         </Link>
                       </Button>

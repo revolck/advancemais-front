@@ -188,6 +188,10 @@ export const websiteRoutes = {
     update: (id: string) => `${prefix}/website/scripts/${id}`,
     delete: (id: string) => `${prefix}/website/scripts/${id}`,
   },
+  siteData: {
+    list: (query?: string) =>
+      `${prefix}/website/site-data${query ? `?${query}` : ""}`,
+  },
 };
 
 /**

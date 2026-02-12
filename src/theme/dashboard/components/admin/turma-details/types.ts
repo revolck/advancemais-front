@@ -7,7 +7,7 @@ import type { CursoTurma } from "@/api/cursos";
 
 export interface HeaderInfoProps {
   turma: CursoTurma;
-  cursoId: number;
+  cursoId: number | string;
   cursoNome?: string;
   onEditTurma?: () => void;
 }

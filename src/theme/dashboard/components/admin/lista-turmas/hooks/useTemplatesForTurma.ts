@@ -52,8 +52,24 @@ type AvaliacaoTemplate = {
   moduloId?: string | null;
 };
 
-export function useTemplatesForTurma(params?: { cursoId?: string | null }) {
+const normalizeAvaliacaoTipo = (
+  raw: unknown
+): "ATIVIDADE" | "PROVA" => {
+  const normalized = String(raw || "").toUpperCase();
+  if (normalized.includes("ATIV")) return "ATIVIDADE";
+  if (normalized.includes("PROVA")) return "PROVA";
+  if (normalized.includes("AVAL")) return "PROVA";
+  return "PROVA";
+};
+
+export function useTemplatesForTurma(params?: {
+  cursoId?: string | null;
+  turmaId?: string | null;
+  includeTurma?: boolean;
+}) {
   const cursoId = params?.cursoId ?? null;
+  const turmaId = params?.turmaId ?? null;
+  const includeTurma = Boolean(params?.includeTurma && turmaId);
 
   const [aulas, setAulas] = useState<AulaTemplate[]>([]);
   const [avaliacoes, setAvaliacoes] = useState<AvaliacaoTemplate[]>([]);
@@ -99,8 +115,39 @@ export function useTemplatesForTurma(params?: { cursoId?: string | null }) {
       const aulasList: any[] = extractListFromApiResponse(aulasRaw);
       const avalList: any[] = extractListFromApiResponse(avalRaw);
 
+      let aulasMerged = aulasList;
+      let avalMerged = avalList;
+
+      if (includeTurma && turmaId) {
+        const [aulasTurmaRes, avalTurmaRes] = await Promise.all([
+          listAulas({
+            turmaId,
+            page,
+            pageSize,
+          }),
+          listAvaliacoes({
+            turmaId,
+            page,
+            pageSize,
+          }),
+        ]);
+
+        const aulasTurma = extractListFromApiResponse(aulasTurmaRes as any);
+        const avalTurma = extractListFromApiResponse(avalTurmaRes as any);
+
+        const aulasMap = new Map<string, any>();
+        (aulasList || []).forEach((a: any) => aulasMap.set(String(a.id), a));
+        (aulasTurma || []).forEach((a: any) => aulasMap.set(String(a.id), a));
+        aulasMerged = Array.from(aulasMap.values());
+
+        const avalMap = new Map<string, any>();
+        (avalList || []).forEach((a: any) => avalMap.set(String(a.id), a));
+        (avalTurma || []).forEach((a: any) => avalMap.set(String(a.id), a));
+        avalMerged = Array.from(avalMap.values());
+      }
+
       setAulas(
-        (aulasList || []).map((a: any) => ({
+        (aulasMerged || []).map((a: any) => ({
           id: String(a.id),
           codigo: a.codigo,
           titulo: pickTitulo(a),
@@ -130,11 +177,13 @@ export function useTemplatesForTurma(params?: { cursoId?: string | null }) {
       );
 
       setAvaliacoes(
-        (avalList || []).map((x: any) => ({
+        (avalMerged || []).map((x: any) => ({
           id: String(x.id),
           codigo: x.codigo,
           titulo: pickTitulo(x),
-          tipo: x.tipo,
+          tipo: normalizeAvaliacaoTipo(
+            x.tipo ?? x.tipoAvaliacao ?? x.tipo_avaliacao ?? x.tipoAtividade
+          ),
           modalidade: x.modalidade ?? undefined,
           status: x.status,
           instrutorId: x.instrutorId ?? x.instrutor?.id ?? undefined,
@@ -162,8 +211,8 @@ export function useTemplatesForTurma(params?: { cursoId?: string | null }) {
 
       if (process.env.NODE_ENV === "development") {
         console.log("[TURMA_TEMPLATES] Carregado:", {
-          aulas: aulasList.length,
-          avaliacoes: avalList.length,
+          aulas: aulasMerged.length,
+          avaliacoes: avalMerged.length,
           aulasShape: {
             hasDataArray: Array.isArray(aulasRaw?.data),
             hasNestedDataArray: Array.isArray(aulasRaw?.data?.data),
@@ -188,7 +237,7 @@ export function useTemplatesForTurma(params?: { cursoId?: string | null }) {
     } finally {
       setIsLoading(false);
     }
-  }, [cursoId]);
+  }, [cursoId, includeTurma, turmaId]);
 
   useEffect(() => {
     void fetchTemplates();

@@ -124,6 +124,8 @@ export type {
   CreateInscricaoPayload,
   StatusInscricao,
   InscricaoCurso,
+  ListTurmasParams,
+  GetTurmaByIdParams,
   ListInscricoesCursoParams,
   ListInscricoesCursoResponse,
   CursoAuditoriaItem,

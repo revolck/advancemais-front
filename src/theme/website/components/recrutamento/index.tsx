@@ -31,17 +31,29 @@ function RecrutamentoSkeleton({ className = "" }: { className?: string }) {
 
 interface RecrutamentoSectionProps {
   className?: string;
+  fetchFromApi?: boolean;
+  staticData?: RecrutamentoApiResponse;
   onDataLoaded?: (data: RecrutamentoApiResponse) => void;
   onError?: (error: string) => void;
 }
 
-function useRecrutamentoLoading() {
-  const [data, setData] = useState<RecrutamentoApiResponse | null>(null);
+function useRecrutamentoLoading(
+  fetchFromApi: boolean = true,
+  staticData?: RecrutamentoApiResponse,
+) {
+  const [data, setData] = useState<RecrutamentoApiResponse | null>(staticData ?? null);
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(fetchFromApi);
   const [retryCount, setRetryCount] = useState(0);
 
   const fetchData = useCallback(async () => {
+    if (!fetchFromApi) {
+      setData(staticData ?? null);
+      setError(null);
+      setIsLoading(false);
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
     try {
@@ -53,7 +65,7 @@ function useRecrutamentoLoading() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [fetchFromApi, staticData]);
 
   const retry = useCallback(() => {
     setRetryCount((prev) => prev + 1);
@@ -84,10 +96,15 @@ function useRecrutamentoLoading() {
 
 export default function RecrutamentoSection({
   className = "",
+  fetchFromApi = true,
+  staticData,
   onDataLoaded,
   onError,
 }: RecrutamentoSectionProps) {
-  const { data, error, isLoading, hasAutoRetried } = useRecrutamentoLoading();
+  const { data, error, isLoading, hasAutoRetried } = useRecrutamentoLoading(
+    fetchFromApi,
+    staticData,
+  );
   const { markAsLoaded, reportError } = useLoadingStatus({
     componentName: "Recrutamento",
   });

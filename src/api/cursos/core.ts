@@ -29,6 +29,8 @@ import type {
   VisaoGeralResponse,
   ListInscricoesCursoParams,
   ListInscricoesCursoResponse,
+  ListTurmasParams,
+  GetTurmaByIdParams,
   ListCursoAuditoriaParams,
   ListCursoAuditoriaResponse,
   ProvaToken,
@@ -389,6 +391,7 @@ export async function createCurso(
  */
 function normalizeTurma(turma: any): CursoTurma {
   return {
+    ...turma,
     id: String(turma.id ?? ""),
     codigo: String(turma.codigo ?? ""),
     nome: String(turma.nome ?? ""),
@@ -416,8 +419,17 @@ function normalizeTurma(turma: any): CursoTurma {
     dataFim: turma.dataFim,
     dataInscricaoInicio: turma.dataInscricaoInicio,
     dataInscricaoFim: turma.dataInscricaoFim,
+    criadoPorId: turma.criadoPorId,
+    criadoEm: turma.criadoEm,
+    editadoPorId: turma.editadoPorId,
+    editadoEm: turma.editadoEm,
     estruturaTipo: turma.estruturaTipo,
     estrutura: turma.estrutura,
+    aulas: Array.isArray(turma.aulas) ? turma.aulas : undefined,
+    provas: Array.isArray(turma.provas) ? turma.provas : undefined,
+    itens: Array.isArray(turma.itens) ? turma.itens : undefined,
+    instrutores: Array.isArray(turma.instrutores) ? turma.instrutores : undefined,
+    alunos: Array.isArray(turma.alunos) ? turma.alunos : undefined,
     instrutor: turma.instrutor
       ? {
           id: String(turma.instrutor.id ?? ""),
@@ -543,9 +555,23 @@ export async function despublicarCurso(
 // Turmas
 export async function listTurmas(
   cursoId: number | string,
-  init?: RequestInit
+  options?: RequestInit & ListTurmasParams
 ): Promise<CursoTurma[]> {
-  const url = cursosRoutes.cursos.turmas.list(cursoId);
+  const { page, pageSize, ...init } = options ?? {};
+  const hasExplicitPage = typeof page === "number" && Number.isFinite(page);
+  const searchParams = new URLSearchParams();
+
+  if (hasExplicitPage) {
+    searchParams.append("page", String(page));
+  }
+  if (typeof pageSize === "number" && Number.isFinite(pageSize)) {
+    searchParams.append("pageSize", String(pageSize));
+  }
+
+  const endpoint = cursosRoutes.cursos.turmas.list(cursoId);
+  const queryString = searchParams.toString();
+  const url = queryString ? `${endpoint}?${queryString}` : endpoint;
+
   const res = await apiFetch<any>(url, {
     init: {
       method: "GET",
@@ -562,26 +588,95 @@ export async function listTurmas(
     ? (res.data as CursoTurma[])
     : [];
 
+  // Mantém comportamento "lista completa" quando a API retorna paginação
+  // e nenhum page explícito foi solicitado.
+  if (
+    !hasExplicitPage &&
+    !Array.isArray(res) &&
+    Number.isFinite(Number(res?.pagination?.totalPages)) &&
+    Number(res.pagination.totalPages) > 1
+  ) {
+    const totalPages = Number(res.pagination.totalPages);
+    const resolvedPageSize =
+      Number.isFinite(Number(res?.pagination?.pageSize)) &&
+      Number(res.pagination.pageSize) > 0
+        ? Number(res.pagination.pageSize)
+        : pageSize ?? 50;
+    const FETCH_CONCURRENCY = 3;
+    let allTurmas = [...turmas];
+
+    for (
+      let startPage = 2;
+      startPage <= totalPages;
+      startPage += FETCH_CONCURRENCY
+    ) {
+      const endPage = Math.min(startPage + FETCH_CONCURRENCY - 1, totalPages);
+      const requests: Promise<any>[] = [];
+
+      for (let nextPage = startPage; nextPage <= endPage; nextPage += 1) {
+        const pageParams = new URLSearchParams();
+        pageParams.append("page", String(nextPage));
+        pageParams.append("pageSize", String(resolvedPageSize));
+        const pageUrl = `${endpoint}?${pageParams.toString()}`;
+
+        requests.push(
+          apiFetch<any>(pageUrl, {
+            init: {
+              method: "GET",
+              ...init,
+              headers: buildHeaders(init?.headers, true),
+            },
+            cache: "no-cache",
+          })
+        );
+      }
+
+      const responses = await Promise.all(requests);
+      responses.forEach((response) => {
+        if (Array.isArray(response)) {
+          allTurmas = allTurmas.concat(response as CursoTurma[]);
+          return;
+        }
+        if (Array.isArray(response?.data)) {
+          allTurmas = allTurmas.concat(response.data as CursoTurma[]);
+        }
+      });
+    }
+
+    return allTurmas;
+  }
+
   return turmas;
 }
 
 export async function getTurmaById(
   cursoId: number | string,
   turmaId: string,
-  init?: RequestInit
+  options?: RequestInit & GetTurmaByIdParams
 ): Promise<CursoTurma> {
+  const { includeAlunos, includeEstrutura, ...init } = options ?? {};
+  const searchParams = new URLSearchParams();
+
+  if (typeof includeAlunos === "boolean") {
+    searchParams.append("includeAlunos", String(includeAlunos));
+  }
+  if (typeof includeEstrutura === "boolean") {
+    searchParams.append("includeEstrutura", String(includeEstrutura));
+  }
+
+  const endpoint = cursosRoutes.cursos.turmas.get(cursoId, turmaId);
+  const queryString = searchParams.toString();
+  const url = queryString ? `${endpoint}?${queryString}` : endpoint;
+
   try {
-    const response = await apiFetch<any>(
-      cursosRoutes.cursos.turmas.get(cursoId, turmaId),
-      {
-        init: {
-          method: "GET",
-          ...init,
-          headers: buildHeaders(init?.headers, true),
-        },
-        cache: "no-cache",
-      }
-    );
+    const response = await apiFetch<any>(url, {
+      init: {
+        method: "GET",
+        ...init,
+        headers: buildHeaders(init?.headers, true),
+      },
+      cache: "no-cache",
+    });
 
     // Normaliza a turma usando a mesma função de normalização
     return normalizeTurma(response);
@@ -838,6 +933,15 @@ export async function listInscricoesCurso(
       ? params.status
       : [params.status];
     searchParams.append("status", statusArray.join(","));
+  }
+  if (params?.statusPagamento) {
+    const statusPagamentoArray = Array.isArray(params.statusPagamento)
+      ? params.statusPagamento
+      : [params.statusPagamento];
+    searchParams.append("statusPagamento", statusPagamentoArray.join(","));
+  }
+  if (typeof params?.includeProgress === "boolean") {
+    searchParams.append("includeProgress", String(params.includeProgress));
   }
   if (params?.turmaId) {
     const turmaIdValue = Array.isArray(params.turmaId)

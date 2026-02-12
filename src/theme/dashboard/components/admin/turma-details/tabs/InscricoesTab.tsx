@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { EmptyState } from "@/components/ui/custom";
 import { Skeleton } from "@/components/ui/skeleton";
 import { InputCustom } from "@/components/ui/custom/input";
@@ -26,9 +26,23 @@ import Link from "next/link";
 import type { TurmaInscricao } from "@/api/cursos";
 import { AvatarCustom } from "@/components/ui/custom/avatar";
 
+interface InscricoesPagination {
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
 interface InscricoesTabProps {
   inscricoes: TurmaInscricao[];
   isLoading?: boolean;
+  pagination?: InscricoesPagination;
+  currentPage?: number;
+  onPageChange?: (page: number) => void;
+  onSearch?: (value: string) => void;
+  onLoadProgress?: () => void;
+  isLoadingProgress?: boolean;
+  hasLoadedProgress?: boolean;
 }
 
 const getStatusColor = (status?: string) => {
@@ -86,17 +100,55 @@ const getStatusLabel = (status?: string) => {
     .join(" ");
 };
 
+const getPagamentoColor = (status?: string) => {
+  if (!status) return "bg-gray-100 text-gray-800 border-gray-200";
+  const normalized = status.toUpperCase().replace(/_/g, "");
+  switch (normalized) {
+    case "APROVADO":
+    case "PAGO":
+      return "bg-emerald-100 text-emerald-800 border-emerald-200";
+    case "PENDENTE":
+    case "AGUARDANDOPAGAMENTO":
+      return "bg-amber-100 text-amber-800 border-amber-200";
+    case "RECUSADO":
+    case "CANCELADO":
+      return "bg-red-100 text-red-800 border-red-200";
+    default:
+      return "bg-gray-100 text-gray-800 border-gray-200";
+  }
+};
+
+const getPagamentoLabel = (status?: string) => {
+  if (!status) return "—";
+  return status
+    .replace(/_/g, " ")
+    .toLowerCase()
+    .split(" ")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+};
+
+const formatCpf = (cpf?: string) => {
+  if (!cpf) return "—";
+  const digits = cpf.replace(/\D/g, "");
+  if (digits.length !== 11) return cpf;
+  return digits.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
+};
+
 export function InscricoesTab({
   inscricoes,
   isLoading = false,
+  pagination,
+  currentPage: currentPageProp = 1,
+  onPageChange,
+  onSearch,
+  onLoadProgress,
+  isLoadingProgress = false,
+  hasLoadedProgress = false,
 }: InscricoesTabProps) {
   // Estados de busca
   const [pendingSearchQuery, setPendingSearchQuery] = useState("");
   const [appliedSearchQuery, setAppliedSearchQuery] = useState("");
-
-  // Estados de paginação
-  const [pageSize] = useState(10);
-  const [currentPage, setCurrentPage] = useState(1);
 
   // Estados de ordenação
   type SortField = "nome" | null;
@@ -109,14 +161,13 @@ export function InscricoesTab({
     const value = rawValue ?? pendingSearchQuery;
     const trimmedValue = value.trim();
     setAppliedSearchQuery(trimmedValue);
-    setCurrentPage(1); // Reset para página 1 ao buscar
-  }, [pendingSearchQuery]);
+    onSearch?.(trimmedValue);
+  }, [onSearch, pendingSearchQuery]);
 
   // Funções de ordenação
   const setSort = useCallback((field: SortField, direction: SortDirection) => {
     setSortField(field);
     setSortDirection(direction);
-    setCurrentPage(1); // Reset para página 1 ao ordenar
   }, []);
 
   const toggleSort = useCallback((field: SortField) => {
@@ -129,7 +180,6 @@ export function InscricoesTab({
       setSortDirection((prevDir) => (prevDir === "asc" ? "desc" : "asc"));
       return prev;
     });
-    setCurrentPage(1); // Reset para página 1 ao ordenar
   }, []);
 
   // Função de ordenação
@@ -153,7 +203,7 @@ export function InscricoesTab({
     [sortDirection, sortField]
   );
 
-  // Filtrar inscrições por nome do aluno (usa o termo aplicado, não o pendente)
+  // Filtra e ordena apenas os itens da página atual recebida da API.
   const filteredInscricoes = useMemo(() => {
     let result = inscricoes;
 
@@ -164,7 +214,14 @@ export function InscricoesTab({
         const aluno = inscricao.aluno as any;
         const nomeCompleto = (aluno?.nomeCompleto || aluno?.nome || "").toLowerCase();
         const codigo = (aluno?.codigo || aluno?.codUsuario || "").toLowerCase();
-        return nomeCompleto.includes(query) || codigo.includes(query);
+        const cpf = (aluno?.cpf || "").toLowerCase();
+        const email = (aluno?.email || "").toLowerCase();
+        return (
+          nomeCompleto.includes(query) ||
+          codigo.includes(query) ||
+          cpf.includes(query) ||
+          email.includes(query)
+        );
       });
     }
 
@@ -172,12 +229,17 @@ export function InscricoesTab({
     return sortList(result);
   }, [inscricoes, appliedSearchQuery, sortList]);
 
-  // Paginação
-  const totalItems = filteredInscricoes.length;
-  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
-  const startIndex = (currentPage - 1) * pageSize;
-  const endIndex = startIndex + pageSize;
-  const paginatedInscricoes = filteredInscricoes.slice(startIndex, endIndex);
+  // Paginação vinda do backend
+  const totalItems = Math.max(0, Number(pagination?.total ?? filteredInscricoes.length));
+  const totalPages = Math.max(1, Number(pagination?.totalPages ?? 1));
+  const pageSize = Math.max(
+    1,
+    Number(pagination?.pageSize ?? Math.max(filteredInscricoes.length, 1))
+  );
+  const currentPage = Math.max(1, Number(currentPageProp || 1));
+  const startIndex = totalItems === 0 ? 0 : (currentPage - 1) * pageSize;
+  const endIndex = startIndex + filteredInscricoes.length;
+  const paginatedInscricoes = filteredInscricoes;
 
   // Páginas visíveis para paginação
   const visiblePages = useMemo(() => {
@@ -195,18 +257,13 @@ export function InscricoesTab({
 
   const handlePageChange = useCallback((page: number) => {
     const nextPage = Math.max(1, Math.min(page, totalPages));
-    setCurrentPage(nextPage);
-  }, [totalPages]);
+    onPageChange?.(nextPage);
+  }, [onPageChange, totalPages]);
 
   // Validação do input de busca
   const isSearchInputValid = useMemo(() => {
     return pendingSearchQuery.trim().length >= 2 || pendingSearchQuery.trim().length === 0;
   }, [pendingSearchQuery]);
-
-  // Reset página quando filtros mudam
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [appliedSearchQuery]);
 
   if (isLoading) {
     return (
@@ -242,7 +299,7 @@ export function InscricoesTab({
           <div className="flex-1">
             <InputCustom
               label="Pesquisar aluno"
-              placeholder="Buscar por nome ou código de matrícula..."
+              placeholder="Buscar por nome, código, CPF ou e-mail..."
               value={pendingSearchQuery}
               onChange={(e) => setPendingSearchQuery(e.target.value)}
               onKeyDown={(e) => {
@@ -262,12 +319,26 @@ export function InscricoesTab({
           >
             Pesquisar
           </ButtonCustom>
+          {onLoadProgress && (
+            <ButtonCustom
+              variant="outline"
+              size="lg"
+              onClick={onLoadProgress}
+              disabled={isLoadingProgress}
+            >
+              {isLoadingProgress
+                ? "Carregando andamento..."
+                : hasLoadedProgress
+                ? "Atualizar andamento"
+                : "Carregar andamento"}
+            </ButtonCustom>
+          )}
         </div>
       </div>
 
       {/* Tabela */}
       <div className="overflow-x-auto">
-        <Table className="min-w-[800px]">
+        <Table className="min-w-[1100px]">
           <TableHeader>
             <TableRow className="border-gray-200 bg-gray-50/50">
               <TableHead
@@ -358,7 +429,10 @@ export function InscricoesTab({
                 </div>
               </TableHead>
               <TableHead className="font-medium text-gray-700">Email</TableHead>
+              <TableHead className="font-medium text-gray-700">CPF</TableHead>
               <TableHead className="font-medium text-gray-700">Status</TableHead>
+              <TableHead className="font-medium text-gray-700">Pagamento</TableHead>
+              <TableHead className="font-medium text-gray-700">Andamento</TableHead>
               <TableHead className="font-medium text-gray-700">Inscrito em</TableHead>
               <TableHead className="w-12" />
             </TableRow>
@@ -366,7 +440,7 @@ export function InscricoesTab({
           <TableBody>
             {paginatedInscricoes.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="py-8 text-center text-sm text-gray-500">
+                <TableCell colSpan={8} className="py-8 text-center text-sm text-gray-500">
                   {appliedSearchQuery ? (
                     <>Nenhum aluno encontrado com o termo "{appliedSearchQuery}"</>
                   ) : (
@@ -413,22 +487,66 @@ export function InscricoesTab({
                   </div>
                 </TableCell>
                 <TableCell className="py-4">
+                  <span className="text-sm text-gray-900">
+                    {formatCpf((inscricao.aluno as any)?.cpf)}
+                  </span>
+                </TableCell>
+                <TableCell className="py-4">
                   <Badge
                     variant="outline"
                     className={cn(
                       "text-xs font-medium",
-                      getStatusColor(inscricao.status)
+                      getStatusColor(inscricao.statusInscricao || inscricao.status)
                     )}
                   >
-                    {getStatusLabel(inscricao.status)}
+                    {getStatusLabel(inscricao.statusInscricao || inscricao.status)}
                   </Badge>
+                </TableCell>
+                <TableCell className="py-4">
+                  <Badge
+                    variant="outline"
+                    className={cn(
+                      "text-xs font-medium",
+                      getPagamentoColor((inscricao as any).statusPagamento)
+                    )}
+                  >
+                    {getPagamentoLabel((inscricao as any).statusPagamento)}
+                  </Badge>
+                </TableCell>
+                <TableCell className="py-4">
+                  <div className="flex items-center gap-2">
+                    {typeof (inscricao as any).progresso === "number" ? (
+                      <>
+                        <div className="h-2 w-20 rounded-full bg-gray-200">
+                          <div
+                            className="h-2 rounded-full bg-[var(--primary-color)] transition-all"
+                            style={{
+                              width: `${Math.max(
+                                0,
+                                Math.min(100, Number((inscricao as any).progresso ?? 0))
+                              )}%`,
+                            }}
+                          />
+                        </div>
+                        <span className="text-xs text-gray-700 min-w-[36px]">
+                          {Math.max(
+                            0,
+                            Math.min(100, Number((inscricao as any).progresso ?? 0))
+                          )}
+                          %
+                        </span>
+                      </>
+                    ) : (
+                      <span className="text-xs text-gray-500">—</span>
+                    )}
+                  </div>
                 </TableCell>
                 <TableCell className="py-4">
                   <div className="flex items-center gap-2 text-sm text-gray-900">
                     <Calendar className="h-4 w-4 flex-shrink-0 text-gray-400" />
                     <span>
                       {inscricao.criadoEm
-                        ? new Date(inscricao.criadoEm).toLocaleDateString("pt-BR")
+                        ? `${new Date(inscricao.criadoEm).toLocaleDateString("pt-BR")} ${new Date(inscricao.criadoEm).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`
                         : "—"}
                     </span>
                   </div>

@@ -10,6 +10,21 @@ export const runtime = "nodejs";
 
 interface TurmaDetailsPageProps {
   params: Promise<{ turmaId: string }>;
+  searchParams?: Promise<{ cursoId?: string | string[] }>;
+}
+
+const TURMA_CURSO_CACHE_TTL_MS = 5 * 60 * 1000;
+const turmaCursoCache = new Map<
+  string,
+  { cursoId: number | string; expiresAt: number }
+>();
+
+function getSearchParamAsString(
+  value: string | string[] | undefined
+): string | null {
+  if (!value) return null;
+  if (Array.isArray(value)) return value[0] ?? null;
+  return value;
 }
 
 /**
@@ -19,11 +34,16 @@ interface TurmaDetailsPageProps {
 async function findCursoIdByTurmaId(
   turmaId: string,
   authHeaders: HeadersInit
-): Promise<number | null> {
+): Promise<number | string | null> {
+  const cached = turmaCursoCache.get(String(turmaId));
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.cursoId;
+  }
+
   try {
     // Busca todos os cursos com paginação para garantir que pegamos todos
     let page = 1;
-    const pageSize = 50; // Tamanho padrão de página
+    const pageSize = 200; // aproveita o novo limite da API para reduzir chamadas
     let allCursos: any[] = [];
     let hasMore = true;
     
@@ -67,6 +87,10 @@ async function findCursoIdByTurmaId(
             cursoNome: curso.nome,
             turmaId,
           });
+          turmaCursoCache.set(String(turmaId), {
+            cursoId: curso.id,
+            expiresAt: Date.now() + TURMA_CURSO_CACHE_TTL_MS,
+          });
           return curso.id;
         }
       }
@@ -85,6 +109,10 @@ async function findCursoIdByTurmaId(
               cursoId: curso.id,
               cursoNome: curso.nome,
               turmaId,
+            });
+            turmaCursoCache.set(String(turmaId), {
+              cursoId: curso.id,
+              expiresAt: Date.now() + TURMA_CURSO_CACHE_TTL_MS,
             });
             return curso.id;
           }
@@ -105,8 +133,10 @@ async function findCursoIdByTurmaId(
 
 export default async function TurmaDetailsPage({
   params,
+  searchParams,
 }: TurmaDetailsPageProps) {
   const { turmaId } = await params;
+  const resolvedSearchParams = searchParams ? await searchParams : undefined;
 
   if (!turmaId) {
     notFound();
@@ -117,31 +147,54 @@ export default async function TurmaDetailsPage({
 
   let turma: Awaited<ReturnType<typeof getTurmaById>> | null = null;
   let cursoNome: string | undefined;
-  let cursoId: number | null = null;
+  let cursoId: number | string | null = null;
   let error: Error | null = null;
 
   try {
-    // Primeiro, precisamos encontrar o cursoId
-    cursoId = await findCursoIdByTurmaId(turmaId, authHeaders);
-    
-    if (!cursoId) {
-      console.error("Não foi possível encontrar cursoId para a turma:", turmaId);
-      notFound();
+    const cursoIdFromQuery = getSearchParamAsString(
+      resolvedSearchParams?.cursoId
+    );
+    const hasValidCursoIdFromQuery = Boolean(cursoIdFromQuery?.trim());
+
+    if (hasValidCursoIdFromQuery && cursoIdFromQuery) {
+      cursoId = cursoIdFromQuery.trim();
+      try {
+        turma = await getTurmaById(cursoId, turmaId, {
+          headers: authHeaders,
+        });
+      } catch (directError: any) {
+        const status = Number(directError?.status ?? 0);
+        if (status !== 404) {
+          throw directError;
+        }
+        turma = null;
+        cursoId = null;
+      }
     }
 
-    // Agora busca a turma completa com o cursoId
-    turma = await getTurmaById(cursoId, turmaId, {
-      headers: authHeaders,
-    });
+    if (!turma) {
+      cursoId = await findCursoIdByTurmaId(turmaId, authHeaders);
 
-    // Buscar nome do curso
-    try {
-      const curso = await getCursoById(cursoId, {
+      if (!cursoId) {
+        console.error("Não foi possível encontrar cursoId para a turma:", turmaId);
+        notFound();
+      }
+
+      turma = await getTurmaById(cursoId, turmaId, {
         headers: authHeaders,
       });
-      cursoNome = curso.nome;
-    } catch {
-      // Se falhar ao buscar curso, continua sem o nome
+    }
+
+    if (cursoId != null) {
+      // Buscar nome do curso
+      try {
+        const curso = await getCursoById(cursoId, {
+          headers: authHeaders,
+        });
+        cursoNome = curso.nome;
+      } catch {
+        // Se falhar ao buscar curso, continua sem o nome
+      }
     }
   } catch (err) {
     const apiError = err as { status?: number; message?: string };
@@ -220,4 +273,3 @@ export default async function TurmaDetailsPage({
     </div>
   );
 }
-

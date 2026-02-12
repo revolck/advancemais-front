@@ -137,7 +137,21 @@ export function CookieConsentProvider({ children }: { children: React.ReactNode 
 export function useCookieConsent(): CookieConsentContextValue {
   const context = useContext(CookieConsentContext);
   if (!context) {
-    throw new Error("useCookieConsent must be used within CookieConsentProvider");
+    return {
+      isReady: false,
+      consent: null,
+      preferences: {
+        functional: false,
+        analytics: false,
+        marketing: false,
+      },
+      isPreferencesOpen: false,
+      openPreferences: () => {},
+      closePreferences: () => {},
+      acceptAll: () => {},
+      rejectAll: () => {},
+      savePreferences: () => {},
+    };
   }
   return context;
 }
