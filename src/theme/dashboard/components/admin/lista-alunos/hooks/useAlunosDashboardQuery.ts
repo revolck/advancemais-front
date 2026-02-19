@@ -88,7 +88,9 @@ export function useAlunosDashboardQuery(filters: NormalizedAlunosFilters) {
       };
     },
     placeholderData: keepPreviousData,
-    staleTime: 60 * 1000,
+    staleTime: 30 * 1000,
     gcTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 }

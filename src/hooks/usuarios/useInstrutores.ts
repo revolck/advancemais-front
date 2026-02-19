@@ -73,6 +73,8 @@ export function useInstrutores(params: UseInstrutoresParams = {}): UseInstrutore
     staleTime: 30 * 1000, // 30 segundos (igual ao backend)
     gcTime: 60 * 1000, // 1 minuto
     placeholderData: keepPreviousData, // Mantém dados anteriores durante refetch
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 
   return {
@@ -83,4 +85,3 @@ export function useInstrutores(params: UseInstrutoresParams = {}): UseInstrutore
     refetch: query.refetch,
   };
 }
-

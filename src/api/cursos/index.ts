@@ -87,6 +87,7 @@ export {
   // API v3 - Avaliações (Biblioteca Global)
   listAvaliacoes,
   getAvaliacao,
+  listAvaliacaoQuestoes,
   createAvaliacao,
   updateAvaliacao,
   deleteAvaliacao,

@@ -7,34 +7,21 @@ interface QuestoesTabProps {
   cursoId: number | string;
   turmaId: string;
   provaId: string;
+  allowQuestionManagement?: boolean;
 }
 
 export function QuestoesTab({
   cursoId,
   turmaId,
   provaId,
+  allowQuestionManagement = true,
 }: QuestoesTabProps) {
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-lg font-semibold text-gray-900 mb-2">
-          Questões da Prova
-        </h2>
-        <p className="text-sm text-gray-600">
-          Gerencie as questões desta prova. Você pode criar questões de texto,
-          múltipla escolha ou anexo.
-        </p>
-      </div>
-
-      <QuestoesList
-        cursoId={cursoId}
-        turmaId={turmaId}
-        provaId={provaId}
-      />
-    </div>
+    <QuestoesList
+      cursoId={cursoId}
+      turmaId={turmaId}
+      provaId={provaId}
+      allowQuestionManagement={allowQuestionManagement}
+    />
   );
 }
-
-
-
-

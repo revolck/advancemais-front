@@ -9,6 +9,14 @@ import type {
   RespostaComQuestao,
   RespostasListResponse,
   ListRespostasParams,
+  AvaliacaoHistoricoItem,
+  ListAvaliacaoHistoricoResponse,
+  ListAvaliacaoRespostasParams,
+  ListAvaliacaoRespostasResponse,
+  AvaliacaoRespostaDetalhe,
+  AvaliacaoRespostaDetalheResponse,
+  CorrigirAvaliacaoRespostaPayload,
+  CorrigirAvaliacaoRespostaResponse,
 } from "./types";
 
 function normalizeHeaders(headers?: HeadersInit): Record<string, string> {
@@ -80,6 +88,167 @@ export async function listRespostas(
   return response.data || [];
 }
 
+/**
+ * Lista submissões por avaliação (nova API)
+ */
+export async function listAvaliacaoRespostas(
+  avaliacaoId: string,
+  params?: ListAvaliacaoRespostasParams,
+  options?: {
+    headers?: HeadersInit;
+    cache?: "no-cache" | "short" | "medium" | "long";
+  }
+): Promise<ListAvaliacaoRespostasResponse> {
+  const queryParams = new URLSearchParams();
+  if (params?.page) queryParams.set("page", String(params.page));
+  if (params?.pageSize) queryParams.set("pageSize", String(params.pageSize));
+  if (params?.search) queryParams.set("search", params.search);
+  if (params?.statusCorrecao) queryParams.set("statusCorrecao", params.statusCorrecao);
+  if (params?.orderBy) queryParams.set("orderBy", params.orderBy);
+  if (params?.order) queryParams.set("order", params.order);
 
+  const endpoint = provasRoutes.avaliacoes.respostas.list(avaliacaoId);
+  const url = queryParams.toString() ? `${endpoint}?${queryParams.toString()}` : endpoint;
 
+  const response = await apiFetch<ListAvaliacaoRespostasResponse>(url, {
+    init: {
+      method: "GET",
+      headers: buildHeaders(options?.headers),
+    },
+    cache: options?.cache || "short",
+  });
 
+  return {
+    success: Boolean(response?.success ?? true),
+    data: Array.isArray(response?.data) ? response.data : [],
+    pagination: response?.pagination,
+  };
+}
+
+/**
+ * Lista histórico de eventos por avaliação
+ */
+export async function listAvaliacaoHistorico(
+  avaliacaoId: string,
+  params?: {
+    page?: number;
+    pageSize?: number;
+  },
+  options?: {
+    headers?: HeadersInit;
+    cache?: "no-cache" | "short" | "medium" | "long";
+  }
+): Promise<AvaliacaoHistoricoItem[]> {
+  const queryParams = new URLSearchParams();
+  queryParams.set("avaliacaoId", avaliacaoId);
+  if (params?.page) queryParams.set("page", String(params.page));
+  if (params?.pageSize) queryParams.set("pageSize", String(params.pageSize));
+
+  const url = `${provasRoutes.avaliacoes.historico()}?${queryParams.toString()}`;
+  const response = await apiFetch<
+    ListAvaliacaoHistoricoResponse | AvaliacaoHistoricoItem[]
+  >(url, {
+    init: {
+      method: "GET",
+      headers: buildHeaders(options?.headers),
+    },
+    cache: options?.cache || "no-cache",
+  });
+
+  if (Array.isArray(response)) return response;
+
+  if (
+    response &&
+    typeof response === "object" &&
+    Array.isArray((response as ListAvaliacaoHistoricoResponse).items)
+  ) {
+    return (response as ListAvaliacaoHistoricoResponse).items ?? [];
+  }
+
+  if (
+    response &&
+    typeof response === "object" &&
+    Array.isArray((response as ListAvaliacaoHistoricoResponse).data)
+  ) {
+    const data = (response as ListAvaliacaoHistoricoResponse).data;
+    return Array.isArray(data) ? data : [];
+  }
+
+  if (
+    response &&
+    typeof response === "object" &&
+    Array.isArray((response as ListAvaliacaoHistoricoResponse).historico)
+  ) {
+    return (response as ListAvaliacaoHistoricoResponse).historico ?? [];
+  }
+
+  const nestedData =
+    response &&
+    typeof response === "object" &&
+    "data" in response &&
+    (response as ListAvaliacaoHistoricoResponse).data &&
+    typeof (response as ListAvaliacaoHistoricoResponse).data === "object"
+      ? ((response as ListAvaliacaoHistoricoResponse).data as {
+          data?: AvaliacaoHistoricoItem[];
+          historico?: AvaliacaoHistoricoItem[];
+          items?: AvaliacaoHistoricoItem[];
+        })
+      : null;
+
+  if (nestedData) {
+    if (Array.isArray(nestedData.items)) return nestedData.items;
+    if (Array.isArray(nestedData.data)) return nestedData.data;
+    if (Array.isArray(nestedData.historico)) return nestedData.historico;
+  }
+
+  return [];
+}
+
+/**
+ * Busca detalhe de uma submissão por avaliação (nova API)
+ */
+export async function getAvaliacaoRespostaById(
+  avaliacaoId: string,
+  respostaId: string,
+  options?: {
+    headers?: HeadersInit;
+    cache?: "no-cache" | "short" | "medium" | "long";
+  }
+): Promise<AvaliacaoRespostaDetalhe> {
+  const response = await apiFetch<AvaliacaoRespostaDetalheResponse>(
+    provasRoutes.avaliacoes.respostas.get(avaliacaoId, respostaId),
+    {
+      init: {
+        method: "GET",
+        headers: buildHeaders(options?.headers),
+      },
+      cache: options?.cache || "short",
+    }
+  );
+
+  return response?.data;
+}
+
+/**
+ * Corrige submissão por avaliação (nova API)
+ */
+export async function corrigirAvaliacaoResposta(
+  avaliacaoId: string,
+  respostaId: string,
+  payload: CorrigirAvaliacaoRespostaPayload,
+  options?: {
+    headers?: HeadersInit;
+  }
+): Promise<CorrigirAvaliacaoRespostaResponse> {
+  return apiFetch<CorrigirAvaliacaoRespostaResponse>(
+    provasRoutes.avaliacoes.respostas.corrigir(avaliacaoId, respostaId),
+    {
+      init: {
+        method: "PATCH",
+        body: JSON.stringify(payload),
+        headers: buildHeaders(options?.headers, true),
+      },
+      cache: "no-cache",
+    }
+  );
+}

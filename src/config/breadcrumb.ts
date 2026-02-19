@@ -3,7 +3,8 @@
 import { usePathname } from "next/navigation";
 import { useUserRole } from "@/hooks/useUserRole";
 import { UserRole } from "@/config/roles";
-import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { getAvaliacao } from "@/api/cursos";
 import {
   getMockAlunoCursos,
   getMockTurmaEstrutura,
@@ -662,6 +663,22 @@ export function useBreadcrumb(): BreadcrumbConfig {
   // Remove query strings e hash do pathname para garantir correspondência exata
   const cleanPathname = pathname.split("?")[0].split("#")[0];
 
+  const atividadeProvaMatch = cleanPathname.match(
+    /^\/dashboard\/cursos\/atividades-provas\/([^/]+)(?:\/.*)?$/
+  );
+  const atividadeProvaId =
+    atividadeProvaMatch && atividadeProvaMatch[1] !== "cadastrar"
+      ? atividadeProvaMatch[1]
+      : null;
+
+  const { data: atividadeProvaBreadcrumbData } = useQuery({
+    queryKey: ["breadcrumb", "avaliacao", atividadeProvaId],
+    queryFn: () => getAvaliacao(atividadeProvaId!),
+    enabled: Boolean(atividadeProvaId),
+    staleTime: 30_000,
+    retry: false,
+  });
+
   // Busca a configuração exata da rota
   const config = breadcrumbConfig[cleanPathname];
 
@@ -1015,6 +1032,94 @@ export function useBreadcrumb(): BreadcrumbConfig {
         { label: "Cursos", href: "/dashboard/cursos", icon: "BookOpen" },
         { label: "Aulas", href: "/dashboard/cursos/aulas", icon: "BookOpen" },
         { label: "Editar Aula", icon: "Edit" },
+      ],
+    };
+  }
+
+  // Detalhes de atividade/prova: /dashboard/cursos/atividades-provas/[id]
+  if (
+    cleanPathname.match(
+      /^\/dashboard\/cursos\/atividades-provas\/[^/]+\/respostas\/[^/]+$/
+    )
+  ) {
+    const detailsLabel =
+      atividadeProvaBreadcrumbData?.tipo === "ATIVIDADE"
+        ? "Detalhe da Atividade"
+        : atividadeProvaBreadcrumbData?.tipo === "PROVA"
+          ? "Detalhe da Prova"
+          : "Detalhe da Atividade/Prova";
+
+    const respostaLabel =
+      atividadeProvaBreadcrumbData?.tipo === "ATIVIDADE"
+        ? "Resposta da Atividade"
+        : atividadeProvaBreadcrumbData?.tipo === "PROVA"
+          ? "Resposta da Prova"
+          : "Resposta";
+
+    return {
+      title: respostaLabel,
+      items: [
+        { label: "Dashboard", href: "/dashboard", icon: "Home" },
+        { label: "Cursos", href: "/dashboard/cursos", icon: "BookOpen" },
+        {
+          label: "Atividades/Provas",
+          href: "/dashboard/cursos/atividades-provas",
+          icon: "ClipboardList",
+        },
+        {
+          label: detailsLabel,
+          href: atividadeProvaId
+            ? `/dashboard/cursos/atividades-provas/${atividadeProvaId}`
+            : "/dashboard/cursos/atividades-provas",
+          icon: "Eye",
+        },
+        { label: respostaLabel, icon: "FileText" },
+      ],
+    };
+  }
+
+  // Detalhes de atividade/prova: /dashboard/cursos/atividades-provas/[id]
+  if (
+    cleanPathname.match(/^\/dashboard\/cursos\/atividades-provas\/[^/]+$/) &&
+    !cleanPathname.includes("cadastrar")
+  ) {
+    const detailsLabel =
+      atividadeProvaBreadcrumbData?.tipo === "ATIVIDADE"
+        ? "Detalhe da Atividade"
+        : atividadeProvaBreadcrumbData?.tipo === "PROVA"
+          ? "Detalhe da Prova"
+          : "Detalhe da Atividade/Prova";
+
+    return {
+      title: detailsLabel,
+      items: [
+        { label: "Dashboard", href: "/dashboard", icon: "Home" },
+        { label: "Cursos", href: "/dashboard/cursos", icon: "BookOpen" },
+        {
+          label: "Atividades/Provas",
+          href: "/dashboard/cursos/atividades-provas",
+          icon: "ClipboardList",
+        },
+        { label: detailsLabel, icon: "Eye" },
+      ],
+    };
+  }
+
+  // Edição de atividade/prova: /dashboard/cursos/atividades-provas/[id]/editar
+  if (
+    cleanPathname.match(/^\/dashboard\/cursos\/atividades-provas\/[^/]+\/editar$/)
+  ) {
+    return {
+      title: "Editar Atividade/Prova",
+      items: [
+        { label: "Dashboard", href: "/dashboard", icon: "Home" },
+        { label: "Cursos", href: "/dashboard/cursos", icon: "BookOpen" },
+        {
+          label: "Atividades/Provas",
+          href: "/dashboard/cursos/atividades-provas",
+          icon: "ClipboardList",
+        },
+        { label: "Editar", icon: "Edit" },
       ],
     };
   }

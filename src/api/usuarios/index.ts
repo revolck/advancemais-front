@@ -637,13 +637,36 @@ export async function listInstrutores(
     ? `${url}?${queryParams.toString()}`
     : url;
 
-  return apiFetch<import("./types").ListInstrutoresResponse>(fullUrl, {
-    init: {
-      method: "GET",
-      headers: buildAuthHeaders(token),
+  const response = await apiFetch<import("./types").ListInstrutoresResponse>(
+    fullUrl,
+    {
+      init: {
+        method: "GET",
+        headers: buildAuthHeaders(token),
+      },
+      cache: "short",
+    }
+  );
+
+  const raw = response as any;
+  const rawPagination = raw?.pagination ?? {};
+
+  const page = Number(rawPagination?.page ?? params?.page ?? 1);
+  const pageSize = Number(rawPagination?.pageSize ?? rawPagination?.limit ?? params?.limit ?? 10);
+  const total = Number(rawPagination?.total ?? 0);
+  const inferredPages = total > 0 ? Math.ceil(total / Math.max(1, pageSize)) : 1;
+  const pages = Number(rawPagination?.pages ?? rawPagination?.totalPages ?? inferredPages);
+
+  return {
+    ...response,
+    data: Array.isArray(raw?.data) ? raw.data : [],
+    pagination: {
+      page: Number.isFinite(page) && page > 0 ? page : 1,
+      pageSize: Number.isFinite(pageSize) && pageSize > 0 ? pageSize : 10,
+      total: Number.isFinite(total) && total >= 0 ? total : 0,
+      pages: Number.isFinite(pages) && pages > 0 ? pages : 1,
     },
-    cache: "no-cache",
-  });
+  };
 }
 
 /**
@@ -665,7 +688,7 @@ export async function getInstrutorById(
         method: "GET",
         headers: buildAuthHeaders(token),
       },
-      cache: "no-cache",
+      cache: "short",
     }
   );
 }
@@ -777,7 +800,7 @@ export async function listInstrutorBloqueios(
       method: "GET",
       headers: buildAuthHeaders(token),
     },
-    cache: "no-cache",
+    cache: "short",
   });
 }
 

@@ -25,8 +25,16 @@ export const provasRoutes = {
     list: (cursoId: string | number, turmaId: string, provaId: string) =>
       `${BASE}/${cursoId}/turmas/${turmaId}/provas/${provaId}/respostas`,
   },
+  avaliacoes: {
+    historico: () => `${BASE}/avaliacoes/historico`,
+    respostas: {
+      list: (avaliacaoId: string) => `${BASE}/avaliacoes/${avaliacaoId}/respostas`,
+      get: (avaliacaoId: string, respostaId: string) =>
+        `${BASE}/avaliacoes/${avaliacaoId}/respostas/${respostaId}`,
+      corrigir: (avaliacaoId: string, respostaId: string) =>
+        `${BASE}/avaliacoes/${avaliacaoId}/respostas/${respostaId}/correcao`,
+    },
+  },
 } as const;
-
-
 
 

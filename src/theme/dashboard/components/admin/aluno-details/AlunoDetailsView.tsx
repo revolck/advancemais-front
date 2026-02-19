@@ -31,7 +31,7 @@ import {
 } from "./modal-acoes";
 import type { AlunoDetailsData, AlunoDetailsViewProps } from "./types";
 
-const ALUNO_QUERY_STALE_TIME = 5 * 60 * 1000;
+const ALUNO_QUERY_STALE_TIME = 30 * 1000;
 const ALUNO_QUERY_GC_TIME = 30 * 60 * 1000;
 
 const buildAlunoQueryKey = (alunoId: string) =>
@@ -67,6 +67,9 @@ export function AlunoDetailsView({
     initialData: initialQueryData,
     staleTime: ALUNO_QUERY_STALE_TIME,
     gcTime: ALUNO_QUERY_GC_TIME,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 
   const alunoData = alunoResponse?.data ?? null;

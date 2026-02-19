@@ -1,83 +1,98 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { Badge } from "@/components/ui/badge";
-import { ButtonCustom } from "@/components/ui/custom";
-import { ArrowLeft, Edit } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { ChevronDown, ChevronLeft, Edit } from "lucide-react";
 import Link from "next/link";
 import type { TurmaProva } from "@/api/cursos";
 import { cn } from "@/lib/utils";
+import { getAvaliacaoActionRestrictions } from "../utils/validations";
 
 interface HeaderInfoProps {
   prova: TurmaProva;
-  cursoId: number | string;
-  turmaId: string;
+  hasRespostas?: boolean;
 }
 
-export function HeaderInfo({ prova, cursoId, turmaId }: HeaderInfoProps) {
+export function HeaderInfo({ prova, hasRespostas }: HeaderInfoProps) {
+  const [isActionsOpen, setIsActionsOpen] = useState(false);
+  const titulo = prova.titulo || prova.nome || "Atividade/Prova sem título";
+  const status = prova.status || "RASCUNHO";
+  const restrictions = getAvaliacaoActionRestrictions(prova, { hasRespostas });
+  const normalizedStatus = String(status).toUpperCase();
+  const isStatusActive = ["PUBLICADA", "ATIVO", "ATIVA"].includes(normalizedStatus);
+
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-6">
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex-1 space-y-3">
-          <div className="flex items-center gap-3">
-            <Link href={`/dashboard/cursos/${cursoId}/turmas/${turmaId}`}>
-              <ButtonCustom variant="ghost" size="sm" icon="ArrowLeft">
-                Voltar
-              </ButtonCustom>
-            </Link>
-            <div className="h-6 w-px bg-gray-300" />
-            <h1 className="text-2xl font-bold text-gray-900">
-              {prova.titulo || prova.nome || "Prova sem título"}
-            </h1>
-          </div>
-
-          {prova.descricao && (
-            <p className="text-sm text-gray-600">{prova.descricao}</p>
-          )}
-
-          <div className="flex items-center gap-2 flex-wrap">
-            {prova.tipo && (
-              <Badge variant="outline">{prova.tipo}</Badge>
-            )}
-            {prova.valePonto !== undefined && (
+    <section className="relative overflow-hidden rounded-3xl bg-white">
+      <div className="relative flex flex-col gap-6 px-6 py-6 sm:px-8 sm:py-8 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex-1 min-w-0">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className="font-semibold !mb-0">{titulo}</h3>
               <Badge
                 variant="outline"
                 className={cn(
-                  prova.valePonto
-                    ? "bg-green-50 text-green-700 border-green-200"
-                    : "bg-gray-50 text-gray-600"
+                  "inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-wide",
+                  isStatusActive
+                    ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                    : "bg-gray-100 text-gray-700 border-gray-300"
                 )}
               >
-                {prova.valePonto ? "Conta para média" : "Não conta para média"}
+                {status}
               </Badge>
-            )}
-            {prova.ativo !== undefined && (
-              <Badge
-                variant="outline"
-                className={cn(
-                  prova.ativo
-                    ? "bg-blue-50 text-blue-700 border-blue-200"
-                    : "bg-gray-50 text-gray-600"
-                )}
-              >
-                {prova.ativo ? "Ativa" : "Inativa"}
-              </Badge>
-            )}
+            </div>
           </div>
         </div>
 
-        <Link
-          href={`/dashboard/cursos/${cursoId}/turmas/${turmaId}/provas/${prova.id}/editar`}
-        >
-          <ButtonCustom variant="outline" size="sm" icon="Edit">
-            Editar Prova
-          </ButtonCustom>
-        </Link>
+        <div className="flex w-full flex-col items-stretch gap-2 sm:w-auto sm:flex-row sm:items-center">
+          {restrictions.canEdit ? (
+            <DropdownMenu open={isActionsOpen} onOpenChange={setIsActionsOpen}>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  aria-expanded={isActionsOpen}
+                  className="flex items-center gap-2 rounded-full bg-[var(--primary-color)] px-6 py-2 text-sm font-semibold text-white hover:bg-[var(--primary-color)]/90 cursor-pointer"
+                >
+                  Ações
+                  <ChevronDown
+                    className={cn(
+                      "h-4 w-4 transition-transform duration-200",
+                      isActionsOpen ? "rotate-180" : "rotate-0"
+                    )}
+                  />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuItem asChild className="cursor-pointer">
+                  <Link href={`/dashboard/cursos/atividades-provas/${prova.id}/editar`}>
+                    <Edit className="h-4 w-4 text-gray-500" />
+                    <span>Editar</span>
+                  </Link>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : null}
+
+          <Button
+            asChild
+            variant="outline"
+            className="rounded-full border-none px-5 py-2 text-sm font-medium hover:bg-gray-200 bg-gray-100/70 hover:text-accent-foreground transition-all duration-200"
+          >
+            <Link
+              href="/dashboard/cursos/atividades-provas"
+              className="flex items-center gap-2"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              Voltar
+            </Link>
+          </Button>
+        </div>
       </div>
-    </div>
+    </section>
   );
 }
-
-
-
-

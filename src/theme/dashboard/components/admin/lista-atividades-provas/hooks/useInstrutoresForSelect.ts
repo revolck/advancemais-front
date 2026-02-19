@@ -8,18 +8,28 @@ interface SelectOption {
   label: string;
 }
 
+interface UseInstrutoresForSelectOptions {
+  enabled?: boolean;
+}
+
 /**
  * Hook para buscar instrutores para o select de avaliações
  * Usa o endpoint específico para avaliações que retorna apenas instrutores ativos
  */
-export function useInstrutoresForSelect() {
+export function useInstrutoresForSelect(
+  options: UseInstrutoresForSelectOptions = {}
+) {
   const { data, isLoading, error } = useQuery({
     queryKey: ["avaliacoes-instrutores"],
     queryFn: async () => {
       const response = await listAvaliacoesInstrutores();
       return response.instrutores || [];
     },
-    staleTime: 5 * 60 * 1000, // 5 minutos
+    enabled: options.enabled ?? true,
+    staleTime: 30 * 1000,
+    gcTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 
   const instrutores: SelectOption[] = (data || []).map((instrutor) => ({

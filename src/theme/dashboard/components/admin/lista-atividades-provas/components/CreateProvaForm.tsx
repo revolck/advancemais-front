@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import {
   InputCustom,
   SelectCustom,
@@ -24,6 +25,7 @@ import { cn } from "@/lib/utils";
 import {
   createProva,
   createAvaliacao,
+  updateAvaliacao,
   updateProva,
   listModulos,
   listInscricoes,
@@ -34,6 +36,7 @@ import {
   type CursoModulo,
   type AvaliacaoQuestaoInput,
   type CreateAvaliacaoPayload,
+  type UpdateAvaliacaoPayload,
 } from "@/api/cursos";
 import {
   useTurmasForSelect,
@@ -90,6 +93,136 @@ const toAvaliacaoQuestoes = (questoes?: QuestaoItem[]): AvaliacaoQuestaoInput[] 
     })),
   }));
 };
+
+function normalizeQuestoesForBuilder(rawQuestoes: unknown): QuestaoItem[] {
+  if (!Array.isArray(rawQuestoes)) return [];
+
+  return rawQuestoes.map((questaoRaw, questaoIndex) => {
+    const questao =
+      questaoRaw && typeof questaoRaw === "object"
+        ? (questaoRaw as Record<string, unknown>)
+        : {};
+
+    const alternativasRaw = Array.isArray(questao.alternativas)
+      ? (questao.alternativas as Array<Record<string, unknown>>)
+      : Array.isArray(questao.opcoes)
+        ? (questao.opcoes as Array<Record<string, unknown>>)
+      : [];
+
+    const alternativas = alternativasRaw.map((alternativaRaw, altIndex) => {
+      const alternativa =
+        alternativaRaw && typeof alternativaRaw === "object"
+          ? (alternativaRaw as Record<string, unknown>)
+          : {};
+
+      const fallbackId = `alt-${questaoIndex + 1}-${altIndex + 1}`;
+      return {
+        id:
+          typeof alternativa.id === "string" && alternativa.id.length > 0
+            ? alternativa.id
+            : typeof alternativa.id === "number"
+              ? String(alternativa.id)
+            : fallbackId,
+        texto:
+          typeof alternativa.texto === "string"
+            ? alternativa.texto
+            : typeof alternativa.enunciado === "string"
+              ? alternativa.enunciado
+              : typeof alternativa.alternativa === "string"
+                ? alternativa.alternativa
+            : alternativa.texto != null
+              ? String(alternativa.texto)
+              : "",
+      };
+    });
+
+    while (alternativas.length < 2) {
+      alternativas.push({
+        id: `alt-${questaoIndex + 1}-${alternativas.length + 1}`,
+        texto: "",
+      });
+    }
+
+    const respostaCorretaLegacy =
+      typeof questao.respostaCorreta === "string"
+        ? questao.respostaCorreta
+        : typeof questao.respostaCorreta === "number"
+          ? String(questao.respostaCorreta)
+        : null;
+    const respostaCorretaId =
+      typeof questao.alternativaCorretaId === "string"
+        ? questao.alternativaCorretaId
+        : typeof questao.alternativaCorretaId === "number"
+          ? String(questao.alternativaCorretaId)
+        : null;
+
+    const respostaCorretaObj =
+      questao.respostaCorreta &&
+      typeof questao.respostaCorreta === "object" &&
+      questao.respostaCorreta !== null
+        ? (questao.respostaCorreta as Record<string, unknown>)
+        : null;
+    const respostaCorretaObjId =
+      respostaCorretaObj && typeof respostaCorretaObj.id === "string"
+        ? respostaCorretaObj.id
+        : respostaCorretaObj && typeof respostaCorretaObj.id === "number"
+          ? String(respostaCorretaObj.id)
+        : respostaCorretaObj && typeof respostaCorretaObj.alternativaId === "string"
+          ? respostaCorretaObj.alternativaId
+          : respostaCorretaObj &&
+              typeof respostaCorretaObj.alternativaId === "number"
+            ? String(respostaCorretaObj.alternativaId)
+          : null;
+
+    const corretaByFlagIndex = alternativasRaw.findIndex((alternativaRaw) => {
+      if (!alternativaRaw || typeof alternativaRaw !== "object") return false;
+      const alt = alternativaRaw as Record<string, unknown>;
+      return (
+        alt.correta === true ||
+        alt.isCorreta === true ||
+        alt.ehCorreta === true ||
+        alt.isCorrect === true
+      );
+    });
+    const corretaByFlagId =
+      corretaByFlagIndex >= 0 ? alternativas[corretaByFlagIndex]?.id : null;
+
+    const respostaCorreta =
+      respostaCorretaLegacy ??
+      respostaCorretaId ??
+      respostaCorretaObjId ??
+      corretaByFlagId ??
+      null;
+
+    const respostaCorretaValida =
+      respostaCorreta && alternativas.some((alt) => alt.id === respostaCorreta)
+        ? respostaCorreta
+        : null;
+
+    return {
+      id:
+        typeof questao.id === "string" && questao.id.length > 0
+          ? questao.id
+          : typeof questao.id === "number"
+            ? String(questao.id)
+          : `questao-${questaoIndex + 1}`,
+      titulo:
+        typeof questao.titulo === "string"
+          ? questao.titulo
+          : typeof questao.enunciado === "string"
+            ? questao.enunciado
+            : typeof questao.pergunta === "string"
+              ? questao.pergunta
+              : typeof questao.descricao === "string"
+                ? questao.descricao
+                : typeof questao.texto === "string"
+                  ? questao.texto
+            : "",
+      alternativas,
+      respostaCorreta: respostaCorretaValida,
+    };
+  });
+}
 
 interface FormData {
   tipo: "PROVA" | "ATIVIDADE" | "";
@@ -151,6 +284,8 @@ export interface CreateProvaFormProps {
   defaultTipo?: "PROVA" | "ATIVIDADE";
   onSuccess?: () => void;
   onCancel?: () => void;
+  successRedirectTo?: string;
+  cancelRedirectTo?: string;
 }
 
 export function CreateProvaForm({
@@ -160,7 +295,10 @@ export function CreateProvaForm({
   defaultTipo,
   onSuccess,
   onCancel,
+  successRedirectTo,
+  cancelRedirectTo,
 }: CreateProvaFormProps) {
+  const router = useRouter();
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const [formData, setFormData] = useState<FormData>(() => {
@@ -283,7 +421,10 @@ export function CreateProvaForm({
           tipo: (prova.tipo === "PROVA" || prova.tipo === "ATIVIDADE"
             ? prova.tipo
             : "") as "PROVA" | "ATIVIDADE" | "",
-          tipoAtividade: (prova as any).tipoAtividade || "",
+          tipoAtividade:
+            (prova as any).tipoAtividade === "PERGUNTA_RESPOSTA"
+              ? "TEXTO"
+              : (prova as any).tipoAtividade || "",
           titulo: prova.titulo || "",
           etiqueta: prova.etiqueta || "",
           valeNota: (prova as any).valeNota !== false,
@@ -303,13 +444,13 @@ export function CreateProvaForm({
           dataInicio: dataInicio,
           dataFim: dataFim,
           horaInicio: (prova as any).horaInicio || "",
-          horaFim: (prova as any).horaFim || "",
+          horaFim: (prova as any).horaFim || (prova as any).horaTermino || "",
           duracaoMinutos: (prova as any).duracaoMinutos?.toString() || "",
           obrigatoria: (prova as any).obrigatoria !== false,
           status: (prova.status === "RASCUNHO" ? "RASCUNHO" : "PUBLICADA") as
             | "RASCUNHO"
             | "PUBLICADA",
-          questoes: (prova as any).questoes || [],
+          questoes: normalizeQuestoesForBuilder((prova as any).questoes),
           texto: (prova as any).texto || { titulo: "" },
         });
         setIsInitializing(false);
@@ -770,15 +911,61 @@ export function CreateProvaForm({
         if (!provaId) {
           throw new Error("ID da prova é necessário para edição");
         }
-        if (!cursoIdFromTurma || !formData.turmaId) {
-          throw new Error("Curso e turma são necessários para edição");
+
+        if (formData.turmaId && cursoIdFromTurma) {
+          await updateProva(
+            cursoIdFromTurma,
+            formData.turmaId,
+            provaId,
+            payload as UpdateProvaPayload
+          );
+        } else {
+          const valePontoEfetivo = formData.valeNota ? true : formData.valePonto;
+          const tipoAtividadeApi =
+            formData.tipo === "ATIVIDADE" && formData.tipoAtividade
+              ? formData.tipoAtividade === "QUESTOES"
+                ? "QUESTOES"
+                : "PERGUNTA_RESPOSTA"
+              : undefined;
+
+          const avaliacaoPayload: UpdateAvaliacaoPayload = {
+            tipo: formData.tipo as "PROVA" | "ATIVIDADE",
+            titulo: formData.titulo.trim(),
+            modalidade: formData.modalidade as any,
+            obrigatoria: formData.obrigatoria,
+            valePonto: valePontoEfetivo,
+            status: formData.status as any,
+            ...(valePontoEfetivo && formData.peso
+              ? { peso: Number(formData.peso) }
+              : {}),
+            etiqueta: formData.etiqueta.trim() || undefined,
+            cursoId: formData.cursoId || undefined,
+            instrutorId: formData.instrutorId || undefined,
+            dataInicio: dataInicio as string,
+            dataFim: dataFim as string,
+            horaInicio: formData.horaInicio,
+            horaTermino: formData.horaFim,
+            ...(duracaoMinutos ? { duracaoMinutos } : {}),
+            ...(formData.tipo === "PROVA"
+              ? { recuperacaoFinal: formData.recuperacaoFinal }
+              : {}),
+            ...(formData.tipo === "ATIVIDADE"
+              ? { tipoAtividade: tipoAtividadeApi as any }
+              : {}),
+            ...(formData.tipo === "ATIVIDADE" &&
+            tipoAtividadeApi === "PERGUNTA_RESPOSTA"
+              ? { descricao: formData.texto?.titulo?.trim() || undefined }
+              : {}),
+            ...((formData.tipo === "PROVA" ||
+              (formData.tipo === "ATIVIDADE" &&
+                tipoAtividadeApi === "QUESTOES")) && {
+              questoes: toAvaliacaoQuestoes(formData.questoes),
+            }),
+          };
+
+          await updateAvaliacao(provaId, avaliacaoPayload);
         }
-        await updateProva(
-          cursoIdFromTurma,
-          formData.turmaId,
-          provaId,
-          payload as UpdateProvaPayload
-        );
+
         const tipoLabel =
           formData.tipo === "PROVA"
             ? "Prova"
@@ -797,7 +984,11 @@ export function CreateProvaForm({
       // Aguardar um pouco para garantir que a invalidação foi processada
       await new Promise((resolve) => setTimeout(resolve, 200));
 
-      onSuccess?.();
+      if (onSuccess) {
+        onSuccess();
+      } else if (successRedirectTo) {
+        router.push(successRedirectTo);
+      }
     } catch (error: any) {
       const errorMessage =
         error?.message || "Erro ao salvar prova. Tente novamente.";
@@ -1585,7 +1776,13 @@ export function CreateProvaForm({
               type="button"
               size="md"
               variant="outline"
-              onClick={() => onCancel?.()}
+              onClick={() => {
+                if (onCancel) {
+                  onCancel();
+                } else if (cancelRedirectTo) {
+                  router.push(cancelRedirectTo);
+                }
+              }}
               disabled={isLoading}
             >
               Cancelar

@@ -5,7 +5,6 @@ import React, {
   useEffect,
   useMemo,
   useState,
-  useRef,
 } from "react";
 import { ButtonCustom, FilterBar, EmptyState } from "@/components/ui/custom";
 import {
@@ -57,7 +56,6 @@ export function InstrutoresDashboard({ className }: { className?: string }) {
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
   const [selectedCidades, setSelectedCidades] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-  const [initialLoad, setInitialLoad] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [instrutores, setInstrutores] = useState<Instrutor[]>([]);
   const [pagination, setPagination] = useState({
@@ -66,9 +64,6 @@ export function InstrutoresDashboard({ className }: { className?: string }) {
     total: 0,
     pages: 0,
   });
-
-  // AbortController para cancelar requisições antigas
-  const abortControllerRef = useRef<AbortController | null>(null);
 
   // Estados de ordenação
   type SortDirection = "asc" | "desc";
@@ -105,20 +100,15 @@ export function InstrutoresDashboard({ className }: { className?: string }) {
   const isSearchInputValid = !searchValidationMessage;
 
   const runFetch = useCallback(
-    async (page = 1) => {
-      // Cancela requisição anterior se existir
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
-
-      // Cria novo AbortController para esta requisição
-      abortControllerRef.current = new AbortController();
-
+    async () => {
       setLoading(true);
       setError(null);
 
       try {
-        const params: ListInstrutoresParams = { page, limit: 10 };
+        // Fallback de paginação no frontend:
+        // alguns ambientes podem devolver sempre a mesma página no backend.
+        // Carregamos um lote maior e paginamos localmente para manter a navegação consistente.
+        const params: ListInstrutoresParams = { page: 1, limit: 200 };
 
         // API aceita apenas um valor por filtro, então enviamos o primeiro selecionado
         if (selectedStatuses.length > 0) {
@@ -144,37 +134,18 @@ export function InstrutoresDashboard({ className }: { className?: string }) {
 
         setInstrutores(filteredInstrutores);
         
-        // Ajusta paginação se houver filtro de localização (filtrado no cliente)
-        const basePagination = response.pagination || {
-            page: 1,
-            pageSize: 10,
-            total: 0,
-            pages: 0,
-        };
-        
-        if (selectedCidades.length > 0) {
-          // Recalcula paginação baseado nos resultados filtrados
-          const totalFiltered = filteredInstrutores.length;
-          const pagesFiltered = Math.max(1, Math.ceil(totalFiltered / basePagination.pageSize));
-          setPagination({
-            ...basePagination,
-            total: totalFiltered,
-            pages: pagesFiltered,
-          });
-        } else {
-          setPagination(basePagination);
-        }
+        const pageSize = 10;
+        const totalFiltered = filteredInstrutores.length;
+        const pagesFiltered = Math.max(1, Math.ceil(totalFiltered / pageSize));
+        setPagination({
+          page: 1,
+          pageSize,
+          total: totalFiltered,
+          pages: pagesFiltered,
+        });
 
         setLoading(false);
-        setInitialLoad(false);
       } catch (err: any) {
-        if (err.name === "AbortError" || err.message?.includes("aborted")) {
-          console.log("🚫 Requisição cancelada (nova requisição iniciada)");
-          return;
-        }
-
-        console.error("❌ Erro ao carregar instrutores:", err);
-
         let errorMessage = "Erro ao carregar instrutores";
         if (err.status === 404) {
           errorMessage =
@@ -192,7 +163,6 @@ export function InstrutoresDashboard({ className }: { className?: string }) {
         setError(errorMessage);
         setInstrutores([]);
         setLoading(false);
-        setInitialLoad(false);
       }
     },
     [selectedStatuses, appliedSearchTerm, selectedCidades]
@@ -210,26 +180,10 @@ export function InstrutoresDashboard({ className }: { className?: string }) {
     [pendingSearchTerm]
   );
 
-  // Carrega instrutores automaticamente ao montar o componente
+  // Carrega instrutores no mount e quando filtros mudarem
   useEffect(() => {
-    runFetch(1);
-
-    // Cleanup: cancela requisição pendente ao desmontar
-    return () => {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Recarrega instrutores quando os filtros mudarem
-  useEffect(() => {
-    if (!initialLoad) {
-      runFetch(1);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedStatuses, appliedSearchTerm, selectedCidades, initialLoad]);
+    runFetch();
+  }, [runFetch]);
 
   // Limpa seleção de cidades se não estiverem mais disponíveis
   useEffect(() => {
@@ -276,6 +230,12 @@ export function InstrutoresDashboard({ className }: { className?: string }) {
     });
     return sorted;
   }, [instrutores, sortDirection]);
+
+  const paginatedInstrutores = useMemo(() => {
+    const start = (pagination.page - 1) * pagination.pageSize;
+    const end = start + pagination.pageSize;
+    return sortedInstrutores.slice(start, end);
+  }, [pagination.page, pagination.pageSize, sortedInstrutores]);
 
   // Páginas visíveis para navegação
   const visiblePages = useMemo(() => {
@@ -328,6 +288,14 @@ export function InstrutoresDashboard({ className }: { className?: string }) {
     }),
     [selectedStatuses, selectedCidades]
   );
+
+  const handlePageChange = useCallback((nextPage: number) => {
+    setPagination((prev) => {
+      const page = Math.max(1, Math.min(nextPage, Math.max(1, prev.pages)));
+      if (page === prev.page) return prev;
+      return { ...prev, page };
+    });
+  }, []);
 
   return (
     <div className={cn("min-h-full space-y-6", className)}>
@@ -383,9 +351,9 @@ export function InstrutoresDashboard({ className }: { className?: string }) {
         <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
           <div className="flex items-center justify-between">
             <span>Erro ao carregar instrutores: {error}</span>
-            <ButtonCustom size="sm" variant="ghost" onClick={() => runFetch(1)}>
-              Tentar novamente
-            </ButtonCustom>
+                  <ButtonCustom size="sm" variant="ghost" onClick={() => runFetch()}>
+                    Tentar novamente
+                  </ButtonCustom>
           </div>
         </div>
       )}
@@ -420,7 +388,7 @@ export function InstrutoresDashboard({ className }: { className?: string }) {
             </Table>
           </div>
         </div>
-      ) : !initialLoad && instrutores.length === 0 ? (
+      ) : !error && instrutores.length === 0 ? (
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
           <EmptyState
             fullHeight
@@ -498,7 +466,7 @@ export function InstrutoresDashboard({ className }: { className?: string }) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {sortedInstrutores.map((instrutor) => (
+                {paginatedInstrutores.map((instrutor) => (
                   <InstrutorRow 
                     key={instrutor.id} 
                     instrutor={instrutor}
@@ -531,13 +499,13 @@ export function InstrutoresDashboard({ className }: { className?: string }) {
 
               {pagination.pages > 1 && (
                 <div className="flex items-center gap-2">
-                  <ButtonCustom
-                    variant="outline"
-                    size="sm"
-                    onClick={() => runFetch(pagination.page - 1)}
-                    disabled={pagination.page === 1}
-                    className="h-8 px-3"
-                  >
+                    <ButtonCustom
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePageChange(pagination.page - 1)}
+                      disabled={pagination.page === 1}
+                      className="h-8 px-3"
+                    >
                     Anterior
                   </ButtonCustom>
 
@@ -546,7 +514,7 @@ export function InstrutoresDashboard({ className }: { className?: string }) {
                       <ButtonCustom
                         variant={pagination.page === 1 ? "primary" : "outline"}
                         size="sm"
-                        onClick={() => runFetch(1)}
+                        onClick={() => handlePageChange(1)}
                         className="h-8 w-8 p-0"
                       >
                         1
@@ -562,7 +530,7 @@ export function InstrutoresDashboard({ className }: { className?: string }) {
                       key={page}
                       variant={pagination.page === page ? "primary" : "outline"}
                       size="sm"
-                      onClick={() => runFetch(page)}
+                      onClick={() => handlePageChange(page)}
                       className="h-8 w-8 p-0"
                     >
                       {page}
@@ -582,7 +550,7 @@ export function InstrutoresDashboard({ className }: { className?: string }) {
                             : "outline"
                         }
                         size="sm"
-                        onClick={() => runFetch(pagination.pages)}
+                        onClick={() => handlePageChange(pagination.pages)}
                         className="h-8 w-8 p-0"
                       >
                         {pagination.pages}
@@ -593,7 +561,7 @@ export function InstrutoresDashboard({ className }: { className?: string }) {
                   <ButtonCustom
                     variant="outline"
                     size="sm"
-                    onClick={() => runFetch(pagination.page + 1)}
+                    onClick={() => handlePageChange(pagination.page + 1)}
                     disabled={pagination.page === pagination.pages}
                     className="h-8 px-3"
                   >

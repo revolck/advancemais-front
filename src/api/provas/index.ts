@@ -14,7 +14,13 @@ export {
 } from "./questoes";
 
 // Respostas
-export { listRespostas } from "./respostas";
+export {
+  listRespostas,
+  listAvaliacaoHistorico,
+  listAvaliacaoRespostas,
+  getAvaliacaoRespostaById,
+  corrigirAvaliacaoResposta,
+} from "./respostas";
 
 // Rotas
 export { provasRoutes } from "./routes";
@@ -39,5 +45,17 @@ export type {
   QuestaoResponse,
   RespostasListResponse,
   RespostaResponse,
+  StatusCorrecao,
+  AvaliacaoHistoricoActor,
+  AvaliacaoHistoricoItem,
+  ListAvaliacaoHistoricoResponse,
+  AvaliacaoRespostaAlunoResumo,
+  AvaliacaoRespostaResumo,
+  ListAvaliacaoRespostasParams,
+  ListAvaliacaoRespostasResponse,
+  AvaliacaoRespostaDetalheQuestaoItem,
+  AvaliacaoRespostaDetalhe,
+  AvaliacaoRespostaDetalheResponse,
+  CorrigirAvaliacaoRespostaPayload,
+  CorrigirAvaliacaoRespostaResponse,
 } from "./types";
-

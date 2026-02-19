@@ -8,20 +8,25 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getProvaById, type TurmaProva } from "@/api/cursos";
+import { listAvaliacaoRespostas } from "@/api/provas";
 import { HeaderInfo } from "./components/HeaderInfo";
+import { AvaliacaoAlertasUnificados } from "./components/AvaliacaoAlertasUnificados";
+import { AboutTab } from "./tabs/AboutTab";
 import { QuestoesTab } from "./tabs/QuestoesTab";
+import { QuestoesReadonlyTab } from "./tabs/QuestoesReadonlyTab";
 import { RespostasTab } from "./tabs/RespostasTab";
-import { TokensTab } from "./tabs/TokensTab";
+import { HistoryTab } from "./tabs/HistoryTab";
+import { canManageQuestoes } from "./utils/validations";
 
 interface ProvaDetailsViewProps {
-  cursoId: number | string;
-  turmaId: string;
+  cursoId: number | string | null;
+  turmaId: string | null;
   provaId: string;
   initialProva?: TurmaProva | null;
   initialError?: Error;
 }
 
-const PROVA_QUERY_STALE_TIME = 5 * 60 * 1000; // 5 minutos
+const PROVA_QUERY_STALE_TIME = 30 * 1000; // 30 segundos
 const PROVA_QUERY_GC_TIME = 30 * 60 * 1000; // 30 minutos
 
 export function ProvaDetailsView({
@@ -31,6 +36,10 @@ export function ProvaDetailsView({
   initialProva,
   initialError,
 }: ProvaDetailsViewProps) {
+  const hasContext = Boolean(cursoId) && Boolean(turmaId);
+  const cursoIdWithContext = cursoId as number | string;
+  const turmaIdWithContext = turmaId as string;
+
   const {
     data: provaData,
     status,
@@ -39,58 +48,116 @@ export function ProvaDetailsView({
     isLoading,
   } = useQuery<TurmaProva, Error>({
     queryKey: ["prova", cursoId, turmaId, provaId],
-    queryFn: () => getProvaById(cursoId, turmaId, provaId),
+    queryFn: () => getProvaById(cursoId!, turmaId!, provaId),
     initialData: initialProva ?? undefined,
     retry: initialError ? false : 3,
-    enabled: !initialError,
+    enabled: !initialError && hasContext,
     staleTime: PROVA_QUERY_STALE_TIME,
     gcTime: PROVA_QUERY_GC_TIME,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 
   const prova = provaData ?? initialProva ?? null;
+  const { data: hasRespostas } = useQuery<boolean>({
+    queryKey: ["avaliacao-respostas-count", provaId],
+    queryFn: async () => {
+      const response = await listAvaliacaoRespostas(provaId, {
+        page: 1,
+        pageSize: 1,
+      });
+      const total = Number(response.pagination?.total ?? response.data?.length ?? 0);
+      return total > 0;
+    },
+    enabled: Boolean(provaId),
+    staleTime: PROVA_QUERY_STALE_TIME,
+    gcTime: PROVA_QUERY_GC_TIME,
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
 
-  const tabs: HorizontalTabItem[] = useMemo(
-    () => [
+  const hasQuestoes = Boolean(
+    prova && Array.isArray(prova.questoes) && prova.questoes.length > 0
+  );
+  const shouldShowQuestoesTab = Boolean(
+    prova &&
+      !(
+        prova.tipo === "ATIVIDADE" &&
+        (prova.tipoAtividade === "PERGUNTA_RESPOSTA" || prova.tipoAtividade === "TEXTO")
+      )
+  );
+  const canManageQuestions = prova
+    ? canManageQuestoes(prova, { hasRespostas })
+    : false;
+
+  const tabs: HorizontalTabItem[] = useMemo(() => {
+    const baseTabs: HorizontalTabItem[] = [
       {
-        value: "questoes",
-        label: "Questões",
+        value: "resumo",
+        label: "Resumo",
+        icon: "FileText",
         content: prova ? (
-          <QuestoesTab cursoId={cursoId} turmaId={turmaId} provaId={provaId} />
+          <AboutTab prova={prova} />
         ) : (
           <div className="space-y-4">
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-64 w-full" />
+            <Skeleton className="h-6 w-1/3" />
+            <Skeleton className="h-40 w-full" />
           </div>
         ),
       },
       {
         value: "respostas",
         label: "Respostas",
-        content: prova ? (
-          <RespostasTab cursoId={cursoId} turmaId={turmaId} provaId={provaId} />
-        ) : (
-          <div className="space-y-4">
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-64 w-full" />
-          </div>
+        icon: "Users",
+        content: (
+          <RespostasTab
+            provaId={provaId}
+            tipoAvaliacaoContext={(prova?.tipo as "PROVA" | "ATIVIDADE" | undefined) ?? null}
+          />
         ),
       },
       {
-        value: "tokens",
-        label: "Tokens Únicos",
-        icon: "Key",
-        content: prova ? (
-          <TokensTab cursoId={cursoId} turmaId={turmaId} provaId={provaId} />
-        ) : (
-          <div className="space-y-4">
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-64 w-full" />
-          </div>
-        ),
+        value: "historico",
+        label: "Histórico",
+        icon: "History",
+        content: prova ? <HistoryTab prova={prova} /> : null,
       },
-    ],
-    [cursoId, turmaId, provaId, prova]
-  );
+    ];
+
+    if (shouldShowQuestoesTab) {
+      baseTabs.splice(1, 0, {
+        value: "questoes",
+        label: "Questões",
+        icon: "CheckSquare",
+        content:
+          prova && hasContext ? (
+            <QuestoesTab
+              cursoId={cursoIdWithContext}
+              turmaId={turmaIdWithContext}
+              provaId={provaId}
+              allowQuestionManagement={canManageQuestions}
+            />
+          ) : (
+            <QuestoesReadonlyTab
+              avaliacaoId={provaId}
+              questoes={hasQuestoes ? prova?.questoes : []}
+            />
+          ),
+      });
+    }
+
+    return baseTabs;
+  }, [
+    provaId,
+    prova,
+    canManageQuestions,
+    hasContext,
+    hasQuestoes,
+    cursoIdWithContext,
+    turmaIdWithContext,
+    shouldShowQuestoesTab,
+  ]);
 
   if (status === "error" || initialError) {
     const errorMessage =
@@ -129,17 +196,9 @@ export function ProvaDetailsView({
 
   return (
     <div className="space-y-8">
-      <HeaderInfo prova={prova} cursoId={cursoId} turmaId={turmaId} />
-
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <HorizontalTabs
-          items={tabs}
-          defaultValue="questoes"
-          className="w-full"
-          listClassName="border-b border-gray-200 px-6"
-          contentClassName="p-6"
-        />
-      </div>
+      <AvaliacaoAlertasUnificados prova={prova} hasRespostas={hasRespostas} />
+      <HeaderInfo prova={prova} hasRespostas={hasRespostas} />
+      <HorizontalTabs items={tabs} defaultValue={tabs[0]?.value ?? "resumo"} />
     </div>
   );
 }

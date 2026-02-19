@@ -35,7 +35,16 @@ type TurmaComCurso = {
   } | null;
 };
 
-export function useTurmasForSelect(cursoId?: string | null) {
+interface UseTurmasForSelectOptions {
+  enabled?: boolean;
+}
+
+export function useTurmasForSelect(
+  cursoId?: string | null,
+  options: UseTurmasForSelectOptions = {}
+) {
+  const isEnabled = Boolean(cursoId) && (options.enabled ?? true);
+
   const query = useQuery({
     queryKey: ["avaliacoes-turmas", cursoId],
     queryFn: async () => {
@@ -44,8 +53,11 @@ export function useTurmasForSelect(cursoId?: string | null) {
       const response = await listAvaliacoesTurmas(cursoId);
       return response.turmas || [];
     },
-    staleTime: 60000, // 1 minute
-    enabled: Boolean(cursoId),
+    staleTime: 30 * 1000,
+    gcTime: 5 * 60 * 1000,
+    enabled: isEnabled,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 
   const turmas: TurmaSelectOption[] =

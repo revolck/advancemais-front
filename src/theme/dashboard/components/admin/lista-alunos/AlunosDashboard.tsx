@@ -77,8 +77,10 @@ export function AlunosDashboard({ className }: { className?: string }) {
   const cursosQuery = useQuery({
     queryKey: queryKeys.cursos.list({ page: 1, pageSize: 100 }),
     queryFn: () => listCursos({ page: 1, pageSize: 100 }),
-    staleTime: 5 * 60 * 1000,
+    staleTime: 30 * 1000,
     gcTime: 30 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 
   const cursosOptions: SelectOption[] = useMemo(() => {
@@ -98,8 +100,10 @@ export function AlunosDashboard({ className }: { className?: string }) {
       return await listTurmas(selectedCourseId);
     },
     enabled: !!selectedCourseId,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 30 * 1000,
     gcTime: 30 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 
   const normalizedFilters = useMemo(() => {

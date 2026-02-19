@@ -245,6 +245,7 @@ export const cursosRoutes = {
     list: () => `${BASE}/avaliacoes`,
     create: () => `${BASE}/avaliacoes`,
     get: (avaliacaoId: string) => `${BASE}/avaliacoes/${avaliacaoId}`,
+    questoes: (avaliacaoId: string) => `${BASE}/avaliacoes/${avaliacaoId}/questoes`,
     update: (avaliacaoId: string) => `${BASE}/avaliacoes/${avaliacaoId}`,
     delete: (avaliacaoId: string) => `${BASE}/avaliacoes/${avaliacaoId}`,
     turmas: () => `${BASE}/avaliacoes/turmas`,

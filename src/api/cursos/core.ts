@@ -1392,7 +1392,7 @@ export async function listAlunosComInscricao(
         ...init,
         headers: buildHeaders(init?.headers, true),
       },
-      cache: "no-cache",
+      cache: "short",
       retries: 1, // Reduz retries para listagens (são requisições rápidas)
     });
 
@@ -1453,7 +1453,7 @@ export async function getCursoAlunoDetalhes(
       ...init,
       headers: buildHeaders(init?.headers, true),
     },
-    cache: "no-cache",
+    cache: "short",
   });
 
   const raw: any = response;
@@ -1901,7 +1901,14 @@ export async function getAvaliacao(
   avaliacaoId: string,
   init?: RequestInit
 ): Promise<import("./types").Avaliacao> {
-  const response = await apiFetch<{ success: boolean; data: import("./types").Avaliacao }>(
+  const response = await apiFetch<
+    | {
+        success?: boolean;
+        data?: import("./types").Avaliacao;
+        avaliacao?: import("./types").Avaliacao;
+      }
+    | import("./types").Avaliacao
+  >(
     cursosRoutes.avaliacoes.get(avaliacaoId),
     {
       init: {
@@ -1912,7 +1919,71 @@ export async function getAvaliacao(
       cache: "short",
     }
   );
-  return response.data;
+
+  // Compatibilidade com contratos:
+  // - { success, data }
+  // - { success, avaliacao }
+  // - objeto da avaliação direto
+  if (response && typeof response === "object") {
+    if (
+      "avaliacao" in response &&
+      response.avaliacao &&
+      typeof response.avaliacao === "object" &&
+      "id" in response.avaliacao
+    ) {
+      return response.avaliacao as import("./types").Avaliacao;
+    }
+    if (
+      "success" in response &&
+      "data" in response &&
+      response.data &&
+      typeof response.data === "object" &&
+      "id" in response.data
+    ) {
+      return response.data as import("./types").Avaliacao;
+    }
+    if ("id" in response) {
+      return response as import("./types").Avaliacao;
+    }
+  }
+
+  throw new Error("Resposta inválida ao buscar avaliação.");
+}
+
+export async function listAvaliacaoQuestoes(
+  avaliacaoId: string,
+  init?: RequestInit
+): Promise<import("./types").AvaliacaoQuestao[]> {
+  const response = await apiFetch<
+    | {
+        success?: boolean;
+        data?: import("./types").AvaliacaoQuestao[];
+        questoes?: import("./types").AvaliacaoQuestao[];
+      }
+    | import("./types").AvaliacaoQuestao[]
+  >(cursosRoutes.avaliacoes.questoes(avaliacaoId), {
+    init: {
+      method: "GET",
+      ...init,
+      headers: buildHeaders(init?.headers, true),
+    },
+    cache: "short",
+  });
+
+  if (Array.isArray(response)) {
+    return response as import("./types").AvaliacaoQuestao[];
+  }
+
+  if (response && typeof response === "object") {
+    if (Array.isArray(response.data)) {
+      return response.data as import("./types").AvaliacaoQuestao[];
+    }
+    if (Array.isArray(response.questoes)) {
+      return response.questoes as import("./types").AvaliacaoQuestao[];
+    }
+  }
+
+  return [];
 }
 
 export async function createAvaliacao(

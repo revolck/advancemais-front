@@ -24,6 +24,8 @@ export function useInstrutoresForSelect() {
       return response;
     },
     staleTime: 5 * 60 * 1000, // 5 minutos
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 
   const instrutores: SelectOption[] = (data?.data || []).map(
@@ -39,4 +41,3 @@ export function useInstrutoresForSelect() {
     error,
   };
 }
-

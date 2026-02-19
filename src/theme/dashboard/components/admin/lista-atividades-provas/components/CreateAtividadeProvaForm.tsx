@@ -145,15 +145,16 @@ export function CreateAtividadeProvaForm({
   const [isInitializing, setIsInitializing] = useState(mode === "edit");
   const modalidadeAtualizadaRef = useRef(false); // Rastrear se já atualizamos a modalidade
 
-  const { turmas, isLoading: loadingTurmas } = useTurmasForSelect();
-  const { instrutores, isLoading: loadingInstrutores } =
-    useInstrutoresForSelect();
-
   // Verificar roles
   const isInstrutor = user?.role === "INSTRUTOR";
   const isAdminModPed = ["ADMIN", "MODERADOR", "PEDAGOGICO"].includes(
     user?.role || ""
   );
+
+  const { turmas, isLoading: loadingTurmas } = useTurmasForSelect();
+  const { instrutores, isLoading: loadingInstrutores } = useInstrutoresForSelect({
+    enabled: isAdminModPed,
+  });
 
   // Mostrar campo turma apenas se instrutor tem múltiplas turmas ou se é Admin/Mod/Ped
   const showTurmaField = isAdminModPed || turmas.length > 1;

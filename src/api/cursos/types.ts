@@ -286,27 +286,72 @@ export type ProvaStatus =
 
 export interface TurmaProva {
   id: string;
+  codigo?: string;
+  cursoId?: string | number | null;
   titulo?: string;
   nome?: string;
   descricao?: string;
-  tipo?: string;
+  tipo?: AvaliacaoTipo | string;
+  tipoAtividade?: AvaliacaoTipoAtividade | "TEXTO" | null;
   recuperacaoFinal?: boolean;
   status?: ProvaStatus;
   data?: string;
   dataInicio?: string;
   dataFim?: string;
+  horaInicio?: string;
+  horaFim?: string;
+  horaTermino?: string;
   inicioPrevisto?: string;
   fimPrevisto?: string;
   etiqueta?: string;
   peso?: number;
   valeNota?: boolean;
   valePonto?: boolean;
+  obrigatoria?: boolean;
+  duracaoMinutos?: number;
   ativo?: boolean;
   localizacao?: "TURMA" | "MODULO";
   turmaId?: string;
   moduloId?: string;
   modalidade?: "ONLINE" | "PRESENCIAL" | "AO_VIVO" | "SEMIPRESENCIAL";
   instrutorId?: string;
+  curso?:
+    | string
+    | {
+        id: string;
+        codigo?: string;
+        nome?: string;
+      }
+    | null;
+  cursoNome?: string | null;
+  turma?:
+    | string
+    | {
+        id: string;
+        codigo?: string;
+        nome?: string;
+        modalidade?: string;
+      }
+    | null;
+  turmaNome?: string | null;
+  instrutor?:
+    | string
+    | {
+        id: string;
+        nome?: string;
+        email?: string;
+        role?: string;
+      }
+    | null;
+  questoes?: AvaliacaoQuestao[] | AvaliacaoQuestaoLegacy[];
+  criadoEm?: string;
+  atualizadoEm?: string;
+  criadoPor?: {
+    id?: string;
+    nome?: string | null;
+    nomeCompleto?: string | null;
+    role?: string | null;
+  } | null;
 }
 
 export interface CreateProvaPayload {

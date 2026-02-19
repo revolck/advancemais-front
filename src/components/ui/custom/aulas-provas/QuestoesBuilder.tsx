@@ -354,7 +354,7 @@ export function QuestoesBuilder({
                         <div
                           key={alternativa.id}
                           className={cn(
-                            "group flex items-center gap-3 p-3 rounded-xl border transition-all duration-200",
+                            "group flex items-center gap-3 p-3 rounded-xl border transition-all duration-200 cursor-pointer",
                             isCorreta
                               ? "bg-emerald-50 border-emerald-300 shadow-sm"
                               : "bg-gray-50/50 border-gray-200 hover:border-gray-300 hover:bg-gray-50"
@@ -367,7 +367,7 @@ export function QuestoesBuilder({
                               setRespostaCorreta(questao.id, alternativa.id)
                             }
                             className={cn(
-                              "shrink-0 w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all duration-200 font-medium text-sm",
+                              "shrink-0 w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all duration-200 font-medium text-sm cursor-pointer",
                               isCorreta
                                 ? "bg-emerald-500 border-emerald-500 text-white shadow-md"
                                 : "bg-white border-gray-300 text-gray-400 hover:border-emerald-400 hover:text-emerald-500 hover:bg-emerald-50"

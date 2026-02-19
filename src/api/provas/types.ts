@@ -131,6 +131,180 @@ export interface RespostaResponse {
   data: RespostaComQuestao;
 }
 
+// ===================================
+// RESPOSTAS (Nova API por Avaliação)
+// ===================================
 
+export type StatusCorrecao = "PENDENTE" | "CORRIGIDA";
 
+export interface AvaliacaoRespostaAlunoResumo {
+  id: string;
+  nomeCompleto: string;
+  codigo?: string | null; // Código de matrícula do aluno
+  cpf?: string | null;
+  email?: string | null;
+  avatarUrl?: string | null;
+}
 
+export interface AvaliacaoRespostaResumo {
+  id: string;
+  avaliacaoId: string;
+  inscricaoId: string;
+  codigoInscricao?: string | null;
+  aluno: AvaliacaoRespostaAlunoResumo;
+  tipoAvaliacao?: "PROVA" | "ATIVIDADE";
+  tipoAtividade?: "QUESTOES" | "PERGUNTA_RESPOSTA" | "TEXTO" | null;
+  statusCorrecao: StatusCorrecao;
+  nota?: number | null;
+  notaMaxima?: number | null;
+  peso?: number | null;
+  valeNota?: boolean | null;
+  valePonto?: boolean | null;
+  concluidoEm?: string | null;
+  ipEnvio?: string | null;
+  resumo?: {
+    questoesTotal?: number;
+    questoesRespondidas?: number;
+    questoesCorretas?: number;
+  } | null;
+  corrigidoEm?: string | null;
+  corrigidoPor?: {
+    id?: string;
+    nome?: string | null;
+    role?: string | null;
+  } | null;
+}
+
+export interface ListAvaliacaoRespostasParams {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  statusCorrecao?: StatusCorrecao;
+  orderBy?: "concluidoEm" | "alunoNome" | "nota";
+  order?: "asc" | "desc";
+}
+
+export interface ListAvaliacaoRespostasResponse {
+  success: boolean;
+  data: AvaliacaoRespostaResumo[];
+  pagination?: {
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+export interface AvaliacaoHistoricoActor {
+  id?: string;
+  nome?: string | null;
+  name?: string | null;
+  nomeCompleto?: string | null;
+  role?: string | null;
+  papel?: string | null;
+}
+
+export interface AvaliacaoHistoricoItem {
+  id?: string;
+  tipoAvaliacao?: "ATIVIDADE" | "PROVA" | string | null;
+  tipoAvaliacaoLabel?: string | null;
+  tipo?: string;
+  entidade?: string;
+  kind?: string;
+  acao?: string;
+  action?: string;
+  acaoLabel?: string;
+  actionLabel?: string;
+  descricao?: string;
+  description?: string;
+  ocorridoEm?: string;
+  criadoEm?: string;
+  data?: string;
+  date?: string;
+  metadata?: Record<string, unknown> | null;
+  ator?: AvaliacaoHistoricoActor | string | null;
+  alteradoPor?: AvaliacaoHistoricoActor | string | null;
+  usuario?: AvaliacaoHistoricoActor | string | null;
+  corrigidoPor?: AvaliacaoHistoricoActor | string | null;
+}
+
+export interface ListAvaliacaoHistoricoResponse {
+  success?: boolean;
+  data?: AvaliacaoHistoricoItem[] | { data?: AvaliacaoHistoricoItem[]; historico?: AvaliacaoHistoricoItem[]; items?: AvaliacaoHistoricoItem[] };
+  items?: AvaliacaoHistoricoItem[];
+  historico?: AvaliacaoHistoricoItem[];
+}
+
+export interface AvaliacaoRespostaDetalheQuestaoItem {
+  questaoId: string;
+  ordem?: number;
+  enunciado: string;
+  tipo: CursosTipoQuestao | string;
+  peso?: number | null;
+  respostaAluno?: {
+    alternativaId?: string | null;
+    texto?: string | null;
+    anexoUrl?: string | null;
+    anexoNome?: string | null;
+  } | null;
+  respostaCorreta?: {
+    alternativaId?: string | null;
+    texto?: string | null;
+  } | null;
+  acertou?: boolean | null;
+  notaItem?: number | null;
+}
+
+export interface AvaliacaoRespostaDetalhe {
+  id: string;
+  avaliacaoId: string;
+  inscricaoId?: string;
+  aluno?: AvaliacaoRespostaAlunoResumo;
+  tipoAvaliacao?: "PROVA" | "ATIVIDADE";
+  tipoAtividade?: "QUESTOES" | "PERGUNTA_RESPOSTA" | "TEXTO" | null;
+  statusCorrecao?: StatusCorrecao;
+  nota?: number | null;
+  notaMaxima?: number | null;
+  peso?: number | null;
+  valeNota?: boolean | null;
+  valePonto?: boolean | null;
+  concluidoEm?: string | null;
+  ipEnvio?: string | null;
+  corrigidoEm?: string | null;
+  corrigidoPor?: {
+    id: string;
+    nome?: string;
+  } | null;
+  feedback?: string | null;
+  enunciado?: string | null;
+  respostaAluno?: {
+    texto?: string | null;
+    anexos?: Array<{
+      nome?: string | null;
+      url: string;
+    }>;
+  } | null;
+  itens?: AvaliacaoRespostaDetalheQuestaoItem[];
+}
+
+export interface AvaliacaoRespostaDetalheResponse {
+  success: boolean;
+  data: AvaliacaoRespostaDetalhe;
+}
+
+export interface CorrigirAvaliacaoRespostaPayload {
+  nota?: number;
+  feedback?: string;
+  statusCorrecao?: StatusCorrecao;
+}
+
+export interface CorrigirAvaliacaoRespostaResponse {
+  success: boolean;
+  message?: string;
+  data?: {
+    id: string;
+    statusCorrecao: StatusCorrecao;
+    nota?: number | null;
+    corrigidoEm?: string | null;
+  };
+}

@@ -1,9 +1,8 @@
 import { notFound, redirect } from "next/navigation";
 
-import { getProvaById, listCursos, listTurmas } from "@/api/cursos";
+import { getAvaliacao, getProvaById, type TurmaProva } from "@/api/cursos";
 import { ProvaDetailsView } from "@/theme/dashboard/components/admin/prova-details";
 import {
-  handleDashboardApiError,
   requireDashboardAuth,
 } from "@/lib/auth/server";
 
@@ -15,68 +14,58 @@ interface ProvaDetailsPageProps {
   params: Promise<{ id: string }>;
 }
 
-/**
- * Busca cursoId e turmaId a partir do provaId
- * Percorre todas as turmas de todos os cursos para encontrar a prova
- */
-async function findProvaContext(
-  provaId: string,
-  authHeaders: HeadersInit
-): Promise<{ cursoId: number; turmaId: string } | null> {
-  try {
-    // Busca todos os cursos
-    let page = 1;
-    const pageSize = 50;
-    let allCursos: { id: string | number }[] = [];
-    let hasMore = true;
+const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-    while (hasMore) {
-      const cursosResponse = await listCursos({ page, pageSize }, { headers: authHeaders });
-      const cursos = cursosResponse.data || [];
-      allCursos = [...allCursos, ...cursos];
+const isUuid = (value?: string | null): value is string =>
+  Boolean(value && UUID_REGEX.test(value));
 
-      const totalPages = cursosResponse.pagination?.totalPages || 1;
-      hasMore = page < totalPages;
-      page++;
+const isValidNumericId = (value: unknown): value is number =>
+  typeof value === "number" && Number.isFinite(value) && value > 0;
 
-      if (page > 100) break; // Limite de segurança
-    }
-
-    // Busca provas em todas as turmas de todos os cursos
-    for (const curso of allCursos) {
-      try {
-        const turmas = await listTurmas(curso.id, { headers: authHeaders });
-        
-        for (const turma of turmas) {
-          try {
-            // Tenta buscar a prova específica
-            await getProvaById(curso.id, turma.id, provaId, { headers: authHeaders });
-            // Se chegou aqui, encontrou a prova
-            return {
-              cursoId: Number(curso.id),
-              turmaId: turma.id,
-            };
-          } catch (err: any) {
-            // Se for 404, continua procurando em outras turmas
-            // Se for outro erro, também continua (pode ser problema de permissão, etc)
-            if (err?.status === 404) {
-              continue;
-            }
-            // Para outros erros, também continua procurando
-            continue;
-          }
+function mapAvaliacaoToTurmaProva(avaliacao: Awaited<ReturnType<typeof getAvaliacao>>): TurmaProva {
+  return {
+    id: avaliacao.id,
+    codigo: avaliacao.codigo,
+    cursoId: avaliacao.cursoId ?? null,
+    titulo: avaliacao.titulo || avaliacao.nome,
+    nome: avaliacao.nome,
+    descricao: avaliacao.descricao,
+    tipo: avaliacao.tipo,
+    tipoAtividade: avaliacao.tipoAtividade ?? null,
+    recuperacaoFinal: avaliacao.recuperacaoFinal,
+    status: avaliacao.status,
+    dataInicio: avaliacao.dataInicio,
+    dataFim: avaliacao.dataFim,
+    horaInicio: avaliacao.horaInicio,
+    horaFim: avaliacao.horaTermino,
+    horaTermino: avaliacao.horaTermino,
+    etiqueta: avaliacao.etiqueta,
+    peso: avaliacao.peso ?? avaliacao.pesoNota,
+    obrigatoria: avaliacao.obrigatoria,
+    duracaoMinutos: avaliacao.duracaoMinutos,
+    valeNota: avaliacao.valeNota,
+    valePonto: avaliacao.valePonto,
+    questoes: avaliacao.questoes,
+    ativo: avaliacao.ativo,
+    localizacao: avaliacao.localizacao,
+    turmaId: avaliacao.turmaId ?? undefined,
+    moduloId: avaliacao.moduloId ?? undefined,
+    modalidade: avaliacao.modalidade as TurmaProva["modalidade"],
+    instrutorId: avaliacao.instrutorId ?? undefined,
+    curso: avaliacao.curso ?? null,
+    cursoNome: avaliacao.cursoNome ?? null,
+    turma: avaliacao.turma ?? null,
+    turmaNome: avaliacao.turmaNome ?? null,
+    instrutor: avaliacao.instrutor ?? null,
+    criadoEm: avaliacao.criadoEm,
+    atualizadoEm: avaliacao.atualizadoEm,
+    criadoPor: avaliacao.criadoPor
+      ? {
+          nome: avaliacao.criadoPor.nome ?? null,
         }
-      } catch {
-        // Erro ao buscar turmas, continua
-        continue;
-      }
-    }
-
-    return null;
-  } catch (error) {
-    console.error("Erro ao buscar contexto da prova:", error);
-    return null;
-  }
+      : null,
+  };
 }
 
 export default async function ProvaDetailsPage({
@@ -91,23 +80,33 @@ export default async function ProvaDetailsPage({
   const safeProvaPath = `/dashboard/cursos/atividades-provas/${encodeURIComponent(provaId)}`;
   const { authHeaders, loginUrl } = await requireDashboardAuth(safeProvaPath);
 
-  // Buscar contexto (cursoId e turmaId)
-  const contexto = await findProvaContext(provaId, authHeaders);
-
-  if (!contexto) {
-    console.error("Não foi possível encontrar contexto da prova:", provaId);
-    notFound();
-  }
-
-  const { cursoId, turmaId } = contexto;
-
+  let cursoId: number | string | null = null;
+  let turmaId: string | null = null;
   let provaResponse: Awaited<ReturnType<typeof getProvaById>> | null = null;
   let error: Error | null = null;
 
   try {
-    provaResponse = await getProvaById(cursoId, turmaId, provaId, {
+    const avaliacaoBase = await getAvaliacao(provaId, {
       headers: authHeaders,
     });
+
+    cursoId = avaliacaoBase.cursoId ?? null;
+    turmaId = avaliacaoBase.turmaId ?? null;
+
+    const hasValidCourseContext =
+      isUuid(typeof cursoId === "string" ? cursoId : null) || isValidNumericId(cursoId);
+
+    if (hasValidCourseContext && isUuid(turmaId)) {
+      const provaContexto = await getProvaById(cursoId as number | string, turmaId, provaId, {
+        headers: authHeaders,
+      });
+      provaResponse = {
+        ...mapAvaliacaoToTurmaProva(avaliacaoBase),
+        ...provaContexto,
+      };
+    } else {
+      provaResponse = mapAvaliacaoToTurmaProva(avaliacaoBase);
+    }
   } catch (err) {
     const apiError = err as { status?: number };
     const status = apiError?.status;

@@ -34,6 +34,9 @@ import {
 } from "./modal-acoes";
 import type { InstrutorDetailsData, InstrutorDetailsViewProps } from "./types";
 
+const INSTRUTOR_QUERY_STALE_TIME = 30 * 1000;
+const INSTRUTOR_QUERY_GC_TIME = 30 * 60 * 1000;
+
 export function InstrutorDetailsView({
   instrutorId,
   initialData,
@@ -62,8 +65,11 @@ export function InstrutorDetailsView({
     queryKey,
     queryFn: () => getInstrutorById(instrutorId),
     initialData: initialResponse,
-    staleTime: 5 * 60 * 1000,
-    gcTime: 30 * 60 * 1000,
+    staleTime: INSTRUTOR_QUERY_STALE_TIME,
+    gcTime: INSTRUTOR_QUERY_GC_TIME,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 
   const instrutorData = instrutorResponse?.data ?? null;
