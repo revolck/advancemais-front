@@ -58,6 +58,7 @@ export function FilterBar({
   className,
   gridClassName,
   rightActionsClassName,
+  showActiveChips = true,
   fields,
   values,
   onChange,
@@ -259,6 +260,7 @@ export function FilterBar({
                   clearable={clearable}
                   maxDate={maxDate}
                   minDate={minDate}
+                  disabledDates={field.disabledDates}
                   disabled={field.disabled}
                   format="dd/MM/yyyy"
                 />
@@ -298,6 +300,8 @@ export function FilterBar({
                 ? field.emptyPlaceholder ?? "Sem opções disponíveis"
                 : field.placeholder ?? "Selecionar",
             className: "w-full",
+            searchable: field.searchable,
+            searchThreshold: field.searchThreshold,
           } as const;
 
           if (mode === "multiple") {
@@ -355,15 +359,18 @@ export function FilterBar({
         )}
       </div>
 
-      {activeChips.length > 0 && (
+      {showActiveChips && activeChips.length > 0 && (
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-wrap items-center gap-2">
             {activeChips.map((chip) => (
               <span
                 key={chip.key}
-                className="inline-flex items-center gap-1 rounded-full border border-gray-300 bg-gray-50 px-2.5 py-1 text-xs text-gray-700"
+                className="inline-flex max-w-full items-center gap-1 rounded-full border border-gray-300 bg-gray-50 px-2.5 py-1 text-xs text-gray-700"
+                title={chip.label}
               >
-                {chip.label}
+                <span className="max-w-[300px] truncate sm:max-w-[360px]">
+                  {chip.label}
+                </span>
                 <button
                   type="button"
                   onClick={() => onChange(chip.key, null)}

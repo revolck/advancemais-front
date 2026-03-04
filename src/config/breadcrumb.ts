@@ -772,6 +772,19 @@ export function useBreadcrumb(): BreadcrumbConfig {
     };
   }
 
+  // Detalhes de estágio: /dashboard/cursos/estagios/[id]
+  if (cleanPathname.match(/^\/dashboard\/cursos\/estagios\/[^/]+$/)) {
+    return {
+      title: "Detalhes do estágio",
+      items: [
+        { label: "Dashboard", href: "/", icon: "Home" },
+        { label: "Cursos", href: "/dashboard/cursos", icon: "BookOpen" },
+        { label: "Estágios", href: "/dashboard/cursos/estagios", icon: "Briefcase" },
+        { label: "Detalhes", icon: "Eye" },
+      ],
+    };
+  }
+
   // Item individual do aluno (aula/atividade/prova): /dashboard/cursos/alunos/cursos/[cursoId]/[turmaId]/[itemId]
   if (
     cleanPathname.match(

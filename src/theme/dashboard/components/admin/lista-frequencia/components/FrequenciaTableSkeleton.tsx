@@ -13,7 +13,19 @@ export function FrequenciaTableSkeleton({ rows }: { rows: number }) {
             <Skeleton className="h-4 w-56" />
           </TableCell>
           <TableCell className="py-4 px-3">
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-64" />
+              <Skeleton className="h-4 w-52" />
+            </div>
+          </TableCell>
+          <TableCell className="py-4 px-3">
+            <Skeleton className="h-6 w-28 rounded-full" />
+          </TableCell>
+          <TableCell className="py-4 px-3">
             <Skeleton className="h-4 w-40" />
+          </TableCell>
+          <TableCell className="py-4 px-3">
+            <Skeleton className="h-6 w-24 rounded-full" />
           </TableCell>
           <TableCell className="py-4 px-3">
             <Skeleton className="h-10 w-full rounded-md" />

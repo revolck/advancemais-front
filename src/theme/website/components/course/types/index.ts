@@ -4,6 +4,7 @@ export interface CourseData {
   id: string;
   nome: string;
   descricao: string;
+  conteudoProgramatico?: string | null;
   cargaHoraria: number;
   categoria: string;
   subcategoria?: string;

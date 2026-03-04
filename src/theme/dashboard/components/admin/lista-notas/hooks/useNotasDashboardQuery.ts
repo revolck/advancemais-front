@@ -1,7 +1,11 @@
 "use client";
 
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { listNotas, type NotaLancamento, type NotaHistoryEvent } from "@/api/cursos";
+import {
+  listNotasGlobal,
+  type NotaLancamento,
+  type NotaHistoryEvent,
+} from "@/api/cursos";
 
 export interface NormalizedNotasFilters {
   cursoId: string | null;
@@ -11,6 +15,7 @@ export interface NormalizedNotasFilters {
   search?: string;
   orderBy?: "alunoNome" | "nota" | "atualizadoEm";
   order?: "asc" | "desc";
+  enabled?: boolean;
 }
 
 export interface NotaListItem {
@@ -20,6 +25,14 @@ export interface NotaListItem {
   inscricaoId?: string;
   alunoId: string;
   alunoNome: string;
+  alunoCpf?: string | null;
+  alunoCodigo?: string | null;
+  codigoMatricula?: string | null;
+  alunoAvatarUrl?: string | null;
+  cursoNome?: string | null;
+  cursoCodigo?: string | null;
+  turmaNome?: string | null;
+  turmaCodigo?: string | null;
   statusInscricao?: string;
   nota: number | null;
   atualizadoEm: string;
@@ -45,6 +58,39 @@ export interface NotasQueryResult {
 }
 
 function mapNotaLancamentoToListItem(nota: NotaLancamento): NotaListItem {
+  const notaWithLegacy = nota as NotaLancamento & {
+    aluno?: {
+      cpf?: string | null;
+      codigo?: string | null;
+      codUsuario?: string | null;
+      avatarUrl?: string | null;
+    } | null;
+    alunoCpf?: string | null;
+    cpf?: string | null;
+    alunoCodigo?: string | null;
+    codigoAluno?: string | null;
+    codigoInscricao?: string | null;
+    matriculaCodigo?: string | null;
+    alunoAvatarUrl?: string | null;
+    avatarUrl?: string | null;
+    cursoNome?: string | null;
+    nomeCurso?: string | null;
+    cursoCodigo?: string | null;
+    codigoCurso?: string | null;
+    turmaNome?: string | null;
+    nomeTurma?: string | null;
+    turmaCodigo?: string | null;
+    codigoTurma?: string | null;
+    curso?: {
+      nome?: string | null;
+      codigo?: string | null;
+    } | null;
+    turma?: {
+      nome?: string | null;
+      codigo?: string | null;
+    } | null;
+  };
+
   return {
     key: `${nota.cursoId}::${nota.turmaId}::${nota.alunoId}`,
     cursoId: nota.cursoId,
@@ -52,6 +98,46 @@ function mapNotaLancamentoToListItem(nota: NotaLancamento): NotaListItem {
     inscricaoId: nota.inscricaoId,
     alunoId: nota.alunoId,
     alunoNome: nota.alunoNome,
+    alunoCpf:
+      notaWithLegacy.aluno?.cpf ??
+      notaWithLegacy.alunoCpf ??
+      notaWithLegacy.cpf ??
+      null,
+    alunoCodigo:
+      notaWithLegacy.aluno?.codigo ??
+      notaWithLegacy.aluno?.codUsuario ??
+      notaWithLegacy.alunoCodigo ??
+      notaWithLegacy.codigoAluno ??
+      null,
+    codigoMatricula:
+      notaWithLegacy.codigoInscricao ??
+      notaWithLegacy.matriculaCodigo ??
+      null,
+    alunoAvatarUrl:
+      notaWithLegacy.aluno?.avatarUrl ??
+      notaWithLegacy.alunoAvatarUrl ??
+      notaWithLegacy.avatarUrl ??
+      null,
+    cursoNome:
+      notaWithLegacy.curso?.nome ??
+      notaWithLegacy.cursoNome ??
+      notaWithLegacy.nomeCurso ??
+      null,
+    cursoCodigo:
+      notaWithLegacy.curso?.codigo ??
+      notaWithLegacy.cursoCodigo ??
+      notaWithLegacy.codigoCurso ??
+      null,
+    turmaNome:
+      notaWithLegacy.turma?.nome ??
+      notaWithLegacy.turmaNome ??
+      notaWithLegacy.nomeTurma ??
+      null,
+    turmaCodigo:
+      notaWithLegacy.turma?.codigo ??
+      notaWithLegacy.turmaCodigo ??
+      notaWithLegacy.codigoTurma ??
+      null,
     nota: nota.nota,
     atualizadoEm: nota.atualizadoEm,
     motivo: nota.motivo,
@@ -64,21 +150,10 @@ function mapNotaLancamentoToListItem(nota: NotaLancamento): NotaListItem {
 async function fetchNotasDashboard(
   filters: NormalizedNotasFilters
 ): Promise<NotasQueryResult> {
-  if (!filters.cursoId || filters.turmaIds.length === 0) {
-    return {
-      items: [],
-      pagination: {
-        page: filters.page,
-        pageSize: filters.pageSize,
-        total: 0,
-        totalPages: 1,
-      },
-    };
-  }
-
   try {
-    const response = await listNotas(filters.cursoId, {
-      turmaIds: filters.turmaIds.join(","),
+    const response = await listNotasGlobal({
+      cursoId: filters.cursoId ?? undefined,
+      turmaIds: filters.turmaIds.length > 0 ? filters.turmaIds.join(",") : undefined,
       search: filters.search,
       page: filters.page,
       pageSize: filters.pageSize,
@@ -107,7 +182,7 @@ export function useNotasDashboardQuery(filters: NormalizedNotasFilters) {
   return useQuery<NotasQueryResult, Error>({
     queryKey: ["notas", "dashboard", filters],
     queryFn: () => fetchNotasDashboard(filters),
-    enabled: Boolean(filters.cursoId && filters.turmaIds.length > 0),
+    enabled: filters.enabled ?? true,
     placeholderData: keepPreviousData,
     staleTime: 30 * 1000,
     gcTime: 5 * 60 * 1000,

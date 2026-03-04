@@ -3,13 +3,15 @@
 import { useQuery } from "@tanstack/react-query";
 import { listAulas, type Aula } from "@/api/aulas";
 import type { SelectOption } from "@/components/ui/custom/select/types";
-import { getMockAulasForTurma } from "@/mockData/notas";
 
 type AulaLite = Pick<Aula, "id" | "titulo" | "codigo">;
 
 function toOption(a: AulaLite): SelectOption {
-  const codigo = a.codigo ? ` • ${a.codigo}` : "";
-  return { value: a.id, label: `${a.titulo}${codigo}` };
+  return {
+    value: a.id,
+    label: a.titulo,
+    searchKeywords: [a.titulo, a.codigo || ""].filter(Boolean),
+  };
 }
 
 export function useAulasForSelect(params: { turmaId: string | null }) {
@@ -24,13 +26,7 @@ export function useAulasForSelect(params: { turmaId: string | null }) {
         titulo: a.titulo,
         codigo: a.codigo,
       }));
-      if (items.length > 0) return items;
-      // Fallback: mock
-      return getMockAulasForTurma({ turmaId: turmaId as string }).map((m) => ({
-        id: m.id,
-        titulo: m.titulo,
-        codigo: m.codigo,
-      }));
+      return items;
     },
     enabled: Boolean(turmaId),
     staleTime: 30 * 1000,

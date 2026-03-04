@@ -1,7 +1,13 @@
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 
-export function NotasTableSkeleton({ rows }: { rows: number }) {
+export function NotasTableSkeleton({
+  rows,
+  withActions = true,
+}: {
+  rows: number;
+  withActions?: boolean;
+}) {
   return (
     <>
       {Array.from({ length: rows }).map((_, i) => (
@@ -24,12 +30,16 @@ export function NotasTableSkeleton({ rows }: { rows: number }) {
           <TableCell className="py-4 px-3">
             <Skeleton className="h-4 w-28" />
           </TableCell>
+          {withActions ? (
+            <TableCell className="py-4 px-3 text-right">
+              <Skeleton className="h-8 w-20 rounded-md ml-auto" />
+            </TableCell>
+          ) : null}
           <TableCell className="py-4 px-3 text-right">
-            <Skeleton className="h-8 w-20 rounded-md ml-auto" />
+            <Skeleton className="h-8 w-8 rounded-full ml-auto" />
           </TableCell>
         </TableRow>
       ))}
     </>
   );
 }
-

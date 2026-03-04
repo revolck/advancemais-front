@@ -6,6 +6,7 @@ export interface SelectOption {
   value: string;
   label: string;
   disabled?: boolean;
+  searchKeywords?: string[];
 }
 
 export interface UserOption extends SelectOption {
@@ -25,6 +26,7 @@ export interface BaseSelectProps extends DivProps {
   size?: "sm" | "md" | "lg";
   fullWidth?: boolean;
   required?: boolean;
+  searchThreshold?: number;
 }
 
 export interface SingleSelectProps extends BaseSelectProps {

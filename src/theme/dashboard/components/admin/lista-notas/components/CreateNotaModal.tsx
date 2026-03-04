@@ -21,16 +21,13 @@ import { useCursosForSelect } from "../hooks/useCursosForSelect";
 import { useTurmasForSelect } from "../hooks/useTurmasForSelect";
 import { useAlunosForTurmaSelect } from "../hooks/useAlunosForTurmaSelect";
 import { useAulasForSelect } from "../hooks/useAulasForSelect";
+import { useNotasAtuaisPorAluno } from "../hooks/useNotasAtuaisPorAluno";
 import {
   useProvasForSelect,
   type ProvaTipo,
 } from "../hooks/useProvasForSelect";
 import { useUpdateNotaMutation } from "../hooks/useUpdateNotaMutation";
-import {
-  getNotasStoreSnapshot,
-  getNotaForEnrollmentFromStore,
-  type NotaOrigemTipo,
-} from "@/mockData/notas";
+import { type NotaOrigemTipo } from "@/api/cursos";
 
 interface CreateNotaModalProps {
   isOpen: boolean;
@@ -47,14 +44,6 @@ interface FormErrors {
   motivo?: string;
   origemTipo?: string;
   origemId?: string;
-}
-
-function formatMax(max: number): string {
-  const rounded = Math.round(max * 100) / 100;
-  if (!Number.isFinite(rounded)) return "0";
-  if (Number.isInteger(rounded)) return String(rounded);
-  const s = String(rounded);
-  return s.replace(/0+$/, "").replace(/\.$/, "");
 }
 
 function sanitizeDecimal0toMax(raw: string, max: number): string {
@@ -79,13 +68,13 @@ function sanitizeDecimal0toMax(raw: string, max: number): string {
   }
 
   const numValue = Number(value);
-  if (numValue === Infinity) return formatMax(max);
+  if (numValue === Infinity) return String(max);
 
   if (Number.isFinite(numValue) && numValue >= 0 && numValue <= max) {
     return value;
   }
   if (Number.isFinite(numValue) && numValue > max) {
-    return formatMax(max);
+    return String(max);
   }
   // Se não for parseável ainda (ex: "."), mantém como está
   return value;
@@ -99,6 +88,69 @@ function parseNota(value: string): number | null | "invalid" {
   if (!Number.isFinite(n)) return "invalid";
   if (n < 0 || n > 10) return "invalid";
   return Math.round(n * 100) / 100;
+}
+
+function formatNotaValue(value: number): string {
+  if (!Number.isFinite(value)) return "0";
+  return value.toLocaleString("pt-BR", {
+    minimumFractionDigits: Number.isInteger(value) ? 0 : 1,
+    maximumFractionDigits: 2,
+  });
+}
+
+type NotaApiErrorLike = {
+  message?: string;
+  status?: number;
+  code?: string;
+  details?: Array<{ message?: string }>;
+  data?: {
+    notaAtual?: number;
+    maximoPermitido?: number;
+    disponivelParaAdicionar?: number;
+  };
+};
+
+function getCreateNotaErrorMessage(error: unknown): string {
+  const err = error as NotaApiErrorLike;
+
+  const backendDetail = err.details?.[0]?.message;
+  if (backendDetail) return backendDetail;
+  if (err.code === "NOTA_MAXIMA_ATINGIDA") {
+    const notaAtual = err.data?.notaAtual;
+    return (
+      err.message ||
+      `Este aluno já atingiu a nota máxima permitida (atual: ${formatNotaValue(notaAtual ?? 10)}).`
+    );
+  }
+  if (err.code === "NOTA_EXCEDE_LIMITE") {
+    const disponivel = err.data?.disponivelParaAdicionar;
+    const notaAtual = err.data?.notaAtual;
+    const maximo = err.data?.maximoPermitido;
+    if (
+      Number.isFinite(disponivel) &&
+      Number.isFinite(notaAtual) &&
+      Number.isFinite(maximo)
+    ) {
+      return `A nota excede o limite permitido. Nota atual: ${formatNotaValue(notaAtual ?? 0)} • máximo: ${formatNotaValue(maximo ?? 10)} • disponível para adicionar: ${formatNotaValue(disponivel ?? 0)}.`;
+    }
+    if (Number.isFinite(disponivel)) {
+      return `A nota excede o limite permitido. Disponível para adicionar: ${formatNotaValue(disponivel ?? 0)}.`;
+    }
+    return err.message || "A nota excede o limite permitido para este aluno.";
+  }
+  if (err.message) return err.message;
+
+  if (err.status === 400)
+    return "Dados inválidos. Revise os campos obrigatórios.";
+  if (err.status === 401) return "Sessão expirada. Faça login novamente.";
+  if (err.status === 403) return "Você não tem permissão para lançar notas.";
+  if (err.status === 404)
+    return "Origem ou inscrição não encontrada para o curso/turma.";
+  if (err.status === 409 || err.code === "NOTA_SYSTEM_LOCKED") {
+    return "Não é possível alterar/remover notas geradas automaticamente pelo sistema.";
+  }
+
+  return "Não foi possível adicionar a nota.";
 }
 
 export function CreateNotaModal({
@@ -125,53 +177,18 @@ export function CreateNotaModal({
   const cursosQuery = useCursosForSelect();
   const turmasQuery = useTurmasForSelect(cursoId);
   const alunosQuery = useAlunosForTurmaSelect({ cursoId, turmaId });
-
-  const alunoRemainingById = useMemo(() => {
-    const map = new Map<string, number>();
-    if (!cursoId || !turmaId || !isOpen) return map;
-
-    const overrideStore = getNotasStoreSnapshot();
-    alunosQuery.alunos.forEach((opt) => {
-      const info = getNotaForEnrollmentFromStore(overrideStore, {
-        cursoId,
-        turmaId,
-        alunoId: opt.value,
-      });
-      const currentFinal = info.nota ?? 0;
-      const remaining = Math.max(
-        0,
-        Math.round((10 - currentFinal) * 100) / 100
-      );
-      map.set(opt.value, remaining);
-    });
-    return map;
-  }, [alunosQuery.alunos, cursoId, turmaId, isOpen]);
-
-  const selectedRemaining = useMemo(() => {
-    if (!alunoId) return null;
-    return alunoRemainingById.get(alunoId) ?? null;
-  }, [alunoId, alunoRemainingById]);
-
-  const maxAllowed = useMemo(() => {
-    if (!alunoId) return 10;
-    const remaining = selectedRemaining ?? 10;
-    return Math.max(0, Math.min(10, remaining));
-  }, [alunoId, selectedRemaining]);
-
-  const alunosOptions: SelectOption[] = useMemo(() => {
-    if (!cursoId || !turmaId) return alunosQuery.alunos;
-    return alunosQuery.alunos.map((opt) => {
-      const remaining = alunoRemainingById.get(opt.value);
-      if (remaining !== undefined && remaining <= 0) {
-        return {
-          ...opt,
-          disabled: true,
-          label: `${opt.label} — Nota final`,
-        };
-      }
-      return opt;
-    });
-  }, [alunoRemainingById, alunosQuery.alunos, cursoId, turmaId]);
+  const notasAtuaisQuery = useNotasAtuaisPorAluno({ cursoId, turmaId });
+  const notaAtualAluno = alunoId
+    ? notasAtuaisQuery.notaByAlunoId[alunoId] ?? 0
+    : 0;
+  const maxAllowed = Math.max(
+    0,
+    Math.round((10 - Math.max(0, notaAtualAluno)) * 100) / 100,
+  );
+  const alunosOptions: SelectOption[] = useMemo(
+    () => alunosQuery.alunos,
+    [alunosQuery.alunos],
+  );
 
   const origemTipoOptions: SelectOption[] = useMemo(
     () => [
@@ -180,7 +197,7 @@ export function CreateNotaModal({
       { value: "AULA", label: "Aula" },
       { value: "OUTRO", label: "Outro" },
     ],
-    []
+    [],
   );
 
   const provasQuery = useProvasForSelect({
@@ -201,16 +218,6 @@ export function CreateNotaModal({
       return provasQuery.options;
     return [];
   }, [aulasQuery.options, origemTipo, provasQuery.options]);
-
-  const origemLabel = useMemo(() => {
-    if (!origemId) return null;
-    if (origemTipo === "AULA")
-      return aulasQuery.labelById.get(origemId) ?? null;
-    if (origemTipo === "PROVA" || origemTipo === "ATIVIDADE") {
-      return provasQuery.labelById.get(origemId) ?? null;
-    }
-    return null;
-  }, [aulasQuery.labelById, origemId, origemTipo, provasQuery.labelById]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -255,10 +262,10 @@ export function CreateNotaModal({
     const notaParsed = parseNota(notaInput);
     if (notaParsed === "invalid")
       next.nota = "Informe uma nota válida entre 0 e 10.";
-    else if (alunoId && maxAllowed <= 0)
-      next.nota = "Esse aluno já atingiu nota final 10.";
+    else if (alunoId && notaAtualAluno >= 10)
+      next.nota = "Este aluno já possui nota final 10.";
     else if (notaParsed !== null && notaParsed > maxAllowed + 1e-9)
-      next.nota = `Disponível para adicionar: ${formatMax(maxAllowed)}.`;
+      next.nota = `Disponível para adicionar: ${formatNotaValue(maxAllowed)}.`;
 
     const motivoTrimmed = motivo.trim();
     if (!motivoTrimmed) next.motivo = "Informe o motivo da nota.";
@@ -276,7 +283,6 @@ export function CreateNotaModal({
       (origemTipo === "AULA" ||
         origemTipo === "PROVA" ||
         origemTipo === "ATIVIDADE") &&
-      origemOptions.length > 0 &&
       !origemId
     ) {
       next.origemId = "Selecione o item de origem.";
@@ -288,10 +294,10 @@ export function CreateNotaModal({
     alunoId,
     cursoId,
     maxAllowed,
+    notaAtualAluno,
     motivo,
     notaInput,
     origemId,
-    origemOptions.length,
     origemTipo,
     origemOutroTitulo,
     turmaId,
@@ -302,6 +308,23 @@ export function CreateNotaModal({
     ((origemTipo === "PROVA" || origemTipo === "ATIVIDADE") &&
       provasQuery.isFetching);
 
+  const notaParsedForSubmit = parseNota(notaInput);
+  const hasOrigemSelecionada =
+    origemTipo === "OUTRO"
+      ? origemOutroTitulo.trim().length >= 3
+      : Boolean(origemId);
+  const isSubmitDisabled =
+    upsertNota.isPending ||
+    notasAtuaisQuery.isLoading ||
+    !cursoId ||
+    !turmaId ||
+    !alunoId ||
+    !origemTipo ||
+    !hasOrigemSelecionada ||
+    maxAllowed <= 0 ||
+    notaParsedForSubmit === "invalid" ||
+    !motivo.trim();
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
@@ -310,34 +333,25 @@ export function CreateNotaModal({
     if (notaParsed === "invalid") return;
 
     try {
+      const origemPayload =
+        origemTipo === "OUTRO"
+          ? {
+              tipo: "OUTRO" as const,
+              id: null,
+              titulo: origemOutroTitulo.trim(),
+            }
+          : {
+              tipo: origemTipo as NotaOrigemTipo,
+              id: origemId as string,
+            };
+
       await upsertNota.mutateAsync({
         cursoId: cursoId as string,
         turmaId: turmaId as string,
         alunoId: (alunoId as string).trim(),
         nota: notaParsed,
         motivo: motivo.trim(),
-        origem:
-          origemTipo === "OUTRO"
-            ? {
-                tipo: "OUTRO",
-                id: null,
-                titulo: origemOutroTitulo.trim()
-                  ? origemOutroTitulo.trim()
-                  : null,
-              }
-            : origemTipo && origemId
-            ? {
-                tipo: origemTipo as NotaOrigemTipo,
-                id: origemId,
-                titulo: origemLabel,
-              }
-            : origemTipo
-            ? {
-                tipo: origemTipo as NotaOrigemTipo,
-                id: null,
-                titulo: null,
-              }
-            : undefined,
+        origem: origemPayload,
       });
 
       toastCustom.success({
@@ -347,10 +361,28 @@ export function CreateNotaModal({
       onClose();
       resetForm();
     } catch (err) {
-      const msg =
-        err instanceof Error
-          ? err.message
-          : "Não foi possível adicionar a nota.";
+      const apiError = err as NotaApiErrorLike;
+      if (apiError.code === "NOTA_MAXIMA_ATINGIDA") {
+        setErrors((prev) => ({
+          ...prev,
+          nota: "Este aluno já atingiu nota final 10.",
+        }));
+      } else if (apiError.code === "NOTA_EXCEDE_LIMITE") {
+        const disponivel = apiError.data?.disponivelParaAdicionar;
+        setErrors((prev) => ({
+          ...prev,
+          nota:
+            typeof disponivel === "number"
+              ? `Disponível para adicionar: ${formatNotaValue(disponivel)}.`
+              : "A nota excede o limite permitido para este aluno.",
+        }));
+      } else if (apiError.code === "NOTA_SYSTEM_LOCKED") {
+        setErrors((prev) => ({
+          ...prev,
+          nota: "Notas automáticas do sistema não podem ser alteradas/removidas.",
+        }));
+      }
+      const msg = getCreateNotaErrorMessage(err);
       toastCustom.error({ title: "Erro ao salvar nota", description: msg });
     }
   };
@@ -381,6 +413,7 @@ export function CreateNotaModal({
               label="Curso"
               options={cursosQuery.cursos}
               value={cursoId}
+              required
               onChange={(v) => {
                 setCursoId(v);
                 setTurmaId(null);
@@ -406,6 +439,8 @@ export function CreateNotaModal({
               label="Turma"
               options={turmasQuery.turmas}
               value={turmaId}
+              required
+              searchThreshold={0}
               onChange={(v) => {
                 setTurmaId(v);
                 setAlunoId(null);
@@ -420,8 +455,8 @@ export function CreateNotaModal({
                 !cursoId
                   ? "Selecione um curso"
                   : turmasQuery.isLoading
-                  ? "Carregando..."
-                  : "Selecionar"
+                    ? "Carregando..."
+                    : "Selecionar"
               }
               disabled={
                 !cursoId ||
@@ -437,6 +472,8 @@ export function CreateNotaModal({
                 label="Aluno"
                 options={alunosOptions}
                 value={alunoId}
+                required
+                searchThreshold={0}
                 onChange={(v) => {
                   setAlunoId(v);
                   setOrigemTipo("");
@@ -450,9 +487,9 @@ export function CreateNotaModal({
                 placeholder={
                   !turmaId
                     ? "Selecione uma turma"
-                  : alunosQuery.isLoading || alunosQuery.isFetching
-                    ? "Carregando..."
-                    : "Selecionar"
+                    : alunosQuery.isLoading || alunosQuery.isFetching
+                      ? "Carregando..."
+                      : "Selecionar"
                 }
                 disabled={!turmaId || alunosQuery.isLoading}
                 error={errors.alunoId}
@@ -462,6 +499,7 @@ export function CreateNotaModal({
                 label="Origem da nota"
                 options={origemTipoOptions}
                 value={origemTipo || null}
+                required
                 onChange={(v) => {
                   setOrigemTipo((v as NotaOrigemTipo) || "");
                   setOrigemId(null);
@@ -481,6 +519,7 @@ export function CreateNotaModal({
                 <InputCustom
                   label="Nome do item"
                   value={origemOutroTitulo}
+                  required
                   onChange={(e) => {
                     setOrigemOutroTitulo((e.target as HTMLInputElement).value);
                     setErrors((prev) => ({ ...prev, origemId: undefined }));
@@ -500,6 +539,8 @@ export function CreateNotaModal({
                     }
                     options={origemOptions}
                     value={origemId}
+                    searchThreshold={0}
+                    required
                     onChange={(v) => {
                       setOrigemId(v);
                       setErrors((prev) => ({ ...prev, origemId: undefined }));
@@ -508,10 +549,10 @@ export function CreateNotaModal({
                       !origemTipo
                         ? "Selecione a origem"
                         : isLoadingOrigem
-                        ? "Carregando..."
-                        : origemOptions.length === 0
-                        ? "Nenhum item encontrado"
-                        : "Selecionar"
+                          ? "Carregando..."
+                          : origemOptions.length === 0
+                            ? "Nenhum item encontrado"
+                            : "Selecionar"
                     }
                     disabled={
                       !alunoId ||
@@ -528,6 +569,7 @@ export function CreateNotaModal({
                 key={`nota-${notaInputInstanceKey}`}
                 label="Nota (0 a 10)"
                 value={notaInput}
+                required
                 type="text"
                 inputMode="decimal"
                 maxLength={5}
@@ -604,13 +646,20 @@ export function CreateNotaModal({
                 placeholder="Ex: 7.5"
                 error={errors.nota}
                 helperText={
-                  alunoId
-                    ? maxAllowed <= 0
-                      ? "Esse aluno já atingiu nota final 10."
-                      : `Disponível para adicionar: ${formatMax(maxAllowed)}`
-                    : undefined
+                  !alunoId
+                    ? undefined
+                    : notasAtuaisQuery.isLoading
+                    ? "Carregando nota atual do aluno..."
+                    : maxAllowed <= 0
+                    ? "Aluno já possui nota final 10. Não é possível adicionar."
+                    : `Nota atual: ${formatNotaValue(notaAtualAluno)} • disponível para adicionar: ${formatNotaValue(maxAllowed)}`
                 }
-                disabled={!alunoId || !origemTipo || maxAllowed <= 0}
+                disabled={
+                  !alunoId ||
+                  !origemTipo ||
+                  notasAtuaisQuery.isLoading ||
+                  maxAllowed <= 0
+                }
               />
             </div>
 
@@ -618,6 +667,7 @@ export function CreateNotaModal({
               <SimpleTextarea
                 label="Motivo da nota"
                 value={motivo}
+                required
                 onChange={(e) => {
                   setMotivo((e.target as HTMLTextAreaElement).value);
                   setErrors((prev) => ({ ...prev, motivo: undefined }));
@@ -647,7 +697,7 @@ export function CreateNotaModal({
                 type="submit"
                 variant="primary"
                 isLoading={upsertNota.isPending}
-                disabled={upsertNota.isPending}
+                disabled={isSubmitDisabled}
               >
                 Salvar nota
               </ButtonCustom>

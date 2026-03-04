@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Controller, useForm } from "react-hook-form";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Controller, useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -44,10 +44,47 @@ const GENERO_OPTIONS: SelectOption[] = [
   { value: "PREFIRO_NAO_INFORMAR", label: "Prefiro não informar" },
 ];
 
+const UF_OPTIONS: SelectOption[] = [
+  { value: "AC", label: "Acre" },
+  { value: "AL", label: "Alagoas" },
+  { value: "AP", label: "Amapá" },
+  { value: "AM", label: "Amazonas" },
+  { value: "BA", label: "Bahia" },
+  { value: "CE", label: "Ceará" },
+  { value: "DF", label: "Distrito Federal" },
+  { value: "ES", label: "Espírito Santo" },
+  { value: "GO", label: "Goiás" },
+  { value: "MA", label: "Maranhão" },
+  { value: "MT", label: "Mato Grosso" },
+  { value: "MS", label: "Mato Grosso do Sul" },
+  { value: "MG", label: "Minas Gerais" },
+  { value: "PA", label: "Pará" },
+  { value: "PB", label: "Paraíba" },
+  { value: "PR", label: "Paraná" },
+  { value: "PE", label: "Pernambuco" },
+  { value: "PI", label: "Piauí" },
+  { value: "RJ", label: "Rio de Janeiro" },
+  { value: "RN", label: "Rio Grande do Norte" },
+  { value: "RS", label: "Rio Grande do Sul" },
+  { value: "RO", label: "Rondônia" },
+  { value: "RR", label: "Roraima" },
+  { value: "SC", label: "Santa Catarina" },
+  { value: "SP", label: "São Paulo" },
+  { value: "SE", label: "Sergipe" },
+  { value: "TO", label: "Tocantins" },
+];
+
 function normalizeGeneroValue(value?: string | null): string {
   const normalized = value ? String(value).trim() : "";
   if (!normalized) return "";
   return normalized === "NAO_INFORMADO" ? "PREFIRO_NAO_INFORMAR" : normalized;
+}
+
+function normalizeText(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
 }
 
 const onboardingSchema = z.object({
@@ -113,8 +150,11 @@ function isProfileCompleteForOnboarding(
 export function ProfileOnboardingGate() {
   const queryClient = useQueryClient();
   const [isCepLoading, setIsCepLoading] = useState(false);
+  const [cidadeOptions, setCidadeOptions] = useState<SelectOption[]>([]);
+  const [isLoadingCidades, setIsLoadingCidades] = useState(false);
   const [activeStep, setActiveStep] = useState(1);
   const [hasCompletedStep1, setHasCompletedStep1] = useState(false);
+  const cidadesCacheRef = useRef<Record<string, SelectOption[]>>({});
   const maskService = useMemo(() => MaskService.getInstance(), []);
   const minBirthDate = useMemo(() => {
     const today = new Date();
@@ -182,11 +222,97 @@ export function ProfileOnboardingGate() {
     },
   });
 
+  const selectedEstado = useWatch({
+    control,
+    name: "endereco.estado",
+  });
+
+  const applyCidadeFromOptions = useCallback(
+    (options: SelectOption[], cidadeToSelect?: string | null) => {
+      if (cidadeToSelect === undefined) return;
+
+      if (!cidadeToSelect) {
+        setValue("endereco.cidade", "", { shouldValidate: true });
+        return;
+      }
+
+      const normalizedTarget = normalizeText(cidadeToSelect);
+      const found = options.find(
+        (option) => normalizeText(String(option.value)) === normalizedTarget
+      );
+
+      setValue("endereco.cidade", found ? String(found.value) : "", {
+        shouldValidate: true,
+      });
+    },
+    [setValue]
+  );
+
+  const fetchCidadesByUf = useCallback(
+    async (uf: string, cidadeToSelect?: string | null) => {
+      const normalizedUf = (uf || "").toUpperCase();
+      if (!normalizedUf) {
+        setCidadeOptions([]);
+        if (cidadeToSelect !== undefined) {
+          setValue("endereco.cidade", "", { shouldValidate: true });
+        }
+        return;
+      }
+
+      const cached = cidadesCacheRef.current[normalizedUf];
+      if (cached) {
+        setCidadeOptions(cached);
+        applyCidadeFromOptions(cached, cidadeToSelect);
+        return;
+      }
+
+      setIsLoadingCidades(true);
+      try {
+        const response = await fetch(
+          `https://servicodados.ibge.gov.br/api/v1/localidades/estados/${normalizedUf}/municipios?orderBy=nome`
+        );
+        if (!response.ok) {
+          throw new Error("Erro ao carregar cidades");
+        }
+
+        const data: Array<{ nome: string }> = await response.json();
+        const options: SelectOption[] = data.map((city) => ({
+          value: city.nome,
+          label: city.nome,
+        }));
+
+        cidadesCacheRef.current[normalizedUf] = options;
+        setCidadeOptions(options);
+        applyCidadeFromOptions(options, cidadeToSelect);
+      } catch (error) {
+        console.error("Erro ao carregar cidades do estado:", normalizedUf, error);
+        setCidadeOptions([]);
+        if (cidadeToSelect !== undefined) {
+          setValue("endereco.cidade", "", { shouldValidate: true });
+        }
+      } finally {
+        setIsLoadingCidades(false);
+      }
+    },
+    [applyCidadeFromOptions, setValue]
+  );
+
+  const handleEstadoChange = useCallback(
+    (value: string | null) => {
+      const uf = (value || "").toUpperCase();
+      setValue("endereco.estado", uf, { shouldValidate: true });
+      setValue("endereco.cidade", "", { shouldValidate: true });
+      void fetchCidadesByUf(uf, null);
+    },
+    [fetchCidadesByUf, setValue]
+  );
+
   useEffect(() => {
     if (!usuario || !stats) return;
     if (isProfileCompleteForOnboarding(usuario, stats)) return;
 
     const endereco = getPrimaryEndereco(usuario);
+    const initialUf = (endereco?.estado ?? "").toUpperCase();
 
     reset({
       genero: normalizeGeneroValue(usuario.genero),
@@ -199,12 +325,17 @@ export function ProfileOnboardingGate() {
         numero: endereco?.numero ?? "",
         bairro: endereco?.bairro ?? "",
         cidade: endereco?.cidade ?? "",
-        estado: endereco?.estado ?? "",
+        estado: initialUf,
       },
     });
+    if (initialUf) {
+      void fetchCidadesByUf(initialUf, endereco?.cidade ?? "");
+    } else {
+      setCidadeOptions([]);
+    }
     setActiveStep(1);
     setHasCompletedStep1(false);
-  }, [reset, usuario, stats, maskService]);
+  }, [fetchCidadesByUf, maskService, reset, stats, usuario]);
 
   const updateMutation = useMutation({
     mutationFn: async (data: OnboardingFormData) => {
@@ -264,9 +395,17 @@ export function ProfileOnboardingGate() {
 
         setValue("endereco.logradouro", result.street || "");
         setValue("endereco.bairro", result.neighborhood || "");
-        setValue("endereco.cidade", result.city || "");
-        setValue("endereco.estado", (result.state || "").toUpperCase());
         setValue("endereco.cep", result.cep);
+
+        const ufFromCep = (result.state || "").toUpperCase();
+        setValue("endereco.estado", ufFromCep, { shouldValidate: true });
+
+        if (ufFromCep) {
+          await fetchCidadesByUf(ufFromCep, result.city || "");
+        } else {
+          setCidadeOptions([]);
+          setValue("endereco.cidade", "", { shouldValidate: true });
+        }
       } catch (error) {
         console.error("Erro ao buscar CEP:", error);
         toastCustom.error({
@@ -277,7 +416,7 @@ export function ProfileOnboardingGate() {
         setIsCepLoading(false);
       }
     },
-    [isCepLoading, setValue]
+    [fetchCidadesByUf, isCepLoading, setValue]
   );
 
   const handleCepChange = useCallback(
@@ -572,40 +711,49 @@ export function ProfileOnboardingGate() {
 
                       <Controller
                         control={control}
-                        name="endereco.cidade"
-                        render={({ field }) => (
-                          <InputCustom
-                            ref={field.ref}
-                            name={field.name}
-                            label="Cidade"
+                        name="endereco.estado"
+                        render={() => (
+                          <SelectCustom
+                            mode="single"
+                            label="UF"
                             required
-                            value={field.value ?? ""}
-                            onChange={field.onChange}
-                            onBlur={field.onBlur}
+                            placeholder="Selecionar"
+                            options={UF_OPTIONS}
+                            value={(selectedEstado || null) as any}
+                            onChange={handleEstadoChange}
                             disabled={isBusy}
-                            error={errors.endereco?.cidade?.message}
+                            error={errors.endereco?.estado?.message}
+                            searchable
                           />
                         )}
                       />
 
                       <Controller
                         control={control}
-                        name="endereco.estado"
+                        name="endereco.cidade"
                         render={({ field }) => (
-                          <InputCustom
-                            ref={field.ref}
-                            name={field.name}
-                            label="UF"
+                          <SelectCustom
+                            mode="single"
+                            label="Cidade"
                             required
-                            value={field.value ?? ""}
-                            onChange={(e) =>
-                              field.onChange(e.target.value.toUpperCase())
+                            placeholder={
+                              !selectedEstado
+                                ? "Selecione uma UF primeiro"
+                                : isLoadingCidades
+                                ? "Carregando cidades..."
+                                : "Selecionar"
                             }
-                            onBlur={field.onBlur}
-                            disabled={isBusy}
-                            error={errors.endereco?.estado?.message}
-                            maxLength={2}
-                            placeholder="Ex: RJ"
+                            options={cidadeOptions}
+                            value={(field.value || null) as any}
+                            onChange={(value) => field.onChange(value ?? "")}
+                            disabled={
+                              isBusy ||
+                              !selectedEstado ||
+                              isLoadingCidades ||
+                              cidadeOptions.length === 0
+                            }
+                            error={errors.endereco?.cidade?.message}
+                            searchable
                           />
                         )}
                       />

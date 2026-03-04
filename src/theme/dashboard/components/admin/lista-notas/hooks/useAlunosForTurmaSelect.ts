@@ -3,7 +3,13 @@
 import { useQuery } from "@tanstack/react-query";
 import type { SelectOption } from "@/components/ui/custom/select/types";
 import { listInscricoes, type TurmaInscricao } from "@/api/cursos";
-import { getMockAlunosForTurma } from "@/mockData/notas";
+
+function formatCpf(cpf?: string): string | null {
+  if (!cpf) return null;
+  const digits = cpf.replace(/\D/g, "");
+  if (digits.length !== 11) return cpf;
+  return digits.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
+}
 
 function buildAlunoOption(inscricao: TurmaInscricao): SelectOption {
   const nome =
@@ -11,8 +17,16 @@ function buildAlunoOption(inscricao: TurmaInscricao): SelectOption {
     inscricao.aluno?.nome ||
     inscricao.alunoId ||
     "—";
-  const label = inscricao.alunoId ? `${nome} • ${inscricao.alunoId}` : nome;
-  return { value: inscricao.alunoId, label };
+  const cpfFormatado = formatCpf(inscricao.aluno?.cpf);
+  const cpfDigits = inscricao.aluno?.cpf?.replace(/\D/g, "") || "";
+  const matricula =
+    inscricao.aluno?.codigo?.trim() || inscricao.aluno?.codUsuario?.trim() || "";
+  const label = nome;
+  return {
+    value: inscricao.alunoId,
+    label,
+    searchKeywords: [nome, cpfFormatado || "", cpfDigits, matricula].filter(Boolean),
+  };
 }
 
 export function useAlunosForTurmaSelect(params: {
@@ -30,19 +44,7 @@ export function useAlunosForTurmaSelect(params: {
         .map(buildAlunoOption)
         .sort((a, b) => a.label.localeCompare(b.label, "pt-BR", { sensitivity: "base" }));
 
-      if (fromApi.length > 0) return fromApi;
-
-      const mock = getMockAlunosForTurma({
-        cursoId: cursoId as string,
-        turmaId: turmaId as string,
-        count: 12,
-      });
-      return mock
-        .map((a) => ({
-          value: a.alunoId,
-          label: `${a.alunoNome} • ${a.alunoId}`,
-        }))
-        .sort((a, b) => a.label.localeCompare(b.label, "pt-BR", { sensitivity: "base" }));
+      return fromApi;
     },
     enabled: Boolean(cursoId && turmaId),
     staleTime: 30 * 1000,
@@ -57,4 +59,3 @@ export function useAlunosForTurmaSelect(params: {
     refetch: query.refetch,
   };
 }
-

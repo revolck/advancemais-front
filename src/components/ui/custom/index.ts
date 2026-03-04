@@ -69,3 +69,5 @@ export * from "./calendar";
 export * from "./aulas-provas";
 
 export * from "./RecuperacaoFinalPagamentoModal";
+
+export * from "./estagio-attendance-by-date";

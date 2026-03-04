@@ -20,24 +20,24 @@ export interface EstagioListItem {
   id: string;
   cursoId: string;
   turmaId: string;
-  inscricaoId: string;
-  alunoId: string;
+  inscricaoId?: string;
+  alunoId?: string;
   alunoNome: string;
   alunoEmail?: string;
   status: EstagioStatus;
-  empresaNome: string;
+  empresaNome?: string;
   empresaTelefone?: string;
-  cep: string;
-  rua: string;
-  numero: string;
-  dataInicioPrevista: string;
-  dataFimPrevista: string;
-  horarioInicio: string;
-  horarioFim: string;
+  cep?: string;
+  rua?: string;
+  numero?: string;
+  dataInicioPrevista?: string;
+  dataFimPrevista?: string;
+  horarioInicio?: string;
+  horarioFim?: string;
   compareceu?: boolean | null;
   aprovado?: boolean | null;
   observacoes?: string | null;
-  criadoEm: string;
+  criadoEm?: string;
   atualizadoEm?: string;
 }
 
@@ -84,18 +84,24 @@ async function fetchEstagios(
   try {
     const response = await listEstagiosGlobal({
       cursoId: filters.cursoId ?? undefined,
-      turmaId: filters.turmaId ?? undefined,
+      turmaIds: filters.turmaId ?? undefined,
       status: filters.status ?? undefined,
       search: filters.search,
       page: filters.page,
       pageSize: filters.pageSize,
     });
 
-    const items = (response.data ?? []).map(mapEstagioToListItem);
+    const responseItems = Array.isArray(response.data)
+      ? response.data
+      : (response.data?.items ?? []);
+    const items = responseItems.map(mapEstagioToListItem);
+    const responsePagination = Array.isArray(response.data)
+      ? response.pagination
+      : (response.data?.pagination ?? response.pagination);
 
     return {
       items,
-      pagination: response.pagination ?? {
+      pagination: responsePagination ?? {
         page: filters.page,
         pageSize: filters.pageSize,
         total: items.length,
@@ -117,8 +123,6 @@ export function useEstagiosDashboardQuery(filters: NormalizedEstagiosFilters) {
     gcTime: 5 * 60 * 1000,
   });
 }
-
-
 
 
 

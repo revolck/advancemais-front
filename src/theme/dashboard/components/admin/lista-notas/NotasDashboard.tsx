@@ -9,7 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { CalendarDays, ChevronDown, ChevronUp, GraduationCap } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -45,8 +45,8 @@ export function NotasDashboard({ className }: { className?: string }) {
   const [pageSize] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
 
-  const [sortField, setSortField] = useState<SortField>("alunoNome");
-  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
+  const [sortField, setSortField] = useState<SortField>("atualizadoEm");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
 
   const { cursos, isLoading: loadingCursos } = useCursosForSelect();
   const { turmas, isLoading: loadingTurmas } = useTurmasForSelect(selectedCourseId);
@@ -54,6 +54,13 @@ export function NotasDashboard({ className }: { className?: string }) {
   useEffect(() => {
     setSelectedTurmaIds([]);
   }, [selectedCourseId]);
+
+  useEffect(() => {
+    if (!selectedCourseId || loadingTurmas) return;
+    if (selectedTurmaIds.length > 0) return;
+    if (turmas.length === 0) return;
+    setSelectedTurmaIds([turmas[0].value]);
+  }, [selectedCourseId, loadingTurmas, selectedTurmaIds.length, turmas]);
 
   const searchValidationMessage = useMemo(
     () => getSearchValidationMessage(pendingSearchTerm),
@@ -94,16 +101,23 @@ export function NotasDashboard({ className }: { className?: string }) {
   });
 
   const notas = useMemo(() => notasQuery.data?.items ?? [], [notasQuery.data]);
+  const showActionsColumn = useMemo(
+    () =>
+      notas.some(
+        (item) => item.isManual === true || (item.history?.length ?? 0) > 0
+      ),
+    [notas]
+  );
   const pagination = notasQuery.data?.pagination;
   const updateNota = useUpdateNotaMutation();
 
-  const hasFiltersSelected = Boolean(
-    selectedCourseId && selectedTurmaIds.length > 0
+  const hasActiveFilters = Boolean(
+    selectedCourseId || selectedTurmaIds.length > 0 || normalizedSearch
   );
-  const isLoadingNotas = notasQuery.status === "pending";
+  const isLoadingNotas = notasQuery.isLoading;
   const isFetchingNotas = notasQuery.isFetching;
-  const shouldShowSkeleton =
-    hasFiltersSelected && (isLoadingNotas || isFetchingNotas);
+  const shouldShowSkeleton = isLoadingNotas || isFetchingNotas;
+  const shouldRenderActionsColumn = showActionsColumn && !shouldShowSkeleton;
 
   const errorMessage =
     notasQuery.status === "error"
@@ -131,6 +145,12 @@ export function NotasDashboard({ className }: { className?: string }) {
     turmas.forEach((t) => map.set(t.value, t.label));
     return map;
   }, [turmas]);
+
+  const cursoLabelById = useMemo(() => {
+    const map = new Map<string, string>();
+    cursos.forEach((c) => map.set(c.value, c.label));
+    return map;
+  }, [cursos]);
 
   const filterFields: FilterField[] = useMemo(
     () => [
@@ -174,7 +194,7 @@ export function NotasDashboard({ className }: { className?: string }) {
     if (field === null) return;
     setSortField((prev) => {
       if (prev !== field) {
-        setSortDirection("asc");
+        setSortDirection(field === "atualizadoEm" ? "desc" : "asc");
         return field;
       }
       setSortDirection((d) => (d === "asc" ? "desc" : "asc"));
@@ -198,7 +218,7 @@ export function NotasDashboard({ className }: { className?: string }) {
     [totalPages]
   );
 
-  const showEmptyState = !shouldShowSkeleton && (!hasFiltersSelected || notas.length === 0);
+  const showEmptyState = !shouldShowSkeleton && notas.length === 0;
 
   return (
     <div className={cn("min-h-full space-y-4", className)}>
@@ -367,7 +387,9 @@ export function NotasDashboard({ className }: { className?: string }) {
                       </div>
                     </div>
                   </TableHead>
-                  <TableHead className="font-medium text-gray-700 py-4 px-3">Turma</TableHead>
+                  <TableHead className="font-medium text-gray-700 py-4 px-3">
+                    Curso/Turma
+                  </TableHead>
                   <TableHead
                     className="font-medium text-gray-700 py-4 px-3 text-center"
                     aria-sort={
@@ -389,7 +411,8 @@ export function NotasDashboard({ className }: { className?: string }) {
                               sortField === "nota" && "text-gray-900"
                             )}
                           >
-                            Nota
+                            <GraduationCap className="h-4 w-4" />
+                            Nota / Situação
                           </button>
                         </TooltipTrigger>
                         <TooltipContent sideOffset={6}>
@@ -450,7 +473,6 @@ export function NotasDashboard({ className }: { className?: string }) {
                       </div>
                     </div>
                   </TableHead>
-	                  <TableHead className="font-medium text-gray-700 py-4 px-3">Situação</TableHead>
                   <TableHead
                     className="font-medium text-gray-700 py-4 px-3 text-center"
                     aria-sort={
@@ -472,6 +494,7 @@ export function NotasDashboard({ className }: { className?: string }) {
                               sortField === "atualizadoEm" && "text-gray-900"
                             )}
                           >
+                            <CalendarDays className="h-4 w-4" />
                             Atualizado em
                           </button>
                         </TooltipTrigger>
@@ -537,36 +560,46 @@ export function NotasDashboard({ className }: { className?: string }) {
 	                      </div>
 	                    </div>
 		                  </TableHead>
-		                  <TableHead className="font-medium text-gray-700 py-4 px-3 text-right">
-                        <span className="sr-only">Ações</span>
+                      {shouldRenderActionsColumn ? (
+                        <TableHead className="font-medium text-gray-700 py-4 px-3 text-right">
+                          <span className="sr-only">Ações</span>
+                        </TableHead>
+                      ) : null}
+		                  <TableHead className="font-medium text-gray-700 py-4 px-3 text-right w-16">
+                        <span className="sr-only">Visualizar aluno</span>
                       </TableHead>
 		                </TableRow>
 		              </TableHeader>
 		              <TableBody>
-		                {shouldShowSkeleton ? (
-                  <NotasTableSkeleton rows={8} />
+                {shouldShowSkeleton ? (
+                  <NotasTableSkeleton rows={8} withActions={shouldRenderActionsColumn} />
                 ) : (
 		                  notas.map((item) => (
 		                    <NotaRow
 		                      key={item.key}
 		                      item={item}
-		                      turmaNome={turmaLabelById.get(item.turmaId) ?? item.turmaId}
+                          cursoNome={cursoLabelById.get(item.cursoId) ?? undefined}
+		                      turmaNome={turmaLabelById.get(item.turmaId) ?? undefined}
                           isRemoving={
                             updateNota.isPending &&
                             updateNota.variables?.alunoId === item.alunoId &&
                             updateNota.variables?.turmaId === item.turmaId &&
                             updateNota.variables?.nota === null
                           }
-                          onRemove={() =>
-                            updateNota
-                              .mutateAsync({
-                                cursoId: item.cursoId,
-                                turmaId: item.turmaId,
-                                alunoId: item.alunoId,
-                                nota: null,
-                              })
-                              .then(() => undefined)
+                          onRemove={
+                            item.isManual === true
+                              ? () =>
+                                  updateNota
+                                    .mutateAsync({
+                                      cursoId: item.cursoId,
+                                      turmaId: item.turmaId,
+                                      alunoId: item.alunoId,
+                                      nota: null,
+                                    })
+                                    .then(() => undefined)
+                              : undefined
                           }
+                          showActionsColumn={showActionsColumn}
 		                    />
 		                  ))
 		                )}
@@ -661,7 +694,7 @@ export function NotasDashboard({ className }: { className?: string }) {
         </div>
       )}
 
-	      {showEmptyState && (
+      {showEmptyState && (
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
           <EmptyState
             fullHeight
@@ -669,14 +702,14 @@ export function NotasDashboard({ className }: { className?: string }) {
             illustration="books"
             illustrationAlt="Ilustração de notas"
             title={
-              hasFiltersSelected
+              hasActiveFilters
                 ? "Nenhuma nota encontrada"
-                : "Selecione curso e turma"
+                : "Nenhuma nota cadastrada"
             }
             description={
-              hasFiltersSelected
+              hasActiveFilters
                 ? "Nenhum aluno encontrado para os filtros aplicados. Tente ajustar sua busca."
-                : "Escolha um curso e uma ou mais turmas para listar as notas."
+                : "Ainda não existem notas para exibir. Use os filtros para refinar a busca ou adicione novas notas."
             }
           />
         </div>

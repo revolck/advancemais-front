@@ -33,6 +33,7 @@ export interface DatePickerCustomProps {
   showOutsideDays?: boolean;
   minDate?: Date;
   maxDate?: Date;
+  disabledDates?: Date[];
   /**
    * Controle de faixa de anos no seletor (dropdown).
    * - `old`: prioriza anos anteriores (até o ano atual, por padrão)
@@ -86,6 +87,7 @@ export function DatePickerCustom({
   showOutsideDays = false,
   minDate,
   maxDate,
+  disabledDates,
   years = "default",
   error,
   helperText,
@@ -102,6 +104,18 @@ export function DatePickerCustom({
     () => resolveYearBounds({ years, minDate, maxDate }),
     [maxDate, minDate, years]
   );
+  const disabledDateKeys = useMemo(() => {
+    if (!disabledDates || disabledDates.length === 0) return null;
+    return new Set(
+      disabledDates.map((date) => {
+        const d = new Date(date);
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, "0");
+        const dd = String(d.getDate()).padStart(2, "0");
+        return `${yyyy}-${mm}-${dd}`;
+      })
+    );
+  }, [disabledDates]);
 
   const displayValue = useMemo(() => {
     if (!value) return "";
@@ -249,6 +263,16 @@ export function DatePickerCustom({
                         new Date(maxDate).setHours(23, 59, 59, 999)
                       ),
                     } as any,
+                  ]
+                : []),
+              ...(disabledDateKeys
+                ? [
+                    ((date: Date) => {
+                      const yyyy = date.getFullYear();
+                      const mm = String(date.getMonth() + 1).padStart(2, "0");
+                      const dd = String(date.getDate()).padStart(2, "0");
+                      return !disabledDateKeys.has(`${yyyy}-${mm}-${dd}`);
+                    }) as any,
                   ]
                 : []),
             ]}

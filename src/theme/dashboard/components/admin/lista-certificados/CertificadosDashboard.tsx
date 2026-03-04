@@ -19,7 +19,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useCursosForSelect } from "../lista-turmas/hooks/useCursosForSelect";
 import { useTurmaOptions } from "../lista-alunos/hooks/useTurmaOptions";
-import { listCertificados } from "@/api/cursos";
+import { listCertificadosGlobal } from "@/api/cursos";
 import type { TurmaCertificado } from "@/api/cursos";
 import type { FilterField } from "@/components/ui/custom/filters";
 import type { DateRange } from "@/components/ui/custom/date-picker";
@@ -46,6 +46,14 @@ const cloneDateRange = (range: DateRange): DateRange => ({
   to: range.to ? new Date(range.to) : null,
 });
 
+const toIsoDate = (value: Date | null): string | undefined => {
+  if (!value) return undefined;
+  const yyyy = value.getFullYear();
+  const mm = String(value.getMonth() + 1).padStart(2, "0");
+  const dd = String(value.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+};
+
 export interface CertificadosDashboardProps {
   className?: string;
   initialCreateModalOpen?: boolean;
@@ -61,7 +69,8 @@ export function CertificadosDashboard({
     () =>
       role === UserRole.ADMIN ||
       role === UserRole.MODERADOR ||
-      role === UserRole.PEDAGOGICO,
+      role === UserRole.PEDAGOGICO ||
+      role === UserRole.INSTRUTOR,
     [role]
   );
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
@@ -122,8 +131,6 @@ export function CertificadosDashboard({
   );
 
   const runFetch = useCallback(async () => {
-    if (!selectedCourseId || !selectedTurmaId) return;
-
     // Aplicar filtros antes de buscar
     const validationMessage = getSearchValidationMessage(pendingSearchTerm);
     if (!validationMessage) {
@@ -137,13 +144,31 @@ export function CertificadosDashboard({
     setError(null);
     setHasFetched(true);
     try {
-      const data = await listCertificados(selectedCourseId, selectedTurmaId);
-      // Garantir que sempre seja um array
-      const certificadosArray = Array.isArray(data) ? data : [];
+      const data = await listCertificadosGlobal({
+        search:
+          getNormalizedSearchOrUndefined(
+            pendingSearchTerm,
+            DEFAULT_SEARCH_MIN_LENGTH
+          ) || undefined,
+        cursoId: selectedCourseId || undefined,
+        turmaId: selectedTurmaId || undefined,
+        emitidoDe: toIsoDate(pendingDateRange.from),
+        emitidoA: toIsoDate(pendingDateRange.to),
+        sortBy:
+          sortField === "aluno"
+            ? "alunoNome"
+            : sortField === "emitidoEm"
+            ? "emitidoEm"
+            : undefined,
+        sortDir: sortDirection,
+        page: 1,
+        pageSize: 200,
+      });
+      const certificadosArray = Array.isArray(data.items) ? data.items : [];
       setCertificados(certificadosArray);
       setCurrentPage(1);
       if (!certificadosArray || certificadosArray.length === 0) {
-        setError("Nenhum certificado encontrado para esta turma.");
+        setError("Nenhum certificado encontrado para os filtros aplicados.");
       }
     } catch (err) {
       setError(
@@ -153,7 +178,19 @@ export function CertificadosDashboard({
     } finally {
       setLoading(false);
     }
-  }, [selectedCourseId, selectedTurmaId, pendingDateRange, pendingSearchTerm]);
+  }, [
+    pendingDateRange,
+    pendingSearchTerm,
+    selectedCourseId,
+    selectedTurmaId,
+    sortField,
+    sortDirection,
+  ]);
+
+  useEffect(() => {
+    runFetch();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (!initialCreateModalOpen) return;
@@ -350,12 +387,9 @@ export function CertificadosDashboard({
   );
 
   const showEmptyState =
-    !loading &&
-    (!selectedCourseId || !selectedTurmaId || sortedCertificados.length === 0);
+    !loading && hasFetched && sortedCertificados.length === 0;
 
-  const showTable =
-    !showEmptyState &&
-    (loading || (hasFetched && sortedCertificados.length > 0));
+  const showTable = loading || (hasFetched && sortedCertificados.length > 0);
 
   return (
     <div className={cn("min-h-full space-y-4", className)}>
@@ -379,8 +413,10 @@ export function CertificadosDashboard({
         onClose={() => setIsCreateModalOpen(false)}
         defaultCursoId={selectedCourseId}
         defaultTurmaId={selectedTurmaId}
-        onSuccess={() => {
-          if (!selectedCourseId || !selectedTurmaId) return;
+        onSuccess={(certificadoCriado) => {
+          setCertificados((prev) => [certificadoCriado, ...prev]);
+          setHasFetched(true);
+          setError(null);
           runFetch();
         }}
       />
@@ -395,14 +431,9 @@ export function CertificadosDashboard({
               if (key === "curso") {
                 setSelectedCourseId((value as string) || null);
                 setSelectedTurmaId(null);
-                setCertificados([]);
-                setError(null);
-                setHasFetched(false);
               }
               if (key === "turma") {
                 setSelectedTurmaId((value as string) || null);
-                setCertificados([]);
-                setHasFetched(false);
               }
               if (key === "dateRange") {
                 setPendingDateRange(
@@ -429,8 +460,8 @@ export function CertificadosDashboard({
               <ButtonCustom
                 variant="primary"
                 size="lg"
-                onClick={runFetch}
-                disabled={!selectedCourseId || !selectedTurmaId || loading}
+                onClick={() => runFetch()}
+                disabled={loading}
                 isLoading={loading}
                 className="md:w-full xl:w-auto"
               >
@@ -446,7 +477,7 @@ export function CertificadosDashboard({
           {showTable && (
             <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
               <div className="overflow-x-auto">
-                <Table className="min-w-[800px]">
+                <Table className="min-w-[980px]">
                   <TableHeader>
                     <TableRow className="border-gray-200 bg-gray-50/50">
                       <TableHead
@@ -537,7 +568,13 @@ export function CertificadosDashboard({
                         </div>
                       </TableHead>
                       <TableHead className="font-medium text-gray-700">
+                        Curso/Turma
+                      </TableHead>
+                      <TableHead className="font-medium text-gray-700">
                         Código
+                      </TableHead>
+                      <TableHead className="font-medium text-gray-700">
+                        Status
                       </TableHead>
                       <TableHead
                         className="font-medium text-gray-700"
@@ -626,10 +663,9 @@ export function CertificadosDashboard({
                           </div>
                         </div>
                       </TableHead>
-                      <TableHead className="font-medium text-gray-700">
-                        Status
+                      <TableHead className="w-[112px] text-right font-medium text-gray-700">
+                        Ações
                       </TableHead>
-                      <TableHead className="w-12" />
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -644,7 +680,11 @@ export function CertificadosDashboard({
                         return (
                           <CertificadoRow
                             key={safeId}
-                            certificado={{ ...certificado, id: safeId }}
+                            certificado={{
+                              ...certificado,
+                              id: safeId,
+                              aluno: certificado.aluno ?? undefined,
+                            }}
                           />
                         );
                       })
@@ -746,16 +786,10 @@ export function CertificadosDashboard({
                 maxContentWidth="sm"
                 illustration="books"
                 illustrationAlt="Ilustração de certificados"
-                title={
-                  !selectedCourseId || !selectedTurmaId
-                    ? "Selecione curso e turma"
-                    : "Nenhum certificado encontrado"
-                }
+                title="Nenhum certificado encontrado"
                 description={
-                  !selectedCourseId || !selectedTurmaId
-                    ? "Selecione o curso e a turma para listar os certificados disponíveis."
-                    : error ||
-                      "Nenhum certificado encontrado para os filtros aplicados. Tente ajustar sua busca."
+                  error ||
+                  "Nenhum certificado encontrado para os filtros aplicados. Tente ajustar sua busca."
                 }
               />
             </div>

@@ -2,20 +2,22 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
-  createFrequencia,
-  updateFrequencia,
+  upsertFrequenciaLancamento,
   type Frequencia,
+  type FrequenciaOrigemTipo,
   type FrequenciaStatus,
 } from "@/api/cursos";
 
 export interface UpdateFrequenciaVariables {
   cursoId: string;
   turmaId: string;
-  aulaId: string;
+  frequenciaId?: string | null;
+  tipoOrigem: FrequenciaOrigemTipo;
+  origemId: string;
   inscricaoId: string;
-  frequenciaId?: string; // Se existir, faz update; senão, cria
   status: FrequenciaStatus;
   justificativa?: string | null;
+  observacoes?: string | null;
   dataReferencia?: string;
 }
 
@@ -26,28 +28,22 @@ export function useUpdateFrequenciaMutation() {
     mutationFn: async ({
       cursoId,
       turmaId,
-      aulaId,
+      tipoOrigem,
+      origemId,
       inscricaoId,
-      frequenciaId,
       status,
       justificativa,
-      dataReferencia,
+      observacoes,
     }) => {
-      // Se tiver frequenciaId, atualiza; senão, cria
-      if (frequenciaId) {
-        return updateFrequencia(cursoId, turmaId, frequenciaId, {
-          status,
-          justificativa,
-        });
-      } else {
-        return createFrequencia(cursoId, turmaId, {
-          inscricaoId,
-          aulaId,
-          status,
-          justificativa,
-          dataReferencia: dataReferencia ?? new Date().toISOString(),
-        });
-      }
+      return upsertFrequenciaLancamento(cursoId, turmaId, {
+        inscricaoId,
+        tipoOrigem,
+        origemId,
+        status,
+        justificativa,
+        observacoes: observacoes ?? null,
+        modoLancamento: "MANUAL",
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["frequencia", "dashboard"] });

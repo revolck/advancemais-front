@@ -4,11 +4,39 @@ import React, { useMemo } from "react";
 import { formatDistanceToNowStrict } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import type { AulaSelectItem } from "../hooks/useAulasForSelect";
 import type { FrequenciaListItem } from "../hooks/useFrequenciaDashboardQuery";
+
+function suggestionLabel(status?: FrequenciaListItem["statusAtual"]): string {
+  switch (status) {
+    case "PRESENTE":
+      return "Presente";
+    case "AUSENTE":
+      return "Ausente";
+    case "ATRASADO":
+      return "Atrasado";
+    case "JUSTIFICADO":
+      return "Justificado";
+    default:
+      return "Pendente";
+  }
+}
+
+function suggestionClass(status?: FrequenciaListItem["statusAtual"]): string {
+  switch (status) {
+    case "PRESENTE":
+      return "text-emerald-700";
+    case "AUSENTE":
+      return "text-red-700";
+    case "ATRASADO":
+    case "JUSTIFICADO":
+      return "text-amber-700";
+    default:
+      return "text-gray-600";
+  }
+}
 
 function formatShortDateFromDate(d: Date): string {
   return d.toLocaleDateString("pt-BR", {
@@ -44,70 +72,209 @@ function getAulaEndDate(aula: Pick<AulaSelectItem, "dataFim" | "dataInicio" | "d
 }
 
 export function EvidenceCell(props: {
-  aula: AulaSelectItem;
+  aula?: AulaSelectItem | null;
   item: FrequenciaListItem;
 }) {
   const { aula, item } = props;
 
-  const modalidade = aula.modalidade;
-  const duracao = Math.max(1, Number(aula.duracaoMinutos ?? 60));
-  const end = useMemo(() => getAulaEndDate(aula), [aula]);
+  const modalidade = aula?.modalidade;
+  const duracao = Math.max(1, Number(aula?.duracaoMinutos ?? 60));
+  const end = useMemo(
+    () => (aula ? getAulaEndDate(aula) : null),
+    [aula]
+  );
 
-  const watched = Number(item.evidence?.tempoAoVivoMin ?? 0);
-  const ultimoLogin = item.evidence?.ultimoLogin ?? null;
+  const watched = Number(
+    item.evidence?.minutosEngajados ?? item.minutosPresenca ?? 0
+  );
+  const ultimoLogin =
+    item.evidence?.ultimoAcessoEm ??
+    item.evidence?.primeiroAcessoEm ??
+    null;
   const ultimoLoginDate = useMemo(() => {
     if (!ultimoLogin) return null;
     const d = new Date(ultimoLogin);
     return Number.isNaN(d.getTime()) ? null : d;
   }, [ultimoLogin]);
 
+  if (item.tipoOrigem === "PROVA" || item.tipoOrigem === "ATIVIDADE") {
+    const sugestao = item.evidence?.statusSugerido ?? "PENDENTE";
+    const hasEvidence =
+      Boolean(item.evidence?.respondeu) ||
+      Boolean(item.evidence?.acessou) ||
+      watched > 0;
+
+    return (
+      <Tooltip disableHoverableContent>
+        <TooltipTrigger asChild>
+          <div className="cursor-default space-y-1">
+            <div className="flex items-center gap-2">
+              <Badge
+                variant="outline"
+                className={cn(
+                  "text-[11px]",
+                  hasEvidence
+                    ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                    : "bg-gray-50 text-gray-600 border-gray-200"
+                )}
+              >
+                {hasEvidence ? "Com evidência" : "Sem evidência"}
+              </Badge>
+              <span className={cn("text-[11px] font-medium", suggestionClass(sugestao))}>
+                Sugestão: {suggestionLabel(sugestao)}
+              </span>
+            </div>
+            <div className="text-xs text-gray-500 tabular-nums">
+              {item.evidence?.respondeu ? "Resposta enviada" : "Sem resposta"} • {watched} min
+              {typeof item.minimoMinutosParaPresenca === "number"
+                ? ` • ref. ${item.minimoMinutosParaPresenca}`
+                : ""}
+            </div>
+          </div>
+        </TooltipTrigger>
+        <TooltipContent sideOffset={8} className="max-w-sm">
+          <div className="space-y-1 text-xs leading-relaxed">
+            <div>
+              Origem: <b>{item.origemTitulo ?? "Não informada"}</b>
+            </div>
+            <div>
+              Evidência: <b>{hasEvidence ? "Detectada" : "Não detectada"}</b>
+            </div>
+            <div>
+              Resposta: <b>{item.evidence?.respondeu ? "Enviada" : "Não enviada"}</b>
+            </div>
+            <div>
+              Sugestão automática: <b>{suggestionLabel(sugestao)}</b>
+            </div>
+            <div>
+              Engajamento: <b>{watched} min</b>
+              {typeof item.minimoMinutosParaPresenca === "number"
+                ? ` • Referência: ${item.minimoMinutosParaPresenca} min`
+                : ""}
+            </div>
+            {item.evidence?.primeiroAcessoEm && (
+              <div>
+                Primeiro acesso:{" "}
+                <b>{formatShortDateTimeFromDate(new Date(item.evidence.primeiroAcessoEm))}</b>
+              </div>
+            )}
+            {item.evidence?.ultimoAcessoEm && (
+              <div>
+                Último acesso:{" "}
+                <b>{formatShortDateTimeFromDate(new Date(item.evidence.ultimoAcessoEm))}</b>
+              </div>
+            )}
+          </div>
+        </TooltipContent>
+      </Tooltip>
+    );
+  }
+
+  if (!aula || !modalidade) {
+    const sugestao = item.evidence?.statusSugerido;
+    const hasEvidence = Boolean(item.evidence?.acessou) || watched > 0;
+
+    return (
+      <Tooltip disableHoverableContent>
+        <TooltipTrigger asChild>
+          <div className="cursor-default space-y-1">
+            <div className="flex items-center gap-2">
+              <Badge
+                variant="outline"
+                className={cn(
+                  "text-[11px]",
+                  hasEvidence
+                    ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                    : "bg-gray-50 text-gray-600 border-gray-200"
+                )}
+              >
+                {hasEvidence ? "Com evidência" : "Sem evidência"}
+              </Badge>
+              {sugestao && (
+                <span className={cn("text-[11px] font-medium", suggestionClass(sugestao))}>
+                  Sugestão: {suggestionLabel(sugestao)}
+                </span>
+              )}
+            </div>
+            <div className="text-xs text-gray-500 tabular-nums">
+              Engajamento: {watched} min
+            </div>
+          </div>
+        </TooltipTrigger>
+        <TooltipContent sideOffset={8} className="max-w-sm">
+          <div className="space-y-1 text-xs leading-relaxed">
+            <div>
+              Origem: <b>{item.origemTitulo ?? "Não informada"}</b>
+            </div>
+            <div>
+              Evidência: <b>{hasEvidence ? "Detectada" : "Não detectada"}</b>
+            </div>
+            {sugestao && (
+              <div>
+                Sugestão automática: <b>{suggestionLabel(sugestao)}</b>
+              </div>
+            )}
+            <div>
+              Engajamento: <b>{watched} min</b>
+            </div>
+          </div>
+        </TooltipContent>
+      </Tooltip>
+    );
+  }
+
   if (modalidade === "PRESENCIAL") {
     return (
-      <div className="flex items-center justify-between gap-3">
-        <div className="min-w-0">
-          <div className="text-sm text-gray-900">Sem evidência automática</div>
-          <div className="text-xs text-gray-500">Aula presencial • lançamento manual</div>
-        </div>
-        <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200">
-          Manual
-        </Badge>
-      </div>
+      <Tooltip disableHoverableContent>
+        <TooltipTrigger asChild>
+          <div className="cursor-default space-y-1">
+            <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200 text-[11px]">
+              Manual
+            </Badge>
+            <div className="text-xs text-gray-500">Aula presencial (sem rastreio automático)</div>
+          </div>
+        </TooltipTrigger>
+        <TooltipContent sideOffset={8} className="max-w-sm">
+          <div className="space-y-1 text-xs leading-relaxed">
+            <div>
+              Modalidade: <b>Presencial</b>
+            </div>
+            <div>
+              Evidência automática: <b>Não aplicável</b>
+            </div>
+            <div>
+              Lançamento recomendado: <b>Manual pelo instrutor</b>
+            </div>
+          </div>
+        </TooltipContent>
+      </Tooltip>
     );
   }
 
   if (modalidade === "AO_VIVO") {
     const required = Math.min(Math.round(duracao * 0.7), 45);
-    const pct = Math.max(0, Math.min(100, Math.round((watched / duracao) * 100)));
     const ok = watched >= required;
 
     return (
       <Tooltip disableHoverableContent>
         <TooltipTrigger asChild>
-          <div className="cursor-default space-y-1.5">
-            <div className="flex items-center justify-between gap-3">
-              <div className="min-w-0">
-                <div className="text-sm text-gray-900">
-                  Assistiu{" "}
-                  <span className="font-medium tabular-nums">{watched} min</span>{" "}
-                  <span className="text-xs text-gray-500 tabular-nums">de {duracao} min</span>
-                </div>
-                <div className="text-xs text-gray-500 tabular-nums">
-                  Mínimo sugerido: {required} min
-                </div>
-              </div>
+          <div className="cursor-default space-y-1">
+            <div className="flex items-center gap-2">
               <Badge
                 variant="outline"
                 className={cn(
-                  "shrink-0 px-2 py-0.5 text-[11px]",
+                  "text-[11px]",
                   ok
                     ? "bg-emerald-50 text-emerald-700 border-emerald-200"
                     : "bg-red-50 text-red-700 border-red-200"
                 )}
               >
-                {ok ? "Suficiente" : "Insuficiente"}
+                {ok ? "Dentro do mínimo" : "Abaixo do mínimo"}
               </Badge>
             </div>
-            <Progress value={pct} className="h-1.5 w-40" />
+            <div className="text-xs text-gray-500 tabular-nums">
+              Engajamento: {watched}/{duracao} min • ref. {required} min
+            </div>
           </div>
         </TooltipTrigger>
         <TooltipContent sideOffset={8} className="max-w-sm">
@@ -152,27 +319,20 @@ export function EvidenceCell(props: {
     <Tooltip disableHoverableContent>
       <TooltipTrigger asChild>
         <div className="cursor-default space-y-1">
-          <div className="flex items-center justify-between gap-3">
-            <div className="min-w-0">
-              <div className="text-sm text-gray-900">
-                {relative ? (
-                  <>
-                    Último acesso: <span className="font-medium">{relative}</span>
-                  </>
-                ) : (
-                  <span className="font-medium text-gray-700">Sem acesso registrado</span>
-                )}
-              </div>
-              <div className="text-xs text-gray-500">
-                {windowEnd ? `Prazo: ${formatShortDateFromDate(windowEnd)}` : "Prazo indisponível"}
-              </div>
-            </div>
+          <div className="flex items-center gap-2">
             <Badge
               variant="outline"
-              className={cn("shrink-0 px-2 py-0.5 text-[11px]", badgeClass)}
+              className={cn("px-2 py-0.5 text-[11px]", badgeClass)}
             >
               {badgeLabel}
             </Badge>
+            <span className={cn("text-[11px] font-medium", suggestionClass(within ? "PRESENTE" : "PENDENTE"))}>
+              Sugestão: {within ? "Presente" : "Pendente"}
+            </span>
+          </div>
+          <div className="text-xs text-gray-500">
+            {relative ? `Último acesso ${relative}` : "Sem acesso registrado"}
+            {windowEnd ? ` • prazo ${formatShortDateFromDate(windowEnd)}` : ""}
           </div>
         </div>
       </TooltipTrigger>

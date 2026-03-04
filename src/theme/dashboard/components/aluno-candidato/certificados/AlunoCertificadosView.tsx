@@ -6,13 +6,7 @@ import { ButtonCustom } from "@/components/ui/custom";
 import { cn } from "@/lib/utils";
 import type { FilterField } from "@/components/ui/custom/filters";
 import { useQuery } from "@tanstack/react-query";
-import { getUserProfile } from "@/api/usuarios";
-import { getMockAlunoCertificados } from "@/mockData/aluno-candidato";
-import {
-  getModeloCertificado,
-  gerarHtmlCertificado,
-  type CertificadoDados,
-} from "@/mockData/certificados";
+import { listMeCertificados } from "@/api/cursos";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -41,14 +35,6 @@ import {
 
 const createEmptyDateRange = (): DateRange => ({ from: null, to: null });
 
-function getCookieValue(name: string): string | null {
-  if (typeof document === "undefined") return null;
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop()?.split(";").shift() || null;
-  return null;
-}
-
 interface CertificadoListItem {
   id: string;
   key: string;
@@ -61,6 +47,7 @@ interface CertificadoListItem {
   alunoId: string;
   emitidoEm: string;
   pdfUrl?: string | null;
+  previewUrl?: string | null;
   templateId?: string;
   cargaHoraria?: number;
   dataInicio?: string;
@@ -76,22 +63,29 @@ export function AlunoCertificadosView() {
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 6;
 
-  // Buscar perfil do usuário (para usar o nome no certificado)
-  const { data: alunoProfile } = useQuery({
-    queryKey: ["aluno-profile"],
-    queryFn: async () => {
-      const token = getCookieValue("token");
-      if (!token) throw new Error("Token não encontrado");
-      return await getUserProfile(token);
-    },
-    staleTime: 5 * 60 * 1000,
-  });
-
-  // Buscar certificados (mockados por enquanto)
+  // Buscar certificados do aluno autenticado
   const { data: todasCertificados, isLoading } = useQuery({
     queryKey: ["aluno-certificados"],
     queryFn: async () => {
-      return getMockAlunoCertificados();
+      const response = await listMeCertificados({
+        page: 1,
+        pageSize: 200,
+      });
+      return (response.items ?? []).map((item) => ({
+        id: item.id,
+        key: item.id,
+        codigo: item.codigo || item.numero || "—",
+        cursoId: item.curso?.id || item.cursoId || "",
+        cursoNome: item.curso?.nome || "Curso",
+        turmaId: item.turma?.id || item.turmaId || "",
+        turmaNome: item.turma?.nome || "Turma",
+        inscricaoId: item.inscricaoId || "",
+        alunoId: item.aluno?.id || item.alunoId || "",
+        emitidoEm: item.emitidoEm,
+        pdfUrl: item.pdfUrl || null,
+        previewUrl: item.previewUrl || null,
+        templateId: item.modelo?.id || item.templateId,
+      })) as CertificadoListItem[];
     },
     enabled: true,
     staleTime: 5 * 60 * 1000,
@@ -271,105 +265,12 @@ export function AlunoCertificadosView() {
 
   const handleDownload = useCallback(
     async (certificado: CertificadoListItem) => {
-      try {
-        const modeloId = certificado.templateId || "modelo-padrao-001";
-        const modelo = getModeloCertificado(modeloId);
-        if (!modelo) {
-          console.error("Modelo de certificado não encontrado:", modeloId);
-          return;
-        }
-
-        const dadosCertificado: CertificadoDados = {
-          alunoNome:
-            (alunoProfile && "usuario" in alunoProfile
-              ? alunoProfile.usuario.nomeCompleto
-              : alunoProfile && "data" in alunoProfile && alunoProfile.data
-              ? alunoProfile.data.nomeCompleto
-              : null) || "Nome do Aluno",
-          cursoNome: certificado.cursoNome,
-          cargaHoraria: certificado.cargaHoraria || 40,
-          dataInicio: certificado.dataInicio || certificado.emitidoEm,
-          dataFim: certificado.dataFim || certificado.emitidoEm,
-          turmaNome: certificado.turmaNome,
-          codigo: certificado.codigo,
-          conteudoProgramatico: [
-            "Introdução ao conteúdo do curso",
-            "Desenvolvimento de habilidades práticas",
-            "Aplicação de conhecimentos",
-            "Projetos e avaliações",
-          ],
-        };
-
-        const htmlCertificado = gerarHtmlCertificado(modelo, dadosCertificado);
-
-        const tempDiv = document.createElement("div");
-        tempDiv.innerHTML = htmlCertificado;
-        tempDiv.style.position = "absolute";
-        tempDiv.style.top = "-10000px";
-        tempDiv.style.left = "-10000px";
-        tempDiv.style.width = "210mm";
-        document.body.appendChild(tempDiv);
-
-        await new Promise((resolve) => setTimeout(resolve, 100));
-
-        const [{ default: html2canvas }, { default: jsPDF }] =
-          await Promise.all([import("html2canvas"), import("jspdf")]);
-
-        const canvas = await html2canvas(
-          tempDiv.firstElementChild as HTMLElement,
-          {
-            scale: 2,
-            useCORS: true,
-            backgroundColor: "#ffffff",
-            logging: false,
-          }
-        );
-
-        document.body.removeChild(tempDiv);
-
-        const pdf = new jsPDF("p", "mm", "a4");
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = pdf.internal.pageSize.getHeight();
-        const imgWidth = pdfWidth;
-        const imgHeight = (canvas.height * pdfWidth) / canvas.width;
-
-        let heightLeft = imgHeight;
-        let position = 0;
-
-        pdf.addImage(
-          canvas.toDataURL("image/jpeg", 0.95),
-          "JPEG",
-          0,
-          position,
-          imgWidth,
-          imgHeight
-        );
-
-        heightLeft -= pdfHeight;
-
-        while (heightLeft > 0) {
-          position = heightLeft - imgHeight;
-          pdf.addPage();
-          pdf.addImage(
-            canvas.toDataURL("image/jpeg", 0.95),
-            "JPEG",
-            0,
-            position,
-            imgWidth,
-            imgHeight
-          );
-          heightLeft -= pdfHeight;
-        }
-
-        pdf.save(`certificado-${certificado.codigo}.pdf`);
-      } catch (error) {
-        console.error("Erro ao gerar PDF do certificado:", error);
-        if (certificado.pdfUrl) {
-          window.open(certificado.pdfUrl, "_blank");
-        }
-      }
+      const pdfUrl =
+        certificado.pdfUrl ||
+        `/api/v1/cursos/certificados/${certificado.id}/pdf`;
+      window.open(pdfUrl, "_blank", "noopener,noreferrer");
     },
-    [alunoProfile]
+    []
   );
 
   return (
@@ -607,7 +508,16 @@ export function AlunoCertificadosView() {
             </ModalHeader>
             <ModalBody className="p-0">
               <div className="p-6">
-                <CertificadoPreview certificado={selectedCertificado} />
+                <div className="bg-gray-50 rounded-lg border border-gray-200 overflow-hidden max-h-[70vh]">
+                  <iframe
+                    title={`Preview ${selectedCertificado.codigo}`}
+                    src={
+                      selectedCertificado.previewUrl ||
+                      `/api/v1/cursos/certificados/${selectedCertificado.id}/preview`
+                    }
+                    className="w-full min-h-[70vh] border-0 bg-white"
+                  />
+                </div>
                 <div className="mt-6 flex justify-end gap-3">
                   <ButtonCustom
                     variant="outline"
@@ -629,71 +539,6 @@ export function AlunoCertificadosView() {
           </ModalContentWrapper>
         </ModalCustom>
       )}
-    </div>
-  );
-}
-
-// Componente para preview do certificado
-function CertificadoPreview({
-  certificado,
-}: {
-  certificado: CertificadoListItem;
-}) {
-  const { data: alunoProfile } = useQuery({
-    queryKey: ["aluno-profile"],
-    queryFn: async () => {
-      const token = getCookieValue("token");
-      if (!token) throw new Error("Token não encontrado");
-      return await getUserProfile(token);
-    },
-    staleTime: 5 * 60 * 1000,
-  });
-
-  const modeloId = certificado.templateId || "modelo-padrao-001";
-  const modelo = getModeloCertificado(modeloId);
-
-  if (!modelo) {
-    return (
-      <div className="p-8 text-center text-gray-500">
-        Modelo de certificado não encontrado
-      </div>
-    );
-  }
-
-  const dadosCertificado: CertificadoDados = {
-    alunoNome:
-      (alunoProfile && "usuario" in alunoProfile
-        ? alunoProfile.usuario.nomeCompleto
-        : alunoProfile && "data" in alunoProfile && alunoProfile.data
-        ? alunoProfile.data.nomeCompleto
-        : null) || "Nome do Aluno",
-    cursoNome: certificado.cursoNome,
-    cargaHoraria: certificado.cargaHoraria || 40,
-    dataInicio: certificado.dataInicio || certificado.emitidoEm,
-    dataFim: certificado.dataFim || certificado.emitidoEm,
-    turmaNome: certificado.turmaNome,
-    codigo: certificado.codigo,
-    conteudoProgramatico: [
-      "Introdução ao conteúdo do curso",
-      "Desenvolvimento de habilidades práticas",
-      "Aplicação de conhecimentos",
-      "Projetos e avaliações",
-    ],
-  };
-
-  const htmlCertificado = gerarHtmlCertificado(modelo, dadosCertificado);
-
-  return (
-    <div className="bg-gray-50 rounded-lg border border-gray-200 overflow-auto max-h-[70vh]">
-      <div
-        className="certificado-preview bg-white mx-auto"
-        dangerouslySetInnerHTML={{ __html: htmlCertificado }}
-        style={{
-          width: "210mm",
-          minHeight: "297mm",
-          margin: "0 auto",
-        }}
-      />
     </div>
   );
 }

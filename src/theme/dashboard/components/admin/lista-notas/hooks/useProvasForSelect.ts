@@ -3,14 +3,18 @@
 import { useQuery } from "@tanstack/react-query";
 import { listProvas, type TurmaProva } from "@/api/cursos";
 import type { SelectOption } from "@/components/ui/custom/select/types";
-import { getMockProvasAtividadesForTurma } from "@/mockData/notas";
 
 export type ProvaTipo = "PROVA" | "ATIVIDADE";
 
 function toOption(p: TurmaProva): SelectOption {
   const titulo = p.titulo || p.nome || "Sem título";
-  const etiqueta = p.etiqueta ? ` • ${p.etiqueta}` : "";
-  return { value: p.id, label: `${titulo}${etiqueta}` };
+  const codigo = p.codigo?.trim() || "";
+  const etiqueta = p.etiqueta?.trim() || "";
+  return {
+    value: p.id,
+    label: titulo,
+    searchKeywords: [titulo, codigo, etiqueta].filter(Boolean),
+  };
 }
 
 export function useProvasForSelect(params: {
@@ -29,17 +33,7 @@ export function useProvasForSelect(params: {
         const data = (res as any).data;
         if (Array.isArray(data) && data.length > 0) return data as TurmaProva[];
       }
-      // Fallback: mock
-      const mock = getMockProvasAtividadesForTurma({
-        cursoId: cursoId as string,
-        turmaId: turmaId as string,
-      });
-      return mock.map((m) => ({
-        id: m.id,
-        titulo: m.titulo,
-        tipo: m.tipo,
-        etiqueta: m.etiqueta,
-      })) as TurmaProva[];
+      return [];
     },
     enabled: Boolean(cursoId && turmaId),
     staleTime: 30 * 1000,

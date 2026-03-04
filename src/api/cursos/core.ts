@@ -21,6 +21,9 @@ import type {
   TurmaCertificado,
   TurmaEstagio,
   CreateCertificadoPayload,
+  ListCertificadosGlobalParams,
+  ListCertificadosResponse,
+  CertificadoModeloResumo,
   AlunoComInscricao,
   ListAlunosComInscricaoParams,
   ListAlunosComInscricaoResponse,
@@ -198,6 +201,13 @@ function buildCursoRequest(payload: CreateCursoPayload | UpdateCursoPayload): {
     jsonPayload.descricao =
       payload.descricao !== undefined && payload.descricao !== null
         ? String(payload.descricao).trim()
+        : "";
+  }
+  if ("conteudoProgramatico" in payload) {
+    jsonPayload.conteudoProgramatico =
+      payload.conteudoProgramatico !== undefined &&
+      payload.conteudoProgramatico !== null
+        ? String(payload.conteudoProgramatico)
         : "";
   }
   if ("cargaHoraria" in payload) {
@@ -461,6 +471,10 @@ export async function getCursoById(
       nome: String(response.nome ?? ""),
       codigo: String(response.codigo ?? ""),
       descricao: String(response.descricao ?? ""),
+      conteudoProgramatico:
+        response.conteudoProgramatico != null
+          ? String(response.conteudoProgramatico)
+          : null,
       cargaHoraria: Number(response.cargaHoraria ?? 0),
       categoriaId: Number(response.categoriaId ?? 0),
       statusPadrao: response.statusPadrao ?? "RASCUNHO",
@@ -1304,6 +1318,213 @@ export async function createCertificado(
   );
 }
 
+export async function listCertificadosGlobal(
+  params?: ListCertificadosGlobalParams,
+  init?: RequestInit
+): Promise<ListCertificadosResponse> {
+  const sp = new URLSearchParams();
+  if (params?.search) sp.set("search", params.search);
+  if (params?.cursoId) sp.set("cursoId", params.cursoId);
+  if (params?.turmaId) sp.set("turmaId", params.turmaId);
+  if (params?.status) sp.set("status", params.status);
+  if (params?.emitidoDe) sp.set("emitidoDe", params.emitidoDe);
+  if (params?.emitidoA) sp.set("emitidoA", params.emitidoA);
+  if (params?.page) sp.set("page", String(params.page));
+  if (params?.pageSize) sp.set("pageSize", String(params.pageSize));
+  if (params?.sortBy) sp.set("sortBy", params.sortBy);
+  if (params?.sortDir) sp.set("sortDir", params.sortDir);
+
+  const url = sp.toString()
+    ? `${cursosRoutes.certificados.list()}?${sp.toString()}`
+    : cursosRoutes.certificados.list();
+
+  const response = await apiFetch<{
+    success?: boolean;
+    data?:
+      | TurmaCertificado[]
+      | {
+          items?: TurmaCertificado[];
+          pagination?: import("./types").Pagination;
+        };
+    items?: TurmaCertificado[];
+    pagination?: import("./types").Pagination;
+  }>(url, {
+    init: {
+      method: "GET",
+      ...init,
+      headers: buildHeaders(init?.headers, true),
+    },
+    cache: "no-cache",
+  });
+
+  const payload = ((response as any)?.data ?? response) as
+    | TurmaCertificado[]
+    | {
+        items?: TurmaCertificado[];
+        pagination?: import("./types").Pagination;
+      }
+    | undefined;
+
+  if (Array.isArray(payload)) {
+    return {
+      items: payload,
+      pagination: response?.pagination,
+    };
+  }
+
+  return {
+    items: payload?.items ?? (response as any)?.items ?? [],
+    pagination: payload?.pagination ?? response?.pagination,
+  };
+}
+
+export async function createCertificadoGlobal(
+  payload: CreateCertificadoPayload,
+  init?: RequestInit
+): Promise<TurmaCertificado> {
+  const response = await apiFetch<{
+    success?: boolean;
+    data?: TurmaCertificado;
+  }>(cursosRoutes.certificados.create(), {
+    init: {
+      method: "POST",
+      headers: buildHeaders(
+        { "Content-Type": "application/json", ...(init?.headers || {}) },
+        true
+      ),
+      body: JSON.stringify(payload),
+      ...init,
+    },
+    cache: "no-cache",
+  });
+
+  return (response?.data ?? response) as TurmaCertificado;
+}
+
+export async function getCertificadoById(
+  certificadoId: string,
+  init?: RequestInit
+): Promise<TurmaCertificado> {
+  const response = await apiFetch<{
+    success?: boolean;
+    data?: TurmaCertificado;
+  }>(cursosRoutes.certificados.get(certificadoId), {
+    init: {
+      method: "GET",
+      ...init,
+      headers: buildHeaders(init?.headers, true),
+    },
+    cache: "no-cache",
+  });
+
+  return (response?.data ?? response) as TurmaCertificado;
+}
+
+export async function listMeCertificados(
+  params?: Pick<
+    ListCertificadosGlobalParams,
+    "cursoId" | "turmaId" | "emitidoDe" | "emitidoA" | "page" | "pageSize"
+  >,
+  init?: RequestInit
+): Promise<ListCertificadosResponse> {
+  const sp = new URLSearchParams();
+  if (params?.cursoId) sp.set("cursoId", params.cursoId);
+  if (params?.turmaId) sp.set("turmaId", params.turmaId);
+  if (params?.emitidoDe) sp.set("emitidoDe", params.emitidoDe);
+  if (params?.emitidoA) sp.set("emitidoA", params.emitidoA);
+  if (params?.page) sp.set("page", String(params.page));
+  if (params?.pageSize) sp.set("pageSize", String(params.pageSize));
+
+  const url = sp.toString()
+    ? `${cursosRoutes.me.certificados()}?${sp.toString()}`
+    : cursosRoutes.me.certificados();
+
+  const response = await apiFetch<{
+    success?: boolean;
+    data?:
+      | TurmaCertificado[]
+      | {
+          items?: TurmaCertificado[];
+          pagination?: import("./types").Pagination;
+        };
+    items?: TurmaCertificado[];
+    pagination?: import("./types").Pagination;
+  }>(url, {
+    init: {
+      method: "GET",
+      ...init,
+      headers: buildHeaders(init?.headers, true),
+    },
+    cache: "no-cache",
+  });
+
+  const payload = ((response as any)?.data ?? response) as
+    | TurmaCertificado[]
+    | {
+        items?: TurmaCertificado[];
+        pagination?: import("./types").Pagination;
+      }
+    | undefined;
+
+  if (Array.isArray(payload)) {
+    return {
+      items: payload,
+      pagination: response?.pagination,
+    };
+  }
+
+  return {
+    items: payload?.items ?? (response as any)?.items ?? [],
+    pagination: payload?.pagination ?? response?.pagination,
+  };
+}
+
+export async function listCertificadoModelos(
+  init?: RequestInit
+): Promise<CertificadoModeloResumo[]> {
+  const response = await apiFetch<{
+    success?: boolean;
+    data?:
+      | CertificadoModeloResumo[]
+      | {
+          items?: CertificadoModeloResumo[];
+        };
+  }>(cursosRoutes.certificados.modelos(), {
+    init: {
+      method: "GET",
+      ...init,
+      headers: buildHeaders(init?.headers, true),
+    },
+    cache: "no-cache",
+  });
+
+  const payload = response?.data as
+    | CertificadoModeloResumo[]
+    | { items?: CertificadoModeloResumo[] }
+    | undefined;
+  if (Array.isArray(payload)) return payload;
+  return payload?.items ?? [];
+}
+
+export async function verificarCertificadoPorCodigo(
+  codigo: string,
+  init?: RequestInit
+): Promise<import("./types").CertificadoVerificacao> {
+  const response = await apiFetch<{
+    success?: boolean;
+    data?: import("./types").CertificadoVerificacao;
+  }>(cursosRoutes.certificados.verificarPorCodigo(codigo), {
+    init: {
+      method: "GET",
+      ...init,
+      headers: buildHeaders(init?.headers, false),
+    },
+    cache: "no-cache",
+  });
+
+  return (response?.data ?? response) as import("./types").CertificadoVerificacao;
+}
+
 export async function createEstagio(
   cursoId: number | string,
   turmaId: string,
@@ -1330,6 +1551,41 @@ export async function createEstagio(
       cache: "no-cache",
     }
   );
+}
+
+export async function listEstagiosByInscricao(
+  cursoId: number | string,
+  turmaId: string,
+  inscricaoId: string,
+  init?: RequestInit
+): Promise<TurmaEstagio[]> {
+  const response = await apiFetch<{
+    success?: boolean;
+    data?: TurmaEstagio[] | { items?: TurmaEstagio[] };
+    items?: TurmaEstagio[];
+  }>(
+    cursosRoutes.cursos.turmas.admin.inscricoes.estagios.list(
+      cursoId,
+      turmaId,
+      inscricaoId
+    ),
+    {
+      init: {
+        method: "GET",
+        ...init,
+        headers: buildHeaders(init?.headers, true),
+      },
+      cache: "no-cache",
+    }
+  );
+
+  const payload = response as any;
+  if (Array.isArray(payload)) return payload as TurmaEstagio[];
+  if (Array.isArray(payload?.data)) return payload.data as TurmaEstagio[];
+  if (Array.isArray(payload?.data?.items))
+    return payload.data.items as TurmaEstagio[];
+  if (Array.isArray(payload?.items)) return payload.items as TurmaEstagio[];
+  return [];
 }
 
 // Admin - Alunos com inscrições
@@ -1648,15 +1904,8 @@ export async function listFrequencias(
   turmaId: string,
   params?: import("./types").ListFrequenciasParams,
   init?: RequestInit
-): Promise<{ data: import("./types").Frequencia[]; pagination?: import("./types").Pagination }> {
-  const sp = new URLSearchParams();
-  if (params?.aulaId) sp.set("aulaId", params.aulaId);
-  if (params?.inscricaoId) sp.set("inscricaoId", params.inscricaoId);
-  if (params?.status) sp.set("status", params.status);
-  if (params?.dataInicio) sp.set("dataInicio", params.dataInicio);
-  if (params?.dataFim) sp.set("dataFim", params.dataFim);
-  if (params?.page) sp.set("page", String(params.page));
-  if (params?.pageSize) sp.set("pageSize", String(params.pageSize));
+): Promise<import("./types").ListFrequenciasResponse> {
+  const sp = buildListFrequenciasSearchParams(params);
 
   const url = sp.toString()
     ? `${cursosRoutes.cursos.turmas.frequencias.list(cursoId, turmaId)}?${sp.toString()}`
@@ -1670,6 +1919,71 @@ export async function listFrequencias(
     },
     cache: "no-cache",
   });
+}
+
+export async function listFrequenciasGlobal(
+  params?: import("./types").ListFrequenciasParams,
+  init?: RequestInit
+): Promise<import("./types").ListFrequenciasResponse> {
+  const sp = buildListFrequenciasSearchParams(params);
+
+  const url = sp.toString()
+    ? `${cursosRoutes.cursos.frequenciasGlobal()}?${sp.toString()}`
+    : cursosRoutes.cursos.frequenciasGlobal();
+
+  return apiFetch(url, {
+    init: {
+      method: "GET",
+      ...init,
+      headers: buildHeaders(init?.headers, true),
+    },
+    cache: "no-cache",
+  });
+}
+
+export async function listFrequenciasByAluno(
+  alunoId: string,
+  params: import("./types").ListFrequenciasParams,
+  init?: RequestInit
+): Promise<import("./types").ListFrequenciasResponse> {
+  const sp = buildListFrequenciasSearchParams(params);
+
+  const url = sp.toString()
+    ? `${cursosRoutes.alunos.frequencias.list(alunoId)}?${sp.toString()}`
+    : cursosRoutes.alunos.frequencias.list(alunoId);
+
+  return apiFetch(url, {
+    init: {
+      method: "GET",
+      ...init,
+      headers: buildHeaders(init?.headers, true),
+    },
+    cache: "no-cache",
+  });
+}
+
+function buildListFrequenciasSearchParams(
+  params?: import("./types").ListFrequenciasParams
+) {
+  const sp = new URLSearchParams();
+  if (!params) return sp;
+
+  if (params.cursoId) sp.set("cursoId", params.cursoId);
+  if (params.turmaIds) sp.set("turmaIds", params.turmaIds);
+  if (params.tipoOrigem) sp.set("tipoOrigem", params.tipoOrigem);
+  if (params.origemId) sp.set("origemId", params.origemId);
+  if (params.aulaId) sp.set("aulaId", params.aulaId);
+  if (params.inscricaoId) sp.set("inscricaoId", params.inscricaoId);
+  if (params.search) sp.set("search", params.search);
+  if (params.status) sp.set("status", params.status);
+  if (params.dataInicio) sp.set("dataInicio", params.dataInicio);
+  if (params.dataFim) sp.set("dataFim", params.dataFim);
+  if (params.orderBy) sp.set("orderBy", params.orderBy);
+  if (params.order) sp.set("order", params.order);
+  if (params.page) sp.set("page", String(params.page));
+  if (params.pageSize) sp.set("pageSize", String(params.pageSize));
+
+  return sp;
 }
 
 export async function getFrequenciaResumo(
@@ -1723,6 +2037,55 @@ export async function createFrequencia(
   return response.data;
 }
 
+export async function upsertFrequenciaLancamento(
+  cursoId: string | number,
+  turmaId: string,
+  payload: import("./types").UpsertFrequenciaLancamentoPayload,
+  init?: RequestInit
+): Promise<import("./types").Frequencia> {
+  const response = await apiFetch<{
+    success: boolean;
+    data: import("./types").Frequencia;
+  }>(cursosRoutes.cursos.turmas.frequencias.lancamentos(cursoId, turmaId), {
+    init: {
+      method: "POST",
+      ...init,
+      headers: buildHeaders(
+        { "Content-Type": "application/json", ...(init?.headers || {}) },
+        true
+      ),
+      body: JSON.stringify(payload),
+    },
+    cache: "no-cache",
+  });
+
+  return response.data;
+}
+
+export async function upsertFrequenciaLancamentoByAluno(
+  alunoId: string,
+  payload: import("./types").UpsertFrequenciaLancamentoByAlunoPayload,
+  init?: RequestInit
+): Promise<import("./types").Frequencia> {
+  const response = await apiFetch<{
+    success: boolean;
+    data: import("./types").Frequencia;
+  }>(cursosRoutes.alunos.frequencias.lancamentos(alunoId), {
+    init: {
+      method: "POST",
+      ...init,
+      headers: buildHeaders(
+        { "Content-Type": "application/json", ...(init?.headers || {}) },
+        true
+      ),
+      body: JSON.stringify(payload),
+    },
+    cache: "no-cache",
+  });
+
+  return response.data;
+}
+
 export async function updateFrequencia(
   cursoId: string | number,
   turmaId: string,
@@ -1748,6 +2111,115 @@ export async function updateFrequencia(
   return response.data;
 }
 
+export async function listFrequenciaHistorico(
+  cursoId: string | number,
+  turmaId: string,
+  frequenciaId: string,
+  init?: RequestInit
+): Promise<import("./types").FrequenciaHistoryEntry[]> {
+  const response = await apiFetch<{
+    success?: boolean;
+    data?: import("./types").FrequenciaHistoryEntry[];
+    items?: import("./types").FrequenciaHistoryEntry[];
+  }>(cursosRoutes.cursos.turmas.frequencias.historico(cursoId, turmaId, frequenciaId), {
+    init: {
+      method: "GET",
+      ...init,
+      headers: buildHeaders(init?.headers, true),
+    },
+    cache: "no-cache",
+  });
+
+  return (
+    response.data ??
+    response.items ??
+    []
+  );
+}
+
+export async function listFrequenciaHistoricoByNaturalKey(
+  cursoId: string | number,
+  turmaId: string,
+  params: import("./types").ListFrequenciaHistoricoByNaturalKeyParams,
+  init?: RequestInit
+): Promise<import("./types").FrequenciaHistoryEntry[]> {
+  const sp = new URLSearchParams();
+  sp.set("inscricaoId", params.inscricaoId);
+  sp.set("tipoOrigem", params.tipoOrigem);
+  sp.set("origemId", params.origemId);
+  const url = `${cursosRoutes.cursos.turmas.frequencias.historicoByNaturalKey(cursoId, turmaId)}?${sp.toString()}`;
+
+  const response = await apiFetch<{
+    success?: boolean;
+    data?: import("./types").FrequenciaHistoryEntry[];
+    items?: import("./types").FrequenciaHistoryEntry[];
+  }>(url, {
+    init: {
+      method: "GET",
+      ...init,
+      headers: buildHeaders(init?.headers, true),
+    },
+    cache: "no-cache",
+  });
+
+  return (
+    response.data ??
+    response.items ??
+    []
+  );
+}
+
+export async function listFrequenciaHistoricoByAluno(
+  alunoId: string,
+  frequenciaId: string,
+  init?: RequestInit
+): Promise<import("./types").FrequenciaHistoryEntry[]> {
+  const response = await apiFetch<{
+    success?: boolean;
+    data?: import("./types").FrequenciaHistoryEntry[];
+    items?: import("./types").FrequenciaHistoryEntry[];
+  }>(cursosRoutes.alunos.frequencias.historico(alunoId, frequenciaId), {
+    init: {
+      method: "GET",
+      ...init,
+      headers: buildHeaders(init?.headers, true),
+    },
+    cache: "no-cache",
+  });
+
+  return response.data ?? response.items ?? [];
+}
+
+export async function listFrequenciaHistoricoByAlunoNaturalKey(
+  alunoId: string,
+  params: import("./types").ListFrequenciaHistoricoByAlunoNaturalKeyParams,
+  init?: RequestInit
+): Promise<import("./types").FrequenciaHistoryEntry[]> {
+  const sp = new URLSearchParams();
+  sp.set("cursoId", params.cursoId);
+  sp.set("turmaId", params.turmaId);
+  sp.set("inscricaoId", params.inscricaoId);
+  sp.set("tipoOrigem", params.tipoOrigem);
+  sp.set("origemId", params.origemId);
+
+  const url = `${cursosRoutes.alunos.frequencias.historicoByNaturalKey(alunoId)}?${sp.toString()}`;
+
+  const response = await apiFetch<{
+    success?: boolean;
+    data?: import("./types").FrequenciaHistoryEntry[];
+    items?: import("./types").FrequenciaHistoryEntry[];
+  }>(url, {
+    init: {
+      method: "GET",
+      ...init,
+      headers: buildHeaders(init?.headers, true),
+    },
+    cache: "no-cache",
+  });
+
+  return response.data ?? response.items ?? [];
+}
+
 // ===================================
 // NOTAS (API v3)
 // ===================================
@@ -1757,15 +2229,10 @@ export async function listNotas(
   params: import("./types").ListNotasParams,
   init?: RequestInit
 ): Promise<import("./types").ListNotasResponse> {
-  const sp = new URLSearchParams();
-  sp.set("turmaIds", params.turmaIds);
-  if (params.search) sp.set("search", params.search);
-  if (params.page) sp.set("page", String(params.page));
-  if (params.pageSize) sp.set("pageSize", String(params.pageSize));
-  if (params.orderBy) sp.set("orderBy", params.orderBy);
-  if (params.order) sp.set("order", params.order);
-
-  const url = `${cursosRoutes.cursos.notas(cursoId)}?${sp.toString()}`;
+  const sp = buildListNotasSearchParams(params);
+  const url = sp.toString()
+    ? `${cursosRoutes.cursos.notas(cursoId)}?${sp.toString()}`
+    : cursosRoutes.cursos.notas(cursoId);
 
   return apiFetch(url, {
     init: {
@@ -1775,6 +2242,57 @@ export async function listNotas(
     },
     cache: "no-cache",
   });
+}
+
+export async function listNotasGlobal(
+  params: import("./types").ListNotasParams,
+  init?: RequestInit
+): Promise<import("./types").ListNotasResponse> {
+  const sp = buildListNotasSearchParams(params);
+  const url = sp.toString()
+    ? `${cursosRoutes.cursos.notasGlobal()}?${sp.toString()}`
+    : cursosRoutes.cursos.notasGlobal();
+
+  return apiFetch(url, {
+    init: {
+      method: "GET",
+      ...init,
+      headers: buildHeaders(init?.headers, true),
+    },
+    cache: "no-cache",
+  });
+}
+
+export async function listNotasByAluno(
+  alunoId: string,
+  params: import("./types").ListNotasParams,
+  init?: RequestInit
+): Promise<import("./types").ListNotasResponse> {
+  const sp = buildListNotasSearchParams(params);
+  const url = sp.toString()
+    ? `${cursosRoutes.alunos.notas(alunoId)}?${sp.toString()}`
+    : cursosRoutes.alunos.notas(alunoId);
+
+  return apiFetch(url, {
+    init: {
+      method: "GET",
+      ...init,
+      headers: buildHeaders(init?.headers, true),
+    },
+    cache: "no-cache",
+  });
+}
+
+function buildListNotasSearchParams(params: import("./types").ListNotasParams) {
+  const sp = new URLSearchParams();
+  if (params.cursoId) sp.set("cursoId", params.cursoId);
+  if (params.turmaIds) sp.set("turmaIds", params.turmaIds);
+  if (params.search) sp.set("search", params.search);
+  if (params.page) sp.set("page", String(params.page));
+  if (params.pageSize) sp.set("pageSize", String(params.pageSize));
+  if (params.orderBy) sp.set("orderBy", params.orderBy);
+  if (params.order) sp.set("order", params.order);
+  return sp;
 }
 
 export async function createNota(
@@ -2155,8 +2673,16 @@ export async function listEstagiosGlobal(
   const sp = new URLSearchParams();
   if (params?.cursoId) sp.set("cursoId", params.cursoId);
   if (params?.turmaId) sp.set("turmaId", params.turmaId);
+  if (params?.turmaIds) sp.set("turmaIds", params.turmaIds);
+  if (params?.empresaId) sp.set("empresaId", params.empresaId);
   if (params?.status) sp.set("status", params.status);
+  if (typeof params?.obrigatorio === "boolean") {
+    sp.set("obrigatorio", String(params.obrigatorio));
+  }
+  if (params?.periodo) sp.set("periodo", params.periodo);
   if (params?.search) sp.set("search", params.search);
+  if (params?.orderBy) sp.set("orderBy", params.orderBy);
+  if (params?.order) sp.set("order", params.order);
   if (params?.page) sp.set("page", String(params.page));
   if (params?.pageSize) sp.set("pageSize", String(params.pageSize));
 
@@ -2172,6 +2698,568 @@ export async function listEstagiosGlobal(
     },
     cache: "short",
   });
+}
+
+export async function createEstagioGlobal(
+  payload: import("./types").CreateEstagioGlobalPayload,
+  init?: RequestInit
+): Promise<import("./types").Estagio> {
+  const response = await apiFetch<{
+    success?: boolean;
+    data?: import("./types").Estagio;
+  }>(cursosRoutes.estagiosGlobal.create(), {
+    init: {
+      method: "POST",
+      ...init,
+      headers: buildHeaders(
+        { "Content-Type": "application/json", ...(init?.headers || {}) },
+        true
+      ),
+      body: JSON.stringify(payload),
+    },
+    cache: "no-cache",
+  });
+
+  return (response?.data ?? response) as import("./types").Estagio;
+}
+
+export async function getEstagioById(
+  estagioId: string,
+  init?: RequestInit
+): Promise<import("./types").Estagio> {
+  const response = await apiFetch<{
+    success?: boolean;
+    data?: import("./types").Estagio;
+  }>(cursosRoutes.estagiosGlobal.get(estagioId), {
+    init: {
+      method: "GET",
+      ...init,
+      headers: buildHeaders(init?.headers, true),
+    },
+    cache: "no-cache",
+  });
+
+  return (response?.data ?? response) as import("./types").Estagio;
+}
+
+export async function listEstagiosByAluno(
+  alunoId: string,
+  params?: {
+    search?: string;
+    status?: import("./types").EstagioStatus;
+    page?: number;
+    pageSize?: number;
+  },
+  init?: RequestInit
+): Promise<import("./types").ListEstagiosResponse> {
+  const sp = new URLSearchParams();
+  if (params?.search) sp.set("search", params.search);
+  if (params?.status) sp.set("status", params.status);
+  if (params?.page) sp.set("page", String(params.page));
+  if (params?.pageSize) sp.set("pageSize", String(params.pageSize));
+
+  const url = sp.toString()
+    ? `${cursosRoutes.alunos.estagios.list(alunoId)}?${sp.toString()}`
+    : cursosRoutes.alunos.estagios.list(alunoId);
+
+  return apiFetch(url, {
+    init: {
+      method: "GET",
+      ...init,
+      headers: buildHeaders(init?.headers, true),
+    },
+    cache: "no-cache",
+  });
+}
+
+export async function getEstagioByAluno(
+  alunoId: string,
+  estagioId: string,
+  init?: RequestInit
+): Promise<import("./types").Estagio> {
+  const response = await apiFetch<{
+    success?: boolean;
+    data?: import("./types").Estagio;
+  }>(cursosRoutes.alunos.estagios.get(alunoId, estagioId), {
+    init: {
+      method: "GET",
+      ...init,
+      headers: buildHeaders(init?.headers, true),
+    },
+    cache: "no-cache",
+  });
+
+  return (response?.data ?? response) as import("./types").Estagio;
+}
+
+export async function updateEstagioGlobal(
+  estagioId: string,
+  payload: import("./types").UpdateEstagioGlobalPayload,
+  init?: RequestInit
+): Promise<import("./types").Estagio> {
+  const response = await apiFetch<{
+    success?: boolean;
+    data?: import("./types").Estagio;
+  }>(cursosRoutes.estagiosGlobal.update(estagioId), {
+    init: {
+      method: "PUT",
+      ...init,
+      headers: buildHeaders(
+        { "Content-Type": "application/json", ...(init?.headers || {}) },
+        true
+      ),
+      body: JSON.stringify(payload),
+    },
+    cache: "no-cache",
+  });
+
+  return (response?.data ?? response) as import("./types").Estagio;
+}
+
+export async function vincularAlunosEstagio(
+  estagioId: string,
+  payload: import("./types").VincularAlunosEstagioPayload,
+  init?: RequestInit
+): Promise<{
+  estagioId: string;
+  totalVinculados?: number;
+}> {
+  const response = await apiFetch<{
+    success?: boolean;
+    data?: {
+      estagioId: string;
+      totalVinculados?: number;
+    };
+  }>(cursosRoutes.estagiosGlobal.vincularAlunos(estagioId), {
+    init: {
+      method: "POST",
+      ...init,
+      headers: buildHeaders(
+        { "Content-Type": "application/json", ...(init?.headers || {}) },
+        true
+      ),
+      body: JSON.stringify(payload),
+    },
+    cache: "no-cache",
+  });
+
+  return (
+    response?.data ?? {
+      estagioId,
+    }
+  );
+}
+
+export async function alocarAlunoEstagioGrupo(
+  estagioId: string,
+  estagioAlunoId: string,
+  payload: import("./types").AlocarAlunoEstagioGrupoPayload,
+  init?: RequestInit
+): Promise<import("./types").EstagioAluno> {
+  const response = await apiFetch<{
+    success?: boolean;
+    data?: import("./types").EstagioAluno;
+  }>(cursosRoutes.estagiosGlobal.alocarAlunoGrupo(estagioId, estagioAlunoId), {
+    init: {
+      method: "PUT",
+      ...init,
+      headers: buildHeaders(
+        { "Content-Type": "application/json", ...(init?.headers || {}) },
+        true
+      ),
+      body: JSON.stringify(payload),
+    },
+    cache: "no-cache",
+  });
+
+  return (response?.data ?? response) as import("./types").EstagioAluno;
+}
+
+export async function listEstagioFrequencias(
+  estagioId: string,
+  params?: import("./types").ListEstagioFrequenciasParams,
+  init?: RequestInit
+): Promise<{
+  items: import("./types").EstagioFrequencia[];
+  pagination?: import("./types").Pagination;
+}> {
+  const sp = new URLSearchParams();
+  if (params?.data) sp.set("data", params.data);
+  if (params?.status) sp.set("status", params.status);
+  if (params?.grupoId) sp.set("grupoId", params.grupoId);
+  if (params?.search) sp.set("search", params.search);
+  if (params?.page) sp.set("page", String(params.page));
+  if (params?.pageSize) sp.set("pageSize", String(params.pageSize));
+
+  const url = sp.toString()
+    ? `${cursosRoutes.estagiosGlobal.frequencias(estagioId)}?${sp.toString()}`
+    : cursosRoutes.estagiosGlobal.frequencias(estagioId);
+
+  const response = await apiFetch<{
+    success?: boolean;
+    data?:
+      | import("./types").EstagioFrequencia[]
+      | {
+          items: import("./types").EstagioFrequencia[];
+          pagination?: import("./types").Pagination;
+        };
+    pagination?: import("./types").Pagination;
+  }>(url, {
+    init: {
+      method: "GET",
+      ...init,
+      headers: buildHeaders(init?.headers, true),
+    },
+    cache: "no-cache",
+  });
+
+  const payload = response?.data;
+  if (Array.isArray(payload)) {
+    return {
+      items: payload,
+      pagination: response?.pagination,
+    };
+  }
+  return {
+    items: payload?.items ?? [],
+    pagination: payload?.pagination ?? response?.pagination,
+  };
+}
+
+export async function listEstagioFrequenciasByAluno(
+  alunoId: string,
+  estagioId: string,
+  params?: import("./types").ListEstagioFrequenciasParams,
+  init?: RequestInit
+): Promise<{
+  items: import("./types").EstagioFrequencia[];
+  pagination?: import("./types").Pagination;
+}> {
+  const sp = new URLSearchParams();
+  if (params?.data) sp.set("data", params.data);
+  if (params?.status) sp.set("status", params.status);
+  if (params?.grupoId) sp.set("grupoId", params.grupoId);
+  if (params?.search) sp.set("search", params.search);
+  if (params?.page) sp.set("page", String(params.page));
+  if (params?.pageSize) sp.set("pageSize", String(params.pageSize));
+
+  const url = sp.toString()
+    ? `${cursosRoutes.alunos.estagios.frequencias(alunoId, estagioId)}?${sp.toString()}`
+    : cursosRoutes.alunos.estagios.frequencias(alunoId, estagioId);
+
+  const response = await apiFetch<{
+    success?: boolean;
+    data?:
+      | import("./types").EstagioFrequencia[]
+      | {
+          items: import("./types").EstagioFrequencia[];
+          pagination?: import("./types").Pagination;
+        };
+    pagination?: import("./types").Pagination;
+  }>(url, {
+    init: {
+      method: "GET",
+      ...init,
+      headers: buildHeaders(init?.headers, true),
+    },
+    cache: "no-cache",
+  });
+
+  const payload = response?.data;
+  if (Array.isArray(payload)) {
+    return {
+      items: payload,
+      pagination: response?.pagination,
+    };
+  }
+  return {
+    items: payload?.items ?? [],
+    pagination: payload?.pagination ?? response?.pagination,
+  };
+}
+
+export async function listEstagioFrequenciasPeriodo(
+  estagioId: string,
+  params?: import("./types").ListEstagioFrequenciasPeriodoParams,
+  init?: RequestInit
+): Promise<import("./types").EstagioFrequenciasPeriodoResponse> {
+  const sp = new URLSearchParams();
+  if (params?.dataInicio) sp.set("dataInicio", params.dataInicio);
+  if (params?.dataFim) sp.set("dataFim", params.dataFim);
+  if (params?.status) sp.set("status", params.status);
+  if (params?.grupoId) sp.set("grupoId", params.grupoId);
+  if (params?.search) sp.set("search", params.search);
+  if (params?.page) sp.set("page", String(params.page));
+  if (params?.pageSize) sp.set("pageSize", String(params.pageSize));
+
+  const url = sp.toString()
+    ? `${cursosRoutes.estagiosGlobal.frequenciasPeriodo(estagioId)}?${sp.toString()}`
+    : cursosRoutes.estagiosGlobal.frequenciasPeriodo(estagioId);
+
+  const response = await apiFetch<{
+    success?: boolean;
+    data?:
+      | import("./types").EstagioFrequenciasPeriodoResponse
+      | import("./types").EstagioFrequenciasPeriodoGroup[];
+    pagination?: import("./types").Pagination;
+  }>(url, {
+    init: {
+      method: "GET",
+      ...init,
+      headers: buildHeaders(init?.headers, true),
+    },
+    cache: "no-cache",
+  });
+
+  const payload = response?.data as any;
+  if (Array.isArray(payload)) {
+    return {
+      gruposPorData: payload,
+      pagination: response?.pagination,
+    };
+  }
+
+  return {
+    gruposPorData: payload?.gruposPorData ?? [],
+    pagination: payload?.pagination ?? response?.pagination,
+    periodo: payload?.periodo,
+  };
+}
+
+export async function listEstagioFrequenciasPeriodoByAluno(
+  alunoId: string,
+  estagioId: string,
+  params?: import("./types").ListEstagioFrequenciasPeriodoParams,
+  init?: RequestInit
+): Promise<import("./types").EstagioFrequenciasPeriodoResponse> {
+  const sp = new URLSearchParams();
+  if (params?.dataInicio) sp.set("dataInicio", params.dataInicio);
+  if (params?.dataFim) sp.set("dataFim", params.dataFim);
+  if (params?.status) sp.set("status", params.status);
+  if (params?.grupoId) sp.set("grupoId", params.grupoId);
+  if (params?.search) sp.set("search", params.search);
+  if (params?.page) sp.set("page", String(params.page));
+  if (params?.pageSize) sp.set("pageSize", String(params.pageSize));
+
+  const url = sp.toString()
+    ? `${cursosRoutes.alunos.estagios.frequenciasPeriodo(alunoId, estagioId)}?${sp.toString()}`
+    : cursosRoutes.alunos.estagios.frequenciasPeriodo(alunoId, estagioId);
+
+  const response = await apiFetch<{
+    success?: boolean;
+    data?:
+      | import("./types").EstagioFrequenciasPeriodoResponse
+      | import("./types").EstagioFrequenciasPeriodoGroup[];
+    pagination?: import("./types").Pagination;
+  }>(url, {
+    init: {
+      method: "GET",
+      ...init,
+      headers: buildHeaders(init?.headers, true),
+    },
+    cache: "no-cache",
+  });
+
+  const payload = response?.data as any;
+  if (Array.isArray(payload)) {
+    return {
+      gruposPorData: payload,
+      pagination: response?.pagination,
+    };
+  }
+
+  return {
+    gruposPorData: payload?.gruposPorData ?? [],
+    pagination: payload?.pagination ?? response?.pagination,
+    periodo: payload?.periodo,
+  };
+}
+
+export async function upsertEstagioFrequenciaLancamento(
+  estagioId: string,
+  payload: import("./types").UpsertEstagioFrequenciaPayload,
+  init?: RequestInit
+): Promise<import("./types").EstagioFrequencia> {
+  const response = await apiFetch<{
+    success?: boolean;
+    data?: import("./types").EstagioFrequencia;
+  }>(cursosRoutes.estagiosGlobal.upsertFrequenciaLancamento(estagioId), {
+    init: {
+      method: "POST",
+      ...init,
+      headers: buildHeaders(
+        { "Content-Type": "application/json", ...(init?.headers || {}) },
+        true
+      ),
+      body: JSON.stringify(payload),
+    },
+    cache: "no-cache",
+  });
+
+  return (response?.data ?? response) as import("./types").EstagioFrequencia;
+}
+
+export async function upsertEstagioFrequenciaLancamentoByAluno(
+  alunoId: string,
+  estagioId: string,
+  payload: import("./types").UpsertEstagioFrequenciaPayload,
+  init?: RequestInit
+): Promise<import("./types").EstagioFrequencia> {
+  const response = await apiFetch<{
+    success?: boolean;
+    data?: import("./types").EstagioFrequencia;
+  }>(cursosRoutes.alunos.estagios.lancamentos(alunoId, estagioId), {
+    init: {
+      method: "POST",
+      ...init,
+      headers: buildHeaders(
+        { "Content-Type": "application/json", ...(init?.headers || {}) },
+        true
+      ),
+      body: JSON.stringify(payload),
+    },
+    cache: "no-cache",
+  });
+
+  return (response?.data ?? response) as import("./types").EstagioFrequencia;
+}
+
+export async function listEstagioFrequenciaHistorico(
+  estagioId: string,
+  frequenciaId: string,
+  init?: RequestInit
+): Promise<import("./types").FrequenciaHistoryEntry[]> {
+  const response = await apiFetch<{
+    success?: boolean;
+    data?:
+      | import("./types").FrequenciaHistoryEntry[]
+      | import("./types").EstagioFrequenciaHistoricoResponse;
+  }>(cursosRoutes.estagiosGlobal.frequenciaHistorico(estagioId, frequenciaId), {
+    init: {
+      method: "GET",
+      ...init,
+      headers: buildHeaders(init?.headers, true),
+    },
+    cache: "no-cache",
+  });
+
+  const payload = response?.data as any;
+  if (Array.isArray(payload)) return payload;
+  return payload?.items ?? [];
+}
+
+export async function listEstagioFrequenciaHistoricoPaginado(
+  estagioId: string,
+  frequenciaId: string,
+  params?: import("./types").ListEstagioFrequenciaHistoricoParams,
+  init?: RequestInit
+): Promise<import("./types").EstagioFrequenciaHistoricoResponse> {
+  const sp = new URLSearchParams();
+  if (params?.page) sp.set("page", String(params.page));
+  if (params?.pageSize) sp.set("pageSize", String(params.pageSize));
+
+  const url = sp.toString()
+    ? `${cursosRoutes.estagiosGlobal.frequenciaHistorico(
+        estagioId,
+        frequenciaId
+      )}?${sp.toString()}`
+    : cursosRoutes.estagiosGlobal.frequenciaHistorico(estagioId, frequenciaId);
+
+  const response = await apiFetch<{
+    success?: boolean;
+    data?:
+      | import("./types").FrequenciaHistoryEntry[]
+      | import("./types").EstagioFrequenciaHistoricoResponse;
+    pagination?: import("./types").Pagination;
+  }>(url, {
+    init: {
+      method: "GET",
+      ...init,
+      headers: buildHeaders(init?.headers, true),
+    },
+    cache: "no-cache",
+  });
+
+  const payload = response?.data as any;
+  if (Array.isArray(payload)) {
+    return {
+      items: payload,
+      pagination: response?.pagination,
+    };
+  }
+
+  return {
+    items: payload?.items ?? [],
+    pagination: payload?.pagination ?? response?.pagination,
+  };
+}
+
+export async function listEstagioFrequenciaHistoricoByAlunoPaginado(
+  alunoId: string,
+  estagioId: string,
+  frequenciaId: string,
+  params?: import("./types").ListEstagioFrequenciaHistoricoParams,
+  init?: RequestInit
+): Promise<import("./types").EstagioFrequenciaHistoricoResponse> {
+  const sp = new URLSearchParams();
+  if (params?.page) sp.set("page", String(params.page));
+  if (params?.pageSize) sp.set("pageSize", String(params.pageSize));
+
+  const url = sp.toString()
+    ? `${cursosRoutes.alunos.estagios.historico(
+        alunoId,
+        estagioId,
+        frequenciaId
+      )}?${sp.toString()}`
+    : cursosRoutes.alunos.estagios.historico(alunoId, estagioId, frequenciaId);
+
+  const response = await apiFetch<{
+    success?: boolean;
+    data?:
+      | import("./types").FrequenciaHistoryEntry[]
+      | import("./types").EstagioFrequenciaHistoricoResponse;
+    pagination?: import("./types").Pagination;
+  }>(url, {
+    init: {
+      method: "GET",
+      ...init,
+      headers: buildHeaders(init?.headers, true),
+    },
+    cache: "no-cache",
+  });
+
+  const payload = response?.data as any;
+  if (Array.isArray(payload)) {
+    return {
+      items: payload,
+      pagination: response?.pagination,
+    };
+  }
+
+  return {
+    items: payload?.items ?? [],
+    pagination: payload?.pagination ?? response?.pagination,
+  };
+}
+
+export async function concluirEstagioAluno(
+  estagioId: string,
+  estagioAlunoId: string,
+  init?: RequestInit
+): Promise<import("./types").ConcluirEstagioAlunoResponse> {
+  const response = await apiFetch<{
+    success?: boolean;
+    data?: import("./types").ConcluirEstagioAlunoResponse;
+  }>(cursosRoutes.estagiosGlobal.concluirAluno(estagioId, estagioAlunoId), {
+    init: {
+      method: "POST",
+      ...init,
+      headers: buildHeaders(init?.headers, true),
+    },
+    cache: "no-cache",
+  });
+
+  return (response?.data ?? response) as import("./types").ConcluirEstagioAlunoResponse;
 }
 
 export async function updateEstagioStatus(

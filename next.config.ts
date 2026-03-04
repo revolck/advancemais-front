@@ -95,12 +95,16 @@ const nextConfig = {
 
   // Proxy das rotas /api para o backend, evitando problemas de CORS
   async rewrites() {
-    return [
-      {
-        source: "/api/:path*",
-        destination: "https://advancemais-api-7h1q.onrender.com/api/:path*",
-      },
-    ];
+    return {
+      // Mantém prioridade para Route Handlers locais em /app/api/**
+      // e só envia para API externa quando não houver rota interna.
+      fallback: [
+        {
+          source: "/api/:path*",
+          destination: "https://advancemais-api-7h1q.onrender.com/api/:path*",
+        },
+      ],
+    };
   },
 };
 

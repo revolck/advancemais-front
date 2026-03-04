@@ -15,10 +15,35 @@ export const cursosRoutes = {
     list: () => `${BASE}/alunos`,
     get: (alunoId: string) => `${BASE}/alunos/${alunoId}`,
     update: (alunoId: string) => `${BASE}/alunos/${alunoId}`,
+    notas: (alunoId: string) => `${BASE}/alunos/${alunoId}/notas`,
+    estagios: {
+      list: (alunoId: string) => `${BASE}/alunos/${alunoId}/estagios`,
+      get: (alunoId: string, estagioId: string) =>
+        `${BASE}/alunos/${alunoId}/estagios/${estagioId}`,
+      frequencias: (alunoId: string, estagioId: string) =>
+        `${BASE}/alunos/${alunoId}/estagios/${estagioId}/frequencias`,
+      frequenciasPeriodo: (alunoId: string, estagioId: string) =>
+        `${BASE}/alunos/${alunoId}/estagios/${estagioId}/frequencias/periodo`,
+      lancamentos: (alunoId: string, estagioId: string) =>
+        `${BASE}/alunos/${alunoId}/estagios/${estagioId}/frequencias/lancamentos`,
+      historico: (alunoId: string, estagioId: string, frequenciaId: string) =>
+        `${BASE}/alunos/${alunoId}/estagios/${estagioId}/frequencias/${frequenciaId}/historico`,
+    },
+    frequencias: {
+      list: (alunoId: string) => `${BASE}/alunos/${alunoId}/frequencias`,
+      lancamentos: (alunoId: string) =>
+        `${BASE}/alunos/${alunoId}/frequencias/lancamentos`,
+      historico: (alunoId: string, frequenciaId: string) =>
+        `${BASE}/alunos/${alunoId}/frequencias/${frequenciaId}/historico`,
+      historicoByNaturalKey: (alunoId: string) =>
+        `${BASE}/alunos/${alunoId}/frequencias/historico`,
+    },
   },
   cursos: {
     list: () => `${BASE}`,
     create: () => `${BASE}`,
+    notasGlobal: () => `${BASE}/notas`,
+    frequenciasGlobal: () => `${BASE}/frequencias`,
     get: (cursoId: number | string) => `${BASE}/${cursoId}`,
     update: (cursoId: number | string) => `${BASE}/${cursoId}`,
     delete: (cursoId: number | string) => `${BASE}/${cursoId}`,
@@ -131,8 +156,18 @@ export const cursosRoutes = {
           `${BASE}/${cursoId}/turmas/${turmaId}/frequencias`,
         create: (cursoId: number | string, turmaId: string) =>
           `${BASE}/${cursoId}/turmas/${turmaId}/frequencias`,
+        lancamentos: (cursoId: number | string, turmaId: string) =>
+          `${BASE}/${cursoId}/turmas/${turmaId}/frequencias/lancamentos`,
         resumo: (cursoId: number | string, turmaId: string) =>
           `${BASE}/${cursoId}/turmas/${turmaId}/frequencias/resumo`,
+        historico: (
+          cursoId: number | string,
+          turmaId: string,
+          frequenciaId: string
+        ) =>
+          `${BASE}/${cursoId}/turmas/${turmaId}/frequencias/${frequenciaId}/historico`,
+        historicoByNaturalKey: (cursoId: number | string, turmaId: string) =>
+          `${BASE}/${cursoId}/turmas/${turmaId}/frequencias/historico`,
         get: (
           cursoId: number | string,
           turmaId: string,
@@ -237,6 +272,13 @@ export const cursosRoutes = {
     },
   },
   certificados: {
+    list: () => `${BASE}/certificados`,
+    create: () => `${BASE}/certificados`,
+    get: (certificadoId: string) => `${BASE}/certificados/${certificadoId}`,
+    preview: (certificadoId: string) =>
+      `${BASE}/certificados/${certificadoId}/preview`,
+    pdf: (certificadoId: string) => `${BASE}/certificados/${certificadoId}/pdf`,
+    modelos: () => `${BASE}/certificados/modelos`,
     verificarPorCodigo: (codigo: string) =>
       `${BASE}/certificados/codigo/${codigo}`,
   },
@@ -277,8 +319,24 @@ export const cursosRoutes = {
   // Estágios (listagem global e status)
   estagiosGlobal: {
     list: () => `${BASE}/estagios`,
+    create: () => `${BASE}/estagios`,
+    get: (estagioId: string) => `${BASE}/estagios/${estagioId}`,
+    update: (estagioId: string) => `${BASE}/estagios/${estagioId}`,
     updateStatus: (estagioId: string) =>
       `${BASE}/estagios/${estagioId}/status`,
+    vincularAlunos: (estagioId: string) =>
+      `${BASE}/estagios/${estagioId}/alunos/vincular`,
+    alocarAlunoGrupo: (estagioId: string, estagioAlunoId: string) =>
+      `${BASE}/estagios/${estagioId}/alunos/${estagioAlunoId}/grupo`,
+    frequencias: (estagioId: string) => `${BASE}/estagios/${estagioId}/frequencias`,
+    frequenciasPeriodo: (estagioId: string) =>
+      `${BASE}/estagios/${estagioId}/frequencias/periodo`,
+    upsertFrequenciaLancamento: (estagioId: string) =>
+      `${BASE}/estagios/${estagioId}/frequencias/lancamentos`,
+    frequenciaHistorico: (estagioId: string, frequenciaId: string) =>
+      `${BASE}/estagios/${estagioId}/frequencias/${frequenciaId}/historico`,
+    concluirAluno: (estagioId: string, estagioAlunoId: string) =>
+      `${BASE}/estagios/${estagioId}/alunos/${estagioAlunoId}/concluir`,
   },
   // Checkout
   checkout: {

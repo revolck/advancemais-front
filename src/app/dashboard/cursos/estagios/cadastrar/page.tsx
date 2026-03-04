@@ -13,6 +13,7 @@ const ALLOWED_ROLES = new Set<UserRole>([
   UserRole.ADMIN,
   UserRole.MODERADOR,
   UserRole.PEDAGOGICO,
+  UserRole.INSTRUTOR,
 ]);
 
 export default function CadastrarEstagioPage() {
@@ -61,4 +62,3 @@ export default function CadastrarEstagioPage() {
 
   return <div className="space-y-8">{content}</div>;
 }
-

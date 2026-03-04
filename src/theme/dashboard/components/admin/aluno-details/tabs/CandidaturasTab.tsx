@@ -62,13 +62,17 @@ interface CandidaturasTabProps {
 }
 
 const getStatusColor = (status: string) => {
-  switch (status) {
+  const normalizedStatus = status?.toUpperCase?.() ?? status;
+
+  switch (normalizedStatus) {
     case "CONTRATADO":
       return "bg-emerald-100 text-emerald-700 border-emerald-200";
     case "ENTREVISTA":
       return "bg-blue-100 text-blue-700 border-blue-200";
     case "EM_ANALISE":
       return "bg-amber-100 text-amber-700 border-amber-200";
+    case "PENDENTE":
+      return "bg-amber-200/70 text-amber-900 border-amber-300";
     case "RECUSADO":
       return "bg-red-100 text-red-700 border-red-200";
     case "DESISTIU":
@@ -81,13 +85,17 @@ const getStatusColor = (status: string) => {
 };
 
 const getStatusLabel = (status: string) => {
-  switch (status) {
+  const normalizedStatus = status?.toUpperCase?.() ?? status;
+
+  switch (normalizedStatus) {
     case "CONTRATADO":
       return "Contratado";
     case "ENTREVISTA":
       return "Em Entrevista";
     case "EM_ANALISE":
       return "Em Análise";
+    case "PENDENTE":
+      return "Pendente";
     case "RECUSADO":
       return "Recusado";
     case "DESISTIU":

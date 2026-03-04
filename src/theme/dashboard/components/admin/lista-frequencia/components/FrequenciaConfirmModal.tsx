@@ -39,29 +39,46 @@ export function FrequenciaConfirmModal(props: {
     onConfirm,
   } = props;
 
+  const isAusente = pendingStatus === "AUSENTE";
+  const isPresente = pendingStatus === "PRESENTE";
+  const title = isPresente
+    ? "Confirmar presença"
+    : isAusente
+      ? "Confirmar ausência"
+      : !currentStatus
+        ? "Confirmar frequência"
+        : "Alterar frequência";
+
+  const description = isPresente
+    ? "Deseja confirmar a marcação de presença para este aluno?"
+    : isAusente
+      ? "Deseja confirmar a marcação de ausência? Informe o motivo obrigatoriamente."
+      : isOverrideFlow
+        ? "Você está alterando uma frequência já lançada. Deseja continuar?"
+        : "Após confirmar, a frequência não poderá ser desfeita pelo instrutor.";
+
+  const handleOpenChange = (open: boolean) => {
+    if (isSaving) return;
+    onOpenChange(open);
+  };
+
   return (
     <ModalCustom
       isOpen={isOpen}
-      onOpenChange={onOpenChange}
+      onOpenChange={handleOpenChange}
       size="md"
       backdrop="blur"
     >
       <ModalContentWrapper>
         <ModalHeader>
-          <ModalTitle>
-            {!currentStatus
-              ? "Confirmar frequência"
-              : "Alterar frequência"}
-          </ModalTitle>
+          <ModalTitle>{title}</ModalTitle>
           <ModalDescription className="text-sm! mt-0! mb-0!">
-            {isOverrideFlow
-              ? "Você está alterando uma frequência já lançada. Deseja continuar?"
-              : "Após confirmar, a frequência não poderá ser desfeita pelo instrutor."}
+            {description}
           </ModalDescription>
         </ModalHeader>
 
         <ModalBody className="space-y-4">
-          {pendingStatus === "AUSENTE" && (
+          {isAusente && (
             <SimpleTextarea
               label="Motivo da ausência"
               required
@@ -69,9 +86,11 @@ export function FrequenciaConfirmModal(props: {
               onChange={(e) =>
                 onChangeMotivo((e.target as HTMLTextAreaElement).value)
               }
-              maxLength={250}
+              disabled={isSaving}
+              maxLength={500}
               showCharCount
               size="lg"
+              placeholder="Descreva o motivo da ausência (obrigatório)."
             />
           )}
         </ModalBody>
@@ -81,6 +100,7 @@ export function FrequenciaConfirmModal(props: {
             variant="outline"
             size="md"
             onClick={() => onOpenChange(false)}
+            disabled={isSaving}
           >
             Cancelar
           </ButtonCustom>
@@ -88,7 +108,7 @@ export function FrequenciaConfirmModal(props: {
             variant="primary"
             size="md"
             onClick={onConfirm}
-            disabled={confirmDisabled}
+            disabled={confirmDisabled || isSaving}
             isLoading={isSaving}
           >
             Confirmar

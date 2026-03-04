@@ -37,6 +37,8 @@ interface FormData {
   nome: string;
   descricao: string;
   descricaoHtml?: string;
+  conteudoProgramatico: string;
+  conteudoProgramaticoHtml?: string;
   cargaHoraria: string;
   categoriaId: string | null;
   subcategoriaId: string | null;
@@ -51,6 +53,8 @@ interface FormData {
 const initialFormData: FormData = {
   nome: "",
   descricao: "",
+  conteudoProgramatico: "",
+  conteudoProgramaticoHtml: "",
   cargaHoraria: "",
   categoriaId: null,
   subcategoriaId: null,
@@ -117,6 +121,8 @@ export function CreateCursoForm({
       return {
         nome: initialData.nome || "",
         descricao: initialData.descricao || "",
+        conteudoProgramatico: initialData.conteudoProgramatico || "",
+        conteudoProgramaticoHtml: initialData.conteudoProgramatico || "",
         cargaHoraria: initialData.cargaHoraria?.toString() || "",
         categoriaId: initialData.categoriaId?.toString() || null,
         subcategoriaId: initialData.subcategoriaId?.toString() || null,
@@ -189,6 +195,13 @@ export function CreateCursoForm({
       newErrors.nome = "Nome deve ter no máximo 200 caracteres";
     if (!formData.descricao.trim())
       newErrors.descricao = "Descrição é obrigatória";
+    const conteudoProgramaticoPayload =
+      formData.conteudoProgramaticoHtml?.trim() ||
+      formData.conteudoProgramatico.trim();
+    if (conteudoProgramaticoPayload.length > 12000) {
+      newErrors.conteudoProgramatico =
+        "Conteúdo programático deve ter no máximo 12000 caracteres";
+    }
     const carga = Number(formData.cargaHoraria);
     if (!Number.isFinite(carga) || carga <= 0)
       newErrors.cargaHoraria = "Informe um número positivo";
@@ -320,6 +333,10 @@ export function CreateCursoForm({
       const payload: CreateCursoPayload = {
         nome: formData.nome.trim(),
         descricao: formData.descricaoHtml?.trim() || formData.descricao.trim(),
+        conteudoProgramatico:
+          formData.conteudoProgramaticoHtml?.trim() ||
+          formData.conteudoProgramatico.trim() ||
+          null,
         cargaHoraria: Number(formData.cargaHoraria),
         categoriaId: Number(formData.categoriaId),
         subcategoriaId: formData.subcategoriaId
@@ -672,6 +689,30 @@ export function CreateCursoForm({
               showCharCount
               error={errors.descricao}
               required
+            />
+
+            <RichTextarea
+              label="Conteúdo programático"
+              placeholder={"Ex.: Módulo 1: Fundamentos...\nMódulo 2: Prática..."}
+              value={
+                formData.conteudoProgramaticoHtml ||
+                formData.conteudoProgramatico
+              }
+              onChange={(e) =>
+                handleInputChange(
+                  "conteudoProgramatico",
+                  (e.target as HTMLTextAreaElement).value
+                )
+              }
+              onHtmlChange={(html) => {
+                setFormData((prev) => ({
+                  ...prev,
+                  conteudoProgramaticoHtml: html,
+                }));
+              }}
+              maxLength={12000}
+              showCharCount
+              error={errors.conteudoProgramatico}
             />
           </div>
 

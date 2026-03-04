@@ -10,8 +10,21 @@ function buildInscricaoOption(inscricao: TurmaInscricao): SelectOption {
     inscricao.aluno?.nome ||
     inscricao.alunoId ||
     "—";
-  const codigo = inscricao.alunoId ? ` • ${inscricao.alunoId}` : "";
-  return { value: inscricao.id, label: `${nome}${codigo}` };
+  const matricula =
+    inscricao.aluno?.codigo?.trim() || inscricao.aluno?.codUsuario?.trim() || "";
+  const cpf = inscricao.aluno?.cpf?.trim() || "";
+  const cpfDigits = cpf.replace(/\D/g, "");
+
+  return {
+    value: inscricao.id,
+    label: nome,
+    searchKeywords: [
+      nome,
+      matricula,
+      cpf,
+      cpfDigits,
+    ].filter(Boolean),
+  };
 }
 
 export function useInscricoesForTurmaSelect(params: {
@@ -47,4 +60,3 @@ export function useInscricoesForTurmaSelect(params: {
     refetch: query.refetch,
   };
 }
-

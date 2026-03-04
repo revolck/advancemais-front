@@ -120,6 +120,7 @@ export function SelectCustom(props: SelectCustomProps) {
     value !== "";
   const canClear = clearable && !disabled && hasValue;
   const searchableSingle = props.mode !== "multiple" ? ((props as any).searchable ?? true) : false;
+  const searchThreshold = props.searchThreshold ?? 5;
   const selectValue = props.mode !== "multiple" ? value ?? "" : "";
   const handleCommandWheel = (event: React.WheelEvent<HTMLDivElement>) => {
     if (!event.currentTarget) return;
@@ -138,14 +139,14 @@ export function SelectCustom(props: SelectCustomProps) {
       props.mode === "multiple" ||
       props.mode === "user" ||
       !options ||
-      (options as SelectOption[]).length <= 5 ||
+      (options as SelectOption[]).length <= searchThreshold ||
       value === null ||
       value === undefined
     ) {
       return null;
     }
     return (options as SelectOption[]).find((o) => o.value === value) || null;
-  }, [searchableSingle, props.mode, options, value]);
+  }, [searchThreshold, searchableSingle, props.mode, options, value]);
   
   // Fecha o popover quando o valor é limpo (null) - apenas para searchable single
   useEffect(() => {
@@ -154,19 +155,19 @@ export function SelectCustom(props: SelectCustomProps) {
       props.mode !== "multiple" &&
       props.mode !== "user" &&
       options &&
-      (options as SelectOption[]).length > 5 &&
+      (options as SelectOption[]).length > searchThreshold &&
       (value === null || value === undefined)
     ) {
       setOpen(false);
     }
-  }, [searchableSingle, props.mode, options, value]);
+  }, [searchThreshold, searchableSingle, props.mode, options, value]);
 
   if (props.mode !== "multiple") {
     if (
       searchableSingle &&
       props.mode !== "user" &&
       options &&
-      (options as SelectOption[]).length > 5
+      (options as SelectOption[]).length > searchThreshold
     ) {
       
       return (
@@ -262,7 +263,7 @@ export function SelectCustom(props: SelectCustomProps) {
                       <CommandItem
                         key={opt.value || "__select_empty__"}
                         value={opt.value || "__select_empty__"}
-                        keywords={[opt.label]}
+                        keywords={[opt.label, ...(opt.searchKeywords ?? [])]}
                         disabled={opt.disabled}
                         onSelect={() => {
                           if (onChange) {
@@ -514,7 +515,7 @@ export function SelectCustom(props: SelectCustomProps) {
                     <CommandItem
                       key={opt.value || "__select_empty__"}
                       value={opt.value || "__select_empty__"}
-                      keywords={[opt.label]}
+                      keywords={[opt.label, ...(opt.searchKeywords ?? [])]}
                       onSelect={() => {
                         const next = checked
                           ? multipleValue.filter((v) => v !== opt.value)

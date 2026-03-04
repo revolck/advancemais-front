@@ -13,6 +13,7 @@ const ALLOWED_ROLES = new Set<UserRole>([
   UserRole.ADMIN,
   UserRole.MODERADOR,
   UserRole.PEDAGOGICO,
+  UserRole.INSTRUTOR,
 ]);
 
 export default function DashboardCertificadosPage() {

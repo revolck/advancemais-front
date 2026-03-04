@@ -1,4 +1,5 @@
 const VIACEP_ENDPOINT = "https://viacep.com.br/ws";
+const BRASIL_API_ENDPOINT = "https://brasilapi.com.br/api/cep/v1";
 const CEP_TIMEOUT = 8000;
 
 export interface CepLookupSuccess {
@@ -26,23 +27,31 @@ export function isValidCep(value: string): boolean {
   return /^\d{5}-?\d{3}$/.test(value.replace(/\s+/g, ""));
 }
 
-export async function lookupCep(rawCep: string): Promise<CepLookupResult> {
-  const cleaned = rawCep.replace(/\D/g, "");
-
-  if (cleaned.length !== 8) {
-    return { error: "CEP deve conter 8 dígitos" };
-  }
-
+async function fetchWithTimeout(
+  url: string,
+  timeoutMs: number = CEP_TIMEOUT
+): Promise<Response> {
   const controller = new AbortController();
-  const timeout = window.setTimeout(() => controller.abort(), CEP_TIMEOUT);
+  const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
 
   try {
-    const response = await fetch(`${VIACEP_ENDPOINT}/${cleaned}/json/`, {
+    return await fetch(url, {
       signal: controller.signal,
+      headers: {
+        Accept: "application/json",
+      },
     });
+  } finally {
+    window.clearTimeout(timeout);
+  }
+}
+
+async function lookupViaCep(cleanedCep: string): Promise<CepLookupResult | null> {
+  try {
+    const response = await fetchWithTimeout(`${VIACEP_ENDPOINT}/${cleanedCep}/json/`);
 
     if (!response.ok) {
-      return { error: "Não foi possível consultar o CEP" };
+      return null;
     }
 
     const data = await response.json();
@@ -52,19 +61,64 @@ export async function lookupCep(rawCep: string): Promise<CepLookupResult> {
     }
 
     return {
-      cep: normalizeCep(cleaned),
+      cep: normalizeCep(cleanedCep),
       street: data.logradouro ?? "",
       neighborhood: data.bairro ?? "",
       city: data.localidade ?? "",
       state: data.uf ?? "",
       complement: data.complemento ?? "",
     };
+  } catch {
+    return null;
+  }
+}
+
+async function lookupBrasilApi(cleanedCep: string): Promise<CepLookupResult | null> {
+  try {
+    const response = await fetchWithTimeout(`${BRASIL_API_ENDPOINT}/${cleanedCep}`);
+
+    if (response.status === 404) {
+      return { error: "CEP não encontrado" };
+    }
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const data = await response.json();
+
+    return {
+      cep: normalizeCep(cleanedCep),
+      street: data.street ?? "",
+      neighborhood: data.neighborhood ?? "",
+      city: data.city ?? "",
+      state: data.state ?? "",
+      complement: "",
+    };
   } catch (error) {
     if ((error as Error).name === "AbortError") {
       return { error: "Tempo excedido ao buscar CEP" };
     }
-    return { error: "Erro ao buscar CEP" };
-  } finally {
-    window.clearTimeout(timeout);
+    return null;
   }
+}
+
+export async function lookupCep(rawCep: string): Promise<CepLookupResult> {
+  const cleaned = rawCep.replace(/\D/g, "");
+
+  if (cleaned.length !== 8) {
+    return { error: "CEP deve conter 8 dígitos" };
+  }
+
+  const viaCepResult = await lookupViaCep(cleaned);
+  if (viaCepResult) {
+    return viaCepResult;
+  }
+
+  const brasilApiResult = await lookupBrasilApi(cleaned);
+  if (brasilApiResult) {
+    return brasilApiResult;
+  }
+
+  return { error: "Erro ao buscar CEP" };
 }

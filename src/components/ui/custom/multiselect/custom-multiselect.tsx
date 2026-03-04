@@ -69,6 +69,13 @@ function isOptionsExist(groupOption: GroupOption, targetOption: Option[]) {
   return false;
 }
 
+function buildSearchableOptionValue(option: Option): string {
+  const keywords = Array.isArray(option.searchKeywords)
+    ? option.searchKeywords
+    : [];
+  return [option.value, option.label, ...keywords].filter(Boolean).join(" ");
+}
+
 // Workaround to ensure Empty renders correctly with cmdk filtering
 const ListEmpty = React.forwardRef<
   HTMLDivElement,
@@ -629,7 +636,7 @@ const MultiSelectCustom = React.forwardRef<MultiSelectRef, MultiSelectProps>(
                                     return (
                                       <CommandItem
                                         key={option.value}
-                                        value={option.value}
+                                        value={buildSearchableOptionValue(option)}
                                         disabled={option.disable}
                                         onMouseDown={(e) => {
                                           e.preventDefault();

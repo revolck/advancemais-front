@@ -58,6 +58,8 @@ export interface AdminCompanyEndereco {
   cidade: string;
   estado: string;
   cep: string;
+  complemento?: string | null;
+  principal?: boolean;
 }
 
 // ============================================================================
@@ -210,6 +212,7 @@ export interface AdminCompanyListItem {
   cidade: string;
   estado: string;
   enderecos: AdminCompanyEndereco[];
+  enderecoPrincipal?: AdminCompanyEndereco | null;
   criadoEm: string;
   informacoes: AdminCompanyInformacoes;
   ativa: boolean;
@@ -237,6 +240,7 @@ export interface AdminCompanyDetail {
   cidade: string;
   estado: string;
   enderecos: AdminCompanyEndereco[];
+  enderecoPrincipal?: AdminCompanyEndereco | null;
   criadoEm: string;
   status: AdminCompanyStatus;
   ultimoLogin: string;

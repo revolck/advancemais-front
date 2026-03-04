@@ -11,6 +11,7 @@ import { getCursoById } from "@/api/cursos";
 import { queryKeys } from "@/lib/react-query/queryKeys";
 import { HeaderInfo } from "./components/HeaderInfo";
 import { AboutTab } from "./tabs/AboutTab";
+import { ConteudoProgramaticoTab } from "./tabs/ConteudoProgramaticoTab";
 import { TurmasTab } from "./tabs/TurmasTab";
 import { AlunosMatriculadosTab } from "./tabs/AlunosMatriculadosTab";
 import { HistoryTab } from "./tabs/HistoryTab";
@@ -111,6 +112,9 @@ export function CursoDetailsView({
   const turmasTabContent = (
     <TurmasTab turmas={curso.turmas || []} cursoId={curso.id} />
   );
+  const conteudoProgramaticoTabContent = (
+    <ConteudoProgramaticoTab curso={curso} isLoading={isReloading} />
+  );
 
   const alunosMatriculadosTabContent = (
     <AlunosMatriculadosTab
@@ -138,6 +142,12 @@ export function CursoDetailsView({
       label: "Sobre",
       icon: "FileText",
       content: aboutTabContent,
+    },
+    {
+      value: "conteudo-programatico",
+      label: "Conteúdo Programático",
+      icon: "BookOpen",
+      content: conteudoProgramaticoTabContent,
     },
     {
       value: "turmas",

@@ -11,6 +11,8 @@ export interface FilterField {
   type?: FilterType; // default: select
   mode?: FilterMode; // default: single
   options?: SelectOption[]; // required for select type
+  searchable?: boolean;
+  searchThreshold?: number;
   placeholder?: string;
   disabled?: boolean; // quando true, componente fica desabilitado
   emptyPlaceholder?: string; // placeholder quando não há opções
@@ -18,6 +20,7 @@ export interface FilterField {
   required?: boolean; // usado principalmente em campos de data/texto
   minDate?: Date;
   maxDate?: Date;
+  disabledDates?: Date[];
   clearable?: boolean;
 }
 
@@ -30,6 +33,7 @@ export interface FilterBarProps {
   className?: string;
   gridClassName?: string;
   rightActionsClassName?: string;
+  showActiveChips?: boolean;
   fields: FilterField[];
   values: FilterValues;
   onChange: (key: string, value: string | string[] | DateRange | Date | null) => void;

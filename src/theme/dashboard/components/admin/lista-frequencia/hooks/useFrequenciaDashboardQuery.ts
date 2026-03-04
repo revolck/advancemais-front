@@ -3,7 +3,10 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import {
   listFrequencias,
+  listFrequenciasGlobal,
   type Frequencia,
+  type FrequenciaOrigemTipo,
+  type ListFrequenciasResponse,
   type FrequenciaStatus,
 } from "@/api/cursos";
 import type { AulaSelectItem } from "./useAulasForSelect";
@@ -14,6 +17,8 @@ export type FrequenciaSortDirection = "asc" | "desc";
 export interface NormalizedFrequenciaFilters {
   cursoId: string | null;
   turmaId: string | null;
+  origemTipo: FrequenciaOrigemTipo | null;
+  origemId: string | null;
   aula: AulaSelectItem | null;
   page: number;
   pageSize: number;
@@ -26,23 +31,44 @@ export interface NormalizedFrequenciaFilters {
 export type { FrequenciaStatus } from "@/api/cursos";
 
 export interface FrequenciaListItem {
-  id: string;
+  id: string | null;
+  syntheticId?: string | null;
+  isPersisted?: boolean;
   key: string;
   cursoId: string;
+  cursoNome?: string | null;
   turmaId: string;
-  aulaId: string;
+  turmaNome?: string | null;
+  turmaCodigo?: string | null;
+  aulaId: string | null;
+  tipoOrigem: FrequenciaOrigemTipo;
+  origemId: string | null;
+  origemTitulo?: string | null;
   inscricaoId: string;
   alunoId: string;
   alunoNome: string;
   alunoCodigo?: string | null;
   alunoCpf?: string | null;
+  avatarUrl?: string | null;
   statusAtual: FrequenciaStatus;
+  modoLancamento?: "MANUAL" | "AUTOMATICO";
+  minutosPresenca?: number | null;
+  minimoMinutosParaPresenca?: number | null;
   justificativa?: string | null;
   observacoes?: string | null;
-  dataReferencia: string;
+  dataReferencia: string | null;
+  naturalKey?: {
+    inscricaoId: string;
+    tipoOrigem: FrequenciaOrigemTipo;
+    origemId: string;
+  };
   evidence?: {
-    ultimoLogin?: string | null;
-    tempoAoVivoMin?: number | null;
+    acessou?: boolean;
+    primeiroAcessoEm?: string | null;
+    ultimoAcessoEm?: string | null;
+    minutosEngajados?: number | null;
+    respondeu?: boolean;
+    statusSugerido?: FrequenciaStatus;
   };
 }
 
@@ -58,24 +84,71 @@ export interface FrequenciaQueryResult {
 }
 
 function mapFrequenciaToListItem(freq: Frequencia): FrequenciaListItem {
+  const rawFreq = freq as Frequencia & {
+    cursoNome?: string | null;
+    turmaNome?: string | null;
+    turmaCodigo?: string | null;
+    curso?: { nome?: string | null };
+    turma?: { nome?: string | null; codigo?: string | null };
+  };
+  const tipoOrigem = freq.tipoOrigem ?? "AULA";
+  const origemId = freq.origemId ?? freq.aulaId ?? null;
+  const alunoNome =
+    freq.alunoNome ??
+    freq.aluno?.nomeCompleto ??
+    freq.aluno?.nome ??
+    "—";
+
+  const fallbackKey = `${freq.turmaId}::${freq.inscricaoId}::${tipoOrigem}::${
+    origemId ?? "sem-origem"
+  }`;
+
   return {
     id: freq.id,
-    key: freq.id,
+    syntheticId: freq.syntheticId ?? null,
+    isPersisted: freq.isPersisted,
+    key: freq.id ?? freq.syntheticId ?? fallbackKey,
     cursoId: freq.cursoId,
+    cursoNome: rawFreq.cursoNome ?? rawFreq.curso?.nome ?? null,
     turmaId: freq.turmaId,
-    aulaId: freq.aulaId,
+    turmaNome: rawFreq.turmaNome ?? rawFreq.turma?.nome ?? null,
+    turmaCodigo: rawFreq.turmaCodigo ?? rawFreq.turma?.codigo ?? null,
+    aulaId: freq.aulaId ?? null,
+    tipoOrigem,
+    origemId,
+    origemTitulo: freq.origemTitulo ?? null,
     inscricaoId: freq.inscricaoId,
-    alunoId: freq.aluno?.id ?? freq.inscricaoId,
-    alunoNome: freq.aluno?.nome ?? "—",
-    alunoCodigo: null, // API pode retornar isso no futuro
-    alunoCpf: null, // API pode retornar isso no futuro
+    alunoId: freq.aluno?.id ?? freq.alunoId ?? freq.inscricaoId,
+    alunoNome,
+    alunoCodigo: freq.aluno?.codigo ?? null,
+    alunoCpf: freq.aluno?.cpf ?? null,
+    avatarUrl: freq.aluno?.avatarUrl ?? null,
     statusAtual: freq.status,
+    modoLancamento: freq.modoLancamento,
+    minutosPresenca: freq.minutosPresenca ?? null,
+    minimoMinutosParaPresenca: freq.minimoMinutosParaPresenca ?? null,
     justificativa: freq.justificativa,
     observacoes: freq.observacoes,
-    dataReferencia: freq.dataReferencia,
+    dataReferencia: freq.dataReferencia ?? null,
+    naturalKey:
+      freq.naturalKey ??
+      (origemId
+        ? {
+            inscricaoId: freq.inscricaoId,
+            tipoOrigem,
+            origemId,
+          }
+        : undefined),
     evidence: {
-      ultimoLogin: null, // API pode retornar isso no futuro
-      tempoAoVivoMin: null, // API pode retornar isso no futuro
+      acessou: freq.evidencia?.acessou,
+      primeiroAcessoEm: freq.evidencia?.primeiroAcessoEm ?? null,
+      ultimoAcessoEm: freq.evidencia?.ultimoAcessoEm ?? null,
+      minutosEngajados:
+        typeof freq.evidencia?.minutosEngajados === "number"
+          ? freq.evidencia.minutosEngajados
+          : freq.minutosPresenca ?? null,
+      respondeu: freq.evidencia?.respondeu,
+      statusSugerido: freq.evidencia?.statusSugerido,
     },
   };
 }
@@ -83,27 +156,31 @@ function mapFrequenciaToListItem(freq: Frequencia): FrequenciaListItem {
 async function fetchFrequencia(
   filters: NormalizedFrequenciaFilters
 ): Promise<FrequenciaQueryResult> {
-  if (!filters.cursoId || !filters.turmaId || !filters.aula) {
-    return {
-      items: [],
-      canEdit: false,
-      pagination: {
-        page: filters.page,
-        pageSize: filters.pageSize,
-        total: 0,
-        totalPages: 1,
-      },
-    };
-  }
-
   try {
-    const response = await listFrequencias(filters.cursoId, filters.turmaId, {
-      aulaId: filters.aula.id,
+    const queryParams = {
+      tipoOrigem: filters.origemTipo ?? undefined,
+      origemId: filters.origemId ?? undefined,
+      aulaId:
+        filters.origemTipo === "AULA" && filters.origemId
+          ? filters.origemId
+          : undefined,
+      search: filters.search || undefined,
       page: filters.page,
       pageSize: filters.pageSize,
-    });
+    };
 
-    const items = (response.data ?? []).map(mapFrequenciaToListItem);
+    const response: ListFrequenciasResponse =
+      filters.cursoId && filters.turmaId
+        ? await listFrequencias(filters.cursoId, filters.turmaId, queryParams)
+        : await listFrequenciasGlobal({
+            ...queryParams,
+            cursoId: filters.cursoId ?? undefined,
+            turmaIds: filters.turmaId ?? undefined,
+          });
+
+    const parsed = parseFrequenciasResponse(response);
+
+    const items = parsed.items.map(mapFrequenciaToListItem);
 
     // Filtro local por search (se a API não suportar)
     const search = (filters.search ?? "").trim().toLowerCase();
@@ -131,21 +208,31 @@ async function fetchFrequencia(
     }
 
     // Verifica se pode editar (aula já aconteceu)
-    const now = new Date();
-    const aulaFim = filters.aula.dataFim
-      ? new Date(filters.aula.dataFim)
-      : filters.aula.dataInicio
-      ? new Date(
-          new Date(filters.aula.dataInicio).getTime() +
-            (filters.aula.duracaoMinutos ?? 60) * 60000
-        )
-      : null;
-    const canEdit = aulaFim ? now >= aulaFim : false;
+    const canEdit = (() => {
+      // No contexto global (sem filtros selecionados), permite edição para
+      // perfis autorizados. O bloqueio por tempo só vale quando há aula
+      // selecionada no contexto da tela.
+      if (!filters.cursoId || !filters.turmaId || !filters.origemId) {
+        return true;
+      }
+      if (filters.origemTipo !== "AULA") return true;
+      if (!filters.aula) return true;
+      const now = new Date();
+      const aulaFim = filters.aula.dataFim
+        ? new Date(filters.aula.dataFim)
+        : filters.aula.dataInicio
+        ? new Date(
+            new Date(filters.aula.dataInicio).getTime() +
+              (filters.aula.duracaoMinutos ?? 60) * 60000
+          )
+        : null;
+      return aulaFim ? now >= aulaFim : true;
+    })();
 
     return {
       items: filtered,
       canEdit,
-      pagination: response.pagination ?? {
+      pagination: parsed.pagination ?? {
         page: filters.page,
         pageSize: filters.pageSize,
         total: filtered.length,
@@ -165,6 +252,8 @@ export function useFrequenciaDashboardQuery(filters: NormalizedFrequenciaFilters
       "dashboard",
       filters.cursoId,
       filters.turmaId,
+      filters.origemTipo,
+      filters.origemId,
       filters.aula?.id ?? null,
       filters.sortBy ?? "ALUNO",
       filters.sortDirection ?? "asc",
@@ -173,9 +262,37 @@ export function useFrequenciaDashboardQuery(filters: NormalizedFrequenciaFilters
       filters.search ?? null,
     ],
     queryFn: () => fetchFrequencia(filters),
-    enabled: Boolean(filters.cursoId && filters.turmaId && filters.aula?.id),
+    enabled: true,
     placeholderData: keepPreviousData,
     staleTime: 30 * 1000,
     gcTime: 5 * 60 * 1000,
   });
+}
+
+function parseFrequenciasResponse(
+  response: ListFrequenciasResponse
+): {
+  items: Frequencia[];
+  pagination?: FrequenciaQueryResult["pagination"];
+} {
+  const raw = response as any;
+
+  const items =
+    (Array.isArray(raw?.data) && raw.data) ||
+    (Array.isArray(raw?.data?.items) && raw.data.items) ||
+    (Array.isArray(raw?.data?.data) && raw.data.data) ||
+    (Array.isArray(raw?.data?.data?.items) && raw.data.data.items) ||
+    (Array.isArray(raw?.items) && raw.items) ||
+    [];
+
+  const pagination =
+    raw?.pagination ??
+    raw?.data?.pagination ??
+    raw?.data?.data?.pagination ??
+    undefined;
+
+  return {
+    items,
+    pagination,
+  };
 }

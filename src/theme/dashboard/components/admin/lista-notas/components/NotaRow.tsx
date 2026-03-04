@@ -1,9 +1,18 @@
 "use client";
 
 import React, { useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { ButtonCustom, toastCustom } from "@/components/ui/custom";
+import { AvatarCustom, ButtonCustom, toastCustom } from "@/components/ui/custom";
+import {
+  ModalBody,
+  ModalContentWrapper,
+  ModalCustom,
+  ModalFooter,
+  ModalHeader,
+  ModalTitle,
+} from "@/components/ui/custom/modal";
 import { cn } from "@/lib/utils";
 import type { NotaListItem } from "../hooks/useNotasDashboardQuery";
 import { NotaHistoryModal } from "./NotaHistoryModal";
@@ -12,13 +21,23 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Info } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  BookOpen,
+  CalendarDays,
+  ChevronRight,
+  GraduationCap,
+  Info,
+  Loader2,
+} from "lucide-react";
 
 interface NotaRowProps {
   item: NotaListItem;
-  turmaNome: string;
+  cursoNome?: string;
+  turmaNome?: string;
   isRemoving?: boolean;
   onRemove?: () => Promise<void> | void;
+  showActionsColumn?: boolean;
 }
 
 function getSituacao(nota: number | null) {
@@ -56,6 +75,13 @@ function formatDate(value?: string) {
   });
 }
 
+function formatCpf(value?: string | null) {
+  if (!value) return "CPF não informado";
+  const digits = value.replace(/\D/g, "");
+  if (digits.length !== 11) return value;
+  return digits.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
+}
+
 function formatNota(nota: number | null): string {
   if (nota === null) return "—";
   if (!Number.isFinite(nota)) return "—";
@@ -74,14 +100,45 @@ function getOrigemLabel(tipo: string) {
 
 export function NotaRow({
   item,
+  cursoNome,
   turmaNome,
   isRemoving = false,
   onRemove,
+  showActionsColumn = true,
 }: NotaRowProps) {
+  const router = useRouter();
   const situacao = useMemo(() => getSituacao(item.nota), [item.nota]);
   const [isHistoryOpen, setIsHistoryOpen] = React.useState(false);
-  const canRemove = item.isManual;
+  const [isConfirmRemoveOpen, setIsConfirmRemoveOpen] = React.useState(false);
+  const [isNavigating, setIsNavigating] = React.useState(false);
+  const canRemove = item.isManual === true;
   const hasHistory = (item.history?.length ?? 0) > 0;
+  const codigoExibicao = item.codigoMatricula || item.alunoCodigo;
+  const cursoNomeExibicao = cursoNome || item.cursoNome || item.cursoId || "—";
+  const turmaNomeExibicao = turmaNome || item.turmaNome || item.turmaId || "—";
+  const cursoCodigoExibicao = item.cursoCodigo;
+  const turmaCodigoExibicao = item.turmaCodigo;
+
+  const handleConfirmRemove = async () => {
+    if (!onRemove) return;
+    try {
+      await Promise.resolve(onRemove());
+      toastCustom.success("Nota removida.");
+      setIsConfirmRemoveOpen(false);
+    } catch (err) {
+      const msg =
+        err instanceof Error ? err.message : "Não foi possível remover a nota.";
+      toastCustom.error(msg);
+    }
+  };
+
+  const handleNavigateAluno = () => {
+    if (isNavigating) return;
+    setIsNavigating(true);
+    router.push(
+      `/dashboard/cursos/alunos/${encodeURIComponent(item.alunoId)}?tab=notas`
+    );
+  };
 
   return (
     <>
@@ -89,22 +146,82 @@ export function NotaRow({
         className={cn("border-gray-100 transition-colors hover:bg-gray-50/50")}
       >
       <TableCell className="py-4 px-3">
-        <div className="space-y-1">
-          <div className="text-sm font-medium text-gray-900 truncate max-w-[320px]">
-            {item.alunoNome}
-          </div>
-          <div className="text-xs text-gray-500 font-mono truncate max-w-[320px]">
-            {item.alunoId}
+        <div className="flex items-center gap-3">
+          <AvatarCustom
+            name={item.alunoNome}
+            src={item.alunoAvatarUrl || undefined}
+            size="sm"
+            showStatus={false}
+          />
+          <div className="min-w-0">
+            <div className="mb-1 flex items-center gap-2">
+              <div className="max-w-[240px] truncate text-sm font-medium text-gray-900">
+                {item.alunoNome}
+              </div>
+              {codigoExibicao && (
+                <code className="shrink-0 rounded bg-gray-100 px-1.5 py-0.5 font-mono text-xs text-gray-500">
+                  {codigoExibicao}
+                </code>
+              )}
+            </div>
+            <div className="max-w-[320px] truncate font-mono text-xs text-gray-500">
+              {formatCpf(item.alunoCpf)}
+            </div>
           </div>
         </div>
       </TableCell>
 
       <TableCell className="py-4 px-3">
-        <div className="flex items-center gap-2 min-w-0">
-          <div className="text-sm text-gray-700 truncate max-w-[260px]">
-            {turmaNome || item.turmaId}
+        <div className="flex min-w-0 items-start gap-2">
+          <BookOpen className="mt-0.5 h-4 w-4 shrink-0 text-gray-400" />
+          <div className="min-w-0 space-y-1">
+            <div className="flex min-w-0 items-center gap-2">
+              <span className="shrink-0 text-[11px] text-gray-500">Curso</span>
+              <span className="min-w-0 truncate text-sm text-gray-700">
+                {cursoNomeExibicao}
+              </span>
+              {cursoCodigoExibicao && (
+                <code className="shrink-0 rounded bg-gray-100 px-1.5 py-0.5 font-mono text-xs text-gray-500">
+                  {cursoCodigoExibicao}
+                </code>
+              )}
+            </div>
+            <div className="flex min-w-0 items-center gap-2">
+              <span className="shrink-0 text-[11px] text-gray-500">Turma</span>
+              <span className="min-w-0 truncate text-sm text-gray-700">
+                {turmaNomeExibicao}
+              </span>
+              {turmaCodigoExibicao && (
+                <code className="shrink-0 rounded bg-gray-100 px-1.5 py-0.5 font-mono text-xs text-gray-500">
+                  {turmaCodigoExibicao}
+                </code>
+              )}
+            </div>
           </div>
-          {(item.origem || item.motivo) && (
+        </div>
+      </TableCell>
+
+      <TableCell className="py-4 px-3 text-center">
+        <div className="inline-flex items-center gap-2">
+          <span className="inline-flex items-center gap-1 text-sm font-medium text-gray-900">
+            <GraduationCap className="h-4 w-4 text-gray-400" />
+            {formatNota(item.nota)}
+          </span>
+          <Badge
+            variant="outline"
+            className={cn("text-xs font-medium", situacao.className)}
+          >
+            {situacao.label}
+          </Badge>
+        </div>
+      </TableCell>
+
+      <TableCell className="py-4 px-3 text-center whitespace-nowrap">
+        <div className="inline-flex items-center gap-2">
+          <CalendarDays className="h-4 w-4 text-gray-400" />
+          <span className="text-sm text-gray-700">{formatDate(item.atualizadoEm)}</span>
+          <span className="text-gray-300">|</span>
+          {(item.origem || item.motivo) ? (
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
@@ -129,8 +246,8 @@ export function NotaRow({
                         {item.origem.titulo
                           ? ` • ${item.origem.titulo}`
                           : item.origem.id
-                          ? ` • ${item.origem.id}`
-                          : ""}
+                            ? ` • ${item.origem.id}`
+                            : ""}
                       </div>
                     ) : (
                       <div className="text-gray-100/80">—</div>
@@ -145,68 +262,72 @@ export function NotaRow({
                 </div>
               </TooltipContent>
             </Tooltip>
+          ) : (
+            <span className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-gray-200 bg-white text-gray-300">
+              <Info className="h-4 w-4" />
+            </span>
           )}
         </div>
       </TableCell>
 
-      <TableCell className="py-4 px-3 text-center">
-        <span className="text-sm font-medium text-gray-900">
-          {formatNota(item.nota)}
-        </span>
-      </TableCell>
+      {showActionsColumn ? (
+        <TableCell className="py-4 px-3">
+          <div className="flex items-center justify-end gap-2">
+            {hasHistory && (
+              <ButtonCustom
+                variant="outline"
+                size="sm"
+                icon="History"
+                onClick={() => setIsHistoryOpen(true)}
+              >
+                Histórico
+              </ButtonCustom>
+            )}
+            {canRemove && (
+              <ButtonCustom
+                variant="outline"
+                size="sm"
+                icon="Trash2"
+                isLoading={isRemoving}
+                disabled={!onRemove || isRemoving}
+                className="border-red-200 text-red-700 hover:bg-red-50 hover:text-red-800 hover:border-red-200"
+                onClick={() => setIsConfirmRemoveOpen(true)}
+              >
+                Remover
+              </ButtonCustom>
+            )}
+          </div>
+        </TableCell>
+      ) : null}
 
-      <TableCell className="py-4 px-3">
-        <Badge
-          variant="outline"
-          className={cn("text-xs font-medium", situacao.className)}
-        >
-          {situacao.label}
-        </Badge>
-      </TableCell>
-
-      <TableCell className="py-4 px-3 text-center whitespace-nowrap">
-        <span className="text-sm text-gray-700">{formatDate(item.atualizadoEm)}</span>
-      </TableCell>
-
-      <TableCell className="py-4 px-3">
-        <div className="flex items-center justify-end gap-2">
-          {hasHistory && (
-            <ButtonCustom
-              variant="outline"
-              size="sm"
-              icon="History"
-              onClick={() => setIsHistoryOpen(true)}
+      <TableCell className="text-right w-16 py-4 px-3">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleNavigateAluno}
+              disabled={isNavigating}
+              className={cn(
+                "h-8 w-8 rounded-full cursor-pointer",
+                isNavigating
+                  ? "text-blue-600 bg-blue-100"
+                  : "text-gray-500 hover:text-white hover:bg-[var(--primary-color)]",
+                "disabled:opacity-50 disabled:cursor-wait"
+              )}
+              aria-label="Visualizar aluno"
             >
-              Histórico
-            </ButtonCustom>
-          )}
-          {canRemove && (
-            <ButtonCustom
-              variant="outline"
-              size="sm"
-              icon="Trash2"
-              isLoading={isRemoving}
-              disabled={!onRemove || isRemoving}
-              className="border-red-200 text-red-700 hover:bg-red-50 hover:text-red-800 hover:border-red-200"
-              onClick={async () => {
-                if (!onRemove) return;
-                try {
-                  await Promise.resolve(onRemove());
-                  toastCustom.success("Nota removida.");
-                } catch (err) {
-                  const msg =
-                    err instanceof Error ? err.message : "Não foi possível remover a nota.";
-                  toastCustom.error(msg);
-                }
-              }}
-            >
-              Remover
-            </ButtonCustom>
-          )}
-          {!hasHistory && !canRemove && (
-            <span className="text-sm text-gray-400">—</span>
-          )}
-        </div>
+              {isNavigating ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <ChevronRight className="h-4 w-4" />
+              )}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent sideOffset={8}>
+            {isNavigating ? "Carregando..." : "Visualizar aluno"}
+          </TooltipContent>
+        </Tooltip>
       </TableCell>
       </TableRow>
 
@@ -217,6 +338,48 @@ export function NotaRow({
         turmaNome={turmaNome}
         history={item.history ?? []}
       />
+
+      <ModalCustom
+        isOpen={isConfirmRemoveOpen}
+        onClose={() => setIsConfirmRemoveOpen(false)}
+        size="md"
+        backdrop="blur"
+      >
+        <ModalContentWrapper>
+          <ModalHeader>
+            <ModalTitle>Remover nota</ModalTitle>
+          </ModalHeader>
+          <ModalBody>
+            <p className="text-sm text-gray-700">
+              Tem certeza que deseja remover a nota manual de{" "}
+              <strong>{item.alunoNome}</strong>?
+            </p>
+            <p className="mt-2 text-xs text-gray-500">
+              Essa ação não pode ser desfeita.
+            </p>
+          </ModalBody>
+          <ModalFooter>
+            <div className="flex w-full justify-end gap-2">
+              <ButtonCustom
+                variant="outline"
+                onClick={() => setIsConfirmRemoveOpen(false)}
+                disabled={Boolean(isRemoving)}
+              >
+                Cancelar
+              </ButtonCustom>
+              <ButtonCustom
+                variant="danger"
+                icon="Trash2"
+                onClick={handleConfirmRemove}
+                isLoading={isRemoving}
+                disabled={!onRemove || isRemoving}
+              >
+                Confirmar remoção
+              </ButtonCustom>
+            </div>
+          </ModalFooter>
+        </ModalContentWrapper>
+      </ModalCustom>
     </>
   );
 }

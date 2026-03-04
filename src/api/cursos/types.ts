@@ -5,6 +5,7 @@ export interface Curso {
   codigo: string;
   descricao: string;
   descricaoHtml?: string;
+  conteudoProgramatico?: string | null;
   cargaHoraria: number;
   categoriaId: number | string;
   statusPadrao: "PUBLICADO" | "RASCUNHO";
@@ -35,6 +36,7 @@ export interface CursoMeta {
 export interface CreateCursoPayload {
   nome: string;
   descricao: string;
+  conteudoProgramatico?: string | null;
   cargaHoraria: number;
   categoriaId: number;
   statusPadrao?: "PUBLICADO" | "RASCUNHO";
@@ -448,15 +450,94 @@ export interface ProvaTokenResponse {
 }
 
 // Certificados
+export type CertificadoStatus = "EMITIDO" | "CANCELADO" | "REVOGADO";
+
+export interface CertificadoModeloResumo {
+  id: string;
+  nome: string;
+  ativo?: boolean;
+  versao?: number;
+  default?: boolean;
+}
+
+export interface CertificadoCursoResumo {
+  id: string;
+  nome: string;
+}
+
+export interface CertificadoTurmaResumo {
+  id: string;
+  nome: string;
+  codigo?: string;
+}
+
+export interface CertificadoAlunoResumo {
+  id: string;
+  nome?: string;
+  email?: string;
+  cpf?: string;
+  codigoMatricula?: string;
+  avatarUrl?: string;
+}
+
+export interface CertificadoEmitidoPorResumo {
+  id: string;
+  nome?: string;
+  email?: string;
+}
+
 export interface TurmaCertificado {
   id: string;
-  turmaId: string;
-  alunoId: string;
+  codigo?: string;
+  numero?: string;
+  status?: CertificadoStatus | string;
   emitidoEm: string;
+  turmaId?: string;
+  alunoId?: string;
+  cursoId?: string;
+  inscricaoId?: string;
+  tipo?: string;
+  formato?: string;
+  cargaHoraria?: number;
+  assinaturaUrl?: string | null;
+  observacoes?: string | null;
+  modelo?: CertificadoModeloResumo | null;
+  curso?: CertificadoCursoResumo | null;
+  turma?: CertificadoTurmaResumo | null;
+  aluno?: CertificadoAlunoResumo | null;
+  emitidoPor?: CertificadoEmitidoPorResumo | null;
+  conteudoProgramatico?: string | null;
+  conteudoProgramaticoAtualizadoEm?: string | null;
+  pdfUrl?: string | null;
+  previewUrl?: string | null;
+  templateId?: string;
+}
+
+export interface ListCertificadosGlobalParams {
+  search?: string;
+  cursoId?: string;
+  turmaId?: string;
+  status?: CertificadoStatus | string;
+  emitidoDe?: string;
+  emitidoA?: string;
+  page?: number;
+  pageSize?: number;
+  sortBy?: "alunoNome" | "emitidoEm" | "status" | "codigo";
+  sortDir?: "asc" | "desc";
+}
+
+export interface ListCertificadosResponse {
+  items: TurmaCertificado[];
+  pagination?: Pagination;
 }
 
 export interface CreateCertificadoPayload {
   alunoId: string;
+  cursoId?: string;
+  turmaId?: string;
+  modeloId?: string;
+  forcarReemissao?: boolean;
+  conteudoProgramatico?: string | null;
 }
 
 // Alunos
@@ -791,22 +872,72 @@ export interface CreateEstagioPayload {
 // FREQUÊNCIA (API Real)
 // ===================================
 
-export type FrequenciaStatus = "PRESENTE" | "AUSENTE" | "JUSTIFICADO" | "ATRASADO";
+export type FrequenciaStatus =
+  | "PRESENTE"
+  | "AUSENTE"
+  | "JUSTIFICADO"
+  | "ATRASADO"
+  | "PENDENTE";
+export type FrequenciaOrigemTipo = "AULA" | "PROVA" | "ATIVIDADE";
+export type FrequenciaModoLancamento = "MANUAL" | "AUTOMATICO";
+
+export interface FrequenciaAcao {
+  podeMarcarPresente?: boolean;
+  podeMarcarAusente?: boolean;
+  podeEditar?: boolean;
+  podeVerHistorico?: boolean;
+  bloqueado?: boolean;
+  motivoBloqueio?: string | null;
+}
 
 export interface Frequencia {
-  id: string;
+  id: string | null;
+  syntheticId?: string | null;
+  isPersisted?: boolean;
   cursoId: string;
   turmaId: string;
-  aulaId: string;
+  aulaId?: string | null;
+  alunoId?: string | null;
+  alunoNome?: string | null;
+  tipoOrigem?: FrequenciaOrigemTipo;
+  origemId?: string | null;
+  origemTitulo?: string | null;
   inscricaoId: string;
   status: FrequenciaStatus;
-  justificativa?: string | null;
-  observacoes?: string | null;
-  dataReferencia: string;
-  criadoEm: string;
-  aluno?: {
+  modoLancamento?: FrequenciaModoLancamento;
+  minutosPresenca?: number | null;
+  minimoMinutosParaPresenca?: number | null;
+  evidencia?: {
+    acessou?: boolean;
+    primeiroAcessoEm?: string | null;
+    ultimoAcessoEm?: string | null;
+    minutosEngajados?: number | null;
+    respondeu?: boolean;
+    statusSugerido?: FrequenciaStatus;
+  } | null;
+  lancadoPor?: {
     id: string;
     nome: string;
+  } | null;
+  lancadoEm?: string | null;
+  justificativa?: string | null;
+  observacoes?: string | null;
+  dataReferencia?: string;
+  criadoEm: string;
+  atualizadoEm?: string;
+  naturalKey?: {
+    inscricaoId: string;
+    tipoOrigem: FrequenciaOrigemTipo;
+    origemId: string;
+  };
+  acaoFrequencia?: FrequenciaAcao;
+  aluno?: {
+    id?: string;
+    nome?: string;
+    nomeCompleto?: string;
+    codigo?: string | null;
+    cpf?: string | null;
+    avatarUrl?: string | null;
   };
 }
 
@@ -837,13 +968,31 @@ export interface FrequenciaResumoResponse {
 }
 
 export interface ListFrequenciasParams {
+  cursoId?: string;
+  turmaIds?: string;
   aulaId?: string;
+  tipoOrigem?: FrequenciaOrigemTipo;
+  origemId?: string;
   inscricaoId?: string;
+  search?: string;
   status?: FrequenciaStatus;
   dataInicio?: string;
   dataFim?: string;
+  orderBy?: "atualizadoEm" | "status" | "tipoOrigem";
+  order?: "asc" | "desc";
   page?: number;
   pageSize?: number;
+}
+
+export interface ListFrequenciasResponse {
+  success?: boolean;
+  data:
+    | Frequencia[]
+    | {
+        items: Frequencia[];
+        pagination?: Pagination;
+      };
+  pagination?: Pagination;
 }
 
 export interface ListFrequenciaResumoParams {
@@ -856,16 +1005,98 @@ export interface ListFrequenciaResumoParams {
 
 export interface CreateFrequenciaPayload {
   inscricaoId: string;
-  aulaId: string;
+  aulaId?: string;
+  tipoOrigem?: FrequenciaOrigemTipo;
+  origemId?: string;
+  status: FrequenciaStatus;
+  modoLancamento?: FrequenciaModoLancamento;
+  minutosPresenca?: number;
+  minimoMinutosParaPresenca?: number;
+  justificativa?: string | null;
+  observacoes?: string | null;
+  dataReferencia?: string;
+}
+
+export interface UpsertFrequenciaLancamentoPayload {
+  inscricaoId: string;
+  tipoOrigem: FrequenciaOrigemTipo;
+  origemId: string;
   status: FrequenciaStatus;
   justificativa?: string | null;
   observacoes?: string | null;
-  dataReferencia: string;
+  modoLancamento?: FrequenciaModoLancamento;
+}
+
+export interface UpsertFrequenciaLancamentoByAlunoPayload
+  extends UpsertFrequenciaLancamentoPayload {
+  cursoId: string;
+  turmaId: string;
 }
 
 export interface UpdateFrequenciaPayload {
   status: FrequenciaStatus;
+  tipoOrigem?: FrequenciaOrigemTipo;
+  origemId?: string;
+  modoLancamento?: FrequenciaModoLancamento;
+  minutosPresenca?: number;
+  minimoMinutosParaPresenca?: number;
   justificativa?: string | null;
+  observacoes?: string | null;
+}
+
+export interface FrequenciaHistoryActor {
+  id?: string | null;
+  nome?: string | null;
+  role?: string | null;
+  roleLabel?: string | null;
+}
+
+export interface FrequenciaHistoryEntry {
+  id: string;
+  fromStatus?: FrequenciaStatus | null;
+  toStatus: FrequenciaStatus;
+  motivo?: string | null;
+  fromMotivo?: string | null;
+  toMotivo?: string | null;
+  changedAt: string;
+  actor?: FrequenciaHistoryActor | null;
+  actorId?: string | null;
+  actorName?: string | null;
+  actorRole?: string | null;
+  overrideReason?: string | null;
+  // Contrato de auditoria (estágios) - compatível com legado
+  frequenciaId?: string | null;
+  evento?: string | null;
+  deStatus?: FrequenciaStatus | null;
+  paraStatus?: FrequenciaStatus | null;
+  deMotivo?: string | null;
+  paraMotivo?: string | null;
+  dataReferencia?: string | null;
+  createdAt?: string | null;
+  ator?: {
+    usuarioId?: string | null;
+    nome?: string | null;
+    email?: string | null;
+    perfil?: string | null;
+    perfilLabel?: string | null;
+  } | null;
+  seguranca?: {
+    ip?: string | null;
+    userAgent?: string | null;
+    origem?: string | null;
+  } | null;
+}
+
+export interface ListFrequenciaHistoricoByNaturalKeyParams {
+  inscricaoId: string;
+  tipoOrigem: FrequenciaOrigemTipo;
+  origemId: string;
+}
+
+export interface ListFrequenciaHistoricoByAlunoNaturalKeyParams
+  extends ListFrequenciaHistoricoByNaturalKeyParams {
+  cursoId: string;
+  turmaId: string;
 }
 
 // ===================================
@@ -886,6 +1117,14 @@ export interface NotaHistoryEvent {
   action: NotaHistoryAction;
   at: string;
   nota: number;
+  origem?: NotaOrigem | string | null;
+  motivo?: string | null;
+  alteradoPor?: {
+    id?: string;
+    nome?: string;
+    role?: string;
+    roleLabel?: string;
+  } | null;
 }
 
 export interface NotaLancamento {
@@ -903,7 +1142,8 @@ export interface NotaLancamento {
 }
 
 export interface ListNotasParams {
-  turmaIds: string; // CSV de IDs
+  turmaIds?: string; // CSV de IDs
+  cursoId?: string;
   search?: string;
   page?: number;
   pageSize?: number;
@@ -917,9 +1157,13 @@ export interface ListNotasResponse {
     items: NotaLancamento[];
     pagination: {
       page: number;
+      requestedPage?: number;
       pageSize: number;
       total: number;
       totalPages: number;
+      hasNext?: boolean;
+      hasPrevious?: boolean;
+      isPageAdjusted?: boolean;
     };
   };
 }
@@ -1123,63 +1367,324 @@ export interface CloneAvaliacaoPayload {
 }
 
 // ===================================
-// ESTÁGIOS (Atualizado com listagem global)
+// ESTÁGIOS (Visão geral, detalhe e frequência)
 // ===================================
 
 export type EstagioStatus =
+  | "PLANEJADO"
+  | "EM_ANDAMENTO"
+  | "ENCERRADO"
+  | "CANCELADO"
+  | "PENDENTE"
+  | "CONCLUIDO"
+  | "APROVADO"
+  | "REPROVADO";
+
+export type EstagioModoAlocacao = "TODOS" | "ESPECIFICOS";
+export type EstagioPeriodicidade = "DIAS_SEMANA" | "INTERVALO";
+export type EstagioTurno = "MANHA" | "TARDE" | "NOITE" | "PERSONALIZADO";
+export type EstagioTipoParticipacao = "INICIAL" | "RECICLAGEM";
+export type EstagioEmpresaVinculoModo = "CADASTRADA" | "MANUAL";
+export type EstagioAlunoStatus =
   | "PENDENTE"
   | "EM_ANDAMENTO"
   | "CONCLUIDO"
-  | "APROVADO"
   | "REPROVADO"
   | "CANCELADO";
+export type EstagioFrequenciaStatus = "PRESENTE" | "AUSENTE" | "PENDENTE";
+
+export interface EstagioPeriodo {
+  periodicidade: EstagioPeriodicidade;
+  diasSemana?: Array<"SEG" | "TER" | "QUA" | "QUI" | "SEX" | "SAB">;
+  dataInicio: string;
+  dataFim: string;
+  incluirSabados?: boolean;
+}
+
+export interface EstagioHorario {
+  horaInicio: string;
+  horaFim: string;
+}
+
+export interface EstagioEmpresaEndereco {
+  rua: string;
+  cep: string;
+  cidade: string;
+  estado: string;
+  numero: string;
+  complemento: string;
+}
+
+export interface EstagioEmpresa {
+  vinculoModo: EstagioEmpresaVinculoModo;
+  empresaId?: string | null;
+  nome?: string | null;
+  cnpj?: string | null;
+  telefone?: string | null;
+  email?: string | null;
+  endereco: EstagioEmpresaEndereco;
+}
+
+export interface EstagioGrupo {
+  id: string;
+  estagioId: string;
+  nome: string;
+  turno?: EstagioTurno | null;
+  capacidade?: number | null;
+  horaInicio?: string | null;
+  horaFim?: string | null;
+  alunosVinculados?: number | null;
+  empresaId?: string | null;
+  empresaNome?: string | null;
+  supervisorNome?: string | null;
+  contatoSupervisor?: string | null;
+}
+
+export interface EstagioAluno {
+  id: string;
+  estagioId: string;
+  grupoId?: string | null;
+  inscricaoId: string;
+  alunoId: string;
+  alunoNome?: string | null;
+  alunoEmail?: string | null;
+  alunoCpf?: string | null;
+  avatarUrl?: string | null;
+  codigoInscricao?: string | null;
+  tipoParticipacao?: EstagioTipoParticipacao;
+  status?: EstagioAlunoStatus;
+  validadeAte?: string | null;
+  percentualFrequencia?: number | null;
+  diasObrigatorios?: number | null;
+  diasPresentes?: number | null;
+  diasAusentes?: number | null;
+}
+
+export interface EstagioResumo {
+  totalAlunosVinculados?: number;
+  concluidos?: number;
+  pendentes?: number;
+  mediaFrequencia?: number;
+  totalLancamentosFrequencia?: number;
+}
 
 export interface Estagio {
   id: string;
+  titulo?: string;
+  descricao?: string | null;
   cursoId: string;
+  cursoNome?: string | null;
   turmaId: string;
-  inscricaoId: string;
-  alunoId: string;
-  empresaNome: string;
-  empresaTelefone?: string;
-  cep: string;
-  rua: string;
-  numero: string;
-  dataInicioPrevista: string;
-  dataFimPrevista: string;
-  horarioInicio: string;
-  horarioFim: string;
+  turmaNome?: string | null;
+  turmaCodigo?: string | null;
+  obrigatorio?: boolean;
+  modoAlocacao?: EstagioModoAlocacao;
+  usarGrupos?: boolean;
   status: EstagioStatus;
+  periodo?: EstagioPeriodo;
+  diasObrigatorios?: number | null;
+  cargaHorariaMinutos?: number | null;
+  horarioPadrao?: EstagioHorario | null;
+  empresa?: EstagioEmpresa | null;
+  totalAlunosVinculados?: number;
+  atualizadoEm?: string;
+  criadoEm?: string;
+  grupos?: EstagioGrupo[];
+  alunos?: EstagioAluno[];
+  calendarioObrigatorio?: string[];
+  resumo?: EstagioResumo;
+  // Campos legados (mantidos para retrocompatibilidade)
+  inscricaoId?: string;
+  alunoId?: string;
+  empresaNome?: string;
+  empresaTelefone?: string;
+  cep?: string;
+  rua?: string;
+  numero?: string;
+  dataInicioPrevista?: string;
+  dataFimPrevista?: string;
+  horarioInicio?: string;
+  horarioFim?: string;
   compareceu?: boolean | null;
   aprovado?: boolean | null;
   observacoes?: string | null;
-  criadoEm: string;
-  atualizadoEm?: string;
   aluno?: {
-    id: string;
-    nomeCompleto: string;
-    email: string;
+    id?: string;
+    nomeCompleto?: string;
+    email?: string;
   };
 }
 
 export interface ListEstagiosParams {
   cursoId?: string;
   turmaId?: string;
+  turmaIds?: string;
+  empresaId?: string;
   status?: EstagioStatus;
+  obrigatorio?: boolean;
+  periodo?: string;
   search?: string;
+  orderBy?: "atualizadoEm" | "titulo" | "status";
+  order?: "asc" | "desc";
   page?: number;
   pageSize?: number;
 }
 
 export interface ListEstagiosResponse {
   success: boolean;
-  data: Estagio[];
-  pagination?: {
-    page: number;
-    pageSize: number;
-    total: number;
-    totalPages: number;
-  };
+  data:
+    | Estagio[]
+    | {
+        items: Estagio[];
+        pagination?: Pagination;
+      };
+  pagination?: Pagination;
+}
+
+export interface CreateEstagioGroupPayload {
+  nome: string;
+  turno?: EstagioTurno;
+  capacidade?: number;
+  horaInicio?: string;
+  horaFim?: string;
+}
+
+export interface CreateEstagioEmpresaPayload {
+  vinculoModo: EstagioEmpresaVinculoModo;
+  empresaId?: string;
+  nome?: string;
+  cnpj?: string;
+  telefone?: string;
+  email?: string;
+  endereco: EstagioEmpresaEndereco;
+}
+
+export interface CreateEstagioGlobalPayload {
+  titulo: string;
+  descricao?: string;
+  cursoId: string;
+  turmaId: string;
+  obrigatorio?: boolean;
+  modoAlocacao: EstagioModoAlocacao;
+  usarGrupos?: boolean;
+  periodo: EstagioPeriodo;
+  horarioPadrao?: EstagioHorario;
+  cargaHorariaMinutos?: number;
+  empresa?: CreateEstagioEmpresaPayload;
+  grupos?: CreateEstagioGroupPayload[];
+}
+
+export interface UpdateEstagioGlobalPayload
+  extends Partial<CreateEstagioGlobalPayload> {
+  status?: EstagioStatus;
+}
+
+export interface VincularAlunosEstagioPayload {
+  modo: EstagioModoAlocacao;
+  inscricaoIds?: string[];
+  grupoIdDefault?: string | null;
+  tipoParticipacao?: EstagioTipoParticipacao;
+}
+
+export interface AlocarAlunoEstagioGrupoPayload {
+  grupoId: string | null;
+}
+
+export interface ListEstagioFrequenciasParams {
+  data?: string;
+  status?: EstagioFrequenciaStatus;
+  grupoId?: string;
+  search?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface ListEstagioFrequenciasPeriodoParams {
+  dataInicio?: string;
+  dataFim?: string;
+  status?: EstagioFrequenciaStatus;
+  grupoId?: string;
+  search?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface EstagioFrequencia {
+  id: string | null;
+  estagioId: string;
+  estagioAlunoId: string;
+  alunoId: string;
+  alunoNome: string;
+  alunoCpf?: string | null;
+  alunoCodigo?: string | null;
+  codigoMatricula?: string | null;
+  avatarUrl?: string | null;
+  inscricaoId?: string;
+  codigoInscricao?: string | null;
+  grupoId?: string | null;
+  grupoNome?: string | null;
+  dataReferencia: string;
+  status: EstagioFrequenciaStatus;
+  motivo?: string | null;
+  atualizadoEm?: string | null;
+  criadoEm?: string | null;
+}
+
+export interface EstagioFrequenciasPeriodoGroup {
+  data: string;
+  items: EstagioFrequencia[];
+}
+
+export interface EstagioFrequenciasPeriodoMeta {
+  dataInicio?: string | null;
+  dataFim?: string | null;
+  totalDatas?: number | null;
+}
+
+export interface EstagioFrequenciasPeriodoResponse {
+  gruposPorData: EstagioFrequenciasPeriodoGroup[];
+  pagination?: Pagination;
+  periodo?: EstagioFrequenciasPeriodoMeta;
+}
+
+export interface ListEstagioFrequenciaHistoricoParams {
+  page?: number;
+  pageSize?: number;
+}
+
+export interface EstagioFrequenciaHistoryActor {
+  usuarioId?: string | null;
+  nome?: string | null;
+  email?: string | null;
+  perfil?: string | null;
+  perfilLabel?: string | null;
+}
+
+export interface EstagioFrequenciaHistorySeguranca {
+  ip?: string | null;
+  userAgent?: string | null;
+  origem?: string | null;
+}
+
+export interface EstagioFrequenciaHistoricoResponse {
+  items: FrequenciaHistoryEntry[];
+  pagination?: Pagination;
+}
+
+export interface UpsertEstagioFrequenciaPayload {
+  estagioAlunoId: string;
+  dataReferencia: string;
+  status: Exclude<EstagioFrequenciaStatus, "PENDENTE">;
+  motivo?: string;
+}
+
+export interface ConcluirEstagioAlunoResponse {
+  id: string;
+  status: EstagioAlunoStatus;
+  conclusaoEm: string;
+  validadeAte: string;
+  percentualFrequencia: number;
+  elegivelCertificado: boolean;
 }
 
 export interface UpdateEstagioStatusPayload {

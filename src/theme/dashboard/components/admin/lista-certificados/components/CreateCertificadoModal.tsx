@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   ModalBody,
   ModalContentWrapper,
@@ -11,11 +12,13 @@ import {
 } from "@/components/ui/custom/modal";
 import {
   ButtonCustom,
+  RichTextarea,
   SelectCustom,
   toastCustom,
 } from "@/components/ui/custom";
 import type { SelectOption } from "@/components/ui/custom/select/types";
-import { createCertificado } from "@/api/cursos";
+import { createCertificadoGlobal, getCursoById } from "@/api/cursos";
+import type { TurmaCertificado } from "@/api/cursos";
 import { useCursosForSelect } from "../../lista-turmas/hooks/useCursosForSelect";
 import { useTurmaOptions } from "../../lista-alunos/hooks/useTurmaOptions";
 import { useAlunosForTurmaSelect } from "../hooks/useAlunosForTurmaSelect";
@@ -25,13 +28,17 @@ interface CreateCertificadoModalProps {
   onClose: () => void;
   defaultCursoId?: string | null;
   defaultTurmaId?: string | null;
-  onSuccess?: () => void;
+  onSuccess?: (
+    certificado: TurmaCertificado,
+    context: { cursoId: string; turmaId: string }
+  ) => void;
 }
 
 interface FormErrors {
   cursoId?: string;
   turmaId?: string;
   alunoId?: string;
+  conteudoProgramatico?: string;
 }
 
 export function CreateCertificadoModal({
@@ -46,16 +53,33 @@ export function CreateCertificadoModal({
   const [alunoId, setAlunoId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
+  const [conteudoProgramatico, setConteudoProgramatico] = useState("");
+  const [conteudoProgramaticoHtml, setConteudoProgramaticoHtml] =
+    useState<string>("");
+  const [conteudoProgramaticoTouched, setConteudoProgramaticoTouched] =
+    useState(false);
 
   const cursosQuery = useCursosForSelect();
   const turmasQuery = useTurmaOptions(cursoId);
   const alunosQuery = useAlunosForTurmaSelect({ cursoId, turmaId });
+  const cursoDetailQuery = useQuery({
+    queryKey: ["curso-detail", cursoId],
+    queryFn: async () => {
+      if (!cursoId) return null;
+      return getCursoById(cursoId);
+    },
+    enabled: Boolean(cursoId),
+    staleTime: 5 * 60 * 1000,
+  });
 
   useEffect(() => {
     if (!isOpen) return;
     setCursoId(defaultCursoId);
     setTurmaId(defaultTurmaId);
     setAlunoId(null);
+    setConteudoProgramatico("");
+    setConteudoProgramaticoHtml("");
+    setConteudoProgramaticoTouched(false);
     setErrors({});
   }, [defaultCursoId, defaultTurmaId, isOpen]);
 
@@ -69,6 +93,19 @@ export function CreateCertificadoModal({
   useEffect(() => {
     if (!turmaId) setAlunoId(null);
   }, [turmaId]);
+
+  useEffect(() => {
+    if (!cursoId || conteudoProgramaticoTouched) return;
+    const cursoConteudo = cursoDetailQuery.data?.conteudoProgramatico;
+    if (typeof cursoConteudo === "string") {
+      setConteudoProgramatico(cursoConteudo);
+      setConteudoProgramaticoHtml(cursoConteudo);
+    }
+  }, [
+    conteudoProgramaticoTouched,
+    cursoDetailQuery.data?.conteudoProgramatico,
+    cursoId,
+  ]);
 
   const cursosOptions = useMemo(
     () => cursosQuery.cursos ?? [],
@@ -89,6 +126,12 @@ export function CreateCertificadoModal({
     if (!cursoId) next.cursoId = "Selecione um curso";
     if (!turmaId) next.turmaId = "Selecione uma turma";
     if (!alunoId) next.alunoId = "Selecione um aluno";
+    const conteudoFinal =
+      conteudoProgramaticoHtml?.trim() || conteudoProgramatico.trim();
+    if (conteudoFinal.length > 12000) {
+      next.conteudoProgramatico =
+        "Conteúdo programático deve ter no máximo 12000 caracteres";
+    }
 
     setErrors(next);
     return Object.keys(next).length === 0;
@@ -106,15 +149,22 @@ export function CreateCertificadoModal({
 
     setIsSaving(true);
     try {
-      await createCertificado(cursoId, turmaId, { alunoId });
+      const certificado = await createCertificadoGlobal({
+        cursoId,
+        turmaId,
+        alunoId,
+        modeloId: "advance-plus-v1",
+        conteudoProgramatico:
+          conteudoProgramaticoHtml?.trim() || conteudoProgramatico.trim() || "",
+      });
 
       toastCustom.success({
         title: "Certificado cadastrado",
         description: "O certificado foi emitido para o aluno selecionado.",
       });
 
-      onSuccess?.();
-      onClose();
+      onSuccess?.(certificado, { cursoId, turmaId });
+      handleClose();
     } catch (error: any) {
       const message =
         error?.message ||
@@ -136,7 +186,7 @@ export function CreateCertificadoModal({
       }}
       backdrop="blur"
     >
-      <ModalContentWrapper className="max-w-xl">
+      <ModalContentWrapper className="max-w-3xl">
         <ModalHeader>
           <ModalTitle>Cadastrar certificado</ModalTitle>
         </ModalHeader>
@@ -205,6 +255,31 @@ export function CreateCertificadoModal({
                 error={errors.alunoId}
                 fullWidth
                 required
+              />
+
+              <RichTextarea
+                label="Conteúdo programático"
+                placeholder={
+                  "Opcional. Você pode usar títulos, negrito, itálico, listas e links."
+                }
+                value={conteudoProgramatico}
+                onChange={(e) => {
+                  setConteudoProgramaticoTouched(true);
+                  setConteudoProgramatico(
+                    (e.target as HTMLTextAreaElement).value
+                  );
+                  setErrors((prev) => ({
+                    ...prev,
+                    conteudoProgramatico: undefined,
+                  }));
+                }}
+                onHtmlChange={(html) => {
+                  setConteudoProgramaticoTouched(true);
+                  setConteudoProgramaticoHtml(html);
+                }}
+                maxLength={12000}
+                showCharCount
+                error={errors.conteudoProgramatico}
               />
             </div>
           </div>

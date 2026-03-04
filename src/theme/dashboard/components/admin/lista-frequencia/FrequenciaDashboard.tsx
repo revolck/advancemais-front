@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useQueries } from "@tanstack/react-query";
 import {
   ButtonCustom,
   EmptyState,
   FilterBar,
-  SelectCustom,
 } from "@/components/ui/custom";
 import {
   Table,
@@ -18,6 +18,7 @@ import {
 import { cn } from "@/lib/utils";
 import type { FilterField } from "@/components/ui/custom/filters";
 import type { SelectOption } from "@/components/ui/custom/select/types";
+import { listTurmas, type FrequenciaOrigemTipo } from "@/api/cursos";
 import {
   DEFAULT_SEARCH_MIN_LENGTH,
   getNormalizedSearchOrUndefined,
@@ -26,6 +27,7 @@ import {
 import { useCursosForSelect } from "./hooks/useCursosForSelect";
 import { useTurmasForSelect } from "./hooks/useTurmasForSelect";
 import { useAulasForSelect } from "./hooks/useAulasForSelect";
+import { useAvaliacoesForSelect } from "./hooks/useAvaliacoesForSelect";
 import { useFrequenciaDashboardQuery } from "./hooks/useFrequenciaDashboardQuery";
 import {
   useFrequenciaResumoQuery,
@@ -48,8 +50,6 @@ import {
 import { AlunoCell } from "./components/AlunoCell";
 
 const SEARCH_HELPER_TEXT = "Pesquise pelo nome, CPF ou código do aluno.";
-
-type FrequenciaViewMode = "AULA" | "RESUMO";
 
 const PERIODO_OPTIONS: SelectOption[] = [
   { value: "TOTAL", label: "Todo o período" },
@@ -83,8 +83,11 @@ export function FrequenciaDashboard({ className }: { className?: string }) {
   const [appliedSearchTerm, setAppliedSearchTerm] = useState("");
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
   const [selectedTurmaId, setSelectedTurmaId] = useState<string | null>(null);
-  const [selectedAulaId, setSelectedAulaId] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<FrequenciaViewMode>("AULA");
+  const [selectedOrigemTipo, setSelectedOrigemTipo] = useState<
+    FrequenciaOrigemTipo | null
+  >(null);
+  const [selectedOrigemId, setSelectedOrigemId] = useState<string | null>(null);
+  const viewMode = "AULA";
   const [periodo, setPeriodo] = useState<FrequenciaResumoPeriodo>("TOTAL");
   const [resumoDia, setResumoDia] = useState<Date | null>(new Date());
   const [resumoMes, setResumoMes] = useState<number>(new Date().getMonth());
@@ -149,11 +152,23 @@ export function FrequenciaDashboard({ className }: { className?: string }) {
   const { turmas, isLoading: loadingTurmas } =
     useTurmasForSelect(selectedCourseId);
   const aulasQuery = useAulasForSelect({ turmaId: selectedTurmaId });
+  const provasQuery = useAvaliacoesForSelect({
+    cursoId: selectedCourseId,
+    turmaId: selectedTurmaId,
+    tipo: "PROVA",
+  });
+  const atividadesQuery = useAvaliacoesForSelect({
+    cursoId: selectedCourseId,
+    turmaId: selectedTurmaId,
+    tipo: "ATIVIDADE",
+  });
 
   const selectedAula = useMemo(
     () =>
-      selectedAulaId ? aulasQuery.itemById.get(selectedAulaId) ?? null : null,
-    [aulasQuery.itemById, selectedAulaId]
+      selectedOrigemTipo === "AULA" && selectedOrigemId
+        ? aulasQuery.itemById.get(selectedOrigemId) ?? null
+        : null,
+    [aulasQuery.itemById, selectedOrigemId, selectedOrigemTipo]
   );
 
   const searchValidationMessage = useMemo(
@@ -187,6 +202,8 @@ export function FrequenciaDashboard({ className }: { className?: string }) {
   const frequenciaQuery = useFrequenciaDashboardQuery({
     cursoId: selectedCourseId,
     turmaId: selectedTurmaId,
+    origemTipo: selectedOrigemTipo,
+    origemId: selectedOrigemId,
     aula: viewMode === "AULA" ? selectedAula : null,
     search: normalizedSearch,
     sortBy: aulaSortBy,
@@ -222,9 +239,79 @@ export function FrequenciaDashboard({ className }: { className?: string }) {
   const updateFrequencia = useUpdateFrequenciaMutation();
 
   const isAulaView = viewMode === "AULA";
+  const origemTipoOptions = useMemo<SelectOption[]>(
+    () => [
+      { value: "AULA", label: "Aula" },
+      { value: "PROVA", label: "Prova" },
+      { value: "ATIVIDADE", label: "Atividade" },
+    ],
+    []
+  );
+  const origemOptions = useMemo<SelectOption[]>(() => {
+    if (selectedOrigemTipo === "PROVA") return provasQuery.options;
+    if (selectedOrigemTipo === "ATIVIDADE") return atividadesQuery.options;
+    if (!selectedOrigemTipo) return [];
+    return aulasQuery.options;
+  }, [
+    atividadesQuery.options,
+    aulasQuery.options,
+    provasQuery.options,
+    selectedOrigemTipo,
+  ]);
   const aulaItems = useMemo(
     () => frequenciaQuery.data?.items ?? [],
     [frequenciaQuery.data]
+  );
+  const cursoIdsFromRows = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          aulaItems
+            .map((item) => item.cursoId)
+            .filter((cursoId): cursoId is string => Boolean(cursoId))
+        )
+      ),
+    [aulaItems]
+  );
+  const turmasByCursoQueries = useQueries({
+    queries: cursoIdsFromRows.map((cursoId) => ({
+      queryKey: ["turmas", "for-select", "frequencia-rows", cursoId],
+      queryFn: () => listTurmas(cursoId, { page: 1, pageSize: 200 }),
+      staleTime: 30 * 1000,
+      gcTime: 5 * 60 * 1000,
+    })),
+  });
+  const cursoLabelById = useMemo(
+    () => new Map(cursos.map((curso) => [String(curso.value), curso.label])),
+    [cursos]
+  );
+  const turmaLabelById = useMemo(
+    () => {
+      const map = new Map<string, string>(
+        turmas.map((turma) => [String(turma.value), turma.label])
+      );
+
+      // Fallback para listagem global: resolve nome da turma via cursoId/turmaId
+      // quando a API ainda não retorna turmaNome no item de frequência.
+      turmasByCursoQueries.forEach((query) => {
+        if (!Array.isArray(query.data)) return;
+        query.data.forEach((turma) => {
+          const turmaId = String((turma as any)?.id ?? "");
+          const turmaNome = (turma as any)?.nome;
+          if (!turmaId || !turmaNome || map.has(turmaId)) return;
+          map.set(turmaId, turmaNome);
+        });
+      });
+
+      aulaItems.forEach((item) => {
+        if (item.turmaId && item.turmaNome && !map.has(item.turmaId)) {
+          map.set(item.turmaId, item.turmaNome);
+        }
+      });
+
+      return map;
+    },
+    [aulaItems, turmas, turmasByCursoQueries]
   );
   const resumoItems = useMemo(
     () => resumoQuery.data?.items ?? [],
@@ -254,19 +341,49 @@ export function FrequenciaDashboard({ className }: { className?: string }) {
   const paginationToUse = isAulaView
     ? pagination
     : resumoQuery.data?.pagination;
-  const totalItems = paginationToUse?.total ?? 0;
-  const totalPages = paginationToUse?.totalPages ?? 1;
+  const totalItems =
+    paginationToUse?.total ??
+    (isAulaView ? aulaItems.length : resumoItems.length);
+  const totalPages =
+    paginationToUse?.totalPages ??
+    Math.max(1, Math.ceil(totalItems / pageSize));
+
+  const visiblePages = useMemo(() => {
+    const pages: number[] = [];
+    if (totalPages <= 5) {
+      for (let i = 1; i <= totalPages; i += 1) pages.push(i);
+      return pages;
+    }
+
+    const start = Math.max(1, currentPage - 2);
+    const end = Math.min(totalPages, start + 4);
+    for (let i = start; i <= end; i += 1) pages.push(i);
+    return pages;
+  }, [currentPage, totalPages]);
+
+  const handlePageChange = useCallback(
+    (page: number) => {
+      const nextPage = Math.max(1, Math.min(page, totalPages));
+      if (nextPage !== currentPage) {
+        setCurrentPage(nextPage);
+      }
+    },
+    [currentPage, totalPages]
+  );
+
+  useEffect(() => {
+    if (totalPages > 0 && currentPage > totalPages) {
+      setCurrentPage(Math.max(1, totalPages));
+    }
+  }, [currentPage, totalPages]);
 
   const isFiltersReady = isAulaView
-    ? Boolean(selectedCourseId && selectedTurmaId && selectedAulaId)
+    ? true
     : Boolean(selectedCourseId && selectedTurmaId);
-  const shouldShowSkeleton =
-    isFiltersReady &&
-    (isAulaView
-      ? frequenciaQuery.isFetching || frequenciaQuery.isLoading
-      : resumoQuery.isFetching ||
-        resumoQuery.isLoading ||
-        aulasQuery.isLoading);
+  const shouldShowSkeleton = isAulaView
+    ? frequenciaQuery.isFetching || frequenciaQuery.isLoading
+    : isFiltersReady &&
+      (resumoQuery.isFetching || resumoQuery.isLoading || aulasQuery.isLoading);
 
   const filterFields: FilterField[] = useMemo(
     () => [
@@ -379,35 +496,62 @@ export function FrequenciaDashboard({ className }: { className?: string }) {
       ...(isAulaView
         ? ([
             {
-              key: "aulaId",
-              label: "Aula",
+              key: "origemTipo",
+              label: "Tipo de origem",
               mode: "single" as const,
-              options: aulasQuery.options,
-              placeholder: !selectedTurmaId
-                ? "Selecione uma turma"
-                : aulasQuery.isLoading
-                ? "Carregando..."
-                : "Selecionar",
-              disabled: !selectedTurmaId || aulasQuery.isLoading,
-              emptyPlaceholder: selectedTurmaId
-                ? "Sem aulas disponíveis"
-                : "Selecione uma turma primeiro",
+              options: origemTipoOptions,
+              placeholder: "Selecionar",
+              disabled: !selectedTurmaId,
             } satisfies FilterField,
+            ...(selectedOrigemTipo
+              ? ([
+                  {
+                    key: "origemId",
+                    label:
+                      selectedOrigemTipo === "PROVA"
+                        ? "Prova"
+                        : selectedOrigemTipo === "ATIVIDADE"
+                          ? "Atividade"
+                          : "Aula",
+                    mode: "single" as const,
+                    options: origemOptions,
+                    placeholder: !selectedTurmaId
+                      ? "Selecione uma turma"
+                      : aulasQuery.isLoading ||
+                          provasQuery.isLoading ||
+                          atividadesQuery.isLoading
+                        ? "Carregando..."
+                        : "Selecionar",
+                    disabled:
+                      !selectedTurmaId ||
+                      aulasQuery.isLoading ||
+                      provasQuery.isLoading ||
+                      atividadesQuery.isLoading,
+                    emptyPlaceholder: selectedTurmaId
+                      ? "Sem opções disponíveis"
+                      : "Selecione uma turma primeiro",
+                  } satisfies FilterField,
+                ] as const)
+              : []),
           ] as const)
         : []),
     ],
     [
       aulasQuery.isLoading,
-      aulasQuery.options,
+      atividadesQuery.isLoading,
       cursos,
       isAulaView,
       loadingCursos,
       loadingTurmas,
       now,
+      origemOptions,
+      origemTipoOptions,
       periodo,
+      provasQuery.isLoading,
       resumoAno,
       resumoMes,
       selectedCourseId,
+      selectedOrigemTipo,
       selectedTurmaId,
       turmas,
     ]
@@ -418,7 +562,7 @@ export function FrequenciaDashboard({ className }: { className?: string }) {
       cursoId: selectedCourseId,
       turmaId: selectedTurmaId,
       ...(isAulaView
-        ? { aulaId: selectedAulaId }
+        ? { origemTipo: selectedOrigemTipo, origemId: selectedOrigemId }
         : {
             periodo,
             ...(periodo === "DIA" ? { dia: resumoDia } : {}),
@@ -435,16 +579,17 @@ export function FrequenciaDashboard({ className }: { className?: string }) {
       resumoDia,
       resumoMes,
       resumoSemana,
-      selectedAulaId,
       selectedCourseId,
+      selectedOrigemId,
+      selectedOrigemTipo,
       selectedTurmaId,
     ]
   );
 
   const showEmptyState =
     !shouldShowSkeleton &&
-    (!isFiltersReady ||
-      (isAulaView ? aulaItems.length === 0 : resumoItems.length === 0));
+    ((isAulaView && aulaItems.length === 0) ||
+      (!isAulaView && (!isFiltersReady || resumoItems.length === 0)));
 
   const resumoGridClassName = useMemo(() => {
     if (isAulaView) return undefined;
@@ -496,10 +641,37 @@ export function FrequenciaDashboard({ className }: { className?: string }) {
     ].join(" ");
   }, [isAulaView, periodo]);
 
+  const aulaGridClassName = useMemo(() => {
+    const base = "lg:grid-cols-12 lg:gap-3 xl:gap-4";
+    const row1 =
+      "lg:[&>*:nth-child(1)]:col-span-6 lg:[&>*:nth-child(2)]:col-span-6";
+
+    if (selectedOrigemTipo) {
+      // 1 search, 2 curso, 3 turma, 4 tipoOrigem, 5 origem, 6 actions
+      return [
+        base,
+        row1,
+        "lg:[&>*:nth-child(3)]:row-start-2 lg:[&>*:nth-child(3)]:col-start-1 lg:[&>*:nth-child(3)]:col-span-3",
+        "lg:[&>*:nth-child(4)]:row-start-2 lg:[&>*:nth-child(4)]:col-start-4 lg:[&>*:nth-child(4)]:col-span-3",
+        "lg:[&>*:nth-child(5)]:row-start-2 lg:[&>*:nth-child(5)]:col-start-7 lg:[&>*:nth-child(5)]:col-span-5",
+        "lg:[&>*:nth-child(6)]:row-start-2 lg:[&>*:nth-child(6)]:col-start-12 lg:[&>*:nth-child(6)]:col-span-1",
+      ].join(" ");
+    }
+
+    // 1 search, 2 curso, 3 turma, 4 tipoOrigem, 5 actions
+    return [
+      base,
+      row1,
+      "lg:[&>*:nth-child(3)]:row-start-2 lg:[&>*:nth-child(3)]:col-start-1 lg:[&>*:nth-child(3)]:col-span-6",
+      "lg:[&>*:nth-child(4)]:row-start-2 lg:[&>*:nth-child(4)]:col-start-7 lg:[&>*:nth-child(4)]:col-span-5",
+      "lg:[&>*:nth-child(5)]:row-start-2 lg:[&>*:nth-child(5)]:col-start-12 lg:[&>*:nth-child(5)]:col-span-1",
+    ].join(" ");
+  }, [selectedOrigemTipo]);
+
   const emptyStateTitle = useMemo(() => {
-    if (!isFiltersReady) {
+    if (!isFiltersReady && !isAulaView) {
       return isAulaView
-        ? "Selecione curso, turma e aula"
+        ? "Selecione curso, turma e origem"
         : "Selecione curso e turma";
     }
     if (isAulaView && frequenciaQuery.error)
@@ -509,7 +681,7 @@ export function FrequenciaDashboard({ className }: { className?: string }) {
     if (!isAulaView && (resumoQuery.data?.totalAulasNoPeriodo ?? 0) === 0) {
       return "Sem aulas no período selecionado";
     }
-    return "Nenhum aluno encontrado";
+    return isAulaView ? "Nenhuma frequência encontrada" : "Nenhum aluno encontrado";
   }, [
     frequenciaQuery.error,
     isAulaView,
@@ -519,9 +691,9 @@ export function FrequenciaDashboard({ className }: { className?: string }) {
   ]);
 
   const emptyStateDescription = useMemo(() => {
-    if (!isFiltersReady) {
+    if (!isFiltersReady && !isAulaView) {
       return isAulaView
-        ? "Escolha um curso, uma turma e uma aula para lançar a frequência."
+        ? "Escolha um curso, uma turma e a origem para lançar a frequência."
         : "Escolha um curso e uma turma para visualizar o resumo.";
     }
     if (isAulaView && frequenciaQuery.error)
@@ -531,7 +703,9 @@ export function FrequenciaDashboard({ className }: { className?: string }) {
     if (!isAulaView && (resumoQuery.data?.totalAulasNoPeriodo ?? 0) === 0) {
       return "Ajuste o filtro de período ou selecione outra data.";
     }
-    return "Nenhum aluno encontrado para os filtros aplicados.";
+    return isAulaView
+      ? "Nenhum registro de frequência para os filtros aplicados."
+      : "Nenhum aluno encontrado para os filtros aplicados.";
   }, [
     frequenciaQuery.error,
     isAulaView,
@@ -545,51 +719,34 @@ export function FrequenciaDashboard({ className }: { className?: string }) {
       <div className="space-y-4">
         <div className="py-2">
           <div className="space-y-3">
-            {/* View Mode Selector - Clean & Minimal */}
-            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-end">
-              <div className="w-full md:w-auto md:max-w-xs bg-white rounded-md">
-                <SelectCustom
-                  options={[
-                    {
-                      value: "AULA",
-                      label: "Por Aula",
-                    },
-                    {
-                      value: "RESUMO",
-                      label: "Resumo",
-                    },
-                  ]}
-                  value={viewMode}
-                  onChange={(value) => {
-                    if (!value) return;
-                    setViewMode(value as FrequenciaViewMode);
-                    setCurrentPage(1);
-                  }}
-                  placeholder="Visualização"
-                  fullWidth={false}
-                  size="sm"
-                />
-              </div>
-            </div>
-
             <FilterBar
               fields={filterFields}
               values={filterValues}
-              gridClassName={resumoGridClassName}
+              gridClassName={isAulaView ? aulaGridClassName : resumoGridClassName}
+              rightActionsClassName={
+                isAulaView
+                  ? "lg:justify-stretch lg:items-stretch xl:flex-row xl:justify-stretch xl:items-stretch"
+                  : undefined
+              }
               onChange={(key, value) => {
                 if (key === "cursoId") {
                   setSelectedCourseId((value as string) || null);
                   setSelectedTurmaId(null);
-                  setSelectedAulaId(null);
+                  setSelectedOrigemId(null);
                   setCurrentPage(1);
                 }
                 if (key === "turmaId") {
                   setSelectedTurmaId((value as string) || null);
-                  setSelectedAulaId(null);
+                  setSelectedOrigemId(null);
                   setCurrentPage(1);
                 }
-                if (key === "aulaId") {
-                  setSelectedAulaId((value as string) || null);
+                if (key === "origemTipo") {
+                  setSelectedOrigemTipo((value as FrequenciaOrigemTipo) || null);
+                  setSelectedOrigemId(null);
+                  setCurrentPage(1);
+                }
+                if (key === "origemId") {
+                  setSelectedOrigemId((value as string) || null);
                   setCurrentPage(1);
                 }
                 if (key === "periodo") {
@@ -638,7 +795,8 @@ export function FrequenciaDashboard({ className }: { className?: string }) {
                 setAppliedSearchTerm("");
                 setSelectedCourseId(null);
                 setSelectedTurmaId(null);
-                setSelectedAulaId(null);
+                setSelectedOrigemTipo(null);
+                setSelectedOrigemId(null);
                 setPeriodo("TOTAL");
                 setResumoDia(new Date());
                 setResumoMes(now.getMonth());
@@ -662,13 +820,20 @@ export function FrequenciaDashboard({ className }: { className?: string }) {
                 helperPlacement: "tooltip",
               }}
               rightActions={
-                <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-end sm:justify-end">
+                <div
+                  className={cn(
+                    "flex w-full flex-col gap-2 sm:flex-row sm:items-end",
+                    isAulaView ? "sm:justify-stretch" : "sm:justify-end"
+                  )}
+                >
                   <ButtonCustom
                     variant="primary"
                     size="lg"
                     onClick={() => handleSearchSubmit()}
-                    disabled={!isSearchInputValid || !isFiltersReady}
-                    className="md:w-full xl:w-auto"
+                    disabled={
+                      !isSearchInputValid || (!isAulaView && !isFiltersReady)
+                    }
+                    className={isAulaView ? "w-full" : "md:w-full xl:w-auto"}
                   >
                     Pesquisar
                   </ButtonCustom>
@@ -681,7 +846,10 @@ export function FrequenciaDashboard({ className }: { className?: string }) {
 
       {!showEmptyState && (
         <div className="bg-white rounded-2xl border border-gray-200/60 overflow-hidden">
-          {isAulaView && !canEdit && selectedAulaId && (
+          {isAulaView &&
+            selectedOrigemTipo === "AULA" &&
+            !canEdit &&
+            selectedOrigemId && (
             <div className="border-b border-amber-200 bg-linear-to-r from-amber-50 to-amber-50/50 px-4 py-3 text-sm text-amber-900 flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-amber-400"></span>
               {blockedMessage}
@@ -697,7 +865,7 @@ export function FrequenciaDashboard({ className }: { className?: string }) {
           ) : null}
           <div className="overflow-x-auto">
             {isAulaView ? (
-              <Table className="min-w-[960px]">
+              <Table className="min-w-[1220px]">
                 <TableHeader>
                   <TableRow className="border-gray-100 bg-white hover:bg-white">
                     <TableHead
@@ -787,7 +955,16 @@ export function FrequenciaDashboard({ className }: { className?: string }) {
                       </div>
                     </TableHead>
                     <TableHead className="font-medium text-gray-700 py-4 px-3">
+                      Curso/Turma
+                    </TableHead>
+                    <TableHead className="font-medium text-gray-700 py-4 px-3">
+                      Tipo
+                    </TableHead>
+                    <TableHead className="font-medium text-gray-700 py-4 px-3">
                       Evidência
+                    </TableHead>
+                    <TableHead className="font-medium text-gray-700 py-4 px-3">
+                      Status
                     </TableHead>
                     <TableHead className="font-medium text-gray-700 py-4 px-3 w-[420px]">
                       Motivo
@@ -805,23 +982,27 @@ export function FrequenciaDashboard({ className }: { className?: string }) {
                       <FrequenciaRow
                         key={item.key}
                         item={item}
+                        cursoNome={cursoLabelById.get(item.cursoId) ?? null}
+                        turmaNome={turmaLabelById.get(item.turmaId) ?? null}
                         canEdit={canEdit}
                         canOverride={canOverride}
-                        aula={selectedAula!}
-                        aulaNome={selectedAula?.titulo ?? null}
+                        aula={selectedAula}
+                        aulaNome={selectedAula?.titulo ?? item.origemTitulo ?? null}
                         blockedMessage={blockedMessage}
                         isSaving={
                           updateFrequencia.isPending &&
                           updateFrequencia.variables?.inscricaoId ===
                             item.inscricaoId &&
-                          updateFrequencia.variables?.aulaId === item.aulaId
+                          updateFrequencia.variables?.origemId ===
+                            (item.origemId ?? item.aulaId ?? "")
                         }
                         onSave={({ status, motivo }) =>
                           updateFrequencia
                             .mutateAsync({
                               cursoId: item.cursoId,
                               turmaId: item.turmaId,
-                              aulaId: item.aulaId,
+                              tipoOrigem: item.tipoOrigem,
+                              origemId: item.origemId ?? item.aulaId ?? "",
                               inscricaoId: item.inscricaoId,
                               frequenciaId: item.id,
                               status,
@@ -1065,29 +1246,97 @@ export function FrequenciaDashboard({ className }: { className?: string }) {
               </Table>
             )}
 
-            {totalItems > 0 && totalPages > 1 && (
-              <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-gray-200 bg-gray-50/30">
-                <ButtonCustom
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                  disabled={currentPage === 1}
-                >
-                  Anterior
-                </ButtonCustom>
-                <span className="text-sm text-gray-600">
-                  Página {currentPage} de {totalPages}
-                </span>
-                <ButtonCustom
-                  variant="outline"
-                  size="sm"
-                  onClick={() =>
-                    setCurrentPage((p) => Math.min(totalPages, p + 1))
-                  }
-                  disabled={currentPage === totalPages}
-                >
-                  Próxima
-                </ButtonCustom>
+            {totalItems > 0 && (
+              <div className="flex flex-col gap-4 px-6 py-4 border-t border-gray-200 bg-gray-50/30 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <span>
+                    {(() => {
+                      const startIndex = paginationToUse
+                        ? (paginationToUse.page - 1) * paginationToUse.pageSize + 1
+                        : (currentPage - 1) * pageSize + 1;
+                      const endIndex = paginationToUse
+                        ? Math.min(
+                            paginationToUse.page * paginationToUse.pageSize,
+                            totalItems
+                          )
+                        : Math.min(currentPage * pageSize, totalItems);
+                      return `Mostrando ${startIndex} a ${endIndex} de ${totalItems} registro${
+                        totalItems === 1 ? "" : "s"
+                      }`;
+                    })()}
+                  </span>
+                </div>
+
+                {totalPages > 1 && (
+                  <div className="flex items-center gap-2">
+                    <ButtonCustom
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={currentPage === 1}
+                      className="h-8 px-3"
+                    >
+                      Anterior
+                    </ButtonCustom>
+
+                    {visiblePages[0] > 1 && (
+                      <>
+                        <ButtonCustom
+                          variant={currentPage === 1 ? "primary" : "outline"}
+                          size="sm"
+                          onClick={() => handlePageChange(1)}
+                          className="h-8 w-8 p-0"
+                        >
+                          1
+                        </ButtonCustom>
+                        {visiblePages[0] > 2 && (
+                          <span className="text-gray-400">...</span>
+                        )}
+                      </>
+                    )}
+
+                    {visiblePages.map((page) => (
+                      <ButtonCustom
+                        key={page}
+                        variant={currentPage === page ? "primary" : "outline"}
+                        size="sm"
+                        onClick={() => handlePageChange(page)}
+                        className="h-8 w-8 p-0"
+                      >
+                        {page}
+                      </ButtonCustom>
+                    ))}
+
+                    {visiblePages[visiblePages.length - 1] < totalPages && (
+                      <>
+                        {visiblePages[visiblePages.length - 1] <
+                          totalPages - 1 && (
+                          <span className="text-gray-400">...</span>
+                        )}
+                        <ButtonCustom
+                          variant={
+                            currentPage === totalPages ? "primary" : "outline"
+                          }
+                          size="sm"
+                          onClick={() => handlePageChange(totalPages)}
+                          className="h-8 w-8 p-0"
+                        >
+                          {totalPages}
+                        </ButtonCustom>
+                      </>
+                    )}
+
+                    <ButtonCustom
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                      className="h-8 px-3"
+                    >
+                      Próxima
+                    </ButtonCustom>
+                  </div>
+                )}
               </div>
             )}
           </div>

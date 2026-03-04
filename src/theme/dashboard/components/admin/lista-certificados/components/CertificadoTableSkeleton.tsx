@@ -24,6 +24,16 @@ export function CertificadoTableSkeleton({ rows }: CertificadoTableSkeletonProps
           </TableCell>
 
           <TableCell className="py-4">
+            <div className="flex items-start gap-2">
+              <Skeleton className="mt-0.5 h-4 w-4 rounded flex-shrink-0" />
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-48" />
+                <Skeleton className="h-4 w-52" />
+              </div>
+            </div>
+          </TableCell>
+
+          <TableCell className="py-4">
             <div className="flex items-center gap-2">
               <Skeleton className="h-4 w-4 rounded flex-shrink-0" />
               <Skeleton className="h-5 w-28 rounded" />
@@ -31,14 +41,14 @@ export function CertificadoTableSkeleton({ rows }: CertificadoTableSkeletonProps
           </TableCell>
 
           <TableCell className="py-4">
+            <Skeleton className="h-6 w-20 rounded-full" />
+          </TableCell>
+
+          <TableCell className="py-4">
             <div className="flex items-center gap-2">
               <Skeleton className="h-4 w-4 rounded flex-shrink-0" />
               <Skeleton className="h-4 w-24" />
             </div>
-          </TableCell>
-
-          <TableCell className="py-4">
-            <Skeleton className="h-6 w-20 rounded-full" />
           </TableCell>
 
           <TableCell className="py-4">

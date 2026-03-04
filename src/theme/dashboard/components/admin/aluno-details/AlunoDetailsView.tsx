@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   useMutation,
   useQuery,
@@ -20,7 +21,15 @@ import {
   revokeAlunoBloqueio,
 } from "@/api/usuarios";
 import { HeaderInfo } from "./components";
-import { AboutTab, CursosTurmasTab, CurriculosTab, CandidaturasTab } from "./tabs";
+import {
+  AboutTab,
+  CursosTurmasTab,
+  CurriculosTab,
+  CandidaturasTab,
+  NotasTab,
+  FrequenciaTab,
+  EstagiosTab,
+} from "./tabs";
 import {
   BloquearAlunoModal,
   DesbloquearAlunoModal,
@@ -41,6 +50,7 @@ export function AlunoDetailsView({
   alunoId,
   initialData,
 }: AlunoDetailsViewProps) {
+  const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const queryKey = useMemo(
     () => buildAlunoQueryKey(alunoId),
@@ -75,6 +85,9 @@ export function AlunoDetailsView({
   const alunoData = alunoResponse?.data ?? null;
   const alunoNome = alunoData?.nome || alunoData?.nomeCompleto || "Aluno";
   const inscricoes = alunoData?.inscricoes ?? [];
+  const hasInscricaoEmCurso = inscricoes.some(
+    (inscricao) => Boolean(inscricao?.curso?.id || inscricao?.turma?.id),
+  );
 
   const isPending = !initialData && isLoading;
   const queryErrorMessage =
@@ -207,7 +220,57 @@ export function AlunoDetailsView({
         <CandidaturasTab aluno={alunoData} isLoading={isReloading} />
       ),
     },
+    ...(hasInscricaoEmCurso
+      ? [
+          {
+            value: "notas",
+            label: "Notas",
+            icon: "GraduationCap",
+            content: (
+              <NotasTab
+                aluno={alunoData}
+                inscricoes={inscricoes}
+                isLoading={isReloading}
+              />
+            ),
+          } satisfies HorizontalTabItem,
+          {
+            value: "frequencia",
+            label: "Frequência",
+            icon: "CalendarDays",
+            content: (
+              <FrequenciaTab
+                aluno={alunoData}
+                inscricoes={inscricoes}
+                isLoading={isReloading}
+              />
+            ),
+          } satisfies HorizontalTabItem,
+        ]
+      : []),
+    ...(hasInscricaoEmCurso
+      ? [
+          {
+            value: "estagios",
+            label: "Estágios",
+            icon: "Briefcase",
+            content: (
+              <EstagiosTab
+                aluno={alunoData}
+                inscricoes={inscricoes}
+                isLoading={isReloading}
+              />
+            ),
+          } satisfies HorizontalTabItem,
+        ]
+      : []),
   ];
+
+  const tabFromUrl = searchParams.get("tab");
+  const defaultTabValue =
+    tabFromUrl && tabs.some((tab) => tab.value === tabFromUrl)
+      ? tabFromUrl
+      : "sobre";
 
   return (
     <div className="space-y-8">
@@ -227,7 +290,7 @@ export function AlunoDetailsView({
         onDesbloquearAluno={() => setIsDesbloquearModalOpen(true)}
       />
 
-      <HorizontalTabs items={tabs} defaultValue="sobre" />
+      <HorizontalTabs items={tabs} defaultValue={defaultTabValue} />
 
       <EditarAlunoModal
         isOpen={isEditModalOpen}

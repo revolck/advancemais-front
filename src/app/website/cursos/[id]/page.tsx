@@ -134,6 +134,10 @@ function normalizeCourse(curso: any): CourseData {
     id: curso.id?.toString() || "",
     nome: curso.nome || "Curso",
     descricao: curso.descricao || "",
+    conteudoProgramatico:
+      typeof curso.conteudoProgramatico === "string"
+        ? curso.conteudoProgramatico
+        : null,
     cargaHoraria: curso.cargaHoraria || 0,
     categoria: curso.categoria?.nome || curso.Categoria?.nome || "Geral",
     subcategoria: curso.subcategoria?.nome || curso.Subcategoria?.nome,
@@ -267,7 +271,15 @@ export default async function CourseDetailsPage({
 
   const descricaoText = stripHtmlTags(course.descricao)?.trim() ?? "";
   const descricaoHtml = course.descricao?.trim() ?? "";
-  const isHtmlDescription = Boolean(descricaoHtml && /<[^>]+>/.test(descricaoHtml));
+  const isHtmlDescription = Boolean(
+    descricaoHtml && /<[^>]+>/.test(descricaoHtml)
+  );
+  const conteudoProgramaticoHtml = course.conteudoProgramatico?.trim() ?? "";
+  const conteudoProgramaticoText =
+    stripHtmlTags(conteudoProgramaticoHtml)?.trim() ?? "";
+  const isHtmlConteudoProgramatico = Boolean(
+    conteudoProgramaticoHtml && /<[^>]+>/.test(conteudoProgramaticoHtml)
+  );
   const descricaoResumo =
     descricaoText.length > 220
       ? `${descricaoText.slice(0, 220).trim()}…`
@@ -585,6 +597,29 @@ export default async function CourseDetailsPage({
                 ) : (
                   <p className="text-gray-700 leading-relaxed">
                     Informações detalhadas sobre o curso em breve.
+                  </p>
+                )}
+              </div>
+            </section>
+
+            <section className="rounded-3xl border border-gray-200/70 bg-white p-6 sm:p-8">
+              <div className="flex flex-col gap-2">
+                <h4 className="!text-lg !font-semibold !text-gray-900 !mb-0">
+                  Conteúdo programático
+                </h4>
+              </div>
+              <div className="mt-3">
+                {conteudoProgramaticoHtml ? (
+                  isHtmlConteudoProgramatico ? (
+                    <HtmlContent html={conteudoProgramaticoHtml} />
+                  ) : (
+                    <p className="text-gray-700 leading-relaxed whitespace-pre-line">
+                      {conteudoProgramaticoText}
+                    </p>
+                  )
+                ) : (
+                  <p className="text-gray-700 leading-relaxed">
+                    Conteúdo programático não informado.
                   </p>
                 )}
               </div>

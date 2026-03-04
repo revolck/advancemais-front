@@ -8,6 +8,7 @@ export { VisaoGeralDashboard } from "./visao-geral/VisaoGeralDashboard";
 export {
   CursoDetailsView,
   AboutTab as CursoAboutTab,
+  ConteudoProgramaticoTab as CursoConteudoProgramaticoTab,
   HeaderInfo as CursoHeaderInfo,
   TurmasTab,
   HistoryTab,

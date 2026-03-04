@@ -91,8 +91,8 @@ function isWebsiteRoute(pathname: string): boolean {
   // Se for exatamente "/" ou começar com uma rota de website
   if (pathname === "/") return true;
 
-  return SYSTEM_CONFIG.websiteRoutes.some((route) =>
-    pathname.startsWith(route)
+  return SYSTEM_CONFIG.websiteRoutes.some(
+    (route) => route !== "/" && pathname.startsWith(route)
   );
 }
 
@@ -118,6 +118,11 @@ function isAcademiaRoute(pathname: string): boolean {
 function getWebsiteRedirect(pathname: string): string | null {
   const redirects = SYSTEM_CONFIG.websiteRedirects as Record<string, string>;
   return redirects[pathname] || null;
+}
+
+function extractCertificadoPreviewId(pathname: string): string | null {
+  const match = pathname.match(/^\/certificados\/([^/]+)\/visualizar\/?$/);
+  return match?.[1] ?? null;
 }
 
 /**
@@ -218,6 +223,13 @@ function applyWebsiteHeaders(
  */
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const certificadoPreviewId = extractCertificadoPreviewId(pathname);
+  if (certificadoPreviewId) {
+    const url = request.nextUrl.clone();
+    url.pathname = `/api/certificados/${certificadoPreviewId}/preview`;
+    return NextResponse.rewrite(url);
+  }
+
   const host = request.headers.get("host") || "";
   const [hostname] = host.split(":");
   const isLocalhost = hostname === "localhost" || hostname === "127.0.0.1";

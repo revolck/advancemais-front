@@ -1,213 +1,201 @@
 "use client";
 
-import React, { useState } from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import {
-  Briefcase,
-  Building2,
-  Calendar,
-  ChevronRight,
-  Loader2,
-} from "lucide-react";
+import { BookOpen, CalendarDays, ChevronRight, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { Estagio } from "@/api/cursos";
 
 export interface EstagioRowProps {
-  estagio: {
-    id: string;
-    status?: string;
-    empresa?: string;
-    cargo?: string;
-    criadoEm?: string;
-    atualizadoEm?: string;
-    inicioPrevisto?: string;
-    fimPrevisto?: string;
-    aluno?: {
-      id: string;
-      nome?: string;
-      email?: string;
-      telefone?: string;
-    };
-  };
+  estagio: Estagio;
 }
 
-function formatDate(value?: string) {
+const STATUS_LABEL: Record<string, string> = {
+  PLANEJADO: "Planejado",
+  EM_ANDAMENTO: "Em andamento",
+  ENCERRADO: "Encerrado",
+  CANCELADO: "Cancelado",
+  CONCLUIDO: "Concluído",
+  APROVADO: "Aprovado",
+  REPROVADO: "Reprovado",
+  PENDENTE: "Pendente",
+};
+
+const STATUS_CLASS: Record<string, string> = {
+  PLANEJADO: "bg-blue-100 text-blue-700 border-blue-200",
+  EM_ANDAMENTO: "bg-emerald-100 text-emerald-700 border-emerald-200",
+  ENCERRADO: "bg-slate-100 text-slate-700 border-slate-200",
+  CANCELADO: "bg-red-100 text-red-700 border-red-200",
+  CONCLUIDO: "bg-emerald-100 text-emerald-700 border-emerald-200",
+  APROVADO: "bg-emerald-100 text-emerald-700 border-emerald-200",
+  REPROVADO: "bg-rose-100 text-rose-700 border-rose-200",
+  PENDENTE: "bg-amber-100 text-amber-700 border-amber-200",
+};
+
+function formatDate(value?: string | null): string {
   if (!value) return "—";
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return value;
-  return new Intl.DateTimeFormat("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  }).format(parsed);
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+  return date.toLocaleDateString("pt-BR");
 }
 
-function getInitials(name?: string): string {
-  if (!name) return "?";
-  const parts = name.trim().split(/\s+/);
-  if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
-  return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+function formatRelativeUpdate(value?: string | null): string {
+  if (!value) return "Sem atualização";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Sem atualização";
+
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  if (diffMs < 0) return "Atualização futura";
+
+  const diffMinutes = Math.floor(diffMs / 60000);
+  if (diffMinutes < 60) {
+    return diffMinutes <= 1
+      ? "Atualizado há 1 minuto"
+      : `Atualizado há ${diffMinutes} minutos`;
+  }
+
+  const diffHours = Math.floor(diffMinutes / 60);
+  if (diffHours < 24) {
+    return diffHours === 1
+      ? "Atualizado há 1 hora"
+      : `Atualizado há ${diffHours} horas`;
+  }
+
+  const diffDays = Math.floor(diffHours / 24);
+  return diffDays === 1
+    ? "Atualizado há 1 dia"
+    : `Atualizado há ${diffDays} dias`;
 }
 
-const getStatusColor = (status?: string) => {
-  const statusUpper = (status || "").toUpperCase();
-  switch (statusUpper) {
-    case "ATIVO":
-    case "EM_ANDAMENTO":
-    case "INICIADO":
-      return "bg-green-100 text-green-800 border-green-200";
-    case "CONCLUIDO":
-    case "FINALIZADO":
-      return "bg-blue-100 text-blue-800 border-blue-200";
-    case "PENDENTE":
-    case "AGUARDANDO":
-      return "bg-yellow-100 text-yellow-800 border-yellow-200";
-    case "CANCELADO":
-    case "DESISTENTE":
-      return "bg-red-100 text-red-800 border-red-200";
-    default:
-      return "bg-gray-100 text-gray-800 border-gray-200";
-  }
-};
+function formatModoAlocacao(value?: string | null): string {
+  if (!value) return "Sem modo";
+  return value === "TODOS" ? "Todos" : "Específicos";
+}
 
-const getStatusLabel = (status?: string) => {
-  if (!status) return "—";
-  const statusUpper = status.toUpperCase();
-  switch (statusUpper) {
-    case "ATIVO":
-      return "Ativo";
-    case "EM_ANDAMENTO":
-      return "Em andamento";
-    case "INICIADO":
-      return "Iniciado";
-    case "CONCLUIDO":
-      return "Concluído";
-    case "FINALIZADO":
-      return "Finalizado";
-    case "PENDENTE":
-      return "Pendente";
-    case "AGUARDANDO":
-      return "Aguardando";
-    case "CANCELADO":
-      return "Cancelado";
-    case "DESISTENTE":
-      return "Desistente";
-    default:
-      return status;
-  }
-};
+function formatPeriodicidade(value?: string | null): string {
+  if (!value) return "Sem período";
+  return value === "DIAS_SEMANA" ? "Dias da semana" : "Intervalo";
+}
 
 export function EstagioRow({ estagio }: EstagioRowProps) {
-  const router = useRouter();
-  const [isNavigating, setIsNavigating] = useState(false);
-
-  const alunoNome = estagio.aluno?.nome || estagio.aluno?.email || "—";
-  const empresa = estagio.empresa || "—";
-  const cargo = estagio.cargo || "—";
-  const status = estagio.status;
-  const atualizado = formatDate(
-    estagio.atualizadoEm || estagio.fimPrevisto || estagio.criadoEm
-  );
-
-  const handleNavigate = (e: React.MouseEvent) => {
-    e.preventDefault();
-    if (isNavigating) return;
-
-    setIsNavigating(true);
-    // TODO: Ajustar rota quando a página de detalhes de estágio existir
-    // router.push(`/dashboard/cursos/estagios/${estagio.id}`);
-
-    setTimeout(() => {
-      setIsNavigating(false);
-    }, 5000);
-  };
+  const status = (estagio.status || "PENDENTE").toUpperCase();
+  const label = STATUS_LABEL[status] ?? estagio.status ?? "—";
+  const badgeClass =
+    STATUS_CLASS[status] ?? "bg-gray-100 text-gray-700 border-gray-200";
 
   return (
-    <TableRow className="border-gray-100 hover:bg-gray-50/50 transition-colors">
-      <TableCell className="py-4">
-        <div className="flex items-center gap-3">
-          <Avatar className="h-8 w-8 flex-shrink-0">
-            <AvatarFallback className="bg-gray-100 text-gray-600 text-xs font-medium">
-              {getInitials(alunoNome)}
-            </AvatarFallback>
-          </Avatar>
-          <div className="min-w-0">
-            <div className="font-medium text-gray-900 truncate max-w-[200px]">
-              {alunoNome}
-            </div>
-            {estagio.aluno?.email && estagio.aluno?.nome && (
-              <div className="text-xs text-gray-500 truncate max-w-[200px]">
-                {estagio.aluno.email}
-              </div>
-            )}
+    <TableRow className="border-gray-100 bg-white transition-colors hover:bg-blue-50/40">
+      <TableCell className="py-4 px-3">
+        <div className="min-w-0 space-y-1">
+          <span className="min-w-0 truncate font-medium text-gray-900 cursor-help mb-0!">
+            {estagio.titulo || "Estágio"}
+          </span>
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
+            <Badge
+              variant="outline"
+              className={cn(
+                "text-xs font-medium",
+                estagio.obrigatorio
+                  ? "border-blue-200 bg-blue-50 text-blue-700"
+                  : "border-slate-200 bg-slate-50 text-slate-700",
+              )}
+            >
+              {estagio.obrigatorio ? "Obrigatório" : "Opcional"}
+            </Badge>
+            <Badge
+              variant="outline"
+              className="text-xs font-medium border-indigo-200 bg-indigo-50 text-indigo-700"
+            >
+              {formatPeriodicidade(estagio.periodo?.periodicidade)}
+            </Badge>
           </div>
         </div>
       </TableCell>
 
-      <TableCell className="py-4">
-        <div className="flex items-center gap-2 text-sm text-gray-900">
-          <Building2 className="h-4 w-4 text-gray-400 flex-shrink-0" />
-          <span className="truncate max-w-[150px]">{empresa}</span>
+      <TableCell className="py-4 px-3">
+        <div className="flex min-w-0 items-start gap-2">
+          <BookOpen className="mt-0.5 h-4 w-4 shrink-0 text-gray-400" />
+          <div className="min-w-0 space-y-1">
+            <div className="flex min-w-0 items-center gap-2">
+              <span className="shrink-0 text-[11px] text-gray-500">Curso</span>
+              <span className="min-w-0 truncate text-sm text-gray-700">
+                {estagio.cursoNome || estagio.cursoId}
+              </span>
+            </div>
+            <div className="flex min-w-0 items-center gap-2">
+              <span className="shrink-0 text-[11px] text-gray-500">Turma</span>
+              <span className="min-w-0 truncate text-sm text-gray-700">
+                {estagio.turmaNome || estagio.turmaId}
+              </span>
+              {estagio.turmaCodigo && (
+                <code className="shrink-0 rounded bg-gray-100 px-1.5 py-0.5 font-mono text-xs text-gray-500">
+                  {estagio.turmaCodigo}
+                </code>
+              )}
+            </div>
+          </div>
         </div>
       </TableCell>
 
-      <TableCell className="py-4">
-        <div className="flex items-center gap-2 text-sm text-gray-600">
-          <Briefcase className="h-4 w-4 text-gray-400 flex-shrink-0" />
-          <span className="truncate max-w-[150px]">{cargo}</span>
-        </div>
-      </TableCell>
-
-      <TableCell className="py-4">
-        {status ? (
+      <TableCell className="py-4 px-3">
+        <div className="inline-flex items-center gap-2 text-sm text-gray-800">
+          <Users className="h-4 w-4 text-gray-400" />
+          <span className="font-medium">
+            {estagio.totalAlunosVinculados ?? 0}
+          </span>
+          <span className="text-xs text-gray-500">vinculados</span>
           <Badge
             variant="outline"
-            className={cn("text-xs font-medium", getStatusColor(status))}
+            className="text-[11px] border-gray-200 bg-gray-50 text-gray-600"
           >
-            {getStatusLabel(status)}
+            {formatModoAlocacao(estagio.modoAlocacao)}
           </Badge>
-        ) : (
-          <span className="text-gray-400">—</span>
-        )}
-      </TableCell>
-
-      <TableCell className="py-4">
-        <div className="flex items-center gap-2 text-sm text-gray-600">
-          <Calendar className="h-4 w-4 text-gray-400 flex-shrink-0" />
-          <span>{atualizado}</span>
         </div>
       </TableCell>
 
-      <TableCell className="py-4">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleNavigate}
-              disabled={isNavigating || true} // Desabilitado até existir a página de detalhes
-              className="h-8 w-8 rounded-full text-gray-500 hover:text-white hover:bg-[var(--primary-color)] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-              aria-label="Visualizar estágio"
-            >
-              {isNavigating ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <ChevronRight className="h-4 w-4" />
-              )}
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent sideOffset={8}>
-            {isNavigating ? "Carregando..." : "Em breve"}
-          </TooltipContent>
-        </Tooltip>
+      <TableCell className="py-4 px-3">
+        <Badge
+          variant="outline"
+          className={cn("text-xs font-medium", badgeClass)}
+        >
+          {label}
+        </Badge>
+      </TableCell>
+
+      <TableCell className="py-4 px-3">
+        <div className="space-y-1">
+          <span
+            className="inline-flex items-center gap-1.5 text-sm text-gray-700"
+            title={
+              estagio.atualizadoEm
+                ? new Date(estagio.atualizadoEm).toLocaleString("pt-BR")
+                : undefined
+            }
+          >
+            <CalendarDays className="h-4 w-4 text-gray-400" />
+            {formatDate(estagio.atualizadoEm)}
+          </span>
+          <div className="text-xs text-gray-500">
+            {formatRelativeUpdate(estagio.atualizadoEm)}
+          </div>
+        </div>
+      </TableCell>
+
+      <TableCell className="py-4 px-3 text-right">
+        <Button
+          asChild
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 rounded-full text-gray-500 hover:text-white hover:bg-[var(--primary-color)] cursor-pointer"
+          aria-label="Visualizar estágio"
+        >
+          <Link href={`/dashboard/cursos/estagios/${estagio.id}`}>
+            <ChevronRight className="h-4 w-4" />
+          </Link>
+        </Button>
       </TableCell>
     </TableRow>
   );

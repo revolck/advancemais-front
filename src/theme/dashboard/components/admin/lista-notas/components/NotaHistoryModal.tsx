@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/custom/modal";
 import { ButtonCustom } from "@/components/ui/custom";
 import { cn } from "@/lib/utils";
-import type { NotaHistoryEvent, NotaOrigemRef } from "@/mockData/notas";
+import type { NotaHistoryEvent, NotaOrigem } from "@/api/cursos";
 
 function formatDateTime(value: string) {
   const d = new Date(value);
@@ -39,7 +39,7 @@ function formatNota(nota: number | null): string {
   });
 }
 
-function getOrigemLabel(origem?: NotaOrigemRef | null) {
+function getOrigemLabel(origem?: NotaOrigem | null) {
   if (!origem) return "—";
   const tipo =
     origem.tipo === "AULA"
@@ -59,6 +59,35 @@ function getOrigemLabel(origem?: NotaOrigemRef | null) {
     : "";
 
   return suffix ? `${tipo} • ${suffix}` : tipo;
+}
+
+function getRoleLabel(role?: string): string | null {
+  if (!role) return null;
+  if (role === "ADMIN") return "Administrador";
+  if (role === "MODERADOR") return "Moderador";
+  if (role === "PEDAGOGICO") return "Setor Pedagógico";
+  if (role === "INSTRUTOR") return "Instrutor";
+  return role;
+}
+
+function resolveOrigemHistorico(event: NotaHistoryEvent): string {
+  if (typeof event.origem === "string" && event.origem.trim()) {
+    return event.origem.trim();
+  }
+
+  if (event.origem && typeof event.origem === "object") {
+    const origemObj = event.origem as NotaOrigem;
+    const origemFromObject = getOrigemLabel(origemObj);
+    if (origemFromObject !== "—") return origemFromObject;
+  }
+
+  const alteradoPor = event.alteradoPor;
+  if (alteradoPor?.nome) {
+    const roleLabel = alteradoPor.roleLabel || getRoleLabel(alteradoPor.role);
+    return roleLabel ? `${alteradoPor.nome} (${roleLabel})` : alteradoPor.nome;
+  }
+
+  return "—";
 }
 
 export function NotaHistoryModal(props: {
@@ -130,7 +159,7 @@ export function NotaHistoryModal(props: {
                 {pageItems.map((e, idx) => {
                   const isAdd = e.action === "ADDED";
                   const isOpen = openId === e.id;
-                  const origemLabel = getOrigemLabel(e.origem);
+                  const origemLabel = resolveOrigemHistorico(e);
                   const motivo = e.motivo?.trim() ? e.motivo.trim() : "—";
                   const hasDetails = origemLabel !== "—" || motivo !== "—";
 
