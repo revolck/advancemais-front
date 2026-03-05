@@ -180,9 +180,7 @@ export function CursoDetailsView({
 
       <HeaderInfo
         curso={curso}
-        onEditCurso={() => {
-          void invalidateCurso();
-        }}
+        onEditCurso={invalidateCurso}
       />
 
       <div className="mt-8">

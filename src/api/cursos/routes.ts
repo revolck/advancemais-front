@@ -47,6 +47,8 @@ export const cursosRoutes = {
     get: (cursoId: number | string) => `${BASE}/${cursoId}`,
     update: (cursoId: number | string) => `${BASE}/${cursoId}`,
     delete: (cursoId: number | string) => `${BASE}/${cursoId}`,
+    deleteDefinitivo: (cursoId: number | string) =>
+      `${BASE}/${cursoId}/exclusao-definitiva`,
     meta: (cursoId: number | string) => `${BASE}/${cursoId}/meta`,
     notas: (cursoId: number | string) => `${BASE}/${cursoId}/notas`,
     inscricoes: {

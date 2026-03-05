@@ -566,6 +566,23 @@ export async function despublicarCurso(
   });
 }
 
+export async function excluirCursoDefinitivamente(
+  cursoId: number | string,
+  init?: RequestInit
+): Promise<{ id: string; excluidoEm: string; excluidoPorId: string }> {
+  return apiFetch<{ id: string; excluidoEm: string; excluidoPorId: string }>(
+    cursosRoutes.cursos.deleteDefinitivo(cursoId),
+    {
+      init: {
+        method: "DELETE",
+        ...init,
+        headers: buildHeaders(init?.headers, true),
+      },
+      cache: "no-cache",
+    }
+  );
+}
+
 // Turmas
 export async function listTurmas(
   cursoId: number | string,

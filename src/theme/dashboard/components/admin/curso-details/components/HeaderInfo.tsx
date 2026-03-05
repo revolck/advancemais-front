@@ -10,39 +10,205 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ChevronDown, ChevronLeft, Edit } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronLeft,
+  Edit,
+  EyeOff,
+  Loader2,
+  Trash2,
+  Upload,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { Curso } from "@/api/cursos";
+import {
+  despublicarCurso,
+  excluirCursoDefinitivamente,
+  type Curso,
+  updateCurso,
+} from "@/api/cursos";
 import { useRouter } from "next/navigation";
+import { toastCustom } from "@/components/ui/custom";
 import { formatCursoStatus, getCursoStatusBadgeClasses } from "../utils";
+import { DespublicarCursoModal, ExcluirCursoModal } from "./modal-acoes";
 
 interface HeaderInfoProps {
   curso: Curso & {
     categoria?: { id: number | string; nome: string };
     subcategoria?: { id: number | string; nome: string };
+    turmasCount?: number;
+    turmas?: Array<{
+      id: string;
+      status?: string;
+    }>;
   };
-  onEditCurso?: () => void;
-}
-
-function getInitials(name: string): string {
-  const words = name.trim().split(/\s+/);
-  if (words.length >= 2) {
-    return (words[0][0] + words[words.length - 1][0]).toUpperCase();
-  }
-  return name.substring(0, 2).toUpperCase();
+  onEditCurso?: () => void | Promise<void>;
 }
 
 export function HeaderInfo({ curso, onEditCurso }: HeaderInfoProps) {
   const router = useRouter();
   const [isActionsOpen, setIsActionsOpen] = useState(false);
+  const [isPublishingActionLoading, setIsPublishingActionLoading] =
+    useState(false);
+  const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isDeleteActionLoading, setIsDeleteActionLoading] = useState(false);
 
   const isPublished = curso.statusPadrao === "PUBLICADO";
-  const statusColor = isPublished ? "bg-emerald-500" : "bg-gray-400";
-  const statusLabel = isPublished ? "Curso publicado" : "Curso em rascunho";
+  const linkedTurmasCount = curso.turmasCount ?? curso.turmas?.length ?? 0;
+  const hasLinkedTurmas = linkedTurmasCount > 0;
+  const hasTurmasStatusLoaded = Array.isArray(curso.turmas) && curso.turmas.length > 0;
+  const canDeleteCurso = !hasLinkedTurmas;
+  const canDespublicarCurso =
+    !isPublished ||
+    !hasLinkedTurmas ||
+    (hasTurmasStatusLoaded &&
+      curso.turmas!.every((turma) => (turma.status ?? "").toUpperCase() === "CONCLUIDO"));
+  const canShowPublicationAction = !isPublished || canDespublicarCurso;
 
   const handleEditClick = () => {
     router.push(`/dashboard/cursos/${curso.id}/editar`);
     setIsActionsOpen(false);
+  };
+
+  const handleChangePublicationStatus = async () => {
+    if (isPublishingActionLoading) return;
+
+    setIsActionsOpen(false);
+    setIsPublishingActionLoading(true);
+    try {
+      if (isPublished) {
+        await despublicarCurso(curso.id);
+        toastCustom.success({
+          title: "Curso despublicado",
+          description: "O curso foi movido para rascunho com sucesso.",
+        });
+      } else {
+        await updateCurso(curso.id, { statusPadrao: "PUBLICADO" });
+        toastCustom.success({
+          title: "Curso publicado",
+          description: "O curso foi publicado com sucesso.",
+        });
+      }
+
+      setIsActionsOpen(false);
+      await onEditCurso?.();
+      setIsStatusModalOpen(false);
+    } catch (error) {
+      const err = error as Error & {
+        code?: string;
+        details?: {
+          code?: string;
+          message?: string;
+          details?: Array<{
+            nome?: string;
+            codigo?: string;
+            status?: string;
+          }>;
+        };
+      };
+      const code = err?.details?.code || err?.code;
+
+      if (code === "CURSO_DESPUBLICAR_TURMAS_NAO_CONCLUIDAS" && isPublished) {
+        const turmasNaoConcluidas = err?.details?.details ?? [];
+        const resumoTurmas =
+          turmasNaoConcluidas.length > 0
+            ? turmasNaoConcluidas
+                .slice(0, 3)
+                .map((turma) =>
+                  turma.codigo
+                    ? `${turma.codigo} (${turma.status ?? "SEM_STATUS"})`
+                    : `${turma.nome ?? "Turma"} (${turma.status ?? "SEM_STATUS"})`
+                )
+                .join(", ")
+            : "";
+
+        toastCustom.error({
+          title: "Não é possível despublicar o curso",
+          description: resumoTurmas
+            ? `${err?.details?.message || err.message}. Turmas pendentes: ${resumoTurmas}.`
+            : err?.details?.message ||
+              err.message ||
+              "Conclua todas as turmas antes de despublicar.",
+        });
+      } else {
+        toastCustom.error({
+          title: isPublished
+            ? "Erro ao despublicar curso"
+            : "Erro ao publicar curso",
+          description:
+            err?.details?.message ||
+            err.message ||
+            `Não foi possível ${isPublished ? "despublicar" : "publicar"} o curso.`,
+        });
+      }
+    } finally {
+      setIsPublishingActionLoading(false);
+    }
+  };
+
+  const handleDeleteCurso = async () => {
+    if (isDeleteActionLoading) return;
+
+    setIsActionsOpen(false);
+    setIsDeleteActionLoading(true);
+
+    try {
+      await excluirCursoDefinitivamente(curso.id);
+      toastCustom.success({
+        title: "Curso excluído",
+        description: "O curso foi excluído definitivamente.",
+      });
+      setIsDeleteModalOpen(false);
+      router.push("/dashboard/cursos");
+    } catch (error) {
+      const err = error as Error & {
+        code?: string;
+        details?: {
+          code?: string;
+          message?: string;
+          details?: Array<{
+            nome?: string;
+            codigo?: string;
+            status?: string;
+          }>;
+        };
+      };
+      const code = err?.details?.code || err?.code;
+
+      if (code === "CURSO_EXCLUSAO_BLOQUEADA_TURMAS_VINCULADAS") {
+        const turmasVinculadas = err?.details?.details ?? [];
+        const resumoTurmas =
+          turmasVinculadas.length > 0
+            ? turmasVinculadas
+                .slice(0, 3)
+                .map((turma) =>
+                  turma.codigo
+                    ? `${turma.codigo} (${turma.status ?? "SEM_STATUS"})`
+                    : `${turma.nome ?? "Turma"} (${turma.status ?? "SEM_STATUS"})`
+                )
+                .join(", ")
+            : "";
+
+        toastCustom.error({
+          title: "Não é possível excluir o curso",
+          description: resumoTurmas
+            ? `${err?.details?.message || err.message}. Turmas vinculadas: ${resumoTurmas}.`
+            : err?.details?.message ||
+              err.message ||
+              "Não é possível excluir curso com turmas vinculadas.",
+        });
+      } else {
+        toastCustom.error({
+          title: "Erro ao excluir curso",
+          description:
+            err?.details?.message ||
+            err.message ||
+            "Não foi possível excluir o curso.",
+        });
+      }
+    } finally {
+      setIsDeleteActionLoading(false);
+    }
   };
 
   const statusBadge = (
@@ -69,7 +235,11 @@ export function HeaderInfo({ curso, onEditCurso }: HeaderInfoProps) {
         </div>
 
         <div className="flex w-full flex-col items-stretch gap-2 sm:w-auto sm:flex-row sm:items-center">
-          <DropdownMenu open={isActionsOpen} onOpenChange={setIsActionsOpen}>
+          <DropdownMenu
+            open={isActionsOpen}
+            onOpenChange={setIsActionsOpen}
+            modal={false}
+          >
             <DropdownMenuTrigger asChild>
               <Button
                 aria-expanded={isActionsOpen}
@@ -91,8 +261,58 @@ export function HeaderInfo({ curso, onEditCurso }: HeaderInfoProps) {
                 className="cursor-pointer"
               >
                 <Edit className="h-4 w-4 text-gray-500" />
-                <span>Editar curso</span>
+                <span>Editar</span>
               </DropdownMenuItem>
+              {canShowPublicationAction ? (
+                <DropdownMenuItem
+                  onSelect={() => {
+                    setIsActionsOpen(false);
+                    window.setTimeout(() => {
+                      setIsStatusModalOpen(true);
+                    }, 0);
+                  }}
+                  disabled={isPublishingActionLoading}
+                  className="cursor-pointer"
+                >
+                  {isPublishingActionLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
+                  ) : isPublished ? (
+                    <EyeOff className="h-4 w-4 text-gray-500" />
+                  ) : (
+                    <Upload className="h-4 w-4 text-gray-500" />
+                  )}
+                  <span>
+                    {isPublishingActionLoading
+                      ? isPublished
+                        ? "Despublicando..."
+                        : "Publicando..."
+                      : isPublished
+                        ? "Despublicar"
+                        : "Publicar"}
+                  </span>
+                </DropdownMenuItem>
+              ) : null}
+              {canDeleteCurso ? (
+                <DropdownMenuItem
+                  onSelect={() => {
+                    setIsActionsOpen(false);
+                    window.setTimeout(() => {
+                      setIsDeleteModalOpen(true);
+                    }, 0);
+                  }}
+                  disabled={isPublishingActionLoading || isDeleteActionLoading}
+                  className="cursor-pointer text-red-600 focus:text-red-700 data-[highlighted]:text-red-700"
+                >
+                  {isDeleteActionLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin text-red-600" />
+                  ) : (
+                    <Trash2 className="h-4 w-4 text-red-600" />
+                  )}
+                  <span>
+                    {isDeleteActionLoading ? "Excluindo..." : "Excluir"}
+                  </span>
+                </DropdownMenuItem>
+              ) : null}
             </DropdownMenuContent>
           </DropdownMenu>
           <Button
@@ -107,6 +327,21 @@ export function HeaderInfo({ curso, onEditCurso }: HeaderInfoProps) {
           </Button>
         </div>
       </div>
+
+      <DespublicarCursoModal
+        isOpen={isStatusModalOpen && canDespublicarCurso}
+        isPublished={isPublished}
+        isLoading={isPublishingActionLoading}
+        onClose={() => setIsStatusModalOpen(false)}
+        onConfirm={() => void handleChangePublicationStatus()}
+      />
+
+      <ExcluirCursoModal
+        isOpen={isDeleteModalOpen}
+        isLoading={isDeleteActionLoading}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={() => void handleDeleteCurso()}
+      />
     </section>
   );
 }

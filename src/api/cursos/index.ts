@@ -45,6 +45,7 @@ export {
   getCursoById,
   updateCurso,
   despublicarCurso,
+  excluirCursoDefinitivamente,
   listTurmas,
   getTurmaById,
   createTurma,
