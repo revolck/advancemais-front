@@ -40,12 +40,17 @@ export interface Aula {
     id: string;
     codigo: string; // ✅ Código da turma
     nome: string;
+    instrutorId?: string | null;
+    instrutor?: {
+      id?: string | null;
+    } | null;
     curso?: {
       id: string;
       codigo: string; // ✅ Código do curso
       nome: string;
     };
   } | null;
+  instrutorId?: string | null;
   modulo?: {
     id: string;
     nome: string;
@@ -223,6 +228,20 @@ export interface AgendaListParams {
 
 export interface AgendaListResponse {
   eventos: AgendaEvento[];
+}
+
+export interface AgendaAniversariantesParams {
+  dataInicio: string;
+  dataFim: string;
+  roles?: string[];
+  incluirInativos?: boolean;
+}
+
+export interface AgendaAniversariantesResponse {
+  eventos: AgendaEvento[];
+  resumo?: {
+    total: number;
+  };
 }
 
 // Google OAuth

@@ -13,6 +13,8 @@ export interface CategoriaCurso {
   descricao: string;
   criadoEm: string;
   atualizadoEm: string;
+  cursosVinculadosCount?: number;
+  totalCursosVinculados?: number;
   subcategorias?: SubcategoriaCurso[];
 }
 
@@ -23,6 +25,8 @@ export interface SubcategoriaCurso {
   descricao: string;
   criadoEm: string;
   atualizadoEm: string;
+  cursosVinculadosCount?: number;
+  totalCursosVinculados?: number;
 }
 
 // ============================================================================

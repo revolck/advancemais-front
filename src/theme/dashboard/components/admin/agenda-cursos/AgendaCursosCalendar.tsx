@@ -36,7 +36,7 @@ import {
   ChevronRight,
   ChevronDown,
 } from "lucide-react";
-import { getAgenda, type AgendaEvento } from "@/api/aulas";
+import { getAgenda, getAgendaAniversariantes, type AgendaEvento } from "@/api/aulas";
 import { startOfMonth, endOfMonth, format, setMonth, setYear } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import type { EventClickArg, EventInput } from "@fullcalendar/core";
@@ -70,6 +70,7 @@ export function AgendaCursosCalendar() {
     "AULA",
     "PROVA",
     "ATIVIDADE",
+    "ANIVERSARIO",
     "TURMA_INICIO",
     "TURMA_FIM",
   ]);
@@ -110,28 +111,62 @@ export function AgendaCursosCalendar() {
 
   const dataInicio = startOfMonth(currentMonth).toISOString();
   const dataFim = endOfMonth(currentMonth).toISOString();
+  const selectedTiposAgenda = useMemo(
+    () => selectedTypes.filter((tipo) => tipo !== "ANIVERSARIO"),
+    [selectedTypes]
+  );
+  const incluirAniversariantes = selectedTypes.includes("ANIVERSARIO");
 
-  // Buscar eventos da API
+  // Buscar eventos da agenda (sem aniversariantes)
   const {
     data: agendaData,
     isLoading,
     error,
   } = useQuery({
-    queryKey: ["agenda", dataInicio, dataFim, selectedTypes],
+    queryKey: ["agenda", dataInicio, dataFim, selectedTiposAgenda],
     queryFn: () =>
-      getAgenda({
-        dataInicio,
-        dataFim,
-        tipos: selectedTypes,
-      }),
+      selectedTiposAgenda.length
+        ? getAgenda({
+            dataInicio,
+            dataFim,
+            tipos: selectedTiposAgenda,
+          })
+        : Promise.resolve({ eventos: [] }),
     staleTime: 1000 * 60 * 2, // 2 minutos
+  });
+
+  // Buscar aniversariantes por rota dedicada
+  const { data: aniversariantesData } = useQuery({
+    queryKey: ["agenda-aniversariantes", dataInicio, dataFim],
+    queryFn: async () => {
+      try {
+        return await getAgendaAniversariantes({
+          dataInicio,
+          dataFim,
+        });
+      } catch (err) {
+        const status = (err as { status?: number })?.status;
+        if (status === 403) {
+          // Fallback para perfis sem permissão na rota dedicada
+          return { eventos: [], resumo: { total: 0 } };
+        }
+        throw err;
+      }
+    },
+    staleTime: 1000 * 60 * 2, // 2 minutos
+    enabled: incluirAniversariantes,
   });
 
   // Transformar eventos da API para formato FullCalendar
   const events: EventInput[] = useMemo(() => {
-    if (!agendaData?.eventos) return [];
+    const eventosBase = agendaData?.eventos ?? [];
+    const aniversariantes = incluirAniversariantes
+      ? (aniversariantesData?.eventos ?? [])
+      : [];
+    const eventosCombinados = [...eventosBase, ...aniversariantes];
+    if (!eventosCombinados.length) return [];
 
-    return agendaData.eventos.map((evento) => {
+    return eventosCombinados.map((evento) => {
       const start = evento.dataInicio || evento.data;
       const end = evento.dataFim;
 
@@ -146,7 +181,7 @@ export function AgendaCursosCalendar() {
         allDay: !evento.dataInicio, // Se não tem horário, é dia inteiro
       };
     });
-  }, [agendaData]);
+  }, [agendaData, aniversariantesData, incluirAniversariantes]);
 
   // Sincronizar o estado inicial quando o calendário montar
   useEffect(() => {
@@ -171,9 +206,11 @@ export function AgendaCursosCalendar() {
     { value: "AULA", label: "Aulas", icon: Video },
     { value: "PROVA", label: "Provas", icon: FileText },
     { value: "ATIVIDADE", label: "Atividades", icon: FileText },
+    { value: "ANIVERSARIO", label: "Aniversariantes", icon: Cake },
     { value: "TURMA_INICIO", label: "Início de Turmas", icon: GraduationCap },
     { value: "TURMA_FIM", label: "Fim de Turmas", icon: GraduationCap },
   ];
+  const totalAniversariantes = aniversariantesData?.resumo?.total ?? 0;
 
   if (error) {
     return (
@@ -345,6 +382,12 @@ export function AgendaCursosCalendar() {
                   className="w-auto min-w-[180px]"
                 />
               </div>
+              {incluirAniversariantes && (
+                <div className="inline-flex items-center gap-1.5 rounded-md border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-medium text-emerald-700">
+                  <Cake className="h-3.5 w-3.5" />
+                  <span>{totalAniversariantes} aniversariante(s)</span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -790,6 +833,5 @@ export const FullCalendarStyles = () => (
     }
   `}</style>
 );
-
 
 

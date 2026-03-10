@@ -1,48 +1,34 @@
 "use client";
 
-import React from "react";
 import {
-  ModalCustom,
-  ModalContentWrapper,
-  ModalHeader,
   ModalBody,
+  ModalContentWrapper,
+  ModalCustom,
   ModalFooter,
+  ModalHeader,
   ModalTitle,
 } from "@/components/ui/custom/modal";
 import { ButtonCustom } from "@/components/ui/custom/button";
-import type { Aula } from "@/api/aulas";
-import { useAuth } from "@/hooks/useAuth";
-import { validarExclusao } from "../utils/validations";
+import type { TurmaProva } from "@/api/cursos";
 
-interface DeleteAulaModalProps {
+interface DeleteAvaliacaoModalProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  aula: Aula | null;
-  onConfirmDelete: (aula: Aula) => void;
+  avaliacao: TurmaProva | null;
+  onConfirmDelete: (avaliacao: TurmaProva) => void;
   isDeleting?: boolean;
+  blockedReason?: string;
 }
 
-export function DeleteAulaModal({
+export function DeleteAvaliacaoModal({
   isOpen,
   onOpenChange,
-  aula,
+  avaliacao,
   onConfirmDelete,
   isDeleting = false,
-}: DeleteAulaModalProps) {
-  const { user } = useAuth();
-  const validacaoExclusao =
-    aula ? validarExclusao(aula, user?.role, user?.id) : null;
-  const podeExcluir = Boolean(validacaoExclusao?.podeExcluir);
-
-  const handleConfirmDelete = () => {
-    if (aula && podeExcluir) {
-      onConfirmDelete(aula);
-    }
-  };
-
-  const handleCancel = () => {
-    onOpenChange(false);
-  };
+  blockedReason,
+}: DeleteAvaliacaoModalProps) {
+  const canDelete = !blockedReason;
 
   return (
     <ModalCustom
@@ -58,13 +44,15 @@ export function DeleteAulaModal({
         </ModalHeader>
 
         <ModalBody>
-          {validacaoExclusao && !validacaoExclusao.podeExcluir ? (
+          {!avaliacao ? (
             <p className="text-sm text-gray-600">
-              {validacaoExclusao.motivo || "Não é possível excluir esta aula."}
+              Avaliação não encontrada.
             </p>
+          ) : blockedReason ? (
+            <p className="text-sm text-gray-600">{blockedReason}</p>
           ) : (
             <p className="text-sm text-gray-600">
-              Tem certeza que deseja excluir esta aula?{" "}
+              Tem certeza que deseja excluir esta avaliação?{" "}
               <span className="font-medium text-red-700">
                 Esta ação é definitiva e não pode ser desfeita.
               </span>
@@ -75,25 +63,26 @@ export function DeleteAulaModal({
         <ModalFooter className="gap-2">
           <ButtonCustom
             variant="outline"
-            onClick={handleCancel}
+            onClick={() => onOpenChange(false)}
             disabled={isDeleting}
             size="md"
           >
             Cancelar
           </ButtonCustom>
-          {podeExcluir && (
+          {avaliacao && canDelete ? (
             <ButtonCustom
               variant="danger"
-              onClick={handleConfirmDelete}
+              onClick={() => onConfirmDelete(avaliacao)}
               isLoading={isDeleting}
               loadingText="Excluindo..."
               size="md"
             >
               Confirmar exclusão
             </ButtonCustom>
-          )}
+          ) : null}
         </ModalFooter>
       </ModalContentWrapper>
     </ModalCustom>
   );
 }
+

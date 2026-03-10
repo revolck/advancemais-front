@@ -23,8 +23,11 @@ function addDays(base: Date, days: number): Date {
 }
 
 async function pickRangeByLabel(page: any, label: string, from: Date, to: Date) {
-  // DatePickerRangeCustom usa um botão como trigger; a label fica acima.
-  const container = page.getByText(label, { exact: true }).locator("..");
+  // DatePickerRangeCustom renderiza a label em um wrapper interno e o trigger
+  // como sibling dentro do container principal.
+  const container = page
+    .getByText(label, { exact: true })
+    .locator("xpath=ancestor::div[contains(@class,'space-y-2')][1]");
   const trigger = container
     .locator("button, [role='button']")
     .filter({ hasNotText: "Recarregar" })
@@ -35,21 +38,20 @@ async function pickRangeByLabel(page: any, label: string, from: Date, to: Date) 
   await trigger.click();
 
   await page.getByRole("grid").waitFor({ state: "visible" });
-  await page.getByRole("gridcell", { name: formatPtBr(from) }).click();
-  await page.getByRole("gridcell", { name: formatPtBr(to) }).click();
+  await page
+    .locator("[role='gridcell']:not([disabled])")
+    .filter({ hasText: new RegExp(`^${from.getDate()}$`) })
+    .first()
+    .click();
+  await page
+    .locator("[role='gridcell']:not([disabled])")
+    .filter({ hasText: new RegExp(`^${to.getDate()}$`) })
+    .first()
+    .click();
 }
 
 async function loginAsAdminOrSkip(page: any) {
-  try {
-    await loginAsAdmin(page);
-  } catch (error) {
-    test.skip(
-      true,
-      `Pré-condição de autenticação indisponível no cadastro de turmas: ${
-        error instanceof Error ? error.message : String(error)
-      }`
-    );
-  }
+  await loginAsAdmin(page);
 }
 
 async function pickFirstOptionFromSelect(page: any, label: string) {
@@ -97,8 +99,7 @@ test.describe("Cadastro de Turmas", () => {
     try {
       await pickFirstOptionFromSelect(page, "Curso");
     } catch (error) {
-      test.skip(
-        true,
+      throw new Error(
         `Pré-condição ausente para curso no cadastro de turma: ${
           error instanceof Error ? error.message : String(error)
         }`

@@ -17,6 +17,7 @@ import { QuestoesReadonlyTab } from "./tabs/QuestoesReadonlyTab";
 import { RespostasTab } from "./tabs/RespostasTab";
 import { HistoryTab } from "./tabs/HistoryTab";
 import { canManageQuestoes } from "./utils/validations";
+import { useAuth } from "@/hooks/useAuth";
 
 interface ProvaDetailsViewProps {
   cursoId: number | string | null;
@@ -36,6 +37,7 @@ export function ProvaDetailsView({
   initialProva,
   initialError,
 }: ProvaDetailsViewProps) {
+  const { user } = useAuth();
   const hasContext = Boolean(cursoId) && Boolean(turmaId);
   const cursoIdWithContext = cursoId as number | string;
   const turmaIdWithContext = turmaId as string;
@@ -88,7 +90,11 @@ export function ProvaDetailsView({
       )
   );
   const canManageQuestions = prova
-    ? canManageQuestoes(prova, { hasRespostas })
+    ? canManageQuestoes(prova, {
+        hasRespostas,
+        userRole: user?.role,
+        userId: user?.id,
+      })
     : false;
 
   const tabs: HorizontalTabItem[] = useMemo(() => {
@@ -196,7 +202,12 @@ export function ProvaDetailsView({
 
   return (
     <div className="space-y-8">
-      <AvaliacaoAlertasUnificados prova={prova} hasRespostas={hasRespostas} />
+      <AvaliacaoAlertasUnificados
+        prova={prova}
+        hasRespostas={hasRespostas}
+        userRole={user?.role}
+        userId={user?.id}
+      />
       <HeaderInfo prova={prova} hasRespostas={hasRespostas} />
       <HorizontalTabs items={tabs} defaultValue={tabs[0]?.value ?? "resumo"} />
     </div>

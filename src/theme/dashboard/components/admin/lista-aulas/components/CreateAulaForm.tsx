@@ -1040,13 +1040,22 @@ export function CreateAulaForm({
 
       onSuccess?.();
     } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : mode === "edit"
-          ? "Erro ao atualizar aula"
-          : "Erro ao criar aula";
-      toastCustom.error(errorMessage);
+      const apiError = error as Error & {
+        status?: number;
+        details?: { message?: string; code?: string };
+      };
+
+      if (apiError?.status === 403) {
+        toastCustom.error("Você não tem permissão para esta aula");
+      } else {
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : mode === "edit"
+              ? "Erro ao atualizar aula"
+              : "Erro ao criar aula";
+        toastCustom.error(errorMessage);
+      }
       setIsLoading(false);
       setLoadingStep("");
       setUploadProgress(0);

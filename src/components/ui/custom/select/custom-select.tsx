@@ -113,6 +113,10 @@ export function SelectCustom(props: SelectCustomProps) {
   const value =
     props.mode !== "multiple" ? ((props.value ?? null) as string | null) : null;
   const onChange = props.mode !== "multiple" ? (props.onChange as (v: string | null) => void) : null;
+  const currentOptionLabel =
+    props.mode !== "multiple"
+      ? options?.find((option) => option.value === value)?.label
+      : undefined;
   const hasValue =
     props.mode !== "multiple" &&
     value !== null &&
@@ -328,9 +332,10 @@ export function SelectCustom(props: SelectCustomProps) {
             <SelectTrigger
               id={id}
               size={size === "sm" ? "sm" : "default"}
+              title={currentOptionLabel || placeholder}
               className={cn(
                 // Alinha visualmente ao InputCustom (altura e tipografia)
-                "peer file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground border-input flex min-w-0 rounded-md border bg-transparent px-3 py-1 text-base shadow-none transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm aria-invalid:ring-destructive/20 aria-invalid:border-destructive w-full text-foreground focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] focus:border-[var(--primary-color)] cursor-pointer relative [&>svg]:hidden",
+                "peer file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground border-input flex min-w-0 overflow-hidden rounded-md border bg-transparent px-3 py-1 text-base shadow-none transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm aria-invalid:ring-destructive/20 aria-invalid:border-destructive w-full text-foreground focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] focus:border-[var(--primary-color)] cursor-pointer relative [&>svg]:hidden",
                 // Força altura equivalente ao InputCustom usando o mesmo seletor de atributo do Radix
                 size === "sm" && "data-[size=sm]:h-10",
                 size === "md" && "data-[size=default]:h-12",
@@ -340,7 +345,7 @@ export function SelectCustom(props: SelectCustomProps) {
               )}
               aria-required={props.required || undefined}
             >
-              <div className="flex min-w-0 flex-1 items-center gap-2">
+              <div className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden">
                 {props.mode === "user" ? (
                   <UserTriggerValue
                     value={value}
@@ -348,11 +353,18 @@ export function SelectCustom(props: SelectCustomProps) {
                     placeholder={placeholder}
                   />
                 ) : disabled && !value && placeholder ? (
-                  <span className="text-muted-foreground">{placeholder}</span>
+                  <span className="block truncate text-muted-foreground">
+                    {placeholder}
+                  </span>
                 ) : value ? (
-                  <SelectValue placeholder={placeholder} />
+                  <SelectValue
+                    placeholder={placeholder}
+                    className="block min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap"
+                  />
                 ) : (
-                  <span className="text-muted-foreground">{placeholder}</span>
+                  <span className="block truncate text-muted-foreground">
+                    {placeholder}
+                  </span>
                 )}
               </div>
             </SelectTrigger>

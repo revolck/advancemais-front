@@ -14,6 +14,7 @@ import {
   updateSubcategoria,
   deleteSubcategoria,
 } from "@/api/cursos/categorias";
+import { listCursos } from "@/api/cursos";
 import type {
   CategoriaCurso,
   SubcategoriaCurso,
@@ -26,11 +27,33 @@ import {
   type SubcategoriaFormData,
 } from "./components/SubcategoriaForm";
 
+type ApiErrorLike = Error & {
+  code?: string;
+  status?: number;
+  details?: {
+    code?: string;
+    message?: string;
+  };
+};
+
+function getApiErrorCode(error: unknown): string | undefined {
+  const err = error as ApiErrorLike;
+  return err?.details?.code || err?.code;
+}
+
+function getApiErrorMessage(error: unknown): string {
+  const err = error as ApiErrorLike;
+  return err?.details?.message || err?.message || "Erro inesperado.";
+}
+
 export function SubcategoriasForm() {
   const [initialSubcategorias, setInitialSubcategorias] = useState<ListItem[]>(
     []
   );
   const [categorias, setCategorias] = useState<CategoriaCurso[]>([]);
+  const [linkedCoursesBySubcategory, setLinkedCoursesBySubcategory] = useState<
+    Record<number, number>
+  >({});
   const [isLoadingCategorias, setIsLoadingCategorias] = useState(true);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
 
@@ -106,10 +129,32 @@ export function SubcategoriasForm() {
     }
   }, [categorias]);
 
+  const loadLinkedCoursesBySubcategory = useCallback(async () => {
+    const counts: Record<number, number> = {};
+    let page = 1;
+    let totalPages = 1;
+
+    do {
+      const response = await listCursos({ page, pageSize: 200 });
+      const cursos = response?.data ?? [];
+
+      cursos.forEach((curso) => {
+        const subcategoriaId = Number(curso.subcategoriaId);
+        if (!Number.isFinite(subcategoriaId)) return;
+        counts[subcategoriaId] = (counts[subcategoriaId] ?? 0) + 1;
+      });
+
+      totalPages = response?.pagination?.totalPages ?? 1;
+      page += 1;
+    } while (page <= totalPages);
+
+    setLinkedCoursesBySubcategory(counts);
+  }, []);
+
   // Carregar dados iniciais
   const loadInitialData = useCallback(async () => {
-    await loadCategorias();
-  }, [loadCategorias]);
+    await Promise.all([loadCategorias(), loadLinkedCoursesBySubcategory()]);
+  }, [loadCategorias, loadLinkedCoursesBySubcategory]);
 
   // Mapear dados do backend para o formato do ListManager
   const mapFromBackend = (
@@ -273,15 +318,27 @@ export function SubcategoriasForm() {
         await loadInitialData();
       } catch (error) {
         console.error("Erro ao excluir subcategoria:", error);
-        toastCustom.error({
-          title: "Erro ao excluir subcategoria",
-          description:
-            "Não foi possível excluir a subcategoria. Tente novamente.",
-        });
+        const errorCode = getApiErrorCode(error);
+        if (errorCode === "SUBCATEGORIA_IN_USE") {
+          void loadLinkedCoursesBySubcategory();
+          toastCustom.error({
+            title: "Subcategoria com cursos vinculados",
+            description:
+              getApiErrorMessage(error) ||
+              "Não é possível excluir subcategoria com cursos vinculados.",
+          });
+        } else {
+          toastCustom.error({
+            title: "Erro ao excluir subcategoria",
+            description:
+              getApiErrorMessage(error) ||
+              "Não foi possível excluir a subcategoria. Tente novamente.",
+          });
+        }
         throw error;
       }
     },
-    [loadInitialData]
+    [loadInitialData, loadLinkedCoursesBySubcategory]
   );
 
   // Renderizar item da lista
@@ -297,13 +354,20 @@ export function SubcategoriasForm() {
         <SubcategoriaRow
           key={item.id}
           subcategoria={subcategoria}
+          linkedCoursesCount={
+            Number(item.linkedCoursesCount) ||
+            Number(subcategoria.cursosVinculadosCount) ||
+            Number(subcategoria.totalCursosVinculados) ||
+            linkedCoursesBySubcategory[subcategoria.id] ||
+            0
+          }
           onEdit={() => onEdit(item)}
           onDelete={(id) => onDelete(id.toString())}
           isDeleting={isDeleting}
         />
       );
     },
-    []
+    [linkedCoursesBySubcategory]
   );
 
   // Renderizar formulário de criação

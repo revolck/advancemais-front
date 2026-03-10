@@ -333,6 +333,11 @@ export interface TurmaProva {
         codigo?: string;
         nome?: string;
         modalidade?: string;
+        instrutorId?: string | null;
+        instrutor?: {
+          id?: string;
+          nome?: string;
+        } | null;
       }
     | null;
   turmaNome?: string | null;
@@ -1270,7 +1275,20 @@ export interface Avaliacao {
   curso?: string | { id: string; codigo: string; nome: string } | null;
   cursoNome?: string | null; // Alias de curso.nome
   // turma pode ser string (legado) ou objeto { id, codigo, nome, modalidade? }
-  turma?: string | { id: string; codigo: string; nome: string; modalidade?: string } | null;
+  turma?:
+    | string
+    | {
+        id: string;
+        codigo: string;
+        nome: string;
+        modalidade?: string;
+        instrutorId?: string | null;
+        instrutor?: {
+          id?: string;
+          nome?: string;
+        } | null;
+      }
+    | null;
   turmaNome?: string | null; // Alias de turma.nome
   // instrutor pode ser objeto completo
   instrutor?: {

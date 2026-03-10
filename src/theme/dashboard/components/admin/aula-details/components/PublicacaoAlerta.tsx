@@ -6,6 +6,7 @@ import type { Aula } from "@/api/aulas";
 import {
   validarPublicacao,
   validarDespublicacao,
+  validarPermissaoGestaoAula,
   podeAlterarStatus,
 } from "../utils/validations";
 import { useAuth } from "@/hooks/useAuth";
@@ -20,13 +21,16 @@ export function PublicacaoAlerta({ aula }: PublicacaoAlertaProps) {
   const isPublicada = aula.status === "PUBLICADA";
   const validacao = isPublicada ? null : validarPublicacao(aula);
   const validacaoDespublicacao = isPublicada
-    ? validarDespublicacao(aula, user?.role)
+    ? validarDespublicacao(aula, user?.role, user?.id)
     : null;
+  const permissaoGestao = validarPermissaoGestaoAula(aula, user?.role, user?.id);
 
   const podeAlterar = podeAlterarStatus(
     aula.status,
     isPublicada ? "RASCUNHO" : "PUBLICADA",
-    user?.role
+    user?.role,
+    aula,
+    user?.id
   );
 
   // Se pode publicar/despublicar, não mostrar alerta
@@ -48,7 +52,11 @@ export function PublicacaoAlerta({ aula }: PublicacaoAlertaProps) {
   let tipo: "info" | "warning" = "info";
 
   if (!podeAlterar) {
-    if (aula.status === "EM_ANDAMENTO") {
+    if (!permissaoGestao.podeGerenciar) {
+      titulo = "Ação não permitida";
+      mensagens = [permissaoGestao.motivo || "Você não tem permissão para esta aula"];
+      tipo = "warning";
+    } else if (aula.status === "EM_ANDAMENTO") {
       titulo = "Ação não permitida";
       mensagens = ["Não é possível alterar o status de uma aula em andamento"];
       tipo = "warning";

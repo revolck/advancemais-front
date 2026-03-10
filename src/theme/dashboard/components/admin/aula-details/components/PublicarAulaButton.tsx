@@ -31,13 +31,15 @@ export function PublicarAulaButton({
   const isPublicada = aula.status === "PUBLICADA";
   const validacao = isPublicada ? null : validarPublicacao(aula);
   const validacaoDespublicacao = isPublicada
-    ? validarDespublicacao(aula, user?.role)
+    ? validarDespublicacao(aula, user?.role, user?.id)
     : null;
 
   const podeAlterar = podeAlterarStatus(
     aula.status,
     isPublicada ? "RASCUNHO" : "PUBLICADA",
-    user?.role
+    user?.role,
+    aula,
+    user?.id
   );
 
   const publicarMutation = useMutation({
@@ -60,9 +62,7 @@ export function PublicarAulaButton({
           );
           break;
         case "FORBIDDEN":
-          toastCustom.error(
-            "Você não tem permissão para publicar esta aula"
-          );
+          toastCustom.error("Você não tem permissão para esta aula");
           break;
         case "DATA_INVALIDA":
           toastCustom.error(
@@ -160,4 +160,3 @@ export function PublicarAulaButton({
     </>
   );
 }
-

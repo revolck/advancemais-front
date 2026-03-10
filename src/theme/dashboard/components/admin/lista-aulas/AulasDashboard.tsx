@@ -132,9 +132,18 @@ export function AulasDashboard({ className }: { className?: string }) {
   const pagination = aulasQuery.data?.pagination;
   const isLoading = aulasQuery.status === "pending";
   const isFetching = aulasQuery.isFetching;
-  const errorMessage =
+  const queryError =
     aulasQuery.status === "error"
-      ? aulasQuery.error?.message ?? "Não foi possível carregar as aulas."
+      ? (aulasQuery.error as Error & {
+          status?: number;
+          details?: { code?: string; message?: string };
+        })
+      : null;
+  const errorMessage =
+    queryError
+      ? queryError.status === 403
+        ? "Você não tem permissão para esta aula"
+        : queryError.message ?? "Não foi possível carregar as aulas."
       : null;
   const hasError = Boolean(errorMessage);
 

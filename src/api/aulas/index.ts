@@ -16,6 +16,7 @@ export {
   getAulaPresencas,
   registrarPresenca,
   getAgenda,
+  getAgendaAniversariantes,
   getGoogleOAuthStatus,
   connectGoogle,
   disconnectGoogle,
@@ -43,6 +44,8 @@ export type {
   AgendaEvento,
   AgendaListParams,
   AgendaListResponse,
+  AgendaAniversariantesParams,
+  AgendaAniversariantesResponse,
   GoogleOAuthStatus,
   GoogleConnectResponse,
   // Materiais
@@ -55,4 +58,3 @@ export type {
 
 // Constants
 export { MATERIAIS_CONFIG } from "./types";
-

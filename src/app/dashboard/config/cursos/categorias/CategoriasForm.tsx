@@ -11,9 +11,29 @@ import {
   updateCategoria,
   deleteCategoria,
 } from "@/api/cursos/categorias";
+import { listCursos } from "@/api/cursos";
 import type { CategoriaCurso } from "@/api/cursos/categorias/types";
 import { CategoriaRow } from "./components/CategoriaRow";
 import { CategoriaForm } from "./components/CategoriaForm";
+
+type ApiErrorLike = Error & {
+  code?: string;
+  status?: number;
+  details?: {
+    code?: string;
+    message?: string;
+  };
+};
+
+function getApiErrorCode(error: unknown): string | undefined {
+  const err = error as ApiErrorLike;
+  return err?.details?.code || err?.code;
+}
+
+function getApiErrorMessage(error: unknown): string {
+  const err = error as ApiErrorLike;
+  return err?.details?.message || err?.message || "Erro inesperado.";
+}
 
 function mapFromBackend(item: CategoriaCurso): ListItem {
   return {
@@ -43,7 +63,32 @@ function mapToBackend(item: ListItem): CategoriaCurso {
 
 export function CategoriasForm() {
   const [initialCategorias, setInitialCategorias] = useState<ListItem[]>([]);
+  const [linkedCoursesByCategory, setLinkedCoursesByCategory] = useState<
+    Record<number, number>
+  >({});
   const [isInitialLoading, setIsInitialLoading] = useState(true);
+
+  const loadLinkedCoursesByCategory = useCallback(async () => {
+    const counts: Record<number, number> = {};
+    let page = 1;
+    let totalPages = 1;
+
+    do {
+      const response = await listCursos({ page, pageSize: 200 });
+      const cursos = response?.data ?? [];
+
+      cursos.forEach((curso) => {
+        const categoriaId = Number(curso.categoriaId);
+        if (!Number.isFinite(categoriaId)) return;
+        counts[categoriaId] = (counts[categoriaId] ?? 0) + 1;
+      });
+
+      totalPages = response?.pagination?.totalPages ?? 1;
+      page += 1;
+    } while (page <= totalPages);
+
+    setLinkedCoursesByCategory(counts);
+  }, []);
 
   // Carregar dados iniciais
   useEffect(() => {
@@ -53,6 +98,10 @@ export function CategoriasForm() {
       try {
         setIsInitialLoading(true);
         const data = await listCategorias();
+        void loadLinkedCoursesByCategory().catch((error) => {
+          console.error("Erro ao carregar contagem de cursos por categoria:", error);
+          setLinkedCoursesByCategory({});
+        });
         const mapped = Array.isArray(data) ? data.map(mapFromBackend) : [];
 
         if (mounted) {
@@ -73,7 +122,7 @@ export function CategoriasForm() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [loadLinkedCoursesByCategory]);
 
   const handleCreate = useCallback(
     async (data: Omit<ListItem, "id" | "createdAt">): Promise<ListItem> => {
@@ -157,12 +206,23 @@ export function CategoriasForm() {
       toastCustom.success("Categoria excluída com sucesso");
     } catch (error) {
       console.error("Erro ao excluir categoria:", error);
-      const errorMessage =
-        error instanceof Error ? error.message : "Erro ao excluir categoria";
-      toastCustom.error(errorMessage);
+      const errorCode = getApiErrorCode(error);
+
+      if (errorCode === "CATEGORIA_IN_USE") {
+        // Atualiza contagem para bloquear exclusão diretamente na UI
+        void loadLinkedCoursesByCategory();
+        toastCustom.error({
+          title: "Categoria com cursos vinculados",
+          description:
+            getApiErrorMessage(error) ||
+            "Não é possível excluir categoria com cursos vinculados.",
+        });
+      } else {
+        toastCustom.error(getApiErrorMessage(error));
+      }
       throw error;
     }
-  }, []);
+  }, [loadLinkedCoursesByCategory]);
 
   // Renderizar item da categoria
   const renderItem = useCallback(
@@ -177,13 +237,20 @@ export function CategoriasForm() {
         <CategoriaRow
           key={item.id}
           categoria={categoria}
+          linkedCoursesCount={
+            Number(item.linkedCoursesCount) ||
+            Number(categoria.cursosVinculadosCount) ||
+            Number(categoria.totalCursosVinculados) ||
+            linkedCoursesByCategory[categoria.id] ||
+            0
+          }
           onEdit={() => onEdit(item)}
           onDelete={(id) => onDelete(id.toString())}
           isDeleting={isDeleting}
         />
       );
     },
-    []
+    [linkedCoursesByCategory]
   );
 
   // Renderizar formulário de criação

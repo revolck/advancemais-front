@@ -17,6 +17,7 @@ import { SubcategoriasModal } from "./SubcategoriasModal";
 
 interface CategoriaRowProps {
   categoria: CategoriaCurso;
+  linkedCoursesCount?: number;
   onEdit: (categoria: CategoriaCurso) => void;
   onDelete: (id: number) => void;
   isDeleting?: boolean;
@@ -24,6 +25,7 @@ interface CategoriaRowProps {
 
 export function CategoriaRow({
   categoria,
+  linkedCoursesCount = 0,
   onEdit,
   onDelete,
   isDeleting: externalIsDeleting = false,
@@ -46,8 +48,16 @@ export function CategoriaRow({
 
   // Contar subcategorias
   const subcategoriasCount = categoria.subcategorias?.length || 0;
+  const hasLinkedCourses = linkedCoursesCount > 0;
+  const canDelete = !hasLinkedCourses && !externalIsDeleting;
+  const deleteBlockedMessage = `Não é possível excluir: existe${
+    linkedCoursesCount > 1 ? "m" : ""
+  } ${linkedCoursesCount} curso${
+    linkedCoursesCount > 1 ? "s" : ""
+  } vinculado${linkedCoursesCount > 1 ? "s" : ""}.`;
 
   const handleDeleteClick = () => {
+    if (!canDelete) return;
     setShowDeleteModal(true);
   };
 
@@ -203,23 +213,34 @@ export function CategoriaRow({
 
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleDeleteClick}
-                disabled={externalIsDeleting}
-                className="h-8 w-8 rounded-full text-gray-500 hover:text-white hover:bg-red-500 cursor-pointer"
-                aria-label="Excluir categoria"
-              >
-                {externalIsDeleting ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Trash2 className="h-4 w-4" />
-                )}
-              </Button>
+              <span className="inline-flex">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleDeleteClick}
+                  disabled={!canDelete}
+                  className={cn(
+                    "h-8 w-8 rounded-full text-gray-500",
+                    canDelete
+                      ? "hover:text-white hover:bg-red-500 cursor-pointer"
+                      : "cursor-not-allowed opacity-50"
+                  )}
+                  aria-label="Excluir categoria"
+                >
+                  {externalIsDeleting ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Trash2 className="h-4 w-4" />
+                  )}
+                </Button>
+              </span>
             </TooltipTrigger>
             <TooltipContent sideOffset={8}>
-              {externalIsDeleting ? "Excluindo..." : "Excluir categoria"}
+              {externalIsDeleting
+                ? "Excluindo..."
+                : hasLinkedCourses
+                  ? deleteBlockedMessage
+                  : "Excluir categoria"}
             </TooltipContent>
           </Tooltip>
         </div>

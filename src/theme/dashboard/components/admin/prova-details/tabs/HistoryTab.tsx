@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 
 import type { TurmaProva } from "@/api/cursos";
+import { getAvaliacaoStatusEfetivo } from "../../lista-atividades-provas/utils/avaliacaoStatus";
 import {
   listAvaliacaoHistorico,
   listAvaliacaoRespostas,
@@ -420,8 +421,8 @@ function buildBaseEvents(prova: TurmaProva): ProvaHistoryEvent[] {
       action: "AVALIACAO_CRIADA",
       actionLabel: ACTION_LABELS.AVALIACAO_CRIADA,
       description: `${titulo} foi cadastrada com status ${
-        STATUS_LABELS[String(prova.status || "").toUpperCase()] ||
-        String(prova.status || "Rascunho")
+        STATUS_LABELS[getAvaliacaoStatusEfetivo(prova)] ||
+        getAvaliacaoStatusEfetivo(prova)
       }`,
       date: createdAt,
       actorName,

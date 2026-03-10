@@ -11,26 +11,16 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import {
   ChevronDown,
   ChevronLeft,
   Edit,
+  Loader2,
   Trash2,
-  Video,
-  Eye,
-  EyeOff,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Aula } from "@/api/aulas";
 import { useRouter } from "next/navigation";
 import {
-  getModalidadeIcon,
-  getModalidadeBadgeColor,
-  getModalidadeLabel,
   getStatusBadgeColor,
   formatAulaStatus,
 } from "../utils";
@@ -45,6 +35,7 @@ import {
   validarExclusao,
   validarPublicacao,
   validarDespublicacao,
+  validarPermissaoGestaoAula,
   podeAlterarStatus,
 } from "../utils/validations";
 
@@ -104,9 +95,7 @@ export function HeaderInfo({ aula, onUpdate }: HeaderInfoProps) {
 
       switch (errorData?.code) {
         case "FORBIDDEN":
-          toastCustom.error(
-            "Apenas administradores, moderadores e equipe pedagógica podem excluir aulas"
-          );
+          toastCustom.error("Você não tem permissão para esta aula");
           break;
         case "AULA_JA_REALIZADA":
           toastCustom.error(
@@ -139,20 +128,31 @@ export function HeaderInfo({ aula, onUpdate }: HeaderInfoProps) {
   }
 
   const isPublicada = aula.status === "PUBLICADA";
-  const statusColor = isPublicada ? "bg-emerald-500" : "bg-gray-400";
-  const statusLabel = isPublicada ? "Aula publicada" : "Aula em rascunho";
-
-  // Validar exclusão usando função centralizada
-  const validacaoExclusao = validarExclusao(aula, user?.role);
+  const permissaoGestao = validarPermissaoGestaoAula(aula, user?.role, user?.id);
+  const podeEditar = permissaoGestao.podeGerenciar;
+  const validacaoPublicacao = isPublicada ? null : validarPublicacao(aula);
+  const validacaoDespublicacao = isPublicada
+    ? validarDespublicacao(aula, user?.role, user?.id)
+    : null;
+  const podeAlterarPublicacao = podeAlterarStatus(
+    aula.status,
+    isPublicada ? "RASCUNHO" : "PUBLICADA",
+    user?.role,
+    aula,
+    user?.id
+  );
+  const podePublicarDespublicar = Boolean(
+    podeAlterarPublicacao &&
+      (isPublicada
+        ? validacaoDespublicacao?.podeDespublicar
+        : validacaoPublicacao?.podePublicar)
+  );
+  const validacaoExclusao = validarExclusao(aula, user?.role, user?.id);
   const podeExcluir = validacaoExclusao.podeExcluir;
+  const podeExibirAcoes = podeEditar || podePublicarDespublicar || podeExcluir;
 
   const handleEditClick = () => {
     router.push(`/dashboard/cursos/aulas/${aula.id}/editar`);
-    setIsActionsOpen(false);
-  };
-
-  const handleDeleteClick = () => {
-    setIsDeleteModalOpen(true);
     setIsActionsOpen(false);
   };
 
@@ -166,18 +166,6 @@ export function HeaderInfo({ aula, onUpdate }: HeaderInfoProps) {
     }
   };
 
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return "—";
-    const date = new Date(dateString);
-    return date.toLocaleDateString("pt-BR", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    });
-  };
-
-  const ModalidadeIcon = getModalidadeIcon(aula.modalidade);
-
   const statusBadge = (
     <Badge
       className={cn(
@@ -186,18 +174,6 @@ export function HeaderInfo({ aula, onUpdate }: HeaderInfoProps) {
       )}
     >
       {formatAulaStatus(aula.status)}
-    </Badge>
-  );
-
-  const modalidadeBadge = (
-    <Badge
-      className={cn(
-        "inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-medium",
-        getModalidadeBadgeColor(aula.modalidade)
-      )}
-    >
-      <ModalidadeIcon className="h-3 w-3" />
-      {getModalidadeLabel(aula.modalidade)}
     </Badge>
   );
 
@@ -214,70 +190,64 @@ export function HeaderInfo({ aula, onUpdate }: HeaderInfoProps) {
         </div>
 
         <div className="flex w-full flex-col items-stretch gap-2 sm:w-auto sm:flex-row sm:items-center">
-          <DropdownMenu open={isActionsOpen} onOpenChange={setIsActionsOpen}>
-            <DropdownMenuTrigger asChild>
-              <Button
-                aria-expanded={isActionsOpen}
-                className="flex items-center gap-2 rounded-full bg-[var(--primary-color)] px-6 py-2 text-sm font-semibold text-white hover:bg-[var(--primary-color)]/90 cursor-pointer"
-              >
-                Ações
-                <ChevronDown
-                  className={cn(
-                    "h-4 w-4 transition-transform duration-200",
-                    isActionsOpen ? "rotate-180" : "rotate-0"
-                  )}
-                  aria-hidden="true"
-                />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuItem
-                onSelect={handleEditClick}
-                className="cursor-pointer"
-              >
-                <Edit className="h-4 w-4 text-gray-500" />
-                <span>Editar</span>
-              </DropdownMenuItem>
-              {(() => {
-                const isPublicada = aula.status === "PUBLICADA";
-                const validacao = isPublicada ? null : validarPublicacao(aula);
-                const validacaoDespublicacao = isPublicada
-                  ? validarDespublicacao(aula, user?.role)
-                  : null;
-                const podeAlterar = podeAlterarStatus(
-                  aula.status,
-                  isPublicada ? "RASCUNHO" : "PUBLICADA",
-                  user?.role
-                );
-
-                const podePublicarDespublicar =
-                  podeAlterar &&
-                  (isPublicada
-                    ? validacaoDespublicacao?.podeDespublicar
-                    : validacao?.podePublicar);
-
-                // Só mostrar item se puder publicar/despublicar
-                if (!podePublicarDespublicar) return null;
-
-                return (
-                  <PublicarAulaMenuItem aula={aula} onSuccess={onUpdate} />
-                );
-              })()}
-              {/* Só mostrar "Excluir" se podeExcluir for true */}
-              {podeExcluir && (
-                <DropdownMenuItem
-                  onSelect={handleDeleteClick}
-                  className="cursor-pointer text-red-600 focus:text-red-600"
-                  disabled={deleteMutation.isPending}
+          {podeExibirAcoes && (
+            <DropdownMenu
+              open={isActionsOpen}
+              onOpenChange={setIsActionsOpen}
+              modal={false}
+            >
+              <DropdownMenuTrigger asChild>
+                <Button
+                  aria-expanded={isActionsOpen}
+                  className="flex items-center gap-2 rounded-full bg-[var(--primary-color)] px-6 py-2 text-sm font-semibold text-white hover:bg-[var(--primary-color)]/90 cursor-pointer"
                 >
-                  <Trash2 className="h-4 w-4" />
-                  <span>
-                    {deleteMutation.isPending ? "Excluindo..." : "Excluir"}
-                  </span>
-                </DropdownMenuItem>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
+                  Ações
+                  <ChevronDown
+                    className={cn(
+                      "h-4 w-4 transition-transform duration-200",
+                      isActionsOpen ? "rotate-180" : "rotate-0"
+                    )}
+                    aria-hidden="true"
+                  />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                {podeEditar && (
+                  <DropdownMenuItem
+                    onSelect={handleEditClick}
+                    className="cursor-pointer"
+                  >
+                    <Edit className="h-4 w-4 text-gray-500" />
+                    <span>Editar</span>
+                  </DropdownMenuItem>
+                )}
+                {podePublicarDespublicar && (
+                  <PublicarAulaMenuItem aula={aula} onSuccess={onUpdate} />
+                )}
+                {podeExcluir && (
+                  <DropdownMenuItem
+                    onSelect={() => {
+                      setIsActionsOpen(false);
+                      window.setTimeout(() => {
+                        setIsDeleteModalOpen(true);
+                      }, 0);
+                    }}
+                    className="cursor-pointer text-red-600 focus:text-red-700 data-[highlighted]:text-red-700"
+                    disabled={deleteMutation.isPending}
+                  >
+                    {deleteMutation.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin text-red-600" />
+                    ) : (
+                      <Trash2 className="h-4 w-4 text-red-600" />
+                    )}
+                    <span>
+                      {deleteMutation.isPending ? "Excluindo..." : "Excluir"}
+                    </span>
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
           <Button
             asChild
             variant="outline"

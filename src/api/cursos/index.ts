@@ -108,6 +108,7 @@ export {
   listAvaliacaoQuestoes,
   createAvaliacao,
   updateAvaliacao,
+  publicarAvaliacao,
   deleteAvaliacao,
   cloneAvaliacaoParaTurma,
   listAvaliacoesTurmas,

@@ -22,6 +22,43 @@ export interface ValidacaoDespublicacao {
   motivo?: string;
 }
 
+const ROLES_GESTAO_AULA = ["ADMIN", "MODERADOR", "PEDAGOGICO", "INSTRUTOR"];
+
+export function isInstrutorVinculadoAAula(
+  aula: Aula,
+  userId?: string
+): boolean {
+  if (!userId) return false;
+
+  const aulaInstrutorId = aula.instrutorId ?? aula.instrutor?.id;
+  const turmaInstrutorId =
+    aula.turma?.instrutorId ?? aula.turma?.instrutor?.id ?? null;
+
+  return aulaInstrutorId === userId || turmaInstrutorId === userId;
+}
+
+export function validarPermissaoGestaoAula(
+  aula: Aula,
+  userRole?: string,
+  userId?: string
+): { podeGerenciar: boolean; motivo?: string } {
+  if (!userRole || !ROLES_GESTAO_AULA.includes(userRole)) {
+    return {
+      podeGerenciar: false,
+      motivo: "Você não tem permissão para esta aula",
+    };
+  }
+
+  if (userRole === "INSTRUTOR" && !isInstrutorVinculadoAAula(aula, userId)) {
+    return {
+      podeGerenciar: false,
+      motivo: "Você não tem permissão para esta aula",
+    };
+  }
+
+  return { podeGerenciar: true };
+}
+
 /**
  * Valida se uma aula pode ser publicada baseado nos campos obrigatórios por modalidade
  */
@@ -116,14 +153,14 @@ export function validarPublicacao(aula: Aula): ValidacaoPublicacao {
  */
 export function validarExclusao(
   aula: Aula,
-  userRole?: string
+  userRole?: string,
+  userId?: string
 ): ValidacaoExclusao {
-  // 1. Verificar permissão
-  if (!userRole || !["ADMIN", "MODERADOR", "PEDAGOGICO"].includes(userRole)) {
+  const permissao = validarPermissaoGestaoAula(aula, userRole, userId);
+  if (!permissao.podeGerenciar) {
     return {
       podeExcluir: false,
-      motivo:
-        "Apenas administradores, moderadores e equipe pedagógica podem excluir aulas",
+      motivo: permissao.motivo,
     };
   }
 
@@ -175,8 +212,17 @@ export function validarExclusao(
  */
 export function validarDespublicacao(
   aula: Aula,
-  userRole?: string
+  userRole?: string,
+  userId?: string
 ): ValidacaoDespublicacao {
+  const permissao = validarPermissaoGestaoAula(aula, userRole, userId);
+  if (!permissao.podeGerenciar) {
+    return {
+      podeDespublicar: false,
+      motivo: permissao.motivo,
+    };
+  }
+
   // 1. Verificar se está publicada
   if (aula.status !== "PUBLICADA") {
     return {
@@ -211,8 +257,19 @@ export function validarDespublicacao(
 export function podeAlterarStatus(
   statusAtual: string,
   novoStatus: string,
-  userRole?: string
+  userRole?: string,
+  aula?: Aula,
+  userId?: string
 ): boolean {
+  if (!userRole || !ROLES_GESTAO_AULA.includes(userRole)) {
+    return false;
+  }
+
+  if (userRole === "INSTRUTOR") {
+    if (!aula) return false;
+    if (!isInstrutorVinculadoAAula(aula, userId)) return false;
+  }
+
   // ADMIN pode tudo
   if (userRole === "ADMIN") {
     return true;

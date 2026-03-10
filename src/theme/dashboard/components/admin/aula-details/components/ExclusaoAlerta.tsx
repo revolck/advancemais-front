@@ -12,7 +12,7 @@ interface ExclusaoAlertaProps {
 
 export function ExclusaoAlerta({ aula }: ExclusaoAlertaProps) {
   const { user } = useAuth();
-  const validacao = validarExclusao(aula, user?.role);
+  const validacao = validarExclusao(aula, user?.role, user?.id);
 
   // Se pode excluir, não mostrar alerta
   if (validacao.podeExcluir) {
@@ -45,4 +45,3 @@ export function ExclusaoAlerta({ aula }: ExclusaoAlertaProps) {
     </div>
   );
 }
-

@@ -4,23 +4,37 @@ import { AlertTriangle } from "lucide-react";
 
 import type { TurmaProva } from "@/api/cursos";
 import { getAvaliacaoActionRestrictions } from "../utils/validations";
+import { getAvaliacaoStatusEfetivo } from "../../lista-atividades-provas/utils/avaliacaoStatus";
 
 interface AvaliacaoAlertasUnificadosProps {
   prova: TurmaProva;
   hasRespostas?: boolean;
+  userRole?: string | null;
+  userId?: string | null;
 }
 
 export function AvaliacaoAlertasUnificados({
   prova,
   hasRespostas,
+  userRole,
+  userId,
 }: AvaliacaoAlertasUnificadosProps) {
-  const restrictions = getAvaliacaoActionRestrictions(prova, { hasRespostas });
+  const restrictions = getAvaliacaoActionRestrictions(prova, {
+    hasRespostas,
+    userRole,
+    userId,
+  });
+  const statusEfetivo = getAvaliacaoStatusEfetivo(prova);
   const issues: string[] = [];
 
-  if (prova.status !== "PUBLICADA" && !restrictions.canPublish) {
+  if (!restrictions.canManage && restrictions.manageReason) {
+    issues.push(restrictions.manageReason);
+  }
+
+  if (statusEfetivo !== "PUBLICADA" && !restrictions.canPublish) {
     issues.push(
       restrictions.publishReason ||
-        "Não é possível publicar enquanto não houver turma vinculada."
+        "Não é possível publicar esta avaliação no momento."
     );
   }
 
@@ -35,7 +49,14 @@ export function AvaliacaoAlertasUnificados({
     issues.push(restrictions.deleteReason);
   }
 
-  if (issues.length === 0) return null;
+  const uniqueIssues = Array.from(new Set(issues.filter(Boolean)));
+  const isMesmoBloqueioPorInicioOuRealizacao =
+    uniqueIssues.length >= 2 &&
+    uniqueIssues.every((issue) =>
+      issue.includes("já iniciou ou já foi realizada")
+    );
+
+  if (uniqueIssues.length === 0) return null;
 
   return (
     <div className="rounded-lg border border-red-200 bg-red-50 p-4">
@@ -47,13 +68,20 @@ export function AvaliacaoAlertasUnificados({
           <p className="mb-0! text-sm! font-bold! leading-normal! text-red-800">
             Algumas ações estão bloqueadas
           </p>
-          <ul className="mb-0! ml-3 list-disc space-y-1.5 text-xs! leading-normal! text-gray-700">
-            {issues.map((issue) => (
-              <li key={issue} className="mb-0!">
-                {issue}
-              </li>
-            ))}
-          </ul>
+          {isMesmoBloqueioPorInicioOuRealizacao ? (
+            <p className="mb-0! text-xs! leading-normal! text-gray-700">
+              A avaliação já iniciou ou já foi realizada e, por isso, não pode
+              mais ser publicada/despublicada, editada ou excluída.
+            </p>
+          ) : (
+            <ul className="mb-0! ml-3 list-disc space-y-1.5 text-xs! leading-normal! text-gray-700">
+              {uniqueIssues.map((issue) => (
+                <li key={issue} className="mb-0!">
+                  {issue}
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </div>
     </div>

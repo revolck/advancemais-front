@@ -26,6 +26,7 @@ import {
   createProva,
   createAvaliacao,
   updateAvaliacao,
+  publicarAvaliacao,
   updateProva,
   listModulos,
   listInscricoes,
@@ -934,7 +935,6 @@ export function CreateProvaForm({
             modalidade: formData.modalidade as any,
             obrigatoria: formData.obrigatoria,
             valePonto: valePontoEfetivo,
-            status: formData.status as any,
             ...(valePontoEfetivo && formData.peso
               ? { peso: Number(formData.peso) }
               : {}),
@@ -964,6 +964,15 @@ export function CreateProvaForm({
           };
 
           await updateAvaliacao(provaId, avaliacaoPayload);
+
+          const statusAtual =
+            String(initialData?.status || "RASCUNHO").toUpperCase() === "PUBLICADA";
+          const statusDesejado = formData.status === "PUBLICADA";
+          const mudouPublicacao = statusAtual !== statusDesejado;
+
+          if (mudouPublicacao) {
+            await publicarAvaliacao(provaId, statusDesejado);
+          }
         }
 
         const tipoLabel =
@@ -990,9 +999,27 @@ export function CreateProvaForm({
         router.push(successRedirectTo);
       }
     } catch (error: any) {
-      const errorMessage =
-        error?.message || "Erro ao salvar prova. Tente novamente.";
-      toastCustom.error(errorMessage);
+      const code = error?.details?.code;
+
+      if (error?.status === 403 || code === "FORBIDDEN") {
+        toastCustom.error("Você não tem permissão para esta avaliação");
+      } else if (
+        error?.status === 409 &&
+        code === "AVALIACAO_PUBLICACAO_EXIGE_TURMA_VINCULADA"
+      ) {
+        toastCustom.error("Vincule uma turma antes de publicar esta avaliação.");
+      } else if (
+        error?.status === 409 ||
+        code === "AVALIACAO_JA_INICIADA_OU_REALIZADA"
+      ) {
+        toastCustom.error(
+          "A avaliação já iniciou ou foi realizada e não pode ser alterada."
+        );
+      } else {
+        const errorMessage =
+          error?.message || "Erro ao salvar prova. Tente novamente.";
+        toastCustom.error(errorMessage);
+      }
       console.error("Erro ao salvar prova:", error);
       setIsLoading(false);
       setLoadingStep("");

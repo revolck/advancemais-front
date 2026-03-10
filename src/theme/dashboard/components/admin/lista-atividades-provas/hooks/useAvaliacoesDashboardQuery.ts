@@ -8,6 +8,7 @@ import {
   type AvaliacaoStatus,
   type AvaliacaoTipoAtividade,
 } from "@/api/cursos";
+import { getAvaliacaoStatusEfetivo } from "../utils/avaliacaoStatus";
 
 export interface NormalizedAvaliacoesFilters {
   cursoId?: string | null;
@@ -86,7 +87,7 @@ function mapAvaliacaoToListItem(avaliacao: Avaliacao): AvaliacaoListItem {
     titulo: avaliacao.titulo || avaliacao.nome || "",
     descricao: avaliacao.descricao,
     etiqueta: avaliacao.etiqueta,
-    status: avaliacao.status,
+    status: getAvaliacaoStatusEfetivo(avaliacao) as AvaliacaoStatus,
     modalidade: avaliacao.modalidade,
     dataInicio: avaliacao.dataInicio,
     dataFim: avaliacao.dataFim,
@@ -148,8 +149,15 @@ async function fetchAvaliacoes(
       },
     };
   } catch (error) {
-    console.error("[useAvaliacoesDashboardQuery] Erro ao buscar avaliações:", error);
-    throw error;
+    console.error(
+      "[useAvaliacoesDashboardQuery] Erro ao buscar avaliações:",
+      error
+    );
+    const apiError = error as Error & { status?: number };
+    if (apiError?.status === 403) {
+      throw new Error("Você não tem permissão para esta avaliação");
+    }
+    throw apiError;
   }
 }
 

@@ -2580,6 +2580,50 @@ export async function deleteAvaliacao(
   });
 }
 
+export async function publicarAvaliacao(
+  avaliacaoId: string,
+  publicar: boolean,
+  init?: RequestInit
+): Promise<import("./types").Avaliacao> {
+  const response = await apiFetch<
+    | {
+        success?: boolean;
+        data?: import("./types").Avaliacao;
+        avaliacao?: import("./types").Avaliacao;
+      }
+    | import("./types").Avaliacao
+  >(cursosRoutes.avaliacoes.publicar(avaliacaoId), {
+    init: {
+      method: "PATCH",
+      ...init,
+      headers: buildHeaders(
+        { "Content-Type": "application/json", ...(init?.headers || {}) },
+        true
+      ),
+      body: JSON.stringify({ publicar }),
+    },
+    cache: "no-cache",
+  });
+
+  if (response && typeof response === "object") {
+    if ("data" in response && response.data && typeof response.data === "object") {
+      return response.data as import("./types").Avaliacao;
+    }
+    if (
+      "avaliacao" in response &&
+      response.avaliacao &&
+      typeof response.avaliacao === "object"
+    ) {
+      return response.avaliacao as import("./types").Avaliacao;
+    }
+    if ("id" in response) {
+      return response as import("./types").Avaliacao;
+    }
+  }
+
+  throw new Error("Resposta inválida ao publicar/despublicar avaliação.");
+}
+
 // Helpers para formulário de avaliações
 export interface AvaliacoesTurmaResponse {
   success: boolean;

@@ -292,6 +292,7 @@ export const cursosRoutes = {
     questoes: (avaliacaoId: string) => `${BASE}/avaliacoes/${avaliacaoId}/questoes`,
     update: (avaliacaoId: string) => `${BASE}/avaliacoes/${avaliacaoId}`,
     delete: (avaliacaoId: string) => `${BASE}/avaliacoes/${avaliacaoId}`,
+    publicar: (avaliacaoId: string) => `${BASE}/avaliacoes/${avaliacaoId}/publicar`,
     turmas: () => `${BASE}/avaliacoes/turmas`,
     instrutores: () => `${BASE}/avaliacoes/instrutores`,
   },

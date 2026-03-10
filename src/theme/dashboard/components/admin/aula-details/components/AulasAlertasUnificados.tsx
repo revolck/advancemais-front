@@ -7,6 +7,7 @@ import {
   validarPublicacao,
   validarDespublicacao,
   validarExclusao,
+  validarPermissaoGestaoAula,
   podeAlterarStatus,
 } from "../utils/validations";
 import { useAuth } from "@/hooks/useAuth";
@@ -32,14 +33,17 @@ export function AulasAlertasUnificados({ aula }: AulasAlertasUnificadosProps) {
   const isPublicada = aula.status === "PUBLICADA";
   const validacaoPublicacao = isPublicada ? null : validarPublicacao(aula);
   const validacaoDespublicacao = isPublicada
-    ? validarDespublicacao(aula, user?.role)
+    ? validarDespublicacao(aula, user?.role, user?.id)
     : null;
-  const validacaoExclusao = validarExclusao(aula, user?.role);
+  const validacaoExclusao = validarExclusao(aula, user?.role, user?.id);
+  const permissaoGestao = validarPermissaoGestaoAula(aula, user?.role, user?.id);
 
   const podeAlterar = podeAlterarStatus(
     aula.status,
     isPublicada ? "RASCUNHO" : "PUBLICADA",
     user?.role,
+    aula,
+    user?.id
   );
 
   const formatDiasRestantes = (dias?: number) => {
@@ -80,7 +84,14 @@ export function AulasAlertasUnificados({ aula }: AulasAlertasUnificadosProps) {
 
   // Problemas de publicação/despublicação
   if (!podeAlterar) {
-    if (aula.status === "EM_ANDAMENTO") {
+    if (!permissaoGestao.podeGerenciar) {
+      problemas.push({
+        tipo: "publicacao",
+        titulo: "Ação não permitida",
+        mensagem: permissaoGestao.motivo ?? "Você não tem permissão para esta aula",
+        severidade: "warning",
+      });
+    } else if (aula.status === "EM_ANDAMENTO") {
       problemas.push({
         tipo: "publicacao",
         titulo: "Ação não permitida",

@@ -1,184 +1,155 @@
-import { Page } from '@playwright/test';
+import { Page } from "@playwright/test";
+import fs from "node:fs";
+import path from "node:path";
 
-/**
- * Credenciais do usuário admin para testes
- */
+const BASE_URL =
+  process.env.PLAYWRIGHT_BASE_URL ||
+  `http://localhost:${process.env.PLAYWRIGHT_PORT ?? process.env.PORT ?? 3001}`;
+const AUTH_CACHE_FILE = path.join(process.cwd(), ".tmp", "e2e-admin-auth.json");
+
 export const ADMIN_CREDENTIALS = {
-  documento: '11111111111', // CPF
-  senha: 'AdminTeste@123',
-  email: 'admin.teste@advancemais.com.br',
+  documento: process.env.E2E_ADMIN_DOCUMENTO ?? "11111111111",
+  senha: process.env.E2E_ADMIN_SENHA ?? "AdminTeste@123",
+  email: process.env.E2E_ADMIN_EMAIL ?? "admin.teste@advancemais.com.br",
 };
 
+type LoginResponse = {
+  success?: boolean;
+  message?: string;
+  token?: string;
+  refreshToken?: string;
+  session?: {
+    expiresAt?: string;
+  };
+  usuario?: {
+    nomeCompleto?: string;
+    role?: string;
+  };
+};
+
+function ensureAuthCacheDir() {
+  fs.mkdirSync(path.dirname(AUTH_CACHE_FILE), { recursive: true });
+}
+
+function readCachedAuth(): LoginResponse | null {
+  const envToken = process.env.E2E_ADMIN_TOKEN;
+  const envRefreshToken = process.env.E2E_ADMIN_REFRESH_TOKEN;
+  if (envToken && envRefreshToken) {
+    return {
+      success: true,
+      token: envToken,
+      refreshToken: envRefreshToken,
+      usuario: {
+        role: process.env.E2E_ADMIN_ROLE,
+        nomeCompleto: process.env.E2E_ADMIN_NOME,
+      },
+    };
+  }
+
+  if (!fs.existsSync(AUTH_CACHE_FILE)) return null;
+
+  try {
+    const cached = JSON.parse(fs.readFileSync(AUTH_CACHE_FILE, "utf8")) as LoginResponse;
+    const expiresAt = cached.session?.expiresAt
+      ? new Date(cached.session.expiresAt).getTime()
+      : Number.POSITIVE_INFINITY;
+
+    if (!cached.token || !cached.refreshToken || Date.now() >= expiresAt) {
+      return null;
+    }
+
+    return cached;
+  } catch {
+    return null;
+  }
+}
+
+function writeCachedAuth(auth: LoginResponse) {
+  ensureAuthCacheDir();
+  fs.writeFileSync(AUTH_CACHE_FILE, JSON.stringify(auth, null, 2));
+}
+
+async function autenticarAdminViaApi(): Promise<LoginResponse> {
+  const cachedAuth = readCachedAuth();
+  if (cachedAuth) {
+    return cachedAuth;
+  }
+
+  const response = await fetch(`${BASE_URL}/api/v1/usuarios/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      documento: ADMIN_CREDENTIALS.documento,
+      senha: ADMIN_CREDENTIALS.senha,
+      rememberMe: false,
+    }),
+  });
+
+  const body = (await response.json().catch(() => ({}))) as LoginResponse;
+
+  if (!response.ok) {
+    throw new Error(
+      `Login API falhou com status ${response.status}: ${body?.message || "sem mensagem"}`
+    );
+  }
+
+  if (!body?.success || !body?.token || !body?.refreshToken) {
+    throw new Error(body?.message || "Login API não retornou os tokens esperados");
+  }
+
+  writeCachedAuth(body);
+  return body;
+}
+
 /**
- * Realiza login no sistema com o usuário admin
- * @param page - Página do Playwright
+ * Realiza autenticação E2E de forma determinística via API e injeta os cookies
+ * que o frontend/middleware esperam.
  */
 export async function loginAsAdmin(page: Page) {
-  // Verificar se já está autenticado
-  await page.goto('/dashboard/cursos/aulas');
-  await page.waitForTimeout(1000);
-  
-  const currentUrl = page.url();
-  if (!currentUrl.includes('/auth/login')) {
-    // Já está autenticado
-    return;
-  }
-  
-  // Se não está autenticado, fazer login
-  await page.goto('/auth/login');
-  await page.waitForLoadState('networkidle');
+  const body = await autenticarAdminViaApi();
+  const url = new URL(BASE_URL);
+  const role = body.usuario?.role;
+  const firstName = body.usuario?.nomeCompleto?.split(" ")?.[0];
 
-  // Aguardar o formulário estar visível
-  await page.waitForSelector('input[name="documento"], input[type="text"]', { timeout: 10000 });
+  await page.context().clearCookies();
+  await page.context().addCookies([
+    {
+      name: "token",
+      value: body.token!,
+      url: BASE_URL,
+      sameSite: "Lax",
+    },
+    {
+      name: "refresh_token",
+      value: body.refreshToken!,
+      url: BASE_URL,
+      sameSite: "Lax",
+    },
+    ...(role
+      ? [
+          {
+            name: "user_role",
+            value: role,
+            url: BASE_URL,
+            sameSite: "Lax" as const,
+          },
+        ]
+      : []),
+  ]);
 
-  // Preencher CPF - pode estar em input[name="documento"] ou input[type="text"]
-  const documentoInput = page.locator('input[name="documento"]').first();
-  if (await documentoInput.count() === 0) {
-    // Tentar encontrar pelo placeholder ou label
-    const docInput = page.locator('input[type="text"]').first();
-    await docInput.fill(ADMIN_CREDENTIALS.documento);
-  } else {
-    await documentoInput.fill(ADMIN_CREDENTIALS.documento);
-  }
-
-  // Preencher senha
-  const senhaInput = page.locator('input[type="password"]').first();
-  await senhaInput.fill(ADMIN_CREDENTIALS.senha);
-
-  // Aguardar um pouco antes de clicar
-  await page.waitForTimeout(500);
-
-  // Clicar no botão de login e aguardar a resposta da API
-  const loginButton = page.locator('button[type="submit"]').first();
-  
-  // Aguardar a requisição de login ser completada
-  let response = null;
-  try {
-    [response] = await Promise.all([
-      page.waitForResponse(resp => {
-        const url = resp.url();
-        return url.includes('/api/v1/usuarios/login') && resp.request().method() === 'POST';
-      }, { timeout: 15000 }),
-      loginButton.click(),
-    ]);
-    
-      // Verificar se a resposta foi bem-sucedida
-      if (response) {
-        const status = response.status();
-        const responseBody = await response.json().catch(() => ({}));
-        
-        if (status === 429) {
-          // Rate limit - lançar erro com mensagem clara
-          const retryAfter = responseBody.retryAfter || 60;
-          throw new Error(`Rate limit atingido. Aguarde ${retryAfter} segundos antes de tentar novamente.`);
-        }
-        
-        if (status >= 400) {
-          throw new Error(`Login falhou com status ${status}: ${JSON.stringify(responseBody)}`);
-        }
-      
-      // Verificar se a resposta indica sucesso
-      if (responseBody && !responseBody.success) {
-        throw new Error(`Login falhou: ${responseBody.message || 'Resposta não indica sucesso'}`);
-      }
-      
-      // Verificar se tem token na resposta
-      if (!responseBody.token) {
-        throw new Error('Login falhou: Token não retornado na resposta');
-      }
+  await page.addInitScript(([storedFirstName]) => {
+    if (storedFirstName) {
+      window.localStorage.setItem("userName", storedFirstName);
     }
-  } catch (error: any) {
-    // Se não conseguiu aguardar a resposta ou houve erro, verificar se há mensagem de erro na página
-    if (error.message.includes('Login falhou') || error.message.includes('Token não retornado')) {
-      throw error;
-    }
-    
-    // Se timeout, verificar se há erro na página
-    await page.waitForTimeout(2000);
-    const errorSelectors = [
-      '[role="alert"]',
-      '.error',
-      '[class*="error"]',
-      'text=/erro|Erro|inválido|Inválido|incorreto|Incorreto|não encontrado/i',
-    ];
-    
-    for (const selector of errorSelectors) {
-      const errorElement = page.locator(selector).first();
-      if (await errorElement.count() > 0) {
-        const errorText = await errorElement.textContent();
-        if (errorText && errorText.trim()) {
-          throw new Error(`Login falhou: ${errorText}`);
-        }
-      }
-    }
-    
-    console.warn('Não foi possível aguardar resposta da API, mas continuando...');
+  }, [firstName]);
+
+  await page.goto("/dashboard", { waitUntil: "domcontentloaded" });
+
+  if (page.url().includes("/auth/login")) {
+    throw new Error(
+      `Autenticação E2E não foi aceita pelo frontend em ${url.origin}. Verifique middleware/cookies.`
+    );
   }
 
-  // Aguardar o redirecionamento (o código usa setTimeout de 1 segundo)
-  // Aguardar até 5 segundos para o redirecionamento
-  try {
-    await page.waitForURL((url) => !url.href.includes("/auth/login"), {
-      timeout: 5000,
-    });
-  } catch {
-    // Se não redirecionou, aguardar mais um pouco
-    await page.waitForTimeout(2000);
-  }
-
-  // Verificar a URL atual após redirecionamento
-  let finalUrl = page.url();
-  
-  // Se ainda está na página de login, verificar se há erro
-  if (finalUrl.includes('/auth/login')) {
-    // Aguardar um pouco mais para ver se aparece algum erro
-    await page.waitForTimeout(2000);
-    
-    // Verificar se há mensagem de erro ou toast
-    const errorSelectors = [
-      '[role="alert"]',
-      '.error',
-      '[class*="error"]',
-      'text=/erro|Erro|inválido|Inválido|incorreto|Incorreto|não encontrado/i',
-    ];
-    
-    for (const selector of errorSelectors) {
-      const errorElement = page.locator(selector).first();
-      if (await errorElement.count() > 0) {
-        const errorText = await errorElement.textContent();
-        if (errorText && errorText.trim()) {
-          throw new Error(`Login falhou: ${errorText}`);
-        }
-      }
-    }
-    
-    // Se não há erro visível, pode ser que o redirecionamento esteja demorando
-    // Tentar navegar manualmente para o dashboard
-    await page.goto('/dashboard');
-    await page.waitForLoadState('networkidle');
-    finalUrl = page.url();
-  } else {
-    // Já foi redirecionado, aguardar carregamento completo
-    await page.waitForLoadState('networkidle');
-  }
-
-  // Se ainda está em /auth/login após todas as tentativas, verificar cookies
-  if (finalUrl.includes('/auth/login')) {
-    const cookies = await page.context().cookies();
-    const hasToken = cookies.some(c => c.name === 'token' || c.name === 'refresh_token');
-    
-    if (!hasToken) {
-      // Tentar uma última vez navegando diretamente
-      await page.goto('/dashboard/cursos/aulas');
-      await page.waitForTimeout(2000);
-      
-      // Se ainda redirecionou para login, então realmente falhou
-      if (page.url().includes('/auth/login')) {
-        throw new Error('Login falhou: Não foi possível autenticar. Verifique as credenciais e se o usuário existe no banco de dados.');
-      }
-    }
-  }
-
-  // Aguardar um pouco mais para garantir que tudo carregou
-  await page.waitForTimeout(1000);
+  await page.waitForLoadState("networkidle");
 }

@@ -17,6 +17,8 @@ import type {
   AulaHistorico,
   AgendaListParams,
   AgendaListResponse,
+  AgendaAniversariantesParams,
+  AgendaAniversariantesResponse,
   GoogleOAuthStatus,
   GoogleConnectResponse,
   CreateMaterialArquivoUrlPayload,
@@ -465,7 +467,7 @@ export async function getAgenda(
     searchParams.set("tipos", params.tipos.join(","));
   }
 
-  const response = await apiFetch<AgendaListResponse>(
+  const response = await apiFetch<AgendaListResponse | { success: boolean; data: AgendaListResponse }>(
     `/api/v1/cursos/agenda?${searchParams.toString()}`,
     {
       init: {
@@ -477,7 +479,51 @@ export async function getAgenda(
     }
   );
 
-  return response;
+  if (response && typeof response === "object" && "eventos" in response) {
+    return response as AgendaListResponse;
+  }
+  if (response && typeof response === "object" && "data" in response) {
+    return (response as { data: AgendaListResponse }).data;
+  }
+  return { eventos: [] };
+}
+
+/**
+ * Buscar aniversariantes internos da agenda
+ */
+export async function getAgendaAniversariantes(
+  params: AgendaAniversariantesParams,
+  init?: RequestInit
+): Promise<AgendaAniversariantesResponse> {
+  const searchParams = new URLSearchParams();
+  searchParams.set("dataInicio", params.dataInicio);
+  searchParams.set("dataFim", params.dataFim);
+  if (params.roles?.length) {
+    searchParams.set("roles", params.roles.join(","));
+  }
+  if (typeof params.incluirInativos === "boolean") {
+    searchParams.set("incluirInativos", String(params.incluirInativos));
+  }
+
+  const response = await apiFetch<
+    AgendaAniversariantesResponse | { success: boolean; data: AgendaAniversariantesResponse }
+  >(`/api/v1/cursos/agenda/aniversariantes?${searchParams.toString()}`, {
+    init: {
+      method: "GET",
+      ...init,
+      headers: buildHeaders(init?.headers, true),
+    },
+    cache: "short",
+    silence403: true,
+  });
+
+  if (response && typeof response === "object" && "eventos" in response) {
+    return response as AgendaAniversariantesResponse;
+  }
+  if (response && typeof response === "object" && "data" in response) {
+    return (response as { data: AgendaAniversariantesResponse }).data;
+  }
+  return { eventos: [], resumo: { total: 0 } };
 }
 
 /**
