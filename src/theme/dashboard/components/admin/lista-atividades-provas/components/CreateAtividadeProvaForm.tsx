@@ -896,13 +896,31 @@ export function CreateAtividadeProvaForm({
 
       onSuccess?.();
     } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : mode === "edit"
-          ? "Erro ao atualizar aula"
-          : "Erro ao criar aula";
-      toastCustom.error(errorMessage);
+      const apiError = error as Error & {
+        status?: number;
+        details?: { message?: string; code?: string };
+      };
+      const code = apiError?.details?.code;
+
+      if (apiError?.status === 403 || code === "FORBIDDEN") {
+        toastCustom.error("Você não tem permissão para esta atividade.");
+      } else if (
+        apiError?.status === 409 &&
+        code === "INSTRUTOR_NAO_PODE_CRIAR_CONTEUDO_EM_TURMA_INICIADA"
+      ) {
+        toastCustom.error(
+          apiError?.details?.message ||
+            "Instrutor não pode criar conteúdo em turma já iniciada."
+        );
+      } else {
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : mode === "edit"
+              ? "Erro ao atualizar atividade"
+              : "Erro ao criar atividade";
+        toastCustom.error(errorMessage);
+      }
       setIsLoading(false);
       setLoadingStep("");
       setUploadProgress(0);

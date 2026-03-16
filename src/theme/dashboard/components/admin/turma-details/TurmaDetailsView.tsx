@@ -444,11 +444,20 @@ export function TurmaDetailsView({
   );
 
   const inscricoesCount = inscricoesPagination?.total ?? 0;
-  const canViewEstrutura =
+  const canManageTurma =
     userRole != null
       ? [UserRole.ADMIN, UserRole.MODERADOR, UserRole.PEDAGOGICO].includes(
           userRole
         )
+      : false;
+  const canViewEstrutura =
+    userRole != null
+      ? [
+          UserRole.ADMIN,
+          UserRole.MODERADOR,
+          UserRole.PEDAGOGICO,
+          UserRole.INSTRUTOR,
+        ].includes(userRole)
       : false;
 
   const tabs: HorizontalTabItem[] = [
@@ -502,12 +511,16 @@ export function TurmaDetailsView({
         turma={turma}
         cursoId={cursoId}
         cursoNome={cursoNome}
+        canManage={canManageTurma}
         onEditTurma={() => {
           router.push(
             `/dashboard/cursos/turmas/${turmaId}/editar?cursoId=${encodeURIComponent(
               String(cursoId)
             )}`
           );
+        }}
+        onDeleteSuccess={() => {
+          router.push("/dashboard/cursos/turmas");
         }}
       />
 

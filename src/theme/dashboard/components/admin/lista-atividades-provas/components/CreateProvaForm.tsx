@@ -1005,6 +1005,14 @@ export function CreateProvaForm({
         toastCustom.error("Você não tem permissão para esta avaliação");
       } else if (
         error?.status === 409 &&
+        code === "INSTRUTOR_NAO_PODE_CRIAR_CONTEUDO_EM_TURMA_INICIADA"
+      ) {
+        toastCustom.error(
+          error?.details?.message ||
+            "Instrutor não pode criar conteúdo em turma já iniciada."
+        );
+      } else if (
+        error?.status === 409 &&
         code === "AVALIACAO_PUBLICACAO_EXIGE_TURMA_VINCULADA"
       ) {
         toastCustom.error("Vincule uma turma antes de publicar esta avaliação.");

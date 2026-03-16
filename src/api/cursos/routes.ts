@@ -64,6 +64,8 @@ export const cursosRoutes = {
         `${BASE}/${cursoId}/turmas/${turmaId}`,
       update: (cursoId: number | string, turmaId: string) =>
         `${BASE}/${cursoId}/turmas/${turmaId}`,
+      delete: (cursoId: number | string, turmaId: string) =>
+        `${BASE}/${cursoId}/turmas/${turmaId}`,
       publicar: (cursoId: number | string, turmaId: string) =>
         `${BASE}/${cursoId}/turmas/${turmaId}/publicar`,
       aulas: {

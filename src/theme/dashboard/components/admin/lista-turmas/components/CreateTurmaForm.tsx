@@ -22,6 +22,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { InputCustom } from "@/components/ui/custom/input";
 import { DatePickerRangeCustom } from "@/components/ui/custom/date-picker";
 import { SelectCustom } from "@/components/ui/custom/select";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Label } from "@/components/ui/label";
 import { toastCustom } from "@/components/ui/custom";
 import {
@@ -38,6 +39,8 @@ import { useCursosForSelect } from "../hooks/useCursosForSelect";
 import { useInstrutoresForSelect } from "../hooks/useInstrutoresForSelect";
 import { useTemplatesForTurma } from "../hooks/useTemplatesForTurma";
 import { Skeleton } from "@/components/ui/skeleton";
+import { UserRole } from "@/config/roles";
+import { useUserRole } from "@/hooks/useUserRole";
 
 interface CreateTurmaFormProps {
   onSuccess?: () => void;
@@ -183,6 +186,7 @@ const TEMPLATE_TOOLTIP: Record<TemplateOptionValue, React.ReactNode> = {
 };
 
 export function CreateTurmaForm({ onSuccess }: CreateTurmaFormProps) {
+  const userRole = useUserRole();
   const {
     cursos,
     isLoading: loadingCursos,
@@ -218,6 +222,8 @@ export function CreateTurmaForm({ onSuccess }: CreateTurmaFormProps) {
   const [step, setStep] = useState(1); // 1: Fluxo & iniciais, 2: Configurações, 3: Estrutura, 4: Revisão
   // Imagem do curso/turma (opcional)
   // imagem foi removida do cadastro de turmas
+
+  const isInstrutor = userRole === UserRole.INSTRUTOR;
 
   const isFirstStep = step === 1;
   const isLastStep = step === 4;
@@ -257,6 +263,16 @@ export function CreateTurmaForm({ onSuccess }: CreateTurmaFormProps) {
       );
     }
   }, [dataFim, dataInicio, dataInscricaoFim, minDateTurma]);
+
+  if (isInstrutor) {
+    return (
+      <Alert variant="destructive">
+        <AlertDescription>
+          Você não tem permissão para cadastrar turmas.
+        </AlertDescription>
+      </Alert>
+    );
+  }
 
   const validateStep1 = (): boolean => {
     if (!estruturaTipo) {

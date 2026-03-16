@@ -23,6 +23,7 @@ export function usePublicarTurma({
   onSettled,
 }: UsePublicarTurmaParams) {
   const queryClient = useQueryClient();
+  const detailQueryKey = queryKeys.turmas.detail(cursoId, String(turma.id));
 
   const isPublished = useMemo(() => {
     const rawStatus =
@@ -40,29 +41,87 @@ export function usePublicarTurma({
     return true;
   }, [turma]);
 
+  const mergeTurmaPatch = (
+    current: CursoTurma | undefined,
+    patch: Partial<CursoTurma> | undefined
+  ): CursoTurma => {
+    const base = current ?? turma;
+    const next = {
+      ...base,
+      ...(patch ?? {}),
+    } as CursoTurma & {
+      statusPublicacao?: string;
+    };
+
+    const publicationStatus =
+      (patch as { publicacaoStatus?: string; statusPublicacao?: string } | undefined)
+        ?.publicacaoStatus ??
+      (patch as { statusPublicacao?: string } | undefined)?.statusPublicacao ??
+      (typeof (patch as { publicado?: boolean } | undefined)?.publicado === "boolean"
+        ? (patch as { publicado?: boolean }).publicado
+          ? "PUBLICADO"
+          : "RASCUNHO"
+        : undefined);
+
+    if (publicationStatus) {
+      next.publicacaoStatus = publicationStatus as CursoTurma["publicacaoStatus"];
+    }
+
+    return next;
+  };
+
   const mutation = useMutation({
     mutationFn: (publicar: boolean) =>
       publicarTurma(cursoId, String(turma.id), publicar),
-    onSuccess: (data) => {
-      const acao = isPublished ? "despublicada" : "publicada";
+    onSuccess: async (data, publicar) => {
+      const acao = publicar ? "publicada" : "despublicada";
       toastCustom.success(`Turma ${acao} com sucesso!`);
       queryClient.setQueryData(
-        queryKeys.turmas.detail(cursoId, String(turma.id)),
-        data
+        detailQueryKey,
+        (current?: CursoTurma) => mergeTurmaPatch(current, data)
       );
-      queryClient.invalidateQueries({
+
+      await queryClient.invalidateQueries({
+        queryKey: detailQueryKey,
+        exact: false,
+      });
+      await queryClient.invalidateQueries({
         queryKey: ["admin-turmas-list"],
         exact: false,
       });
       onSettled?.();
     },
-    onError: (error: { message?: string }) => {
-      const msg =
-        error?.message ||
-        (isPublished
-          ? "Erro ao colocar turma em rascunho."
-          : "Erro ao publicar turma.");
-      toastCustom.error(msg);
+    onError: (error: {
+      status?: number;
+      message?: string;
+      details?: { code?: string; message?: string };
+      code?: string;
+    }) => {
+      const code = error?.details?.code || error?.code;
+      const message = error?.details?.message || error?.message;
+
+      if (error?.status === 403 || code === "FORBIDDEN") {
+        toastCustom.error("Você não tem permissão para alterar esta turma.");
+      } else if (code === "TURMA_PREREQUISITOS_NAO_ATENDIDOS") {
+        toastCustom.error(
+          message ||
+            "A turma ainda não atende os pré-requisitos para publicação."
+        );
+      } else if (
+        code === "TURMA_DESPUBLICACAO_BLOQUEADA_EM_ANDAMENTO" ||
+        code === "TURMA_DESPUBLICACAO_BLOQUEADA_COM_INSCRITOS"
+      ) {
+        toastCustom.error(
+          message || "Não foi possível despublicar a turma no estado atual."
+        );
+      } else {
+        toastCustom.error(
+          message ||
+            (isPublished
+              ? "Erro ao despublicar turma."
+              : "Erro ao publicar turma.")
+        );
+      }
       onSettled?.();
     },
   });

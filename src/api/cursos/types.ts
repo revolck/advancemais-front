@@ -244,6 +244,7 @@ export interface CreateInscricaoPayload {
   alunoId: string;
   status?: string;
   observacoes?: string;
+  prazoAdaptacaoDias?: number;
 }
 
 export type StatusInscricao =

@@ -31,6 +31,23 @@ function ensureAuthCacheDir() {
   fs.mkdirSync(path.dirname(AUTH_CACHE_FILE), { recursive: true });
 }
 
+function getJwtExpiration(token?: string | null): number | null {
+  if (!token) return null;
+
+  try {
+    const [, payload] = token.split(".");
+    if (!payload) return null;
+
+    const decoded = JSON.parse(Buffer.from(payload, "base64url").toString("utf8")) as {
+      exp?: number;
+    };
+
+    return typeof decoded.exp === "number" ? decoded.exp * 1000 : null;
+  } catch {
+    return null;
+  }
+}
+
 function readCachedAuth(): LoginResponse | null {
   const envToken = process.env.E2E_ADMIN_TOKEN;
   const envRefreshToken = process.env.E2E_ADMIN_REFRESH_TOKEN;
@@ -50,11 +67,24 @@ function readCachedAuth(): LoginResponse | null {
 
   try {
     const cached = JSON.parse(fs.readFileSync(AUTH_CACHE_FILE, "utf8")) as LoginResponse;
-    const expiresAt = cached.session?.expiresAt
+    const now = Date.now();
+    const tokenExpiresAt = getJwtExpiration(cached.token);
+    const refreshTokenExpiresAt = getJwtExpiration(cached.refreshToken);
+    const sessionExpiresAt = cached.session?.expiresAt
       ? new Date(cached.session.expiresAt).getTime()
-      : Number.POSITIVE_INFINITY;
+      : null;
 
-    if (!cached.token || !cached.refreshToken || Date.now() >= expiresAt) {
+    const accessStillValid = tokenExpiresAt ? now < tokenExpiresAt - 60_000 : true;
+    const refreshStillValid = refreshTokenExpiresAt ? now < refreshTokenExpiresAt - 60_000 : true;
+    const sessionStillValid = sessionExpiresAt ? now < sessionExpiresAt : true;
+
+    if (
+      !cached.token ||
+      !cached.refreshToken ||
+      !accessStillValid ||
+      !refreshStillValid ||
+      !sessionStillValid
+    ) {
       return null;
     }
 
@@ -101,12 +131,24 @@ async function autenticarAdminViaApi(): Promise<LoginResponse> {
   return body;
 }
 
+export async function getAdminApiAuth(): Promise<
+  Required<Pick<LoginResponse, "token" | "refreshToken">> & LoginResponse
+> {
+  const auth = await autenticarAdminViaApi();
+
+  if (!auth.token || !auth.refreshToken) {
+    throw new Error("Autenticação E2E não retornou token e refreshToken válidos.");
+  }
+
+  return auth as Required<Pick<LoginResponse, "token" | "refreshToken">> & LoginResponse;
+}
+
 /**
  * Realiza autenticação E2E de forma determinística via API e injeta os cookies
  * que o frontend/middleware esperam.
  */
 export async function loginAsAdmin(page: Page) {
-  const body = await autenticarAdminViaApi();
+  const body = await getAdminApiAuth();
   const url = new URL(BASE_URL);
   const role = body.usuario?.role;
   const firstName = body.usuario?.nomeCompleto?.split(" ")?.[0];

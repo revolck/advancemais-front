@@ -50,6 +50,7 @@ export {
   getTurmaById,
   createTurma,
   publicarTurma,
+  deleteTurma,
   vincularTemplatesAoCurso,
   listInscricoes,
   createInscricao,

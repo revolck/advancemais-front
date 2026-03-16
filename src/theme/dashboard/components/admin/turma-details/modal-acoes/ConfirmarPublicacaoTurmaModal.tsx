@@ -6,9 +6,10 @@ import {
   ModalHeader,
   ModalTitle,
   ModalBody,
+  ModalFooter,
   ButtonCustom,
 } from "@/components/ui/custom";
-import { AlertCircle, Eye, EyeOff, Loader2 } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 import type { ConfirmarPublicacaoTurmaModalProps } from "../types";
 
 /**
@@ -34,7 +35,7 @@ export function ConfirmarPublicacaoTurmaModal({
         <ModalHeader>
           <div className="flex items-center gap-3">
             <ModalTitle className="mb-0!">
-              {isPublished ? "Colocar turma em rascunho?" : "Publicar turma?"}
+              {isPublished ? "Despublicar turma" : "Publicar turma"}
             </ModalTitle>
           </div>
         </ModalHeader>
@@ -42,47 +43,47 @@ export function ConfirmarPublicacaoTurmaModal({
           <div className="space-y-3">
             <p className="text-sm! text-gray-700 leading-relaxed mt-0!">
               {isPublished
-                ? "Ao colocar esta turma em rascunho, ela deixará de aparecer no site e não estará mais visível para os usuários."
-                : "Ao publicar esta turma, ela ficará visível no site e poderá receber inscrições de usuários."}
+                ? "A turma voltará para rascunho e sairá do fluxo público."
+                : "A turma ficará visível no site e poderá receber inscrições."}
             </p>
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
               <div className="flex items-start gap-2">
                 <AlertCircle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
                 <p className="text-xs! text-amber-800 font-medium mb-0!">
                   {isPublished
-                    ? "Esta ação não afetará as inscrições já realizadas."
-                    : "Certifique-se de que a turma está configurada corretamente antes de publicar."}
+                    ? "Bloqueado para turmas em andamento ou com inscritos ativos."
+                    : "Só publique depois de concluir os pré-requisitos obrigatórios."}
                 </p>
               </div>
             </div>
           </div>
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200">
-            <ButtonCustom
-              onClick={() => onOpenChange(false)}
-              variant="outline"
-              withAnimation={false}
-              disabled={isPending}
-            >
-              Cancelar
-            </ButtonCustom>
-            <ButtonCustom
-              onClick={onConfirm}
-              variant="default"
-              withAnimation={false}
-              disabled={isPending}
-            >
-              {isPending ? (
-                <>{isPublished ? "Despublicando..." : "Publicando..."}</>
-              ) : (
-                <>
-                  {isPublished
-                    ? "Sim, colocar em rascunho"
-                    : "Sim, publicar turma"}
-                </>
-              )}
-            </ButtonCustom>
-          </div>
         </ModalBody>
+        <ModalFooter className="gap-2">
+          <ButtonCustom
+            onClick={() => onOpenChange(false)}
+            variant="outline"
+            withAnimation={false}
+            disabled={isPending}
+          >
+            Cancelar
+          </ButtonCustom>
+          <ButtonCustom
+            onClick={onConfirm}
+            variant="default"
+            withAnimation={false}
+            disabled={isPending}
+          >
+            {isPending ? (
+              <>{isPublished ? "Despublicando..." : "Publicando..."}</>
+            ) : (
+              <>
+                {isPublished
+                  ? "Confirmar despublicação"
+                  : "Confirmar publicação"}
+              </>
+            )}
+          </ButtonCustom>
+        </ModalFooter>
       </ModalContentWrapper>
     </ModalCustom>
   );

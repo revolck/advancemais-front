@@ -752,7 +752,7 @@ export async function publicarTurma(
   turmaId: string,
   publicar: boolean,
   init?: RequestInit
-): Promise<CursoTurma> {
+): Promise<Partial<CursoTurma>> {
   const response = await apiFetch<any>(
     cursosRoutes.cursos.turmas.publicar(cursoId, turmaId),
     {
@@ -772,9 +772,7 @@ export async function publicarTurma(
     }
   );
 
-  const turmaData =
-    response?.turma ?? response?.data ?? response?.result ?? response;
-  return normalizeTurma(turmaData);
+  return response?.data ?? response?.turma ?? response?.result ?? response;
 }
 
 export async function createTurma(
@@ -794,6 +792,26 @@ export async function createTurma(
     },
     cache: "no-cache",
   });
+}
+
+export async function deleteTurma(
+  cursoId: number | string,
+  turmaId: string,
+  init?: RequestInit
+): Promise<{ id: string; removidoEm?: string; removidoPorId?: string }> {
+  const response = await apiFetch<any>(
+    cursosRoutes.cursos.turmas.delete(cursoId, turmaId),
+    {
+      init: {
+        method: "DELETE",
+        ...init,
+        headers: buildHeaders(init?.headers, true),
+      },
+      cache: "no-cache",
+    }
+  );
+
+  return response?.data ?? response ?? { id: turmaId };
 }
 
 // Vínculo de templates ao curso (pré-requisito de turmas)

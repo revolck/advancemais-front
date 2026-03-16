@@ -23,6 +23,7 @@ import { motion } from "framer-motion";
 import { InputCustom } from "@/components/ui/custom/input";
 import { DatePickerRangeCustom } from "@/components/ui/custom/date-picker";
 import { SelectCustom } from "@/components/ui/custom/select";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Label } from "@/components/ui/label";
 import { toastCustom } from "@/components/ui/custom";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -44,6 +45,8 @@ import { useCursosForSelect } from "../hooks/useCursosForSelect";
 import { useInstrutoresForSelect } from "../hooks/useInstrutoresForSelect";
 import { useTemplatesForTurma } from "../hooks/useTemplatesForTurma";
 import { queryKeys } from "@/lib/react-query/queryKeys";
+import { UserRole } from "@/config/roles";
+import { useUserRole } from "@/hooks/useUserRole";
 
 interface EditTurmaFormProps {
   turmaId: string;
@@ -302,6 +305,9 @@ export function EditTurmaForm({
 }: EditTurmaFormProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const userRole = useUserRole();
+  const isInstrutor = userRole === UserRole.INSTRUTOR;
+  const isPedagogico = userRole === UserRole.PEDAGOGICO;
 
   const {
     cursos,
@@ -354,19 +360,19 @@ export function EditTurmaForm({
     isLoading: loadingTemplates,
   } = useTemplatesForTurma({ cursoId, turmaId, includeTurma: true });
 
-  const turmaIniciou = useMemo(() => {
-    if (!turma?.dataInicio) return false;
-    return new Date(turma.dataInicio) <= new Date();
-  }, [turma]);
-
-  const turmaFinalizou = useMemo(() => {
-    if (!turma?.dataFim) return false;
-    return new Date(turma.dataFim) < new Date();
-  }, [turma]);
-
-  const isStatusDisabled = turmaIniciou || turmaFinalizou;
-  const canEditStructure = !turmaIniciou && !turmaFinalizou;
+  const isStatusDisabled = true;
   const canEditTemplate = false;
+  const statusNormalized = turma?.status?.toUpperCase?.() ?? "";
+  const turmaJaIniciada = useMemo(() => {
+    if (statusNormalized === "EM_ANDAMENTO" || statusNormalized === "CONCLUIDO") {
+      return true;
+    }
+    if (!turma?.dataInicio) return false;
+    const dataInicioMs = new Date(turma.dataInicio).getTime();
+    return Number.isFinite(dataInicioMs) && dataInicioMs <= Date.now();
+  }, [statusNormalized, turma?.dataInicio]);
+  const periodoBloqueadoAposInicio = turmaJaIniciada;
+  const edicaoBloqueadaAposInicio = turmaJaIniciada && !isPedagogico;
 
   useEffect(() => {
     if (!turma) return;
@@ -682,16 +688,19 @@ export function EditTurmaForm({
         }
       }
 
-      const payload: (Partial<CreateTurmaPayload> & { cursoId?: string | number }) = {
-        cursoId: cursoId ?? undefined,
+      const payload: Partial<CreateTurmaPayload> = {
         nome: nome.trim(),
         turno: turno as any,
-        dataInscricaoInicio: new Date(dataInscricaoInicio).toISOString(),
-        dataInscricaoFim: new Date(dataInscricaoFim).toISOString(),
-        dataInicio: new Date(dataInicio).toISOString(),
-        dataFim: new Date(dataFim).toISOString(),
         vagasIlimitadas,
         ...(!vagasIlimitadas ? { vagasTotais: Number(vagasTotais) } : {}),
+        ...(!periodoBloqueadoAposInicio
+          ? {
+              dataInscricaoInicio: new Date(dataInscricaoInicio).toISOString(),
+              dataInscricaoFim: new Date(dataInscricaoFim).toISOString(),
+              dataInicio: new Date(dataInicio).toISOString(),
+              dataFim: new Date(dataFim).toISOString(),
+            }
+          : {}),
         estrutura: {
           modules: (curriculum.modules || []).map((m, index) => ({
             ...(typeof m.id === "string" && isUuid(m.id) ? { id: m.id } : {}),
@@ -767,10 +776,6 @@ export function EditTurmaForm({
         },
       };
 
-      if (!isStatusDisabled) {
-        payload.status = status;
-      }
-
       setLoadingStep("Salvando turma...");
       const url = cursosRoutes.cursos.turmas.update(cursoId!, turmaId);
       await apiFetch(url, {
@@ -814,9 +819,65 @@ export function EditTurmaForm({
         }
       }
     } catch (err: any) {
+      const statusCode = err?.status;
+      const details = err?.details;
+      const code = details?.code || err?.code;
+      const message = details?.message || err?.message;
+
+      if (statusCode === 403 || code === "FORBIDDEN") {
+        toastCustom.error("Você não tem permissão para editar esta turma.");
+        return;
+      }
+
+      if (code === "TURMA_EDICAO_BLOQUEADA_JA_INICIADA") {
+        toastCustom.error(
+          message ||
+            "Somente o setor pedagógico pode alterar uma turma após o início."
+        );
+        return;
+      }
+
+      if (code === "TURMA_PERIODO_BLOQUEADO_APOS_INICIO") {
+        toastCustom.error(
+          message ||
+            "Não é possível alterar o período de inscrição ou o período da turma após o início."
+        );
+        return;
+      }
+
+      if (code === "CAMPO_NAO_EDITAVEL") {
+        toastCustom.error(
+          message || "Este campo não pode ser alterado na edição da turma."
+        );
+        return;
+      }
+
+      if (code === "INVALID_VAGAS_TOTAIS") {
+        toastCustom.error(
+          message || "Vagas totais não podem ser menores que as inscrições ativas."
+        );
+        return;
+      }
+
+      if (code === "STATUS_NAO_EDITAVEL_APOS_INICIO") {
+        toastCustom.error(
+          message ||
+            "Não é possível alterar o status manualmente após o início da turma."
+        );
+        return;
+      }
+
+      if (statusCode === 422 && code === "TURMA_PREREQUISITOS_NAO_ATENDIDOS") {
+        toastCustom.error(
+          message ||
+            "A turma ainda não atende os pré-requisitos para publicação."
+        );
+        return;
+      }
+
       toastCustom.error({
         title: "Erro ao atualizar turma",
-        description: err?.message || "Tente novamente.",
+        description: message || "Tente novamente.",
       });
     } finally {
       setIsSubmitting(false);
@@ -836,6 +897,26 @@ export function EditTurmaForm({
         <Skeleton className="h-12 w-full" />
         <Skeleton className="h-96 w-full" />
       </div>
+    );
+  }
+
+  if (isInstrutor) {
+    return (
+      <Alert variant="destructive">
+        <AlertDescription>
+          Você não tem permissão para editar turmas.
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
+  if (edicaoBloqueadaAposInicio) {
+    return (
+      <Alert variant="destructive">
+        <AlertDescription>
+          Somente o setor pedagógico pode editar uma turma após o início.
+        </AlertDescription>
+      </Alert>
     );
   }
 
@@ -1012,10 +1093,9 @@ export function EditTurmaForm({
                         placeholder="Selecionar"
                         options={cursos}
                         value={cursoId}
-                        onChange={(v) => {
-                          setCursoId(v);
-                        }}
+                        onChange={() => {}}
                         required
+                        disabled
                       />
                     )}
                     <InputCustom
@@ -1027,6 +1107,15 @@ export function EditTurmaForm({
                       required
                     />
                   </div>
+
+                  {periodoBloqueadoAposInicio && (
+                    <Alert>
+                      <AlertDescription>
+                        Os campos de período ficam bloqueados após o início da
+                        turma.
+                      </AlertDescription>
+                    </Alert>
+                  )}
 
                   <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
                     <DatePickerRangeCustom
@@ -1051,6 +1140,7 @@ export function EditTurmaForm({
                       helperLabel="Período em que os alunos poderão se inscrever"
                       required
                       className="md:col-span-2"
+                      disabled={periodoBloqueadoAposInicio}
                     />
                     <DatePickerRangeCustom
                       label="Período da Turma"
@@ -1067,6 +1157,7 @@ export function EditTurmaForm({
                       minDate={minDateTurma}
                       required
                       className="md:col-span-2"
+                      disabled={periodoBloqueadoAposInicio}
                     />
                     <SelectCustom
                       label="Turno"
@@ -1155,13 +1246,6 @@ export function EditTurmaForm({
                     aulaTemplates={aulaTemplates}
                     avaliacaoTemplates={avaliacaoTemplates}
                   />
-                  {!canEditStructure && (
-                    <div className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-white/70 backdrop-blur-sm">
-                      <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                        A estrutura não pode ser editada após o início da turma.
-                      </div>
-                    </div>
-                  )}
                 </div>
               </StepperContent>
 

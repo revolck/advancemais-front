@@ -18,6 +18,8 @@ import { TurmaRow } from "./components/TurmaRow";
 import { TurmaTableSkeleton } from "./components/TurmaTableSkeleton";
 import type { FilterField } from "@/components/ui/custom/filters";
 import type { CursoTurma } from "@/api/cursos";
+import { UserRole } from "@/config/roles";
+import { useUserRole } from "@/hooks/useUserRole";
 import {
   DEFAULT_SEARCH_MIN_LENGTH,
   getNormalizedSearchOrUndefined,
@@ -57,6 +59,13 @@ type TurmaComCurso = CursoTurma & {
 };
 
 export function TurmasDashboard({ className }: { className?: string }) {
+  const userRole = useUserRole();
+  const canManageTurmas =
+    userRole != null
+      ? [UserRole.ADMIN, UserRole.MODERADOR, UserRole.PEDAGOGICO].includes(
+          userRole
+        )
+      : false;
   const [pendingSearchTerm, setPendingSearchTerm] = useState("");
   const [appliedSearchTerm, setAppliedSearchTerm] = useState("");
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
@@ -351,11 +360,22 @@ export function TurmasDashboard({ className }: { className?: string }) {
   return (
     <div className={cn("min-h-full space-y-4", className)}>
       {/* Top actions */}
-      <div className="mb-4 flex flex-col items-stretch gap-3 sm:mb-2 sm:flex-row sm:items-center sm:justify-end">
-        <ButtonCustom variant="primary" size="md" icon="Plus" fullWidth className="sm:w-auto" asChild>
-          <Link href="/dashboard/cursos/turmas/cadastrar">Cadastrar turma</Link>
-        </ButtonCustom>
-      </div>
+      {canManageTurmas && (
+        <div className="mb-4 flex flex-col items-stretch gap-3 sm:mb-2 sm:flex-row sm:items-center sm:justify-end">
+          <ButtonCustom
+            variant="primary"
+            size="md"
+            icon="Plus"
+            fullWidth
+            className="sm:w-auto"
+            asChild
+          >
+            <Link href="/dashboard/cursos/turmas/cadastrar">
+              Cadastrar turma
+            </Link>
+          </ButtonCustom>
+        </div>
+      )}
 
       {/* Filters */}
       <div className="border-b border-gray-200 top-0 z-10">

@@ -1044,9 +1044,18 @@ export function CreateAulaForm({
         status?: number;
         details?: { message?: string; code?: string };
       };
+      const code = apiError?.details?.code;
 
-      if (apiError?.status === 403) {
+      if (apiError?.status === 403 || code === "FORBIDDEN") {
         toastCustom.error("Você não tem permissão para esta aula");
+      } else if (
+        apiError?.status === 409 &&
+        code === "INSTRUTOR_NAO_PODE_CRIAR_CONTEUDO_EM_TURMA_INICIADA"
+      ) {
+        toastCustom.error(
+          apiError?.details?.message ||
+            "Instrutor não pode criar conteúdo em turma já iniciada."
+        );
       } else {
         const errorMessage =
           error instanceof Error
