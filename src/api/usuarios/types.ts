@@ -34,7 +34,10 @@ export type UsuarioErrorCode =
   | "INVALID_ID"
   | "VALIDATION_ERROR"
   | "FORBIDDEN_USER_ROLE"
+  | "FORBIDDEN_SELF_ROLE_CHANGE"
   | "USER_ACCESS_RELEASE_BLOCKED_BY_STATUS"
+  | "USER_ROLE_UPDATE_BLOCKED"
+  | "USER_ROLE_UPDATE_ERROR"
   | "USER_HISTORY_ERROR"
   | "INTERNAL_ERROR";
 
@@ -686,6 +689,28 @@ export interface LiberarUsuarioAcessoResponse extends UsuarioResponseBase {
     alreadyVerified: boolean;
     statusPermiteLogin: boolean;
     acessoLiberado: boolean;
+  };
+}
+
+export interface UpdateUsuarioRolePayload {
+  role: Role;
+  motivo?: string;
+}
+
+export interface UpdateUsuarioRoleResponse extends UsuarioResponseBase {
+  success: boolean;
+  code?: "USER_ROLE_UPDATED";
+  message: string;
+  data: {
+    id: string;
+    email: string;
+    nomeCompleto: string;
+    roleAnterior: Role | string;
+    role: Role;
+    status: StatusUsuario;
+    emailVerificado?: boolean;
+    emailVerificadoEm?: string | null;
+    atualizadoEm?: string | null;
   };
 }
 

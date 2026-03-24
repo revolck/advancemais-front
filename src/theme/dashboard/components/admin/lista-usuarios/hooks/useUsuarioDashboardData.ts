@@ -9,6 +9,52 @@ import type {
 import { UserRole } from "@/config/roles";
 import { queryKeys } from "@/lib/react-query/queryKeys";
 
+const LIST_FETCH_LIMIT = 500;
+
+function normalizeSearchValue(value?: string | null) {
+  return (value ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
+function digitsOnly(value?: string | null) {
+  return (value ?? "").replace(/\D/g, "");
+}
+
+function matchesUsuarioSearch(usuario: UsuarioOverview, rawSearch: string) {
+  const normalizedSearch = normalizeSearchValue(rawSearch);
+  if (!normalizedSearch) return true;
+
+  const searchableValues = [
+    usuario.nomeCompleto,
+    usuario.email,
+    usuario.codUsuario,
+    usuario.cidade,
+    usuario.estado,
+  ]
+    .map((value) => normalizeSearchValue(value))
+    .filter(Boolean);
+
+  if (searchableValues.some((value) => value.includes(normalizedSearch))) {
+    return true;
+  }
+
+  const numericSearch = digitsOnly(rawSearch);
+  if (numericSearch.length === 0) return false;
+
+  const numericValues = [
+    usuario.cpf,
+    usuario.cnpj,
+    usuario.telefone,
+  ]
+    .map((value) => digitsOnly(value))
+    .filter(Boolean);
+
+  return numericValues.some((value) => value.includes(numericSearch));
+}
+
 interface UseUsuarioDashboardDataReturn {
   data: UsuariosDashboardData | null;
   isLoading: boolean;
@@ -40,11 +86,28 @@ export function useUsuarioDashboardData(
     };
   }, [filters]);
 
+  const queryFilters = useMemo(
+    () => ({
+      status: normalizedFilters.status,
+      role: normalizedFilters.role,
+      search: normalizedFilters.search,
+      cidade: normalizedFilters.cidade,
+      estado: normalizedFilters.estado,
+    }),
+    [
+      normalizedFilters.cidade,
+      normalizedFilters.estado,
+      normalizedFilters.role,
+      normalizedFilters.search,
+      normalizedFilters.status,
+    ]
+  );
+
   const buildParams = useCallback(
-    (currentFilters: typeof normalizedFilters): ListUsuariosParams => {
+    (currentFilters: typeof queryFilters): ListUsuariosParams => {
       const params: ListUsuariosParams = {
-        page: currentFilters.page,
-        limit: currentFilters.pageSize,
+        page: 1,
+        limit: LIST_FETCH_LIMIT,
       };
 
       // Apenas adiciona filtros se tiverem valores válidos
@@ -54,14 +117,14 @@ export function useUsuarioDashboardData(
       if (currentFilters.role && currentFilters.role !== null) {
         params.role = currentFilters.role as UserRole;
       }
-      if (currentFilters.search && currentFilters.search.length >= 3) {
-        params.search = currentFilters.search;
-      }
       if (currentFilters.cidade && currentFilters.cidade !== null) {
         params.cidade = currentFilters.cidade;
       }
       if (currentFilters.estado && currentFilters.estado !== null) {
         params.estado = currentFilters.estado;
+      }
+      if (currentFilters.search && currentFilters.search.length >= 3) {
+        params.search = currentFilters.search;
       }
 
       return params;
@@ -70,15 +133,15 @@ export function useUsuarioDashboardData(
   );
 
   const usuariosQuery = useQuery({
-    queryKey: queryKeys.usuarios.list(normalizedFilters),
+    queryKey: queryKeys.usuarios.list(queryFilters),
     queryFn: async () => {
-      const params = buildParams(normalizedFilters);
+      const params = buildParams(queryFilters);
       
       // Log para debug (apenas em desenvolvimento)
       if (process.env.NODE_ENV === "development") {
         console.log("📋 Buscando usuários com parâmetros:", {
           params,
-          normalizedFilters,
+          queryFilters,
         });
       }
       
@@ -122,7 +185,7 @@ export function useUsuarioDashboardData(
           cidade: u.cidade,
           estado: u.estado,
           role: u.role as UserRole,
-          status: u.status as "ATIVO" | "INATIVO" | "SUSPENSO" | "BLOQUEADO",
+          status: u.status,
           criadoEm: u.criadoEm,
           atualizadoEm: u.atualizadoEm,
           ultimoAcesso: u.ultimoLogin ?? undefined,
@@ -133,15 +196,46 @@ export function useUsuarioDashboardData(
         })
       );
 
-      return {
-        usuarios,
-        pagination: {
-          page: response.pagination.page,
-          pageSize: response.pagination.limit,
-          total: response.pagination.total,
-          totalPages: response.pagination.pages,
-        },
-      } satisfies UsuariosDashboardData;
+      return usuarios.filter((usuario) => {
+        if (
+          queryFilters.status &&
+          usuario.status.toUpperCase() !== queryFilters.status.toUpperCase()
+        ) {
+          return false;
+        }
+
+        if (
+          queryFilters.role &&
+          usuario.role.toUpperCase() !== queryFilters.role.toUpperCase()
+        ) {
+          return false;
+        }
+
+        if (
+          queryFilters.cidade &&
+          normalizeSearchValue(usuario.cidade) !==
+            normalizeSearchValue(queryFilters.cidade)
+        ) {
+          return false;
+        }
+
+        if (
+          queryFilters.estado &&
+          normalizeSearchValue(usuario.estado) !==
+            normalizeSearchValue(queryFilters.estado)
+        ) {
+          return false;
+        }
+
+        if (
+          queryFilters.search.length >= 3 &&
+          !matchesUsuarioSearch(usuario, queryFilters.search)
+        ) {
+          return false;
+        }
+
+        return true;
+      });
     },
     placeholderData: keepPreviousData,
     staleTime: 0, // Sempre considerar os dados como stale para forçar refetch
@@ -149,6 +243,33 @@ export function useUsuarioDashboardData(
     refetchOnMount: 'always', // Sempre refetch quando o componente é montado
     refetchOnWindowFocus: false, // Não refetch ao focar na janela (evita refetch desnecessário)
   });
+
+  const data = useMemo<UsuariosDashboardData | null>(() => {
+    const filteredUsuarios = usuariosQuery.data ?? null;
+
+    if (!filteredUsuarios) {
+      return null;
+    }
+
+    const total = filteredUsuarios.length;
+    const totalPages = Math.max(1, Math.ceil(total / normalizedFilters.pageSize));
+    const currentPage = Math.min(normalizedFilters.page, totalPages);
+    const startIndex = (currentPage - 1) * normalizedFilters.pageSize;
+    const paginatedUsuarios = filteredUsuarios.slice(
+      startIndex,
+      startIndex + normalizedFilters.pageSize
+    );
+
+    return {
+      usuarios: paginatedUsuarios,
+      pagination: {
+        page: currentPage,
+        pageSize: normalizedFilters.pageSize,
+        total,
+        totalPages,
+      },
+    };
+  }, [normalizedFilters.page, normalizedFilters.pageSize, usuariosQuery.data]);
 
   const updateFilters = useCallback(
     (newFilters: Partial<UsuarioDashboardFilters>) => {
@@ -162,7 +283,7 @@ export function useUsuarioDashboardData(
   }, []);
 
   return {
-    data: usuariosQuery.data ?? null,
+    data,
     isLoading: usuariosQuery.status === "pending",
     isFetching: usuariosQuery.isFetching,
     error:

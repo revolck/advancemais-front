@@ -139,10 +139,11 @@ export function UsuariosDashboard({
       const validationMessage = getSearchValidationMessage(value);
       if (validationMessage) return;
       const trimmedValue = value.trim();
+      if (trimmedValue === (filters.search ?? "").trim()) return;
       setIsFiltering(true); // Ativar loading imediatamente
-      updateFilters({ search: trimmedValue });
+      updateFilters({ search: trimmedValue || undefined });
     },
-    [pendingSearchTerm, updateFilters]
+    [filters.search, pendingSearchTerm, updateFilters]
   );
 
   const filterFields: FilterField[] = useMemo(
@@ -279,12 +280,6 @@ export function UsuariosDashboard({
               value: pendingSearchTerm,
               onChange: (value) => setPendingSearchTerm(value),
               placeholder: "Buscar por nome, e-mail ou código...",
-              onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  handleSearchSubmit((e.target as HTMLInputElement).value);
-                }
-              },
               error: searchValidationMessage,
               helperText: SEARCH_HELPER_TEXT,
               helperPlacement: "tooltip",

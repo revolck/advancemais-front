@@ -963,6 +963,36 @@ export async function liberarUsuarioAcesso(
 }
 
 /**
+ * PATCH /api/v1/usuarios/usuarios/:userId/role
+ * Altera a função/permissão principal de um usuário.
+ *
+ * @param userId - ID do usuário
+ * @param payload - Nova role e motivo opcional
+ * @param token - Token JWT (opcional)
+ * @returns Resultado da alteração de função
+ */
+export async function updateUsuarioRole(
+  userId: string,
+  payload: import("./types").UpdateUsuarioRolePayload,
+  token?: string
+): Promise<import("./types").UpdateUsuarioRoleResponse> {
+  return apiFetch<import("./types").UpdateUsuarioRoleResponse>(
+    usuarioRoutes.admin.usuarios.updateRole(userId),
+    {
+      init: {
+        method: "PATCH",
+        headers: {
+          ...buildAuthHeaders(token),
+          ...JSON_HEADERS,
+        },
+        body: JSON.stringify(payload),
+      },
+      cache: "no-cache",
+    }
+  );
+}
+
+/**
  * GET /api/v1/usuarios/usuarios/:userId/historico
  * Busca o histórico completo do usuário no painel administrativo.
  *
@@ -1234,6 +1264,7 @@ export const usuarioApi = {
   getUsuarioById,
   createUsuario,
   updateUsuario,
+  updateUsuarioRole,
   liberarUsuarioAcesso,
   liberarUsuarioEmail,
   getUsuarioHistorico,

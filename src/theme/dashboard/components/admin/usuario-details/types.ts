@@ -12,6 +12,7 @@ export interface HeaderInfoProps {
   usuario: UsuarioDetailsData;
   onEditUsuario?: () => void;
   onEditEndereco?: () => void;
+  onAlterarFuncaoUsuario?: () => void;
   onResetSenha?: () => void;
   onLiberarAcessoUsuario?: () => void;
   onBloquearUsuario?: () => void;

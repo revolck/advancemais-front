@@ -1,5 +1,6 @@
 export { BloquearUsuarioModal } from "./BloquearUsuarioModal";
 export { DesbloquearUsuarioModal } from "./DesbloquearUsuarioModal";
+export { AlterarFuncaoUsuarioModal } from "./AlterarFuncaoUsuarioModal";
 export { EditarUsuarioModal } from "./EditarUsuarioModal";
 export { EditarUsuarioEnderecoModal } from "./EditarUsuarioEnderecoModal";
 export { LiberarEmailUsuarioModal } from "./LiberarEmailUsuarioModal";

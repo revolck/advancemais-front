@@ -14,6 +14,7 @@ import type { HorizontalTabItem } from "@/components/ui/custom";
 import {
   getUsuarioById,
   liberarUsuarioAcesso,
+  updateUsuarioRole,
   updateUsuario,
   createUsuarioBloqueio,
   revokeUsuarioBloqueio,
@@ -21,14 +22,17 @@ import {
 import type {
   GetUsuarioResponse,
   UpdateUsuarioPayload,
+  Role,
   CreateUsuarioBloqueioPayload,
   LiberarUsuarioAcessoPayload,
   RevokeUsuarioBloqueioPayload,
+  UpdateUsuarioRolePayload,
 } from "@/api/usuarios/types";
 import { toastCustom } from "@/components/ui/custom/toast";
 import { queryKeys } from "@/lib/react-query/queryKeys";
 import { invalidateUsuarios } from "@/lib/react-query/invalidation";
 import { useAuth } from "@/hooks/useAuth";
+import { getRoleLabel } from "@/config/roles";
 import { HeaderInfo } from "./components";
 import {
   AboutTab,
@@ -38,6 +42,7 @@ import {
   HistoryTab,
 } from "./tabs";
 import {
+  AlterarFuncaoUsuarioModal,
   BloquearUsuarioModal,
   DesbloquearUsuarioModal,
   EditarUsuarioModal,
@@ -46,6 +51,48 @@ import {
   ResetarSenhaUsuarioModal,
 } from "./modal-acoes";
 import type { UsuarioDetailsData, UsuarioDetailsViewProps } from "./types";
+
+const ALL_MANAGEABLE_ROLES: Role[] = [
+  "ADMIN",
+  "MODERADOR",
+  "EMPRESA",
+  "ALUNO_CANDIDATO",
+  "INSTRUTOR",
+  "PEDAGOGICO",
+  "SETOR_DE_VAGAS",
+  "RECRUTADOR",
+  "FINANCEIRO",
+];
+
+function getAvailableRoleTransitions(
+  actorRole: string | null,
+  targetRole: Role | undefined,
+  actorUserId?: string | null,
+  targetUserId?: string | null
+): Role[] {
+  if (!actorRole || !targetRole) return [];
+  if (actorUserId && targetUserId && actorUserId === targetUserId) return [];
+
+  switch (actorRole) {
+    case "ADMIN":
+      return ALL_MANAGEABLE_ROLES;
+
+    case "MODERADOR": {
+      const allowedRoles: Role[] = ALL_MANAGEABLE_ROLES.filter(
+        (role) => role !== "ADMIN" && role !== "MODERADOR"
+      );
+      return allowedRoles.includes(targetRole) ? allowedRoles : [];
+    }
+
+    case "PEDAGOGICO": {
+      const allowedRoles: Role[] = ["ALUNO_CANDIDATO", "INSTRUTOR"];
+      return allowedRoles.includes(targetRole) ? allowedRoles : [];
+    }
+
+    default:
+      return [];
+  }
+}
 
 export function UsuarioDetailsView({
   usuarioId,
@@ -96,6 +143,7 @@ export function UsuarioDetailsView({
   // Modals state
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isEditEnderecoOpen, setIsEditEnderecoOpen] = useState(false);
+  const [isAlterarFuncaoOpen, setIsAlterarFuncaoOpen] = useState(false);
   const [isResetSenhaOpen, setIsResetSenhaOpen] = useState(false);
   const [isLiberarAcessoOpen, setIsLiberarAcessoOpen] = useState(false);
   const [isBloquearModalOpen, setIsBloquearModalOpen] = useState(false);
@@ -142,6 +190,42 @@ export function UsuarioDetailsView({
       void invalidateUsuario();
       // Invalida listagens para refletir mudanças de status
       invalidateUsuarios(queryClient);
+    },
+  });
+
+  const alterarFuncaoMutation = useMutation({
+    mutationFn: (payload: UpdateUsuarioRolePayload) =>
+      updateUsuarioRole(usuarioId, payload),
+    onSuccess: (response) => {
+      const data = response.data;
+
+      queryClient.setQueryData<GetUsuarioResponse | undefined>(
+        queryKey,
+        (previous) => {
+          if (!previous?.usuario) return previous;
+
+          return {
+            ...previous,
+            usuario: {
+              ...previous.usuario,
+              role: data.role,
+              atualizadoEm:
+                data.atualizadoEm ?? previous.usuario.atualizadoEm,
+            },
+          };
+        }
+      );
+
+      void invalidateUsuario();
+      invalidateUsuarios(queryClient);
+      void queryClient.invalidateQueries({
+        queryKey: ["usuarios", "historico", usuarioId],
+        exact: false,
+      });
+
+      toastCustom.success(
+        `Função alterada de ${getRoleLabel(String(data.roleAnterior))} para ${getRoleLabel(data.role)}.`
+      );
     },
   });
 
@@ -278,6 +362,57 @@ export function UsuarioDetailsView({
     return false;
   }, [currentUserRole, usuarioData]);
 
+  const availableRoleTransitions = useMemo(
+    () =>
+      getAvailableRoleTransitions(
+        currentUserRole,
+        usuarioData?.role,
+        user?.id ?? null,
+        usuarioData?.id ?? null
+      ),
+    [currentUserRole, user?.id, usuarioData?.id, usuarioData?.role]
+  );
+
+  const canAlterarFuncao =
+    !!usuarioData && availableRoleTransitions.length > 0;
+
+  const handleAlterarFuncao = useCallback(
+    async (payload: UpdateUsuarioRolePayload) => {
+      try {
+        await alterarFuncaoMutation.mutateAsync(payload);
+      } catch (error: any) {
+        const code = error?.response?.data?.code;
+        const message =
+          error?.response?.data?.message ||
+          error?.message ||
+          "Não foi possível alterar a função do usuário.";
+
+        if (code === "FORBIDDEN_SELF_ROLE_CHANGE") {
+          toastCustom.error("Você não pode alterar a própria função.");
+          throw error;
+        }
+
+        if (code === "FORBIDDEN_USER_ROLE") {
+          toastCustom.error(
+            "Você não tem permissão para aplicar essa função a este usuário."
+          );
+          throw error;
+        }
+
+        if (code === "USER_ROLE_UPDATE_BLOCKED") {
+          toastCustom.error(
+            "Essa alteração de função precisa de outro fluxo administrativo."
+          );
+          throw error;
+        }
+
+        toastCustom.error(message);
+        throw error;
+      }
+    },
+    [alterarFuncaoMutation]
+  );
+
   const handleLiberarAcesso = useCallback(
     async (payload?: LiberarUsuarioAcessoPayload) => {
       try {
@@ -397,6 +532,9 @@ export function UsuarioDetailsView({
         usuario={usuarioData}
         onEditUsuario={() => setIsEditModalOpen(true)}
         onEditEndereco={() => setIsEditEnderecoOpen(true)}
+        onAlterarFuncaoUsuario={
+          canAlterarFuncao ? () => setIsAlterarFuncaoOpen(true) : undefined
+        }
         onResetSenha={() => setIsResetSenhaOpen(true)}
         onLiberarAcessoUsuario={
           canLiberarAcesso ? () => setIsLiberarAcessoOpen(true) : undefined
@@ -447,6 +585,16 @@ export function UsuarioDetailsView({
             onConfirm={async (endereco) => {
               await updateUsuarioMutation.mutateAsync(endereco as any);
             }}
+          />
+
+          <AlterarFuncaoUsuarioModal
+            isOpen={isAlterarFuncaoOpen}
+            onOpenChange={setIsAlterarFuncaoOpen}
+            usuarioNome={usuarioData.nomeCompleto}
+            usuarioEmail={usuarioData.email}
+            roleAtual={usuarioData.role}
+            availableRoles={availableRoleTransitions}
+            onConfirm={handleAlterarFuncao}
           />
 
           <ResetarSenhaUsuarioModal

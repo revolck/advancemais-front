@@ -19,6 +19,7 @@ import {
   Ban,
   ChevronDown,
   ChevronLeft,
+  Crown,
   MailCheck,
   MapPin,
   Shield,
@@ -33,6 +34,7 @@ export function HeaderInfo({
   usuario,
   onEditUsuario,
   onEditEndereco,
+  onAlterarFuncaoUsuario,
   onResetSenha,
   onLiberarAcessoUsuario,
   onBloquearUsuario,
@@ -155,6 +157,15 @@ export function HeaderInfo({
                 >
                   <MapPin className="h-4 w-4 text-gray-500" />
                   <span>Editar endereço</span>
+                </DropdownMenuItem>
+              )}
+              {onAlterarFuncaoUsuario && (
+                <DropdownMenuItem
+                  onSelect={onAlterarFuncaoUsuario}
+                  className="cursor-pointer"
+                >
+                  <Crown className="h-4 w-4 text-gray-500" />
+                  <span>Alterar função</span>
                 </DropdownMenuItem>
               )}
               {onResetSenha && (

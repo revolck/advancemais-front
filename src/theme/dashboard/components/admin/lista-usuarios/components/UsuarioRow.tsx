@@ -111,7 +111,7 @@ export function UsuarioRow({
                   variant="outline"
                   className="text-xs font-medium bg-gray-50 text-gray-600 border-gray-200 flex-shrink-0"
                 >
-                  Sem vínculos
+                  Sem currículo e sem inscrição
                 </Badge>
               )}
             </div>

@@ -1,4 +1,5 @@
 import type { UserRole } from "@/config/roles";
+import type { StatusUsuario } from "@/api/usuarios/types";
 
 export interface UsuarioOverview {
   id: string;
@@ -13,7 +14,7 @@ export interface UsuarioOverview {
   cidade?: string;
   estado?: string;
   role: UserRole;
-  status: "ATIVO" | "INATIVO" | "SUSPENSO" | "BLOQUEADO";
+  status: StatusUsuario;
   criadoEm: string;
   atualizadoEm?: string;
   ultimoAcesso?: string;
