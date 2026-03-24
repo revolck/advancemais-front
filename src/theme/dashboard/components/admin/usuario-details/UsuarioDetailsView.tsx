@@ -64,6 +64,12 @@ const ALL_MANAGEABLE_ROLES: Role[] = [
   "FINANCEIRO",
 ];
 
+const MODERADOR_BLOCKED_ROLES: Role[] = ["ADMIN", "MODERADOR"];
+const MODERADOR_ALLOWED_ROLES: Role[] = ALL_MANAGEABLE_ROLES.filter(
+  (role) => !MODERADOR_BLOCKED_ROLES.includes(role)
+);
+const PEDAGOGICO_ALLOWED_ROLES: Role[] = ["ALUNO_CANDIDATO", "INSTRUTOR"];
+
 function getAvailableRoleTransitions(
   actorRole: string | null,
   targetRole: Role | undefined,
@@ -78,15 +84,17 @@ function getAvailableRoleTransitions(
       return ALL_MANAGEABLE_ROLES;
 
     case "MODERADOR": {
-      const allowedRoles: Role[] = ALL_MANAGEABLE_ROLES.filter(
-        (role) => role !== "ADMIN" && role !== "MODERADOR"
-      );
-      return allowedRoles.includes(targetRole) ? allowedRoles : [];
+      if (MODERADOR_BLOCKED_ROLES.includes(targetRole)) {
+        return [];
+      }
+
+      return MODERADOR_ALLOWED_ROLES;
     }
 
     case "PEDAGOGICO": {
-      const allowedRoles: Role[] = ["ALUNO_CANDIDATO", "INSTRUTOR"];
-      return allowedRoles.includes(targetRole) ? allowedRoles : [];
+      return PEDAGOGICO_ALLOWED_ROLES.includes(targetRole)
+        ? PEDAGOGICO_ALLOWED_ROLES
+        : [];
     }
 
     default:
@@ -374,7 +382,8 @@ export function UsuarioDetailsView({
   );
 
   const canAlterarFuncao =
-    !!usuarioData && availableRoleTransitions.length > 0;
+    !!usuarioData &&
+    availableRoleTransitions.some((role) => role !== usuarioData.role);
 
   const handleAlterarFuncao = useCallback(
     async (payload: UpdateUsuarioRolePayload) => {

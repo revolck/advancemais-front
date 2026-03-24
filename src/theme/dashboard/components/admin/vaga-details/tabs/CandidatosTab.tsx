@@ -337,8 +337,13 @@ export function CandidatosTab({ vaga }: AboutTabProps) {
   const normalizedFilters = useMemo<CandidatosFilters>(() => {
     const filters: CandidatosFilters = {
       vagaId: vaga.id,
+      // O backend de overview precisa do escopo da empresa para roles
+      // como RECRUTADOR/EMPRESA. Usar a empresa dona da vaga evita que a
+      // consulta fique sem candidatos mesmo com candidaturas já registradas.
+      empresaUsuarioId: vaga.usuarioId,
       page: currentPage,
       pageSize: ITEMS_PER_PAGE,
+      onlyWithCandidaturas: true,
     };
 
     if (normalizedSearch) {
@@ -354,7 +359,7 @@ export function CandidatosTab({ vaga }: AboutTabProps) {
     }
 
     return filters;
-  }, [vaga.id, currentPage, normalizedSearch, appliedDateRange]);
+  }, [vaga.id, vaga.usuarioId, currentPage, normalizedSearch, appliedDateRange]);
 
   // React Query para buscar candidatos
   const {
