@@ -10,7 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { CalendarDays, ChevronDown, ChevronUp, GraduationCap } from "lucide-react";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -597,8 +597,7 @@ export function NotasDashboard({ className }: { className?: string }) {
                               sortField === "nota" && "text-gray-900"
                             )}
                           >
-                            <GraduationCap className="h-4 w-4" />
-                            Nota / Situação
+                            Nota/Situação
                           </button>
                         </TooltipTrigger>
                         <TooltipContent sideOffset={6}>
@@ -680,7 +679,6 @@ export function NotasDashboard({ className }: { className?: string }) {
                               sortField === "atualizadoEm" && "text-gray-900"
                             )}
                           >
-                            <CalendarDays className="h-4 w-4" />
                             Atualizado em
                           </button>
                         </TooltipTrigger>

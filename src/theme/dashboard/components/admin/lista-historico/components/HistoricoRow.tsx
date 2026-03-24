@@ -72,6 +72,10 @@ export function HistoricoRow({
   isDisabled = false,
 }: HistoricoRowProps) {
   const isRowDisabled = isDisabled;
+  const actorName = log.ator?.nome?.trim() || "Sistema";
+  const actorRoleLabel = log.ator?.roleLabel?.trim() || "Sistema interno";
+  const logIp = log.contexto?.ip ?? log.ip ?? null;
+  const logDate = log.dataHora ?? log.criadoEm ?? "";
 
   return (
     <TableRow 
@@ -115,25 +119,26 @@ export function HistoricoRow({
         </div>
       </TableCell>
       <TableCell className="py-4">
-        {log.usuarioId ? (
-          <div className="flex items-center gap-2 max-w-[200px]">
-            <Icon
-              name="User"
-              size={16}
-              className="text-gray-400 flex-shrink-0"
-            />
-            <div className="text-sm text-gray-900 truncate" title={log.usuarioId}>
-              {log.usuarioId.substring(0, 8)}...
+        <div className="flex items-center gap-2 max-w-[220px]">
+          <Icon
+            name="User"
+            size={16}
+            className="text-gray-400 flex-shrink-0"
+          />
+          <div className="min-w-0">
+            <div className="text-sm text-gray-900 truncate" title={actorName}>
+              {actorName}
+            </div>
+            <div className="text-xs text-gray-500 truncate" title={actorRoleLabel}>
+              {actorRoleLabel}
             </div>
           </div>
-        ) : (
-          <div className="text-sm text-gray-500">—</div>
-        )}
+        </div>
       </TableCell>
       <TableCell className="py-4">
-        {log.ip ? (
+        {logIp ? (
           <div className="text-sm text-gray-900 font-mono">
-            {log.ip}
+            {logIp}
           </div>
         ) : (
           <div className="text-sm text-gray-500">—</div>
@@ -141,10 +146,9 @@ export function HistoricoRow({
       </TableCell>
       <TableCell className="py-4">
         <div className="text-sm text-gray-600">
-          {formatDate(log.criadoEm)}
+          {formatDate(logDate)}
         </div>
       </TableCell>
     </TableRow>
   );
 }
-

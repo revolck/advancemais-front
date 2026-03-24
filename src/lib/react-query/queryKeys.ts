@@ -67,4 +67,9 @@ export const queryKeys = {
     list: createListKey<unknown>("admin-aulas-list"),
     detail: createDetailKey("admin-aula-detail"),
   },
+  auditoria: {
+    logs: {
+      list: createListKey<unknown>("admin-auditoria-logs-list"),
+    },
+  },
 };

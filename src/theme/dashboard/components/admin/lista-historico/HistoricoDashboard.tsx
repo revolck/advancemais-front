@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import React, { useEffect, useMemo, useState } from "react";
 import { ButtonCustom, FilterBar, EmptyState } from "@/components/ui/custom";
 import {
   Table,
@@ -43,12 +42,6 @@ export function HistoricoDashboard({ className }: { className?: string }) {
   const [selectedTipo, setSelectedTipo] = useState<string | null>(null);
   const pageSize = defaultPageSize;
   const [currentPage, setCurrentPage] = useState(1);
-  const [isNavigating, setIsNavigating] = useState(false);
-
-  const handleNavigateStart = useCallback(() => {
-    setIsNavigating(true);
-    setTimeout(() => setIsNavigating(false), 5000);
-  }, []);
 
   // Estados de ordenação
   type SortDirection = "asc" | "desc";
@@ -68,16 +61,14 @@ export function HistoricoDashboard({ className }: { className?: string }) {
     return {
       page: currentPage,
       pageSize,
-      categoria: selectedCategorias.length > 0
-        ? selectedCategorias.length === 1
-          ? selectedCategorias[0]
-          : selectedCategorias
-        : null,
+      categorias: selectedCategorias.length > 0 ? selectedCategorias : null,
       tipo: selectedTipo,
       search:
         appliedSearchTerm.length >= MIN_SEARCH_LENGTH
           ? appliedSearchTerm
           : "",
+      sortBy: "dataHora",
+      sortDir: sortDirection,
     };
   }, [
     currentPage,
@@ -85,10 +76,12 @@ export function HistoricoDashboard({ className }: { className?: string }) {
     selectedCategorias,
     selectedTipo,
     appliedSearchTerm,
+    sortDirection,
   ]);
 
   const historicoQuery = useHistoricoDashboardQuery(normalizedFilters);
   const logs = useMemo(() => historicoQuery.data?.logs ?? [], [historicoQuery.data?.logs]);
+  const filtrosDisponiveis = historicoQuery.data?.filtrosDisponiveis;
 
   useEffect(() => {
     setCurrentPage(1);
@@ -163,21 +156,6 @@ export function HistoricoDashboard({ className }: { className?: string }) {
     } catch {}
   }, [sortDirection]);
 
-  // Ordenar logs
-  const sortedLogs = useMemo(() => {
-    const sorted = [...logs];
-    sorted.sort((a, b) => {
-      const dateA = new Date(a.criadoEm).getTime();
-      const dateB = new Date(b.criadoEm).getTime();
-      if (sortDirection === "asc") {
-        return dateA - dateB;
-      } else {
-        return dateB - dateA;
-      }
-    });
-    return sorted;
-  }, [logs, sortDirection]);
-
   // Páginas visíveis para navegação
   const visiblePages = useMemo(() => {
     const pages: number[] = [];
@@ -202,24 +180,39 @@ export function HistoricoDashboard({ className }: { className?: string }) {
     return pages;
   }, [pagination.page, pagination.totalPages]);
 
+  const categoryOptions = useMemo<SelectOption[]>(() => {
+    if (filtrosDisponiveis?.categorias?.length) {
+      return filtrosDisponiveis.categorias.map((categoria) => ({
+        value: categoria.value,
+        label: categoria.label,
+      }));
+    }
+
+    return categoriaOptions;
+  }, [categoriaOptions, filtrosDisponiveis?.categorias]);
+
   const filterFields: FilterField[] = useMemo(
     () => [
       {
         key: "categoria",
         label: "Categoria",
         mode: "multiple",
-        options: categoriaOptions,
+        options: categoryOptions,
         placeholder: "Selecione categoria",
       },
       {
         key: "tipo",
         label: "Tipo",
-        options: [],
+        options:
+          filtrosDisponiveis?.tipos?.map((tipo) => ({
+            value: tipo.value,
+            label: tipo.label,
+          })) ?? [],
         placeholder: "Selecione tipo",
-        disabled: true, // Pode ser implementado depois
+        disabled: !filtrosDisponiveis?.tipos?.length,
       },
     ],
-    [categoriaOptions]
+    [categoryOptions, filtrosDisponiveis?.tipos]
   );
 
   const filterValues = useMemo(
@@ -459,11 +452,10 @@ export function HistoricoDashboard({ className }: { className?: string }) {
                 {showSkeleton ? (
                   <HistoricoTableSkeleton rows={pageSize} />
                 ) : (
-                  sortedLogs.map((log) => (
+                  logs.map((log) => (
                     <HistoricoRow
                       key={log.id}
                       log={log}
-                      isDisabled={isNavigating}
                     />
                   ))
                 )}
@@ -571,4 +563,3 @@ export function HistoricoDashboard({ className }: { className?: string }) {
 }
 
 export default HistoricoDashboard;
-

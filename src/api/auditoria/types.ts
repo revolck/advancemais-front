@@ -8,7 +8,45 @@ export type AuditoriaCategoria =
   | "CURSO"
   | "PAGAMENTO"
   | "SCRIPT"
-  | "SEGURANCA";
+  | "SEGURANCA"
+  | (string & {});
+
+export interface AuditoriaActor {
+  id?: string | null;
+  nome: string;
+  role?: string | null;
+  roleLabel?: string | null;
+  avatarUrl?: string | null;
+}
+
+export interface AuditoriaEntidade {
+  id?: string | null;
+  tipo?: string | null;
+  codigo?: string | null;
+  nomeExibicao?: string | null;
+}
+
+export interface AuditoriaContexto {
+  ip?: string | null;
+  userAgent?: string | null;
+  origem?: string | null;
+}
+
+export interface AuditoriaFiltroDisponivel {
+  value: string;
+  label: string;
+  count?: number;
+}
+
+export interface AuditoriaFiltrosDisponiveis {
+  categorias?: AuditoriaFiltroDisponivel[];
+  tipos?: AuditoriaFiltroDisponivel[];
+}
+
+export interface AuditoriaResumo {
+  total?: number;
+  ultimoEventoEm?: string | null;
+}
 
 export interface AuditoriaLog {
   id: string;
@@ -16,6 +54,14 @@ export interface AuditoriaLog {
   tipo: string;
   acao: string;
   descricao: string;
+  dataHora?: string;
+  ator?: AuditoriaActor | null;
+  entidade?: AuditoriaEntidade | null;
+  contexto?: AuditoriaContexto | null;
+  dadosAnteriores?: any;
+  dadosNovos?: any;
+  meta?: Record<string, any> | null;
+  // Compatibilidade com contratos antigos ainda presentes no projeto
   usuarioId?: string | null;
   entidadeId?: string | null;
   entidadeTipo?: string | null;
@@ -23,20 +69,29 @@ export interface AuditoriaLog {
   dadosDepois?: any;
   ip?: string | null;
   userAgent?: string | null;
-  criadoEm: string;
+  criadoEm?: string;
 }
 
 export interface AuditoriaLogsListParams {
-  categoria?: AuditoriaCategoria | string;
-  tipo?: string;
-  usuarioId?: string;
+  categorias?: AuditoriaCategoria[] | AuditoriaCategoria | string[] | string;
+  tipos?: string[] | string;
+  atorId?: string;
+  atorRole?: string;
   entidadeId?: string;
   entidadeTipo?: string;
-  startDate?: string;
-  endDate?: string;
+  dataInicio?: string;
+  dataFim?: string;
   page?: number;
   pageSize?: number;
   search?: string;
+  sortBy?: string;
+  sortDir?: "asc" | "desc";
+  // Aliases legados para compatibilidade
+  categoria?: AuditoriaCategoria | string;
+  tipo?: string;
+  usuarioId?: string;
+  startDate?: string;
+  endDate?: string;
 }
 
 export interface Pagination {
@@ -55,7 +110,11 @@ export interface AuditoriaPaginatedResponse<T> {
   totalPages: number;
 }
 
-export type AuditoriaLogsListResponse = AuditoriaPaginatedResponse<AuditoriaLog>;
+export interface AuditoriaLogsListResponse extends AuditoriaPaginatedResponse<AuditoriaLog> {
+  pagination: Pagination;
+  resumo?: AuditoriaResumo;
+  filtrosDisponiveis?: AuditoriaFiltrosDisponiveis;
+}
 
 export type AuditoriaErrorCode =
   | "AUDITORIA_ACCESS_DENIED"

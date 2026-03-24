@@ -44,7 +44,7 @@ export function LogsTable({ initialFilters }: Props) {
         });
         if (!active) return;
         setData(res.items ?? []);
-        setTotal(res.total ?? 0);
+        setTotal(res.pagination?.total ?? res.total ?? 0);
       } catch (err) {
         if (!active) return;
         setError((err as any)?.message ?? "Erro ao carregar logs");
@@ -148,8 +148,10 @@ export function LogsTable({ initialFilters }: Props) {
                   <td className="p-2">{log.categoria}</td>
                   <td className="p-2">{log.tipo}</td>
                   <td className="p-2">{log.acao}</td>
-                  <td className="p-2 font-mono text-xs">{log.usuarioId ?? '-'}</td>
-                  <td className="p-2">{new Date(log.criadoEm).toLocaleString()}</td>
+                  <td className="p-2">{log.ator?.nome ?? "Sistema"}</td>
+                  <td className="p-2">
+                    {new Date(log.dataHora ?? log.criadoEm ?? "").toLocaleString()}
+                  </td>
                 </tr>
               ))}
           </tbody>
@@ -194,4 +196,3 @@ export function LogsTable({ initialFilters }: Props) {
 }
 
 export default LogsTable;
-

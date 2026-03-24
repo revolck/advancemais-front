@@ -5,6 +5,11 @@ import type {
   AuditoriaLog,
   AuditoriaLogsListParams,
   AuditoriaLogsListResponse,
+  AuditoriaActor,
+  AuditoriaEntidade,
+  AuditoriaContexto,
+  AuditoriaFiltrosDisponiveis,
+  AuditoriaResumo,
   AuditoriaScript,
   AuditoriaScriptsListParams,
   AuditoriaScriptsListResponse,
@@ -47,10 +52,168 @@ function buildQuery(params?: Record<string, any>): string {
   if (!params) return "";
   const sp = new URLSearchParams();
   Object.entries(params).forEach(([k, v]) => {
-    if (v !== undefined && v !== null && v !== "") sp.set(k, String(v));
+    if (v === undefined || v === null || v === "") return;
+    if (Array.isArray(v)) {
+      if (v.length > 0) {
+        sp.set(k, v.join(","));
+      }
+      return;
+    }
+    sp.set(k, String(v));
   });
   const qs = sp.toString();
   return qs ? `?${qs}` : "";
+}
+
+type AuditoriaLogsApiPayload = {
+  items?: unknown[];
+  pagination?: Partial<AuditoriaLogsListResponse["pagination"]>;
+  resumo?: AuditoriaResumo;
+  filtrosDisponiveis?: AuditoriaFiltrosDisponiveis;
+  total?: number;
+  page?: number;
+  pageSize?: number;
+  totalPages?: number;
+};
+
+type AuditoriaLogsApiResponse =
+  | AuditoriaLogsListResponse
+  | {
+      success?: boolean;
+      data?: AuditoriaLogsApiPayload;
+    };
+
+function normalizeAuditoriaActor(actor: any): AuditoriaActor | null {
+  if (!actor && actor !== 0) return null;
+
+  return {
+    id: actor?.id ?? null,
+    nome: actor?.nome ?? "Sistema",
+    role: actor?.role ?? "SISTEMA",
+    roleLabel: actor?.roleLabel ?? "Sistema interno",
+    avatarUrl: actor?.avatarUrl ?? null,
+  };
+}
+
+function normalizeAuditoriaEntidade(entity: any): AuditoriaEntidade | null {
+  if (!entity && entity !== 0) return null;
+
+  return {
+    id: entity?.id ?? null,
+    tipo: entity?.tipo ?? null,
+    codigo: entity?.codigo ?? null,
+    nomeExibicao: entity?.nomeExibicao ?? null,
+  };
+}
+
+function normalizeAuditoriaContexto(context: any, log: any): AuditoriaContexto | null {
+  const ip = context?.ip ?? log?.ip ?? null;
+  const userAgent = context?.userAgent ?? log?.userAgent ?? null;
+  const origem = context?.origem ?? null;
+
+  if (!ip && !userAgent && !origem) {
+    return null;
+  }
+
+  return {
+    ip,
+    userAgent,
+    origem,
+  };
+}
+
+function normalizeAuditoriaLog(log: any): AuditoriaLog {
+  const ator = normalizeAuditoriaActor(log?.ator);
+  const entidade = normalizeAuditoriaEntidade(log?.entidade);
+  const contexto = normalizeAuditoriaContexto(log?.contexto, log);
+  const dadosAnteriores = log?.dadosAnteriores ?? log?.dadosAntes ?? null;
+  const dadosNovos = log?.dadosNovos ?? log?.dadosDepois ?? null;
+  const dataHora = log?.dataHora ?? log?.criadoEm ?? null;
+
+  return {
+    id: String(log?.id ?? ""),
+    categoria: log?.categoria ?? "SISTEMA",
+    tipo: log?.tipo ?? "",
+    acao: log?.acao ?? "",
+    descricao: log?.descricao ?? log?.acao ?? "",
+    dataHora,
+    ator,
+    entidade,
+    contexto,
+    dadosAnteriores,
+    dadosNovos,
+    meta: log?.meta ?? null,
+    // Compatibilidade com consumidores antigos
+    usuarioId: log?.usuarioId ?? ator?.id ?? null,
+    entidadeId: log?.entidadeId ?? entidade?.id ?? null,
+    entidadeTipo: log?.entidadeTipo ?? entidade?.tipo ?? null,
+    dadosAntes: dadosAnteriores,
+    dadosDepois: dadosNovos,
+    ip: log?.ip ?? contexto?.ip ?? null,
+    userAgent: log?.userAgent ?? contexto?.userAgent ?? null,
+    criadoEm: log?.criadoEm ?? dataHora ?? undefined,
+  };
+}
+
+function normalizeAuditoriaLogsListResponse(
+  response: AuditoriaLogsApiResponse,
+  fallback?: { page?: number; pageSize?: number },
+): AuditoriaLogsListResponse {
+  const payload: AuditoriaLogsApiPayload =
+    "data" in response && response.data
+      ? response.data
+      : (response as AuditoriaLogsApiPayload);
+  const items = (payload.items ?? []).map(normalizeAuditoriaLog);
+
+  const page = payload.pagination?.page ?? payload.page ?? fallback?.page ?? 1;
+  const pageSize =
+    payload.pagination?.pageSize ?? payload.pageSize ?? fallback?.pageSize ?? 10;
+  const total = payload.pagination?.total ?? payload.total ?? items.length;
+  const totalPages =
+    payload.pagination?.totalPages ??
+    payload.totalPages ??
+    Math.max(1, Math.ceil(total / Math.max(pageSize, 1)));
+
+  return {
+    items,
+    pagination: {
+      page,
+      pageSize,
+      total,
+      totalPages,
+    },
+    total,
+    page,
+    pageSize,
+    totalPages,
+    resumo: payload.resumo,
+    filtrosDisponiveis: payload.filtrosDisponiveis,
+  };
+}
+
+function normalizeAuditoriaLogsParams(
+  params?: AuditoriaLogsListParams,
+): Record<string, unknown> | undefined {
+  if (!params) return undefined;
+
+  const normalized: Record<string, unknown> = {
+    page: params.page,
+    pageSize: params.pageSize,
+    search: params.search,
+    entidadeTipo: params.entidadeTipo,
+    entidadeId: params.entidadeId,
+    atorRole: params.atorRole,
+    sortBy: params.sortBy,
+    sortDir: params.sortDir,
+  };
+
+  normalized.categorias = params.categorias ?? params.categoria;
+  normalized.tipos = params.tipos ?? params.tipo;
+  normalized.atorId = params.atorId ?? params.usuarioId;
+  normalized.dataInicio = params.dataInicio ?? params.startDate;
+  normalized.dataFim = params.dataFim ?? params.endDate;
+
+  return normalized;
 }
 
 // ---------------------------------------------
@@ -59,11 +222,14 @@ function buildQuery(params?: Record<string, any>): string {
 export async function listAuditoriaLogs(
   params?: AuditoriaLogsListParams,
 ): Promise<AuditoriaLogsListResponse> {
-  const url = `${auditoriaRoutes.logs.list()}${buildQuery(params)}`;
-  return apiFetch<AuditoriaLogsListResponse>(url, {
+  const normalizedParams = normalizeAuditoriaLogsParams(params);
+  const url = `${auditoriaRoutes.logs.list()}${buildQuery(normalizedParams)}`;
+  const response = await apiFetch<AuditoriaLogsApiResponse>(url, {
     init: { method: "GET", headers: buildHeaders() },
     cache: "no-cache",
   });
+
+  return normalizeAuditoriaLogsListResponse(response, params);
 }
 
 export async function getAuditoriaLogById(id: string): Promise<AuditoriaLog> {
@@ -78,10 +244,12 @@ export async function listAuditoriaLogsByEntidade(
   params?: { entidadeTipo?: string; page?: number; pageSize?: number },
 ): Promise<AuditoriaLogsListResponse> {
   const url = `${auditoriaRoutes.logs.byEntidade(entidadeId)}${buildQuery(params)}`;
-  return apiFetch<AuditoriaLogsListResponse>(url, {
+  const response = await apiFetch<AuditoriaLogsApiResponse>(url, {
     init: { method: "GET", headers: buildHeaders() },
     cache: "no-cache",
   });
+
+  return normalizeAuditoriaLogsListResponse(response, params);
 }
 
 export async function listAuditoriaLogsByUsuario(
@@ -89,36 +257,50 @@ export async function listAuditoriaLogsByUsuario(
   params?: { page?: number; pageSize?: number; startDate?: string; endDate?: string },
 ): Promise<AuditoriaLogsListResponse> {
   const url = `${auditoriaRoutes.logs.byUsuario(usuarioId)}${buildQuery(params)}`;
-  return apiFetch<AuditoriaLogsListResponse>(url, {
+  const response = await apiFetch<AuditoriaLogsApiResponse>(url, {
     init: { method: "GET", headers: buildHeaders() },
     cache: "no-cache",
   });
+
+  return normalizeAuditoriaLogsListResponse(response, params);
 }
 
 export async function listAccessLogs(params?: AuditoriaLogsListParams) {
-  const url = `${auditoriaRoutes.logs.acesso()}${buildQuery(params)}`;
-  return apiFetch<AuditoriaLogsListResponse>(url, {
+  const normalizedParams = normalizeAuditoriaLogsParams(params);
+  const url = `${auditoriaRoutes.logs.acesso()}${buildQuery(normalizedParams)}`;
+  const response = await apiFetch<AuditoriaLogsApiResponse>(url, {
     init: { method: "GET", headers: buildHeaders() },
     cache: "no-cache",
   });
+
+  return normalizeAuditoriaLogsListResponse(response, params);
 }
 
 export async function listChangeLogs(params?: AuditoriaLogsListParams) {
-  const url = `${auditoriaRoutes.logs.alteracao()}${buildQuery(params)}`;
-  return apiFetch<AuditoriaLogsListResponse>(url, {
+  const normalizedParams = normalizeAuditoriaLogsParams(params);
+  const url = `${auditoriaRoutes.logs.alteracao()}${buildQuery(normalizedParams)}`;
+  const response = await apiFetch<AuditoriaLogsApiResponse>(url, {
     init: { method: "GET", headers: buildHeaders() },
     cache: "no-cache",
   });
+
+  return normalizeAuditoriaLogsListResponse(response, params);
 }
 
 export async function listErrorLogs(
   params?: AuditoriaLogsListParams & { nivel?: string },
 ): Promise<AuditoriaLogsListResponse> {
-  const url = `${auditoriaRoutes.logs.erro()}${buildQuery(params)}`;
-  return apiFetch<AuditoriaLogsListResponse>(url, {
+  const normalizedParams = {
+    ...normalizeAuditoriaLogsParams(params),
+    nivel: params?.nivel,
+  };
+  const url = `${auditoriaRoutes.logs.erro()}${buildQuery(normalizedParams)}`;
+  const response = await apiFetch<AuditoriaLogsApiResponse>(url, {
     init: { method: "GET", headers: buildHeaders() },
     cache: "no-cache",
   });
+
+  return normalizeAuditoriaLogsListResponse(response, params);
 }
 
 export async function getLogsEstatisticas(
@@ -466,4 +648,3 @@ export async function getAuditoriaUsuarioResumo(
 }
 
 export * from './types';
-
