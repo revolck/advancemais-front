@@ -31,6 +31,11 @@ export type UsuarioErrorCode =
   | "WEAK_PASSWORD"
   | "INVALID_REFRESH_TOKEN"
   | "REFRESH_TOKEN_EXPIRED"
+  | "INVALID_ID"
+  | "VALIDATION_ERROR"
+  | "FORBIDDEN_USER_ROLE"
+  | "USER_ACCESS_RELEASE_BLOCKED_BY_STATUS"
+  | "USER_HISTORY_ERROR"
   | "INTERNAL_ERROR";
 
 export interface UsuarioErrorResponse extends UsuarioResponseBase {
@@ -68,7 +73,12 @@ export type Role =
   | "SETOR_DE_VAGAS"
   | "RECRUTADOR";
 
-export type StatusUsuario = "ATIVO" | "INATIVO" | "SUSPENSO" | "BLOQUEADO";
+export type StatusUsuario =
+  | "ATIVO"
+  | "INATIVO"
+  | "SUSPENSO"
+  | "BLOQUEADO"
+  | "PENDENTE";
 
 // ============================================================================
 // RECUPERAÇÃO DE SENHA
@@ -605,6 +615,8 @@ export interface UsuarioGenerico {
   status: StatusUsuario;
   tipoUsuario: TipoUsuario;
   role: Role;
+  emailVerificado?: boolean;
+  emailVerificadoEm?: string | null;
   telefone?: string;
   celular?: string;
   cidade?: string;
@@ -618,11 +630,163 @@ export interface UsuarioGenerico {
   avatarUrl?: string | null;
   enderecos?: UsuarioEndereco[];
   socialLinks?: UsuarioSocialLinks;
+  UsuariosVerificacaoEmail?: {
+    verified: boolean;
+    verifiedAt: string | null;
+    token?: string | null;
+    tokenExpiration: string | null;
+    attempts?: number;
+    lastAttemptAt?: string | null;
+  };
   // Relações por role
   curriculos?: UsuarioCurriculo[];
   candidaturas?: UsuarioCandidatura[];
   cursosInscricoes?: UsuarioCursoInscricao[];
   vagas?: UsuarioVaga[];
+}
+
+export interface LiberarUsuarioEmailPayload {
+  motivo?: string;
+}
+
+export interface LiberarUsuarioEmailResponse extends UsuarioResponseBase {
+  success: boolean;
+  code: "EMAIL_VALIDATION_BYPASSED";
+  message: string;
+  data: {
+    id: string;
+    email: string;
+    nomeCompleto: string;
+    role: Role;
+    status: StatusUsuario;
+    emailVerificado: boolean;
+    emailVerificadoEm: string | null;
+    alreadyVerified: boolean;
+    statusPermiteLogin: boolean;
+  };
+}
+
+export interface LiberarUsuarioAcessoPayload {
+  motivo?: string;
+}
+
+export interface LiberarUsuarioAcessoResponse extends UsuarioResponseBase {
+  success: boolean;
+  code: "USER_ACCESS_RELEASED";
+  message: string;
+  data: {
+    id: string;
+    email: string;
+    nomeCompleto: string;
+    role: Role;
+    statusAnterior: StatusUsuario | string;
+    status: StatusUsuario;
+    emailVerificado: boolean;
+    emailVerificadoEm: string | null;
+    alreadyVerified: boolean;
+    statusPermiteLogin: boolean;
+    acessoLiberado: boolean;
+  };
+}
+
+export type UsuarioHistoricoTipo =
+  | "USUARIO_CRIADO"
+  | "USUARIO_ATUALIZADO"
+  | "USUARIO_STATUS_ALTERADO"
+  | "USUARIO_ROLE_ALTERADA"
+  | "USUARIO_ACESSO_LIBERADO"
+  | "USUARIO_BLOQUEADO"
+  | "USUARIO_DESBLOQUEADO"
+  | "USUARIO_EMAIL_LIBERADO"
+  | "USUARIO_EMAIL_VERIFICADO"
+  | "USUARIO_SENHA_RESETADA"
+  | "USUARIO_LOGIN"
+  | "USUARIO_LOGOUT"
+  | "USUARIO_ENDERECO_ATUALIZADO"
+  | "USUARIO_SOCIAL_LINK_ATUALIZADO"
+  | "USUARIO_AVATAR_ATUALIZADO"
+  | "USUARIO_CPF_ATUALIZADO"
+  | "USUARIO_TELEFONE_ATUALIZADO"
+  | (string & {});
+
+export type UsuarioHistoricoCategoria =
+  | "CADASTRO"
+  | "PERFIL"
+  | "SEGURANCA"
+  | "ACESSO"
+  | "STATUS"
+  | "ADMINISTRATIVO"
+  | (string & {});
+
+export interface UsuarioHistoricoActor {
+  id: string | null;
+  nome: string | null;
+  role: Role | string | null;
+  roleLabel: string | null;
+  avatarUrl: string | null;
+}
+
+export interface UsuarioHistoricoTarget {
+  id: string;
+  nomeCompleto: string;
+  email?: string | null;
+  role?: Role | string | null;
+  status?: StatusUsuario | string | null;
+}
+
+export interface UsuarioHistoricoContexto {
+  ip?: string | null;
+  userAgent?: string | null;
+  origem?: string | null;
+  [key: string]: unknown;
+}
+
+export interface UsuarioHistoricoItem {
+  id: string;
+  tipo: UsuarioHistoricoTipo;
+  categoria: UsuarioHistoricoCategoria;
+  titulo: string;
+  descricao?: string | null;
+  dataHora: string;
+  ator: UsuarioHistoricoActor;
+  alvo: UsuarioHistoricoTarget;
+  contexto?: UsuarioHistoricoContexto | null;
+  dadosAnteriores: Record<string, unknown> | null;
+  dadosNovos: Record<string, unknown> | null;
+  meta?: Record<string, unknown> | null;
+}
+
+export interface UsuarioHistoricoPagination {
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+}
+
+export interface UsuarioHistoricoResumo {
+  total: number;
+  ultimoEventoEm: string | null;
+}
+
+export interface GetUsuarioHistoricoParams {
+  page?: number;
+  pageSize?: number;
+  tipos?: string[];
+  categorias?: string[];
+  atorId?: string;
+  atorRole?: string;
+  dataInicio?: string;
+  dataFim?: string;
+  search?: string;
+}
+
+export interface GetUsuarioHistoricoResponse extends UsuarioResponseBase {
+  success: boolean;
+  data: {
+    items: UsuarioHistoricoItem[];
+    pagination: UsuarioHistoricoPagination;
+    resumo: UsuarioHistoricoResumo;
+  };
 }
 
 // Tipos simplificados para relações

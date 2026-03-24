@@ -103,6 +103,7 @@ export {
   listNotasByAluno,
   createNota,
   deleteNotas,
+  getNotaHistorico,
   // API v3 - Avaliações (Biblioteca Global)
   listAvaliacoes,
   getAvaliacao,
@@ -235,9 +236,14 @@ export type {
   NotaHistoryAction,
   NotaOrigem,
   NotaHistoryEvent,
+  NotaHistoricoAcao,
+  NotaHistoricoActor,
+  NotaHistoricoSnapshot,
+  NotaHistoricoItem,
   NotaLancamento,
   ListNotasParams,
   ListNotasResponse,
+  GetNotaHistoricoResponse,
   CreateNotaPayload,
   DeleteNotasParams,
   // API v3 - Avaliações

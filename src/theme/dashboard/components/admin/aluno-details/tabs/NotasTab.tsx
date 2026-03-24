@@ -123,6 +123,11 @@ const ORIGEM_CONFIG: Record<
     icon: FileCheck2,
     badgeClassName: "bg-emerald-100 text-emerald-700 border-emerald-200",
   },
+  SISTEMA: {
+    label: "Sistema",
+    icon: GraduationCap,
+    badgeClassName: "bg-cyan-100 text-cyan-700 border-cyan-200",
+  },
   OUTRO: {
     label: "Outros",
     icon: School,

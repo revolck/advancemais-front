@@ -903,6 +903,108 @@ export async function updateUsuario(
 }
 
 /**
+ * PATCH /api/v1/usuarios/usuarios/:userId/liberar-email
+ * Libera manualmente a validação de email de um usuário
+ *
+ * @param userId - ID do usuário
+ * @param payload - Motivo opcional da liberação
+ * @param token - Token JWT (opcional)
+ * @returns Resultado da liberação manual
+ */
+export async function liberarUsuarioEmail(
+  userId: string,
+  payload?: import("./types").LiberarUsuarioEmailPayload,
+  token?: string
+): Promise<import("./types").LiberarUsuarioEmailResponse> {
+  return apiFetch<import("./types").LiberarUsuarioEmailResponse>(
+    usuarioRoutes.admin.usuarios.liberarEmail(userId),
+    {
+      init: {
+        method: "PATCH",
+        headers: {
+          ...buildAuthHeaders(token),
+          ...JSON_HEADERS,
+        },
+        body: JSON.stringify(payload ?? {}),
+      },
+      cache: "no-cache",
+    }
+  );
+}
+
+/**
+ * PATCH /api/v1/usuarios/usuarios/:userId/liberar-acesso
+ * Libera o acesso completo de um usuário pendente.
+ *
+ * @param userId - ID do usuário
+ * @param payload - Motivo opcional da liberação
+ * @param token - Token JWT (opcional)
+ * @returns Resultado da liberação completa de acesso
+ */
+export async function liberarUsuarioAcesso(
+  userId: string,
+  payload?: import("./types").LiberarUsuarioAcessoPayload,
+  token?: string
+): Promise<import("./types").LiberarUsuarioAcessoResponse> {
+  return apiFetch<import("./types").LiberarUsuarioAcessoResponse>(
+    usuarioRoutes.admin.usuarios.liberarAcesso(userId),
+    {
+      init: {
+        method: "PATCH",
+        headers: {
+          ...buildAuthHeaders(token),
+          ...JSON_HEADERS,
+        },
+        body: JSON.stringify(payload ?? {}),
+      },
+      cache: "no-cache",
+    }
+  );
+}
+
+/**
+ * GET /api/v1/usuarios/usuarios/:userId/historico
+ * Busca o histórico completo do usuário no painel administrativo.
+ *
+ * @param userId - ID do usuário
+ * @param params - Parâmetros de paginação e filtro
+ * @param token - Token JWT (opcional)
+ * @returns Histórico paginado do usuário
+ */
+export async function getUsuarioHistorico(
+  userId: string,
+  params?: import("./types").GetUsuarioHistoricoParams,
+  token?: string
+): Promise<import("./types").GetUsuarioHistoricoResponse> {
+  const queryParams = new URLSearchParams();
+
+  if (params?.page) queryParams.set("page", String(params.page));
+  if (params?.pageSize) queryParams.set("pageSize", String(params.pageSize));
+  if (params?.tipos?.length) queryParams.set("tipos", params.tipos.join(","));
+  if (params?.categorias?.length) {
+    queryParams.set("categorias", params.categorias.join(","));
+  }
+  if (params?.atorId) queryParams.set("atorId", params.atorId);
+  if (params?.atorRole) queryParams.set("atorRole", params.atorRole);
+  if (params?.dataInicio) queryParams.set("dataInicio", params.dataInicio);
+  if (params?.dataFim) queryParams.set("dataFim", params.dataFim);
+  if (params?.search) queryParams.set("search", params.search);
+
+  const baseUrl = usuarioRoutes.admin.usuarios.historico(userId);
+  const url = queryParams.toString()
+    ? `${baseUrl}?${queryParams.toString()}`
+    : baseUrl;
+
+  return apiFetch<import("./types").GetUsuarioHistoricoResponse>(url, {
+    init: {
+      method: "GET",
+      headers: buildAuthHeaders(token),
+    },
+    cache: "no-cache",
+  });
+}
+
+/**
  * POST /api/v1/usuarios/usuarios
  * Cria um novo usuário no sistema (admin)
  *
@@ -1132,6 +1234,9 @@ export const usuarioApi = {
   getUsuarioById,
   createUsuario,
   updateUsuario,
+  liberarUsuarioAcesso,
+  liberarUsuarioEmail,
+  getUsuarioHistorico,
   createUsuarioBloqueio,
   revokeUsuarioBloqueio,
   listUsuarioBloqueios,

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import type { NotaHistoryEvent } from "@/api/cursos";
 import { ButtonCustom, EmptyState, FilterBar } from "@/components/ui/custom";
 import {
   Table,
@@ -31,9 +32,74 @@ import { NotasTableSkeleton } from "./components/NotasTableSkeleton";
 import { CreateNotaModal } from "./components/CreateNotaModal";
 
 const SEARCH_HELPER_TEXT = "Pesquise pelo nome ou código do aluno.";
+const HISTORY_CACHE_STORAGE_KEY = "notas-dashboard-history-cache";
 
 type SortField = "alunoNome" | "nota" | "atualizadoEm" | null;
 type SortDirection = "asc" | "desc";
+type StickyHistoryEntry = {
+  notaId?: string | null;
+  historicoNotaId?: string | null;
+  historicoDisponivel?: boolean;
+  history: NotaHistoryEvent[];
+};
+
+function buildLocalAddedHistoryEvent(item: {
+  key: string;
+  atualizadoEm: string;
+  criadoEm?: string;
+  nota: number | null;
+  motivo?: string | null;
+  origem?: NotaHistoryEvent["origem"];
+}): NotaHistoryEvent {
+  return {
+    id: `local-added-${item.key}`,
+    action: "ADDED",
+    at: item.criadoEm ?? item.atualizadoEm,
+    nota: item.nota ?? 0,
+    motivo: item.motivo ?? "Nota manual adicionada",
+    origem: item.origem ?? null,
+    alteradoPor: null,
+  };
+}
+
+function buildLocalRemovedHistoryEvent(item: {
+  key: string;
+  atualizadoEm: string;
+  nota: number | null;
+  motivo?: string | null;
+  origem?: NotaHistoryEvent["origem"];
+}): NotaHistoryEvent {
+  return {
+    id: `local-removed-${item.key}-${Date.now()}`,
+    action: "REMOVED",
+    at: new Date().toISOString(),
+    nota: item.nota ?? 0,
+    motivo: item.motivo ?? "Nota manual removida",
+    origem: item.origem ?? null,
+    alteradoPor: null,
+  };
+}
+
+function loadStickyHistoryCache(): Record<string, StickyHistoryEntry> {
+  if (typeof window === "undefined") return {};
+
+  try {
+    const raw = window.sessionStorage.getItem(HISTORY_CACHE_STORAGE_KEY);
+    if (!raw) return {};
+
+    const parsed = JSON.parse(raw) as Record<string, StickyHistoryEntry>;
+    return Object.fromEntries(
+      Object.entries(parsed).filter(
+        ([, entry]) =>
+          Array.isArray(entry?.history) ||
+          Boolean(entry?.notaId) ||
+          Boolean(entry?.historicoNotaId)
+      )
+    );
+  } catch {
+    return {};
+  }
+}
 
 export function NotasDashboard({ className }: { className?: string }) {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -44,6 +110,9 @@ export function NotasDashboard({ className }: { className?: string }) {
 
   const [pageSize] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
+  const [stickyHistoryByKey, setStickyHistoryByKey] = useState<
+    Record<string, StickyHistoryEntry>
+  >(() => loadStickyHistoryCache());
 
   const [sortField, setSortField] = useState<SortField>("atualizadoEm");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
@@ -101,12 +170,101 @@ export function NotasDashboard({ className }: { className?: string }) {
   });
 
   const notas = useMemo(() => notasQuery.data?.items ?? [], [notasQuery.data]);
+  useEffect(() => {
+    setStickyHistoryByKey((previous) => {
+      let changed = false;
+      const next = { ...previous };
+
+      notas.forEach((item) => {
+        const previousEntry = previous[item.key];
+        const fallbackHistory =
+          item.history.length > 0
+            ? item.history
+            : item.isManual
+              ? previousEntry?.history?.length
+                ? previousEntry.history
+                : [buildLocalAddedHistoryEvent(item)]
+              : previousEntry?.history ?? [];
+        const notaId = item.notaId ?? previousEntry?.notaId ?? null;
+        const historicoNotaId =
+          item.historicoNotaId ?? previousEntry?.historicoNotaId ?? notaId;
+        const historicoDisponivel =
+          item.historicoDisponivel ??
+          previousEntry?.historicoDisponivel ??
+          Boolean(historicoNotaId || fallbackHistory.length > 0);
+
+        if (!historicoNotaId && !notaId && fallbackHistory.length === 0) return;
+
+        const previousIds = previousEntry?.history?.map((history) => history.id).join("|");
+        const nextIds = fallbackHistory.map((history) => history.id).join("|");
+
+        if (
+          !previousEntry ||
+          previousEntry.notaId !== notaId ||
+          previousEntry.historicoNotaId !== historicoNotaId ||
+          previousEntry.historicoDisponivel !== historicoDisponivel ||
+          previousIds !== nextIds
+        ) {
+          next[item.key] = {
+            notaId,
+            historicoNotaId,
+            historicoDisponivel,
+            history: fallbackHistory,
+          };
+          changed = true;
+        }
+      });
+
+      return changed ? next : previous;
+    });
+  }, [notas]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.sessionStorage.setItem(
+      HISTORY_CACHE_STORAGE_KEY,
+      JSON.stringify(stickyHistoryByKey)
+    );
+  }, [stickyHistoryByKey]);
+
+  const notasWithStickyHistory = useMemo(
+    () =>
+      notas.map((item) => {
+        const sticky = stickyHistoryByKey[item.key];
+        if (!sticky) return item;
+
+        return {
+          ...item,
+          notaId: item.notaId ?? sticky.notaId ?? null,
+          historicoNotaId:
+            item.historicoNotaId ?? sticky.historicoNotaId ?? item.notaId ?? sticky.notaId ?? null,
+          historicoDisponivel:
+            item.historicoDisponivel ??
+            sticky.historicoDisponivel ??
+            Boolean(
+              item.historicoNotaId ??
+                sticky.historicoNotaId ??
+                item.notaId ??
+                sticky.notaId ??
+                (item.history.length > 0 ? "history" : "")
+            ),
+          history: item.history.length > 0 ? item.history : sticky.history,
+        };
+      }),
+    [notas, stickyHistoryByKey]
+  );
+
   const showActionsColumn = useMemo(
     () =>
-      notas.some(
-        (item) => item.isManual === true || (item.history?.length ?? 0) > 0
+      notasWithStickyHistory.some(
+        (item) =>
+          item.historicoDisponivel === true ||
+          Boolean(item.historicoNotaId) ||
+          item.isManual === true ||
+          Boolean(item.notaId) ||
+          (item.history?.length ?? 0) > 0
       ),
-    [notas]
+    [notasWithStickyHistory]
   );
   const pagination = notasQuery.data?.pagination;
   const updateNota = useUpdateNotaMutation();
@@ -219,6 +377,34 @@ export function NotasDashboard({ className }: { className?: string }) {
   );
 
   const showEmptyState = !shouldShowSkeleton && notas.length === 0;
+
+  const handlePersistHistoryAfterRemove = useCallback((item: (typeof notas)[number]) => {
+    setStickyHistoryByKey((previous) => {
+      const previousEntry = previous[item.key];
+      const baseHistory =
+        previousEntry?.history?.length
+          ? previousEntry.history
+          : item.history.length > 0
+            ? item.history
+            : [buildLocalAddedHistoryEvent(item)];
+      const removeEvent = buildLocalRemovedHistoryEvent(item);
+
+      return {
+        ...previous,
+        [item.key]: {
+          notaId: item.notaId ?? previousEntry?.notaId ?? null,
+          historicoNotaId:
+            item.historicoNotaId ??
+            previousEntry?.historicoNotaId ??
+            item.notaId ??
+            previousEntry?.notaId ??
+            null,
+          historicoDisponivel: true,
+          history: [removeEvent, ...baseHistory],
+        },
+      };
+    });
+  }, []);
 
   return (
     <div className={cn("min-h-full space-y-4", className)}>
@@ -574,7 +760,7 @@ export function NotasDashboard({ className }: { className?: string }) {
                 {shouldShowSkeleton ? (
                   <NotasTableSkeleton rows={8} withActions={shouldRenderActionsColumn} />
                 ) : (
-		                  notas.map((item) => (
+		                  notasWithStickyHistory.map((item) => (
 		                    <NotaRow
 		                      key={item.key}
 		                      item={item}
@@ -599,6 +785,7 @@ export function NotasDashboard({ className }: { className?: string }) {
                                     .then(() => undefined)
                               : undefined
                           }
+                          onPersistHistoryAfterRemove={handlePersistHistoryAfterRemove}
                           showActionsColumn={showActionsColumn}
 		                    />
 		                  ))

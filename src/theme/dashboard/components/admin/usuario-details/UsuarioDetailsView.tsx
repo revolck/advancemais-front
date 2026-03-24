@@ -13,6 +13,7 @@ import { HorizontalTabs } from "@/components/ui/custom";
 import type { HorizontalTabItem } from "@/components/ui/custom";
 import {
   getUsuarioById,
+  liberarUsuarioAcesso,
   updateUsuario,
   createUsuarioBloqueio,
   revokeUsuarioBloqueio,
@@ -21,22 +22,27 @@ import type {
   GetUsuarioResponse,
   UpdateUsuarioPayload,
   CreateUsuarioBloqueioPayload,
+  LiberarUsuarioAcessoPayload,
   RevokeUsuarioBloqueioPayload,
 } from "@/api/usuarios/types";
+import { toastCustom } from "@/components/ui/custom/toast";
 import { queryKeys } from "@/lib/react-query/queryKeys";
 import { invalidateUsuarios } from "@/lib/react-query/invalidation";
+import { useAuth } from "@/hooks/useAuth";
 import { HeaderInfo } from "./components";
 import {
   AboutTab,
   CurriculosTab,
   CandidaturasTab,
   CursosInscricoesTab,
+  HistoryTab,
 } from "./tabs";
 import {
   BloquearUsuarioModal,
   DesbloquearUsuarioModal,
   EditarUsuarioModal,
   EditarUsuarioEnderecoModal,
+  LiberarEmailUsuarioModal as LiberarAcessoUsuarioModal,
   ResetarSenhaUsuarioModal,
 } from "./modal-acoes";
 import type { UsuarioDetailsData, UsuarioDetailsViewProps } from "./types";
@@ -45,6 +51,7 @@ export function UsuarioDetailsView({
   usuarioId,
   initialData,
 }: UsuarioDetailsViewProps) {
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const queryKey = useMemo(
     () => queryKeys.usuarios.detail(usuarioId),
@@ -80,6 +87,7 @@ export function UsuarioDetailsView({
     status === "error"
       ? error?.message ?? "Erro ao carregar usuário."
       : null;
+  const currentUserRole = user?.role?.toUpperCase() ?? null;
 
   const invalidateUsuario = useCallback(async () => {
     await queryClient.invalidateQueries({ queryKey });
@@ -89,6 +97,7 @@ export function UsuarioDetailsView({
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isEditEnderecoOpen, setIsEditEnderecoOpen] = useState(false);
   const [isResetSenhaOpen, setIsResetSenhaOpen] = useState(false);
+  const [isLiberarAcessoOpen, setIsLiberarAcessoOpen] = useState(false);
   const [isBloquearModalOpen, setIsBloquearModalOpen] = useState(false);
   const [isDesbloquearModalOpen, setIsDesbloquearModalOpen] = useState(false);
 
@@ -133,6 +142,49 @@ export function UsuarioDetailsView({
       void invalidateUsuario();
       // Invalida listagens para refletir mudanças de status
       invalidateUsuarios(queryClient);
+    },
+  });
+
+  const liberarAcessoMutation = useMutation({
+    mutationFn: (payload?: LiberarUsuarioAcessoPayload) =>
+      liberarUsuarioAcesso(usuarioId, payload),
+    onSuccess: (response) => {
+      const data = response.data;
+
+      queryClient.setQueryData<GetUsuarioResponse | undefined>(
+        queryKey,
+        (previous) => {
+          if (!previous?.usuario) return previous;
+
+          return {
+            ...previous,
+            usuario: {
+              ...previous.usuario,
+              status: data.status,
+              emailVerificado: data.emailVerificado,
+              emailVerificadoEm: data.emailVerificadoEm,
+              UsuariosVerificacaoEmail: {
+                verified: data.emailVerificado,
+                verifiedAt: data.emailVerificadoEm,
+                token: null,
+                tokenExpiration: null,
+                attempts: previous.usuario.UsuariosVerificacaoEmail?.attempts ?? 0,
+                lastAttemptAt:
+                  previous.usuario.UsuariosVerificacaoEmail?.lastAttemptAt ?? null,
+              },
+            },
+          };
+        }
+      );
+
+      void invalidateUsuario();
+      invalidateUsuarios(queryClient);
+
+      toastCustom.success(
+        data.alreadyVerified
+          ? "A conta foi ativada com o e-mail já verificado."
+          : "Acesso do usuário liberado com sucesso."
+      );
     },
   });
 
@@ -196,8 +248,67 @@ export function UsuarioDetailsView({
         }
     }
 
+    baseTabs.push({
+      value: "historico",
+      label: "Histórico",
+      icon: "History",
+      content: <HistoryTab usuario={usuarioData} isLoading={isReloading} />,
+    });
+
     return baseTabs;
   }, [usuarioData, isReloading]);
+
+  const canLiberarAcesso = useMemo(() => {
+    if (!usuarioData || !currentUserRole) return false;
+
+    const statusPendente = usuarioData.status?.toUpperCase() === "PENDENTE";
+
+    if (!statusPendente) return false;
+
+    if (currentUserRole === "ADMIN" || currentUserRole === "MODERADOR") {
+      return true;
+    }
+
+    if (currentUserRole === "PEDAGOGICO") {
+      return (
+        usuarioData.role === "ALUNO_CANDIDATO" || usuarioData.role === "INSTRUTOR"
+      );
+    }
+
+    return false;
+  }, [currentUserRole, usuarioData]);
+
+  const handleLiberarAcesso = useCallback(
+    async (payload?: LiberarUsuarioAcessoPayload) => {
+      try {
+        await liberarAcessoMutation.mutateAsync(payload);
+      } catch (error: any) {
+        const code = error?.response?.data?.code;
+        const message =
+          error?.response?.data?.message ||
+          error?.message ||
+          "Não foi possível liberar o acesso do usuário.";
+
+        if (code === "FORBIDDEN_USER_ROLE") {
+          toastCustom.error(
+            "O setor pedagógico só pode liberar alunos e instrutores."
+          );
+          throw error;
+        }
+
+        if (code === "USER_ACCESS_RELEASE_BLOCKED_BY_STATUS") {
+          toastCustom.error(
+            "Esse usuário precisa de outro fluxo administrativo para voltar a acessar."
+          );
+          throw error;
+        }
+
+        toastCustom.error(message);
+        throw error;
+      }
+    },
+    [liberarAcessoMutation]
+  );
 
   if (isReloading) {
     return (
@@ -287,6 +398,9 @@ export function UsuarioDetailsView({
         onEditUsuario={() => setIsEditModalOpen(true)}
         onEditEndereco={() => setIsEditEnderecoOpen(true)}
         onResetSenha={() => setIsResetSenhaOpen(true)}
+        onLiberarAcessoUsuario={
+          canLiberarAcesso ? () => setIsLiberarAcessoOpen(true) : undefined
+        }
         onBloquearUsuario={() => setIsBloquearModalOpen(true)}
         onDesbloquearUsuario={() => setIsDesbloquearModalOpen(true)}
       />
@@ -346,6 +460,14 @@ export function UsuarioDetailsView({
                 confirmarSenha,
               } as any);
             }}
+          />
+
+          <LiberarAcessoUsuarioModal
+            isOpen={isLiberarAcessoOpen}
+            onOpenChange={setIsLiberarAcessoOpen}
+            usuarioNome={usuarioData.nomeCompleto}
+            usuarioEmail={usuarioData.email}
+            onConfirm={handleLiberarAcesso}
           />
         </>
       )}

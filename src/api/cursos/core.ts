@@ -2375,6 +2375,35 @@ export async function deleteNotas(
   });
 }
 
+export async function getNotaHistorico(
+  cursoId: string | number,
+  turmaId: string,
+  notaId: string,
+  init?: RequestInit
+): Promise<import("./types").NotaHistoricoItem[]> {
+  const response = await apiFetch<import("./types").GetNotaHistoricoResponse>(
+    cursosRoutes.cursos.turmas.notas.historico(cursoId, turmaId, notaId),
+    {
+      init: {
+        method: "GET",
+        ...init,
+        headers: buildHeaders(init?.headers, true),
+      },
+      cache: "no-cache",
+    }
+  );
+
+  if (Array.isArray(response.data?.items)) {
+    return response.data.items;
+  }
+
+  if (Array.isArray(response.items)) {
+    return response.items;
+  }
+
+  return [];
+}
+
 // ===================================
 // AVALIAÇÕES (API v3 - Biblioteca Global)
 // ===================================

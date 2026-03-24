@@ -19,13 +19,14 @@ import {
   Ban,
   ChevronDown,
   ChevronLeft,
+  MailCheck,
   MapPin,
   Shield,
   ShieldOff,
   UserCog,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { getUsuarioInitials, formatCpf, formatCnpj } from "../utils/formatters";
+import { formatCpf, formatCnpj } from "../utils/formatters";
 import type { HeaderInfoProps } from "../types";
 
 export function HeaderInfo({
@@ -33,6 +34,7 @@ export function HeaderInfo({
   onEditUsuario,
   onEditEndereco,
   onResetSenha,
+  onLiberarAcessoUsuario,
   onBloquearUsuario,
   onDesbloquearUsuario,
 }: HeaderInfoProps) {
@@ -162,6 +164,15 @@ export function HeaderInfo({
                 >
                   <Shield className="h-4 w-4 text-gray-500" />
                   <span>Resetar senha</span>
+                </DropdownMenuItem>
+              )}
+              {onLiberarAcessoUsuario && (
+                <DropdownMenuItem
+                  onSelect={onLiberarAcessoUsuario}
+                  className="cursor-pointer"
+                >
+                  <MailCheck className="h-4 w-4 text-gray-500" />
+                  <span>Liberar acesso</span>
                 </DropdownMenuItem>
               )}
               {isBloqueado

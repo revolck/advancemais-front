@@ -13,11 +13,17 @@ export interface HeaderInfoProps {
   onEditUsuario?: () => void;
   onEditEndereco?: () => void;
   onResetSenha?: () => void;
+  onLiberarAcessoUsuario?: () => void;
   onBloquearUsuario?: () => void;
   onDesbloquearUsuario?: () => void;
 }
 
 export interface AboutTabProps {
+  usuario: UsuarioDetailsData;
+  isLoading?: boolean;
+}
+
+export interface HistoryTabProps {
   usuario: UsuarioDetailsData;
   isLoading?: boolean;
 }

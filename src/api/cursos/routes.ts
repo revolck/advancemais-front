@@ -154,6 +154,8 @@ export const cursosRoutes = {
           `${BASE}/${cursoId}/turmas/${turmaId}/notas/${notaId}`,
         delete: (cursoId: number | string, turmaId: string, notaId: string) =>
           `${BASE}/${cursoId}/turmas/${turmaId}/notas/${notaId}`,
+        historico: (cursoId: number | string, turmaId: string, notaId: string) =>
+          `${BASE}/${cursoId}/turmas/${turmaId}/notas/${notaId}/historico`,
       },
       frequencias: {
         list: (cursoId: number | string, turmaId: string) =>

@@ -5,6 +5,7 @@ import {
   listNotasGlobal,
   type NotaLancamento,
   type NotaHistoryEvent,
+  type NotaOrigem,
 } from "@/api/cursos";
 
 export interface NormalizedNotasFilters {
@@ -20,6 +21,9 @@ export interface NormalizedNotasFilters {
 
 export interface NotaListItem {
   key: string;
+  notaId?: string | null;
+  historicoNotaId?: string | null;
+  historicoDisponivel?: boolean;
   cursoId: string;
   turmaId: string;
   inscricaoId?: string;
@@ -38,11 +42,7 @@ export interface NotaListItem {
   atualizadoEm: string;
   criadoEm?: string;
   motivo?: string | null;
-  origem?: {
-    tipo: "PROVA" | "ATIVIDADE" | "AULA" | "OUTRO";
-    id?: string | null;
-    titulo?: string | null;
-  } | null;
+  origem?: NotaOrigem | null;
   isManual: boolean;
   history: NotaHistoryEvent[];
 }
@@ -59,6 +59,10 @@ export interface NotasQueryResult {
 
 function mapNotaLancamentoToListItem(nota: NotaLancamento): NotaListItem {
   const notaWithLegacy = nota as NotaLancamento & {
+    id?: string | null;
+    notaId?: string | null;
+    historicoNotaId?: string | null;
+    historicoDisponivel?: boolean;
     aluno?: {
       cpf?: string | null;
       codigo?: string | null;
@@ -93,11 +97,26 @@ function mapNotaLancamentoToListItem(nota: NotaLancamento): NotaListItem {
 
   return {
     key: `${nota.cursoId}::${nota.turmaId}::${nota.alunoId}`,
+    notaId: notaWithLegacy.notaId ?? notaWithLegacy.id ?? null,
+    historicoNotaId:
+      notaWithLegacy.historicoNotaId ??
+      notaWithLegacy.notaId ??
+      notaWithLegacy.id ??
+      null,
+    historicoDisponivel:
+      notaWithLegacy.historicoDisponivel ??
+      (Boolean(
+        notaWithLegacy.historicoNotaId ??
+          notaWithLegacy.notaId ??
+          notaWithLegacy.id
+      ) ||
+        (nota.history?.length ?? 0) > 0),
     cursoId: nota.cursoId,
     turmaId: nota.turmaId,
     inscricaoId: nota.inscricaoId,
     alunoId: nota.alunoId,
     alunoNome: nota.alunoNome,
+    criadoEm: nota.criadoEm,
     alunoCpf:
       notaWithLegacy.aluno?.cpf ??
       notaWithLegacy.alunoCpf ??

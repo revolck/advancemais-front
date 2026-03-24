@@ -406,6 +406,12 @@ export const usuarioRoutes = {
         `${prefix}/usuarios/usuarios/${encodeURIComponent(userId)}`,
       update: (userId: string) =>
         `${prefix}/usuarios/usuarios/${encodeURIComponent(userId)}`,
+      liberarAcesso: (userId: string) =>
+        `${prefix}/usuarios/usuarios/${encodeURIComponent(userId)}/liberar-acesso`,
+      liberarEmail: (userId: string) =>
+        `${prefix}/usuarios/usuarios/${encodeURIComponent(userId)}/liberar-email`,
+      historico: (userId: string) =>
+        `${prefix}/usuarios/usuarios/${encodeURIComponent(userId)}/historico`,
       updateRole: (userId: string) =>
         `${prefix}/usuarios/usuarios/${encodeURIComponent(userId)}/role`,
       updateStatus: (userId: string) =>

@@ -37,6 +37,7 @@ interface NotaRowProps {
   turmaNome?: string;
   isRemoving?: boolean;
   onRemove?: () => Promise<void> | void;
+  onPersistHistoryAfterRemove?: (item: NotaListItem) => void;
   showActionsColumn?: boolean;
 }
 
@@ -104,6 +105,7 @@ export function NotaRow({
   turmaNome,
   isRemoving = false,
   onRemove,
+  onPersistHistoryAfterRemove,
   showActionsColumn = true,
 }: NotaRowProps) {
   const router = useRouter();
@@ -112,7 +114,12 @@ export function NotaRow({
   const [isConfirmRemoveOpen, setIsConfirmRemoveOpen] = React.useState(false);
   const [isNavigating, setIsNavigating] = React.useState(false);
   const canRemove = item.isManual === true;
-  const hasHistory = (item.history?.length ?? 0) > 0;
+  const canViewHistory =
+    item.historicoDisponivel === true ||
+    Boolean(item.historicoNotaId) ||
+    item.isManual === true ||
+    Boolean(item.notaId) ||
+    (item.history?.length ?? 0) > 0;
   const codigoExibicao = item.codigoMatricula || item.alunoCodigo;
   const cursoNomeExibicao = cursoNome || item.cursoNome || item.cursoId || "—";
   const turmaNomeExibicao = turmaNome || item.turmaNome || item.turmaId || "—";
@@ -123,6 +130,7 @@ export function NotaRow({
     if (!onRemove) return;
     try {
       await Promise.resolve(onRemove());
+      onPersistHistoryAfterRemove?.(item);
       toastCustom.success("Nota removida.");
       setIsConfirmRemoveOpen(false);
     } catch (err) {
@@ -273,7 +281,7 @@ export function NotaRow({
       {showActionsColumn ? (
         <TableCell className="py-4 px-3">
           <div className="flex items-center justify-end gap-2">
-            {hasHistory && (
+            {canViewHistory && (
               <ButtonCustom
                 variant="outline"
                 size="sm"
@@ -335,8 +343,15 @@ export function NotaRow({
         isOpen={isHistoryOpen}
         onClose={() => setIsHistoryOpen(false)}
         alunoNome={item.alunoNome}
+        alunoCpf={item.alunoCpf}
+        alunoCodigo={item.codigoMatricula || item.alunoCodigo}
+        alunoAvatarUrl={item.alunoAvatarUrl}
+        notaAtual={item.nota}
         turmaNome={turmaNome}
-        history={item.history ?? []}
+        cursoId={item.cursoId}
+        turmaId={item.turmaId}
+        historicoNotaId={item.historicoNotaId ?? item.notaId}
+        fallbackHistory={item.history ?? []}
       />
 
       <ModalCustom
@@ -355,7 +370,8 @@ export function NotaRow({
               <strong>{item.alunoNome}</strong>?
             </p>
             <p className="mt-2 text-xs text-gray-500">
-              Essa ação não pode ser desfeita.
+              Essa ação não pode ser desfeita. O histórico da nota permanecerá
+              disponível para auditoria.
             </p>
           </ModalBody>
           <ModalFooter>

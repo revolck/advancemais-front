@@ -1109,8 +1109,12 @@ export interface ListFrequenciaHistoricoByAlunoNaturalKeyParams
 // NOTAS (API Real)
 // ===================================
 
-export type NotaOrigemTipo = "PROVA" | "ATIVIDADE" | "AULA" | "OUTRO";
+export type NotaOrigemTipo = "PROVA" | "ATIVIDADE" | "AULA" | "OUTRO" | "SISTEMA";
 export type NotaHistoryAction = "ADDED" | "REMOVED";
+export type NotaHistoricoAcao =
+  | "NOTA_MANUAL_ADICIONADA"
+  | "NOTA_MANUAL_ATUALIZADA"
+  | "NOTA_MANUAL_EXCLUIDA";
 
 export interface NotaOrigem {
   tipo: NotaOrigemTipo;
@@ -1133,13 +1137,55 @@ export interface NotaHistoryEvent {
   } | null;
 }
 
+export interface NotaHistoricoActor {
+  id?: string | null;
+  nome?: string | null;
+  role?: string | null;
+  roleLabel?: string | null;
+}
+
+export interface NotaHistoricoSnapshot {
+  notaId?: string | null;
+  cursoId?: string | null;
+  turmaId?: string | null;
+  inscricaoId?: string | null;
+  alunoId?: string | null;
+  tipo?: string | null;
+  provaId?: string | null;
+  referenciaExterna?: string | null;
+  titulo?: string | null;
+  descricao?: string | null;
+  nota?: number | null;
+  peso?: number | null;
+  valorMaximo?: number | null;
+  dataReferencia?: string | null;
+  observacoes?: string | null;
+  criadoEm?: string | null;
+  atualizadoEm?: string | null;
+}
+
+export interface NotaHistoricoItem {
+  id: string;
+  acao: NotaHistoricoAcao;
+  dataHora: string;
+  ator?: NotaHistoricoActor | null;
+  descricao?: string | null;
+  dadosAnteriores?: NotaHistoricoSnapshot | null;
+  dadosNovos?: NotaHistoricoSnapshot | null;
+}
+
 export interface NotaLancamento {
+  id?: string;
+  notaId?: string | null;
+  historicoNotaId?: string | null;
+  historicoDisponivel?: boolean;
   cursoId: string;
   turmaId: string;
   inscricaoId: string;
   alunoId: string;
   alunoNome: string;
   nota: number | null;
+  criadoEm?: string;
   atualizadoEm: string;
   motivo?: string | null;
   origem?: NotaOrigem | null;
@@ -1172,6 +1218,15 @@ export interface ListNotasResponse {
       isPageAdjusted?: boolean;
     };
   };
+}
+
+export interface GetNotaHistoricoResponse {
+  success?: boolean;
+  data?: {
+    notaId?: string;
+    items?: NotaHistoricoItem[];
+  };
+  items?: NotaHistoricoItem[];
 }
 
 export interface CreateNotaPayload {

@@ -130,6 +130,13 @@ export function AboutTab({ usuario, isLoading = false }: AboutTabProps) {
     },
     { label: "E-mail", value: formatEmailLink(usuario.email), icon: Mail },
     {
+      label: "Validação de email",
+      value: usuario.emailVerificado
+        ? `Verificado${usuario.emailVerificadoEm ? ` em ${formatDateTime(usuario.emailVerificadoEm)}` : ""}`
+        : "Pendente",
+      icon: Mail,
+    },
+    {
       label: "Instagram",
       value: formatSocialLink(usuario.socialLinks?.instagram),
       icon: Instagram,

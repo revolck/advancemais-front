@@ -140,14 +140,15 @@ export function HorizontalTabs({
       </div>
 
       <div className="relative">
-        <AnimatePresence mode="wait">
-          {items.map((item) => (
-            <TabsPrimitive.Content
-              key={item.value}
-              value={item.value}
-              forceMount
-            >
-              {value === item.value ? (
+        <AnimatePresence mode="wait" initial={false}>
+          {items
+            .filter((item) => item.value === value)
+            .map((item) => (
+              <TabsPrimitive.Content
+                key={item.value}
+                value={item.value}
+                forceMount
+              >
                 <motion.div
                   variants={panelVariants}
                   initial="initial"
@@ -160,9 +161,8 @@ export function HorizontalTabs({
                 >
                   {item.content}
                 </motion.div>
-              ) : null}
-            </TabsPrimitive.Content>
-          ))}
+              </TabsPrimitive.Content>
+            ))}
         </AnimatePresence>
       </div>
     </TabsPrimitive.Root>

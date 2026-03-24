@@ -10,7 +10,7 @@ import type { FilterField } from "@/components/ui/custom/filters";
 import { useQuery } from "@tanstack/react-query";
 import { getUserProfile } from "@/api/usuarios";
 import { getCursoAlunoDetalhes } from "@/api/cursos";
-import { listNotas, type NotaLancamento } from "@/api/cursos";
+import { listNotas, type NotaLancamento, type NotaOrigem } from "@/api/cursos";
 import {
   getMockAlunoNotas,
   getMockAlunoCandidatoData,
@@ -39,6 +39,9 @@ function getCookieValue(name: string): string | null {
 
 interface NotaListItem {
   key: string;
+  notaId?: string | null;
+  historicoNotaId?: string | null;
+  historicoDisponivel?: boolean;
   cursoId: string;
   cursoNome: string;
   turmaId: string;
@@ -48,11 +51,7 @@ interface NotaListItem {
   nota: number | null;
   atualizadoEm: string;
   motivo?: string | null;
-  origem?: {
-    tipo: "PROVA" | "ATIVIDADE" | "AULA" | "OUTRO";
-    id?: string | null;
-    titulo?: string | null;
-  } | null;
+  origem?: NotaOrigem | null;
   isManual: boolean;
   history: any[];
 }
@@ -241,21 +240,41 @@ export function AlunoNotasView() {
         const notasFinais = Array.from(notasPorCurso.values());
 
         // Mapear para o formato esperado
-        const items: NotaListItem[] = notasFinais.map((nota) => ({
-          key: `${nota.cursoId}::final`,
-          cursoId: nota.cursoId,
-          cursoNome: nota.cursoNome,
-          turmaId: nota.turmaId,
-          turmaNome: nota.turmaNome,
-          inscricaoId: nota.inscricaoId,
-          alunoId: nota.alunoId,
-          nota: nota.nota,
-          atualizadoEm: nota.atualizadoEm,
-          motivo: nota.motivo,
-          origem: nota.origem,
-          isManual: nota.isManual,
-          history: nota.history,
-        }));
+        const items: NotaListItem[] = notasFinais.map((nota) => {
+          const notaWithId = nota as {
+            id?: string;
+            notaId?: string | null;
+            historicoNotaId?: string | null;
+            historicoDisponivel?: boolean;
+          };
+
+          return {
+            key: `${nota.cursoId}::final`,
+            notaId: notaWithId.notaId ?? notaWithId.id ?? null,
+            historicoNotaId:
+              notaWithId.historicoNotaId ?? notaWithId.notaId ?? notaWithId.id ?? null,
+            historicoDisponivel:
+              notaWithId.historicoDisponivel ??
+              (Boolean(
+                notaWithId.historicoNotaId ??
+                  notaWithId.notaId ??
+                  notaWithId.id
+              ) ||
+                (nota.history?.length ?? 0) > 0),
+            cursoId: nota.cursoId,
+            cursoNome: nota.cursoNome,
+            turmaId: nota.turmaId,
+            turmaNome: nota.turmaNome,
+            inscricaoId: nota.inscricaoId,
+            alunoId: nota.alunoId,
+            nota: nota.nota,
+            atualizadoEm: nota.atualizadoEm,
+            motivo: nota.motivo,
+            origem: nota.origem,
+            isManual: nota.isManual,
+            history: nota.history,
+          };
+        });
 
         return { items };
       } catch (error) {
@@ -708,9 +727,18 @@ export function AlunoNotasView() {
         <NotaHistoryModal
           isOpen={true}
           onClose={() => setSelectedNotaHistory(null)}
-          alunoNome={selectedNotaHistory.cursoNome}
+          alunoNome={
+            profileResponse && "usuario" in profileResponse
+              ? profileResponse.usuario.nomeCompleto
+              : "Aluno"
+          }
           turmaNome={selectedNotaHistory.turmaNome}
-          history={selectedNotaHistory.history ?? []}
+          cursoId={selectedNotaHistory.cursoId}
+          turmaId={selectedNotaHistory.turmaId}
+          historicoNotaId={
+            selectedNotaHistory.historicoNotaId ?? selectedNotaHistory.notaId
+          }
+          fallbackHistory={selectedNotaHistory.history ?? []}
         />
       )}
     </div>
