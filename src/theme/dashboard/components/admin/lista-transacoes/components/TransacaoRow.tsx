@@ -2,7 +2,6 @@
 
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Icon } from "@/components/ui/custom";
 import { cn } from "@/lib/utils";
 import type { AuditoriaTransacao } from "@/api/auditoria/types";
 import { format } from "date-fns";
@@ -34,7 +33,8 @@ const getTipoColor = (tipo?: string) => {
   }
 };
 
-const getTipoLabel = (tipo?: string) => {
+const getTipoLabel = (tipo?: string, tipoLabel?: string | null) => {
+  if (tipoLabel) return tipoLabel;
   if (!tipo) return "—";
   
   switch (tipo) {
@@ -76,7 +76,8 @@ const getStatusColor = (status?: string) => {
   }
 };
 
-const getStatusLabel = (status?: string) => {
+const getStatusLabel = (status?: string, statusLabel?: string | null) => {
+  if (statusLabel) return statusLabel;
   if (!status) return "—";
   
   switch (status) {
@@ -117,6 +118,13 @@ export function TransacaoRow({
   isDisabled = false,
 }: TransacaoRowProps) {
   const isRowDisabled = isDisabled;
+  const codigoExibicao = transacao.codigoExibicao?.trim() || "—";
+  const tipoLabel = getTipoLabel(transacao.tipo, transacao.tipoLabel);
+  const statusLabel = getStatusLabel(transacao.status, transacao.statusLabel);
+  const gatewayLabel = transacao.gatewayLabel?.trim() || transacao.gateway?.trim() || "—";
+  const valorExibicao =
+    transacao.valorFormatado?.trim() ||
+    formatCurrency(transacao.valor, transacao.moeda);
 
   return (
     <TableRow 
@@ -129,7 +137,7 @@ export function TransacaoRow({
     >
       <TableCell className="py-4">
         <div className="text-sm text-gray-900 font-medium">
-          {transacao.id.substring(0, 8)}...
+          {codigoExibicao}
         </div>
       </TableCell>
       <TableCell className="py-4">
@@ -141,7 +149,7 @@ export function TransacaoRow({
               getTipoColor(transacao.tipo)
             )}
           >
-            {getTipoLabel(transacao.tipo)}
+            {tipoLabel}
           </Badge>
         ) : (
           <div className="text-sm text-gray-500">—</div>
@@ -156,7 +164,7 @@ export function TransacaoRow({
               getStatusColor(transacao.status)
             )}
           >
-            {getStatusLabel(transacao.status)}
+            {statusLabel}
           </Badge>
         ) : (
           <div className="text-sm text-gray-500">—</div>
@@ -164,22 +172,11 @@ export function TransacaoRow({
       </TableCell>
       <TableCell className="py-4">
         <div className="text-sm text-gray-900 font-semibold">
-          {formatCurrency(transacao.valor, transacao.moeda)}
+          {valorExibicao}
         </div>
       </TableCell>
       <TableCell className="py-4">
-        {transacao.gateway ? (
-          <div className="flex items-center gap-2">
-            <Icon
-              name="CreditCard"
-              size={16}
-              className="text-gray-400 flex-shrink-0"
-            />
-            <span className="text-sm text-gray-900">{transacao.gateway}</span>
-          </div>
-        ) : (
-          <div className="text-sm text-gray-500">—</div>
-        )}
+        <div className="text-sm text-gray-900">{gatewayLabel}</div>
       </TableCell>
       <TableCell className="py-4">
         {transacao.descricao ? (
@@ -198,4 +195,3 @@ export function TransacaoRow({
     </TableRow>
   );
 }
-

@@ -192,7 +192,8 @@ export type AuditoriaTransacaoTipo =
   | "ESTORNO"
   | "ASSINATURA"
   | "CUPOM"
-  | "TAXA";
+  | "TAXA"
+  | (string & {});
 
 export type AuditoriaTransacaoStatus =
   | "PENDENTE"
@@ -200,37 +201,94 @@ export type AuditoriaTransacaoStatus =
   | "APROVADA"
   | "RECUSADA"
   | "CANCELADA"
-  | "ESTORNADA";
+  | "ESTORNADA"
+  | (string & {});
+
+export interface AuditoriaTransacaoUsuario {
+  id?: string | null;
+  nome?: string | null;
+  email?: string | null;
+  codigo?: string | null;
+}
+
+export interface AuditoriaTransacaoEmpresa {
+  id?: string | null;
+  nomeExibicao?: string | null;
+  codigo?: string | null;
+}
+
+export interface AuditoriaTransacaoContexto {
+  cursoNome?: string | null;
+  cursoId?: string | null;
+  planoNome?: string | null;
+  planoId?: string | null;
+  origem?: string | null;
+  metodoPagamento?: string | null;
+}
+
+export interface AuditoriaTransacoesFiltrosDisponiveis {
+  tipos?: AuditoriaFiltroDisponivel[];
+  status?: AuditoriaFiltroDisponivel[];
+  gateways?: AuditoriaFiltroDisponivel[];
+}
+
+export interface AuditoriaTransacoesResumo {
+  total?: number;
+  valorTotal?: number;
+  ultimoEventoEm?: string | null;
+}
 
 export interface AuditoriaTransacao {
   id: string;
   tipo: AuditoriaTransacaoTipo;
   status: AuditoriaTransacaoStatus;
+  codigoExibicao?: string | null;
+  tipoLabel?: string | null;
+  statusLabel?: string | null;
   valor: number;
   moeda: string;
-  usuarioId?: string;
-  empresaId?: string;
-  gateway?: string;
-  gatewayId?: string;
-  descricao?: string;
+  valorFormatado?: string | null;
+  usuarioId?: string | null;
+  empresaId?: string | null;
+  gateway?: string | null;
+  gatewayId?: string | null;
+  gatewayLabel?: string | null;
+  gatewayReferencia?: string | null;
+  descricao?: string | null;
+  usuario?: AuditoriaTransacaoUsuario | null;
+  empresa?: AuditoriaTransacaoEmpresa | null;
+  contexto?: AuditoriaTransacaoContexto | null;
+  meta?: Record<string, any> | null;
   dadosAdicionais?: any;
   criadoEm: string;
   atualizadoEm: string;
 }
 
 export interface AuditoriaTransacoesListParams {
-  tipo?: AuditoriaTransacaoTipo | string;
-  status?: AuditoriaTransacaoStatus | string;
+  tipos?: AuditoriaTransacaoTipo[] | AuditoriaTransacaoTipo | string[] | string;
+  status?: AuditoriaTransacaoStatus[] | AuditoriaTransacaoStatus | string[] | string;
   usuarioId?: string;
   empresaId?: string;
   gateway?: string;
-  startDate?: string;
-  endDate?: string;
+  dataInicio?: string;
+  dataFim?: string;
   page?: number;
   pageSize?: number;
+  search?: string;
+  sortBy?: "criadoEm" | "tipo" | "status" | "valor" | "gateway" | string;
+  sortDir?: "asc" | "desc";
+  // Aliases legados para compatibilidade
+  tipo?: AuditoriaTransacaoTipo | string;
+  startDate?: string;
+  endDate?: string;
 }
 
-export type AuditoriaTransacoesListResponse = AuditoriaPaginatedResponse<AuditoriaTransacao>;
+export interface AuditoriaTransacoesListResponse
+  extends AuditoriaPaginatedResponse<AuditoriaTransacao> {
+  pagination: Pagination;
+  resumo?: AuditoriaTransacoesResumo;
+  filtrosDisponiveis?: AuditoriaTransacoesFiltrosDisponiveis;
+}
 
 export interface CreateAuditoriaTransacaoPayload {
   tipo: AuditoriaTransacaoTipo;

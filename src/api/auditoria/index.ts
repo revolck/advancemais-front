@@ -16,8 +16,13 @@ import type {
   CreateAuditoriaScriptPayload,
   UpdateAuditoriaScriptPayload,
   AuditoriaTransacao,
+  AuditoriaTransacaoContexto,
+  AuditoriaTransacaoEmpresa,
+  AuditoriaTransacaoUsuario,
+  AuditoriaTransacoesFiltrosDisponiveis,
   AuditoriaTransacoesListParams,
   AuditoriaTransacoesListResponse,
+  AuditoriaTransacoesResumo,
   CreateAuditoriaTransacaoPayload,
   UpdateAuditoriaTransacaoPayload,
   UpdateAuditoriaTransacaoStatusPayload,
@@ -216,6 +221,159 @@ function normalizeAuditoriaLogsParams(
   return normalized;
 }
 
+type AuditoriaTransacoesApiPayload = {
+  items?: unknown[];
+  pagination?: Partial<AuditoriaTransacoesListResponse["pagination"]>;
+  resumo?: AuditoriaTransacoesResumo;
+  filtrosDisponiveis?: AuditoriaTransacoesFiltrosDisponiveis;
+  total?: number;
+  page?: number;
+  pageSize?: number;
+  totalPages?: number;
+};
+
+type AuditoriaTransacoesApiResponse =
+  | AuditoriaTransacoesListResponse
+  | {
+      success?: boolean;
+      data?: AuditoriaTransacoesApiPayload;
+    };
+
+function normalizeAuditoriaTransacaoUsuario(
+  usuario: any,
+  transacao: any,
+): AuditoriaTransacaoUsuario | null {
+  if (!usuario && !transacao?.usuarioId) return null;
+
+  return {
+    id: usuario?.id ?? transacao?.usuarioId ?? null,
+    nome: usuario?.nome ?? null,
+    email: usuario?.email ?? null,
+    codigo: usuario?.codigo ?? null,
+  };
+}
+
+function normalizeAuditoriaTransacaoEmpresa(
+  empresa: any,
+  transacao: any,
+): AuditoriaTransacaoEmpresa | null {
+  if (!empresa && !transacao?.empresaId) return null;
+
+  return {
+    id: empresa?.id ?? transacao?.empresaId ?? null,
+    nomeExibicao: empresa?.nomeExibicao ?? null,
+    codigo: empresa?.codigo ?? null,
+  };
+}
+
+function normalizeAuditoriaTransacaoContexto(contexto: any): AuditoriaTransacaoContexto | null {
+  if (!contexto && contexto !== 0) return null;
+
+  const normalized: AuditoriaTransacaoContexto = {
+    cursoNome: contexto?.cursoNome ?? null,
+    cursoId: contexto?.cursoId ?? null,
+    planoNome: contexto?.planoNome ?? null,
+    planoId: contexto?.planoId ?? null,
+    origem: contexto?.origem ?? null,
+    metodoPagamento: contexto?.metodoPagamento ?? null,
+  };
+
+  if (Object.values(normalized).every((value) => value === null || value === undefined)) {
+    return null;
+  }
+
+  return normalized;
+}
+
+function normalizeAuditoriaTransacao(transacao: any): AuditoriaTransacao {
+  const usuario = normalizeAuditoriaTransacaoUsuario(transacao?.usuario, transacao);
+  const empresa = normalizeAuditoriaTransacaoEmpresa(transacao?.empresa, transacao);
+  const contexto = normalizeAuditoriaTransacaoContexto(transacao?.contexto);
+
+  return {
+    id: String(transacao?.id ?? ""),
+    codigoExibicao: transacao?.codigoExibicao ?? null,
+    tipo: transacao?.tipo ?? "",
+    tipoLabel: transacao?.tipoLabel ?? transacao?.tipo ?? null,
+    status: transacao?.status ?? "",
+    statusLabel: transacao?.statusLabel ?? transacao?.status ?? null,
+    valor: Number(transacao?.valor ?? 0),
+    moeda: transacao?.moeda ?? "BRL",
+    valorFormatado: transacao?.valorFormatado ?? null,
+    usuarioId: transacao?.usuarioId ?? usuario?.id ?? null,
+    empresaId: transacao?.empresaId ?? empresa?.id ?? null,
+    gateway: transacao?.gateway ?? null,
+    gatewayId: transacao?.gatewayId ?? null,
+    gatewayLabel: transacao?.gatewayLabel ?? transacao?.gateway ?? null,
+    gatewayReferencia: transacao?.gatewayReferencia ?? null,
+    descricao: transacao?.descricao ?? null,
+    usuario,
+    empresa,
+    contexto,
+    meta: transacao?.meta ?? null,
+    dadosAdicionais: transacao?.dadosAdicionais ?? null,
+    criadoEm: transacao?.criadoEm ?? "",
+    atualizadoEm: transacao?.atualizadoEm ?? transacao?.criadoEm ?? "",
+  };
+}
+
+function normalizeAuditoriaTransacoesListResponse(
+  response: AuditoriaTransacoesApiResponse,
+  fallback?: { page?: number; pageSize?: number },
+): AuditoriaTransacoesListResponse {
+  const payload: AuditoriaTransacoesApiPayload =
+    "data" in response && response.data
+      ? response.data
+      : (response as AuditoriaTransacoesApiPayload);
+
+  const items = (payload.items ?? []).map(normalizeAuditoriaTransacao);
+  const page = payload.pagination?.page ?? payload.page ?? fallback?.page ?? 1;
+  const pageSize =
+    payload.pagination?.pageSize ?? payload.pageSize ?? fallback?.pageSize ?? 10;
+  const total = payload.pagination?.total ?? payload.total ?? items.length;
+  const totalPages =
+    payload.pagination?.totalPages ??
+    payload.totalPages ??
+    Math.max(1, Math.ceil(total / Math.max(pageSize, 1)));
+
+  return {
+    items,
+    pagination: {
+      page,
+      pageSize,
+      total,
+      totalPages,
+    },
+    total,
+    page,
+    pageSize,
+    totalPages,
+    resumo: payload.resumo,
+    filtrosDisponiveis: payload.filtrosDisponiveis,
+  };
+}
+
+function normalizeAuditoriaTransacoesParams(
+  params?: AuditoriaTransacoesListParams,
+): Record<string, unknown> | undefined {
+  if (!params) return undefined;
+
+  return {
+    page: params.page,
+    pageSize: params.pageSize,
+    search: params.search,
+    usuarioId: params.usuarioId,
+    empresaId: params.empresaId,
+    gateway: params.gateway,
+    sortBy: params.sortBy,
+    sortDir: params.sortDir,
+    tipos: params.tipos ?? params.tipo,
+    status: params.status,
+    dataInicio: params.dataInicio ?? params.startDate,
+    dataFim: params.dataFim ?? params.endDate,
+  };
+}
+
 // ---------------------------------------------
 // Logs
 // ---------------------------------------------
@@ -401,11 +559,14 @@ export async function cancelarAuditoriaScript(id: string): Promise<{ success: bo
 export async function listAuditoriaTransacoes(
   params?: AuditoriaTransacoesListParams,
 ): Promise<AuditoriaTransacoesListResponse> {
-  const url = `${auditoriaRoutes.transacoes.list()}${buildQuery(params)}`;
-  return apiFetch<AuditoriaTransacoesListResponse>(url, {
+  const normalizedParams = normalizeAuditoriaTransacoesParams(params);
+  const url = `${auditoriaRoutes.transacoes.list()}${buildQuery(normalizedParams)}`;
+  const response = await apiFetch<AuditoriaTransacoesApiResponse>(url, {
     init: { method: "GET", headers: buildHeaders() },
     cache: "no-cache",
   });
+
+  return normalizeAuditoriaTransacoesListResponse(response, params);
 }
 
 export async function createAuditoriaTransacao(

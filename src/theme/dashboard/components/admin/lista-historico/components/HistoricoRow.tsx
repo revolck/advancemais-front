@@ -2,6 +2,7 @@
 
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { AvatarCustom } from "@/components/ui/custom/avatar";
 import { Icon } from "@/components/ui/custom";
 import { cn } from "@/lib/utils";
 import type { AuditoriaLog } from "@/api/auditoria/types";
@@ -119,17 +120,24 @@ export function HistoricoRow({
         </div>
       </TableCell>
       <TableCell className="py-4">
-        <div className="flex items-center gap-2 max-w-[220px]">
-          <Icon
-            name="User"
-            size={16}
-            className="text-gray-400 flex-shrink-0"
+        <div className="flex items-center gap-3">
+          <AvatarCustom
+            name={actorName}
+            src={log.ator?.avatarUrl || undefined}
+            size="sm"
+            showStatus={false}
           />
           <div className="min-w-0">
-            <div className="text-sm text-gray-900 truncate" title={actorName}>
+            <div
+              className="text-sm text-gray-900 font-medium truncate max-w-[220px]"
+              title={actorName}
+            >
               {actorName}
             </div>
-            <div className="text-xs text-gray-500 truncate" title={actorRoleLabel}>
+            <div
+              className="text-xs text-gray-500 truncate max-w-[220px]"
+              title={actorRoleLabel}
+            >
               {actorRoleLabel}
             </div>
           </div>

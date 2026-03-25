@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { ButtonCustom, FilterBar, EmptyState } from "@/components/ui/custom";
 import {
   Table,
@@ -40,20 +40,15 @@ export function TransacoesDashboard({ className }: { className?: string }) {
   const [appliedSearchTerm, setAppliedSearchTerm] = useState("");
   const [selectedTipos, setSelectedTipos] = useState<string[]>([]);
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
+  const [selectedGateway, setSelectedGateway] = useState<string | null>(null);
   const pageSize = defaultPageSize;
   const [currentPage, setCurrentPage] = useState(1);
-  const [isNavigating, setIsNavigating] = useState(false);
-
-  const handleNavigateStart = useCallback(() => {
-    setIsNavigating(true);
-    setTimeout(() => setIsNavigating(false), 5000);
-  }, []);
 
   // Estados de ordenação
   type SortDirection = "asc" | "desc";
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
 
-  const tipoOptions: SelectOption[] = useMemo(
+  const fallbackTipoOptions: SelectOption[] = useMemo(
     () => [
       { value: "PAGAMENTO", label: "Pagamento" },
       { value: "REEMBOLSO", label: "Reembolso" },
@@ -65,7 +60,7 @@ export function TransacoesDashboard({ className }: { className?: string }) {
     []
   );
 
-  const statusOptions: SelectOption[] = useMemo(
+  const fallbackStatusOptions: SelectOption[] = useMemo(
     () => [
       { value: "PENDENTE", label: "Pendente" },
       { value: "PROCESSANDO", label: "Processando" },
@@ -81,30 +76,39 @@ export function TransacoesDashboard({ className }: { className?: string }) {
     return {
       page: currentPage,
       pageSize,
-      tipo:
-        selectedTipos.length > 0
-          ? selectedTipos.length === 1
-            ? selectedTipos[0]
-            : selectedTipos
-          : null,
+      tipos: selectedTipos.length > 0 ? selectedTipos : null,
       status:
         selectedStatuses.length > 0
-          ? selectedStatuses.length === 1
-            ? selectedStatuses[0]
-            : selectedStatuses
+          ? selectedStatuses
           : null,
+      gateway: selectedGateway,
+      search:
+        appliedSearchTerm.length >= MIN_SEARCH_LENGTH
+          ? appliedSearchTerm
+          : "",
+      sortBy: "criadoEm",
+      sortDir: sortDirection,
     };
-  }, [currentPage, pageSize, selectedTipos, selectedStatuses]);
+  }, [
+    currentPage,
+    pageSize,
+    selectedTipos,
+    selectedStatuses,
+    selectedGateway,
+    appliedSearchTerm,
+    sortDirection,
+  ]);
 
   const transacoesQuery = useTransacoesDashboardQuery(normalizedFilters);
   const transacoes = useMemo(
     () => transacoesQuery.data?.transacoes ?? [],
     [transacoesQuery.data?.transacoes]
   );
+  const filtrosDisponiveis = transacoesQuery.data?.filtrosDisponiveis;
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [selectedTipos, selectedStatuses]);
+  }, [selectedTipos, selectedStatuses, selectedGateway]);
 
   const transacoesPagination = transacoesQuery.data?.pagination ?? {
     page: normalizedFilters.page,
@@ -179,21 +183,6 @@ export function TransacoesDashboard({ className }: { className?: string }) {
     } catch {}
   }, [sortDirection]);
 
-  // Ordenar transações
-  const sortedTransacoes = useMemo(() => {
-    const sorted = [...transacoes];
-    sorted.sort((a, b) => {
-      const dateA = new Date(a.criadoEm).getTime();
-      const dateB = new Date(b.criadoEm).getTime();
-      if (sortDirection === "asc") {
-        return dateA - dateB;
-      } else {
-        return dateB - dateA;
-      }
-    });
-    return sorted;
-  }, [transacoes, sortDirection]);
-
   // Páginas visíveis para navegação
   const visiblePages = useMemo(() => {
     const pages: number[] = [];
@@ -218,10 +207,41 @@ export function TransacoesDashboard({ className }: { className?: string }) {
     return pages;
   }, [pagination.page, pagination.totalPages]);
 
+  const tipoOptions = useMemo<SelectOption[]>(() => {
+    if (filtrosDisponiveis?.tipos?.length) {
+      return filtrosDisponiveis.tipos.map((tipo) => ({
+        value: tipo.value,
+        label: tipo.label,
+      }));
+    }
+
+    return fallbackTipoOptions;
+  }, [fallbackTipoOptions, filtrosDisponiveis?.tipos]);
+
+  const statusOptions = useMemo<SelectOption[]>(() => {
+    if (filtrosDisponiveis?.status?.length) {
+      return filtrosDisponiveis.status.map((status) => ({
+        value: status.value,
+        label: status.label,
+      }));
+    }
+
+    return fallbackStatusOptions;
+  }, [fallbackStatusOptions, filtrosDisponiveis?.status]);
+
+  const gatewayOptions = useMemo<SelectOption[]>(
+    () =>
+      filtrosDisponiveis?.gateways?.map((gateway) => ({
+        value: gateway.value,
+        label: gateway.label,
+      })) ?? [],
+    [filtrosDisponiveis?.gateways]
+  );
+
   const filterFields: FilterField[] = useMemo(
     () => [
       {
-        key: "tipo",
+        key: "tipos",
         label: "Tipo",
         mode: "multiple",
         options: tipoOptions,
@@ -234,16 +254,24 @@ export function TransacoesDashboard({ className }: { className?: string }) {
         options: statusOptions,
         placeholder: "Selecione status",
       },
+      {
+        key: "gateway",
+        label: "Gateway",
+        options: gatewayOptions,
+        placeholder: "Selecione gateway",
+        disabled: !gatewayOptions.length,
+      },
     ],
-    [tipoOptions, statusOptions]
+    [tipoOptions, statusOptions, gatewayOptions]
   );
 
   const filterValues = useMemo(
     () => ({
-      tipo: selectedTipos,
+      tipos: selectedTipos,
       status: selectedStatuses,
+      gateway: selectedGateway,
     }),
-    [selectedTipos, selectedStatuses]
+    [selectedTipos, selectedStatuses, selectedGateway]
   );
 
   return (
@@ -251,11 +279,11 @@ export function TransacoesDashboard({ className }: { className?: string }) {
       <div className="border-b border-gray-200 top-0 z-10">
         <div className="py-4">
           <FilterBar
-            className="[&>div]:lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)_minmax(0,1fr)_auto]"
+            className="[&>div]:lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_auto]"
             fields={filterFields}
             values={filterValues}
             onChange={(key, value) => {
-              if (key === "tipo") {
+              if (key === "tipos") {
                 setSelectedTipos(
                   Array.isArray(value) ? (value as string[]) : []
                 );
@@ -265,6 +293,9 @@ export function TransacoesDashboard({ className }: { className?: string }) {
                   Array.isArray(value) ? (value as string[]) : []
                 );
                 setCurrentPage(1);
+              } else if (key === "gateway") {
+                setSelectedGateway((value as string) || null);
+                setCurrentPage(1);
               }
             }}
             onClearAll={() => {
@@ -272,6 +303,7 @@ export function TransacoesDashboard({ className }: { className?: string }) {
               setAppliedSearchTerm("");
               setSelectedTipos([]);
               setSelectedStatuses([]);
+              setSelectedGateway(null);
               setCurrentPage(1);
             }}
             search={{
@@ -491,11 +523,10 @@ export function TransacoesDashboard({ className }: { className?: string }) {
                 {showSkeleton ? (
                   <TransacaoTableSkeleton rows={pageSize} />
                 ) : (
-                  sortedTransacoes.map((transacao) => (
+                  transacoes.map((transacao) => (
                     <TransacaoRow
                       key={transacao.id}
                       transacao={transacao}
-                      isDisabled={isNavigating}
                     />
                   ))
                 )}

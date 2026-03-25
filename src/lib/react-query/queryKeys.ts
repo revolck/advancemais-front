@@ -71,5 +71,8 @@ export const queryKeys = {
     logs: {
       list: createListKey<unknown>("admin-auditoria-logs-list"),
     },
+    transacoes: {
+      list: createListKey<unknown>("admin-auditoria-transacoes-list"),
+    },
   },
 };
