@@ -274,4 +274,5 @@ export async function getPlataformaOverview(
   }
 }
 
+export * from "./financeiro";
 export type * from "./types";

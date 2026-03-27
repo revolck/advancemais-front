@@ -192,7 +192,7 @@ const rawMenuSections: MenuSection[] = [
         icon: "Wallet",
         label: "Financeiro",
         route: "/dashboard/financeiro",
-        permissions: [UserRole.ADMIN, UserRole.FINANCEIRO],
+        permissions: [UserRole.ADMIN],
       },
       {
         icon: "Settings",

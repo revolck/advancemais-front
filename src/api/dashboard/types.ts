@@ -147,3 +147,167 @@ export interface PlataformaOverviewResponse {
   message?: string;
 }
 
+export type DashboardFinanceiroPeriodo =
+  | "7d"
+  | "30d"
+  | "90d"
+  | "12m"
+  | "month"
+  | "custom";
+
+export type DashboardFinanceiroAgruparPor = "day" | "week" | "month";
+export type DashboardFinanceiroTendencia = "up" | "down" | "stable";
+
+export interface DashboardFinanceiroParams {
+  periodo?: DashboardFinanceiroPeriodo;
+  mesReferencia?: string;
+  dataInicio?: string;
+  dataFim?: string;
+  agruparPor?: DashboardFinanceiroAgruparPor;
+  timezone?: string;
+  ultimasTransacoesLimit?: number;
+}
+
+export interface DashboardFinanceiroFiltroAplicado {
+  periodo?: DashboardFinanceiroPeriodo | null;
+  mesReferencia?: string | null;
+  dataInicio?: string | null;
+  dataFim?: string | null;
+  agruparPor?: DashboardFinanceiroAgruparPor | null;
+  timezone?: string | null;
+}
+
+export interface DashboardFinanceiroCardMonetario {
+  valor: number;
+  valorFormatado?: string | null;
+  variacaoPercentual?: number | null;
+  tendencia?: DashboardFinanceiroTendencia | null;
+}
+
+export interface DashboardFinanceiroCardContador {
+  valor: number;
+  variacaoPercentual?: number | null;
+  tendencia?: DashboardFinanceiroTendencia | null;
+}
+
+export interface DashboardFinanceiroCards {
+  receitaBruta: DashboardFinanceiroCardMonetario;
+  receitaLiquida: DashboardFinanceiroCardMonetario;
+  ticketMedio: DashboardFinanceiroCardMonetario;
+  transacoesAprovadas: DashboardFinanceiroCardContador;
+  transacoesPendentes: DashboardFinanceiroCardContador;
+  estornosEReembolsos: DashboardFinanceiroCardMonetario;
+}
+
+export interface DashboardFinanceiroEvolucaoReceitaItem {
+  label: string;
+  valor: number;
+  valorFormatado?: string | null;
+  quantidade?: number | null;
+}
+
+export interface DashboardFinanceiroEvolucaoTransacoesItem {
+  label: string;
+  aprovadas: number;
+  pendentes: number;
+  recusadas: number;
+}
+
+export interface DashboardFinanceiroDistribuicaoStatusItem {
+  value: string;
+  label: string;
+  count: number;
+  percentual?: number | null;
+}
+
+export interface DashboardFinanceiroDistribuicaoValorItem {
+  value: string;
+  label: string;
+  count: number;
+  valor: number;
+  valorFormatado?: string | null;
+}
+
+export interface DashboardFinanceiroGraficos {
+  evolucaoReceita: DashboardFinanceiroEvolucaoReceitaItem[];
+  evolucaoTransacoes: DashboardFinanceiroEvolucaoTransacoesItem[];
+  distribuicaoPorStatus: DashboardFinanceiroDistribuicaoStatusItem[];
+  distribuicaoPorTipo: DashboardFinanceiroDistribuicaoValorItem[];
+  distribuicaoPorGateway: DashboardFinanceiroDistribuicaoValorItem[];
+}
+
+export interface DashboardFinanceiroRankingItem {
+  position: number;
+  name: string;
+  value: number;
+  valorFormatado?: string | null;
+}
+
+export interface DashboardFinanceiroRankings {
+  topCursos: DashboardFinanceiroRankingItem[];
+  topPlanos: DashboardFinanceiroRankingItem[];
+  topEmpresas: DashboardFinanceiroRankingItem[];
+  topAlunos: DashboardFinanceiroRankingItem[];
+}
+
+export interface DashboardFinanceiroAssinaturas {
+  ativas: number;
+  novasNoPeriodo: number;
+  canceladasNoPeriodo: number;
+  renovacoesNoPeriodo: number;
+  receitaAssinaturas: number;
+  receitaAssinaturasFormatada?: string | null;
+  taxaRetencao: number;
+}
+
+export interface DashboardFinanceiroUltimaTransacao {
+  id: string;
+  codigoExibicao?: string | null;
+  tipo: string;
+  tipoLabel?: string | null;
+  status: string;
+  statusLabel?: string | null;
+  valor: number;
+  valorFormatado?: string | null;
+  gateway?: string | null;
+  gatewayLabel?: string | null;
+  descricao?: string | null;
+  criadoEm: string;
+}
+
+export interface DashboardFinanceiroAcoesRapidas {
+  detalhesTransacoesUrl?: string | null;
+  detalhesAssinaturasUrl?: string | null;
+}
+
+export interface DashboardFinanceiroData {
+  filtrosAplicados: DashboardFinanceiroFiltroAplicado;
+  cards: DashboardFinanceiroCards;
+  graficos: DashboardFinanceiroGraficos;
+  rankings: DashboardFinanceiroRankings;
+  assinaturas: DashboardFinanceiroAssinaturas;
+  ultimasTransacoes: DashboardFinanceiroUltimaTransacao[];
+  acoesRapidas?: DashboardFinanceiroAcoesRapidas | null;
+}
+
+export interface DashboardFinanceiroResponse {
+  success: boolean;
+  data: DashboardFinanceiroData;
+  message?: string;
+}
+
+export interface DashboardFinanceiroFiltroOption {
+  value: string;
+  label: string;
+}
+
+export interface DashboardFinanceiroFiltrosData {
+  periodos: DashboardFinanceiroFiltroOption[];
+  agruparPor: DashboardFinanceiroFiltroOption[];
+}
+
+export interface DashboardFinanceiroFiltrosResponse {
+  success: boolean;
+  data: DashboardFinanceiroFiltrosData;
+  message?: string;
+}

@@ -21,7 +21,7 @@ export const DASHBOARD_ROUTE_RULES: readonly RouteRule[] = Object.freeze([
   // Regras específicas do dashboard (devem vir antes da regra genérica)
   {
     pattern: "/dashboard/financeiro{/*path}",
-    roles: [UserRole.ADMIN, UserRole.FINANCEIRO],
+    roles: [UserRole.ADMIN],
   },
   {
     pattern: "/dashboard/usuarios{/*path}",
