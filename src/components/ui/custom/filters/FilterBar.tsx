@@ -234,9 +234,10 @@ export function FilterBar({
                   onChange={(range) => onChange(field.key, range)}
                   placeholder={field.placeholder ?? "Selecionar período"}
                   size="md"
-                  clearable
+                  clearable={field.clearable ?? true}
                   format="dd/MM/yyyy"
-                  maxDate={new Date()}
+                  minDate={field.minDate}
+                  maxDate={field.maxDate ?? new Date()}
                 />
               </div>
             );

@@ -33,6 +33,7 @@ import {
 import { cn } from "@/lib/utils";
 import { getRoleLabel } from "@/config/roles";
 import {
+  Link2,
   Calendar,
   Crown,
   Eye,
@@ -75,6 +76,10 @@ const TYPE_LABELS: Record<string, string> = {
   USUARIO_AVATAR_ATUALIZADO: "Avatar atualizado",
   USUARIO_CPF_ATUALIZADO: "CPF atualizado",
   USUARIO_TELEFONE_ATUALIZADO: "Telefone atualizado",
+  USUARIO_RECRUTADOR_VINCULO_EMPRESA_CRIADO: "Vínculo por empresa adicionado",
+  USUARIO_RECRUTADOR_VINCULO_EMPRESA_REMOVIDO: "Vínculo por empresa removido",
+  USUARIO_RECRUTADOR_VINCULO_VAGA_CRIADO: "Vínculo por vaga adicionado",
+  USUARIO_RECRUTADOR_VINCULO_VAGA_REMOVIDO: "Vínculo por vaga removido",
 };
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -159,6 +164,11 @@ function formatFieldName(fieldName: string): string {
     descricao: "Descrição",
     socialLinks: "Redes sociais",
     enderecos: "Endereços",
+    tipoVinculo: "Tipo de vínculo",
+    empresaNome: "Empresa",
+    empresaCodigo: "Código da empresa",
+    vagaTitulo: "Vaga",
+    vagaCodigo: "Código da vaga",
     origem: "Origem",
     userAgent: "Navegador",
     ip: "IP",
@@ -192,6 +202,9 @@ function formatCategoryName(category?: string | null): string {
 function getActionIcon(acao: string) {
   const normalized = acao.toUpperCase();
 
+  if (normalized.includes("RECRUTADOR_VINCULO")) {
+    return <Link2 className="h-3 w-3" />;
+  }
   if (normalized.includes("LOGIN")) return <LogIn className="h-3 w-3" />;
   if (normalized.includes("LOGOUT")) return <LogOut className="h-3 w-3" />;
   if (normalized.includes("ACESSO")) return <MailCheck className="h-3 w-3" />;
@@ -205,6 +218,9 @@ function getActionIcon(acao: string) {
 function getActionBadgeColors(acao: string) {
   const normalized = acao.toUpperCase();
 
+  if (normalized.includes("RECRUTADOR_VINCULO")) {
+    return "bg-blue-50 text-blue-700 border-blue-200";
+  }
   if (normalized.includes("LOGIN") || normalized.includes("LOGOUT")) {
     return "bg-cyan-50 text-cyan-700 border-cyan-200";
   }
@@ -256,7 +272,51 @@ function getActorRoleLabel(item: UsuarioHistoricoItem) {
   return null;
 }
 
+function isRecrutadorVinculoItem(item: UsuarioHistoricoItem) {
+  return item.tipo.toUpperCase().includes("RECRUTADOR_VINCULO");
+}
+
+function getRecrutadorVinculoResumo(value: unknown): string | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return null;
+  }
+
+  const data = value as Record<string, unknown>;
+  const tipoVinculo = String(data.tipoVinculo ?? "").toUpperCase();
+  const empresaNome = sanitizeStringValue(String(data.empresaNome ?? "")).trim();
+  const empresaCodigo = sanitizeStringValue(String(data.empresaCodigo ?? "")).trim();
+  const vagaTitulo = sanitizeStringValue(String(data.vagaTitulo ?? "")).trim();
+  const vagaCodigo = sanitizeStringValue(String(data.vagaCodigo ?? "")).trim();
+
+  if (tipoVinculo === "EMPRESA") {
+    const parts = [
+      empresaNome ? `Empresa: ${empresaNome}` : null,
+      empresaCodigo ? `Código: ${empresaCodigo}` : null,
+    ].filter(Boolean);
+
+    return parts.length > 0 ? parts.join(" • ") : null;
+  }
+
+  if (tipoVinculo === "VAGA") {
+    const parts = [
+      empresaNome ? `Empresa: ${empresaNome}` : null,
+      vagaTitulo ? `Vaga: ${vagaTitulo}` : null,
+      vagaCodigo ? `Código: ${vagaCodigo}` : null,
+    ].filter(Boolean);
+
+    return parts.length > 0 ? parts.join(" • ") : null;
+  }
+
+  return null;
+}
+
 function getContextFieldValue(item: UsuarioHistoricoItem) {
+  if (isRecrutadorVinculoItem(item)) {
+    return item.tipo.toUpperCase().includes("_EMPRESA_")
+      ? "Vínculo por empresa"
+      : "Vínculo por vaga";
+  }
+
   const previousKeys = Object.keys(item.dadosAnteriores ?? {});
   const nextKeys = Object.keys(item.dadosNovos ?? {});
   const diffKeys = [...new Set([...previousKeys, ...nextKeys])].filter(
@@ -325,6 +385,11 @@ function formatJsonForUser(obj: Record<string, unknown>): string {
 }
 
 function formatValueForUser(value: unknown): string {
+  const recrutadorVinculoResumo = getRecrutadorVinculoResumo(value);
+  if (recrutadorVinculoResumo) {
+    return recrutadorVinculoResumo;
+  }
+
   const sanitizedValue = sanitizeValue(value);
 
   if (sanitizedValue === null || sanitizedValue === undefined || sanitizedValue === "") {

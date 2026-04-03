@@ -4,6 +4,7 @@ import type { VagaListItem } from "@/api/vagas";
 export interface CandidatoItem {
   id: string;
   codUsuario?: string;
+  cpf?: string;
   candidaturaId?: string;
   curriculoId?: string;
   nome: string;

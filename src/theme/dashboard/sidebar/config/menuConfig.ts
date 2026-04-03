@@ -133,7 +133,7 @@ const rawMenuSections: MenuSection[] = [
           {
             icon: null,
             label: "Agenda",
-            route: "/dashboard/cursos/agenda",
+            route: "/dashboard/agenda",
             permissions: [UserRole.ADMIN, UserRole.MODERADOR],
           },
         ],
@@ -159,6 +159,18 @@ const rawMenuSections: MenuSection[] = [
             icon: null,
             label: "Candidatos",
             route: "/dashboard/empresas/candidatos",
+            permissions: [UserRole.ADMIN, UserRole.MODERADOR],
+          },
+          {
+            icon: null,
+            label: "Entrevistas",
+            route: "/dashboard/empresas/entrevistas",
+            permissions: [UserRole.ADMIN, UserRole.MODERADOR],
+          },
+          {
+            icon: null,
+            label: "Solicitações",
+            route: "/dashboard/empresas/solicitacoes",
             permissions: [UserRole.ADMIN, UserRole.MODERADOR],
           },
         ],
@@ -376,7 +388,7 @@ const rawMenuSections: MenuSection[] = [
           {
             icon: null,
             label: "Agenda",
-            route: "/dashboard/cursos/agenda",
+            route: "/dashboard/agenda",
             permissions: [
               UserRole.ADMIN,
               UserRole.MODERADOR,
@@ -438,15 +450,9 @@ const rawMenuSections: MenuSection[] = [
         permissions: SETOR_DE_VAGAS_PERMISSIONS,
       },
       {
-        icon: "UserCheck",
-        label: "Entrevistas",
-        route: "/setor-de-vagas/interviews",
-        permissions: SETOR_DE_VAGAS_PERMISSIONS,
-      },
-      {
         icon: "Calendar",
         label: "Agenda",
-        route: "/setor-de-vagas/agenda",
+        route: "/dashboard/agenda",
         permissions: SETOR_DE_VAGAS_PERMISSIONS,
       },
     ],
@@ -490,6 +496,12 @@ const rawMenuSections: MenuSection[] = [
         route: "/dashboard/cursos/aulas",
         permissions: INSTRUTOR_PERMISSIONS,
       },
+      {
+        icon: "Calendar",
+        label: "Agenda",
+        route: "/dashboard/agenda",
+        permissions: INSTRUTOR_PERMISSIONS,
+      },
     ],
   },
   {
@@ -517,6 +529,18 @@ const rawMenuSections: MenuSection[] = [
         icon: "Briefcase",
         label: "Vagas",
         route: "/dashboard/empresas/vagas",
+        permissions: RECRUTADOR_PERMISSIONS,
+      },
+      {
+        icon: "Calendar",
+        label: "Agenda",
+        route: "/dashboard/agenda",
+        permissions: RECRUTADOR_PERMISSIONS,
+      },
+      {
+        icon: "UserCheck",
+        label: "Entrevistas",
+        route: "/dashboard/empresas/entrevistas",
         permissions: RECRUTADOR_PERMISSIONS,
       },
     ],
@@ -552,13 +576,13 @@ const rawMenuSections: MenuSection[] = [
       {
         icon: "Calendar",
         label: "Agenda",
-        route: "/empresa/agenda",
+        route: "/dashboard/agenda",
         permissions: [UserRole.EMPRESA],
       },
       {
         icon: "UserCheck",
         label: "Entrevistas",
-        route: "/empresa/entrevistas",
+        route: "/dashboard/empresas/entrevistas",
         permissions: [UserRole.EMPRESA],
       },
     ],
@@ -613,7 +637,7 @@ const rawMenuSections: MenuSection[] = [
       {
         icon: "Calendar",
         label: "Agenda",
-        route: "/dashboard/cursos/agenda",
+        route: "/dashboard/agenda",
         permissions: [UserRole.ALUNO_CANDIDATO],
       },
       {

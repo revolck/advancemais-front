@@ -416,6 +416,24 @@ export const usuarioRoutes = {
         `${prefix}/usuarios/usuarios/${encodeURIComponent(userId)}/role`,
       updateStatus: (userId: string) =>
         `${prefix}/usuarios/usuarios/${encodeURIComponent(userId)}/status`,
+      vinculosRecrutador: {
+        list: (userId: string) =>
+          `${prefix}/usuarios/usuarios/${encodeURIComponent(userId)}/vinculos-recrutador`,
+        create: (userId: string) =>
+          `${prefix}/usuarios/usuarios/${encodeURIComponent(userId)}/vinculos-recrutador`,
+        remove: (userId: string, vinculoId: string) =>
+          `${prefix}/usuarios/usuarios/${encodeURIComponent(
+            userId
+          )}/vinculos-recrutador/${encodeURIComponent(vinculoId)}`,
+        optionsEmpresas: (userId: string) =>
+          `${prefix}/usuarios/usuarios/${encodeURIComponent(
+            userId
+          )}/vinculos-recrutador/opcoes/empresas`,
+        optionsVagas: (userId: string) =>
+          `${prefix}/usuarios/usuarios/${encodeURIComponent(
+            userId
+          )}/vinculos-recrutador/opcoes/vagas`,
+      },
       bloqueios: {
         list: (userId: string) =>
           `${prefix}/usuarios/usuarios/${encodeURIComponent(userId)}/bloqueios`,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import {
   useMutation,
   useQuery,
@@ -40,6 +40,7 @@ import {
   CandidaturasTab,
   CursosInscricoesTab,
   HistoryTab,
+  VinculosTab,
 } from "./tabs";
 import {
   AlterarFuncaoUsuarioModal,
@@ -156,6 +157,7 @@ export function UsuarioDetailsView({
   const [isLiberarAcessoOpen, setIsLiberarAcessoOpen] = useState(false);
   const [isBloquearModalOpen, setIsBloquearModalOpen] = useState(false);
   const [isDesbloquearModalOpen, setIsDesbloquearModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("sobre");
 
   const updateUsuarioMutation = useMutation({
     mutationFn: (payload: UpdateUsuarioPayload) => {
@@ -283,7 +285,7 @@ export function UsuarioDetailsView({
   // Movido para antes dos returns condicionais para evitar hook condicional
   const tabs: HorizontalTabItem[] = useMemo(() => {
     if (!usuarioData) return [];
-    
+
     const baseTabs: HorizontalTabItem[] = [
       {
         value: "sobre",
@@ -337,7 +339,20 @@ export function UsuarioDetailsView({
             />
           ),
         });
-        }
+      }
+    }
+
+    const canManageRecrutadorVinculos =
+      usuarioData.role === "RECRUTADOR" &&
+      (currentUserRole === "ADMIN" || currentUserRole === "MODERADOR");
+
+    if (canManageRecrutadorVinculos) {
+      baseTabs.push({
+        value: "vinculos",
+        label: "Vínculos",
+        icon: "Link2",
+        content: <VinculosTab usuario={usuarioData} isLoading={isReloading} />,
+      });
     }
 
     baseTabs.push({
@@ -348,7 +363,17 @@ export function UsuarioDetailsView({
     });
 
     return baseTabs;
-  }, [usuarioData, isReloading]);
+  }, [currentUserRole, usuarioData, isReloading]);
+
+  useEffect(() => {
+    if (tabs.length === 0) return;
+
+    const hasActiveTab = tabs.some((tab) => tab.value === activeTab);
+
+    if (!hasActiveTab) {
+      setActiveTab(tabs[0]?.value ?? "sobre");
+    }
+  }, [activeTab, tabs]);
 
   const canLiberarAcesso = useMemo(() => {
     if (!usuarioData || !currentUserRole) return false;
@@ -454,7 +479,7 @@ export function UsuarioDetailsView({
     [liberarAcessoMutation]
   );
 
-  if (isReloading) {
+  if (isPending) {
     return (
       <div className="space-y-8">
         {/* HeaderInfo Skeleton */}
@@ -552,7 +577,11 @@ export function UsuarioDetailsView({
         onDesbloquearUsuario={() => setIsDesbloquearModalOpen(true)}
       />
 
-      <HorizontalTabs items={tabs} defaultValue="sobre" />
+      <HorizontalTabs
+        items={tabs}
+        value={activeTab}
+        onValueChange={setActiveTab}
+      />
 
       {/* Modais */}
       {usuarioData && (

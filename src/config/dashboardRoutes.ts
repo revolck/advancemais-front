@@ -7,6 +7,8 @@ interface RouteRule {
   pattern: string;
   /** Papeis autorizados */
   roles: readonly UserRole[];
+  /** Validação adicional para rotas dinâmicas específicas */
+  validatePath?: (path: string) => boolean;
 }
 
 /** Lista imutável de regras de acesso do dashboard */
@@ -17,6 +19,32 @@ export const DASHBOARD_ROUTE_RULES: readonly RouteRule[] = Object.freeze([
   {
     pattern: "/dashboard/admin{/*path}",
     roles: [UserRole.ADMIN, UserRole.MODERADOR],
+  },
+  {
+    pattern: "/dashboard/agenda{/*path}",
+    roles: [
+      UserRole.ADMIN,
+      UserRole.MODERADOR,
+      UserRole.PEDAGOGICO,
+      UserRole.INSTRUTOR,
+      UserRole.EMPRESA,
+      UserRole.SETOR_DE_VAGAS,
+      UserRole.RECRUTADOR,
+      UserRole.ALUNO_CANDIDATO,
+    ],
+  },
+  {
+    pattern: "/dashboard/cursos/agenda{/*path}",
+    roles: [
+      UserRole.ADMIN,
+      UserRole.MODERADOR,
+      UserRole.PEDAGOGICO,
+      UserRole.INSTRUTOR,
+      UserRole.EMPRESA,
+      UserRole.SETOR_DE_VAGAS,
+      UserRole.RECRUTADOR,
+      UserRole.ALUNO_CANDIDATO,
+    ],
   },
   // Regras específicas do dashboard (devem vir antes da regra genérica)
   {
@@ -32,12 +60,40 @@ export const DASHBOARD_ROUTE_RULES: readonly RouteRule[] = Object.freeze([
     roles: [UserRole.ADMIN, UserRole.MODERADOR, UserRole.PEDAGOGICO],
   },
   {
+    pattern: "/dashboard/cursos/alunos/:id",
+    roles: [
+      UserRole.ADMIN,
+      UserRole.MODERADOR,
+      UserRole.PEDAGOGICO,
+      UserRole.INSTRUTOR,
+      UserRole.RECRUTADOR,
+      UserRole.ALUNO_CANDIDATO,
+    ],
+    validatePath: (path) =>
+      /^\/dashboard\/cursos\/alunos\/[0-9a-fA-F-]{36}(?:\/.*)?$/.test(path),
+  },
+  {
+    pattern: "/dashboard/empresas/entrevistas{/*path}",
+    roles: [
+      UserRole.ADMIN,
+      UserRole.MODERADOR,
+      UserRole.EMPRESA,
+      UserRole.RECRUTADOR,
+    ],
+  },
+  {
     pattern: "/dashboard/cursos{/*path}",
     roles: [UserRole.ADMIN, UserRole.MODERADOR, UserRole.PEDAGOGICO],
   },
   {
     pattern: "/dashboard/empresas{/*path}",
-    roles: [UserRole.ADMIN, UserRole.MODERADOR, UserRole.SETOR_DE_VAGAS, UserRole.EMPRESA],
+    roles: [
+      UserRole.ADMIN,
+      UserRole.MODERADOR,
+      UserRole.SETOR_DE_VAGAS,
+      UserRole.EMPRESA,
+      UserRole.RECRUTADOR,
+    ],
   },
   {
     pattern: "/dashboard/vagas{/*path}",
@@ -103,10 +159,19 @@ export const DASHBOARD_ROUTE_RULES: readonly RouteRule[] = Object.freeze([
   },
 ]);
 
-const matchers = DASHBOARD_ROUTE_RULES.map((rule) => ({
-  roles: rule.roles,
-  match: match(rule.pattern, { decode: decodeURIComponent, end: false }),
-}));
+const matchers = DASHBOARD_ROUTE_RULES.map((rule) => {
+  const matcher = match(rule.pattern, {
+    decode: decodeURIComponent,
+    end: false,
+  });
+
+  return {
+    roles: rule.roles,
+    match: (path: string) =>
+      Boolean(matcher(path)) &&
+      (rule.validatePath ? rule.validatePath(path) : true),
+  };
+});
 
 /**
  * Retorna os papéis permitidos para uma determinada rota.

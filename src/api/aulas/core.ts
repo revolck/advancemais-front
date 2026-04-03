@@ -468,14 +468,16 @@ export async function getAgenda(
   }
 
   const response = await apiFetch<AgendaListResponse | { success: boolean; data: AgendaListResponse }>(
-    `/api/v1/cursos/agenda?${searchParams.toString()}`,
+    `/api/v1/agenda?${searchParams.toString()}`,
     {
       init: {
         method: "GET",
         ...init,
         headers: buildHeaders(init?.headers, true),
       },
-      cache: "short",
+      // A agenda precisa refletir rapidamente entrevistas recém-criadas.
+      // O cache de memória do apiFetch pode segurar resultados antigos mesmo após invalidateQueries.
+      cache: "no-cache",
     }
   );
 
@@ -507,7 +509,7 @@ export async function getAgendaAniversariantes(
 
   const response = await apiFetch<
     AgendaAniversariantesResponse | { success: boolean; data: AgendaAniversariantesResponse }
-  >(`/api/v1/cursos/agenda/aniversariantes?${searchParams.toString()}`, {
+  >(`/api/v1/agenda/aniversariantes?${searchParams.toString()}`, {
     init: {
       method: "GET",
       ...init,

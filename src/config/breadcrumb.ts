@@ -118,6 +118,14 @@ export const breadcrumbConfig: Record<string, BreadcrumbConfig> = {
   // Novas rotas consolidadas
   "/dashboard/empresas/list": EMPRESAS_BREADCRUMB,
   "/dashboard/empresas/listagem": EMPRESAS_BREADCRUMB,
+  "/dashboard/empresas/entrevistas": {
+    title: "Entrevistas",
+    items: [
+      { label: "Dashboard", href: "/", icon: "Home" },
+      { label: "Empresas", href: "/dashboard/empresas", icon: "Building2" },
+      { label: "Entrevistas", icon: "Users" },
+    ],
+  },
 
   "/config/website/pagina-inicial": {
     title: "Configuração Página Inicial",
@@ -545,7 +553,13 @@ export const breadcrumbConfig: Record<string, BreadcrumbConfig> = {
     title: "Agenda",
     items: [
       { label: "Dashboard", href: "/", icon: "Home" },
-      { label: "Cursos", href: "/dashboard/cursos", icon: "BookOpen" },
+      { label: "Agenda", icon: "Calendar" },
+    ],
+  },
+  "/dashboard/agenda": {
+    title: "Agenda",
+    items: [
+      { label: "Dashboard", href: "/", icon: "Home" },
       { label: "Agenda", icon: "Calendar" },
     ],
   },

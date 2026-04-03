@@ -1,0 +1,1 @@
+export { RecruiterEntrevistasDashboard } from "./RecruiterEntrevistasDashboard";

@@ -200,23 +200,65 @@ export interface AulasListResponse {
 // Agenda
 export interface AgendaEvento {
   id: string;
-  tipo: "AULA" | "PROVA" | "ATIVIDADE" | "ANIVERSARIO" | "TURMA_INICIO" | "TURMA_FIM";
+  tipo:
+    | "AULA"
+    | "PROVA"
+    | "ATIVIDADE"
+    | "ENTREVISTA"
+    | "ANIVERSARIO"
+    | "TURMA_INICIO"
+    | "TURMA_FIM";
   titulo: string;
   descricao?: string;
   dataInicio?: string;
   dataFim?: string;
   data?: string;
   cor?: string;
+  modalidadeLabel?: string;
+  local?: string | null;
+  enderecoPresencial?: {
+    cep?: string | null;
+    logradouro?: string | null;
+    numero?: string | null;
+    complemento?: string | null;
+    bairro?: string | null;
+    cidade?: string | null;
+    estado?: string | null;
+    pontoReferencia?: string | null;
+  } | null;
   turma?: {
     id: string;
     nome: string;
   };
   modalidade?: Modalidade;
   meetUrl?: string;
+  empresaAnonima?: boolean;
   usuario?: {
     id: string;
     nome: string;
     role: string;
+    avatarUrl?: string | null;
+  };
+  empresa?: {
+    id: string;
+    nomeExibicao: string;
+    anonima?: boolean;
+  };
+  vaga?: {
+    id: string;
+    titulo: string;
+  };
+  candidato?: {
+    id: string;
+    nome: string;
+  };
+  agenda?: {
+    eventoInternoId: string;
+    criadoNoSistema: boolean;
+    provider?: string;
+    organizerSource?: string;
+    organizerUserId?: string;
+    organizerEmail?: string;
   };
 }
 

@@ -27,6 +27,28 @@ type LoginResponse = {
   };
 };
 
+type UserProfileResponse = {
+  success?: boolean;
+  message?: string;
+  usuario?: {
+    telefone?: string | null;
+    genero?: string | null;
+    dataNasc?: string | null;
+    descricao?: string | null;
+    enderecos?: Array<{
+      cep?: string | null;
+      logradouro?: string | null;
+      numero?: string | null;
+      bairro?: string | null;
+      cidade?: string | null;
+      estado?: string | null;
+    }> | null;
+  };
+  stats?: {
+    hasAddress?: boolean;
+  };
+};
+
 function ensureAuthCacheDir() {
   fs.mkdirSync(path.dirname(AUTH_CACHE_FILE), { recursive: true });
 }
@@ -99,6 +121,47 @@ function writeCachedAuth(auth: LoginResponse) {
   fs.writeFileSync(AUTH_CACHE_FILE, JSON.stringify(auth, null, 2));
 }
 
+function getPrimaryEndereco(profile?: UserProfileResponse["usuario"]) {
+  const enderecos = profile?.enderecos ?? [];
+  return enderecos[0] ?? null;
+}
+
+function isAdminProfileComplete(profile?: UserProfileResponse | null) {
+  const usuario = profile?.usuario;
+  const stats = profile?.stats;
+
+  if (!usuario || !stats) return false;
+
+  const telefoneDigits = (usuario.telefone ?? "").replace(/\D/g, "");
+  const endereco = getPrimaryEndereco(usuario);
+
+  return Boolean(
+    telefoneDigits &&
+      usuario.dataNasc &&
+      usuario.genero &&
+      stats.hasAddress &&
+      endereco?.cep &&
+      endereco?.logradouro &&
+      endereco?.numero &&
+      endereco?.bairro &&
+      endereco?.cidade &&
+      endereco?.estado,
+  );
+}
+
+async function fetchJson<T>(path: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(`${BASE_URL}${path}`, init);
+  const body = (await response.json().catch(() => ({}))) as T & { message?: string };
+
+  if (!response.ok) {
+    throw new Error(
+      `${init?.method ?? "GET"} ${path} falhou com status ${response.status}: ${body?.message || "sem mensagem"}`,
+    );
+  }
+
+  return body;
+}
+
 async function autenticarAdminViaApi(): Promise<LoginResponse> {
   const cachedAuth = readCachedAuth();
   if (cachedAuth) {
@@ -141,6 +204,54 @@ export async function getAdminApiAuth(): Promise<
   }
 
   return auth as Required<Pick<LoginResponse, "token" | "refreshToken">> & LoginResponse;
+}
+
+export async function ensureAdminProfileComplete() {
+  const auth = await getAdminApiAuth();
+  const headers = {
+    Authorization: `Bearer ${auth.token}`,
+    "Content-Type": "application/json",
+  };
+
+  const profile = await fetchJson<UserProfileResponse>("/api/v1/usuarios/perfil", {
+    method: "GET",
+    headers,
+  });
+
+  if (isAdminProfileComplete(profile)) {
+    return;
+  }
+
+  const currentEndereco = getPrimaryEndereco(profile.usuario);
+  const payload = {
+    telefone: (profile.usuario?.telefone ?? "").replace(/\D/g, "") || "82999990000",
+    genero: profile.usuario?.genero?.trim() || "MASCULINO",
+    dataNasc: profile.usuario?.dataNasc || "1990-01-15T00:00:00.000Z",
+    descricao: profile.usuario?.descricao ?? "Perfil preenchido automaticamente pelo E2E.",
+    endereco: {
+      cep: (currentEndereco?.cep ?? "").replace(/\D/g, "") || "57084028",
+      logradouro: currentEndereco?.logradouro?.trim() || "Rua Manoel Pedro de Oliveira",
+      numero: currentEndereco?.numero?.trim() || "245",
+      bairro: currentEndereco?.bairro?.trim() || "Benedito Bentes",
+      cidade: currentEndereco?.cidade?.trim() || "Maceió",
+      estado: currentEndereco?.estado?.trim().toUpperCase() || "AL",
+    },
+  };
+
+  await fetchJson<UserProfileResponse>("/api/v1/usuarios/perfil", {
+    method: "PUT",
+    headers,
+    body: JSON.stringify(payload),
+  });
+
+  const updatedProfile = await fetchJson<UserProfileResponse>("/api/v1/usuarios/perfil", {
+    method: "GET",
+    headers,
+  });
+
+  if (!isAdminProfileComplete(updatedProfile)) {
+    throw new Error("O perfil admin continua incompleto após a atualização automática do E2E.");
+  }
 }
 
 /**

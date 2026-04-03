@@ -75,4 +75,7 @@ export const queryKeys = {
       list: createListKey<unknown>("admin-auditoria-transacoes-list"),
     },
   },
+  entrevistas: {
+    list: createListKey<unknown>("admin-entrevistas-list"),
+  },
 };

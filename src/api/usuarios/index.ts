@@ -1035,6 +1035,119 @@ export async function getUsuarioHistorico(
 }
 
 /**
+ * GET /api/v1/usuarios/usuarios/:userId/vinculos-recrutador
+ * Lista vínculos operacionais do recrutador.
+ */
+export async function getUsuarioRecrutadorVinculos(
+  userId: string,
+  token?: string
+): Promise<import("./types").GetUsuarioRecrutadorVinculosResponse> {
+  return apiFetch<import("./types").GetUsuarioRecrutadorVinculosResponse>(
+    usuarioRoutes.admin.usuarios.vinculosRecrutador.list(userId),
+    {
+      init: {
+        method: "GET",
+        headers: buildAuthHeaders(token),
+      },
+      cache: "no-cache",
+    }
+  );
+}
+
+/**
+ * GET /api/v1/usuarios/usuarios/:userId/vinculos-recrutador/opcoes/empresas
+ * Lista empresas elegíveis para vínculo do recrutador.
+ */
+export async function getUsuarioRecrutadorEmpresasElegiveis(
+  userId: string,
+  token?: string
+): Promise<import("./types").GetUsuarioRecrutadorEmpresasElegiveisResponse> {
+  return apiFetch<
+    import("./types").GetUsuarioRecrutadorEmpresasElegiveisResponse
+  >(usuarioRoutes.admin.usuarios.vinculosRecrutador.optionsEmpresas(userId), {
+    init: {
+      method: "GET",
+      headers: buildAuthHeaders(token),
+    },
+    cache: "no-cache",
+  });
+}
+
+/**
+ * GET /api/v1/usuarios/usuarios/:userId/vinculos-recrutador/opcoes/vagas
+ * Lista vagas elegíveis de uma empresa para vínculo do recrutador.
+ */
+export async function getUsuarioRecrutadorVagasElegiveis(
+  userId: string,
+  empresaUsuarioId: string,
+  token?: string
+): Promise<import("./types").GetUsuarioRecrutadorVagasElegiveisResponse> {
+  const queryParams = new URLSearchParams();
+  queryParams.set("empresaUsuarioId", empresaUsuarioId);
+
+  const baseUrl =
+    usuarioRoutes.admin.usuarios.vinculosRecrutador.optionsVagas(userId);
+  const url = `${baseUrl}?${queryParams.toString()}`;
+
+  return apiFetch<import("./types").GetUsuarioRecrutadorVagasElegiveisResponse>(
+    url,
+    {
+      init: {
+        method: "GET",
+        headers: buildAuthHeaders(token),
+      },
+      cache: "no-cache",
+    }
+  );
+}
+
+/**
+ * POST /api/v1/usuarios/usuarios/:userId/vinculos-recrutador
+ * Cria vínculo operacional para recrutador.
+ */
+export async function createUsuarioRecrutadorVinculo(
+  userId: string,
+  payload: import("./types").CreateUsuarioRecrutadorVinculoPayload,
+  token?: string
+): Promise<import("./types").CreateUsuarioRecrutadorVinculoResponse> {
+  return apiFetch<import("./types").CreateUsuarioRecrutadorVinculoResponse>(
+    usuarioRoutes.admin.usuarios.vinculosRecrutador.create(userId),
+    {
+      init: {
+        method: "POST",
+        headers: {
+          ...buildAuthHeaders(token),
+          ...JSON_HEADERS,
+        },
+        body: JSON.stringify(payload),
+      },
+      cache: "no-cache",
+    }
+  );
+}
+
+/**
+ * DELETE /api/v1/usuarios/usuarios/:userId/vinculos-recrutador/:vinculoId
+ * Remove vínculo operacional do recrutador.
+ */
+export async function deleteUsuarioRecrutadorVinculo(
+  userId: string,
+  vinculoId: string,
+  token?: string
+): Promise<import("./types").DeleteUsuarioRecrutadorVinculoResponse> {
+  return apiFetch<import("./types").DeleteUsuarioRecrutadorVinculoResponse>(
+    usuarioRoutes.admin.usuarios.vinculosRecrutador.remove(userId, vinculoId),
+    {
+      init: {
+        method: "DELETE",
+        headers: buildAuthHeaders(token),
+      },
+      cache: "no-cache",
+    }
+  );
+}
+
+/**
  * POST /api/v1/usuarios/usuarios
  * Cria um novo usuário no sistema (admin)
  *
@@ -1268,6 +1381,11 @@ export const usuarioApi = {
   liberarUsuarioAcesso,
   liberarUsuarioEmail,
   getUsuarioHistorico,
+  getUsuarioRecrutadorVinculos,
+  getUsuarioRecrutadorEmpresasElegiveis,
+  getUsuarioRecrutadorVagasElegiveis,
+  createUsuarioRecrutadorVinculo,
+  deleteUsuarioRecrutadorVinculo,
   createUsuarioBloqueio,
   revokeUsuarioBloqueio,
   listUsuarioBloqueios,

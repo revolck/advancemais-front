@@ -120,13 +120,13 @@ export function SolicitacaoRow({
       {/* Vaga */}
       <TableCell className="py-4 min-w-[280px] max-w-[320px]">
         <div className="flex items-center gap-2">
-          <div className="font-bold text-gray-900 truncate text-sm">
+          <span className="font-medium text-gray-900 truncate">
             {solicitacao.vaga.titulo}
-          </div>
+          </span>
           {solicitacao.vaga.codigo && (
-            <code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded font-mono text-gray-500 flex-shrink-0">
+            <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600 flex-shrink-0">
               {solicitacao.vaga.codigo}
-            </code>
+            </span>
           )}
         </div>
       </TableCell>

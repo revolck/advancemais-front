@@ -31,6 +31,7 @@ const SYSTEM_CONFIG = {
   // Rotas que pertencem ao website
   websiteRoutes: [
     "/",
+    "/advance-mais-local",
     "/sobre",
     "/recrutamento",
     "/vagas",
@@ -189,6 +190,8 @@ function applyWebsiteHeaders(
   // Headers de cache para páginas estáticas
   const staticPages = [
     "/",
+    "/advance-mais-local",
+    "/advance-mais-local/politica-privacidade",
     "/sobre",
     "/politica-privacidade",
     "/termos-uso",
@@ -237,7 +240,9 @@ export function middleware(request: NextRequest) {
     .replace(/^www\./, "")
     .replace(/^app\./, "")
     .replace(/^auth\./, "")
-    .replace(/^academia\./, "");
+    .replace(/^academia\./, "")
+    .replace(/^local\./, "")
+    .replace(/^aplicacao\./, "");
 
   // Normaliza hosts com prefixo www
   if (hostname.startsWith("www.")) {
@@ -333,6 +338,22 @@ export function middleware(request: NextRequest) {
       return setupDevCookies(request, NextResponse.rewrite(url));
     }
     return setupDevCookies(request, NextResponse.next());
+  }
+
+  // Subdomínio público da aplicação para verificação do Google OAuth.
+  // Serve uma landing institucional sem exigir autenticação.
+  if (hostname.startsWith("local.") || hostname.startsWith("aplicacao.")) {
+    const url = request.nextUrl.clone();
+    url.pathname =
+      pathname === "/"
+        ? "/website/advance-mais-local"
+        : `/website/advance-mais-local${pathname}`;
+
+    const response = NextResponse.rewrite(url);
+    response.headers.set("X-Page-Type", "advance-mais-local");
+    response.headers.set("X-Robots-Tag", "index, follow");
+
+    return setupDevCookies(request, response);
   }
 
   // Log para desenvolvimento

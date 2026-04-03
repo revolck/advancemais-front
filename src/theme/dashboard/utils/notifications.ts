@@ -142,6 +142,41 @@ export const SISTEMA_TYPES: NotificacaoTipo[] = [
   "SISTEMA",
 ];
 
+export interface NotificationVisualMeta {
+  label: string;
+  icon: string;
+  bgColor: string;
+  textColor: string;
+  tagBg: string;
+  tagText: string;
+}
+
+export interface RecruiterLinkNotificationData {
+  tipoVinculo: "EMPRESA" | "VAGA" | null;
+  empresaId: string | null;
+  empresaNome: string | null;
+  empresaCodigo: string | null;
+  vagaId: string | null;
+  vagaTitulo: string | null;
+  vagaCodigo: string | null;
+  atorNome: string | null;
+  atorRole: string | null;
+}
+
+export interface CandidaturaStatusNotificationData {
+  candidaturaId: string | null;
+  vagaId: string | null;
+  empresaUsuarioId: string | null;
+  vagaTitulo: string | null;
+  statusIdAnterior: string | null;
+  statusAnterior: string | null;
+  statusAnteriorLabel: string | null;
+  statusIdNovo: string | null;
+  statusNovo: string | null;
+  statusNovoLabel: string | null;
+  atualizadoEm: string | null;
+}
+
 export function formatRelativeTime(date?: string | null): string {
   if (!date) return "";
   try {
@@ -169,10 +204,108 @@ function readNumber(data: Record<string, unknown> | null | undefined, key: strin
   return null;
 }
 
+export function getRecruiterLinkNotificationData(
+  notification: Notificacao
+): RecruiterLinkNotificationData | null {
+  const dados = notification.dados ?? null;
+  const evento = readString(dados, "evento");
+
+  if (notification.tipo !== "SISTEMA" || evento !== "RECRUTADOR_VINCULO_CRIADO") {
+    return null;
+  }
+
+  const tipoVinculo = readString(dados, "tipoVinculo");
+
+  return {
+    tipoVinculo:
+      tipoVinculo === "EMPRESA" || tipoVinculo === "VAGA" ? tipoVinculo : null,
+    empresaId: readString(dados, "empresaId"),
+    empresaNome: readString(dados, "empresaNome"),
+    empresaCodigo: readString(dados, "empresaCodigo"),
+    vagaId: readString(dados, "vagaId"),
+    vagaTitulo: readString(dados, "vagaTitulo"),
+    vagaCodigo: readString(dados, "vagaCodigo"),
+    atorNome: readString(dados, "atorNome"),
+    atorRole: readString(dados, "atorRole"),
+  };
+}
+
+export function getCandidaturaStatusNotificationData(
+  notification: Notificacao
+): CandidaturaStatusNotificationData | null {
+  const dados = notification.dados ?? null;
+  const evento = readString(dados, "evento");
+
+  if (
+    notification.tipo !== "SISTEMA" ||
+    evento !== "CANDIDATURA_STATUS_ATUALIZADO"
+  ) {
+    return null;
+  }
+
+  return {
+    candidaturaId: readString(dados, "candidaturaId"),
+    vagaId: readString(dados, "vagaId"),
+    empresaUsuarioId: readString(dados, "empresaUsuarioId"),
+    vagaTitulo: readString(dados, "vagaTitulo"),
+    statusIdAnterior: readString(dados, "statusIdAnterior"),
+    statusAnterior: readString(dados, "statusAnterior"),
+    statusAnteriorLabel: readString(dados, "statusAnteriorLabel"),
+    statusIdNovo: readString(dados, "statusIdNovo"),
+    statusNovo: readString(dados, "statusNovo"),
+    statusNovoLabel: readString(dados, "statusNovoLabel"),
+    atualizadoEm: readString(dados, "atualizadoEm"),
+  };
+}
+
+export function getNotificationMeta(
+  notification: Notificacao
+): NotificationVisualMeta {
+  const recruiterLinkData = getRecruiterLinkNotificationData(notification);
+  const candidaturaStatusData =
+    getCandidaturaStatusNotificationData(notification);
+
+  if (candidaturaStatusData) {
+    return {
+      label: "Status da candidatura",
+      icon: "BellRing",
+      bgColor: "bg-blue-100",
+      textColor: "text-blue-600",
+      tagBg: "bg-blue-50",
+      tagText: "text-blue-700",
+    };
+  }
+
+  if (recruiterLinkData) {
+    return {
+      label: "Novo acesso",
+      icon: recruiterLinkData.tipoVinculo === "VAGA" ? "BriefcaseBusiness" : "ShieldCheck",
+      bgColor: "bg-blue-100",
+      textColor: "text-blue-600",
+      tagBg: "bg-blue-50",
+      tagText: "text-blue-700",
+    };
+  }
+
+  return (
+    TYPE_META[notification.tipo] ?? {
+      label: "Notificação",
+      icon: "Bell",
+      bgColor: "bg-slate-100",
+      textColor: "text-slate-600",
+      tagBg: "bg-slate-50",
+      tagText: "text-slate-700",
+    }
+  );
+}
+
 export function getNotificationAction(notification: Notificacao): {
   href?: string;
   label?: string;
 } {
+  const recruiterLinkData = getRecruiterLinkNotificationData(notification);
+  const candidaturaStatusData =
+    getCandidaturaStatusNotificationData(notification);
   const explicitHref =
     typeof notification.linkAcao === "string" && notification.linkAcao.trim()
       ? notification.linkAcao.trim()
@@ -181,14 +314,43 @@ export function getNotificationAction(notification: Notificacao): {
   if (explicitHref) {
     return {
       href: explicitHref,
-      label:
-        notification.tipo === "RECUPERACAO_FINAL_PAGAMENTO_PENDENTE"
+      label: candidaturaStatusData
+        ? "Ver vaga"
+        : recruiterLinkData
+        ? recruiterLinkData.tipoVinculo === "VAGA"
+          ? "Ver vaga"
+          : "Ver empresas"
+        : notification.tipo === "RECUPERACAO_FINAL_PAGAMENTO_PENDENTE"
           ? "Pagar"
           : notification.tipo.startsWith("VAGA_") ||
             notification.tipo === "NOVO_CANDIDATO" ||
             notification.tipo === "VAGA_PREENCHIDA"
           ? "Ver vaga"
           : "Ver detalhes",
+    };
+  }
+
+  if (candidaturaStatusData?.vagaId) {
+    const params = new URLSearchParams();
+    params.set("view", candidaturaStatusData.vagaId);
+
+    return {
+      href: `/dashboard/vagas?${params.toString()}`,
+      label: "Ver vaga",
+    };
+  }
+
+  if (recruiterLinkData) {
+    if (recruiterLinkData.tipoVinculo === "VAGA" && recruiterLinkData.vagaId) {
+      return {
+        href: `/dashboard/empresas/vagas/${recruiterLinkData.vagaId}`,
+        label: "Ver vaga",
+      };
+    }
+
+    return {
+      href: "/dashboard/empresas",
+      label: "Ver empresas",
     };
   }
 

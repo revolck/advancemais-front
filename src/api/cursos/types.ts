@@ -1,3 +1,12 @@
+import type {
+  EntrevistaCreateResponseItem,
+  EntrevistaEndereco,
+  EntrevistaGoogleCapability,
+  EntrevistaModalidade,
+  EntrevistaOverviewCapabilities,
+  EntrevistaOverviewItem,
+} from "@/api/entrevistas/types";
+
 // Tipos básicos para Cursos
 export interface Curso {
   id: string;
@@ -619,6 +628,10 @@ export interface CursoAlunoDetalhes {
   descricao?: string | null;
   avatarUrl?: string | null;
   atualizadoEm?: string | null;
+  curriculosResumo?: {
+    total: number;
+    principalId?: string | null;
+  };
   enderecos: CursoAlunoEndereco[];
   inscricoes: CursoAlunoInscricao[];
   totalInscricoes: number;
@@ -672,6 +685,71 @@ export interface CursoAlunoDetalhesResponse {
   success: boolean;
   data: CursoAlunoDetalhes;
 }
+
+export interface CursoAlunoEntrevistasParams {
+  page?: number;
+  pageSize?: number;
+  statusEntrevista?: string[] | string;
+  modalidades?: string[] | string;
+  dataInicio?: string;
+  dataFim?: string;
+  sortBy?: string;
+  sortDir?: "asc" | "desc";
+}
+
+export interface CursoAlunoEntrevistasResponse {
+  items: EntrevistaOverviewItem[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+export interface CursoAlunoEntrevistaOpcaoItem {
+  candidaturaId: string;
+  empresa: {
+    id: string;
+    nomeExibicao?: string | null;
+    anonima?: boolean;
+    labelExibicao?: string | null;
+  } | null;
+  vaga: {
+    id: string;
+    codigo?: string | null;
+    titulo: string;
+    status?: string | null;
+  } | null;
+  candidato: {
+    id: string;
+    codigo?: string | null;
+    nome: string;
+  } | null;
+  entrevistaAtiva: boolean;
+  entrevistaAtivaId?: string | null;
+  empresaAnonima?: boolean;
+  anonimatoBloqueado?: boolean;
+  enderecoPadraoEntrevista?: EntrevistaEndereco | null;
+}
+
+export interface CursoAlunoEntrevistaOpcoesResponse
+  extends EntrevistaOverviewCapabilities {
+  google?: EntrevistaGoogleCapability | null;
+  items: CursoAlunoEntrevistaOpcaoItem[];
+}
+
+export interface CursoAlunoCreateEntrevistaPayload {
+  candidaturaId: string;
+  modalidade: EntrevistaModalidade;
+  dataInicio: string;
+  dataFim: string;
+  descricao?: string | null;
+  empresaAnonima?: boolean;
+  enderecoPresencial?: EntrevistaEndereco | null;
+}
+
+export type CursoAlunoCreateEntrevistaResponse = EntrevistaCreateResponseItem;
 
 // Visão Geral
 export interface VisaoGeralResponse {

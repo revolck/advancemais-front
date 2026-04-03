@@ -38,6 +38,13 @@ export type UsuarioErrorCode =
   | "USER_ACCESS_RELEASE_BLOCKED_BY_STATUS"
   | "USER_ROLE_UPDATE_BLOCKED"
   | "USER_ROLE_UPDATE_ERROR"
+  | "USER_IS_NOT_RECRUITER"
+  | "EMPRESA_NOT_FOUND"
+  | "VAGA_NOT_FOUND"
+  | "RECRUITER_LINK_NOT_FOUND"
+  | "RECRUITER_LINK_ALREADY_EXISTS"
+  | "RECRUITER_LINK_REDUNDANT"
+  | "RECRUITER_LINK_ERROR"
   | "USER_HISTORY_ERROR"
   | "INTERNAL_ERROR";
 
@@ -714,6 +721,110 @@ export interface UpdateUsuarioRoleResponse extends UsuarioResponseBase {
   };
 }
 
+export type UsuarioRecrutadorVinculoTipo = "EMPRESA" | "VAGA";
+
+export interface UsuarioRecrutadorVinculoEmpresaRef {
+  id: string;
+  nomeExibicao: string;
+  codigo: string | null;
+  cnpj?: string | null;
+}
+
+export interface UsuarioRecrutadorVinculoVagaRef {
+  id: string;
+  titulo: string;
+  codigo: string | null;
+  status: string | null;
+}
+
+export interface UsuarioRecrutadorVinculoEscopo {
+  label: string;
+  permiteVagasPublicadas: boolean;
+  permiteVagasDespublicadas: boolean;
+  permiteCandidatos: boolean;
+}
+
+export interface UsuarioRecrutadorVinculoItem {
+  id: string;
+  tipoVinculo: UsuarioRecrutadorVinculoTipo;
+  ativo: boolean;
+  criadoEm: string;
+  empresa: UsuarioRecrutadorVinculoEmpresaRef;
+  vaga: UsuarioRecrutadorVinculoVagaRef | null;
+  escopo: UsuarioRecrutadorVinculoEscopo;
+}
+
+export interface GetUsuarioRecrutadorVinculosResponse
+  extends UsuarioResponseBase {
+  success: boolean;
+  data: {
+    items: UsuarioRecrutadorVinculoItem[];
+  };
+}
+
+export interface UsuarioRecrutadorEmpresaElegivelItem {
+  id: string;
+  nomeExibicao: string;
+  codigo: string | null;
+  cnpj: string | null;
+  totalVagasOperaveis: number;
+  jaVinculadoPorEmpresa: boolean;
+}
+
+export interface GetUsuarioRecrutadorEmpresasElegiveisResponse
+  extends UsuarioResponseBase {
+  success: boolean;
+  data: {
+    items: UsuarioRecrutadorEmpresaElegivelItem[];
+  };
+}
+
+export interface UsuarioRecrutadorVagaElegivelItem {
+  id: string;
+  titulo: string;
+  codigo: string | null;
+  status: string | null;
+  statusLabel: string | null;
+  empresaUsuarioId: string;
+  jaVinculadoNestaVaga: boolean;
+}
+
+export interface GetUsuarioRecrutadorVagasElegiveisResponse
+  extends UsuarioResponseBase {
+  success: boolean;
+  data: {
+    items: UsuarioRecrutadorVagaElegivelItem[];
+  };
+}
+
+export interface CreateUsuarioRecrutadorVinculoPayload {
+  tipoVinculo: UsuarioRecrutadorVinculoTipo;
+  empresaUsuarioId: string;
+  vagaId?: string;
+}
+
+export interface CreateUsuarioRecrutadorVinculoResponse
+  extends UsuarioResponseBase {
+  success: boolean;
+  code?: "RECRUITER_LINK_CREATED";
+  message: string;
+  data: {
+    id: string;
+    tipoVinculo: UsuarioRecrutadorVinculoTipo;
+    ativo: boolean;
+    empresa: UsuarioRecrutadorVinculoEmpresaRef;
+    vaga: UsuarioRecrutadorVinculoVagaRef | null;
+    criadoEm: string;
+  };
+}
+
+export interface DeleteUsuarioRecrutadorVinculoResponse
+  extends UsuarioResponseBase {
+  success: boolean;
+  code?: "RECRUITER_LINK_REMOVED";
+  message: string;
+}
+
 export type UsuarioHistoricoTipo =
   | "USUARIO_CRIADO"
   | "USUARIO_ATUALIZADO"
@@ -732,6 +843,10 @@ export type UsuarioHistoricoTipo =
   | "USUARIO_AVATAR_ATUALIZADO"
   | "USUARIO_CPF_ATUALIZADO"
   | "USUARIO_TELEFONE_ATUALIZADO"
+  | "USUARIO_RECRUTADOR_VINCULO_EMPRESA_CRIADO"
+  | "USUARIO_RECRUTADOR_VINCULO_EMPRESA_REMOVIDO"
+  | "USUARIO_RECRUTADOR_VINCULO_VAGA_CRIADO"
+  | "USUARIO_RECRUTADOR_VINCULO_VAGA_REMOVIDO"
   | (string & {});
 
 export type UsuarioHistoricoCategoria =

@@ -240,17 +240,17 @@ export const CompanyRow: React.FC<CompanyRowProps> = ({
             size="sm"
             showStatus={false}
           />
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 mb-1">
-              <div className="font-bold text-gray-900 truncate text-sm">
+          <div className="min-w-0 flex flex-1 flex-col">
+            <div className="flex items-center gap-2">
+              <span className="font-medium text-gray-900 truncate">
                 {partnership.empresa.nome}
-              </div>
-              <code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded font-mono text-gray-500 flex-shrink-0">
+              </span>
+              <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600 flex-shrink-0">
                 {partnership.empresa.codUsuario}
-              </code>
+              </span>
             </div>
             {formattedCnpj && (
-              <div className="text-xs text-gray-500 font-mono truncate">
+              <div className="font-mono text-sm text-gray-500 truncate">
                 {formattedCnpj}
               </div>
             )}

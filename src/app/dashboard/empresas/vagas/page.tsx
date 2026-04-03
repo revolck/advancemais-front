@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { UserRole } from "@/config/roles";
 import { useUserRole } from "@/hooks/useUserRole";
 import { VagasDashboard } from "@/theme/dashboard/components/admin";
+import { RecruiterVagasDashboard } from "@/theme/dashboard/components/recrutador/vagas/RecruiterVagasDashboard";
 
 const ALLOWED_ROLES = new Set<UserRole>([
   UserRole.ADMIN,
@@ -38,7 +39,11 @@ export default function DashboardVagasPage() {
     if (ALLOWED_ROLES.has(role)) {
       return (
         <div className="space-y-8">
-          <VagasDashboard />
+          {role === UserRole.RECRUTADOR ? (
+            <RecruiterVagasDashboard />
+          ) : (
+            <VagasDashboard />
+          )}
         </div>
       );
     }

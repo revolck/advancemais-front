@@ -6,3 +6,4 @@ export { EditarUsuarioEnderecoModal } from "./EditarUsuarioEnderecoModal";
 export { LiberarEmailUsuarioModal } from "./LiberarEmailUsuarioModal";
 export { ResetarSenhaModal as ResetarSenhaUsuarioModal } from "./ResetarSenhaModal";
 export { ViewCurriculoModal } from "./ViewCurriculoModal";
+export { CreateVinculoRecrutadorModal } from "./CreateVinculoRecrutadorModal";

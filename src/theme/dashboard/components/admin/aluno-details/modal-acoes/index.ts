@@ -5,3 +5,4 @@ export { EditarAlunoModal } from "./EditarAlunoModal";
 export { EditarAlunoEnderecoModal } from "./EditarAlunoEnderecoModal";
 export { ResetarSenhaModal as ResetarSenhaAlunoModal } from "./ResetarSenhaModal";
 export { ViewCurriculoModal } from "./ViewCurriculoModal";
+export { MarcarEntrevistaAlunoModal } from "./MarcarEntrevistaAlunoModal";

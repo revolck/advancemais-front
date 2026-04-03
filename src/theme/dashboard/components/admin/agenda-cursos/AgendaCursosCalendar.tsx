@@ -17,24 +17,28 @@ import {
   ModalHeader,
   ModalTitle,
   ModalBody,
+  ModalFooter,
   SelectCustom,
 } from "@/components/ui/custom";
 import { MultiSelectFilter } from "@/components/ui/custom/filters";
 import { ButtonCustom } from "@/components/ui/custom";
 import { cn } from "@/lib/utils";
+import { useUserRole } from "@/hooks/useUserRole";
+import { UserRole } from "@/config/roles";
 import {
-  Calendar,
   Video,
   Building2,
-  Radio,
+  Briefcase,
   FileText,
   Cake,
   GraduationCap,
   AlertCircle,
-  Clock,
+  MapPin,
   ChevronLeft,
   ChevronRight,
   ChevronDown,
+  User,
+  UserCheck,
 } from "lucide-react";
 import { getAgenda, getAgendaAniversariantes, type AgendaEvento } from "@/api/aulas";
 import { startOfMonth, endOfMonth, format, setMonth, setYear } from "date-fns";
@@ -46,6 +50,7 @@ const EVENT_COLORS = {
   AULA: "#3B82F6", // Azul
   PROVA: "#EF4444", // Vermelho
   ATIVIDADE: "#8B5CF6", // Roxo
+  ENTREVISTA: "#0F172A", // Slate
   ANIVERSARIO: "#10B981", // Verde
   TURMA_INICIO: "#6366F1", // Indigo
   TURMA_FIM: "#F59E0B", // Amber
@@ -56,6 +61,7 @@ const EVENT_ICONS = {
   AULA: Video,
   PROVA: FileText,
   ATIVIDADE: FileText,
+  ENTREVISTA: UserCheck,
   ANIVERSARIO: Cake,
   TURMA_INICIO: GraduationCap,
   TURMA_FIM: GraduationCap,
@@ -64,12 +70,15 @@ const EVENT_ICONS = {
 type EventType = keyof typeof EVENT_COLORS;
 
 export function AgendaCursosCalendar() {
+  const role = useUserRole();
+  const canSeeInterviewEvents = role !== UserRole.SETOR_DE_VAGAS;
   const today = useMemo(() => new Date(), []);
   const [currentMonth, setCurrentMonth] = useState(today);
   const [selectedTypes, setSelectedTypes] = useState<EventType[]>([
     "AULA",
     "PROVA",
     "ATIVIDADE",
+    "ENTREVISTA",
     "ANIVERSARIO",
     "TURMA_INICIO",
     "TURMA_FIM",
@@ -111,11 +120,24 @@ export function AgendaCursosCalendar() {
 
   const dataInicio = startOfMonth(currentMonth).toISOString();
   const dataFim = endOfMonth(currentMonth).toISOString();
-  const selectedTiposAgenda = useMemo(
-    () => selectedTypes.filter((tipo) => tipo !== "ANIVERSARIO"),
-    [selectedTypes]
+  const effectiveSelectedTypes = useMemo(
+    () =>
+      canSeeInterviewEvents
+        ? selectedTypes
+        : selectedTypes.filter((tipo) => tipo !== "ENTREVISTA"),
+    [canSeeInterviewEvents, selectedTypes]
   );
-  const incluirAniversariantes = selectedTypes.includes("ANIVERSARIO");
+  const selectedTiposAgenda = useMemo(
+    () => effectiveSelectedTypes.filter((tipo) => tipo !== "ANIVERSARIO"),
+    [effectiveSelectedTypes]
+  );
+  const incluirAniversariantes = effectiveSelectedTypes.includes("ANIVERSARIO");
+
+  useEffect(() => {
+    if (!canSeeInterviewEvents) {
+      setSelectedTypes((prev) => prev.filter((tipo) => tipo !== "ENTREVISTA"));
+    }
+  }, [canSeeInterviewEvents]);
 
   // Buscar eventos da agenda (sem aniversariantes)
   const {
@@ -159,7 +181,9 @@ export function AgendaCursosCalendar() {
 
   // Transformar eventos da API para formato FullCalendar
   const events: EventInput[] = useMemo(() => {
-    const eventosBase = agendaData?.eventos ?? [];
+    const eventosBase = (agendaData?.eventos ?? []).filter(
+      (evento) => canSeeInterviewEvents || evento.tipo !== "ENTREVISTA"
+    );
     const aniversariantes = incluirAniversariantes
       ? (aniversariantesData?.eventos ?? [])
       : [];
@@ -181,7 +205,7 @@ export function AgendaCursosCalendar() {
         allDay: !evento.dataInicio, // Se não tem horário, é dia inteiro
       };
     });
-  }, [agendaData, aniversariantesData, incluirAniversariantes]);
+  }, [agendaData, aniversariantesData, canSeeInterviewEvents, incluirAniversariantes]);
 
   // Sincronizar o estado inicial quando o calendário montar
   useEffect(() => {
@@ -206,10 +230,14 @@ export function AgendaCursosCalendar() {
     { value: "AULA", label: "Aulas", icon: Video },
     { value: "PROVA", label: "Provas", icon: FileText },
     { value: "ATIVIDADE", label: "Atividades", icon: FileText },
+    { value: "ENTREVISTA", label: "Entrevistas", icon: UserCheck },
     { value: "ANIVERSARIO", label: "Aniversariantes", icon: Cake },
     { value: "TURMA_INICIO", label: "Início de Turmas", icon: GraduationCap },
     { value: "TURMA_FIM", label: "Fim de Turmas", icon: GraduationCap },
   ];
+  const visibleTipoOptions = canSeeInterviewEvents
+    ? tipoOptions
+    : tipoOptions.filter((option) => option.value !== "ENTREVISTA");
   const totalAniversariantes = aniversariantesData?.resumo?.total ?? 0;
 
   if (error) {
@@ -371,13 +399,18 @@ export function AgendaCursosCalendar() {
                 <MultiSelectFilter
                   title="Tipos"
                   placeholder="Tipos"
-                  options={tipoOptions.map((option) => ({
+                  options={visibleTipoOptions.map((option) => ({
                     value: option.value,
                     label: option.label,
                   }))}
-                  selectedValues={selectedTypes}
+                  selectedValues={effectiveSelectedTypes}
                   onSelectionChange={(values) => {
-                    setSelectedTypes(values as EventType[]);
+                    const nextValues = values as EventType[];
+                    setSelectedTypes(
+                      canSeeInterviewEvents
+                        ? nextValues
+                        : nextValues.filter((tipo) => tipo !== "ENTREVISTA")
+                    );
                   }}
                   className="w-auto min-w-[180px]"
                 />
@@ -509,25 +542,144 @@ interface EventDetailsModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
+function EventMetaCard({
+  label,
+  value,
+  icon,
+  emphasis = false,
+  className,
+}: {
+  label: string;
+  value: string;
+  icon?: React.ReactNode;
+  emphasis?: boolean;
+  className?: string;
+}) {
+  return (
+    <div className={cn("flex items-start gap-3", className)}>
+      {icon && (
+        <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-50 text-slate-600">
+          {icon}
+        </div>
+      )}
+      <div className="min-w-0 space-y-1">
+        <p className="mb-0! text-[11px]! font-medium! uppercase! tracking-[0.08em]! text-gray-500!">
+          {label}
+        </p>
+        <p
+          className={cn(
+            "mb-0! leading-6! text-gray-900! break-words",
+            emphasis ? "text-base! font-semibold!" : "text-sm! font-medium!"
+          )}
+        >
+          {value}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 function EventDetailsModal({
   evento,
   open,
   onOpenChange,
 }: EventDetailsModalProps) {
-  const Icon = EVENT_ICONS[evento.tipo] || Calendar;
-  const color = EVENT_COLORS[evento.tipo] || "#6B7280";
+  const role = useUserRole();
+  const isInterview = evento.tipo === "ENTREVISTA";
+  const isCandidateViewingOwnInterview =
+    isInterview && role === UserRole.ALUNO_CANDIDATO;
+  const isDetailedInterviewView =
+    isInterview && !isCandidateViewingOwnInterview;
+  const headerTitle = isCandidateViewingOwnInterview
+    ? "Sua entrevista"
+    : isInterview
+      ? "Entrevista"
+      : evento.titulo;
+  const headerSubtitle = !isInterview
+    ? [evento.vaga?.titulo, evento.empresa?.nomeExibicao]
+        .filter(Boolean)
+        .join(" • ")
+    : "";
+  const displayDescription =
+    evento.descricao &&
+    evento.descricao !== evento.vaga?.titulo &&
+    evento.descricao !== evento.candidato?.nome
+      ? evento.descricao
+      : null;
 
-  const formatDateTime = (dateString?: string) => {
-    if (!dateString) return "—";
-    const date = new Date(dateString);
-    return date.toLocaleString("pt-BR", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+  const parseEventDate = (value?: string) => {
+    if (!value) return null;
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? null : date;
   };
+  const capitalizeText = (value: string) =>
+    value.charAt(0).toUpperCase() + value.slice(1);
+  const startDate = parseEventDate(evento.dataInicio || evento.data);
+  const endDate = parseEventDate(evento.dataFim);
+  const dateLabel = startDate
+    ? capitalizeText(
+        startDate.toLocaleDateString("pt-BR", {
+          day: "2-digit",
+          month: "long",
+          year: "numeric",
+        })
+      )
+    : "Data não informada";
+  const timeLabel =
+    startDate && endDate
+      ? `${startDate.toLocaleTimeString("pt-BR", {
+          hour: "2-digit",
+          minute: "2-digit",
+        })} às ${endDate.toLocaleTimeString("pt-BR", {
+          hour: "2-digit",
+          minute: "2-digit",
+        })}`
+      : startDate && evento.dataInicio
+        ? startDate.toLocaleTimeString("pt-BR", {
+            hour: "2-digit",
+            minute: "2-digit",
+          })
+        : null;
+  const modalityLabel =
+    evento.modalidadeLabel ||
+    (evento.modalidade === "ONLINE"
+      ? "Online"
+      : evento.modalidade === "PRESENCIAL"
+        ? "Presencial"
+        : evento.modalidade);
+  const hasMeet = Boolean(evento.meetUrl);
+  const meetButtonLabel = isInterview ? "Acessar entrevista" : "Acessar reunião";
+  const whenLabel = timeLabel ? `${dateLabel} • ${timeLabel}` : dateLabel;
+  const isAnonymousCompany = Boolean(
+    evento.empresaAnonima || evento.empresa?.anonima
+  );
+  const companyDisplayName = isAnonymousCompany
+    ? "Empresa anônima"
+    : evento.empresa?.nomeExibicao;
+  const isOnline = modalityLabel === "Online";
+  const formattedEnderecoPresencial = evento.enderecoPresencial
+    ? [
+        [evento.enderecoPresencial.logradouro, evento.enderecoPresencial.numero]
+          .filter(Boolean)
+          .join(", "),
+        evento.enderecoPresencial.complemento,
+        evento.enderecoPresencial.bairro,
+        [
+          evento.enderecoPresencial.cidade,
+          evento.enderecoPresencial.estado,
+        ]
+          .filter(Boolean)
+          .join(" - "),
+        evento.enderecoPresencial.cep,
+        evento.enderecoPresencial.pontoReferencia,
+      ]
+        .filter(Boolean)
+        .join(" • ")
+    : null;
+  const presencialLocation =
+    evento.local?.trim() || formattedEnderecoPresencial || null;
+  const shouldShowPresencialLocation =
+    isInterview && evento.modalidade === "PRESENCIAL" && Boolean(presencialLocation);
 
   return (
     <ModalCustom
@@ -538,115 +690,144 @@ function EventDetailsModal({
       scrollBehavior="inside"
     >
       <ModalContentWrapper>
-        <ModalHeader>
-          <div className="flex items-center gap-3">
-            <div
-              className="flex h-10 w-10 items-center justify-center rounded-lg flex-shrink-0"
-              style={{ backgroundColor: `${color}20` }}
-            >
-              <Icon className="h-5 w-5" style={{ color }} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <ModalTitle className="mb-0">{evento.titulo}</ModalTitle>
-              <Badge
-                variant="outline"
-                className="mt-1.5 text-xs"
-                style={{
-                  backgroundColor: `${color}20`,
-                  color,
-                  borderColor: color,
-                }}
-              >
-                {evento.tipo.replace(/_/g, " ")}
-              </Badge>
-            </div>
+        <ModalHeader className="pb-4!">
+          <div className="min-w-0">
+            <ModalTitle className="mb-0! text-lg! font-semibold! text-gray-900!">
+              {headerTitle}
+            </ModalTitle>
+            {headerSubtitle && (
+              <p className="mb-0! mt-1! text-sm! text-gray-500!">
+                {headerSubtitle}
+              </p>
+            )}
           </div>
         </ModalHeader>
-        <ModalBody className="!py-4 max-h-[65vh] overflow-y-auto">
+        <ModalBody className="max-h-[65vh] overflow-y-auto py-0!">
           <div className="space-y-5">
-            {/* Tags de Informação */}
-            <div className="flex flex-wrap gap-2">
-              {(evento.dataInicio || evento.data) && (
-                <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-gray-100 text-gray-700 text-xs">
-                  <Calendar className="w-3 h-3" />
-                  {evento.dataInicio
-                    ? formatDateTime(evento.dataInicio)
-                    : formatDateTime(evento.data)}
-                </span>
-              )}
-              {evento.turma && (
-                <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-blue-50 text-blue-700 text-xs">
-                  <Building2 className="w-3 h-3" />
-                  {evento.turma.nome}
-                </span>
-              )}
-              {evento.modalidade && (
-                <Badge variant="outline" className="text-xs">
-                  {evento.modalidade}
-                </Badge>
-              )}
+            <div className="rounded-2xl border border-slate-200 bg-white">
+              <div className="border-b border-slate-100 px-5 py-4">
+                <div className="flex flex-col gap-4">
+                  <div className="min-w-0">
+                    <p className="mb-0! text-[11px]! font-medium! uppercase! tracking-[0.08em]! text-slate-500!">
+                      {isInterview ? "Data e horário" : "Quando"}
+                    </p>
+                    <div className="mt-1 flex flex-wrap items-center gap-2">
+                      <p className="mb-0! text-base! font-semibold! text-slate-900!">
+                        {whenLabel}
+                      </p>
+                      {modalityLabel && (
+                        <Badge
+                          variant="outline"
+                          className={cn(
+                            "rounded-full px-2.5 py-0.5 text-[11px] font-medium",
+                            isOnline
+                              ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                              : "border-slate-200 bg-slate-50 text-slate-700"
+                          )}
+                        >
+                          {modalityLabel}
+                        </Badge>
+                      )}
+                      {!isInterview && (
+                        <p className="mb-0! text-xs! font-medium! uppercase! tracking-[0.08em]! text-slate-400!">
+                          {evento.tipo.replace(/_/g, " ")}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4 px-5 py-4">
+                {(companyDisplayName || evento.vaga) && (
+                  <div className="space-y-4">
+                    {companyDisplayName && (
+                      <EventMetaCard
+                        label="Empresa"
+                        value={companyDisplayName}
+                        emphasis
+                        icon={<Building2 className="h-4 w-4" />}
+                      />
+                    )}
+
+                    {evento.vaga && (
+                      <EventMetaCard
+                        label="Vaga"
+                        value={evento.vaga.titulo}
+                        emphasis
+                        icon={<Briefcase className="h-4 w-4" />}
+                      />
+                    )}
+
+                    {shouldShowPresencialLocation && (
+                      <EventMetaCard
+                        label="Local"
+                        value={presencialLocation as string}
+                        icon={<MapPin className="h-4 w-4" />}
+                      />
+                    )}
+                  </div>
+                )}
+
+                {isDetailedInterviewView && (evento.candidato || evento.usuario) && (
+                  <div className="space-y-4 border-t border-slate-100 pt-4">
+                    {evento.candidato && (
+                      <EventMetaCard
+                        label="Candidato"
+                        value={evento.candidato.nome}
+                        icon={<User className="h-4 w-4" />}
+                      />
+                    )}
+                    {evento.usuario && (
+                      <EventMetaCard
+                        label="Responsável"
+                        value={evento.usuario.nome}
+                        icon={<UserCheck className="h-4 w-4" />}
+                      />
+                    )}
+                  </div>
+                )}
+
+                {!isInterview && evento.usuario && (
+                  <div className="border-t border-slate-100 pt-4">
+                    <EventMetaCard
+                      label={
+                        evento.tipo === "ANIVERSARIO"
+                          ? "Aniversariante"
+                          : "Responsável"
+                      }
+                      value={evento.usuario.nome}
+                    />
+                  </div>
+                )}
+
+                {displayDescription && (
+                  <div className="border-t border-slate-100 pt-4">
+                    <p className="mb-0! text-[11px]! font-medium! uppercase! tracking-[0.08em]! text-gray-500!">
+                      {isCandidateViewingOwnInterview ? "Instruções" : "Descrição"}
+                    </p>
+                    <p className="mb-0! mt-2! whitespace-pre-wrap text-sm! leading-6! text-gray-700!">
+                      {displayDescription}
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
-
-            {/* Descrição */}
-            {evento.descricao && (
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h3 className="!text-sm !font-semibold !text-gray-700 !m-0 !mb-2 flex items-center gap-2">
-                  <FileText className="w-4 h-4" />
-                  Descrição
-                </h3>
-                <p className="!text-sm !text-gray-600 !m-0 whitespace-pre-wrap leading-relaxed">
-                  {evento.descricao}
-                </p>
-              </div>
-            )}
-
-            {/* Data/Horário detalhado */}
-            {(evento.dataInicio || evento.data) && evento.dataFim && (
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h3 className="!text-sm !font-semibold !text-gray-700 !m-0 !mb-2 flex items-center gap-2">
-                  <Clock className="w-4 h-4" />
-                  Período
-                </h3>
-                <p className="!text-sm !text-gray-600 !m-0">
-                  {formatDateTime(evento.dataInicio || evento.data)} até{" "}
-                  {new Date(evento.dataFim).toLocaleTimeString("pt-BR", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </p>
-              </div>
-            )}
-
-            {/* Google Meet */}
-            {evento.meetUrl && (
-              <div className="bg-blue-50/50 rounded-lg p-4">
-                <h3 className="!text-sm !font-semibold !text-blue-700 !m-0 !mb-2 flex items-center gap-2">
-                  <Video className="w-4 h-4" />
-                  Google Meet
-                </h3>
-                <a
-                  href={evento.meetUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="!text-sm !text-blue-600 hover:underline !m-0 inline-flex items-center gap-1.5 cursor-pointer font-medium"
-                >
-                  Entrar na sala
-                  <span className="text-xs">↗</span>
-                </a>
-              </div>
-            )}
-
-            {/* Responsável/Aniversariante */}
-            {evento.usuario && (
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h3 className="!text-sm !font-semibold !text-gray-700 !m-0 !mb-2">
-                  {evento.tipo === "ANIVERSARIO" ? "Aniversariante" : "Responsável"}
-                </h3>
-                <p className="!text-sm !text-gray-600 !m-0">{evento.usuario.nome}</p>
-              </div>
-            )}
           </div>
         </ModalBody>
+        {hasMeet && (
+          <ModalFooter className="border-t border-gray-100 pt-4">
+            <ButtonCustom asChild size="md" variant="primary" className="sm:min-w-[220px]">
+              <a
+                href={evento.meetUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {meetButtonLabel}
+              </a>
+            </ButtonCustom>
+          </ModalFooter>
+        )}
       </ModalContentWrapper>
     </ModalCustom>
   );
@@ -833,5 +1014,3 @@ export const FullCalendarStyles = () => (
     }
   `}</style>
 );
-
-

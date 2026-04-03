@@ -41,7 +41,7 @@ export function useNotifications(params?: ListarNotificacoesParams) {
     enabled: isEnabled,
     retry: false, // API já faz retry interno
     refetchInterval: (query) => (query.state.status === "success" ? 30000 : false),
-    refetchOnWindowFocus: false,
+    refetchOnWindowFocus: true,
     placeholderData: keepPreviousData, // Mantém dados anteriores durante refetch
   });
 }
@@ -57,7 +57,7 @@ export function useNotificationsCounter() {
     queryFn: () => getNotificacoesContador(),
     retry: false,
     refetchInterval: (query) => (query.state.status === "success" ? 30000 : false),
-    refetchOnWindowFocus: false,
+    refetchOnWindowFocus: true,
     placeholderData: keepPreviousData,
   });
 }
@@ -110,4 +110,3 @@ export function getUnreadCount(
   return data.data.filter((notification) => notification.status === "NAO_LIDA")
     .length;
 }
-

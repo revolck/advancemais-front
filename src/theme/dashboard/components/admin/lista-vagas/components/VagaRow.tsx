@@ -6,7 +6,15 @@ import { TableCell, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { ChevronRight, MapPin, Calendar, Clock, Loader2, Users, ExternalLink } from "lucide-react";
+import {
+  ChevronRight,
+  MapPin,
+  Calendar,
+  Clock,
+  Loader2,
+  Users,
+  ExternalLink,
+} from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
@@ -82,7 +90,7 @@ const formatCnpj = (value?: string | null): string => {
   return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8, 12)}-${digits.slice(12)}`;
 };
 
-export function VagaRow({ 
+export function VagaRow({
   vaga,
   isDisabled = false,
   onNavigateStart,
@@ -96,24 +104,24 @@ export function VagaRow({
   const handleNavigate = (e: React.MouseEvent) => {
     e.preventDefault();
     if (isRowDisabled) return;
-    
+
     setIsNavigating(true);
     onNavigateStart?.();
     router.push(`/dashboard/empresas/vagas/${vaga.id}`);
-    
+
     setTimeout(() => {
       setIsNavigating(false);
     }, 5000);
   };
 
   return (
-    <TableRow 
+    <TableRow
       className={cn(
         "border-gray-100 transition-colors",
-        isRowDisabled 
-          ? "opacity-50 pointer-events-none" 
+        isRowDisabled
+          ? "opacity-50 pointer-events-none"
           : "hover:bg-gray-50/50",
-        isNavigating && "bg-blue-50/50"
+        isNavigating && "bg-blue-50/50",
       )}
     >
       <TableCell className="py-4 min-w-[220px]">
@@ -135,30 +143,36 @@ export function VagaRow({
             {vaga.ultimoCandidato ? (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <button 
+                  <button
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
                       setIsNavigatingToCandidato(true);
-                      router.push(`/dashboard/empresas/candidatos/${vaga.ultimoCandidato!.id}`);
+                      router.push(
+                        `/dashboard/empresas/candidatos/${vaga.ultimoCandidato!.id}`,
+                      );
                     }}
                     disabled={isNavigatingToCandidato}
                     className={cn(
                       "flex items-center gap-3 hover:bg-gray-50 -mx-2 px-2 py-1 rounded-lg transition-colors cursor-pointer text-left",
-                      isNavigatingToCandidato && "opacity-50 cursor-wait"
+                      isNavigatingToCandidato && "opacity-50 cursor-wait",
                     )}
                   >
                     <Avatar className="h-8 w-8 flex-shrink-0">
-                      <AvatarFallback className={cn(
-                        "text-xs font-medium",
-                        isNavigatingToCandidato 
-                          ? "bg-blue-200 text-blue-700" 
-                          : "bg-blue-100 text-blue-600"
-                      )}>
+                      <AvatarFallback
+                        className={cn(
+                          "text-xs font-medium",
+                          isNavigatingToCandidato
+                            ? "bg-blue-200 text-blue-700"
+                            : "bg-blue-100 text-blue-600",
+                        )}
+                      >
                         {isNavigatingToCandidato ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
                         ) : (
-                          vaga.ultimoCandidato.nome.substring(0, 2).toUpperCase()
+                          vaga.ultimoCandidato.nome
+                            .substring(0, 2)
+                            .toUpperCase()
                         )}
                       </AvatarFallback>
                     </Avatar>
@@ -167,7 +181,10 @@ export function VagaRow({
                         {vaga.ultimoCandidato.nome}
                       </div>
                       <div className="text-xs text-gray-500">
-                        {formatDistanceToNow(new Date(vaga.ultimoCandidato.aplicadaEm), { addSuffix: true, locale: ptBR })}
+                        {formatDistanceToNow(
+                          new Date(vaga.ultimoCandidato.aplicadaEm),
+                          { addSuffix: true, locale: ptBR },
+                        )}
                       </div>
                     </div>
                   </button>
@@ -188,31 +205,47 @@ export function VagaRow({
           </div>
         ) : (
           // Para outras roles: mostrar empresa
-          <div className="flex items-center gap-3">
-            <Avatar className="h-8 w-8 flex-shrink-0">
-              <AvatarImage src={vaga.empresa.avatarUrl} />
-              <AvatarFallback className="bg-purple-100 text-purple-600 text-xs font-medium">
-                {vaga.empresa.nome.substring(0, 2).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2 mb-1">
-                <div className="font-medium text-gray-900 truncate text-sm">
-                  {vaga.empresa.nome}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="flex items-center gap-3 cursor-help">
+                <Avatar className="h-8 w-8 flex-shrink-0">
+                  <AvatarImage src={vaga.empresa.avatarUrl} />
+                  <AvatarFallback className="bg-purple-100 text-purple-600 text-xs font-medium">
+                    {vaga.empresa.nome.substring(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 flex-1">
+                  <div className="mb-1 flex items-center gap-2">
+                    <div className="truncate text-sm font-medium text-gray-900">
+                      {vaga.empresa.nome}
+                    </div>
+                    {vaga.empresa.codUsuario && (
+                      <code className="flex-shrink-0 rounded bg-gray-100 px-1.5 py-0.5 font-mono text-xs text-gray-500">
+                        {vaga.empresa.codUsuario}
+                      </code>
+                    )}
+                  </div>
+                  {vaga.empresa.cnpj && (
+                    <div className="truncate font-mono text-xs text-gray-500">
+                      {formatCnpj(vaga.empresa.cnpj)}
+                    </div>
+                  )}
                 </div>
-                {vaga.empresa.codUsuario && (
-                  <code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded font-mono text-gray-500 flex-shrink-0">
-                    {vaga.empresa.codUsuario}
-                  </code>
-                )}
               </div>
-              {vaga.empresa.cnpj && (
-                <div className="text-xs text-gray-500 font-mono truncate">
-                  {formatCnpj(vaga.empresa.cnpj)}
-                </div>
-              )}
-            </div>
-          </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <div className="space-y-1 p-1">
+                <p className="mb-1! font-medium! text-white! text-xs!">
+                  {vaga.empresa.nome}
+                </p>
+                {vaga.empresa.codUsuario ? (
+                  <p className="mb-0! font-mono! text-[11px]! text-slate-300!">
+                    {vaga.empresa.codUsuario}
+                  </p>
+                ) : null}
+              </div>
+            </TooltipContent>
+          </Tooltip>
         )}
       </TableCell>
 
@@ -228,10 +261,10 @@ export function VagaRow({
               {vaga.modalidade === "REMOTO"
                 ? "Remoto"
                 : vaga.modalidade === "PRESENCIAL"
-                ? "Presencial"
-                : vaga.modalidade === "HIBRIDO"
-                ? "Híbrido"
-                : vaga.modalidade}
+                  ? "Presencial"
+                  : vaga.modalidade === "HIBRIDO"
+                    ? "Híbrido"
+                    : vaga.modalidade}
             </div>
           </div>
         </div>
@@ -260,9 +293,7 @@ export function VagaRow({
             <span>{formatDate(vaga.inscricoesAte)}</span>
           </div>
         ) : (
-          <div className="flex items-center text-sm text-gray-500">
-            —
-          </div>
+          <div className="flex items-center text-sm text-gray-500">—</div>
         )}
       </TableCell>
 
@@ -274,9 +305,7 @@ export function VagaRow({
             </span>
           </div>
           <span className="text-sm text-gray-900">
-            {vaga.numeroVagas
-              ? `vaga${vaga.numeroVagas > 1 ? "s" : ""}`
-              : "—"}
+            {vaga.numeroVagas ? `vaga${vaga.numeroVagas > 1 ? "s" : ""}` : "—"}
           </span>
         </div>
       </TableCell>
@@ -291,10 +320,10 @@ export function VagaRow({
               disabled={isRowDisabled}
               className={cn(
                 "h-8 w-8 rounded-full cursor-pointer",
-                isNavigating 
-                  ? "text-blue-600 bg-blue-100" 
+                isNavigating
+                  ? "text-blue-600 bg-blue-100"
                   : "text-gray-500 hover:text-white hover:bg-[var(--primary-color)]",
-                "disabled:opacity-50 disabled:cursor-wait"
+                "disabled:opacity-50 disabled:cursor-wait",
               )}
               aria-label="Visualizar vaga"
             >

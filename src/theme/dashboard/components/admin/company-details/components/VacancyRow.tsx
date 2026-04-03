@@ -45,10 +45,10 @@ function getStatusBadge(status?: string | null) {
     s === "PUBLICADO"
       ? "bg-emerald-100 text-emerald-800 border-emerald-200"
       : s === "EM_ANALISE"
-      ? "bg-sky-100 text-sky-800 border-sky-200"
-      : s === "EXPIRADO"
-      ? "bg-rose-100 text-rose-800 border-rose-200"
-      : "bg-slate-100 text-slate-700 border-slate-200";
+        ? "bg-sky-100 text-sky-800 border-sky-200"
+        : s === "EXPIRADO"
+          ? "bg-rose-100 text-rose-800 border-rose-200"
+          : "bg-slate-100 text-slate-700 border-slate-200";
   const labelMap: Record<string, string> = {
     PUBLICADO: "Publicado",
     EM_ANALISE: "Em análise",
@@ -124,11 +124,11 @@ export function VacancyRow({
   const handleNavigate = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     if (isRowDisabled) return;
-    
+
     setIsNavigating(true);
     onNavigateStart?.();
     router.push(`/dashboard/empresas/vagas/${encodeURIComponent(vacancy.id)}`);
-    
+
     setTimeout(() => {
       setIsNavigating(false);
     }, 5000);
@@ -149,13 +149,11 @@ export function VacancyRow({
 
   return (
     <>
-      <TableRow 
+      <TableRow
         className={cn(
           "border-gray-200 transition-colors",
-          isRowDisabled 
-            ? "opacity-50 pointer-events-none" 
-            : "hover:bg-gray-50",
-          isNavigating && "bg-blue-50/50"
+          isRowDisabled ? "opacity-50 pointer-events-none" : "hover:bg-gray-50",
+          isNavigating && "bg-blue-50/50",
         )}
       >
         {/* Vaga */}
@@ -172,7 +170,9 @@ export function VacancyRow({
                     <EyeOff className="h-4 w-4 text-gray-400" />
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>Publicado em modo anônimo</p>
+                    <p className="mb-0! text-white! text-xs!">
+                      Publicado em modo anônimo
+                    </p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -227,7 +227,7 @@ export function VacancyRow({
                         candidatura.candidato.avatarUrl ||
                         candidatura.candidato.informacoes?.avatarUrl ||
                         `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                          candidatura.candidato.nomeCompleto
+                          candidatura.candidato.nomeCompleto,
                         )}&background=random`,
                     }))}
                     size={24}
@@ -318,10 +318,10 @@ export function VacancyRow({
                   disabled={isRowDisabled}
                   className={cn(
                     "h-8 w-8 rounded-full cursor-pointer",
-                    isNavigating 
-                      ? "text-blue-600 bg-blue-100" 
+                    isNavigating
+                      ? "text-blue-600 bg-blue-100"
                       : "text-gray-500 hover:text-white hover:bg-[var(--primary-color)]",
-                    "disabled:opacity-50 disabled:cursor-wait"
+                    "disabled:opacity-50 disabled:cursor-wait",
                   )}
                   aria-label="Visualizar vaga"
                 >

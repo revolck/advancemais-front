@@ -27,12 +27,13 @@ import {
 } from "@/components/ui/custom/modal";
 import { ButtonCustom } from "@/components/ui/custom/button";
 import {
-  TYPE_META,
   VAGA_TYPES,
   SISTEMA_TYPES,
   formatRelativeTime,
   PRIORITY_COLORS,
   getNotificationAction,
+  getNotificationMeta,
+  getRecruiterLinkNotificationData,
 } from "@/theme/dashboard/utils/notifications";
 import {
   Tooltip,
@@ -368,14 +369,7 @@ export function NotificationButton({ className }: NotificationButtonProps) {
               <div className="divide-y divide-gray-100">
                 <AnimatePresence mode="popLayout">
                   {filteredNotifications.map((notification, index) => {
-                  const meta = TYPE_META[notification.tipo] ?? {
-                    label: "Notificação",
-                    icon: "Bell",
-                      bgColor: "bg-slate-100",
-                      textColor: "text-slate-600",
-                      tagBg: "bg-slate-50",
-                      tagText: "text-slate-700",
-                  };
+                  const meta = getNotificationMeta(notification);
                   const isUnread = notification.status === "NAO_LIDA";
                   const relativeTime = formatRelativeTime(
                     notification.criadoEm
@@ -518,31 +512,32 @@ export function NotificationButton({ className }: NotificationButtonProps) {
       >
         {selectedNotification && (
           <>
+            {(() => {
+              const notificationMeta = getNotificationMeta(selectedNotification);
+              const recruiterLinkData =
+                getRecruiterLinkNotificationData(selectedNotification);
+
+              return (
+                <>
             <ModalHeader>
               <div className="flex items-center gap-3">
                 <div
                   className={cn(
                     "w-10 h-10 rounded-full flex items-center justify-center",
-                    TYPE_META[selectedNotification.tipo]?.bgColor ??
-                      "bg-slate-100",
-                    TYPE_META[selectedNotification.tipo]?.textColor ??
-                      "text-slate-600"
+                    notificationMeta.bgColor,
+                    notificationMeta.textColor
                   )}
                 >
                   <Icon
-                    name={
-                      (TYPE_META[selectedNotification.tipo]?.icon ??
-                        "Bell") as any
-                    }
+                    name={notificationMeta.icon as any}
                     size={18}
                   />
                 </div>
                 <div>
                   <ModalTitle>{selectedNotification.titulo}</ModalTitle>
                   <p className="!text-xs text-gray-500 mt-0.5">
-                    {TYPE_META[selectedNotification.tipo]?.label ??
-                      "Notificação"}{" "}
-                    • {formatRelativeTime(selectedNotification.criadoEm)}
+                    {notificationMeta.label} •{" "}
+                    {formatRelativeTime(selectedNotification.criadoEm)}
                   </p>
                 </div>
               </div>
@@ -553,7 +548,68 @@ export function NotificationButton({ className }: NotificationButtonProps) {
                 {selectedNotification.mensagem}
               </p>
 
-              {selectedNotification.dados &&
+              {recruiterLinkData ? (
+                <div className="rounded-xl border border-blue-100 bg-blue-50/50 p-4">
+                  <div className="space-y-4">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="inline-flex rounded-full bg-blue-100 px-2.5 py-1 !text-[11px] !font-semibold uppercase tracking-wide text-blue-700">
+                        {recruiterLinkData.tipoVinculo === "VAGA"
+                          ? "Acesso à vaga"
+                          : "Acesso à empresa"}
+                      </span>
+                    </div>
+
+                    <div className="space-y-1">
+                      <p className="!mb-0 !text-[11px] !font-semibold uppercase tracking-[0.08em] text-gray-500">
+                        Empresa
+                      </p>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="!mb-0 !text-sm !font-medium text-gray-900">
+                          {recruiterLinkData.empresaNome ?? "Empresa"}
+                        </p>
+                        {recruiterLinkData.empresaCodigo ? (
+                          <span className="inline-flex items-center rounded-full bg-white px-2 py-0.5 !text-xs !font-medium text-gray-600 ring-1 ring-gray-200">
+                            {recruiterLinkData.empresaCodigo}
+                          </span>
+                        ) : null}
+                      </div>
+                    </div>
+
+                    {recruiterLinkData.tipoVinculo === "VAGA" &&
+                    recruiterLinkData.vagaTitulo ? (
+                      <div className="space-y-1">
+                        <p className="!mb-0 !text-[11px] !font-semibold uppercase tracking-[0.08em] text-gray-500">
+                          Vaga
+                        </p>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="!mb-0 !text-sm !font-medium text-gray-900">
+                            {recruiterLinkData.vagaTitulo}
+                          </p>
+                          {recruiterLinkData.vagaCodigo ? (
+                            <span className="inline-flex items-center rounded-full bg-white px-2 py-0.5 !text-xs !font-medium text-gray-600 ring-1 ring-gray-200">
+                              {recruiterLinkData.vagaCodigo}
+                            </span>
+                          ) : null}
+                        </div>
+                      </div>
+                    ) : null}
+
+                    {recruiterLinkData.atorNome ? (
+                      <div className="border-t border-blue-100 pt-3">
+                        <p className="!mb-0 !text-xs text-gray-600">
+                          Liberado por{" "}
+                          <span className="!font-medium text-gray-900">
+                            {recruiterLinkData.atorNome}
+                          </span>
+                          {recruiterLinkData.atorRole
+                            ? ` · ${recruiterLinkData.atorRole}`
+                            : ""}
+                        </p>
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+              ) : selectedNotification.dados &&
                 Object.keys(selectedNotification.dados).length > 0 && (
                   <div className="bg-gray-50 rounded-lg p-3 space-y-2">
                     {Object.entries(selectedNotification.dados).map(
@@ -613,6 +669,9 @@ export function NotificationButton({ className }: NotificationButtonProps) {
                 </ButtonCustom>
               )}
             </ModalFooter>
+                </>
+              );
+            })()}
           </>
         )}
       </ModalCustom>

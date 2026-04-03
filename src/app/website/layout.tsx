@@ -49,7 +49,7 @@ export const metadata: Metadata = {
     images: ["/images/og-image.jpg"],
   },
   alternates: {
-    canonical: "https://advancemais.com.br",
+    canonical: process.env.NEXT_PUBLIC_BASE_URL || "https://advancemais.com",
   },
 };
 

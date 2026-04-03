@@ -26,6 +26,7 @@ import {
   CursosTurmasTab,
   CurriculosTab,
   CandidaturasTab,
+  EntrevistasTab,
   NotasTab,
   FrequenciaTab,
   EstagiosTab,
@@ -85,6 +86,7 @@ export function AlunoDetailsView({
   const alunoData = alunoResponse?.data ?? null;
   const alunoNome = alunoData?.nome || alunoData?.nomeCompleto || "Aluno";
   const inscricoes = alunoData?.inscricoes ?? [];
+  const hasCurriculos = (alunoData?.curriculosResumo?.total ?? 0) > 0;
   const hasInscricaoEmCurso = inscricoes.some(
     (inscricao) => Boolean(inscricao?.curso?.id || inscricao?.turma?.id),
   );
@@ -220,6 +222,18 @@ export function AlunoDetailsView({
         <CandidaturasTab aluno={alunoData} isLoading={isReloading} />
       ),
     },
+    ...(hasCurriculos
+      ? [
+          {
+            value: "entrevistas",
+            label: "Entrevistas",
+            icon: "CalendarDays",
+            content: (
+              <EntrevistasTab aluno={alunoData} isLoading={isReloading} />
+            ),
+          } satisfies HorizontalTabItem,
+        ]
+      : []),
     ...(hasInscricaoEmCurso
       ? [
           {

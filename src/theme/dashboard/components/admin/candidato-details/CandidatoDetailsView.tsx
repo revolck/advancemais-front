@@ -14,6 +14,7 @@ import { HorizontalTabs } from "@/components/ui/custom";
 import type { HorizontalTabItem } from "@/components/ui/custom";
 import { useUserRole } from "@/hooks/useUserRole";
 import { UserRole } from "@/config/roles";
+import { getCursoAlunoDetalhes, type CursoAlunoDetalhes } from "@/api/cursos";
 import {
   getAdminCandidatoConsolidated,
   atualizarStatusCandidatura,
@@ -28,6 +29,11 @@ import { AboutTab } from "./tabs/AboutTab";
 import { CandidaturasTab } from "./tabs/CandidaturasTab";
 import { CurriculosTab } from "./tabs/CurriculosTab";
 import { CursosTurmasTab } from "./tabs/CursosTurmasTab";
+import {
+  EntrevistasTab as AlunoEntrevistasTab,
+  FrequenciaTab as AlunoFrequenciaTab,
+  NotasTab as AlunoNotasTab,
+} from "../aluno-details/tabs";
 import {
   BloquearCandidatoModal,
   DesbloquearCandidatoModal,
@@ -56,6 +62,8 @@ export function CandidatoDetailsView({
     () => queryKeys.candidatos.detail(candidatoId),
     [candidatoId]
   );
+  const canLoadAlunoContext =
+    userRole === UserRole.ADMIN || userRole === UserRole.MODERADOR;
 
   const {
     data: consolidatedData,
@@ -69,6 +77,25 @@ export function CandidatoDetailsView({
     initialData: initialConsolidated,
     staleTime: CANDIDATO_QUERY_STALE_TIME,
     gcTime: CANDIDATO_QUERY_GC_TIME,
+  });
+
+  const { data: alunoData, isFetching: isFetchingAlunoContext } = useQuery<
+    CursoAlunoDetalhes | null
+  >({
+    queryKey: ["candidato-aluno-context", candidatoId],
+    queryFn: async () => {
+      try {
+        const response = await getCursoAlunoDetalhes(candidatoId);
+        return response.data ?? null;
+      } catch {
+        return null;
+      }
+    },
+    enabled: canLoadAlunoContext && Boolean(candidatoId),
+    staleTime: CANDIDATO_QUERY_STALE_TIME,
+    gcTime: CANDIDATO_QUERY_GC_TIME,
+    retry: false,
+    refetchOnWindowFocus: false,
   });
 
   const updateCachedData = useCallback(
@@ -95,6 +122,11 @@ export function CandidatoDetailsView({
     [];
   const curriculos =
     consolidatedData?.curriculos?.recentes ?? candidatoData?.curriculos ?? [];
+  const inscricoes = alunoData?.inscricoes ?? [];
+  const hasCurriculosAsAluno = (alunoData?.curriculosResumo?.total ?? 0) > 0;
+  const hasInscricaoEmCurso = inscricoes.some(
+    (inscricao) => Boolean(inscricao?.curso?.id || inscricao?.turma?.id)
+  );
 
   const isPending = !initialConsolidated && isLoading;
   const queryErrorMessage =
@@ -102,6 +134,7 @@ export function CandidatoDetailsView({
       ? error?.message ?? "Não foi possível carregar o candidato."
       : null;
   const isReloading = isFetching && status === "success";
+  const isReloadingAlunoContext = isFetchingAlunoContext && Boolean(alunoData);
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isEditEnderecoOpen, setIsEditEnderecoOpen] = useState(false);
@@ -341,8 +374,51 @@ export function CandidatoDetailsView({
             content: (
               <CursosTurmasTab
                 candidato={candidatoData}
-                inscricoes={[]}
-                isLoading={isReloading}
+                inscricoes={inscricoes}
+                isLoading={isReloading || isReloadingAlunoContext}
+              />
+            ),
+          } as HorizontalTabItem,
+        ]
+      : []),
+    ...(canLoadAlunoContext && alunoData && hasCurriculosAsAluno
+      ? [
+          {
+            value: "entrevistas",
+            label: "Entrevistas",
+            icon: "CalendarDays",
+            content: (
+              <AlunoEntrevistasTab
+                aluno={alunoData}
+                isLoading={isReloading || isReloadingAlunoContext}
+              />
+            ),
+          } as HorizontalTabItem,
+        ]
+      : []),
+    ...(canLoadAlunoContext && alunoData && hasInscricaoEmCurso
+      ? [
+          {
+            value: "notas",
+            label: "Notas",
+            icon: "GraduationCap",
+            content: (
+              <AlunoNotasTab
+                aluno={alunoData}
+                inscricoes={inscricoes}
+                isLoading={isReloading || isReloadingAlunoContext}
+              />
+            ),
+          } as HorizontalTabItem,
+          {
+            value: "frequencia",
+            label: "Frequência",
+            icon: "CalendarDays",
+            content: (
+              <AlunoFrequenciaTab
+                aluno={alunoData}
+                inscricoes={inscricoes}
+                isLoading={isReloading || isReloadingAlunoContext}
               />
             ),
           } as HorizontalTabItem,

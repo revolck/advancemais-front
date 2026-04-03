@@ -128,6 +128,7 @@ interface VerCandidatoDetalheModalProps {
   onOpenChange: (open: boolean) => void;
   candidaturaId?: string;
   fallback?: Pick<CandidatoItem, "nome" | "email" | "telefone" | "dataInscricao" | "avatarUrl">;
+  loadCandidaturaDetalhe?: (candidaturaId: string) => Promise<unknown>;
 }
 
 export function VerCandidatoDetalheModal({
@@ -135,6 +136,7 @@ export function VerCandidatoDetalheModal({
   onOpenChange,
   candidaturaId,
   fallback,
+  loadCandidaturaDetalhe,
 }: VerCandidatoDetalheModalProps) {
   const [data, setData] = useState<CandidaturaData | null>(null);
   const [loading, setLoading] = useState(false);
@@ -152,7 +154,9 @@ export function VerCandidatoDetalheModal({
       setData(null);
 
       try {
-        const response = await getCandidaturaDetalhe(candidaturaId);
+        const response = await (loadCandidaturaDetalhe
+          ? loadCandidaturaDetalhe(candidaturaId)
+          : getCandidaturaDetalhe(candidaturaId));
         
         if (!mounted) return;
         
@@ -181,7 +185,7 @@ export function VerCandidatoDetalheModal({
     return () => {
       mounted = false;
     };
-  }, [isOpen, candidaturaId]);
+  }, [isOpen, candidaturaId, loadCandidaturaDetalhe]);
 
   const handleClose = () => onOpenChange(false);
 

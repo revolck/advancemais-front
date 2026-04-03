@@ -15,7 +15,8 @@ async function proxy(
   const endpoint = `${hasApiPrefix ? "" : "api/"}${env.apiVersion}/${service}${
     path.length ? "/" + path.join("/") : ""
   }`;
-  const url = buildApiUrl(endpoint);
+  const query = req.nextUrl.search || "";
+  const url = `${buildApiUrl(endpoint)}${query}`;
 
   try {
     const init: RequestInit = {

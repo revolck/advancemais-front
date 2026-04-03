@@ -29,6 +29,11 @@ export interface HistoryTabProps {
   isLoading?: boolean;
 }
 
+export interface VinculosTabProps {
+  usuario: UsuarioDetailsData;
+  isLoading?: boolean;
+}
+
 export interface HorizontalTabItem {
   value: string;
   label: string;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertCircle, ChevronLeft, ChevronRight } from "lucide-react";
@@ -163,7 +163,7 @@ export function EstagiosTab({ aluno, inscricoes, isLoading }: InscricoesTabProps
     if (urlStatus !== estagioStatusFilter) {
       setEstagioStatusFilter(urlStatus);
     }
-  }, [searchParams]);
+  }, [estagioStatusFilter, searchParams]);
 
   useEffect(() => {
     const params = new URLSearchParams(searchParams.toString());
@@ -213,7 +213,10 @@ export function EstagiosTab({ aluno, inscricoes, isLoading }: InscricoesTabProps
     staleTime: 30 * 1000,
   });
 
-  const estagios = estagiosQuery.data ?? [];
+  const estagios = useMemo(
+    () => estagiosQuery.data ?? [],
+    [estagiosQuery.data]
+  );
   const estagioStatusOptions = useMemo(
     () =>
       Array.from(
@@ -306,13 +309,21 @@ export function EstagiosTab({ aluno, inscricoes, isLoading }: InscricoesTabProps
     [aluno.nome, aluno.nomeCompleto]
   );
 
-  const isAlunoMatch = (item: EstagioFrequencia) => {
-    if (item.alunoId && item.alunoId === aluno.id) return true;
-    if (alunoCpfDigits && normalizeCpf(item.alunoCpf) === alunoCpfDigits) return true;
-    if (alunoNomeNormalized && (item.alunoNome || "").trim().toLowerCase() === alunoNomeNormalized)
-      return true;
-    return false;
-  };
+  const isAlunoMatch = useCallback(
+    (item: EstagioFrequencia) => {
+      if (item.alunoId && item.alunoId === aluno.id) return true;
+      if (alunoCpfDigits && normalizeCpf(item.alunoCpf) === alunoCpfDigits)
+        return true;
+      if (
+        alunoNomeNormalized &&
+        (item.alunoNome || "").trim().toLowerCase() === alunoNomeNormalized
+      ) {
+        return true;
+      }
+      return false;
+    },
+    [aluno.id, alunoCpfDigits, alunoNomeNormalized]
+  );
 
   const dailyQueryKey = [
     "aluno-details",
@@ -339,7 +350,7 @@ export function EstagiosTab({ aluno, inscricoes, isLoading }: InscricoesTabProps
 
   const dailyItems = useMemo(
     () => (dailyFrequenciasQuery.data?.items ?? []).filter(isAlunoMatch),
-    [dailyFrequenciasQuery.data?.items]
+    [dailyFrequenciasQuery.data?.items, isAlunoMatch]
   );
 
   const periodQueryKey = [
@@ -380,7 +391,7 @@ export function EstagiosTab({ aluno, inscricoes, isLoading }: InscricoesTabProps
         date: group.data,
         items: (group.items ?? []).filter(isAlunoMatch),
       })),
-    [periodFrequenciasQuery.data?.gruposPorData, aluno.id, alunoCpfDigits, alunoNomeNormalized]
+    [isAlunoMatch, periodFrequenciasQuery.data?.gruposPorData]
   );
 
   const gruposById = useMemo(() => {

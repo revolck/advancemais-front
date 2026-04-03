@@ -29,6 +29,11 @@ import type {
   ListAlunosComInscricaoResponse,
   CursoAlunoDetalhes,
   CursoAlunoDetalhesResponse,
+  CursoAlunoEntrevistaOpcoesResponse,
+  CursoAlunoCreateEntrevistaPayload,
+  CursoAlunoCreateEntrevistaResponse,
+  CursoAlunoEntrevistasParams,
+  CursoAlunoEntrevistasResponse,
   VisaoGeralResponse,
   ListInscricoesCursoParams,
   ListInscricoesCursoResponse,
@@ -1773,6 +1778,22 @@ export async function getCursoAlunoDetalhes(
         : typeof rawData.codUsuario === "string"
         ? rawData.codUsuario
         : undefined,
+    curriculosResumo:
+      rawData.curriculosResumo && typeof rawData.curriculosResumo === "object"
+        ? {
+            total:
+              typeof rawData.curriculosResumo.total === "number"
+                ? rawData.curriculosResumo.total
+                : 0,
+            principalId:
+              typeof rawData.curriculosResumo.principalId === "string"
+                ? rawData.curriculosResumo.principalId
+                : rawData.curriculosResumo.principalId ?? null,
+          }
+        : {
+            total: 0,
+            principalId: null,
+          },
     enderecos: Array.isArray(rawData.enderecos) ? rawData.enderecos : [],
     inscricoes: Array.isArray(rawData.inscricoes)
       ? rawData.inscricoes.map((inscricao: any) => {
@@ -1831,6 +1852,299 @@ export async function getCursoAlunoDetalhes(
   return {
     success: Boolean(raw?.success ?? true),
     data: normalizedData,
+  };
+}
+
+export async function getCursoAlunoEntrevistas(
+  alunoId: string,
+  params?: CursoAlunoEntrevistasParams,
+  init?: RequestInit
+): Promise<CursoAlunoEntrevistasResponse> {
+  const sp = new URLSearchParams();
+
+  if (params?.page) sp.set("page", String(params.page));
+  if (params?.pageSize) sp.set("pageSize", String(params.pageSize));
+  if (params?.dataInicio) sp.set("dataInicio", params.dataInicio);
+  if (params?.dataFim) sp.set("dataFim", params.dataFim);
+  if (params?.sortBy) sp.set("sortBy", params.sortBy);
+  if (params?.sortDir) sp.set("sortDir", params.sortDir);
+
+  const statusEntrevista = Array.isArray(params?.statusEntrevista)
+    ? params.statusEntrevista
+    : params?.statusEntrevista
+      ? [params.statusEntrevista]
+      : [];
+  if (statusEntrevista.length > 0) {
+    sp.set("statusEntrevista", statusEntrevista.join(","));
+  }
+
+  const modalidades = Array.isArray(params?.modalidades)
+    ? params.modalidades
+    : params?.modalidades
+      ? [params.modalidades]
+      : [];
+  if (modalidades.length > 0) {
+    sp.set("modalidades", modalidades.join(","));
+  }
+
+  const url = sp.toString()
+    ? `${cursosRoutes.alunos.entrevistas(alunoId)}?${sp.toString()}`
+    : cursosRoutes.alunos.entrevistas(alunoId);
+
+  const response = await apiFetch<any>(url, {
+    init: {
+      method: "GET",
+      ...init,
+      headers: buildHeaders(init?.headers, true),
+    },
+    cache: "no-cache",
+  });
+
+  const payload =
+    response?.data && typeof response.data === "object"
+      ? response.data
+      : response;
+  const items = Array.isArray(payload?.items) ? payload.items : [];
+  const paginationRaw =
+    payload?.pagination && typeof payload.pagination === "object"
+      ? payload.pagination
+      : {};
+
+  return {
+    items,
+    pagination: {
+      page:
+        typeof paginationRaw.page === "number"
+          ? paginationRaw.page
+          : params?.page ?? 1,
+      pageSize:
+        typeof paginationRaw.pageSize === "number"
+          ? paginationRaw.pageSize
+          : params?.pageSize ?? items.length,
+      total:
+        typeof paginationRaw.total === "number"
+          ? paginationRaw.total
+          : items.length,
+      totalPages:
+        typeof paginationRaw.totalPages === "number"
+          ? paginationRaw.totalPages
+          : items.length > 0
+            ? 1
+            : 0,
+    },
+  };
+}
+
+function normalizeCursoAlunoEntrevistaEndereco(value: any) {
+  if (!value || typeof value !== "object") return null;
+
+  return {
+    cep: value?.cep ?? null,
+    logradouro: value?.logradouro ?? null,
+    numero: value?.numero ?? null,
+    complemento: value?.complemento ?? null,
+    bairro: value?.bairro ?? null,
+    cidade: value?.cidade ?? null,
+    estado: value?.estado ?? null,
+    pontoReferencia: value?.pontoReferencia ?? null,
+  };
+}
+
+function normalizeCursoAlunoEntrevistaGoogle(value: any) {
+  if (!value || typeof value !== "object") return null;
+
+  return {
+    connected:
+      typeof value?.connected === "boolean" ? value.connected : undefined,
+    expired: typeof value?.expired === "boolean" ? value.expired : undefined,
+    calendarId: value?.calendarId ?? null,
+    expiraEm: value?.expiraEm ?? null,
+    connectEndpoint: value?.connectEndpoint ?? null,
+    disconnectEndpoint: value?.disconnectEndpoint ?? null,
+    statusEndpoint: value?.statusEndpoint ?? null,
+  };
+}
+
+function normalizeCursoAlunoEntrevistaAgenda(value: any) {
+  if (!value || typeof value !== "object") return null;
+
+  return {
+    eventoInternoId: value?.eventoInternoId ?? null,
+    criadoNoSistema:
+      typeof value?.criadoNoSistema === "boolean"
+        ? value.criadoNoSistema
+        : undefined,
+    provider: value?.provider ?? null,
+    organizerSource: value?.organizerSource ?? null,
+    organizerUserId: value?.organizerUserId ?? null,
+    organizerEmail: value?.organizerEmail ?? null,
+  };
+}
+
+export async function getCursoAlunoEntrevistaOpcoes(
+  alunoId: string,
+  init?: RequestInit,
+): Promise<CursoAlunoEntrevistaOpcoesResponse> {
+  const response = await apiFetch<any>(cursosRoutes.alunos.entrevistasOpcoes(alunoId), {
+    init: {
+      method: "GET",
+      ...init,
+      headers: buildHeaders(init?.headers, true),
+    },
+    cache: "no-cache",
+  });
+
+  const payload =
+    response?.data && typeof response.data === "object"
+      ? response.data
+      : response;
+
+  const items = Array.isArray(payload?.items)
+    ? payload.items.map((item: any) => ({
+        candidaturaId: String(item?.candidaturaId ?? ""),
+        empresa: item?.empresa
+          ? {
+              id: String(item.empresa.id ?? ""),
+              nomeExibicao: item.empresa.nomeExibicao ?? null,
+              anonima:
+                typeof item.empresa.anonima === "boolean"
+                  ? item.empresa.anonima
+                  : undefined,
+              labelExibicao: item.empresa.labelExibicao ?? null,
+            }
+          : null,
+        vaga: item?.vaga
+          ? {
+              id: String(item.vaga.id ?? ""),
+              codigo: item.vaga.codigo ?? null,
+              titulo: item.vaga.titulo ?? "Vaga",
+              status: item.vaga.status ?? null,
+            }
+          : null,
+        candidato: item?.candidato
+          ? {
+              id: String(item.candidato.id ?? ""),
+              codigo: item.candidato.codigo ?? null,
+              nome: item.candidato.nome ?? "Candidato",
+            }
+          : null,
+        entrevistaAtiva: Boolean(item?.entrevistaAtiva),
+        entrevistaAtivaId: item?.entrevistaAtivaId ?? null,
+        empresaAnonima:
+          typeof item?.empresaAnonima === "boolean"
+            ? item.empresaAnonima
+            : undefined,
+        anonimatoBloqueado:
+          typeof item?.anonimatoBloqueado === "boolean"
+            ? item.anonimatoBloqueado
+            : undefined,
+        enderecoPadraoEntrevista: normalizeCursoAlunoEntrevistaEndereco(
+          item?.enderecoPadraoEntrevista,
+        ),
+      }))
+    : [];
+
+  return {
+    canCreate:
+      typeof payload?.canCreate === "boolean" ? payload.canCreate : undefined,
+    canCreateOnline:
+      typeof payload?.canCreateOnline === "boolean"
+        ? payload.canCreateOnline
+        : undefined,
+    canCreatePresencial:
+      typeof payload?.canCreatePresencial === "boolean"
+        ? payload.canCreatePresencial
+        : undefined,
+    requiresGoogleForOnline:
+      typeof payload?.requiresGoogleForOnline === "boolean"
+        ? payload.requiresGoogleForOnline
+        : undefined,
+    google: normalizeCursoAlunoEntrevistaGoogle(payload?.google),
+    items,
+  };
+}
+
+export async function createCursoAlunoEntrevista(
+  alunoId: string,
+  payload: CursoAlunoCreateEntrevistaPayload,
+  init?: RequestInit,
+): Promise<CursoAlunoCreateEntrevistaResponse> {
+  const response = await apiFetch<any>(cursosRoutes.alunos.entrevistas(alunoId), {
+    init: {
+      method: "POST",
+      ...init,
+      headers: buildHeaders(
+        {
+          "Content-Type": apiConfig.headers["Content-Type"],
+          ...normalizeHeaders(init?.headers),
+        },
+        true,
+      ),
+      body: JSON.stringify(payload),
+    },
+    cache: "no-cache",
+  });
+
+  const item = response?.data && typeof response.data === "object"
+    ? response.data
+    : response;
+
+  return {
+    id: String(item?.id ?? ""),
+    candidaturaId: item?.candidaturaId ?? null,
+    empresaAnonima:
+      typeof item?.empresaAnonima === "boolean"
+        ? item.empresaAnonima
+        : undefined,
+    statusEntrevista: item?.statusEntrevista ?? "AGENDADA",
+    statusEntrevistaLabel:
+      item?.statusEntrevistaLabel ?? item?.statusEntrevista ?? null,
+    modalidade: item?.modalidade ?? null,
+    modalidadeLabel: item?.modalidadeLabel ?? item?.modalidade ?? null,
+    dataInicio: item?.dataInicio ?? item?.agendadaPara ?? null,
+    dataFim: item?.dataFim ?? null,
+    agendadaPara: item?.agendadaPara ?? item?.dataInicio ?? null,
+    agendadaParaFormatada:
+      item?.agendadaParaFormatada ?? item?.agendadaPara ?? null,
+    descricao: item?.descricao ?? null,
+    meetUrl: item?.meetUrl ?? null,
+    local: item?.local ?? null,
+    enderecoPresencial: normalizeCursoAlunoEntrevistaEndereco(
+      item?.enderecoPresencial,
+    ),
+    agenda: normalizeCursoAlunoEntrevistaAgenda(item?.agenda),
+    candidato: item?.candidato
+      ? {
+          id: String(item.candidato.id ?? ""),
+          nome: item.candidato.nome ?? "Candidato",
+          codigo: item.candidato.codigo ?? null,
+        }
+      : null,
+    vaga: item?.vaga
+      ? {
+          id: String(item.vaga.id ?? ""),
+          titulo: item.vaga.titulo ?? "Vaga",
+          codigo: item.vaga.codigo ?? null,
+        }
+      : null,
+    empresa: item?.empresa
+      ? {
+          id: String(item.empresa.id ?? ""),
+          nomeExibicao: item.empresa.nomeExibicao ?? null,
+          anonima:
+            typeof item.empresa.anonima === "boolean"
+              ? item.empresa.anonima
+              : undefined,
+          labelExibicao: item.empresa.labelExibicao ?? null,
+        }
+      : null,
+    recrutador: item?.recrutador
+      ? {
+          id: String(item.recrutador.id ?? ""),
+          nome: item.recrutador.nome ?? "Recrutador",
+        }
+      : null,
+    criadoEm: item?.criadoEm ?? null,
   };
 }
 

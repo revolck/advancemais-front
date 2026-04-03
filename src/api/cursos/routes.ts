@@ -15,6 +15,9 @@ export const cursosRoutes = {
     list: () => `${BASE}/alunos`,
     get: (alunoId: string) => `${BASE}/alunos/${alunoId}`,
     update: (alunoId: string) => `${BASE}/alunos/${alunoId}`,
+    entrevistas: (alunoId: string) => `${BASE}/alunos/${alunoId}/entrevistas`,
+    entrevistasOpcoes: (alunoId: string) =>
+      `${BASE}/alunos/${alunoId}/entrevistas/opcoes`,
     notas: (alunoId: string) => `${BASE}/alunos/${alunoId}/notas`,
     estagios: {
       list: (alunoId: string) => `${BASE}/alunos/${alunoId}/estagios`,

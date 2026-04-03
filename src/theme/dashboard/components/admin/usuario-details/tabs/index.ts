@@ -3,3 +3,4 @@ export { CurriculosTab } from "./CurriculosTab";
 export { CandidaturasTab } from "./CandidaturasTab";
 export { CursosInscricoesTab } from "./CursosInscricoesTab";
 export { HistoryTab } from "./HistoryTab";
+export { VinculosTab } from "./VinculosTab";

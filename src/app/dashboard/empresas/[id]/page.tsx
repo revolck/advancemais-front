@@ -1,8 +1,11 @@
+import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 
+import { UserRole } from "@/config/roles";
 import { getAdminCompanyConsolidated } from "@/api/empresas/admin";
 import type { AdminCompanyConsolidatedResponse } from "@/api/empresas/admin/types";
 import { CompanyDetailsView } from "@/theme/dashboard/components/admin";
+import { RecruiterCompanyDetailsView } from "@/theme/dashboard/components/recrutador/companies/RecruiterCompanyDetailsView";
 import {
   handleDashboardApiError,
   requireDashboardAuth,
@@ -12,10 +15,27 @@ interface CompanyDetailsPageProps {
   params: Promise<{ id: string }>;
 }
 
+async function getUserRoleFromCookie(): Promise<UserRole | null> {
+  const cookieStore = await cookies();
+  const raw = cookieStore.get("user_role")?.value;
+
+  if (!raw) return null;
+  if (raw === "PSICOLOGO") return UserRole.RECRUTADOR;
+
+  const validRoles = Object.values(UserRole);
+  return validRoles.includes(raw as UserRole) ? (raw as UserRole) : null;
+}
+
 export default async function CompanyDetailsPage({
   params,
 }: CompanyDetailsPageProps) {
   const { id } = await params;
+  const role = await getUserRoleFromCookie();
+
+  if (role === UserRole.RECRUTADOR) {
+    return <RecruiterCompanyDetailsView companyId={id} />;
+  }
+
   const safeCompanyPath = `/dashboard/empresas/${encodeURIComponent(id)}`;
   const { authHeaders, loginUrl } = await requireDashboardAuth(
     safeCompanyPath

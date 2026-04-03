@@ -93,6 +93,13 @@ function formatPhone(phone?: string | null): string {
   return phone;
 }
 
+function formatCpf(cpf?: string | null): string {
+  if (!cpf) return "";
+  const digits = cpf.replace(/\D/g, "");
+  if (digits.length !== 11) return cpf;
+  return digits.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
+}
+
 // Verifica se um valor parece ser um UUID
 function isUUID(value: string): boolean {
   const uuidRegex =
@@ -359,7 +366,13 @@ export function CandidatosTab({ vaga }: AboutTabProps) {
     }
 
     return filters;
-  }, [vaga.id, vaga.usuarioId, currentPage, normalizedSearch, appliedDateRange]);
+  }, [
+    vaga.id,
+    vaga.usuarioId,
+    currentPage,
+    normalizedSearch,
+    appliedDateRange,
+  ]);
 
   // React Query para buscar candidatos
   const {
@@ -408,6 +421,7 @@ export function CandidatosTab({ vaga }: AboutTabProps) {
         return {
           id: cand.id,
           codUsuario: cand.codUsuario,
+          cpf: cand.cpf,
           nome,
           email: cand.email,
           telefone: cand.telefone ?? undefined,
@@ -502,7 +516,7 @@ export function CandidatosTab({ vaga }: AboutTabProps) {
     try {
       // Busca os detalhes da candidatura (que inclui o currículo completo)
       const response = await getCandidaturaDetalhe(candidato.candidaturaId);
-       
+
       const responseAny = response as any;
       const candidaturaData = responseAny?.candidatura ?? responseAny;
       const curriculo = candidaturaData?.curriculo;
@@ -684,16 +698,21 @@ export function CandidatosTab({ vaga }: AboutTabProps) {
               showStatus={false}
             />
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2 mb-1">
-                <div className="font-bold text-gray-900 truncate text-sm">
+              <div className="flex items-center gap-2">
+                <span className="font-medium text-gray-900 truncate">
                   {candidato.nome}
-                </div>
+                </span>
                 {candidato.codUsuario && (
-                  <code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded font-mono text-gray-500 flex-shrink-0">
+                  <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">
                     {candidato.codUsuario}
-                  </code>
+                  </span>
                 )}
               </div>
+              {candidato.cpf && (
+                <span className="font-mono text-sm text-gray-500">
+                  {formatCpf(candidato.cpf)}
+                </span>
+              )}
             </div>
           </div>
         </td>
@@ -838,12 +857,6 @@ export function CandidatosTab({ vaga }: AboutTabProps) {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h5 className="!mb-0">Candidatos Inscritos</h5>
-        <p>Lista de todos os candidatos que se inscreveram nesta vaga</p>
-      </div>
-
       {/* Barra de Filtros */}
       <div className="border-b border-gray-200 pb-4">
         <FilterBar
@@ -980,7 +993,7 @@ export function CandidatosTab({ vaga }: AboutTabProps) {
               </div>
 
               {/* Controles de Paginação */}
-              <div className="flex flex-col gap-4 px-1 py-6 border-t border-gray-200 bg-gray-50/30 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-col gap-4 px-1 py-6 bg-gray-50/30 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-2 text-sm text-gray-600">
                   <span>
                     Mostrando{" "}
