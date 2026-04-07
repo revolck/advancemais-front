@@ -17,6 +17,7 @@ import { AboutTab } from "./tabs/AboutTab";
 import { EstruturaTab } from "./tabs/EstruturaTab";
 import { InscricoesTab } from "./tabs/InscricoesTab";
 import { HistoryTab } from "./tabs/HistoryTab";
+import { LinkedInstructorsTab } from "./tabs/LinkedInstructorsTab";
 
 interface TurmaDetailsViewProps {
   cursoId: number | string;
@@ -318,7 +319,7 @@ export function TurmaDetailsView({
         throw error;
       }
     },
-    enabled: !!turma && !initialError && activeTab === "historico",
+    enabled: false,
     staleTime: 15 * 1000,
     gcTime: TURMA_QUERY_GC_TIME,
     refetchOnMount: false,
@@ -362,6 +363,30 @@ export function TurmaDetailsView({
       queryKey: queryKeys.cursos.listInscricoes(cursoId, turmaId),
     });
   }, [queryClient, queryKey, cursoId, turmaId]);
+  const canManageTurma =
+    userRole != null
+      ? [UserRole.ADMIN, UserRole.MODERADOR, UserRole.PEDAGOGICO].includes(
+          userRole
+        )
+      : false;
+  const canViewLinkedInstructors =
+    userRole != null
+      ? [UserRole.ADMIN, UserRole.MODERADOR, UserRole.PEDAGOGICO].includes(
+          userRole
+        )
+      : false;
+  const canViewEstrutura = canManageTurma;
+  const canViewHistorico = canManageTurma;
+  const handleTabChange = useCallback(
+    (value: string) => {
+      setActiveTab(value);
+
+      if (value === "historico" && canViewHistorico) {
+        void historyInscricoesQuery.refetch();
+      }
+    },
+    [canViewHistorico, historyInscricoesQuery]
+  );
 
   const isPending = !initialTurma && !initialError && isLoading;
   const isReloading = isFetching && status === "success";
@@ -444,21 +469,6 @@ export function TurmaDetailsView({
   );
 
   const inscricoesCount = inscricoesPagination?.total ?? 0;
-  const canManageTurma =
-    userRole != null
-      ? [UserRole.ADMIN, UserRole.MODERADOR, UserRole.PEDAGOGICO].includes(
-          userRole
-        )
-      : false;
-  const canViewEstrutura =
-    userRole != null
-      ? [
-          UserRole.ADMIN,
-          UserRole.MODERADOR,
-          UserRole.PEDAGOGICO,
-          UserRole.INSTRUTOR,
-        ].includes(userRole)
-      : false;
 
   const tabs: HorizontalTabItem[] = [
     {
@@ -474,6 +484,18 @@ export function TurmaDetailsView({
       content: inscricoesTabContent,
       badge: inscricoesCount > 0 ? <span>{inscricoesCount}</span> : null,
     },
+    ...(canViewLinkedInstructors
+      ? [
+          {
+            value: "instrutores",
+            label: "Instrutores",
+            icon: "User",
+            content: (
+              <LinkedInstructorsTab turma={turma} isLoading={isReloading} />
+            ),
+          } as HorizontalTabItem,
+        ]
+      : []),
     ...(canViewEstrutura
       ? [
           {
@@ -491,12 +513,16 @@ export function TurmaDetailsView({
           } as HorizontalTabItem,
         ]
       : []),
-    {
-      value: "historico",
-      label: "Histórico",
-      icon: "History",
-      content: historyTabContent,
-    },
+    ...(canViewHistorico
+      ? [
+          {
+            value: "historico",
+            label: "Histórico",
+            icon: "History",
+            content: historyTabContent,
+          } as HorizontalTabItem,
+        ]
+      : []),
   ];
 
   return (
@@ -527,7 +553,7 @@ export function TurmaDetailsView({
       <HorizontalTabs
         items={tabs}
         value={activeTab}
-        onValueChange={setActiveTab}
+        onValueChange={handleTabChange}
         defaultValue="sobre"
       />
     </div>

@@ -176,7 +176,7 @@ export function CreateAulaForm({
     includeCursoNameInLabel: !isAdminModPed,
   });
   const { instrutores, isLoading: loadingInstrutores } =
-    useInstrutoresForSelect();
+    useInstrutoresForSelect(isAdminModPed);
 
   // Mostrar campo turma apenas se instrutor tem múltiplas turmas ou se é Admin/Mod/Ped
   const showTurmaField = isAdminModPed || turmas.length > 1;

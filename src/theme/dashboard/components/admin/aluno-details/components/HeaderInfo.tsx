@@ -25,7 +25,7 @@ import {
   UserCog,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { getAlunoInitials, formatCpf } from "../utils/formatters";
+import { formatCpf } from "../utils/formatters";
 import type { HeaderInfoProps } from "../types";
 
 export function HeaderInfo({
@@ -38,8 +38,14 @@ export function HeaderInfo({
 }: HeaderInfoProps) {
   const [isActionsOpen, setIsActionsOpen] = useState(false);
   const alunoNome = aluno.nome || aluno.nomeCompleto || "Aluno";
+  const hasActions = Boolean(
+    onEditAluno ||
+      onEditEndereco ||
+      onResetSenha ||
+      onBloquearAluno ||
+      onDesbloquearAluno
+  );
   // Status não está disponível em CursoAlunoDetalhes, usando valor padrão
-  const normalized = "ATIVO"; // Valor padrão, pode ser ajustado quando status estiver disponível
   const isBloqueado = false; // Valor padrão
   const isAtivo = true; // Valor padrão
   const statusColor = isBloqueado
@@ -92,71 +98,73 @@ export function HeaderInfo({
         </div>
 
         <div className="flex w-full flex-col items-stretch gap-2 sm:w-auto sm:flex-row sm:items-center">
-          <DropdownMenu open={isActionsOpen} onOpenChange={setIsActionsOpen}>
-            <DropdownMenuTrigger asChild>
-              <Button
-                aria-expanded={isActionsOpen}
-                className="flex items-center gap-2 rounded-full bg-[var(--primary-color)] px-6 py-2 text-sm font-semibold text-white hover:bg-[var(--primary-color)]/90 cursor-pointer"
-              >
-                Ações
-                <ChevronDown
-                  className={cn(
-                    "h-4 w-4 transition-transform duration-200",
-                    isActionsOpen ? "rotate-180" : "rotate-0"
-                  )}
-                  aria-hidden="true"
-                />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              {onEditAluno && (
-                <DropdownMenuItem
-                  onSelect={onEditAluno}
-                  className="cursor-pointer"
+          {hasActions ? (
+            <DropdownMenu open={isActionsOpen} onOpenChange={setIsActionsOpen}>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  aria-expanded={isActionsOpen}
+                  className="flex items-center gap-2 rounded-full bg-[var(--primary-color)] px-6 py-2 text-sm font-semibold text-white hover:bg-[var(--primary-color)]/90 cursor-pointer"
                 >
-                  <UserCog className="h-4 w-4 text-gray-500" />
-                  <span>Editar informações</span>
-                </DropdownMenuItem>
-              )}
-              {onEditEndereco && (
-                <DropdownMenuItem
-                  onSelect={onEditEndereco}
-                  className="cursor-pointer"
-                >
-                  <MapPin className="h-4 w-4 text-gray-500" />
-                  <span>Editar endereço</span>
-                </DropdownMenuItem>
-              )}
-              {onResetSenha && (
-                <DropdownMenuItem
-                  onSelect={onResetSenha}
-                  className="cursor-pointer"
-                >
-                  <Shield className="h-4 w-4 text-gray-500" />
-                  <span>Resetar senha</span>
-                </DropdownMenuItem>
-              )}
-              {isBloqueado
-                ? onDesbloquearAluno && (
-                    <DropdownMenuItem
-                      onSelect={onDesbloquearAluno}
-                      className="cursor-pointer"
-                    >
-                      <ShieldOff className="h-4 w-4 text-gray-500" />
-                      <span>Desbloquear aluno</span>
-                    </DropdownMenuItem>
-                  )
-                : onBloquearAluno && (
-                    <DropdownMenuItem
-                      onSelect={onBloquearAluno}
-                      className="cursor-pointer"
-                    >
-                      <Ban className="h-4 w-4 text-gray-500" />
-                      <span>Bloquear aluno</span>
-                    </DropdownMenuItem>
-                  )}
-            </DropdownMenuContent>
-          </DropdownMenu>
+                  Ações
+                  <ChevronDown
+                    className={cn(
+                      "h-4 w-4 transition-transform duration-200",
+                      isActionsOpen ? "rotate-180" : "rotate-0"
+                    )}
+                    aria-hidden="true"
+                  />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                {onEditAluno && (
+                  <DropdownMenuItem
+                    onSelect={onEditAluno}
+                    className="cursor-pointer"
+                  >
+                    <UserCog className="h-4 w-4 text-gray-500" />
+                    <span>Editar informações</span>
+                  </DropdownMenuItem>
+                )}
+                {onEditEndereco && (
+                  <DropdownMenuItem
+                    onSelect={onEditEndereco}
+                    className="cursor-pointer"
+                  >
+                    <MapPin className="h-4 w-4 text-gray-500" />
+                    <span>Editar endereço</span>
+                  </DropdownMenuItem>
+                )}
+                {onResetSenha && (
+                  <DropdownMenuItem
+                    onSelect={onResetSenha}
+                    className="cursor-pointer"
+                  >
+                    <Shield className="h-4 w-4 text-gray-500" />
+                    <span>Resetar senha</span>
+                  </DropdownMenuItem>
+                )}
+                {isBloqueado
+                  ? onDesbloquearAluno && (
+                      <DropdownMenuItem
+                        onSelect={onDesbloquearAluno}
+                        className="cursor-pointer"
+                      >
+                        <ShieldOff className="h-4 w-4 text-gray-500" />
+                        <span>Desbloquear aluno</span>
+                      </DropdownMenuItem>
+                    )
+                  : onBloquearAluno && (
+                      <DropdownMenuItem
+                        onSelect={onBloquearAluno}
+                        className="cursor-pointer"
+                      >
+                        <Ban className="h-4 w-4 text-gray-500" />
+                        <span>Bloquear aluno</span>
+                      </DropdownMenuItem>
+                    )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : null}
           <Button
             asChild
             variant="outline"

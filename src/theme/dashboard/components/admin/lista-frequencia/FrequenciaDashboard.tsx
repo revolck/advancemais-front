@@ -77,6 +77,59 @@ const RESUMO_MES_OPTIONS: SelectOption[] = [
   { value: "11", label: "Dezembro" },
 ];
 
+type ApiLikeError = Error & {
+  status?: number;
+  code?: string;
+  details?: {
+    code?: string;
+    message?: string;
+  };
+};
+
+function resolveQueryErrorCopy(error: unknown): {
+  title: string;
+  description: string;
+} {
+  const apiError = error as ApiLikeError | undefined;
+  const status = apiError?.status;
+  const code = String(
+    apiError?.details?.code ?? apiError?.code ?? ""
+  ).toUpperCase();
+  const backendMessage =
+    apiError?.details?.message ||
+    apiError?.message ||
+    "Não foi possível carregar os dados agora.";
+
+  if (status === 401 || code === "UNAUTHORIZED") {
+    return {
+      title: "Sessão expirada",
+      description: "Faça login novamente para acessar a frequência.",
+    };
+  }
+
+  if (status === 403 || code === "FORBIDDEN") {
+    return {
+      title: "Acesso fora do escopo",
+      description: backendMessage,
+    };
+  }
+
+  if (
+    (status === 500 && code === "INSTRUTOR_SCOPE_ERROR") ||
+    code === "INSTRUTOR_SCOPE_ERROR"
+  ) {
+    return {
+      title: "Erro ao aplicar escopo do instrutor",
+      description: backendMessage,
+    };
+  }
+
+  return {
+    title: "Não foi possível carregar os dados",
+    description: backendMessage,
+  };
+}
+
 export function FrequenciaDashboard({ className }: { className?: string }) {
   const now = useMemo(() => new Date(), []);
   const [pendingSearchTerm, setPendingSearchTerm] = useState("");
@@ -590,6 +643,13 @@ export function FrequenciaDashboard({ className }: { className?: string }) {
     !shouldShowSkeleton &&
     ((isAulaView && aulaItems.length === 0) ||
       (!isAulaView && (!isFiltersReady || resumoItems.length === 0)));
+  const currentViewError = isAulaView
+    ? frequenciaQuery.error
+    : resumoQuery.error;
+  const currentErrorCopy = useMemo(
+    () => resolveQueryErrorCopy(currentViewError),
+    [currentViewError]
+  );
 
   const resumoGridClassName = useMemo(() => {
     if (isAulaView) return undefined;
@@ -674,20 +734,17 @@ export function FrequenciaDashboard({ className }: { className?: string }) {
         ? "Selecione curso, turma e origem"
         : "Selecione curso e turma";
     }
-    if (isAulaView && frequenciaQuery.error)
-      return "Não foi possível carregar a frequência";
-    if (!isAulaView && resumoQuery.error)
-      return "Não foi possível carregar o resumo";
+    if (currentViewError) return currentErrorCopy.title;
     if (!isAulaView && (resumoQuery.data?.totalAulasNoPeriodo ?? 0) === 0) {
       return "Sem aulas no período selecionado";
     }
     return isAulaView ? "Nenhuma frequência encontrada" : "Nenhum aluno encontrado";
   }, [
-    frequenciaQuery.error,
+    currentErrorCopy.title,
+    currentViewError,
     isAulaView,
     isFiltersReady,
     resumoQuery.data?.totalAulasNoPeriodo,
-    resumoQuery.error,
   ]);
 
   const emptyStateDescription = useMemo(() => {
@@ -696,10 +753,7 @@ export function FrequenciaDashboard({ className }: { className?: string }) {
         ? "Escolha um curso, uma turma e a origem para lançar a frequência."
         : "Escolha um curso e uma turma para visualizar o resumo.";
     }
-    if (isAulaView && frequenciaQuery.error)
-      return "Tente novamente em instantes.";
-    if (!isAulaView && resumoQuery.error)
-      return "Tente novamente em instantes.";
+    if (currentViewError) return currentErrorCopy.description;
     if (!isAulaView && (resumoQuery.data?.totalAulasNoPeriodo ?? 0) === 0) {
       return "Ajuste o filtro de período ou selecione outra data.";
     }
@@ -707,11 +761,11 @@ export function FrequenciaDashboard({ className }: { className?: string }) {
       ? "Nenhum registro de frequência para os filtros aplicados."
       : "Nenhum aluno encontrado para os filtros aplicados.";
   }, [
-    frequenciaQuery.error,
+    currentErrorCopy.description,
+    currentViewError,
     isAulaView,
     isFiltersReady,
     resumoQuery.data?.totalAulasNoPeriodo,
-    resumoQuery.error,
   ]);
 
   return (

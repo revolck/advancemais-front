@@ -4,6 +4,7 @@ export { AboutTab } from "./tabs/AboutTab";
 export { EstruturaTab } from "./tabs/EstruturaTab";
 export { InscricoesTab } from "./tabs/InscricoesTab";
 export { HistoryTab } from "./tabs/HistoryTab";
+export { LinkedInstructorsTab } from "./tabs/LinkedInstructorsTab";
 
 // Hooks do domínio
 export { usePublicarTurma } from "./hooks";

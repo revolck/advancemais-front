@@ -8,6 +8,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getProvaById, type TurmaProva } from "@/api/cursos";
+import { getUserProfile } from "@/api/usuarios";
 import { listAvaliacaoRespostas } from "@/api/provas";
 import { HeaderInfo } from "./components/HeaderInfo";
 import { AvaliacaoAlertasUnificados } from "./components/AvaliacaoAlertasUnificados";
@@ -62,6 +63,21 @@ export function ProvaDetailsView({
   });
 
   const prova = provaData ?? initialProva ?? null;
+  const { data: profileResponse } = useQuery({
+    queryKey: ["user-profile", "prova-details"],
+    queryFn: () => getUserProfile(),
+    staleTime: PROVA_QUERY_STALE_TIME,
+    gcTime: PROVA_QUERY_GC_TIME,
+    retry: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+  });
+  const profileUsuario =
+    profileResponse && "usuario" in profileResponse
+      ? profileResponse.usuario
+      : null;
+  const effectiveUserRole = profileUsuario?.role ?? user?.role ?? null;
+  const effectiveUserId = profileUsuario?.id ?? user?.id ?? null;
   const { data: hasRespostas } = useQuery<boolean>({
     queryKey: ["avaliacao-respostas-count", provaId],
     queryFn: async () => {
@@ -92,8 +108,8 @@ export function ProvaDetailsView({
   const canManageQuestions = prova
     ? canManageQuestoes(prova, {
         hasRespostas,
-        userRole: user?.role,
-        userId: user?.id,
+        userRole: effectiveUserRole,
+        userId: effectiveUserId,
       })
     : false;
 
@@ -205,10 +221,15 @@ export function ProvaDetailsView({
       <AvaliacaoAlertasUnificados
         prova={prova}
         hasRespostas={hasRespostas}
-        userRole={user?.role}
-        userId={user?.id}
+        userRole={effectiveUserRole}
+        userId={effectiveUserId}
       />
-      <HeaderInfo prova={prova} hasRespostas={hasRespostas} />
+      <HeaderInfo
+        prova={prova}
+        hasRespostas={hasRespostas}
+        userRole={effectiveUserRole}
+        userId={effectiveUserId}
+      />
       <HorizontalTabs items={tabs} defaultValue={tabs[0]?.value ?? "resumo"} />
     </div>
   );

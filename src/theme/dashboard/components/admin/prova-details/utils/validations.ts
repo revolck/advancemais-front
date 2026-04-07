@@ -3,6 +3,7 @@ import {
   getAvaliacaoStatusEfetivo,
   hasTurmaVinculadaAvaliacao,
 } from "../../lista-atividades-provas/utils/avaliacaoStatus";
+import { isInstrutorOwnerOrCreator } from "../../lista-atividades-provas/utils/instrutorScope";
 
 export interface AvaliacaoActionRestrictions {
   canPublish: boolean;
@@ -25,43 +26,7 @@ export function isInstrutorVinculadoAAvaliacao(
   prova: TurmaProva,
   userId?: string | null
 ): boolean {
-  if (!userId) return false;
-
-  const ids = new Set<string>();
-
-  if (typeof prova.instrutorId === "string" && prova.instrutorId.trim()) {
-    ids.add(prova.instrutorId.trim());
-  }
-
-  if (
-    prova.instrutor &&
-    typeof prova.instrutor === "object" &&
-    typeof prova.instrutor.id === "string" &&
-    prova.instrutor.id.trim()
-  ) {
-    ids.add(prova.instrutor.id.trim());
-  }
-
-  if (prova.turma && typeof prova.turma === "object") {
-    const turma = prova.turma as {
-      instrutorId?: string | null;
-      instrutor?: { id?: string | null } | null;
-    };
-
-    if (typeof turma.instrutorId === "string" && turma.instrutorId.trim()) {
-      ids.add(turma.instrutorId.trim());
-    }
-
-    if (
-      turma.instrutor &&
-      typeof turma.instrutor.id === "string" &&
-      turma.instrutor.id.trim()
-    ) {
-      ids.add(turma.instrutor.id.trim());
-    }
-  }
-
-  return ids.has(userId);
+  return isInstrutorOwnerOrCreator(prova, userId);
 }
 
 export function getInicioAvaliacaoDate(prova: TurmaProva): Date | null {

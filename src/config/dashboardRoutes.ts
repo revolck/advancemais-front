@@ -73,12 +73,66 @@ export const DASHBOARD_ROUTE_RULES: readonly RouteRule[] = Object.freeze([
       /^\/dashboard\/cursos\/alunos\/[0-9a-fA-F-]{36}(?:\/.*)?$/.test(path),
   },
   {
+    pattern: "/dashboard/cursos/alunos{/*path}",
+    roles: [
+      UserRole.ADMIN,
+      UserRole.MODERADOR,
+      UserRole.PEDAGOGICO,
+      UserRole.INSTRUTOR,
+    ],
+  },
+  {
     pattern: "/dashboard/empresas/entrevistas{/*path}",
     roles: [
       UserRole.ADMIN,
       UserRole.MODERADOR,
       UserRole.EMPRESA,
       UserRole.RECRUTADOR,
+    ],
+  },
+  {
+    pattern: "/dashboard/cursos/frequencia{/*path}",
+    roles: [
+      UserRole.ADMIN,
+      UserRole.MODERADOR,
+      UserRole.PEDAGOGICO,
+      UserRole.INSTRUTOR,
+    ],
+  },
+  {
+    pattern: "/dashboard/cursos/turmas{/*path}",
+    roles: [
+      UserRole.ADMIN,
+      UserRole.MODERADOR,
+      UserRole.PEDAGOGICO,
+      UserRole.INSTRUTOR,
+    ],
+  },
+  {
+    pattern: "/dashboard/cursos/aulas{/*path}",
+    roles: [
+      UserRole.ADMIN,
+      UserRole.MODERADOR,
+      UserRole.PEDAGOGICO,
+      UserRole.INSTRUTOR,
+    ],
+  },
+  {
+    pattern: "/dashboard/cursos/atividades-provas{/*path}",
+    roles: [
+      UserRole.ADMIN,
+      UserRole.MODERADOR,
+      UserRole.PEDAGOGICO,
+      UserRole.INSTRUTOR,
+    ],
+  },
+  {
+    pattern: "/dashboard/cursos/notas{/*path}",
+    roles: [
+      UserRole.ADMIN,
+      UserRole.MODERADOR,
+      UserRole.PEDAGOGICO,
+      UserRole.INSTRUTOR,
     ],
   },
   {

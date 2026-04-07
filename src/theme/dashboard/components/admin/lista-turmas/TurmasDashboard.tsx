@@ -2,7 +2,13 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ButtonCustom, FilterBar, EmptyState } from "@/components/ui/custom";
-import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { ChevronDown, ChevronUp } from "lucide-react";
@@ -25,6 +31,7 @@ import {
   getNormalizedSearchOrUndefined,
   getSearchValidationMessage,
 } from "../shared/filterUtils";
+import { turmaHasInstrutorVinculado } from "./utils/instrutores";
 
 const TURMA_STATUS_OPTIONS = [
   { value: "RASCUNHO", label: "Rascunho" },
@@ -60,25 +67,37 @@ type TurmaComCurso = CursoTurma & {
 
 export function TurmasDashboard({ className }: { className?: string }) {
   const userRole = useUserRole();
+  const isInstrutor = userRole === UserRole.INSTRUTOR;
+  const canViewInstrutorColumn =
+    userRole != null
+      ? [UserRole.ADMIN, UserRole.MODERADOR, UserRole.PEDAGOGICO].includes(
+          userRole,
+        )
+      : false;
   const canManageTurmas =
     userRole != null
       ? [UserRole.ADMIN, UserRole.MODERADOR, UserRole.PEDAGOGICO].includes(
-          userRole
+          userRole,
         )
       : false;
+  const canFilterByInstrutor = canManageTurmas;
   const [pendingSearchTerm, setPendingSearchTerm] = useState("");
   const [appliedSearchTerm, setAppliedSearchTerm] = useState("");
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
   const [selectedTurnos, setSelectedTurnos] = useState<string[]>([]);
   const [selectedMetodos, setSelectedMetodos] = useState<string[]>([]);
-  const [selectedInstrutorId, setSelectedInstrutorId] = useState<string | null>(null);
-  const [optimisticTurma, setOptimisticTurma] = useState<TurmaComCurso | null>(null);
-  
+  const [selectedInstrutorId, setSelectedInstrutorId] = useState<string | null>(
+    null,
+  );
+  const [optimisticTurma, setOptimisticTurma] = useState<TurmaComCurso | null>(
+    null,
+  );
+
   // Pagination
   const [pageSize] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
-  
+
   // Sorting
   type SortField = "nome" | "dataInicio" | null;
   type SortDirection = "asc" | "desc";
@@ -86,10 +105,12 @@ export function TurmasDashboard({ className }: { className?: string }) {
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
 
   const { cursos, isLoading: loadingCursos } = useCursosForSelect();
-  const { instrutores, isLoading: loadingInstrutores } = useInstrutoresForSelect();
+  const { instrutores, isLoading: loadingInstrutores } =
+    useInstrutoresForSelect();
   const turmasQuery = useTurmasDashboardQuery({ cursoId: selectedCourseId });
   const turmas = useMemo(() => {
     const base = turmasQuery.data ?? [];
+
     if (!optimisticTurma) return base;
     const matchesCourse =
       !selectedCourseId ||
@@ -102,13 +123,13 @@ export function TurmasDashboard({ className }: { className?: string }) {
   const isFetching = turmasQuery.isFetching;
   const errorMessage =
     turmasQuery.status === "error"
-      ? turmasQuery.error?.message ?? "Não foi possível carregar as turmas."
+      ? (turmasQuery.error?.message ?? "Não foi possível carregar as turmas.")
       : null;
   const hasError = Boolean(errorMessage);
 
   const searchValidationMessage = useMemo(
     () => getSearchValidationMessage(pendingSearchTerm),
-    [pendingSearchTerm]
+    [pendingSearchTerm],
   );
   const isSearchInputValid = !searchValidationMessage;
   const searchHelperText = SEARCH_HELPER_TEXT;
@@ -117,9 +138,9 @@ export function TurmasDashboard({ className }: { className?: string }) {
     () =>
       getNormalizedSearchOrUndefined(
         appliedSearchTerm,
-        DEFAULT_SEARCH_MIN_LENGTH
+        DEFAULT_SEARCH_MIN_LENGTH,
       ),
-    [appliedSearchTerm]
+    [appliedSearchTerm],
   );
 
   useEffect(() => {
@@ -160,8 +181,9 @@ export function TurmasDashboard({ className }: { className?: string }) {
 
   useEffect(() => {
     if (!optimisticTurma) return;
-    const hasTurma =
-      (turmasQuery.data ?? []).some((t) => t.id === optimisticTurma.id);
+    const hasTurma = (turmasQuery.data ?? []).some(
+      (t) => t.id === optimisticTurma.id,
+    );
     if (!hasTurma) return;
     setOptimisticTurma(null);
     if (typeof window !== "undefined") {
@@ -183,7 +205,7 @@ export function TurmasDashboard({ className }: { className?: string }) {
       setAppliedSearchTerm(trimmedValue);
       setCurrentPage(1); // Reset para página 1 ao buscar
     },
-    [pendingSearchTerm]
+    [pendingSearchTerm],
   );
 
   // Sorting functions
@@ -225,7 +247,7 @@ export function TurmasDashboard({ className }: { className?: string }) {
     try {
       localStorage.setItem(
         "turmaList.sort",
-        JSON.stringify({ field: sortField, dir: sortDirection })
+        JSON.stringify({ field: sortField, dir: sortDirection }),
       );
     } catch {}
   }, [sortField, sortDirection]);
@@ -253,7 +275,7 @@ export function TurmasDashboard({ className }: { className?: string }) {
       });
       return arr;
     },
-    [sortDirection, sortField]
+    [sortDirection, sortField],
   );
 
   const filteredTurmas = useMemo(() => {
@@ -264,24 +286,38 @@ export function TurmasDashboard({ className }: { className?: string }) {
       const searchLower = normalizedSearch.toLowerCase();
       filtered = filtered.filter((t) => {
         const nomeMatch = t.nome?.toLowerCase().includes(searchLower) ?? false;
-        const codigoMatch = t.codigo?.toLowerCase().includes(searchLower) ?? false;
+        const codigoMatch =
+          t.codigo?.toLowerCase().includes(searchLower) ?? false;
         return nomeMatch || codigoMatch;
       });
     }
 
     // Aplica filtros
     filtered = filtered.filter((t) => {
-      const okStatus = selectedStatuses.length === 0 || (t.status && selectedStatuses.includes(t.status));
-      const okTurno = selectedTurnos.length === 0 || (t.turno && selectedTurnos.includes(t.turno));
-      const okMetodo = selectedMetodos.length === 0 || (t.metodo && selectedMetodos.includes(t.metodo));
-      const okInstrutor =
-        !selectedInstrutorId || t.instrutor?.id === selectedInstrutorId;
+      const okStatus =
+        selectedStatuses.length === 0 ||
+        (t.status && selectedStatuses.includes(t.status));
+      const okTurno =
+        selectedTurnos.length === 0 ||
+        (t.turno && selectedTurnos.includes(t.turno));
+      const okMetodo =
+        selectedMetodos.length === 0 ||
+        (t.metodo && selectedMetodos.includes(t.metodo));
+      const okInstrutor = turmaHasInstrutorVinculado(t, selectedInstrutorId);
       return okStatus && okTurno && okMetodo && okInstrutor;
     });
 
     // Aplica ordenação
     return sortList(filtered);
-  }, [turmas, normalizedSearch, selectedStatuses, selectedTurnos, selectedMetodos, selectedInstrutorId, sortList]);
+  }, [
+    turmas,
+    normalizedSearch,
+    selectedStatuses,
+    selectedTurnos,
+    selectedMetodos,
+    selectedInstrutorId,
+    sortList,
+  ]);
 
   // Paginação
   const totalItems = filteredTurmas.length;
@@ -304,15 +340,25 @@ export function TurmasDashboard({ className }: { className?: string }) {
     return pages;
   }, [currentPage, totalPages]);
 
-  const handlePageChange = useCallback((page: number) => {
-    const nextPage = Math.max(1, Math.min(page, totalPages));
-    setCurrentPage(nextPage);
-  }, [totalPages]);
+  const handlePageChange = useCallback(
+    (page: number) => {
+      const nextPage = Math.max(1, Math.min(page, totalPages));
+      setCurrentPage(nextPage);
+    },
+    [totalPages],
+  );
 
   // Reset página quando filtros mudam
   useEffect(() => {
     setCurrentPage(1);
-  }, [appliedSearchTerm, selectedCourseId, selectedStatuses, selectedTurnos, selectedMetodos, selectedInstrutorId]);
+  }, [
+    appliedSearchTerm,
+    selectedCourseId,
+    selectedStatuses,
+    selectedTurnos,
+    selectedMetodos,
+    selectedInstrutorId,
+  ]);
 
   // Ajusta página atual se necessário (ex: se estiver na página 5 e só houver 2 páginas)
   useEffect(() => {
@@ -329,33 +375,99 @@ export function TurmasDashboard({ className }: { className?: string }) {
     !hasOptimisticForView &&
     (isLoading || (isFetching && (turmasQuery.data ?? []).length === 0));
   const canDisplayTable =
-    !hasError &&
-    (shouldShowSkeleton || filteredTurmas.length > 0);
+    !hasError && (shouldShowSkeleton || filteredTurmas.length > 0);
   const showEmptyState =
     !hasError && !shouldShowSkeleton && filteredTurmas.length === 0;
+  const visibleCursos = cursos;
+  const filterBarClassName = isInstrutor
+    ? "lg:grid-cols-4 [&>div>*:nth-child(1)]:lg:col-span-2 [&>div>*:nth-child(2)]:lg:col-span-2 [&>div>*:nth-child(3)]:lg:row-start-2 [&>div>*:nth-child(3)]:lg:col-start-1 [&>div>*:nth-child(4)]:lg:row-start-2 [&>div>*:nth-child(4)]:lg:col-start-2 [&>div>*:nth-child(5)]:lg:row-start-2 [&>div>*:nth-child(5)]:lg:col-start-3 [&>div>*:nth-child(6)]:lg:row-start-2 [&>div>*:nth-child(6)]:lg:col-start-4"
+    : "lg:grid-cols-[minmax(0,2fr)_minmax(0,2.5fr)_minmax(0,1.5fr)_auto] [&>div>*:nth-child(1)]:lg:col-span-1 [&>div>*:nth-child(2)]:lg:col-span-1 [&>div>*:nth-child(3)]:lg:col-span-1 [&>div>*:nth-child(4)]:lg:row-start-2 [&>div>*:nth-child(4)]:lg:col-start-1 [&>div>*:nth-child(5)]:lg:row-start-2 [&>div>*:nth-child(5)]:lg:col-start-2 [&>div>*:nth-child(6)]:lg:row-start-2 [&>div>*:nth-child(6)]:lg:col-start-3 [&>div>*:nth-child(7)]:lg:row-start-2 [&>div>*:nth-child(7)]:lg:col-start-4";
+  const rightActionsClassName = isInstrutor
+    ? "lg:row-start-2 lg:col-start-4 lg:col-span-1 lg:w-full lg:items-stretch lg:justify-stretch"
+    : undefined;
 
   // Ordem dos campos: curso, status na primeira linha; turno, método, instrutor na segunda
-  const filterFields: FilterField[] = useMemo(
-    () => [
-      { key: "curso", label: "Curso", options: cursos, placeholder: loadingCursos ? "Carregando..." : "Selecionar" },
-      { key: "status", label: "Status", mode: "multiple", options: TURMA_STATUS_OPTIONS, placeholder: "Selecionar" },
-      { key: "turno", label: "Turno", mode: "multiple", options: TURNO_OPTIONS, placeholder: "Selecionar" },
-      { key: "metodo", label: "Método", mode: "multiple", options: METODO_OPTIONS, placeholder: "Selecionar" },
-      { key: "instrutor", label: "Instrutor", options: instrutores, placeholder: loadingInstrutores ? "Carregando..." : "Selecionar" },
-    ],
-    [cursos, loadingCursos, instrutores, loadingInstrutores]
-  );
+  const filterFields: FilterField[] = useMemo(() => {
+    const fields: FilterField[] = [
+      {
+        key: "curso",
+        label: "Curso",
+        options: visibleCursos,
+        placeholder: loadingCursos ? "Carregando..." : "Selecionar",
+      },
+      {
+        key: "status",
+        label: "Status",
+        mode: "multiple",
+        options: TURMA_STATUS_OPTIONS,
+        placeholder: "Selecionar",
+      },
+      {
+        key: "turno",
+        label: "Turno",
+        mode: "multiple",
+        options: TURNO_OPTIONS,
+        placeholder: "Selecionar",
+      },
+      {
+        key: "metodo",
+        label: "Método",
+        mode: "multiple",
+        options: METODO_OPTIONS,
+        placeholder: "Selecionar",
+      },
+    ];
+
+    if (canFilterByInstrutor) {
+      fields.push({
+        key: "instrutor",
+        label: "Instrutor",
+        options: instrutores,
+        placeholder: loadingInstrutores ? "Carregando..." : "Selecionar",
+      });
+    }
+
+    return fields;
+  }, [
+    canFilterByInstrutor,
+    instrutores,
+    loadingCursos,
+    loadingInstrutores,
+    visibleCursos,
+  ]);
 
   const filterValues = useMemo(
-    () => ({ 
-      curso: selectedCourseId, 
-      status: selectedStatuses, 
-      turno: selectedTurnos, 
+    () => ({
+      curso: selectedCourseId,
+      status: selectedStatuses,
+      turno: selectedTurnos,
       metodo: selectedMetodos,
       instrutor: selectedInstrutorId,
     }),
-    [selectedCourseId, selectedStatuses, selectedTurnos, selectedMetodos, selectedInstrutorId]
+    [
+      selectedCourseId,
+      selectedStatuses,
+      selectedTurnos,
+      selectedMetodos,
+      selectedInstrutorId,
+    ],
   );
+
+  useEffect(() => {
+    if (!canFilterByInstrutor && selectedInstrutorId) {
+      setSelectedInstrutorId(null);
+    }
+  }, [canFilterByInstrutor, selectedInstrutorId]);
+
+  useEffect(() => {
+    if (!selectedCourseId) return;
+    if (
+      visibleCursos.some((curso) => String(curso.value) === selectedCourseId)
+    ) {
+      return;
+    }
+    setSelectedCourseId(null);
+  }, [selectedCourseId, visibleCursos]);
 
   return (
     <div className={cn("min-h-full space-y-4", className)}>
@@ -381,7 +493,8 @@ export function TurmasDashboard({ className }: { className?: string }) {
       <div className="border-b border-gray-200 top-0 z-10">
         <div className="py-4">
           <FilterBar
-            className="lg:grid-cols-[minmax(0,2fr)_minmax(0,2.5fr)_minmax(0,1.5fr)_auto] [&>div>*:nth-child(1)]:lg:col-span-1 [&>div>*:nth-child(2)]:lg:col-span-1 [&>div>*:nth-child(3)]:lg:col-span-1 [&>div>*:nth-child(4)]:lg:row-start-2 [&>div>*:nth-child(4)]:lg:col-start-1 [&>div>*:nth-child(5)]:lg:row-start-2 [&>div>*:nth-child(5)]:lg:col-start-2 [&>div>*:nth-child(6)]:lg:row-start-2 [&>div>*:nth-child(6)]:lg:col-start-3 [&>div>*:nth-child(7)]:lg:row-start-2 [&>div>*:nth-child(7)]:lg:col-start-4"
+            className={filterBarClassName}
+            rightActionsClassName={rightActionsClassName}
             fields={filterFields}
             values={filterValues}
             onChange={(key, value) => {
@@ -390,15 +503,21 @@ export function TurmasDashboard({ className }: { className?: string }) {
                 setCurrentPage(1);
               }
               if (key === "status") {
-                setSelectedStatuses(Array.isArray(value) ? (value as string[]) : []);
+                setSelectedStatuses(
+                  Array.isArray(value) ? (value as string[]) : [],
+                );
                 setCurrentPage(1);
               }
               if (key === "turno") {
-                setSelectedTurnos(Array.isArray(value) ? (value as string[]) : []);
+                setSelectedTurnos(
+                  Array.isArray(value) ? (value as string[]) : [],
+                );
                 setCurrentPage(1);
               }
               if (key === "metodo") {
-                setSelectedMetodos(Array.isArray(value) ? (value as string[]) : []);
+                setSelectedMetodos(
+                  Array.isArray(value) ? (value as string[]) : [],
+                );
                 setCurrentPage(1);
               }
               if (key === "instrutor") {
@@ -434,10 +553,10 @@ export function TurmasDashboard({ className }: { className?: string }) {
             rightActions={
               <ButtonCustom
                 variant="primary"
-                size="lg"
+                size={isInstrutor ? "lg" : "lg"}
                 onClick={() => handleSearchSubmit()}
                 disabled={isLoading || !isSearchInputValid}
-                className="md:w-full xl:w-auto"
+                className={isInstrutor ? "w-full" : "md:w-full xl:w-auto"}
               >
                 Pesquisar
               </ButtonCustom>
@@ -485,7 +604,7 @@ export function TurmasDashboard({ className }: { className?: string }) {
                             onClick={() => toggleSort("nome")}
                             className={cn(
                               "inline-flex items-center gap-1 px-2 py-1 cursor-pointer transition-colors bg-transparent",
-                              sortField === "nome" && "text-gray-900"
+                              sortField === "nome" && "text-gray-900",
                             )}
                           >
                             Turma
@@ -517,7 +636,7 @@ export function TurmasDashboard({ className }: { className?: string }) {
                                   "h-3 w-3 text-gray-400",
                                   sortField === "nome" &&
                                     sortDirection === "asc" &&
-                                    "text-[var(--primary-color)]"
+                                    "text-[var(--primary-color)]",
                                 )}
                               />
                             </button>
@@ -540,7 +659,7 @@ export function TurmasDashboard({ className }: { className?: string }) {
                                   "h-3 w-3 text-gray-400 -mt-0.5",
                                   sortField === "nome" &&
                                     sortDirection === "desc" &&
-                                    "text-[var(--primary-color)]"
+                                    "text-[var(--primary-color)]",
                                 )}
                               />
                             </button>
@@ -551,10 +670,16 @@ export function TurmasDashboard({ className }: { className?: string }) {
                     </div>
                   </TableHead>
                   {!selectedCourseId && (
-                    <TableHead className="font-medium text-gray-700">Curso</TableHead>
+                    <TableHead className="font-medium text-gray-700">
+                      Curso
+                    </TableHead>
                   )}
-                  <TableHead className="font-medium text-gray-700">Turno/Método</TableHead>
-                  <TableHead className="font-medium text-gray-700">Status</TableHead>
+                  <TableHead className="font-medium text-gray-700">
+                    Turno/Método
+                  </TableHead>
+                  <TableHead className="font-medium text-gray-700">
+                    Status
+                  </TableHead>
                   <TableHead
                     className="font-medium text-gray-700"
                     aria-sort={
@@ -573,7 +698,7 @@ export function TurmasDashboard({ className }: { className?: string }) {
                             onClick={() => toggleSort("dataInicio")}
                             className={cn(
                               "inline-flex items-center gap-1 px-2 py-1 cursor-pointer transition-colors bg-transparent",
-                              sortField === "dataInicio" && "text-gray-900"
+                              sortField === "dataInicio" && "text-gray-900",
                             )}
                           >
                             Período
@@ -605,7 +730,7 @@ export function TurmasDashboard({ className }: { className?: string }) {
                                   "h-3 w-3 text-gray-400",
                                   sortField === "dataInicio" &&
                                     sortDirection === "desc" &&
-                                    "text-[var(--primary-color)]"
+                                    "text-[var(--primary-color)]",
                                 )}
                               />
                             </button>
@@ -630,7 +755,7 @@ export function TurmasDashboard({ className }: { className?: string }) {
                                   "h-3 w-3 text-gray-400 -mt-0.5",
                                   sortField === "dataInicio" &&
                                     sortDirection === "asc" &&
-                                    "text-[var(--primary-color)]"
+                                    "text-[var(--primary-color)]",
                                 )}
                               />
                             </button>
@@ -642,8 +767,14 @@ export function TurmasDashboard({ className }: { className?: string }) {
                       </div>
                     </div>
                   </TableHead>
-                  <TableHead className="font-medium text-gray-700 text-center">Vagas</TableHead>
-                  <TableHead className="font-medium text-gray-700">Instrutor</TableHead>
+                  <TableHead className="font-medium text-gray-700 text-center">
+                    Vagas
+                  </TableHead>
+                  {canViewInstrutorColumn && (
+                    <TableHead className="font-medium text-gray-700">
+                      Instrutor
+                    </TableHead>
+                  )}
                   <TableHead className="font-medium text-gray-700"></TableHead>
                 </TableRow>
               </TableHeader>
@@ -652,10 +783,11 @@ export function TurmasDashboard({ className }: { className?: string }) {
                   <TurmaTableSkeleton rows={8} />
                 ) : (
                   paginatedTurmas.map((t) => (
-                    <TurmaRow 
-                      key={t.id} 
-                      turma={t} 
+                    <TurmaRow
+                      key={t.id}
+                      turma={t}
                       showCurso={!selectedCourseId}
+                      showInstrutor={canViewInstrutorColumn}
                     />
                   ))
                 )}
@@ -667,10 +799,9 @@ export function TurmasDashboard({ className }: { className?: string }) {
               <div className="flex flex-col gap-4 px-6 py-4 border-t border-gray-200 bg-gray-50/30 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-2 text-sm text-gray-600">
                   <span>
-                    Mostrando{" "}
-                    {Math.min(startIndex + 1, totalItems)}{" "}
-                    a {Math.min(endIndex, totalItems)}{" "}
-                    de {totalItems} turma{totalItems === 1 ? "" : "s"}
+                    Mostrando {Math.min(startIndex + 1, totalItems)} a{" "}
+                    {Math.min(endIndex, totalItems)} de {totalItems} turma
+                    {totalItems === 1 ? "" : "s"}
                   </span>
                 </div>
 
@@ -689,9 +820,7 @@ export function TurmasDashboard({ className }: { className?: string }) {
                     {visiblePages[0] > 1 && (
                       <>
                         <ButtonCustom
-                          variant={
-                            currentPage === 1 ? "primary" : "outline"
-                          }
+                          variant={currentPage === 1 ? "primary" : "outline"}
                           size="sm"
                           onClick={() => handlePageChange(1)}
                           className="h-8 w-8 p-0"
@@ -707,9 +836,7 @@ export function TurmasDashboard({ className }: { className?: string }) {
                     {visiblePages.map((page) => (
                       <ButtonCustom
                         key={page}
-                        variant={
-                          currentPage === page ? "primary" : "outline"
-                        }
+                        variant={currentPage === page ? "primary" : "outline"}
                         size="sm"
                         onClick={() => handlePageChange(page)}
                         className="h-8 w-8 p-0"
@@ -726,9 +853,7 @@ export function TurmasDashboard({ className }: { className?: string }) {
                         )}
                         <ButtonCustom
                           variant={
-                            currentPage === totalPages
-                              ? "primary"
-                              : "outline"
+                            currentPage === totalPages ? "primary" : "outline"
                           }
                           size="sm"
                           onClick={() => handlePageChange(totalPages)}

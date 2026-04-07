@@ -19,6 +19,11 @@ import { toastCustom } from "@/components/ui/custom/toast";
 import type { UsuarioProfileResponse } from "@/api/usuarios/types";
 import { changeUserPassword } from "@/api/usuarios";
 import { lookupCep, normalizeCep, isValidCep } from "@/lib/cep";
+import {
+  BRASIL_ESTADO_OPTIONS,
+  fetchCidadesByUf,
+  normalizeEstadoUf,
+} from "@/lib/brasil-localidades";
 import { MaskService } from "@/services";
 
 // Schema de validação
@@ -34,12 +39,18 @@ const profileSchema = z.object({
 
 // Schema de validação para endereço
 const addressSchema = z.object({
-  cep: z.string().optional(),
-  logradouro: z.string().optional(),
-  numero: z.string().optional(),
-  bairro: z.string().optional(),
-  cidade: z.string().optional(),
-  estado: z.string().optional(),
+  cep: z
+    .string()
+    .min(1, "CEP é obrigatório")
+    .refine((value) => isValidCep(value), "CEP inválido"),
+  logradouro: z.string().min(1, "Logradouro é obrigatório"),
+  numero: z.string().min(1, "Número é obrigatório"),
+  bairro: z.string().min(1, "Bairro é obrigatório"),
+  cidade: z.string().min(1, "Cidade é obrigatória"),
+  estado: z
+    .string()
+    .min(2, "Estado é obrigatório")
+    .max(2, "Estado deve ter 2 caracteres"),
 });
 
 type ProfileFormData = z.infer<typeof profileSchema>;
@@ -151,8 +162,11 @@ export function ProfileForm({
   const [isSubmittingPassword, setIsSubmittingPassword] = useState(false);
   const [isSubmittingAddress, setIsSubmittingAddress] = useState(false);
   const [isCepLoading, setIsCepLoading] = useState(false);
+  const [cidadeOptions, setCidadeOptions] = useState<SelectOption[]>([]);
+  const [isLoadingCidades, setIsLoadingCidades] = useState(false);
   const prevIsDirtyRef = useRef<boolean>(false);
   const prevIsSubmittingRef = useRef<boolean>(false);
+  const cidadesCacheRef = useRef<Record<string, SelectOption[]>>({});
 
   // Formulário de senha
   const {
@@ -177,6 +191,7 @@ export function ProfileForm({
     formState: { errors: addressErrors },
     reset: resetAddress,
     setValue: setAddressValue,
+    watch: watchAddress,
   } = useForm<AddressFormData>({
     resolver: zodResolver(addressSchema),
     defaultValues: {
@@ -188,6 +203,62 @@ export function ProfileForm({
       estado: "",
     },
   });
+  const selectedEstado = watchAddress("estado");
+
+  const fetchCidades = useCallback(
+    async (uf: string, cidadeToSelect?: string | null) => {
+      const normalizedUf = normalizeEstadoUf(uf);
+      if (!normalizedUf) {
+        setCidadeOptions([]);
+        if (cidadeToSelect !== undefined) {
+          setAddressValue("cidade", "", { shouldValidate: true });
+        }
+        return;
+      }
+
+      const cached = cidadesCacheRef.current[normalizedUf];
+      if (cached) {
+        setCidadeOptions(cached);
+        if (cidadeToSelect !== undefined) {
+          const option = cached.find(
+            (item) =>
+              String(item.value).toLowerCase() ===
+              String(cidadeToSelect || "").trim().toLowerCase()
+          );
+          setAddressValue("cidade", option ? String(option.value) : "", {
+            shouldValidate: true,
+          });
+        }
+        return;
+      }
+
+      setIsLoadingCidades(true);
+      try {
+        const options = await fetchCidadesByUf(normalizedUf);
+        cidadesCacheRef.current[normalizedUf] = options;
+        setCidadeOptions(options);
+        if (cidadeToSelect !== undefined) {
+          const option = options.find(
+            (item) =>
+              String(item.value).toLowerCase() ===
+              String(cidadeToSelect || "").trim().toLowerCase()
+          );
+          setAddressValue("cidade", option ? String(option.value) : "", {
+            shouldValidate: true,
+          });
+        }
+      } catch (error) {
+        console.error("Erro ao carregar cidades:", error);
+        setCidadeOptions([]);
+        if (cidadeToSelect !== undefined) {
+          setAddressValue("cidade", "", { shouldValidate: true });
+        }
+      } finally {
+        setIsLoadingCidades(false);
+      }
+    },
+    [setAddressValue]
+  );
 
   const senhaNova = watchPassword("senhaNova");
   const satisfiedRequirements = useMemo(
@@ -470,9 +541,14 @@ export function ProfileForm({
         // Preencher campos automaticamente
         setAddressValue("logradouro", result.street || "");
         setAddressValue("bairro", result.neighborhood || "");
-        setAddressValue("cidade", result.city || "");
-        setAddressValue("estado", result.state || "");
         setAddressValue("cep", result.cep);
+        const ufFromCep = normalizeEstadoUf(result.state || "");
+        setAddressValue("estado", ufFromCep, { shouldValidate: true });
+        if (ufFromCep) {
+          await fetchCidades(ufFromCep, result.city || "");
+        } else {
+          setAddressValue("cidade", "", { shouldValidate: true });
+        }
       } catch (error) {
         console.error("Erro ao buscar CEP:", error);
         toastCustom.error({
@@ -483,7 +559,7 @@ export function ProfileForm({
         setIsCepLoading(false);
       }
     },
-    [isCepLoading, setAddressValue]
+    [fetchCidades, isCepLoading, setAddressValue]
   );
 
   // Handler para mudança de CEP
@@ -524,7 +600,7 @@ export function ProfileForm({
           bairro: data.bairro?.trim() || null,
           numero: data.numero?.trim() || null,
           cidade: data.cidade?.trim() || null,
-          estado: data.estado?.trim() || null,
+          estado: data.estado?.trim().toUpperCase() || null,
         },
       };
 
@@ -557,11 +633,16 @@ export function ProfileForm({
         numero: primeiroEndereco.numero || "",
         bairro: primeiroEndereco.bairro || "",
         cidade: primeiroEndereco.cidade || "",
-        estado: primeiroEndereco.estado || "",
+        estado: normalizeEstadoUf(primeiroEndereco.estado || ""),
       };
       resetAddress(addressValues);
+      if (addressValues.estado) {
+        void fetchCidades(addressValues.estado, addressValues.cidade || "");
+      } else {
+        setCidadeOptions([]);
+      }
     }
-  }, [profile?.id, profile?.enderecos, resetAddress]);
+  }, [fetchCidades, profile?.id, profile?.enderecos, resetAddress]);
 
   // Notifica mudanças nas ações apenas quando isDirty ou isSubmitting mudarem
   useEffect(() => {
@@ -901,6 +982,7 @@ export function ProfileForm({
                           rightIcon={isCepLoading ? "Loader2" : undefined}
                           error={addressErrors.cep?.message}
                           icon="MapPin"
+                          required
                         />
                       )}
                     />
@@ -918,6 +1000,7 @@ export function ProfileForm({
                           disabled={isSubmittingAddress}
                           error={addressErrors.numero?.message}
                           icon="Hash"
+                          required
                         />
                       )}
                     />
@@ -937,6 +1020,7 @@ export function ProfileForm({
                         disabled={isSubmittingAddress}
                         error={addressErrors.logradouro?.message}
                         icon="MapPin"
+                        required
                       />
                     )}
                   />
@@ -956,23 +1040,7 @@ export function ProfileForm({
                           disabled={isSubmittingAddress}
                           error={addressErrors.bairro?.message}
                           icon="MapPin"
-                        />
-                      )}
-                    />
-                    <Controller
-                      control={addressControl}
-                      name="cidade"
-                      render={({ field }) => (
-                        <InputCustom
-                          ref={field.ref}
-                          name={field.name}
-                          label="Cidade"
-                          value={field.value ?? ""}
-                          onChange={field.onChange}
-                          onBlur={field.onBlur}
-                          disabled={isSubmittingAddress}
-                          error={addressErrors.cidade?.message}
-                          icon="MapPin"
+                          required
                         />
                       )}
                     />
@@ -980,18 +1048,53 @@ export function ProfileForm({
                       control={addressControl}
                       name="estado"
                       render={({ field }) => (
-                        <InputCustom
-                          ref={field.ref}
-                          name={field.name}
+                        <SelectCustom
+                          mode="single"
                           label="Estado"
-                          value={field.value ?? ""}
-                          onChange={field.onChange}
-                          onBlur={field.onBlur}
-                          disabled={isSubmittingAddress}
+                          required
+                          placeholder="Selecione o estado"
+                          options={BRASIL_ESTADO_OPTIONS}
+                          value={(field.value || null) as string | null}
+                          onChange={(value) => {
+                            const uf = normalizeEstadoUf(value || "");
+                            field.onChange(uf);
+                            setAddressValue("cidade", "", {
+                              shouldValidate: true,
+                            });
+                            void fetchCidades(uf, null);
+                          }}
+                          disabled={isSubmittingAddress || isLoadingCidades}
                           error={addressErrors.estado?.message}
-                          icon="MapPin"
-                          maxLength={2}
-                          placeholder="Ex: RJ"
+                          searchable
+                        />
+                      )}
+                    />
+                    <Controller
+                      control={addressControl}
+                      name="cidade"
+                      render={({ field }) => (
+                        <SelectCustom
+                          mode="single"
+                          label="Cidade"
+                          required
+                          placeholder={
+                            !selectedEstado
+                              ? "Selecione o estado primeiro"
+                              : isLoadingCidades
+                              ? "Carregando cidades..."
+                              : "Selecione a cidade"
+                          }
+                          options={cidadeOptions}
+                          value={(field.value || null) as string | null}
+                          onChange={(value) => field.onChange(value || "")}
+                          disabled={
+                            isSubmittingAddress ||
+                            !selectedEstado ||
+                            isLoadingCidades ||
+                            cidadeOptions.length === 0
+                          }
+                          error={addressErrors.cidade?.message}
+                          searchable
                         />
                       )}
                     />

@@ -20,6 +20,8 @@ import {
   createAlunoBloqueio,
   revokeAlunoBloqueio,
 } from "@/api/usuarios";
+import { UserRole } from "@/config/roles";
+import { useUserRole } from "@/hooks/useUserRole";
 import { HeaderInfo } from "./components";
 import {
   AboutTab,
@@ -51,6 +53,7 @@ export function AlunoDetailsView({
   alunoId,
   initialData,
 }: AlunoDetailsViewProps) {
+  const userRole = useUserRole();
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const queryKey = useMemo(
@@ -90,6 +93,11 @@ export function AlunoDetailsView({
   const hasInscricaoEmCurso = inscricoes.some(
     (inscricao) => Boolean(inscricao?.curso?.id || inscricao?.turma?.id),
   );
+  const isInstrutor = userRole === UserRole.INSTRUTOR;
+  const isReadOnlyRole =
+    userRole === UserRole.RECRUTADOR || userRole === UserRole.INSTRUTOR;
+  const canManageAluno = !isReadOnlyRole;
+  const canAccessCareerTabs = !isInstrutor;
 
   const isPending = !initialData && isLoading;
   const queryErrorMessage =
@@ -206,32 +214,36 @@ export function AlunoDetailsView({
         />
       ),
     },
-    {
-      value: "curriculos",
-      label: "Currículos",
-      icon: "FileText",
-      content: (
-        <CurriculosTab aluno={alunoData} isLoading={isReloading} />
-      ),
-    },
-    {
-      value: "candidaturas",
-      label: "Candidaturas",
-      icon: "Briefcase",
-      content: (
-        <CandidaturasTab aluno={alunoData} isLoading={isReloading} />
-      ),
-    },
-    ...(hasCurriculos
+    ...(canAccessCareerTabs
       ? [
           {
-            value: "entrevistas",
-            label: "Entrevistas",
-            icon: "CalendarDays",
+            value: "curriculos",
+            label: "Currículos",
+            icon: "FileText",
             content: (
-              <EntrevistasTab aluno={alunoData} isLoading={isReloading} />
+              <CurriculosTab aluno={alunoData} isLoading={isReloading} />
             ),
           } satisfies HorizontalTabItem,
+          {
+            value: "candidaturas",
+            label: "Candidaturas",
+            icon: "Briefcase",
+            content: (
+              <CandidaturasTab aluno={alunoData} isLoading={isReloading} />
+            ),
+          } satisfies HorizontalTabItem,
+          ...(hasCurriculos
+            ? [
+                {
+                  value: "entrevistas",
+                  label: "Entrevistas",
+                  icon: "CalendarDays",
+                  content: (
+                    <EntrevistasTab aluno={alunoData} isLoading={isReloading} />
+                  ),
+                } satisfies HorizontalTabItem,
+              ]
+            : []),
         ]
       : []),
     ...(hasInscricaoEmCurso
@@ -262,7 +274,7 @@ export function AlunoDetailsView({
           } satisfies HorizontalTabItem,
         ]
       : []),
-    ...(hasInscricaoEmCurso
+    ...(hasInscricaoEmCurso && canAccessCareerTabs
       ? [
           {
             value: "estagios",
@@ -297,11 +309,21 @@ export function AlunoDetailsView({
 
       <HeaderInfo
         aluno={alunoData}
-        onEditAluno={() => setIsEditModalOpen(true)}
-        onEditEndereco={() => setIsEditEnderecoOpen(true)}
-        onResetSenha={() => setIsResetSenhaOpen(true)}
-        onBloquearAluno={() => setIsBloquearModalOpen(true)}
-        onDesbloquearAluno={() => setIsDesbloquearModalOpen(true)}
+        onEditAluno={
+          canManageAluno ? () => setIsEditModalOpen(true) : undefined
+        }
+        onEditEndereco={
+          canManageAluno ? () => setIsEditEnderecoOpen(true) : undefined
+        }
+        onResetSenha={
+          canManageAluno ? () => setIsResetSenhaOpen(true) : undefined
+        }
+        onBloquearAluno={
+          canManageAluno ? () => setIsBloquearModalOpen(true) : undefined
+        }
+        onDesbloquearAluno={
+          canManageAluno ? () => setIsDesbloquearModalOpen(true) : undefined
+        }
       />
 
       <HorizontalTabs items={tabs} defaultValue={defaultTabValue} />

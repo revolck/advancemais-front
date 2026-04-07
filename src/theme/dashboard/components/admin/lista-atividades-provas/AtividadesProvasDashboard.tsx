@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { ButtonCustom, FilterBar, EmptyState } from "@/components/ui/custom";
 import {
   Table,
@@ -20,13 +21,13 @@ import {
 import { useTurmasForSelect } from "./hooks/useTurmasForSelect";
 import { useCursosForSelect } from "./hooks/useCursosForSelect";
 import { useInstrutoresForSelect } from "./hooks/useInstrutoresForSelect";
-import {
-  useAvaliacoesDashboardQuery,
-  type AvaliacaoListItem,
-} from "./hooks/useAvaliacoesDashboardQuery";
+import { useAvaliacoesDashboardQuery } from "./hooks/useAvaliacoesDashboardQuery";
 import { AtividadeProvaRow } from "./components/AtividadeProvaRow";
 import { AtividadeProvaTableSkeleton } from "./components/AtividadeProvaTableSkeleton";
 import type { FilterField } from "@/components/ui/custom/filters";
+import { getUserProfile } from "@/api/usuarios";
+import { UserRole } from "@/config/roles";
+import { useUserRole } from "@/hooks/useUserRole";
 import {
   DEFAULT_SEARCH_MIN_LENGTH,
   getNormalizedSearchOrUndefined,
@@ -34,6 +35,7 @@ import {
 } from "../shared/filterUtils";
 import type { AvaliacaoStatus, AvaliacaoTipo } from "@/api/cursos";
 import type { DateRange } from "@/components/ui/custom/date-picker";
+import { isInstrutorOwnerOrCreator } from "./utils/instrutorScope";
 
 const PROVA_STATUS_OPTIONS: { value: AvaliacaoStatus; label: string }[] = [
   { value: "RASCUNHO", label: "Rascunho" },
@@ -65,6 +67,9 @@ export function AtividadesProvasDashboard({
 }: {
   className?: string;
 }) {
+  const userRole = useUserRole();
+  const isInstrutor = userRole === UserRole.INSTRUTOR;
+  const canFilterByInstrutor = !isInstrutor;
   const [pendingSearchTerm, setPendingSearchTerm] = useState("");
   const [appliedSearchTerm, setAppliedSearchTerm] = useState("");
   const [selectedCursoId, setSelectedCursoId] = useState<string | null>(null);
@@ -92,14 +97,32 @@ export function AtividadesProvasDashboard({
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc"); // Padrão: mais novo primeiro
 
   const { cursos, isLoading: loadingCursos } = useCursosForSelect();
-  const { instrutores, isLoading: loadingInstrutores } = useInstrutoresForSelect();
+  const { instrutores, isLoading: loadingInstrutores } = useInstrutoresForSelect({
+    enabled: canFilterByInstrutor,
+  });
   const { turmas, isLoading: loadingTurmas } = useTurmasForSelect(selectedCursoId);
+  const { data: profileResponse, isLoading: isLoadingProfile } = useQuery({
+    queryKey: ["user-profile", "avaliacoes-dashboard"],
+    queryFn: () => getUserProfile(),
+    enabled: isInstrutor,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    retry: 1,
+  });
+  const currentInstrutorId = isInstrutor
+    ? profileResponse && "usuario" in profileResponse
+      ? (profileResponse.usuario?.id ?? null)
+      : null
+    : null;
 
   // Usar o hook correto que utiliza a API global de avaliações
   const avaliacoesQuery = useAvaliacoesDashboardQuery({
     cursoId: selectedCursoId ?? null,
     turmaId: selectedTurmaId,
-    instrutorId: selectedInstrutorId,
+    instrutorId: canFilterByInstrutor ? selectedInstrutorId : null,
+    fetchAllPages: isInstrutor,
     tipo: selectedTipo,
     status: selectedStatuses,
     periodo:
@@ -110,7 +133,7 @@ export function AtividadesProvasDashboard({
       appliedSearchTerm,
       DEFAULT_SEARCH_MIN_LENGTH
     ),
-    page: currentPage,
+    page: isInstrutor ? 1 : currentPage,
     pageSize,
     orderBy: sortField || "criadoEm",
     order: sortDirection,
@@ -120,6 +143,14 @@ export function AtividadesProvasDashboard({
     () => avaliacoesQuery.data?.items ?? [],
     [avaliacoesQuery.data]
   );
+  const avaliacoesEscopadas = useMemo(() => {
+    if (!isInstrutor) return avaliacoes;
+    if (!currentInstrutorId) return [];
+
+    return avaliacoes.filter((avaliacao) =>
+      isInstrutorOwnerOrCreator(avaliacao, currentInstrutorId)
+    );
+  }, [avaliacoes, currentInstrutorId, isInstrutor]);
   const pagination = avaliacoesQuery.data?.pagination;
   const isLoading = avaliacoesQuery.status === "pending";
   const isFetching = avaliacoesQuery.isFetching;
@@ -207,13 +238,20 @@ export function AtividadesProvasDashboard({
 
   // A API já faz paginação, filtros, busca e ordenação no backend
   // Não precisa ordenar client-side, a API já retorna ordenado conforme orderBy e order
-  const filteredAvaliacoes = avaliacoes;
+  const filteredAvaliacoes = avaliacoesEscopadas;
 
-  // Usa paginação da API ao invés de client-side
-  const totalItems = pagination?.total ?? filteredAvaliacoes.length;
-  const totalPages =
-    pagination?.totalPages ?? Math.max(1, Math.ceil(totalItems / pageSize));
-  const paginatedAvaliacoes = filteredAvaliacoes; // A API já retorna apenas os itens da página atual
+  const totalItems = isInstrutor
+    ? filteredAvaliacoes.length
+    : pagination?.total ?? filteredAvaliacoes.length;
+  const totalPages = isInstrutor
+    ? Math.max(1, Math.ceil(totalItems / pageSize))
+    : pagination?.totalPages ?? Math.max(1, Math.ceil(totalItems / pageSize));
+  const paginatedAvaliacoes = isInstrutor
+    ? filteredAvaliacoes.slice(
+        (currentPage - 1) * pageSize,
+        currentPage * pageSize
+      )
+    : filteredAvaliacoes;
 
   // Páginas visíveis para paginação
   const visiblePages = useMemo(() => {
@@ -251,69 +289,151 @@ export function AtividadesProvasDashboard({
   }, [totalPages]); // Removido currentPage das dependências para evitar loop
 
   const shouldShowSkeleton =
-    isLoading || (isFetching && avaliacoes.length === 0);
+    (isInstrutor && isLoadingProfile) ||
+    isLoading ||
+    (isFetching && filteredAvaliacoes.length === 0);
   const canDisplayTable =
     !hasError && (shouldShowSkeleton || filteredAvaliacoes.length > 0);
   const showEmptyState =
     !hasError && !shouldShowSkeleton && filteredAvaliacoes.length === 0;
 
+  const visibleCursos = useMemo(() => {
+    if (!isInstrutor) return cursos;
+
+    const byId = new Map<string, string>();
+
+    filteredAvaliacoes.forEach((avaliacao) => {
+      const cursoId = String(avaliacao.cursoId ?? "");
+      if (!cursoId) return;
+      const fallbackLabel = avaliacao.cursoNome || cursoId;
+      const knownLabel =
+        cursos.find((curso) => String(curso.value) === cursoId)?.label ??
+        fallbackLabel;
+
+      byId.set(cursoId, knownLabel);
+    });
+
+    return Array.from(byId.entries())
+      .map(([value, label]) => ({ value, label }))
+      .sort((a, b) => a.label.localeCompare(b.label, "pt-BR"));
+  }, [cursos, filteredAvaliacoes, isInstrutor]);
+
+  const visibleTurmas = useMemo(() => {
+    if (!selectedCursoId) return [];
+    if (!isInstrutor) return turmas;
+
+    const byId = new Map<string, string>();
+
+    filteredAvaliacoes.forEach((avaliacao) => {
+      if (String(avaliacao.cursoId ?? "") !== String(selectedCursoId)) return;
+      if (!avaliacao.turmaId) return;
+
+      byId.set(
+        String(avaliacao.turmaId),
+        avaliacao.turmaNome || String(avaliacao.turmaId)
+      );
+    });
+
+    return Array.from(byId.entries())
+      .map(([value, label]) => ({ value, label }))
+      .sort((a, b) => a.label.localeCompare(b.label, "pt-BR"));
+  }, [filteredAvaliacoes, isInstrutor, selectedCursoId, turmas]);
+
+  useEffect(() => {
+    if (!isInstrutor || isLoadingProfile || !currentInstrutorId || !selectedCursoId) return;
+
+    const hasSelectedCurso = visibleCursos.some(
+      (curso) => String(curso.value) === String(selectedCursoId)
+    );
+
+    if (!hasSelectedCurso) {
+      setSelectedCursoId(null);
+      setSelectedTurmaId(null);
+      setCurrentPage(1);
+    }
+  }, [currentInstrutorId, isInstrutor, isLoadingProfile, selectedCursoId, visibleCursos]);
+
+  useEffect(() => {
+    if (!isInstrutor || isLoadingProfile || !currentInstrutorId || !selectedTurmaId) return;
+
+    const hasSelectedTurma = visibleTurmas.some(
+      (turma) => String(turma.value) === String(selectedTurmaId)
+    );
+
+    if (!hasSelectedTurma) {
+      setSelectedTurmaId(null);
+      setCurrentPage(1);
+    }
+  }, [currentInstrutorId, isInstrutor, isLoadingProfile, selectedTurmaId, visibleTurmas]);
+
   // Ordem dos campos: turma, tipo, status
   const filterFields: FilterField[] = useMemo(
-    () => [
-      {
-        key: "cursoId",
-        label: "Curso",
-        options: cursos,
-        placeholder: loadingCursos ? "Carregando..." : "Selecionar",
-      },
-      {
-        key: "turmaId",
-        label: "Turma",
-        options: selectedCursoId ? turmas : [],
-        placeholder: !selectedCursoId
-          ? "Selecione um curso"
-          : loadingTurmas
-          ? "Carregando..."
-          : "Selecionar",
-        emptyPlaceholder: selectedCursoId
-          ? "Nenhuma turma disponível"
-          : "Selecione um curso primeiro",
-        disabled: !selectedCursoId || loadingTurmas,
-      },
-      {
-        key: "instrutorId",
-        label: "Instrutor",
-        options: instrutores,
-        placeholder: loadingInstrutores ? "Carregando..." : "Selecionar",
-      },
-      {
-        key: "tipo",
-        label: "Tipo",
-        options: PROVA_TIPO_OPTIONS,
-        placeholder: "Todos",
-      },
-      {
-        key: "periodo",
-        label: "Período",
-        type: "date-range",
-        placeholder: "Selecionar período",
-      },
-      {
-        key: "status",
-        label: "Status",
-        mode: "multiple" as const,
-        options: PROVA_STATUS_OPTIONS,
-        placeholder: "Selecionar",
-      },
-    ],
+    () => {
+      const fields: FilterField[] = [
+        {
+          key: "cursoId",
+          label: "Curso",
+          options: visibleCursos,
+          placeholder: loadingCursos ? "Carregando..." : "Selecionar",
+        },
+        {
+          key: "turmaId",
+          label: "Turma",
+          options: selectedCursoId ? visibleTurmas : [],
+          placeholder: !selectedCursoId
+            ? "Selecione um curso"
+            : loadingTurmas
+            ? "Carregando..."
+            : "Selecionar",
+          emptyPlaceholder: selectedCursoId
+            ? "Nenhuma turma disponível"
+            : "Selecione um curso primeiro",
+          disabled: !selectedCursoId || loadingTurmas,
+        },
+      ];
+
+      if (canFilterByInstrutor) {
+        fields.push({
+          key: "instrutorId",
+          label: "Instrutor",
+          options: instrutores,
+          placeholder: loadingInstrutores ? "Carregando..." : "Selecionar",
+        });
+      }
+
+      fields.push(
+        {
+          key: "tipo",
+          label: "Tipo",
+          options: PROVA_TIPO_OPTIONS,
+          placeholder: "Todos",
+        },
+        {
+          key: "periodo",
+          label: "Período",
+          type: "date-range",
+          placeholder: "Selecionar período",
+        },
+        {
+          key: "status",
+          label: "Status",
+          mode: "multiple" as const,
+          options: PROVA_STATUS_OPTIONS,
+          placeholder: "Selecionar",
+        }
+      );
+
+      return fields;
+    },
     [
-      cursos,
+      canFilterByInstrutor,
       instrutores,
       loadingCursos,
       loadingInstrutores,
       loadingTurmas,
       selectedCursoId,
-      turmas,
+      visibleCursos,
+      visibleTurmas,
     ]
   );
 
@@ -335,6 +455,14 @@ export function AtividadesProvasDashboard({
       selectedTurmaId,
     ]
   );
+
+  const filterGridClassName = isInstrutor
+    ? "lg:grid-cols-[repeat(16,minmax(0,1fr))_auto] lg:[&>*:nth-child(1)]:col-span-8 lg:[&>*:nth-child(2)]:col-span-8 lg:[&>*:nth-child(3)]:col-span-8 lg:[&>*:nth-child(4)]:col-span-2 lg:[&>*:nth-child(5)]:col-span-4 lg:[&>*:nth-child(6)]:col-span-2"
+    : "lg:grid-cols-12 lg:[&>*:nth-child(1)]:col-span-4 lg:[&>*:nth-child(2)]:col-span-4 lg:[&>*:nth-child(3)]:col-span-4 lg:[&>*:nth-child(4)]:col-span-3 lg:[&>*:nth-child(5)]:col-span-3 lg:[&>*:nth-child(6)]:col-span-3 lg:[&>*:nth-child(7)]:col-span-2 lg:[&>*:nth-child(8)]:col-span-1";
+
+  const rightActionsLayoutClassName = isInstrutor
+    ? "lg:col-auto lg:flex-row lg:items-end lg:justify-end xl:col-auto xl:flex-row xl:items-end xl:justify-end"
+    : "lg:col-span-1 lg:items-end lg:justify-end";
 
   return (
     <div className={cn("min-h-full space-y-4", className)}>
@@ -358,7 +486,7 @@ export function AtividadesProvasDashboard({
       <div className="border-b border-gray-200 top-0 z-10">
         <div className="py-4">
           <FilterBar
-            gridClassName="lg:grid-cols-12 lg:[&>*:nth-child(1)]:col-span-4 lg:[&>*:nth-child(2)]:col-span-4 lg:[&>*:nth-child(3)]:col-span-4 lg:[&>*:nth-child(4)]:col-span-3 lg:[&>*:nth-child(5)]:col-span-3 lg:[&>*:nth-child(6)]:col-span-3 lg:[&>*:nth-child(7)]:col-span-2 lg:[&>*:nth-child(8)]:col-span-1"
+            gridClassName={filterGridClassName}
             fields={filterFields}
             values={filterValues}
             onChange={(key, value) => {
@@ -421,12 +549,15 @@ export function AtividadesProvasDashboard({
                 size="lg"
                 onClick={() => handleApplyFilters()}
                 disabled={isLoading || !isSearchInputValid}
-                className="md:w-full xl:w-auto"
+                className={cn(
+                  "w-full",
+                  isInstrutor ? "lg:w-auto" : "xl:w-auto",
+                )}
               >
                 Pesquisar
               </ButtonCustom>
             }
-            rightActionsClassName="lg:col-span-1 lg:items-end lg:justify-end"
+            rightActionsClassName={rightActionsLayoutClassName}
           />
         </div>
       </div>

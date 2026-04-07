@@ -201,6 +201,15 @@ export function AlunosDashboard({ className }: { className?: string }) {
   }, [alunos]);
 
   useEffect(() => {
+    if (selectedCourseId) {
+      const allowed = new Set(cursosOptions.map((opt) => opt.value));
+      if (!allowed.has(selectedCourseId)) {
+        setSelectedCourseId(null);
+      }
+    }
+  }, [cursosOptions, selectedCourseId]);
+
+  useEffect(() => {
     if (selectedTurmaId) {
       const allowed = new Set(turmasOptions.map((opt) => opt.value));
       if (!allowed.has(selectedTurmaId)) {

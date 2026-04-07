@@ -14,6 +14,7 @@ export interface NormalizedAvaliacoesFilters {
   cursoId?: string | null;
   turmaId?: string | null;
   instrutorId?: string | null;
+  fetchAllPages?: boolean;
   semTurma?: boolean;
   tipo?: AvaliacaoTipo | null;
   tipoAtividade?: AvaliacaoTipoAtividade | null;
@@ -39,6 +40,12 @@ export interface AvaliacaoListItem {
   etiqueta?: string;
   status: AvaliacaoStatus;
   modalidade: string;
+  instrutorId?: string | null;
+  instrutor?: {
+    id?: string | null;
+    nome?: string | null;
+  } | null;
+  criadoPorId?: string | null;
   dataInicio?: string;
   dataFim?: string;
   duracaoMinutos?: number;
@@ -53,6 +60,7 @@ export interface AvaliacaoListItem {
   cursoNome?: string;
   turmaNome?: string;
   criadoPor?: {
+    id?: string | null;
     nome: string | null;
     avatarUrl: string | null;
     cpf: string | null;
@@ -89,6 +97,14 @@ function mapAvaliacaoToListItem(avaliacao: Avaliacao): AvaliacaoListItem {
     etiqueta: avaliacao.etiqueta,
     status: getAvaliacaoStatusEfetivo(avaliacao) as AvaliacaoStatus,
     modalidade: avaliacao.modalidade,
+    instrutorId: avaliacao.instrutorId ?? null,
+    instrutor: avaliacao.instrutor
+      ? {
+          id: avaliacao.instrutor.id ?? null,
+          nome: avaliacao.instrutor.nome ?? null,
+        }
+      : null,
+    criadoPorId: avaliacao.criadoPorId ?? null,
     dataInicio: avaliacao.dataInicio,
     dataFim: avaliacao.dataFim,
     duracaoMinutos: avaliacao.duracaoMinutos,
@@ -103,7 +119,14 @@ function mapAvaliacaoToListItem(avaliacao: Avaliacao): AvaliacaoListItem {
     cursoNome: extractName(avaliacao.curso) || avaliacao.cursoNome || undefined,
     turmaNome: extractName(avaliacao.turma) || avaliacao.turmaNome || undefined,
     // Incluir criadoPor se disponível
-    criadoPor: avaliacao.criadoPor,
+    criadoPor: avaliacao.criadoPor
+      ? {
+          id: avaliacao.criadoPor.id ?? null,
+          nome: avaliacao.criadoPor.nome ?? null,
+          avatarUrl: avaliacao.criadoPor.avatarUrl ?? null,
+          cpf: avaliacao.criadoPor.cpf ?? null,
+        }
+      : null,
   };
 }
 
@@ -119,7 +142,7 @@ async function fetchAvaliacoes(
         ? filters.modalidade.join(",")
         : undefined;
 
-    const response = await listAvaliacoes({
+    const buildParams = (page: number, pageSize: number) => ({
       cursoId: filters.cursoId ?? undefined,
       turmaId: filters.turmaId ?? undefined,
       instrutorId: filters.instrutorId ?? undefined,
@@ -131,17 +154,52 @@ async function fetchAvaliacoes(
       obrigatoria: filters.obrigatoria ?? undefined,
       periodo: filters.periodo ?? undefined,
       search: filters.search,
-      page: filters.page,
-      pageSize: filters.pageSize,
+      page,
+      pageSize,
       orderBy: filters.orderBy,
       order: filters.order,
     });
 
-    const items = (response.data ?? []).map(mapAvaliacaoToListItem);
+    const shouldFetchAllPages = filters.fetchAllPages === true;
+    const aggregated: Avaliacao[] = [];
+    let finalPagination: AvaliacoesQueryResult["pagination"] | undefined;
+
+    if (shouldFetchAllPages) {
+      const batchSize = Math.max(filters.pageSize, 100);
+      let page = 1;
+      let totalPages = 1;
+
+      do {
+        const response = await listAvaliacoes(buildParams(page, batchSize));
+        aggregated.push(...(response.data ?? []));
+
+        const total =
+          Number(response.pagination?.total ?? aggregated.length) || aggregated.length;
+        totalPages = Number(response.pagination?.totalPages ?? 1) || 1;
+        finalPagination = {
+          page: 1,
+          pageSize: filters.pageSize,
+          total,
+          totalPages: Math.max(1, Math.ceil(total / filters.pageSize)),
+        };
+        page += 1;
+      } while (page <= totalPages);
+    } else {
+      const response = await listAvaliacoes(buildParams(filters.page, filters.pageSize));
+      aggregated.push(...(response.data ?? []));
+      finalPagination = response.pagination ?? {
+        page: filters.page,
+        pageSize: filters.pageSize,
+        total: aggregated.length,
+        totalPages: Math.max(1, Math.ceil(aggregated.length / filters.pageSize)),
+      };
+    }
+
+    const items = aggregated.map(mapAvaliacaoToListItem);
 
     return {
       items,
-      pagination: response.pagination ?? {
+      pagination: finalPagination ?? {
         page: filters.page,
         pageSize: filters.pageSize,
         total: items.length,

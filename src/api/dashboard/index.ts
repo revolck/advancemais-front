@@ -1,277 +1,222 @@
 /**
  * API de Dashboard - Visão Geral da Plataforma
- * Agrega dados de múltiplas APIs para criar uma visão geral completa
+ * Consome o endpoint backend consolidado e normaliza o payload
+ * para o contrato usado pelos componentes atuais.
  */
 
-import { getVisaoGeral } from "@/api/cursos";
-import {
-  listAlunosDashboard,
-  listInstrutores,
-  listUsuarios,
-} from "@/api/usuarios";
-import { getAdminCompanyDashboard } from "@/api/empresas/admin";
-import { listVagas } from "@/api/vagas/admin";
-import type { PlataformaOverviewResponse } from "./types";
+import { apiFetch } from "@/api/client";
+import { dashboardRoutes } from "@/api/routes";
+import type {
+  PlataformaOverviewData,
+  PlataformaOverviewResponse,
+} from "./types";
+
+type OverviewRoleItem = {
+  role?: string;
+  total?: number;
+};
+
+type OverviewApiResponse = {
+  success?: boolean;
+  data?: {
+    metricasGerais?: {
+      totalUsuarios?: number;
+      totalCursos?: number;
+      totalEmpresas?: number;
+      totalVagas?: number;
+    };
+    cards?: {
+      cursos?: { total?: number; publicados?: number; turmasAtivas?: number };
+      alunos?: { total?: number; concluidos?: number };
+      instrutores?: { total?: number; ativos?: number };
+      empresas?: { total?: number; ativas?: number };
+      vagas?: { publicadas?: number; emAnalise?: number; encerradas?: number };
+    };
+    usuariosPorTipo?: {
+      total?: number;
+      items?: OverviewRoleItem[];
+    };
+    statusPorCategoria?: {
+      usuarios?: {
+        ativo?: number;
+        bloqueado?: number;
+        inativo?: number;
+        pendente?: number;
+        suspenso?: number;
+        total?: number;
+        // Compat com contratos antigos
+        ativos?: number;
+        bloqueados?: number;
+        inativos?: number;
+        pendentes?: number;
+      };
+      cursos?: { publicado?: number; encerrado?: number };
+      empresas?: { ativo?: number; bloqueado?: number };
+      vagas?: { publicado?: number; encerrado?: number };
+    };
+  };
+  message?: string;
+};
+
+function mapRolesToPorTipo(items?: OverviewRoleItem[]) {
+  const seed = {
+    alunos: 0,
+    instrutores: 0,
+    empresas: 0,
+    candidatos: 0,
+    admins: 0,
+    moderadores: 0,
+  };
+
+  if (!Array.isArray(items)) return seed;
+
+  return items.reduce((acc, item) => {
+    const role = item.role ?? "";
+    const value = Number(item.total ?? 0);
+    switch (role) {
+      case "ALUNO":
+        acc.alunos += value;
+        break;
+      case "INSTRUTOR":
+        acc.instrutores += value;
+        break;
+      case "EMPRESA":
+        acc.empresas += value;
+        break;
+      case "ALUNO_CANDIDATO":
+        acc.candidatos += value;
+        break;
+      case "ADMIN":
+        acc.admins += value;
+        break;
+      case "MODERADOR":
+        acc.moderadores += value;
+        break;
+      default:
+        break;
+    }
+    return acc;
+  }, seed);
+}
+
+function normalizeOverviewData(payload: OverviewApiResponse["data"]): PlataformaOverviewData {
+  const metricas = payload?.metricasGerais ?? {};
+  const cards = payload?.cards ?? {};
+  const status = payload?.statusPorCategoria ?? {};
+  const usuariosPorTipo = mapRolesToPorTipo(payload?.usuariosPorTipo?.items);
+
+  const usuariosStatus = status.usuarios ?? {};
+  const totalUsuarios =
+    Number(
+      metricas.totalUsuarios ??
+        usuariosStatus.total ??
+        payload?.usuariosPorTipo?.total ??
+        0
+    ) || 0;
+
+  return {
+    metricasGerais: {
+      totalCursos: Number(metricas.totalCursos ?? cards.cursos?.total ?? 0),
+      cursosPublicados: Number(cards.cursos?.publicados ?? 0),
+      cursosRascunho: 0,
+      totalTurmas: 0,
+      turmasAtivas: Number(cards.cursos?.turmasAtivas ?? 0),
+      turmasInscricoesAbertas: 0,
+      totalUsuarios,
+      totalAlunos: Number(cards.alunos?.total ?? usuariosPorTipo.alunos),
+      totalAlunosAtivos: 0,
+      totalAlunosInscritos: 0,
+      totalAlunosConcluidos: Number(cards.alunos?.concluidos ?? 0),
+      totalInstrutores: Number(cards.instrutores?.total ?? usuariosPorTipo.instrutores),
+      totalInstrutoresAtivos: Number(cards.instrutores?.ativos ?? 0),
+      totalCandidatos: Number(usuariosPorTipo.candidatos),
+      totalCandidatosAtivos: 0,
+      totalEmpresas: Number(metricas.totalEmpresas ?? cards.empresas?.total ?? 0),
+      empresasAtivas: Number(cards.empresas?.ativas ?? status.empresas?.ativo ?? 0),
+      empresasBloqueadas: Number(status.empresas?.bloqueado ?? 0),
+      empresasPendentes: 0,
+      totalVagas: Number(metricas.totalVagas ?? 0),
+      vagasPublicadas: Number(cards.vagas?.publicadas ?? status.vagas?.publicado ?? 0),
+      vagasEmAnalise: Number(cards.vagas?.emAnalise ?? 0),
+      vagasEncerradas: Number(cards.vagas?.encerradas ?? status.vagas?.encerrado ?? 0),
+      faturamentoMesAtual: 0,
+      faturamentoMesAnterior: 0,
+      totalTransacoes: 0,
+      transacoesAprovadas: 0,
+      transacoesPendentes: 0,
+    },
+      usuarios: {
+      porTipo: usuariosPorTipo,
+      porStatus: {
+        ativos: Number(usuariosStatus.ativo ?? usuariosStatus.ativos ?? 0),
+        inativos: Number(usuariosStatus.inativo ?? usuariosStatus.inativos ?? 0),
+        bloqueados: Number(
+          usuariosStatus.bloqueado ?? usuariosStatus.bloqueados ?? 0
+        ),
+        pendentes: Number(
+          usuariosStatus.pendente ?? usuariosStatus.pendentes ?? 0
+        ),
+      },
+      crescimentoMensal: [],
+    },
+    cursos: {
+      porStatus: {
+        publicados: Number(cards.cursos?.publicados ?? status.cursos?.publicado ?? 0),
+        rascunho: 0,
+        despublicados: Number(status.cursos?.encerrado ?? 0),
+      },
+      porCategoria: [],
+      crescimentoMensal: [],
+    },
+    empresas: {
+      porStatus: {
+        ativas: Number(cards.empresas?.ativas ?? status.empresas?.ativo ?? 0),
+        bloqueadas: Number(status.empresas?.bloqueado ?? 0),
+        pendentes: 0,
+        inativas: 0,
+      },
+      porPlano: [],
+      crescimentoMensal: [],
+    },
+    vagas: {
+      porStatus: {
+        publicadas: Number(cards.vagas?.publicadas ?? status.vagas?.publicado ?? 0),
+        emAnalise: Number(cards.vagas?.emAnalise ?? 0),
+        encerradas: Number(cards.vagas?.encerradas ?? status.vagas?.encerrado ?? 0),
+        pausadas: 0,
+      },
+      crescimentoMensal: [],
+    },
+    faturamento: {
+      porMes: [],
+      porCategoria: [],
+      topCursos: [],
+    },
+  };
+}
 
 /**
- * Obtém visão geral completa da plataforma
- * Agrega dados de cursos, usuários, empresas e vagas
+ * Obtém visão geral completa da plataforma a partir do endpoint consolidado.
  */
 export async function getPlataformaOverview(
   init?: RequestInit
 ): Promise<PlataformaOverviewResponse> {
-  try {
-    // Busca dados de múltiplas APIs em paralelo
-    const [
-      cursosVisaoGeral,
-      alunosResponse,
-      instrutoresResponse,
-      usuariosResponse,
-      empresasResponse,
-      vagasResponse,
-    ] = await Promise.allSettled([
-      getVisaoGeral(),
-      listAlunosDashboard({ page: 1 }),
-      listInstrutores({ page: 1, limit: 1 }),
-      listUsuarios({ page: 1, limit: 1 }),
-      getAdminCompanyDashboard({ page: 1 }),
-      listVagas({ page: 1, pageSize: 1 }),
-    ]);
+  const response = await apiFetch<OverviewApiResponse>(dashboardRoutes.overview(), {
+    init: {
+      method: "GET",
+      ...(init ?? {}),
+    },
+    cache: "no-cache",
+  });
 
-    // Extrai dados de cursos
-    const cursosData =
-      cursosVisaoGeral.status === "fulfilled" && cursosVisaoGeral.value.success
-        ? cursosVisaoGeral.value.data
-        : null;
-
-    // Extrai dados de alunos
-    const alunosData =
-      alunosResponse.status === "fulfilled" ? alunosResponse.value : null;
-
-    // Extrai dados de instrutores
-    const instrutoresData =
-      instrutoresResponse.status === "fulfilled"
-        ? instrutoresResponse.value
-        : null;
-
-    // Extrai dados de usuários
-    const usuariosData =
-      usuariosResponse.status === "fulfilled" ? usuariosResponse.value : null;
-
-    // Extrai dados de empresas
-    const empresasData =
-      empresasResponse.status === "fulfilled" ? empresasResponse.value : null;
-
-    // Extrai dados de vagas
-    const vagasData =
-      vagasResponse.status === "fulfilled" ? vagasResponse.value : null;
-
-    // Agrega métricas gerais
-    const metricasGerais = {
-      // Cursos (da visão geral de cursos)
-      totalCursos: cursosData?.metricasGerais.totalCursos || 0,
-      cursosPublicados: 0, // Não disponível em VisaoGeralMetricasGerais
-      cursosRascunho: 0, // Não disponível em VisaoGeralMetricasGerais
-      totalTurmas: cursosData?.metricasGerais.totalTurmas || 0,
-      turmasAtivas: 0, // Não disponível em VisaoGeralMetricasGerais
-      turmasInscricoesAbertas: 0, // Não disponível em VisaoGeralMetricasGerais
-
-      // Alunos
-      totalAlunos: alunosData?.pagination?.total || 0,
-      totalAlunosAtivos: 0, // Não disponível em VisaoGeralMetricasGerais
-      totalAlunosInscritos: cursosData?.metricasGerais.totalInscricoes || 0,
-      totalAlunosConcluidos: 0, // Não disponível em VisaoGeralMetricasGerais
-
-      // Instrutores
-      totalInstrutores: instrutoresData?.pagination?.total || 0,
-      totalInstrutoresAtivos:
-        instrutoresData?.data?.filter((i) => i.status === "ATIVO").length || 0,
-
-      // Candidatos (via usuários com role ALUNO_CANDIDATO)
-      totalCandidatos:
-        usuariosData?.usuarios?.filter((u: any) => u.role === "ALUNO_CANDIDATO")
-          .length || 0,
-      totalCandidatosAtivos:
-        usuariosData?.usuarios?.filter(
-          (u: any) => u.role === "ALUNO_CANDIDATO" && u.status === "ATIVO"
-        ).length || 0,
-
-      // Usuários totais
-      totalUsuarios: usuariosData?.pagination?.total || 0,
-
-      // Empresas
-      totalEmpresas:
-        empresasResponse.status === "fulfilled" &&
-        empresasData !== null &&
-        "data" in empresasData &&
-        "pagination" in empresasData
-          ? empresasData.pagination.total
-          : empresasData !== null &&
-            "data" in empresasData &&
-            Array.isArray(empresasData.data)
-          ? empresasData.data.length
-          : 0,
-      empresasAtivas:
-        empresasData !== null &&
-        "data" in empresasData &&
-        Array.isArray(empresasData.data)
-          ? empresasData.data.filter((e: any) => e.status === "ATIVO").length
-          : 0,
-      empresasBloqueadas:
-        empresasData !== null &&
-        "data" in empresasData &&
-        Array.isArray(empresasData.data)
-          ? empresasData.data.filter((e: any) => e.status === "BLOQUEADO")
-              .length
-          : 0,
-      empresasPendentes:
-        empresasData !== null &&
-        "data" in empresasData &&
-        Array.isArray(empresasData.data)
-          ? empresasData.data.filter((e: any) => e.status === "PENDENTE").length
-          : 0,
-
-      // Vagas
-      totalVagas: Array.isArray(vagasData)
-        ? vagasData.length
-        : vagasData?.pagination?.total || vagasData?.data?.length || 0,
-      vagasPublicadas:
-        (Array.isArray(vagasData) ? vagasData : vagasData?.data || []).filter(
-          (v: any) => v.status === "PUBLICADO"
-        ).length || 0,
-      vagasEmAnalise:
-        (Array.isArray(vagasData) ? vagasData : vagasData?.data || []).filter(
-          (v: any) => v.status === "EM_ANALISE"
-        ).length || 0,
-      vagasEncerradas:
-        (Array.isArray(vagasData) ? vagasData : vagasData?.data || []).filter(
-          (v: any) => v.status === "ENCERRADA"
-        ).length || 0,
-
-      // Financeiro (da visão geral de cursos)
-      faturamentoMesAtual: cursosData?.faturamento.total || 0,
-      faturamentoMesAnterior: 0, // Não disponível em VisaoGeralFaturamento
-      totalTransacoes: 0, // Não disponível em VisaoGeralFaturamento
-      transacoesAprovadas: 0, // Não disponível em VisaoGeralFaturamento
-      transacoesPendentes: 0, // Não disponível em VisaoGeralFaturamento
-    };
-
-    // Estatísticas de usuários (simplificado)
-    const usuariosStats = {
-      porTipo: {
-        alunos: alunosData?.pagination?.total || 0,
-        instrutores: instrutoresData?.pagination?.total || 0,
-        empresas:
-          empresasData !== null &&
-          "data" in empresasData &&
-          "pagination" in empresasData
-            ? empresasData.pagination.total
-            : empresasData !== null &&
-              "data" in empresasData &&
-              Array.isArray(empresasData.data)
-            ? empresasData.data.length
-            : 0,
-        candidatos:
-          usuariosData?.usuarios?.filter(
-            (u: any) => u.role === "ALUNO_CANDIDATO"
-          ).length || 0,
-        admins:
-          usuariosData?.usuarios?.filter((u: any) => u.role === "ADMIN")
-            .length || 0,
-        moderadores:
-          usuariosData?.usuarios?.filter((u: any) => u.role === "MODERADOR")
-            .length || 0,
-      },
-      porStatus: {
-        ativos:
-          usuariosData?.usuarios?.filter((u: any) => u.status === "ATIVO")
-            .length || 0,
-        inativos:
-          usuariosData?.usuarios?.filter((u: any) => u.status === "INATIVO")
-            .length || 0,
-        bloqueados:
-          usuariosData?.usuarios?.filter((u: any) => u.status === "BLOQUEADO")
-            .length || 0,
-        pendentes:
-          usuariosData?.usuarios?.filter((u: any) => u.status === "PENDENTE")
-            .length || 0,
-      },
-      crescimentoMensal: [], // TODO: Buscar dados históricos quando disponível
-    };
-
-    // Estatísticas de cursos (simplificado)
-    const cursosStats = {
-      porStatus: {
-        publicados: metricasGerais.cursosPublicados,
-        rascunho: metricasGerais.cursosRascunho,
-        despublicados: 0, // TODO: Buscar quando disponível
-      },
-      porCategoria: [], // TODO: Buscar categorias quando disponível
-      crescimentoMensal: [], // TODO: Buscar dados históricos quando disponível
-    };
-
-    // Estatísticas de empresas (simplificado)
-    const empresasStats = {
-      porStatus: {
-        ativas: metricasGerais.empresasAtivas,
-        bloqueadas: metricasGerais.empresasBloqueadas,
-        pendentes: metricasGerais.empresasPendentes,
-        inativas:
-          empresasData !== null &&
-          "data" in empresasData &&
-          Array.isArray(empresasData.data)
-            ? empresasData.data.filter((e: any) => e.status === "INATIVO")
-                .length
-            : 0,
-      },
-      porPlano: [], // TODO: Buscar planos quando disponível
-      crescimentoMensal: [], // TODO: Buscar dados históricos quando disponível
-    };
-
-    // Estatísticas de vagas (simplificado)
-    const vagasStats = {
-      porStatus: {
-        publicadas: metricasGerais.vagasPublicadas,
-        emAnalise: metricasGerais.vagasEmAnalise,
-        encerradas: metricasGerais.vagasEncerradas,
-        pausadas:
-          (Array.isArray(vagasData) ? vagasData : vagasData?.data || []).filter(
-            (v: any) => v.status === "PAUSADA"
-          ).length || 0,
-      },
-      crescimentoMensal: [], // TODO: Buscar dados históricos quando disponível
-    };
-
-    // Estatísticas de faturamento (da visão geral de cursos)
-    const faturamentoStats = {
-      porMes: [], // TODO: Buscar dados históricos quando disponível
-      porCategoria: [], // TODO: Buscar por categoria quando disponível
-      topCursos:
-        cursosData?.faturamento.cursos?.map((c) => ({
-          cursoId: String(c.cursoId),
-          cursoNome: c.nome,
-          cursoCodigo: String(c.cursoId),
-          faturamento: c.faturamento,
-        })) || [],
-    };
-
-    const response: PlataformaOverviewResponse = {
-      success: true,
-      data: {
-        metricasGerais,
-        usuarios: usuariosStats,
-        cursos: cursosStats,
-        empresas: empresasStats,
-        vagas: vagasStats,
-        faturamento: faturamentoStats,
-      },
-    };
-
-    return response;
-  } catch (error) {
-    console.error("Erro ao buscar visão geral da plataforma:", error);
-    throw error;
+  if (!response?.success || !response.data) {
+    throw new Error(response?.message || "Resposta inválida da API de overview");
   }
+
+  return {
+    success: true,
+    data: normalizeOverviewData(response.data),
+  };
 }
 
 export * from "./financeiro";

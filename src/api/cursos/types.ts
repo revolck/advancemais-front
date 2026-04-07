@@ -327,6 +327,7 @@ export interface TurmaProva {
   moduloId?: string;
   modalidade?: "ONLINE" | "PRESENCIAL" | "AO_VIVO" | "SEMIPRESENCIAL";
   instrutorId?: string;
+  criadoPorId?: string | null;
   curso?:
     | string
     | {
@@ -364,7 +365,7 @@ export interface TurmaProva {
   criadoEm?: string;
   atualizadoEm?: string;
   criadoPor?: {
-    id?: string;
+    id?: string | null;
     nome?: string | null;
     nomeCompleto?: string | null;
     role?: string | null;
@@ -1434,6 +1435,7 @@ export interface Avaliacao {
   data?: string; // Alias de criadoEm
   pesoNota?: number; // Alias de peso
   criadoPor?: {
+    id?: string | null;
     nome: string | null;
     avatarUrl: string | null;
     cpf: string | null;

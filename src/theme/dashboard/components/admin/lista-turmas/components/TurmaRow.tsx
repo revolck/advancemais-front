@@ -13,6 +13,10 @@ import {
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import type { CursoTurma } from "@/api/cursos";
+import {
+  getTurmaInstrutoresResumo,
+  getTurmaInstrutoresVinculados,
+} from "../utils/instrutores";
 
 interface TurmaComCurso extends CursoTurma {
   cursoId?: number;
@@ -22,6 +26,7 @@ interface TurmaComCurso extends CursoTurma {
 interface TurmaRowProps {
   turma: CursoTurma | TurmaComCurso;
   showCurso?: boolean;
+  showInstrutor?: boolean;
 }
 
 const getStatusLabel = (status?: string) => {
@@ -155,6 +160,7 @@ const getMetodoBadgeColor = (metodo?: string) => {
 export function TurmaRow({ 
   turma, 
   showCurso = false,
+  showInstrutor = true,
 }: TurmaRowProps) {
   const turmaComCurso = turma as TurmaComCurso;
   const turmaDetailsHref = turmaComCurso.cursoId
@@ -162,6 +168,8 @@ export function TurmaRow({
         String(turmaComCurso.cursoId)
       )}`
     : `/dashboard/cursos/turmas/${turma.id}`;
+  const instrutoresVinculados = getTurmaInstrutoresVinculados(turma);
+  const instrutoresResumo = getTurmaInstrutoresResumo(turma);
   
   return (
     <TableRow 
@@ -235,12 +243,36 @@ export function TurmaRow({
           </span>
         </div>
       </TableCell>
-      <TableCell className="py-4">
-        <div className="flex items-center gap-2 text-sm text-gray-700">
-          <User className="h-4 w-4 text-gray-400" />
-          <span>{turma?.instrutor?.nome || turma?.instrutor?.id || "—"}</span>
-        </div>
-      </TableCell>
+      {showInstrutor && (
+        <TableCell className="py-4">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="flex items-center gap-2 text-sm text-gray-700">
+                <User className="h-4 w-4 text-gray-400" />
+                <span className="truncate max-w-[180px]">{instrutoresResumo}</span>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="max-w-xs">
+              {instrutoresVinculados.length === 0 ? (
+                <span>Nenhum instrutor vinculado</span>
+              ) : (
+                <div className="space-y-1">
+                  {instrutoresVinculados.map((instrutor) => (
+                    <div key={`${instrutor.id}-${instrutor.nome}`} className="text-xs">
+                      <div className="font-medium">{instrutor.nome}</div>
+                      {instrutor.email && (
+                        <div className="text-muted-foreground">
+                          {instrutor.email}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </TooltipContent>
+          </Tooltip>
+        </TableCell>
+      )}
       <TableCell className="py-4">
         <Tooltip>
           <TooltipTrigger asChild>

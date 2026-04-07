@@ -30,6 +30,8 @@ import {
   getSearchValidationMessage,
 } from "../shared/filterUtils";
 import { useInstrutoresForSelect } from "./hooks/useInstrutoresForSelect";
+import { useUserRole } from "@/hooks/useUserRole";
+import { UserRole } from "@/config/roles";
 
 const createEmptyDateRange = (): DateRange => ({ from: null, to: null });
 
@@ -56,6 +58,11 @@ const OBRIGATORIA_OPTIONS = [
 const SEARCH_HELPER_TEXT = "Pesquise pelo título da aula.";
 
 export function AulasDashboard({ className }: { className?: string }) {
+  const userRole = useUserRole();
+  const showInstrutorFilter =
+    userRole === UserRole.ADMIN ||
+    userRole === UserRole.MODERADOR ||
+    userRole === UserRole.PEDAGOGICO;
   const [pendingSearchTerm, setPendingSearchTerm] = useState("");
   const [appliedSearchTerm, setAppliedSearchTerm] = useState("");
   const [selectedCursoId, setSelectedCursoId] = useState<string | null>(null);
@@ -96,7 +103,7 @@ export function AulasDashboard({ className }: { className?: string }) {
     includeCursoNameInLabel: false,
   });
   const { instrutores, isLoading: loadingInstrutores } =
-    useInstrutoresForSelect();
+    useInstrutoresForSelect(showInstrutorFilter);
 
   const dataInicioFiltro = useMemo(
     () =>
@@ -221,6 +228,12 @@ export function AulasDashboard({ className }: { className?: string }) {
     } catch {}
   }, [sortField, sortDirection]);
 
+  useEffect(() => {
+    if (!showInstrutorFilter && selectedInstrutorId) {
+      setSelectedInstrutorId(null);
+    }
+  }, [selectedInstrutorId, showInstrutorFilter]);
+
   // A API já faz paginação, filtros, busca e ordenação no backend
   // Não precisa ordenar client-side, a API já retorna ordenado conforme orderBy e order
   const filteredAulas = aulas; // A API já retorna ordenado
@@ -281,7 +294,7 @@ export function AulasDashboard({ className }: { className?: string }) {
 
   // Layout:
   // Linha 1: Pesquisar, Curso, Turma
-  // Linha 2: Modalidade, Período, Instrutor, Status, Obrigatória, Pesquisar
+  // Linha 2: Modalidade, Período, [Instrutor], Status, Obrigatória, Pesquisar
   const filterFields: FilterField[] = useMemo(
     () => [
       {
@@ -317,12 +330,16 @@ export function AulasDashboard({ className }: { className?: string }) {
         type: "date-range",
         placeholder: "Selecionar período",
       },
-      {
-        key: "instrutorId",
-        label: "Instrutor",
-        options: instrutores,
-        placeholder: loadingInstrutores ? "Carregando..." : "Selecionar",
-      },
+      ...(showInstrutorFilter
+        ? ([
+            {
+              key: "instrutorId",
+              label: "Instrutor",
+              options: instrutores,
+              placeholder: loadingInstrutores ? "Carregando..." : "Selecionar",
+            } satisfies FilterField,
+          ] as const)
+        : []),
       {
         key: "status",
         label: "Status",
@@ -344,6 +361,7 @@ export function AulasDashboard({ className }: { className?: string }) {
       loadingInstrutores,
       loadingTurmas,
       selectedCursoId,
+      showInstrutorFilter,
       turmas,
     ]
   );
@@ -389,7 +407,11 @@ export function AulasDashboard({ className }: { className?: string }) {
       <div className="border-b border-gray-200 top-0 z-10">
         <div className="py-4">
           <FilterBar
-            gridClassName="lg:grid-cols-12 lg:[&>*:nth-child(1)]:col-span-4 lg:[&>*:nth-child(2)]:col-span-4 lg:[&>*:nth-child(3)]:col-span-4 lg:[&>*:nth-child(4)]:col-span-2 lg:[&>*:nth-child(5)]:col-span-4 lg:[&>*:nth-child(6)]:col-span-2 lg:[&>*:nth-child(7)]:col-span-2 lg:[&>*:nth-child(8)]:col-span-1 lg:[&>*:nth-child(9)]:col-span-1"
+            gridClassName={
+              showInstrutorFilter
+                ? "lg:grid-cols-12 lg:[&>*:nth-child(1)]:col-span-4 lg:[&>*:nth-child(2)]:col-span-4 lg:[&>*:nth-child(3)]:col-span-4 lg:[&>*:nth-child(4)]:col-span-2 lg:[&>*:nth-child(5)]:col-span-4 lg:[&>*:nth-child(6)]:col-span-2 lg:[&>*:nth-child(7)]:col-span-2 lg:[&>*:nth-child(8)]:col-span-1 lg:[&>*:nth-child(9)]:col-span-1"
+                : "lg:grid-cols-12 lg:[&>*:nth-child(1)]:col-span-4 lg:[&>*:nth-child(2)]:col-span-4 lg:[&>*:nth-child(3)]:col-span-4 lg:[&>*:nth-child(4)]:col-span-3 lg:[&>*:nth-child(5)]:col-span-3 lg:[&>*:nth-child(6)]:col-span-2 lg:[&>*:nth-child(7)]:col-span-2 lg:[&>*:nth-child(8)]:col-span-2"
+            }
             fields={filterFields}
             values={filterValues}
             onChange={(key, value) => {

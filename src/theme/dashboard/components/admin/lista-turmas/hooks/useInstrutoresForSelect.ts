@@ -2,39 +2,36 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { SelectOption } from "@/components/ui/custom/select/types";
-import { listUsuarios } from "@/api/usuarios";
-
-function getTokenFromCookie(): string | undefined {
-  if (typeof document === "undefined") return undefined;
-  return document.cookie
-    .split("; ")
-    .find((row) => row.startsWith("token="))
-    ?.split("=")[1];
-}
+import { listInstrutores } from "@/api/usuarios";
+import { UserRole } from "@/config/roles";
+import { useUserRole } from "@/hooks/useUserRole";
 
 export function useInstrutoresForSelect() {
+  const userRole = useUserRole();
   const [options, setOptions] = useState<SelectOption[]>([]);
   const [raw, setRaw] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const canLoadInstrutores =
+    userRole != null &&
+    [UserRole.ADMIN, UserRole.MODERADOR, UserRole.PEDAGOGICO].includes(
+      userRole
+    );
 
   const fetchInstrutores = useCallback(async () => {
+    if (!canLoadInstrutores) {
+      setOptions([]);
+      setRaw([]);
+      setError(null);
+      setIsLoading(false);
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
     try {
-      const token = getTokenFromCookie();
-      const res = await listUsuarios(
-        { page: 1, pageSize: 100, role: "INSTRUTOR", status: "ATIVO" },
-        token
-      );
-
-      const data: any[] = Array.isArray((res as any)?.usuarios)
-        ? (res as any).usuarios
-        : Array.isArray((res as any)?.data)
-        ? (res as any).data
-        : Array.isArray(res as any)
-        ? (res as any)
-        : [];
+      const res = await listInstrutores({ limit: 100, status: "ATIVO" });
+      const data: any[] = Array.isArray(res?.data) ? res.data : [];
 
       const mapped = data
         .map((u: any) => ({
@@ -71,10 +68,10 @@ export function useInstrutoresForSelect() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [canLoadInstrutores]);
 
   useEffect(() => {
-    fetchInstrutores();
+    void fetchInstrutores();
   }, [fetchInstrutores]);
 
   return { instrutores: options, rawInstrutores: raw, isLoading, error, refetch: fetchInstrutores };

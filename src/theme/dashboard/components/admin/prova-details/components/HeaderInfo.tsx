@@ -27,7 +27,6 @@ import {
   type TurmaProva,
 } from "@/api/cursos";
 import { cn } from "@/lib/utils";
-import { useAuth } from "@/hooks/useAuth";
 import { toastCustom } from "@/components/ui/custom";
 import { getAvaliacaoActionRestrictions } from "../utils/validations";
 import { DeleteAvaliacaoModal } from "../modals/DeleteAvaliacaoModal";
@@ -37,6 +36,8 @@ import { getAvaliacaoStatusEfetivo } from "../../lista-atividades-provas/utils/a
 interface HeaderInfoProps {
   prova: TurmaProva;
   hasRespostas?: boolean;
+  userRole?: string | null;
+  userId?: string | null;
 }
 
 function mergeAvaliacaoIntoProva(
@@ -74,16 +75,24 @@ function mergeAvaliacaoIntoProva(
       avaliacao.instrutorId === undefined
         ? prova.instrutorId
         : avaliacao.instrutorId,
+    criadoPorId:
+      avaliacao.criadoPorId === undefined
+        ? prova.criadoPorId
+        : avaliacao.criadoPorId,
     instrutor:
       avaliacao.instrutor === undefined ? prova.instrutor : avaliacao.instrutor,
     atualizadoEm: avaliacao.atualizadoEm ?? prova.atualizadoEm,
   };
 }
 
-export function HeaderInfo({ prova, hasRespostas }: HeaderInfoProps) {
+export function HeaderInfo({
+  prova,
+  hasRespostas,
+  userRole,
+  userId,
+}: HeaderInfoProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { user } = useAuth();
   const [isActionsOpen, setIsActionsOpen] = useState(false);
   const [isPublicarModalOpen, setIsPublicarModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -91,8 +100,8 @@ export function HeaderInfo({ prova, hasRespostas }: HeaderInfoProps) {
   const status = getAvaliacaoStatusEfetivo(prova);
   const restrictions = getAvaliacaoActionRestrictions(prova, {
     hasRespostas,
-    userRole: user?.role,
-    userId: user?.id,
+    userRole,
+    userId,
   });
   const normalizedStatus = String(status).toUpperCase();
   const isStatusActive = ["PUBLICADA", "ATIVO", "ATIVA"].includes(normalizedStatus);

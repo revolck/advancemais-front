@@ -45,6 +45,7 @@ import {
 } from "../hooks/useTurmasForSelect";
 import { useInstrutoresForSelect } from "../hooks/useInstrutoresForSelect";
 import { useCursosForSelect } from "../hooks/useCursosForSelect";
+import { getUserProfile } from "@/api/usuarios";
 import { useAuth } from "@/hooks/useAuth";
 import { queryKeys } from "@/lib/react-query/queryKeys";
 import { useQuery } from "@tanstack/react-query";
@@ -312,6 +313,27 @@ export function CreateProvaForm({
   const [isLoading, setIsLoading] = useState(false);
   const [loadingStep, setLoadingStep] = useState<string>("");
   const [isInitializing, setIsInitializing] = useState(mode === "edit");
+  const isInstrutor = user?.role === "INSTRUTOR";
+  const {
+    data: instrutorProfileResponse,
+    isLoading: isLoadingInstrutorProfile,
+  } = useQuery({
+    queryKey: ["user-profile", "avaliacoes-create-form"],
+    queryFn: () => getUserProfile(),
+    enabled: isInstrutor,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    retry: 1,
+  });
+  const currentInstrutorId = isInstrutor
+    ? instrutorProfileResponse &&
+      "usuario" in instrutorProfileResponse &&
+      instrutorProfileResponse.usuario?.id
+      ? instrutorProfileResponse.usuario.id
+      : null
+    : null;
 
   const { cursos, isLoading: loadingCursos } = useCursosForSelect();
   const {
@@ -321,7 +343,9 @@ export function CreateProvaForm({
     error: turmasError,
   } = useTurmasForSelect(formData.cursoId || null); // Filtra turmas pelo curso selecionado
   const { instrutores, isLoading: loadingInstrutores } =
-    useInstrutoresForSelect();
+    useInstrutoresForSelect({
+      enabled: !isInstrutor,
+    });
 
   // Obter cursoId da turma selecionada
   const cursoIdFromTurma = React.useMemo(() => {
@@ -329,7 +353,7 @@ export function CreateProvaForm({
     const turmaSelecionada = turmasRawData.find(
       (t) => t.id === formData.turmaId
     );
-    return turmaSelecionada?.cursoId ? Number(turmaSelecionada.cursoId) : null;
+    return turmaSelecionada?.cursoId || null;
   }, [formData.turmaId, turmasRawData]);
 
   // Obter modalidade da turma selecionada (mapeamento metodo -> modalidade)
@@ -372,24 +396,28 @@ export function CreateProvaForm({
         }
         
         // Herdar instrutor da turma apenas se não houver instrutor selecionado
-        if (instrutorIdFromTurma && !prev.instrutorId) {
+        if (!isInstrutor && instrutorIdFromTurma && !prev.instrutorId) {
           updates.instrutorId = instrutorIdFromTurma;
         }
         
         return { ...prev, ...updates };
       });
     }
-  }, [modalidadeFromTurma, instrutorIdFromTurma, formData.turmaId]);
+  }, [modalidadeFromTurma, instrutorIdFromTurma, formData.turmaId, isInstrutor]);
 
-  // Auto-fill de instrutorId para role INSTRUTOR
+  // Auto-fill de instrutorId para role INSTRUTOR com o ID real do perfil
   useEffect(() => {
-    if (user?.role === "INSTRUTOR" && user?.id && !formData.instrutorId) {
+    if (
+      isInstrutor &&
+      currentInstrutorId &&
+      formData.instrutorId !== currentInstrutorId
+    ) {
       setFormData((prev) => ({
         ...prev,
-        instrutorId: user.id,
+        instrutorId: currentInstrutorId,
       }));
     }
-  }, [user?.role, user?.id, formData.instrutorId]);
+  }, [currentInstrutorId, formData.instrutorId, isInstrutor]);
 
   // Buscar módulos da turma quando localização for MODULO
   const { data: modulosDaTurma, isLoading: loadingModulos } = useQuery({
@@ -408,6 +436,7 @@ export function CreateProvaForm({
   const isAdminModPed = ["ADMIN", "MODERADOR", "PEDAGOGICO"].includes(
     user?.role || ""
   );
+  const showInstrutorField = !isInstrutor;
 
   // Carregar dados iniciais no modo de edição
   useEffect(() => {
@@ -712,6 +741,13 @@ export function CreateProvaForm({
       return;
     }
 
+    if (isInstrutor && !currentInstrutorId) {
+      toastCustom.error(
+        "Não foi possível identificar o instrutor autenticado. Recarregue a página e tente novamente."
+      );
+      return;
+    }
+
     setIsLoading(true);
     setLoadingStep("Salvando prova...");
 
@@ -739,6 +775,9 @@ export function CreateProvaForm({
       const dataFim = formData.dataFim
         ? formatDateForAPI(formData.dataFim)
         : undefined;
+      const resolvedInstrutorId = isInstrutor
+        ? currentInstrutorId || undefined
+        : formData.instrutorId || undefined;
 
       const payload: CreateProvaPayload | UpdateProvaPayload = {
         titulo: formData.titulo.trim(),
@@ -763,7 +802,7 @@ export function CreateProvaForm({
         modalidade: formData.modalidade
           ? (formData.modalidade as Modalidade)
           : undefined,
-        instrutorId: formData.instrutorId || undefined,
+        instrutorId: resolvedInstrutorId,
         obrigatoria: formData.obrigatoria,
         status: formData.status,
         // Dados específicos de atividade (legado)
@@ -827,7 +866,7 @@ export function CreateProvaForm({
             ...(valePontoEfetivo && formData.peso ? { peso: Number(formData.peso) } : {}),
             etiqueta: formData.etiqueta.trim() || undefined,
             cursoId: formData.cursoId || undefined,
-            instrutorId: formData.instrutorId || undefined,
+            instrutorId: resolvedInstrutorId,
             dataInicio: dataInicio as string,
             dataFim: dataFim as string,
             horaInicio: formData.horaInicio,
@@ -940,7 +979,7 @@ export function CreateProvaForm({
               : {}),
             etiqueta: formData.etiqueta.trim() || undefined,
             cursoId: formData.cursoId || undefined,
-            instrutorId: formData.instrutorId || undefined,
+            instrutorId: resolvedInstrutorId,
             dataInicio: dataInicio as string,
             dataFim: dataFim as string,
             horaInicio: formData.horaInicio,
@@ -1603,36 +1642,32 @@ export function CreateProvaForm({
               </div>
 
               {/* Instrutor */}
-              <div className="flex-1 min-w-0">
-                {loadingInstrutores ? (
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium text-gray-700">
-                      Instrutor
-                    </Label>
-                    <Skeleton className="h-10 w-full rounded-md" />
-                  </div>
-                ) : (
-                  <SelectCustom
-                    label="Instrutor"
-                    placeholder="Selecione o instrutor"
-                    options={[
-                      { value: "", label: "Sem instrutor (vincular depois)" },
-                      ...instrutores,
-                    ]}
-                    value={formData.instrutorId}
-                    onChange={(value) =>
-                      handleInputChange("instrutorId", value || "")
-                    }
-                    error={errors.instrutorId}
-                    disabled={user?.role === "INSTRUTOR"}
-                    helperText={
-                      user?.role === "INSTRUTOR"
-                        ? "Seu ID será automaticamente atribuído"
-                        : undefined
-                    }
-                  />
-                )}
-              </div>
+              {showInstrutorField && (
+                <div className="flex-1 min-w-0">
+                  {loadingInstrutores ? (
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-gray-700">
+                        Instrutor
+                      </Label>
+                      <Skeleton className="h-10 w-full rounded-md" />
+                    </div>
+                  ) : (
+                    <SelectCustom
+                      label="Instrutor"
+                      placeholder="Selecione o instrutor"
+                      options={[
+                        { value: "", label: "Sem instrutor (vincular depois)" },
+                        ...instrutores,
+                      ]}
+                      value={formData.instrutorId}
+                      onChange={(value) =>
+                        handleInputChange("instrutorId", value || "")
+                      }
+                      error={errors.instrutorId}
+                    />
+                  )}
+                </div>
+              )}
 
               {/* Módulo (se localização for MODULO e turma selecionada) */}
               {formData.turmaId && formData.localizacao === "MODULO" && (
@@ -1827,6 +1862,7 @@ export function CreateProvaForm({
               size="md"
               variant="primary"
               isLoading={isLoading}
+              disabled={isLoading || (isInstrutor && isLoadingInstrutorProfile)}
             >
               {isLoading
                 ? mode === "edit"

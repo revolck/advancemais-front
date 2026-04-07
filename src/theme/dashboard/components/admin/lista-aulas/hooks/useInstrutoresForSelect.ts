@@ -12,7 +12,7 @@ interface SelectOption {
  * Hook para buscar instrutores para o select
  * Usado por Admin/Moderador/Pedagógico para selecionar instrutor da aula
  */
-export function useInstrutoresForSelect() {
+export function useInstrutoresForSelect(enabled = true) {
   const { data, isLoading, error } = useQuery({
     queryKey: ["instrutores-select"],
     queryFn: async () => {
@@ -23,6 +23,7 @@ export function useInstrutoresForSelect() {
       });
       return response;
     },
+    enabled,
     staleTime: 5 * 60 * 1000, // 5 minutos
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,

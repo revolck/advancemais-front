@@ -4,4 +4,5 @@ export { VisaoGeralPedagogico } from "./visao-geral.pedagogico";
 export { VisaoGeralSetorDeVagas } from "./visao-geral.setor-de-vagas";
 export { VisaoGeralEmpresa } from "./visao-geral.empresa";
 export { VisaoGeralRecrutador } from "./visao-geral.recrutador";
+export { VisaoGeralInstrutor } from "./visao-geral.instrutor";
 export { VisaoGeralAlunoCandidato } from "./visao-geral.aluno-candidato";

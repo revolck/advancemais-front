@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import type { CursoTurma } from "@/api/cursos";
 import { formatTurmaStatus, getTurmaStatusBadgeClasses } from "../utils";
+import { getTurmaInstrutoresResumo } from "../../lista-turmas/utils/instrutores";
 
 interface AboutTabProps {
   turma: CursoTurma;
@@ -131,8 +132,8 @@ export function AboutTab({
       icon: Monitor,
     },
     {
-      label: "Instrutor",
-      value: turma.instrutor?.nome ?? "—",
+      label: "Instrutores vinculados",
+      value: getTurmaInstrutoresResumo(turma),
       icon: User,
     },
     {

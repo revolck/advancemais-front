@@ -12,10 +12,10 @@ import { queryKeys } from "@/lib/react-query/queryKeys";
 export interface NormalizedAlunosFilters {
   page: number;
   pageSize: number;
-  status?: string | string[] | null; // Status único ou array para múltiplos status
-  cursoId?: string | null; // UUID (string) - seleção individual
-  turmaId?: string | null; // UUID (string) - seleção individual
-  cidade?: string | string[] | null; // Cidade único ou array para múltiplas cidades
+  status?: string | string[] | null;
+  cursoId?: string | null;
+  turmaId?: string | null;
+  cidade?: string | string[] | null;
   search?: string;
 }
 
@@ -56,7 +56,9 @@ export function useAlunosDashboardQuery(filters: NormalizedAlunosFilters) {
             ? filters.cidade[0]
             : filters.cidade;
       }
-      if (filters.search) params.search = filters.search;
+      if (filters.search) {
+        params.search = filters.search;
+      }
 
       const response = await listAlunosComInscricao(params);
 

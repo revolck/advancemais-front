@@ -5,12 +5,40 @@ import path from "node:path";
 const BASE_URL =
   process.env.PLAYWRIGHT_BASE_URL ||
   `http://localhost:${process.env.PLAYWRIGHT_PORT ?? process.env.PORT ?? 3001}`;
-const AUTH_CACHE_FILE = path.join(process.cwd(), ".tmp", "e2e-admin-auth.json");
+const ADMIN_AUTH_CACHE_FILE = path.join(
+  process.cwd(),
+  ".tmp",
+  "e2e-admin-auth.json"
+);
+const INSTRUTOR_AUTH_CACHE_FILE = path.join(
+  process.cwd(),
+  ".tmp",
+  "e2e-instrutor-auth.json"
+);
 
 export const ADMIN_CREDENTIALS = {
   documento: process.env.E2E_ADMIN_DOCUMENTO ?? "11111111111",
   senha: process.env.E2E_ADMIN_SENHA ?? "AdminTeste@123",
   email: process.env.E2E_ADMIN_EMAIL ?? "admin.teste@advancemais.com.br",
+};
+
+export const INSTRUTOR_CREDENTIALS = {
+  documento: process.env.E2E_INSTRUTOR_DOCUMENTO ?? "55555555555",
+  senha: process.env.E2E_INSTRUTOR_SENHA ?? "Instrutor@123",
+  email:
+    process.env.E2E_INSTRUTOR_EMAIL ?? "instrutor@advancemais.com.br",
+};
+
+type CachedAuthEnvOptions = {
+  token?: string;
+  refreshToken?: string;
+  role?: string;
+  nome?: string;
+};
+
+type E2ECredentials = {
+  documento: string;
+  senha: string;
 };
 
 type LoginResponse = {
@@ -22,6 +50,7 @@ type LoginResponse = {
     expiresAt?: string;
   };
   usuario?: {
+    id?: string;
     nomeCompleto?: string;
     role?: string;
   };
@@ -49,8 +78,8 @@ type UserProfileResponse = {
   };
 };
 
-function ensureAuthCacheDir() {
-  fs.mkdirSync(path.dirname(AUTH_CACHE_FILE), { recursive: true });
+function ensureAuthCacheDir(authCacheFile: string) {
+  fs.mkdirSync(path.dirname(authCacheFile), { recursive: true });
 }
 
 function getJwtExpiration(token?: string | null): number | null {
@@ -70,25 +99,28 @@ function getJwtExpiration(token?: string | null): number | null {
   }
 }
 
-function readCachedAuth(): LoginResponse | null {
-  const envToken = process.env.E2E_ADMIN_TOKEN;
-  const envRefreshToken = process.env.E2E_ADMIN_REFRESH_TOKEN;
+function readCachedAuth(
+  authCacheFile: string,
+  envOptions?: CachedAuthEnvOptions
+): LoginResponse | null {
+  const envToken = envOptions?.token;
+  const envRefreshToken = envOptions?.refreshToken;
   if (envToken && envRefreshToken) {
     return {
       success: true,
       token: envToken,
       refreshToken: envRefreshToken,
       usuario: {
-        role: process.env.E2E_ADMIN_ROLE,
-        nomeCompleto: process.env.E2E_ADMIN_NOME,
+        role: envOptions?.role,
+        nomeCompleto: envOptions?.nome,
       },
     };
   }
 
-  if (!fs.existsSync(AUTH_CACHE_FILE)) return null;
+  if (!fs.existsSync(authCacheFile)) return null;
 
   try {
-    const cached = JSON.parse(fs.readFileSync(AUTH_CACHE_FILE, "utf8")) as LoginResponse;
+    const cached = JSON.parse(fs.readFileSync(authCacheFile, "utf8")) as LoginResponse;
     const now = Date.now();
     const tokenExpiresAt = getJwtExpiration(cached.token);
     const refreshTokenExpiresAt = getJwtExpiration(cached.refreshToken);
@@ -116,9 +148,9 @@ function readCachedAuth(): LoginResponse | null {
   }
 }
 
-function writeCachedAuth(auth: LoginResponse) {
-  ensureAuthCacheDir();
-  fs.writeFileSync(AUTH_CACHE_FILE, JSON.stringify(auth, null, 2));
+function writeCachedAuth(authCacheFile: string, auth: LoginResponse) {
+  ensureAuthCacheDir(authCacheFile);
+  fs.writeFileSync(authCacheFile, JSON.stringify(auth, null, 2));
 }
 
 function getPrimaryEndereco(profile?: UserProfileResponse["usuario"]) {
@@ -162,8 +194,12 @@ async function fetchJson<T>(path: string, init?: RequestInit): Promise<T> {
   return body;
 }
 
-async function autenticarAdminViaApi(): Promise<LoginResponse> {
-  const cachedAuth = readCachedAuth();
+async function autenticarViaApi(options: {
+  credentials: E2ECredentials;
+  authCacheFile: string;
+  env: CachedAuthEnvOptions;
+}): Promise<LoginResponse> {
+  const cachedAuth = readCachedAuth(options.authCacheFile, options.env);
   if (cachedAuth) {
     return cachedAuth;
   }
@@ -172,8 +208,8 @@ async function autenticarAdminViaApi(): Promise<LoginResponse> {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      documento: ADMIN_CREDENTIALS.documento,
-      senha: ADMIN_CREDENTIALS.senha,
+      documento: options.credentials.documento,
+      senha: options.credentials.senha,
       rememberMe: false,
     }),
   });
@@ -190,8 +226,34 @@ async function autenticarAdminViaApi(): Promise<LoginResponse> {
     throw new Error(body?.message || "Login API não retornou os tokens esperados");
   }
 
-  writeCachedAuth(body);
+  writeCachedAuth(options.authCacheFile, body);
   return body;
+}
+
+async function autenticarAdminViaApi(): Promise<LoginResponse> {
+  return autenticarViaApi({
+    credentials: ADMIN_CREDENTIALS,
+    authCacheFile: ADMIN_AUTH_CACHE_FILE,
+    env: {
+      token: process.env.E2E_ADMIN_TOKEN,
+      refreshToken: process.env.E2E_ADMIN_REFRESH_TOKEN,
+      role: process.env.E2E_ADMIN_ROLE,
+      nome: process.env.E2E_ADMIN_NOME,
+    },
+  });
+}
+
+async function autenticarInstrutorViaApi(): Promise<LoginResponse> {
+  return autenticarViaApi({
+    credentials: INSTRUTOR_CREDENTIALS,
+    authCacheFile: INSTRUTOR_AUTH_CACHE_FILE,
+    env: {
+      token: process.env.E2E_INSTRUTOR_TOKEN,
+      refreshToken: process.env.E2E_INSTRUTOR_REFRESH_TOKEN,
+      role: process.env.E2E_INSTRUTOR_ROLE,
+      nome: process.env.E2E_INSTRUTOR_NOME,
+    },
+  });
 }
 
 export async function getAdminApiAuth(): Promise<
@@ -204,6 +266,19 @@ export async function getAdminApiAuth(): Promise<
   }
 
   return auth as Required<Pick<LoginResponse, "token" | "refreshToken">> & LoginResponse;
+}
+
+export async function getInstrutorApiAuth(): Promise<
+  Required<Pick<LoginResponse, "token" | "refreshToken">> & LoginResponse
+> {
+  const auth = await autenticarInstrutorViaApi();
+
+  if (!auth.token || !auth.refreshToken) {
+    throw new Error("Autenticação E2E do instrutor não retornou tokens válidos.");
+  }
+
+  return auth as Required<Pick<LoginResponse, "token" | "refreshToken">> &
+    LoginResponse;
 }
 
 export async function ensureAdminProfileComplete() {
@@ -258,8 +333,10 @@ export async function ensureAdminProfileComplete() {
  * Realiza autenticação E2E de forma determinística via API e injeta os cookies
  * que o frontend/middleware esperam.
  */
-export async function loginAsAdmin(page: Page) {
-  const body = await getAdminApiAuth();
+async function loginWithAuthBody(
+  page: Page,
+  body: Required<Pick<LoginResponse, "token" | "refreshToken">> & LoginResponse
+) {
   const url = new URL(BASE_URL);
   const role = body.usuario?.role;
   const firstName = body.usuario?.nomeCompleto?.split(" ")?.[0];
@@ -305,4 +382,14 @@ export async function loginAsAdmin(page: Page) {
   }
 
   await page.waitForLoadState("networkidle");
+}
+
+export async function loginAsAdmin(page: Page) {
+  const body = await getAdminApiAuth();
+  await loginWithAuthBody(page, body);
+}
+
+export async function loginAsInstrutor(page: Page) {
+  const body = await getInstrutorApiAuth();
+  await loginWithAuthBody(page, body);
 }
