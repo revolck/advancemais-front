@@ -69,6 +69,16 @@ export const cursosRoutes = {
         `${BASE}/${cursoId}/turmas/${turmaId}`,
       delete: (cursoId: number | string, turmaId: string) =>
         `${BASE}/${cursoId}/turmas/${turmaId}`,
+      instrutores: {
+        sync: (cursoId: number | string, turmaId: string) =>
+          `${BASE}/${cursoId}/turmas/${turmaId}/instrutores`,
+      },
+      estrutura: {
+        itens: {
+          create: (cursoId: number | string, turmaId: string) =>
+            `${BASE}/${cursoId}/turmas/${turmaId}/estrutura/itens`,
+        },
+      },
       publicar: (cursoId: number | string, turmaId: string) =>
         `${BASE}/${cursoId}/turmas/${turmaId}/publicar`,
       aulas: {

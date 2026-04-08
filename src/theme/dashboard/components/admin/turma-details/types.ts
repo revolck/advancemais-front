@@ -10,7 +10,10 @@ export interface HeaderInfoProps {
   cursoId: number | string;
   cursoNome?: string;
   onEditTurma?: () => void;
+  onCreateAula?: () => void;
+  onCreateAvaliacao?: () => void;
   canManage?: boolean;
+  canAppendItensOperacionais?: boolean;
   onDeleteSuccess?: () => void;
 }
 

@@ -222,6 +222,58 @@ export interface CreateTurmaPayload {
   estrutura: CreateTurmaEstruturaPayload;
 }
 
+export interface SyncTurmaInstrutoresPayload {
+  instrutorIds: string[];
+}
+
+export interface AppendTurmaEstruturaPlacementPayload {
+  moduleId?: string | null;
+  afterItemId?: string | null;
+}
+
+export interface AppendTurmaEstruturaItemDataPayload {
+  titulo: string;
+  descricao?: string;
+  modalidade?: "ONLINE" | "PRESENCIAL" | "AO_VIVO" | "SEMIPRESENCIAL";
+  status?: string;
+  dataInicio?: string;
+  dataFim?: string;
+  horaInicio?: string;
+  horaFim?: string;
+  horaTermino?: string;
+  obrigatoria?: boolean;
+  instrutorId?: string;
+  instrutorIds?: string[];
+  duracaoMinutos?: number;
+  etiqueta?: string;
+  valeNota?: boolean;
+  valePonto?: boolean;
+  peso?: number;
+  recuperacaoFinal?: boolean;
+  tipoAtividade?: string;
+  questoes?: unknown[];
+  texto?: unknown;
+}
+
+export interface AppendTurmaEstruturaItemPayload {
+  type: "AULA" | "PROVA" | "ATIVIDADE";
+  placement?: AppendTurmaEstruturaPlacementPayload;
+  item: AppendTurmaEstruturaItemDataPayload;
+}
+
+export interface AppendTurmaEstruturaItemResponse {
+  item?: {
+    id: string;
+    type?: string;
+    title?: string;
+    ordem?: number;
+    startDate?: string;
+    endDate?: string;
+    instructorIds?: string[];
+  };
+  turma?: CursoTurma;
+}
+
 // Inscrições
 export interface TurmaInscricao {
   id: string;

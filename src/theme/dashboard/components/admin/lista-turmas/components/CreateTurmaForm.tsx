@@ -21,6 +21,7 @@ import { FormLoadingModal } from "@/components/ui/custom/form-loading-modal";
 import { motion, AnimatePresence } from "framer-motion";
 import { InputCustom } from "@/components/ui/custom/input";
 import { DatePickerRangeCustom } from "@/components/ui/custom/date-picker";
+import { MultiSelectCustom } from "@/components/ui/custom/multiselect";
 import { SelectCustom } from "@/components/ui/custom/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Label } from "@/components/ui/label";
@@ -193,7 +194,8 @@ export function CreateTurmaForm({ onSuccess }: CreateTurmaFormProps) {
     error: cursosError,
     refetch: refetchCursos,
   } = useCursosForSelect();
-  const { instrutores } = useInstrutoresForSelect();
+  const { instrutores, isLoading: loadingInstrutores } =
+    useInstrutoresForSelect();
 
   const [cursoId, setCursoId] = useState<string | null>(null);
   const {
@@ -207,6 +209,7 @@ export function CreateTurmaForm({ onSuccess }: CreateTurmaFormProps) {
   const [estruturaTipo, setEstruturaTipo] =
     useState<TemplateOptionValue | null>(null);
   const [status, setStatus] = useState<"RASCUNHO" | "PUBLICADO">("RASCUNHO");
+  const [instrutorIds, setInstrutorIds] = useState<string[]>([]);
   const [vagasIlimitadas, setVagasIlimitadas] = useState<boolean>(true);
   const [vagasTotais, setVagasTotais] = useState<string>("");
   const [curriculum, setCurriculum] = useState<BuilderData>({
@@ -506,6 +509,7 @@ export function CreateTurmaForm({ onSuccess }: CreateTurmaFormProps) {
         turno: turno as any,
         metodo: metodo as any,
         status,
+        instrutorIds,
         dataInscricaoInicio: new Date(dataInscricaoInicio).toISOString(),
         dataInscricaoFim: new Date(dataInscricaoFim).toISOString(),
         dataInicio: new Date(dataInicio).toISOString(),
@@ -865,6 +869,48 @@ export function CreateTurmaForm({ onSuccess }: CreateTurmaFormProps) {
                       className="md:col-span-3"
                       required
                     />
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-4">
+                    {loadingInstrutores ? (
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium">
+                          Instrutores vinculados
+                        </Label>
+                        <Skeleton className="h-12 w-full" />
+                      </div>
+                    ) : (
+                      <MultiSelectCustom
+                        label="Instrutores vinculados"
+                        placeholder="Selecionar instrutores"
+                        options={instrutores}
+                        value={instrutores.filter((option) =>
+                          instrutorIds.includes(String(option.value))
+                        )}
+                        onChange={(selectedOptions) =>
+                          setInstrutorIds(
+                            selectedOptions.map((option) => String(option.value))
+                          )
+                        }
+                        emptyIndicator="Nenhum instrutor disponível"
+                        maxVisibleTags={6}
+                        hidePlaceholderWhenSelected={false}
+                        commandProps={{
+                          className: "overflow-visible",
+                        }}
+                        inputProps={{
+                          className: "text-sm!",
+                        }}
+                      />
+                    )}
+                    <p className="flex items-center gap-1.5 text-xs! text-muted-foreground">
+                      <Icon
+                        name="Info"
+                        className="h-4 w-4 shrink-0"
+                      />
+                      Vinculo institucional da turma. O dono explicito de aula,
+                      prova ou atividade continua prevalecendo.
+                    </p>
                   </div>
 
                   {/* Linha 2: Inscrições, Período da Turma, Turno e Modalidade */}

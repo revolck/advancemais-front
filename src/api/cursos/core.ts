@@ -799,6 +799,80 @@ export async function createTurma(
   });
 }
 
+export async function syncTurmaInstrutores(
+  cursoId: number | string,
+  turmaId: string,
+  payload: import("./types").SyncTurmaInstrutoresPayload,
+  init?: RequestInit
+): Promise<CursoTurma> {
+  const response = await apiFetch<any>(
+    cursosRoutes.cursos.turmas.instrutores.sync(cursoId, turmaId),
+    {
+      init: {
+        method: "PUT",
+        headers: buildHeaders(
+          { "Content-Type": "application/json", ...(init?.headers || {}) },
+          true
+        ),
+        body: JSON.stringify(payload),
+        ...init,
+      },
+      cache: "no-cache",
+    }
+  );
+
+  const turma =
+    response?.data?.turma ??
+    response?.turma ??
+    response?.data ??
+    response;
+
+  return normalizeTurma(turma);
+}
+
+export async function appendTurmaEstruturaItem(
+  cursoId: number | string,
+  turmaId: string,
+  payload: import("./types").AppendTurmaEstruturaItemPayload,
+  init?: RequestInit
+): Promise<import("./types").AppendTurmaEstruturaItemResponse> {
+  const response = await apiFetch<any>(
+    cursosRoutes.cursos.turmas.estrutura.itens.create(cursoId, turmaId),
+    {
+      init: {
+        method: "POST",
+        headers: buildHeaders(
+          { "Content-Type": "application/json", ...(init?.headers || {}) },
+          true
+        ),
+        body: JSON.stringify(payload),
+        ...init,
+      },
+      cache: "no-cache",
+    }
+  );
+
+  const data = response?.data ?? response ?? {};
+
+  return {
+    item: data?.item
+      ? {
+          id: String(data.item.id ?? ""),
+          type: data.item.type,
+          title: data.item.title,
+          ordem:
+            data.item.ordem != null ? Number(data.item.ordem) : undefined,
+          startDate: data.item.startDate,
+          endDate: data.item.endDate,
+          instructorIds: Array.isArray(data.item.instructorIds)
+            ? data.item.instructorIds.map((id: unknown) => String(id))
+            : undefined,
+        }
+      : undefined,
+    turma: data?.turma ? normalizeTurma(data.turma) : undefined,
+  };
+}
+
 export async function deleteTurma(
   cursoId: number | string,
   turmaId: string,

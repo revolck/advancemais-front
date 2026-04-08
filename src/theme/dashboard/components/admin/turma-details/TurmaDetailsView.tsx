@@ -369,12 +369,25 @@ export function TurmaDetailsView({
           userRole
         )
       : false;
+  const statusNormalized = turma?.status?.toUpperCase?.() ?? "";
+  const turmaJaIniciada =
+    statusNormalized === "EM_ANDAMENTO" ||
+    statusNormalized === "CONCLUIDO" ||
+    (!!turma?.dataInicio &&
+      Number.isFinite(new Date(turma.dataInicio).getTime()) &&
+      new Date(turma.dataInicio).getTime() <= Date.now());
+  const turmaEmAndamento = statusNormalized === "EM_ANDAMENTO";
   const canViewLinkedInstructors =
     userRole != null
       ? [UserRole.ADMIN, UserRole.MODERADOR, UserRole.PEDAGOGICO].includes(
           userRole
         )
       : false;
+  const canManageLinkedInstructors =
+    canViewLinkedInstructors &&
+    (!turmaJaIniciada || userRole === UserRole.PEDAGOGICO);
+  const canAppendOperationalItems =
+    userRole === UserRole.PEDAGOGICO && turmaEmAndamento;
   const canViewEstrutura = canManageTurma;
   const canViewHistorico = canManageTurma;
   const handleTabChange = useCallback(
@@ -491,7 +504,12 @@ export function TurmaDetailsView({
             label: "Instrutores",
             icon: "User",
             content: (
-              <LinkedInstructorsTab turma={turma} isLoading={isReloading} />
+              <LinkedInstructorsTab
+                turma={turma}
+                cursoId={cursoId}
+                isLoading={isReloading}
+                canManage={canManageLinkedInstructors}
+              />
             ),
           } as HorizontalTabItem,
         ]
@@ -538,11 +556,36 @@ export function TurmaDetailsView({
         cursoId={cursoId}
         cursoNome={cursoNome}
         canManage={canManageTurma}
+        canAppendItensOperacionais={canAppendOperationalItems}
         onEditTurma={() => {
           router.push(
             `/dashboard/cursos/turmas/${turmaId}/editar?cursoId=${encodeURIComponent(
               String(cursoId)
             )}`
+          );
+        }}
+        onCreateAula={() => {
+          const returnTo = `/dashboard/cursos/turmas/${turmaId}?cursoId=${encodeURIComponent(
+            String(cursoId)
+          )}`;
+          router.push(
+            `/dashboard/cursos/aulas/cadastrar?cursoId=${encodeURIComponent(
+              String(cursoId)
+            )}&turmaId=${encodeURIComponent(
+              String(turmaId)
+            )}&appendToTurma=1&returnTo=${encodeURIComponent(returnTo)}`
+          );
+        }}
+        onCreateAvaliacao={() => {
+          const returnTo = `/dashboard/cursos/turmas/${turmaId}?cursoId=${encodeURIComponent(
+            String(cursoId)
+          )}`;
+          router.push(
+            `/dashboard/cursos/atividades-provas/cadastrar?cursoId=${encodeURIComponent(
+              String(cursoId)
+            )}&turmaId=${encodeURIComponent(
+              String(turmaId)
+            )}&appendToTurma=1&returnTo=${encodeURIComponent(returnTo)}`
           );
         }}
         onDeleteSuccess={() => {

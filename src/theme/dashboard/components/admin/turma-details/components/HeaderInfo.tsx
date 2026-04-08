@@ -17,6 +17,7 @@ import {
   Eye,
   EyeOff,
   Loader2,
+  PlusCircle,
   Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -34,7 +35,10 @@ export function HeaderInfo({
   turma,
   cursoId,
   onEditTurma,
+  onCreateAula,
+  onCreateAvaliacao,
   canManage = false,
+  canAppendItensOperacionais = false,
   onDeleteSuccess,
 }: HeaderInfoProps) {
   const userRole = useUserRole();
@@ -76,7 +80,13 @@ export function HeaderInfo({
   const canDeleteTurma = !turmaJaIniciada && !possuiInscritosAtivos;
   const canEditTurma = canManage && (!turmaJaIniciada || isPedagogico);
   const hasAvailableActions =
-    canManage && (canEditTurma || canTogglePublication || canDeleteTurma);
+    canManage &&
+    (
+      canEditTurma ||
+      canTogglePublication ||
+      canDeleteTurma ||
+      canAppendItensOperacionais
+    );
 
   const statusBadge = (
     <Badge
@@ -139,6 +149,34 @@ export function HeaderInfo({
                   >
                     <Edit className="h-4 w-4 text-gray-500" />
                     <span>Editar</span>
+                  </DropdownMenuItem>
+                )}
+
+                {canAppendItensOperacionais && onCreateAula && (
+                  <DropdownMenuItem
+                    onSelect={(event) => {
+                      event.preventDefault();
+                      setIsActionsOpen(false);
+                      onCreateAula();
+                    }}
+                    className="cursor-pointer"
+                  >
+                    <PlusCircle className="h-4 w-4 text-gray-500" />
+                    <span>Nova aula</span>
+                  </DropdownMenuItem>
+                )}
+
+                {canAppendItensOperacionais && onCreateAvaliacao && (
+                  <DropdownMenuItem
+                    onSelect={(event) => {
+                      event.preventDefault();
+                      setIsActionsOpen(false);
+                      onCreateAvaliacao();
+                    }}
+                    className="cursor-pointer"
+                  >
+                    <PlusCircle className="h-4 w-4 text-gray-500" />
+                    <span>Nova atividade/prova</span>
                   </DropdownMenuItem>
                 )}
 

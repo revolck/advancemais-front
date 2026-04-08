@@ -44,6 +44,7 @@ import {
 import { useCursosForSelect } from "../hooks/useCursosForSelect";
 import { useInstrutoresForSelect } from "../hooks/useInstrutoresForSelect";
 import { useTemplatesForTurma } from "../hooks/useTemplatesForTurma";
+import { getTurmaInstrutoresVinculados } from "../utils/instrutores";
 import { queryKeys } from "@/lib/react-query/queryKeys";
 import { UserRole } from "@/config/roles";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -338,6 +339,7 @@ export function EditTurmaForm({
   const [turno, setTurno] = useState<string | null>(null);
   const [metodo, setMetodo] = useState<string | null>(null);
   const [status, setStatus] = useState<"RASCUNHO" | "PUBLICADO">("RASCUNHO");
+  const [instrutorIds, setInstrutorIds] = useState<string[]>([]);
   const [estruturaTipo, setEstruturaTipo] =
     useState<TemplateOptionValue | null>(null);
   const [vagasIlimitadas, setVagasIlimitadas] = useState<boolean>(true);
@@ -406,6 +408,9 @@ export function EditTurmaForm({
       setTurno(turma.turno || null);
       setMetodo(turma.metodo || null);
       setStatus(resolvedStatus);
+      setInstrutorIds(
+        getTurmaInstrutoresVinculados(turma).map((instrutor) => instrutor.id)
+      );
       setEstruturaTipo(resolvedTemplate);
       setVagasIlimitadas(turma.vagasIlimitadas ?? true);
       setVagasTotais(turma.vagasTotais ? String(turma.vagasTotais) : "");
@@ -691,6 +696,7 @@ export function EditTurmaForm({
       const payload: Partial<CreateTurmaPayload> = {
         nome: nome.trim(),
         turno: turno as any,
+        instrutorIds,
         vagasIlimitadas,
         ...(!vagasIlimitadas ? { vagasTotais: Number(vagasTotais) } : {}),
         ...(!periodoBloqueadoAposInicio
@@ -1105,6 +1111,18 @@ export function EditTurmaForm({
                       placeholder="Ex.: Turma 01 - Manhã"
                       className="md:col-span-3"
                       required
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-4">
+                    <SelectCustom
+                      mode="multiple"
+                      label="Instrutores vinculados"
+                      placeholder="Selecionar instrutores"
+                      options={instrutores}
+                      value={instrutorIds}
+                      onChange={setInstrutorIds}
+                      helperText="Vínculo institucional da turma. O dono explícito de aula, prova ou atividade continua prevalecendo."
                     />
                   </div>
 

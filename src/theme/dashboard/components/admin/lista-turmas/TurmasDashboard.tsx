@@ -63,6 +63,7 @@ const SEARCH_HELPER_TEXT = "Pesquise por nome ou código da turma.";
 type TurmaComCurso = CursoTurma & {
   cursoId?: number | string;
   cursoNome?: string;
+  createdAt?: string;
 };
 
 export function TurmasDashboard({ className }: { className?: string }) {
@@ -99,10 +100,10 @@ export function TurmasDashboard({ className }: { className?: string }) {
   const [currentPage, setCurrentPage] = useState(1);
 
   // Sorting
-  type SortField = "nome" | "dataInicio" | null;
+  type SortField = "nome" | "dataInicio" | "criadoEm" | null;
   type SortDirection = "asc" | "desc";
-  const [sortField, setSortField] = useState<SortField>(null);
-  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
+  const [sortField, setSortField] = useState<SortField>("criadoEm");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
 
   const { cursos, isLoading: loadingCursos } = useCursosForSelect();
   const { instrutores, isLoading: loadingInstrutores } =
@@ -173,6 +174,7 @@ export function TurmasDashboard({ className }: { className?: string }) {
         ...parsed.turma,
         cursoId: parsed.cursoId ?? (parsed.turma as any)?.cursoId,
         cursoNome,
+        createdAt: parsed.createdAt,
       });
     } catch {
       // ignore
@@ -253,10 +255,24 @@ export function TurmasDashboard({ className }: { className?: string }) {
   }, [sortField, sortDirection]);
 
   const sortList = useCallback(
-    <T extends { nome?: string; dataInicio?: string | null }>(list: T[]) => {
+    <T extends { nome?: string; dataInicio?: string | null; criadoEm?: string | null; createdAt?: string | null }>(list: T[]) => {
       if (!sortField) return list;
       const arr = [...list];
       arr.sort((a, b) => {
+        if (sortField === "criadoEm") {
+          const aTime = a.criadoEm
+            ? new Date(a.criadoEm).getTime()
+            : a.createdAt
+              ? new Date(a.createdAt).getTime()
+              : 0;
+          const bTime = b.criadoEm
+            ? new Date(b.criadoEm).getTime()
+            : b.createdAt
+              ? new Date(b.createdAt).getTime()
+              : 0;
+          const cmp = aTime - bTime;
+          return sortDirection === "asc" ? cmp : -cmp;
+        }
         if (sortField === "nome") {
           const aNome = a.nome?.toLocaleLowerCase?.() ?? "";
           const bNome = b.nome?.toLocaleLowerCase?.() ?? "";
