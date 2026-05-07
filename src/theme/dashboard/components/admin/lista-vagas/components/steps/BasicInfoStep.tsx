@@ -2,6 +2,12 @@
 
 import React from "react";
 import { InputCustom } from "@/components/ui/custom/input";
+import {
+  InputSearch,
+  type InputSearchApiProps,
+  type InputSearchOption,
+  type InputSearchSelection,
+} from "@/components/ui/custom/inputSearch";
 import { DatePickerCustom } from "@/components/ui/custom/date-picker";
 import { format as formatDate } from "date-fns";
 import { SelectCustom } from "@/components/ui/custom/select";
@@ -15,6 +21,10 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Info } from "lucide-react";
+import {
+  listAdminCompanies,
+  type AdminCompanyListItem,
+} from "@/api/empresas";
 
 interface FormState {
   usuarioId: string;
@@ -59,31 +69,114 @@ interface BasicInfoStepProps {
   formData: FormState;
   errors: FormErrors;
   isSubmitting: boolean;
-  isLoadingEmpresas: boolean;
+  isLoadingEmpresas?: boolean;
   isLoadingCategorias: boolean;
   empresasError?: string;
   categoriasError?: string;
-  empresas: Array<{ value: string; label: string }>;
+  empresas?: Array<{ value: string; label: string }>;
   categoriaOptions: Array<{ value: string; label: string }>;
   subcategoriaOptions: Array<{ value: string; label: string }>;
   onFieldChange: (field: keyof FormState, value: any) => void;
   isEmpresaRole?: boolean;
 }
 
+function formatCnpj(value?: string | null) {
+  const digits = (value ?? "").replace(/\D/g, "");
+  if (digits.length !== 14) return value ?? "";
+
+  return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(
+    5,
+    8
+  )}/${digits.slice(8, 12)}-${digits.slice(12)}`;
+}
+
 export function BasicInfoStep({
   formData,
   errors,
   isSubmitting,
-  isLoadingEmpresas,
   isLoadingCategorias,
-  empresasError,
   categoriasError,
-  empresas,
+  empresas = [],
   categoriaOptions,
   subcategoriaOptions,
   onFieldChange,
   isEmpresaRole = false,
 }: BasicInfoStepProps) {
+  const [selectedEmpresa, setSelectedEmpresa] =
+    React.useState<InputSearchOption<AdminCompanyListItem> | null>(null);
+
+  const empresaSearchApiProps =
+    React.useMemo<InputSearchApiProps<AdminCompanyListItem>>(
+      () => ({
+        fields: ["cnpj", "name", "email", "cod"],
+        minLength: 3,
+        limit: 10,
+        fetcher: async ({ query, limit, signal }) => {
+          const response = await listAdminCompanies(
+            {
+              page: 1,
+              pageSize: limit,
+              search: query,
+            },
+            { signal }
+          );
+
+          if (!response || !("data" in response)) {
+            throw new Error(
+              "Não foi possível buscar empresas. Tente novamente."
+            );
+          }
+
+          return response;
+        },
+        mapItem: (empresa) => ({
+          id: empresa.id,
+          label: empresa.nome,
+          description: [empresa.codUsuario, formatCnpj(empresa.cnpj)]
+            .filter(Boolean)
+            .join(" - "),
+          metadata: {
+            cod: empresa.codUsuario,
+            cnpj: empresa.cnpj,
+            email: empresa.email,
+            name: empresa.nome,
+          },
+          raw: empresa,
+        }),
+      }),
+      []
+    );
+
+  React.useEffect(() => {
+    if (!formData.usuarioId) {
+      setSelectedEmpresa(null);
+      return;
+    }
+
+    if (selectedEmpresa?.id === formData.usuarioId) {
+      return;
+    }
+
+    const empresaOption = empresas.find(
+      (empresa) => empresa.value === formData.usuarioId
+    );
+
+    if (empresaOption) {
+      setSelectedEmpresa({
+        id: empresaOption.value,
+        label: empresaOption.label,
+      });
+    }
+  }, [empresas, formData.usuarioId, selectedEmpresa?.id]);
+
+  const handleEmpresaChange = (
+    value: InputSearchSelection<AdminCompanyListItem>
+  ) => {
+    const option = Array.isArray(value) ? value[0] ?? null : value;
+    setSelectedEmpresa(option);
+    onFieldChange("usuarioId", option?.id ?? "");
+  };
+
   const regimeOptions = [
     { value: "CLT", label: "CLT" },
     { value: "PJ", label: "PJ / Freelance" },
@@ -146,18 +239,15 @@ export function BasicInfoStep({
 
           {/* Campo de Empresa - só aparece para roles que não são EMPRESA */}
           {!isEmpresaRole && (
-            <SelectCustom
+            <InputSearch<AdminCompanyListItem>
               label="Empresa"
-              placeholder={
-                isLoadingEmpresas
-                  ? "Carregando empresas..."
-                  : "Selecione a empresa"
-              }
-              options={empresas}
-              value={formData.usuarioId || null}
-              onChange={(value) => onFieldChange("usuarioId", value || "")}
-              disabled={isSubmitting || isLoadingEmpresas}
-              error={errors.usuarioId || empresasError || undefined}
+              placeholder="Buscar por nome, CNPJ, e-mail ou código"
+              value={selectedEmpresa}
+              onChange={handleEmpresaChange}
+              apiProps={empresaSearchApiProps}
+              searchHintText="Digite pelo menos 3 caracteres para buscar empresas."
+              disabled={isSubmitting}
+              error={errors.usuarioId}
               required
             />
           )}

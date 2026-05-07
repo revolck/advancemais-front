@@ -9,52 +9,6 @@ import type {
 import { UserRole } from "@/config/roles";
 import { queryKeys } from "@/lib/react-query/queryKeys";
 
-const LIST_FETCH_LIMIT = 500;
-
-function normalizeSearchValue(value?: string | null) {
-  return (value ?? "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .trim();
-}
-
-function digitsOnly(value?: string | null) {
-  return (value ?? "").replace(/\D/g, "");
-}
-
-function matchesUsuarioSearch(usuario: UsuarioOverview, rawSearch: string) {
-  const normalizedSearch = normalizeSearchValue(rawSearch);
-  if (!normalizedSearch) return true;
-
-  const searchableValues = [
-    usuario.nomeCompleto,
-    usuario.email,
-    usuario.codUsuario,
-    usuario.cidade,
-    usuario.estado,
-  ]
-    .map((value) => normalizeSearchValue(value))
-    .filter(Boolean);
-
-  if (searchableValues.some((value) => value.includes(normalizedSearch))) {
-    return true;
-  }
-
-  const numericSearch = digitsOnly(rawSearch);
-  if (numericSearch.length === 0) return false;
-
-  const numericValues = [
-    usuario.cpf,
-    usuario.cnpj,
-    usuario.telefone,
-  ]
-    .map((value) => digitsOnly(value))
-    .filter(Boolean);
-
-  return numericValues.some((value) => value.includes(numericSearch));
-}
-
 interface UseUsuarioDashboardDataReturn {
   data: UsuariosDashboardData | null;
   isLoading: boolean;
@@ -88,6 +42,8 @@ export function useUsuarioDashboardData(
 
   const queryFilters = useMemo(
     () => ({
+      page: normalizedFilters.page,
+      pageSize: normalizedFilters.pageSize,
       status: normalizedFilters.status,
       role: normalizedFilters.role,
       search: normalizedFilters.search,
@@ -95,6 +51,8 @@ export function useUsuarioDashboardData(
       estado: normalizedFilters.estado,
     }),
     [
+      normalizedFilters.page,
+      normalizedFilters.pageSize,
       normalizedFilters.cidade,
       normalizedFilters.estado,
       normalizedFilters.role,
@@ -106,8 +64,8 @@ export function useUsuarioDashboardData(
   const buildParams = useCallback(
     (currentFilters: typeof queryFilters): ListUsuariosParams => {
       const params: ListUsuariosParams = {
-        page: 1,
-        limit: LIST_FETCH_LIMIT,
+        page: currentFilters.page,
+        limit: currentFilters.pageSize,
       };
 
       // Apenas adiciona filtros se tiverem valores válidos
@@ -196,46 +154,33 @@ export function useUsuarioDashboardData(
         })
       );
 
-      return usuarios.filter((usuario) => {
-        if (
-          queryFilters.status &&
-          usuario.status.toUpperCase() !== queryFilters.status.toUpperCase()
-        ) {
-          return false;
-        }
+      const rawPagination = (response as any)?.pagination ?? {};
+      const page = Number(
+        rawPagination?.page ?? queryFilters.page ?? normalizedFilters.page
+      );
+      const pageSize = Number(
+        rawPagination?.limit ??
+          rawPagination?.pageSize ??
+          queryFilters.pageSize ??
+          normalizedFilters.pageSize
+      );
+      const total = Number(rawPagination?.total ?? usuarios.length);
+      const totalPages = Number(
+        rawPagination?.pages ??
+          rawPagination?.totalPages ??
+          Math.max(1, Math.ceil(total / Math.max(1, pageSize)))
+      );
 
-        if (
-          queryFilters.role &&
-          usuario.role.toUpperCase() !== queryFilters.role.toUpperCase()
-        ) {
-          return false;
-        }
-
-        if (
-          queryFilters.cidade &&
-          normalizeSearchValue(usuario.cidade) !==
-            normalizeSearchValue(queryFilters.cidade)
-        ) {
-          return false;
-        }
-
-        if (
-          queryFilters.estado &&
-          normalizeSearchValue(usuario.estado) !==
-            normalizeSearchValue(queryFilters.estado)
-        ) {
-          return false;
-        }
-
-        if (
-          queryFilters.search.length >= 3 &&
-          !matchesUsuarioSearch(usuario, queryFilters.search)
-        ) {
-          return false;
-        }
-
-        return true;
-      });
+      return {
+        usuarios,
+        pagination: {
+          page: Number.isFinite(page) && page > 0 ? page : 1,
+          pageSize: Number.isFinite(pageSize) && pageSize > 0 ? pageSize : 10,
+          total: Number.isFinite(total) && total >= 0 ? total : 0,
+          totalPages:
+            Number.isFinite(totalPages) && totalPages > 0 ? totalPages : 1,
+        },
+      } as UsuariosDashboardData;
     },
     placeholderData: keepPreviousData,
     staleTime: 0, // Sempre considerar os dados como stale para forçar refetch
@@ -245,31 +190,8 @@ export function useUsuarioDashboardData(
   });
 
   const data = useMemo<UsuariosDashboardData | null>(() => {
-    const filteredUsuarios = usuariosQuery.data ?? null;
-
-    if (!filteredUsuarios) {
-      return null;
-    }
-
-    const total = filteredUsuarios.length;
-    const totalPages = Math.max(1, Math.ceil(total / normalizedFilters.pageSize));
-    const currentPage = Math.min(normalizedFilters.page, totalPages);
-    const startIndex = (currentPage - 1) * normalizedFilters.pageSize;
-    const paginatedUsuarios = filteredUsuarios.slice(
-      startIndex,
-      startIndex + normalizedFilters.pageSize
-    );
-
-    return {
-      usuarios: paginatedUsuarios,
-      pagination: {
-        page: currentPage,
-        pageSize: normalizedFilters.pageSize,
-        total,
-        totalPages,
-      },
-    };
-  }, [normalizedFilters.page, normalizedFilters.pageSize, usuariosQuery.data]);
+    return usuariosQuery.data ?? null;
+  }, [usuariosQuery.data]);
 
   const updateFilters = useCallback(
     (newFilters: Partial<UsuarioDashboardFilters>) => {

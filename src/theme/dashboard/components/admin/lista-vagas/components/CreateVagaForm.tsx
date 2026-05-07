@@ -20,7 +20,6 @@ import { createVaga, type CreateVagaPayload } from "@/api/vagas";
 import { Check, Loader2, Briefcase } from "lucide-react";
 import { FormLoadingModal } from "@/components/ui/custom/form-loading-modal";
 import {
-  useEmpresasForSelect,
   useVagaCategorias,
   useEmpresaDetails,
   useUnsavedChanges,
@@ -65,13 +64,6 @@ export function CreateVagaForm({
   
   // Buscar dados da empresa logada (apenas para role EMPRESA)
   const { company: empresaLogada } = useTenantCompany(isEmpresaRole);
-
-  // Só buscar lista de empresas se NÃO for role EMPRESA
-  const {
-    empresas,
-    isLoading: isLoadingEmpresas,
-    error: empresasError,
-  } = useEmpresasForSelect(!isEmpresaRole);
 
   const {
     categoriaOptions,
@@ -633,11 +625,8 @@ export function CreateVagaForm({
                     formData={formData}
                     errors={errors}
                     isSubmitting={isSubmitting}
-                    isLoadingEmpresas={isLoadingEmpresas}
                     isLoadingCategorias={isLoadingCategorias}
-                    empresasError={empresasError || undefined}
                     categoriasError={categoriasError || undefined}
-                    empresas={empresas}
                     categoriaOptions={categoriaOptions}
                     subcategoriaOptions={subcategoriaOptions}
                     onFieldChange={handleChange}

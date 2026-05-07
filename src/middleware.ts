@@ -33,6 +33,7 @@ const SYSTEM_CONFIG = {
     "/",
     "/advance-mais-local",
     "/sobre",
+    "/treinamento",
     "/recrutamento",
     "/vagas",
     "/fale-conosco",
