@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ButtonCustom } from "@/components/ui/custom";
 import { toastCustom } from "@/components/ui/custom/toast";
 import {
@@ -28,6 +28,7 @@ import {
 import { useUserRole } from "@/hooks/useUserRole";
 import { useTenantCompany } from "@/hooks/useTenantCompany";
 import { UserRole } from "@/config/roles";
+import { normalizeEstadoUf } from "@/lib/brasil-localidades";
 import {
   isErrorResponse,
   slugify,
@@ -57,11 +58,12 @@ export function CreateVagaForm({
   const [errors, setErrors] = useState<FormErrors>({});
   const [currentStep, setCurrentStep] = useState(0);
   const [loadingStep, setLoadingStep] = useState<string>("");
+  const lastLocationAutofillEmpresaIdRef = useRef<string | null>(null);
 
   // Verificar role do usuário
   const role = useUserRole();
   const isEmpresaRole = role === UserRole.EMPRESA;
-  
+
   // Buscar dados da empresa logada (apenas para role EMPRESA)
   const { company: empresaLogada } = useTenantCompany(isEmpresaRole);
 
@@ -75,12 +77,12 @@ export function CreateVagaForm({
   // Para role EMPRESA, usar dados diretos do useTenantCompany
   // Para outras roles, buscar detalhes quando selecionarem uma empresa
   const { empresaDetails: empresaDetailsFetched } = useEmpresaDetails(
-    !isEmpresaRole && formData.usuarioId ? formData.usuarioId : null
+    !isEmpresaRole && formData.usuarioId ? formData.usuarioId : null,
   );
-  
+
   // Unificar fonte de dados: EMPRESA usa empresaLogada, outras roles usam empresaDetailsFetched
   const empresaDetails = isEmpresaRole ? empresaLogada : empresaDetailsFetched;
-  
+
   // Atualizar formData com o ID da empresa quando for role EMPRESA
   useEffect(() => {
     if (isEmpresaRole && empresaLogada?.id && !formData.usuarioId) {
@@ -93,7 +95,7 @@ export function CreateVagaForm({
 
   const subcategoriaOptions = useMemo(
     () => getSubcategoriasOptions(formData.areaInteresseId || null),
-    [formData.areaInteresseId, getSubcategoriasOptions]
+    [formData.areaInteresseId, getSubcategoriasOptions],
   );
 
   // Hook para gerenciar mudanças não salvas
@@ -111,7 +113,7 @@ export function CreateVagaForm({
   useEffect(() => {
     if (formData.subareaInteresseId.length > 0) {
       const validIds = formData.subareaInteresseId.filter((id) =>
-        subcategoriaOptions.some((option) => option.value === id)
+        subcategoriaOptions.some((option) => option.value === id),
       );
 
       if (validIds.length !== formData.subareaInteresseId.length) {
@@ -123,38 +125,44 @@ export function CreateVagaForm({
     }
   }, [formData.subareaInteresseId, subcategoriaOptions]);
 
-  // Preenche dados de localização quando empresa é selecionada
+  // Preenche dados de localização quando empresa é selecionada/trocada.
+  // Faz isso uma vez por empresa para não sobrescrever edição manual do usuário.
   useEffect(() => {
-    if (empresaDetails) {
-      // Usa o primeiro endereço da empresa se existir
-      const primeiroEndereco = empresaDetails.enderecos?.[0];
+    if (!empresaDetails?.id) return;
+    if (lastLocationAutofillEmpresaIdRef.current === empresaDetails.id) return;
 
-      if (primeiroEndereco) {
-        setFormData((prev) => ({
-          ...prev,
-          localizacao: {
-            ...prev.localizacao,
-            logradouro: primeiroEndereco.logradouro || "",
-            numero: primeiroEndereco.numero || "",
-            bairro: primeiroEndereco.bairro || "",
-            cidade: primeiroEndereco.cidade || "",
-            estado: primeiroEndereco.estado || "",
-            cep: primeiroEndereco.cep || "",
-          },
-        }));
-      } else {
-        // Se não tem endereço específico, usa cidade e estado da empresa
-        setFormData((prev) => ({
-          ...prev,
-          localizacao: {
-            ...prev.localizacao,
-            cidade: empresaDetails.cidade || "",
-            estado: empresaDetails.estado || "",
-          },
-        }));
-      }
-    }
+    const enderecoBase =
+      empresaDetails.enderecoPrincipal ??
+      empresaDetails.enderecos?.find((endereco) => endereco.principal) ??
+      empresaDetails.enderecos?.[0];
+
+    const cidade = enderecoBase?.cidade || empresaDetails.cidade || "";
+    const estado = normalizeEstadoUf(
+      enderecoBase?.estado || empresaDetails.estado || "",
+    );
+
+    setFormData((prev) => ({
+      ...prev,
+      localizacao: {
+        ...prev.localizacao,
+        logradouro: enderecoBase?.logradouro || "",
+        numero: enderecoBase?.numero || "",
+        bairro: enderecoBase?.bairro || "",
+        cidade,
+        estado,
+        cep: enderecoBase?.cep || "",
+        complemento: enderecoBase?.complemento || "",
+      },
+    }));
+
+    lastLocationAutofillEmpresaIdRef.current = empresaDetails.id;
   }, [empresaDetails]);
+
+  useEffect(() => {
+    if (!formData.usuarioId) {
+      lastLocationAutofillEmpresaIdRef.current = null;
+    }
+  }, [formData.usuarioId]);
 
   const handleChange = (field: keyof FormState, value: any) => {
     setFormData((prev) => ({
@@ -173,7 +181,7 @@ export function CreateVagaForm({
 
   const handleLocalizacaoChange = (
     field: keyof FormState["localizacao"],
-    value: string
+    value: string,
   ) => {
     setFormData((prev) => ({
       ...prev,
@@ -195,7 +203,7 @@ export function CreateVagaForm({
 
   // Atualiza múltiplos campos de localização de uma vez (usado na busca de CEP)
   const handleLocalizacaoBatchChange = (
-    updates: Partial<FormState["localizacao"]>
+    updates: Partial<FormState["localizacao"]>,
   ) => {
     setFormData((prev) => ({
       ...prev,
@@ -216,7 +224,7 @@ export function CreateVagaForm({
 
   const validateSections = (
     scope: SectionKey | "all" = "all",
-    { showToast = true }: { showToast?: boolean } = {}
+    { showToast = true }: { showToast?: boolean } = {},
   ): boolean => {
     const sectionsToValidate: SectionKey[] =
       scope === "all"
@@ -294,7 +302,7 @@ export function CreateVagaForm({
 
         // Validação de requisitos obrigatórios (pelo menos 1)
         const requisitosObrigatorios = parseMultiline(
-          formData.requisitosObrigatorios
+          formData.requisitosObrigatorios,
         );
         if (requisitosObrigatorios.length === 0) {
           sectionErrors.requisitosObrigatorios =
@@ -306,7 +314,7 @@ export function CreateVagaForm({
 
         // Validação de atividades principais (pelo menos 1)
         const atividadesPrincipais = parseMultiline(
-          formData.atividadesPrincipais
+          formData.atividadesPrincipais,
         );
         if (atividadesPrincipais.length === 0) {
           sectionErrors.atividadesPrincipais =
@@ -337,8 +345,7 @@ export function CreateVagaForm({
           const raw = (formData as unknown as Record<string, unknown>)[key];
           const value = typeof raw === "string" ? raw : String(raw ?? "");
           if (value && containsProhibitedInfo(value)) {
-            sectionErrors[key] =
-              "Remova links, e-mails ou telefones do texto.";
+            sectionErrors[key] = "Remova links, e-mails ou telefones do texto.";
           }
         });
       }
@@ -372,7 +379,7 @@ export function CreateVagaForm({
     setErrors((prev) => {
       const updated = { ...prev };
       const keysToClear = sectionsToValidate.flatMap(
-        (section) => SECTION_FIELD_MAP[section]
+        (section) => SECTION_FIELD_MAP[section],
       );
       keysToClear.forEach((key) => delete updated[key]);
       return { ...updated, ...sectionErrors };
@@ -381,7 +388,7 @@ export function CreateVagaForm({
     if (Object.keys(sectionErrors).length > 0) {
       if (showToast) {
         toastCustom.error(
-          "Por favor, corrija os campos destacados antes de continuar."
+          "Por favor, corrija os campos destacados antes de continuar.",
         );
       }
       return false;
@@ -489,7 +496,7 @@ export function CreateVagaForm({
       const response = await createVaga(payload);
 
       if (isErrorResponse(response)) {
-        const apiErrors = "issues" in response ? response.issues ?? {} : {};
+        const apiErrors = "issues" in response ? (response.issues ?? {}) : {};
 
         if (Object.keys(apiErrors).length > 0) {
           setErrors((prev) => {
@@ -516,7 +523,11 @@ export function CreateVagaForm({
       setCurrentStep(0);
     } catch (error) {
       console.error("Erro ao criar vaga:", error);
-      toastCustom.error("Erro inesperado ao criar a vaga. Tente novamente.");
+      const message =
+        error instanceof Error && error.message
+          ? error.message
+          : "Erro inesperado ao criar a vaga. Tente novamente.";
+      toastCustom.error(message);
     } finally {
       setIsSubmitting(false);
       setLoadingStep("");
@@ -667,8 +678,10 @@ export function CreateVagaForm({
                     planoDestaque={
                       empresaDetails?.plano
                         ? {
-                            permiteDestaque: empresaDetails.plano.permiteDestaque ?? false,
-                            destaquesDisponiveis: empresaDetails.plano.destaquesDisponiveis ?? 0,
+                            permiteDestaque:
+                              empresaDetails.plano.permiteDestaque ?? false,
+                            destaquesDisponiveis:
+                              empresaDetails.plano.destaquesDisponiveis ?? 0,
                           }
                         : null
                     }

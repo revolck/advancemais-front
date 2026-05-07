@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useState, useMemo } from "react";
 import { InputCustom } from "@/components/ui/custom/input";
 import { SelectCustom } from "@/components/ui/custom/select";
 import { lookupCep, normalizeCep } from "@/lib/cep";
+import { normalizeEstadoUf } from "@/lib/brasil-localidades";
 import { Loader2 } from "lucide-react";
 
 interface FormState {
@@ -51,16 +52,24 @@ interface SelectOption {
   label: string;
 }
 
+function normalizeText(value?: string | null): string {
+  return (value ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
 interface LocationStepProps {
   formData: FormState;
   errors: FormErrors;
   isSubmitting: boolean;
   onLocalizacaoChange: (
     field: keyof FormState["localizacao"],
-    value: string
+    value: string,
   ) => void;
   onLocalizacaoBatchChange?: (
-    updates: Partial<FormState["localizacao"]>
+    updates: Partial<FormState["localizacao"]>,
   ) => void;
 }
 
@@ -87,7 +96,7 @@ export function LocationStep({
       setIsLoadingEstados(true);
       try {
         const response = await fetch(
-          "https://servicodados.ibge.gov.br/api/v1/localidades/estados?orderBy=nome"
+          "https://servicodados.ibge.gov.br/api/v1/localidades/estados?orderBy=nome",
         );
         if (!response.ok) throw new Error("Erro ao carregar estados");
         const data: Array<{ sigla: string; nome: string }> =
@@ -110,18 +119,19 @@ export function LocationStep({
   // Busca cidades quando o estado muda
   const fetchCidadesByUf = useCallback(
     async (uf: string, cityToSelect?: string | null) => {
-      if (!uf) {
+      const normalizedUf = normalizeEstadoUf(uf);
+      if (!normalizedUf) {
         setCidadeOptions([]);
         return;
       }
 
       // Verifica cache
-      const cached = citiesCache[uf];
+      const cached = citiesCache[normalizedUf];
       if (cached) {
         setCidadeOptions(cached);
         if (cityToSelect) {
           const found = cached.find(
-            (c) => c.label.toLowerCase() === cityToSelect.toLowerCase()
+            (c) => normalizeText(c.label) === normalizeText(cityToSelect),
           );
           if (found) {
             onLocalizacaoChange("cidade", found.value);
@@ -133,7 +143,7 @@ export function LocationStep({
       setIsLoadingCidades(true);
       try {
         const response = await fetch(
-          `https://servicodados.ibge.gov.br/api/v1/localidades/estados/${uf}/municipios?orderBy=nome`
+          `https://servicodados.ibge.gov.br/api/v1/localidades/estados/${normalizedUf}/municipios?orderBy=nome`,
         );
         if (!response.ok) throw new Error("Erro ao carregar cidades");
         const data: Array<{ nome: string }> = await response.json();
@@ -142,25 +152,29 @@ export function LocationStep({
           label: city.nome,
         }));
         setCidadeOptions(options);
-        setCitiesCache((prev) => ({ ...prev, [uf]: options }));
+        setCitiesCache((prev) => ({ ...prev, [normalizedUf]: options }));
 
         // Se tem cidade para selecionar (vindo do CEP), seleciona
         if (cityToSelect) {
           const found = options.find(
-            (c) => c.label.toLowerCase() === cityToSelect.toLowerCase()
+            (c) => normalizeText(c.label) === normalizeText(cityToSelect),
           );
           if (found) {
             onLocalizacaoChange("cidade", found.value);
           }
         }
       } catch (error) {
-        console.error("Erro ao carregar cidades do estado:", uf, error);
+        console.error(
+          "Erro ao carregar cidades do estado:",
+          normalizedUf,
+          error,
+        );
         setCidadeOptions([]);
       } finally {
         setIsLoadingCidades(false);
       }
     },
-    [citiesCache, onLocalizacaoChange]
+    [citiesCache, onLocalizacaoChange],
   );
 
   // Carrega cidades quando estado muda (pelo usuário ou CEP)
@@ -223,7 +237,7 @@ export function LocationStep({
         setIsLoadingCep(false);
       }
     },
-    [onLocalizacaoChange, onLocalizacaoBatchChange, fetchCidadesByUf]
+    [onLocalizacaoChange, onLocalizacaoBatchChange, fetchCidadesByUf],
   );
 
   // Handler de mudança do estado (limpa cidade)
@@ -238,14 +252,15 @@ export function LocationStep({
         fetchCidadesByUf(uf);
       }
     },
-    [onLocalizacaoChange, fetchCidadesByUf]
+    [onLocalizacaoChange, fetchCidadesByUf],
   );
 
   // Verifica se cidade está na lista de opções
   const cidadeValue = useMemo(() => {
     if (!formData.localizacao.cidade) return null;
     const found = cidadeOptions.find(
-      (c) => c.value.toLowerCase() === formData.localizacao.cidade.toLowerCase()
+      (c) =>
+        c.value.toLowerCase() === formData.localizacao.cidade.toLowerCase(),
     );
     return found?.value || null;
   }, [formData.localizacao.cidade, cidadeOptions]);
@@ -253,8 +268,9 @@ export function LocationStep({
   // Verifica se estado está na lista de opções
   const estadoValue = useMemo(() => {
     if (!formData.localizacao.estado) return null;
+    const normalizedUf = normalizeEstadoUf(formData.localizacao.estado);
     const found = estadoOptions.find(
-      (e) => e.value.toLowerCase() === formData.localizacao.estado.toLowerCase()
+      (e) => e.value.toLowerCase() === normalizedUf.toLowerCase(),
     );
     return found?.value || null;
   }, [formData.localizacao.estado, estadoOptions]);
@@ -310,8 +326,8 @@ export function LocationStep({
               !formData.localizacao.estado
                 ? "Selecione o estado primeiro"
                 : isLoadingCidades
-                ? "Carregando cidades..."
-                : "Selecione a cidade"
+                  ? "Carregando cidades..."
+                  : "Selecione a cidade"
             }
             options={cidadeOptions}
             value={cidadeValue}
