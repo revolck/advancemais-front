@@ -20,6 +20,112 @@ import { textareaVariants } from "../variants";
 import type { RichTextareaProps } from "../types";
 import { toastCustom } from "@/components/ui/custom/toast";
 
+const HTML_TAG_PATTERN = /<\/?[a-z][\s\S]*>/i;
+const BLOCK_TAG_NAMES = new Set([
+  "ADDRESS",
+  "ARTICLE",
+  "ASIDE",
+  "BLOCKQUOTE",
+  "DIV",
+  "FIGCAPTION",
+  "FIGURE",
+  "FOOTER",
+  "H1",
+  "H2",
+  "H3",
+  "H4",
+  "H5",
+  "H6",
+  "HEADER",
+  "LI",
+  "MAIN",
+  "NAV",
+  "OL",
+  "P",
+  "PRE",
+  "SECTION",
+  "UL",
+]);
+
+function looksLikeHtml(value: string): boolean {
+  return HTML_TAG_PATTERN.test(value);
+}
+
+function decodeBasicHtmlEntities(value: string): string {
+  return value
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'");
+}
+
+function getInitialPlainText(value: string): string {
+  if (!looksLikeHtml(value)) return value;
+
+  return decodeBasicHtmlEntities(
+    value
+      .replace(/<br\s*\/?>/gi, "\n")
+      .replace(/<(div|p|h[1-6]|li|blockquote|pre)\b[^>]*>/gi, "\n")
+      .replace(/<\/(div|p|h[1-6]|li|blockquote|pre)>/gi, "")
+      .replace(/<[^>]+>/g, ""),
+  ).replace(/^\n+|\n+$/g, "");
+}
+
+function getPlainText(element: HTMLElement): string {
+  if (typeof Node === "undefined") {
+    return element.textContent || "";
+  }
+
+  let text = "";
+
+  const appendLineBreak = () => {
+    text += "\n";
+  };
+
+  const appendBlockSeparator = () => {
+    if (text && !text.endsWith("\n")) {
+      text += "\n";
+    }
+  };
+
+  const walk = (node: Node) => {
+    if (node.nodeType === Node.TEXT_NODE) {
+      text += node.textContent || "";
+      return;
+    }
+
+    if (node.nodeType !== Node.ELEMENT_NODE) {
+      return;
+    }
+
+    const childElement = node as HTMLElement;
+    const tagName = childElement.tagName.toUpperCase();
+
+    if (tagName === "BR") {
+      appendLineBreak();
+      return;
+    }
+
+    const isBlock = BLOCK_TAG_NAMES.has(tagName);
+    if (isBlock) {
+      appendBlockSeparator();
+    }
+
+    if (isBlock && !childElement.hasChildNodes()) {
+      appendLineBreak();
+      return;
+    }
+
+    childElement.childNodes.forEach(walk);
+  };
+
+  element.childNodes.forEach(walk);
+
+  return text.replace(/\u00a0/g, " ");
+}
+
 const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
   (
     {
@@ -33,30 +139,44 @@ const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
       style,
       onHtmlChange,
       required,
+      value,
+      defaultValue,
+      placeholder,
+      disabled,
+      readOnly,
+      onChange,
+      onKeyDown,
+      onPaste,
+      onFocus,
+      onBlur,
+      error,
+      name,
+      id,
+      autoFocus,
       ...props
     },
-    ref
+    ref,
   ) => {
-    const [htmlValue, setHtmlValue] = React.useState<string>("");
-    const [plainTextValue, setPlainTextValue] = React.useState<string>(
-      typeof props.value === "string" ? props.value : ""
+    const isControlled = typeof value === "string";
+    const initialValue = isControlled
+      ? value
+      : typeof defaultValue === "string"
+        ? defaultValue
+        : "";
+    const externalValue = isControlled ? value : undefined;
+    const isEditable = !disabled && !readOnly;
+    const [htmlValue, setHtmlValue] = React.useState<string>(() =>
+      looksLikeHtml(initialValue) ? initialValue : "",
     );
-
-    // ✅ DEBUG: Log inicial do RichTextarea
-    React.useEffect(() => {
-      if (process.env.NODE_ENV === "development") {
-        console.log("[RichTextarea] Inicializado:", {
-          propsValue: props.value,
-          propsValueLength: props.value?.length || 0,
-          initialPlainTextValue: plainTextValue,
-          initialPlainTextValueLength: plainTextValue.length,
-        });
-      }
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []); // Apenas no mount - intencionalmente sem dependências
+    const [plainTextValue, setPlainTextValue] = React.useState<string>(() =>
+      getInitialPlainText(initialValue),
+    );
     const contentEditableRef = React.useRef<HTMLDivElement>(null);
+    const hasAppliedDefaultValueRef = React.useRef(false);
+    const lastEmittedHtmlRef = React.useRef("");
+    const lastEmittedPlainTextRef = React.useRef("");
     const [activeFormats, setActiveFormats] = React.useState<Set<string>>(
-      new Set()
+      new Set(),
     );
     const [activeHeading, setActiveHeading] =
       React.useState<HeadingType | null>(null);
@@ -92,7 +212,7 @@ const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
       // Calcula a altura final
       const newHeight = Math.max(
         MIN_HEIGHT,
-        Math.min(scrollHeight, MAX_HEIGHT)
+        Math.min(scrollHeight, MAX_HEIGHT),
       );
 
       // Aplica a nova altura
@@ -100,55 +220,60 @@ const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
       setContentHeight(newHeight);
     }, []);
 
-    // Sincronização com props.value
-    // ⚠️ IMPORTANTE: Não atualiza o DOM quando o usuário está focado e digitando
-    // Isso previne perda de foco durante a digitação
+    const setContentEditableNode = React.useCallback(
+      (node: HTMLDivElement | null) => {
+        contentEditableRef.current = node;
+
+        if (typeof ref === "function") {
+          ref(node);
+        } else if (ref) {
+          (ref as React.MutableRefObject<HTMLDivElement | null>).current = node;
+        }
+      },
+      [ref],
+    );
+
+    // Sincroniza apenas valores externos. Valores emitidos pelo próprio editor
+    // nunca reescrevem o DOM, para preservar a seleção durante a digitação.
     React.useEffect(() => {
-      // Não sincroniza se o usuário está ativamente editando (focado)
-      // Isso previne conflitos entre a digitação do usuário e atualizações externas
-      if (isFocused && contentEditableRef.current) {
-        // Se o usuário está focado, só atualiza se o valor externo for completamente diferente
-        // (caso de substituição completa, não de edição incremental)
-        const currentText = contentEditableRef.current.textContent || "";
-        if (props.value !== undefined && props.value !== currentText) {
-          // Se o valor externo é muito diferente, provavelmente é uma atualização externa
-          // Mas ainda assim, só atualiza se não estiver digitando ativamente
-          const isMajorChange =
-            Math.abs((props.value?.length || 0) - currentText.length) > 1;
-          if (!isMajorChange) {
-            return; // Ignora mudanças menores quando o usuário está digitando
-          }
-        } else {
-          return; // Valor igual ou indefinido, não precisa atualizar
-        }
+      const root = contentEditableRef.current;
+      const valueToSync =
+        externalValue ??
+        (!hasAppliedDefaultValueRef.current && typeof defaultValue === "string"
+          ? defaultValue
+          : undefined);
+
+      if (!root || valueToSync === undefined) return;
+      if (valueToSync === lastEmittedHtmlRef.current) return;
+      if (valueToSync === lastEmittedPlainTextRef.current) return;
+      if (isFocused && valueToSync !== "") return;
+      if (!isControlled) {
+        hasAppliedDefaultValueRef.current = true;
       }
 
-      // ✅ Sincronizar quando props.value mudar externamente (quando não está em foco)
-      if (props.value !== undefined) {
-        const newValue = typeof props.value === "string" ? props.value : "";
+      const nextValue = valueToSync;
+      const nextValueIsHtml = looksLikeHtml(nextValue);
+      const currentHtml = root.innerHTML;
+      const currentPlainText = getPlainText(root);
 
-        // ✅ Sempre atualizar se o valor mudou ou se o componente foi remontado
-        if (
-          props.value !== plainTextValue ||
-          !contentEditableRef.current?.textContent
-        ) {
-          setPlainTextValue(newValue);
-          if (contentEditableRef.current) {
-            // ✅ Usar textContent se for texto simples, innerHTML se for HTML
-            // Se o valor contém tags HTML, usar innerHTML, senão usar textContent
-            if (newValue && /<[^>]+>/.test(newValue)) {
-              contentEditableRef.current.innerHTML = newValue;
-            } else {
-              contentEditableRef.current.textContent = newValue;
-            }
-            // Ajusta altura após atualizar conteúdo
-            setTimeout(() => {
-              adjustHeight();
-            }, 0);
-          }
-        }
+      if (nextValueIsHtml && nextValue === currentHtml) return;
+      if (!nextValueIsHtml && nextValue === currentPlainText) return;
+
+      if (nextValueIsHtml) {
+        root.innerHTML = nextValue;
+      } else {
+        root.textContent = nextValue;
       }
-    }, [props.value, plainTextValue, adjustHeight, isFocused]);
+
+      const nextPlainText = getPlainText(root);
+      const nextHtml = root.innerHTML;
+      setPlainTextValue(nextPlainText);
+      setHtmlValue(nextHtml);
+
+      setTimeout(() => {
+        adjustHeight();
+      }, 0);
+    }, [externalValue, defaultValue, isControlled, adjustHeight, isFocused]);
 
     // Ajusta altura quando o conteúdo muda
     React.useEffect(() => {
@@ -172,11 +297,6 @@ const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
       lineHeight: "1.5", // Altura de linha confortável
       transition: "height 0.1s ease-out", // Transição suave
       ...style,
-    };
-
-    // Função para extrair texto sem formatação
-    const getPlainText = (element: HTMLElement): string => {
-      return element.textContent || "";
     };
 
     // Função melhorada para verificar se um nó tem determinada formatação
@@ -437,7 +557,7 @@ const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
               }
               return NodeFilter.FILTER_REJECT;
             },
-          }
+          },
         );
 
         const elementsToUnwrap: HTMLElement[] = [];
@@ -626,9 +746,11 @@ const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
 
       setPlainTextValue(plainText);
       setHtmlValue(htmlContent);
+      lastEmittedPlainTextRef.current = plainText;
+      lastEmittedHtmlRef.current = htmlContent;
 
       // Chama onChange com o texto plano (para compatibilidade)
-      props.onChange?.({
+      onChange?.({
         target: { value: plainText },
       } as React.ChangeEvent<HTMLTextAreaElement>);
 
@@ -969,29 +1091,6 @@ const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
       setActiveLink(null);
     };
 
-    // Função para normalizar quebras de linha (converte <div> em <br>)
-    const normalizeLineBreaks = React.useCallback(() => {
-      if (!contentEditableRef.current) return;
-
-      // Substitui <div><br></div> ou <div></div> (criado por alguns browsers no Enter) por <br>
-      const divs = Array.from(
-        contentEditableRef.current.querySelectorAll("div")
-      );
-      divs.forEach((div) => {
-        // Se o div está vazio ou só tem um <br>, substitui por <br>
-        if (
-          div.children.length === 0 ||
-          (div.children.length === 1 && div.children[0].tagName === "BR") ||
-          (div.textContent?.trim() === "" && div.children.length === 0)
-        ) {
-          const br = document.createElement("br");
-          if (div.parentNode) {
-            div.parentNode.replaceChild(br, div);
-          }
-        }
-      });
-    }, []);
-
     const handleInput = (e: React.FormEvent<HTMLDivElement>) => {
       if (!contentEditableRef.current) return;
 
@@ -1014,9 +1113,6 @@ const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
         return;
       }
 
-      // Normaliza quebras de linha após input (garante que Enter funcione)
-      normalizeLineBreaks();
-
       updateValues();
 
       // Ajusta altura após mudanças no conteúdo
@@ -1029,6 +1125,9 @@ const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
     };
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+      onKeyDown?.(e);
+      if (e.defaultPrevented) return;
+
       // Atalhos de teclado para formatação
       if (e.ctrlKey || e.metaKey) {
         switch (e.key.toLowerCase()) {
@@ -1090,6 +1189,9 @@ const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
     };
 
     const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
+      onPaste?.(e);
+      if (e.defaultPrevented) return;
+
       if (maxLength) {
         e.preventDefault();
         const clipboardData = e.clipboardData?.getData("text/plain") || "";
@@ -1150,7 +1252,12 @@ const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
           </div>
         )}
 
-        <div className="rounded-lg border border-input bg-background flex flex-col overflow-hidden">
+        <div
+          className={cn(
+            "rounded-lg border bg-background flex flex-col overflow-hidden",
+            error ? "border-destructive" : "border-input",
+          )}
+        >
           <RichTextareaToolbar
             activeHeading={activeHeading}
             activeFormats={activeFormats}
@@ -1171,27 +1278,34 @@ const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
                   paddingBottom: "0.5rem",
                 }}
               >
-                {props.placeholder || "Digite algo..."}
+                {placeholder || "Digite algo..."}
               </div>
             )}
             <div
-              ref={ref || contentEditableRef}
-              contentEditable
+              {...props}
+              ref={setContentEditableNode}
+              id={id}
+              data-name={name}
+              contentEditable={isEditable}
               className={cn(
                 textareaVariants({ size }),
                 "rich-textarea-content resize-none! min-w-full! max-w-full! w-full! overflow-y-auto! overflow-x-hidden!",
                 "focus:outline-none focus-visible:outline-none flex-1 relative z-10",
-                className
+                !isEditable && "cursor-not-allowed opacity-60",
+                className,
               )}
               style={contentEditableStyles}
+              autoFocus={autoFocus}
               onInput={handleInput}
-              onFocus={() => {
+              onFocus={(event) => {
                 setIsFocused(true);
                 setTimeout(checkActiveFormats, 10);
+                onFocus?.(event);
               }}
-              onBlur={() => {
+              onBlur={(event) => {
                 setIsFocused(false);
                 setActiveFormats(new Set());
+                onBlur?.(event);
               }}
               onKeyDown={handleKeyDown}
               onKeyUp={(e) => {
@@ -1235,11 +1349,11 @@ const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
               suppressContentEditableWarning
               role="textbox"
               aria-label={label || "Rich text editor"}
+              aria-invalid={error ? true : undefined}
               aria-multiline="true"
               data-gramm="false"
               data-gramm_editor="false"
               data-enable-grammarly="false"
-              {...(props as any)}
             />
 
             {(showCharCount || maxLength) && (
@@ -1247,7 +1361,7 @@ const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
                 <span
                   className={cn(
                     "text-xs text-muted-foreground",
-                    maxLength && charCount > maxLength && "text-destructive"
+                    maxLength && charCount > maxLength && "text-destructive",
                   )}
                 >
                   {charCount}
@@ -1257,6 +1371,7 @@ const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
             )}
           </div>
         </div>
+        {error && <p className="text-sm text-destructive mt-1">{error}</p>}
 
         {/* Modal para adicionar/editar link */}
         <LinkModal
@@ -1271,7 +1386,7 @@ const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
         />
       </div>
     );
-  }
+  },
 );
 
 RichTextarea.displayName = "RichTextarea";
