@@ -3,26 +3,18 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
-import { Hash, Loader2 } from "lucide-react";
+import { Hash } from "lucide-react";
 
 import { syncTurmaInstrutores, type CursoTurma } from "@/api/cursos";
 import { AvatarCustom } from "@/components/ui/custom/avatar";
 import { ButtonCustom } from "@/components/ui/custom/button";
 import { EmptyState } from "@/components/ui/custom";
-import { SelectCustom } from "@/components/ui/custom/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { toastCustom } from "@/components/ui/custom";
 import { queryKeys } from "@/lib/react-query/queryKeys";
 import { useInstrutoresForSelect } from "../../lista-turmas/hooks/useInstrutoresForSelect";
 import { getTurmaInstrutoresVinculados } from "../../lista-turmas/utils/instrutores";
+import { GerenciarInstrutoresModal } from "../components/GerenciarInstrutoresModal";
 
 interface LinkedInstructorsTabProps {
   turma: CursoTurma;
@@ -40,21 +32,38 @@ export function LinkedInstructorsTab({
   canManage = false,
 }: LinkedInstructorsTabProps) {
   const queryClient = useQueryClient();
-  const instrutores = getTurmaInstrutoresVinculados(turma);
+  const instrutores = useMemo(
+    () => getTurmaInstrutoresVinculados(turma),
+    [turma],
+  );
   const [currentPage, setCurrentPage] = useState(1);
   const [isManageOpen, setIsManageOpen] = useState(false);
   const [selectedInstrutorIds, setSelectedInstrutorIds] = useState<string[]>(
-    []
+    [],
   );
   const [isSaving, setIsSaving] = useState(false);
-  const {
-    instrutores: instrutorOptions,
-    isLoading: isLoadingInstrutores,
-  } = useInstrutoresForSelect();
+  const { instrutores: instrutorOptions, isLoading: isLoadingInstrutores } =
+    useInstrutoresForSelect();
+  const linkedInstrutorIds = useMemo(
+    () => instrutores.map((instrutor) => String(instrutor.id)).filter(Boolean),
+    [instrutores],
+  );
+  const linkedInstrutorIdsSignature = useMemo(
+    () => [...linkedInstrutorIds].sort().join("|"),
+    [linkedInstrutorIds],
+  );
+  const selectedInstrutorIdsSignature = useMemo(
+    () => [...selectedInstrutorIds].sort().join("|"),
+    [selectedInstrutorIds],
+  );
+  const hasManageChanges =
+    linkedInstrutorIdsSignature !== selectedInstrutorIdsSignature;
 
   useEffect(() => {
-    setSelectedInstrutorIds(instrutores.map((instrutor) => instrutor.id));
-  }, [instrutores]);
+    if (!isManageOpen) {
+      setSelectedInstrutorIds(linkedInstrutorIds);
+    }
+  }, [isManageOpen, linkedInstrutorIds, linkedInstrutorIdsSignature]);
 
   const totalItems = instrutores.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / ITEMS_PER_PAGE));
@@ -93,7 +102,18 @@ export function LinkedInstructorsTab({
     setCurrentPage(page);
   };
 
+  const handleManageOpenChange = (open: boolean) => {
+    if (open) {
+      setSelectedInstrutorIds(linkedInstrutorIds);
+    }
+    setIsManageOpen(open);
+  };
+
   const handleSave = async () => {
+    if (!hasManageChanges) {
+      return;
+    }
+
     setIsSaving(true);
     try {
       await syncTurmaInstrutores(cursoId, turma.id, {
@@ -147,20 +167,6 @@ export function LinkedInstructorsTab({
     );
   }
 
-  if (instrutores.length === 0) {
-    return (
-      <div className="rounded-2xl border border-gray-200/60 bg-white p-6">
-        <EmptyState
-          illustration="userProfiles"
-          illustrationAlt="Instrutores vinculados"
-          title="Nenhum instrutor vinculado"
-          description="Esta turma ainda não possui instrutores vinculados."
-          maxContentWidth="sm"
-        />
-      </div>
-    );
-  }
-
   return (
     <section className="overflow-hidden rounded-2xl border border-gray-200/60 bg-white">
       <div className="flex items-center justify-between gap-3 border-b border-gray-100 px-6 py-3">
@@ -172,9 +178,9 @@ export function LinkedInstructorsTab({
           {canManage && (
             <ButtonCustom
               type="button"
-              variant="outline"
+              variant="primary"
               size="sm"
-              onClick={() => setIsManageOpen(true)}
+              onClick={() => handleManageOpenChange(true)}
               className="h-8"
             >
               Gerenciar
@@ -183,45 +189,61 @@ export function LinkedInstructorsTab({
         </div>
       </div>
 
-      <div className="divide-y divide-gray-100">
-        {paginatedInstrutores.map((instrutor) => {
-          const codigo = instrutor.codUsuario || instrutor.id || "—";
+      {instrutores.length === 0 ? (
+        <div className="p-6">
+          <EmptyState
+            illustration="userProfiles"
+            illustrationAlt="Instrutores vinculados"
+            title="Nenhum instrutor vinculado"
+            description={
+              canManage
+                ? "Use o botão Gerenciar para adicionar instrutores a esta turma."
+                : "Esta turma ainda não possui instrutores vinculados."
+            }
+            maxContentWidth="sm"
+          />
+        </div>
+      ) : (
+        <div className="divide-y divide-gray-100">
+          {paginatedInstrutores.map((instrutor) => {
+            const codigo = instrutor.codUsuario || instrutor.id || "—";
 
-          return (
-            <article
-              key={`${instrutor.id}-${instrutor.nome}`}
-              className="px-6 py-4 transition-colors hover:bg-slate-50/50"
-            >
-              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                <div className="flex min-w-0 items-center gap-3">
-                  <AvatarCustom
-                    name={instrutor.nome}
-                    src={instrutor.avatarUrl ?? undefined}
-                    size="md"
-                    showStatus={false}
-                  />
+            return (
+              <article
+                key={`${instrutor.id}-${instrutor.nome}`}
+                className="px-6 py-4 transition-colors hover:bg-slate-50/50"
+              >
+                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <AvatarCustom
+                      name={instrutor.nome}
+                      src={instrutor.avatarUrl ?? undefined}
+                      size="md"
+                      showStatus={false}
+                    />
 
-                  <div className="min-w-0 mt-4">
-                    <h6 className="mb-0! truncate text-sm! font-semibold! text-gray-900!">
-                      {instrutor.nome}
-                    </h6>
-                    <p className="mt-1 text-sm! text-gray-500!">
-                      {instrutor.email || "Sem email cadastrado"}
-                    </p>
+                    <div className="min-w-0 mt-4">
+                      <h6 className="mb-0! truncate text-sm! font-semibold! text-gray-900!">
+                        {instrutor.nome}
+                      </h6>
+                      <p className="mt-1 text-sm! text-gray-500!">
+                        {instrutor.email || "Sem email cadastrado"}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center">
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-2.5 py-1 text-xs! font-medium! text-gray-600!">
+                      <Hash className="h-3.5 w-3.5" />
+                      <span className="max-w-[160px] truncate">{codigo}</span>
+                    </span>
                   </div>
                 </div>
-
-                <div className="flex items-center">
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-2.5 py-1 text-xs! font-medium! text-gray-600!">
-                    <Hash className="h-3.5 w-3.5" />
-                    <span className="max-w-[160px] truncate">{codigo}</span>
-                  </span>
-                </div>
-              </div>
-            </article>
-          );
-        })}
-      </div>
+              </article>
+            );
+          })}
+        </div>
+      )}
 
       {totalItems > 0 && (
         <div className="flex flex-col gap-4 border-t border-gray-100 bg-gray-50/30 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
@@ -300,60 +322,17 @@ export function LinkedInstructorsTab({
         </div>
       )}
 
-      <Dialog open={isManageOpen} onOpenChange={setIsManageOpen}>
-        <DialogContent className="sm:max-w-xl">
-          <DialogHeader>
-            <DialogTitle>Gerenciar instrutores</DialogTitle>
-            <DialogDescription>
-              Atualize o vínculo institucional de instrutores desta turma.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4">
-            {isLoadingInstrutores ? (
-              <div className="space-y-2">
-                <Skeleton className="h-12 w-full" />
-                <Skeleton className="h-12 w-full" />
-              </div>
-            ) : (
-              <SelectCustom
-                mode="multiple"
-                label="Instrutores vinculados"
-                placeholder="Selecionar instrutores"
-                options={instrutorOptions}
-                value={selectedInstrutorIds}
-                onChange={setSelectedInstrutorIds}
-                helperText="Esse vínculo não reescreve o dono explícito de aula, prova ou atividade."
-              />
-            )}
-          </div>
-
-          <DialogFooter>
-            <ButtonCustom
-              type="button"
-              variant="outline"
-              onClick={() => setIsManageOpen(false)}
-              disabled={isSaving}
-            >
-              Cancelar
-            </ButtonCustom>
-            <ButtonCustom
-              type="button"
-              onClick={handleSave}
-              disabled={isSaving || isLoadingInstrutores}
-            >
-              {isSaving ? (
-                <span className="flex items-center gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Salvando
-                </span>
-              ) : (
-                "Salvar"
-              )}
-            </ButtonCustom>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <GerenciarInstrutoresModal
+        isOpen={isManageOpen}
+        onOpenChange={handleManageOpenChange}
+        isLoading={isLoadingInstrutores}
+        isSaving={isSaving}
+        hasChanges={hasManageChanges}
+        selectedInstrutorIds={selectedInstrutorIds}
+        onSelectedInstrutorIdsChange={setSelectedInstrutorIds}
+        instrutorOptions={instrutorOptions}
+        onSave={handleSave}
+      />
     </section>
   );
 }

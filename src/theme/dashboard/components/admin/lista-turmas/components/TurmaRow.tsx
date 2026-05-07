@@ -260,11 +260,6 @@ export function TurmaRow({
                   {instrutoresVinculados.map((instrutor) => (
                     <div key={`${instrutor.id}-${instrutor.nome}`} className="text-xs">
                       <div className="font-medium">{instrutor.nome}</div>
-                      {instrutor.email && (
-                        <div className="text-muted-foreground">
-                          {instrutor.email}
-                        </div>
-                      )}
                     </div>
                   ))}
                 </div>

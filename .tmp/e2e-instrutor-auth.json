@@ -1,0 +1,69 @@
+{
+  "success": true,
+  "message": "Login realizado com sucesso",
+  "usuario": {
+    "id": "0d68d45b-4a94-45c3-a224-a96952b0bca7",
+    "email": "instrutor@advancemais.com.br",
+    "nomeCompleto": "Instrutor Maria Silva",
+    "telefone": "11999990005",
+    "genero": "FEMININO",
+    "dataNasc": "1956-02-28T03:00:00.000Z",
+    "inscricao": null,
+    "role": "INSTRUTOR",
+    "tipoUsuario": "PESSOA_FISICA",
+    "authId": "seed-instrutor-1771640531221",
+    "emailVerificado": true,
+    "emailVerificadoEm": "2026-02-21T02:22:11.692Z",
+    "UsuariosVerificacaoEmail": {
+      "verified": true,
+      "verifiedAt": "2026-02-21T02:22:11.692Z",
+      "token": null,
+      "tokenExpiration": null,
+      "attempts": 0,
+      "lastAttemptAt": null
+    },
+    "ultimoLogin": "2026-04-06T14:49:02.466Z",
+    "codUsuario": "INS-24657",
+    "cidade": "Maceió",
+    "estado": "AL",
+    "avatarUrl": null,
+    "descricao": "Instrutora de Desenvolvimento Web",
+    "aceitarTermos": true,
+    "informacoes": {
+      "telefone": "11999990005",
+      "genero": "FEMININO",
+      "dataNasc": "1956-02-28T03:00:00.000Z",
+      "inscricao": null,
+      "avatarUrl": null,
+      "descricao": "Instrutora de Desenvolvimento Web",
+      "aceitarTermos": true
+    },
+    "socialLinks": null,
+    "enderecos": [
+      {
+        "id": "846a8d7b-535b-42d0-84ed-b723b6063311",
+        "logradouro": "Rua Manoel Pedro de Oliveira",
+        "numero": "245",
+        "bairro": "Benedito Bentes",
+        "cidade": "Maceió",
+        "estado": "AL",
+        "cep": "57084028"
+      }
+    ]
+  },
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjBkNjhkNDViLTRhOTQtNDVjMy1hMjI0LWE5Njk1MmIwYmNhNyIsInJvbGUiOiJJTlNUUlVUT1IiLCJ0eXBlIjoiYWNjZXNzIiwiaWF0IjoxNzc1NDg2OTQxLCJleHAiOjE3NzU1MTIxNDEsImF1ZCI6ImFkdmFuY2VtYWlzLXVzZXJzIiwiaXNzIjoiYWR2YW5jZW1haXMtYXBpIiwic3ViIjoiMGQ2OGQ0NWItNGE5NC00NWMzLWEyMjQtYTk2OTUyYjBiY2E3IiwianRpIjoiYWNjZXNzXzBkNjhkNDViLTRhOTQtNDVjMy1hMjI0LWE5Njk1MmIwYmNhN18xNzc1NDg2OTQxMDY0In0.zVw7uP9mqtt0U1W065orXz-tLFf0qETubfv4vAkjt4c",
+  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjBkNjhkNDViLTRhOTQtNDVjMy1hMjI0LWE5Njk1MmIwYmNhNyIsInR5cGUiOiJyZWZyZXNoIiwiaWF0IjoxNzc1NDg2OTQxLCJleHAiOjE3NzgwNzg5NDEsImF1ZCI6ImFkdmFuY2VtYWlzLXJlZnJlc2giLCJpc3MiOiJhZHZhbmNlbWFpcy1hcGkiLCJzdWIiOiIwZDY4ZDQ1Yi00YTk0LTQ1YzMtYTIyNC1hOTY5NTJiMGJjYTciLCJqdGkiOiJyZWZyZXNoXzBkNjhkNDViLTRhOTQtNDVjMy1hMjI0LWE5Njk1MmIwYmNhN18xNzc1NDg2OTQxMDY0In0.b3HIQbQfvs2F2niLL4uUNzH225DsbhopdUX2o-zxm9E",
+  "tokenType": "Bearer",
+  "expiresIn": "7h",
+  "rememberMe": false,
+  "refreshTokenExpiresIn": "30d",
+  "refreshTokenExpiresAt": "2026-05-06T14:49:01.065Z",
+  "session": {
+    "id": "eab11042-0da8-459f-bf32-9c32bbea139f",
+    "rememberMe": false,
+    "createdAt": "2026-04-06T14:49:01.765Z",
+    "expiresAt": "2026-05-06T14:49:01.065Z"
+  },
+  "correlationId": "ff748445-ad4c-4985-91b7-c5e8c6a3f0f1",
+  "timestamp": "2026-04-06T14:49:02.466Z"
+}

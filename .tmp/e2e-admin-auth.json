@@ -1,0 +1,69 @@
+{
+  "success": true,
+  "message": "Login realizado com sucesso",
+  "usuario": {
+    "id": "fb227078-f7da-465c-ae30-b41c20060878",
+    "email": "admin.teste@advancemais.com.br",
+    "nomeCompleto": "Admin Teste Sistema",
+    "telefone": "11999990000",
+    "genero": "MASCULINO",
+    "dataNasc": "1990-01-15T00:00:00.000Z",
+    "inscricao": null,
+    "role": "ADMIN",
+    "tipoUsuario": "PESSOA_FISICA",
+    "authId": "seed-admin-1771640528697",
+    "emailVerificado": true,
+    "emailVerificadoEm": "2026-02-21T02:22:09.166Z",
+    "UsuariosVerificacaoEmail": {
+      "verified": true,
+      "verifiedAt": "2026-02-21T02:22:09.166Z",
+      "token": null,
+      "tokenExpiration": null,
+      "attempts": 0,
+      "lastAttemptAt": null
+    },
+    "ultimoLogin": "2026-04-06T14:57:59.802Z",
+    "codUsuario": "ADM-74342",
+    "cidade": "São Paulo",
+    "estado": "SP",
+    "avatarUrl": null,
+    "descricao": "Administrador para testes do sistema",
+    "aceitarTermos": true,
+    "informacoes": {
+      "telefone": "11999990000",
+      "genero": "MASCULINO",
+      "dataNasc": "1990-01-15T00:00:00.000Z",
+      "inscricao": null,
+      "avatarUrl": null,
+      "descricao": "Administrador para testes do sistema",
+      "aceitarTermos": true
+    },
+    "socialLinks": null,
+    "enderecos": [
+      {
+        "id": "dcbd595d-0e10-4d8a-a1bf-338a91393e97",
+        "logradouro": "Rua Manoel Pedro de Oliveira",
+        "numero": "245",
+        "bairro": "Benedito Bentes",
+        "cidade": "São Paulo",
+        "estado": "SP",
+        "cep": "57084028"
+      }
+    ]
+  },
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImZiMjI3MDc4LWY3ZGEtNDY1Yy1hZTMwLWI0MWMyMDA2MDg3OCIsInJvbGUiOiJBRE1JTiIsInR5cGUiOiJhY2Nlc3MiLCJpYXQiOjE3NzU0ODc0NzgsImV4cCI6MTc3NTUxMjY3OCwiYXVkIjoiYWR2YW5jZW1haXMtdXNlcnMiLCJpc3MiOiJhZHZhbmNlbWFpcy1hcGkiLCJzdWIiOiJmYjIyNzA3OC1mN2RhLTQ2NWMtYWUzMC1iNDFjMjAwNjA4NzgiLCJqdGkiOiJhY2Nlc3NfZmIyMjcwNzgtZjdkYS00NjVjLWFlMzAtYjQxYzIwMDYwODc4XzE3NzU0ODc0NzgzNTgifQ.rb2VHe9qjmqrMw2t0wkhhp9Ph9tmlBy6_47eiv1zMUA",
+  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImZiMjI3MDc4LWY3ZGEtNDY1Yy1hZTMwLWI0MWMyMDA2MDg3OCIsInR5cGUiOiJyZWZyZXNoIiwiaWF0IjoxNzc1NDg3NDc4LCJleHAiOjE3NzgwNzk0NzgsImF1ZCI6ImFkdmFuY2VtYWlzLXJlZnJlc2giLCJpc3MiOiJhZHZhbmNlbWFpcy1hcGkiLCJzdWIiOiJmYjIyNzA3OC1mN2RhLTQ2NWMtYWUzMC1iNDFjMjAwNjA4NzgiLCJqdGkiOiJyZWZyZXNoX2ZiMjI3MDc4LWY3ZGEtNDY1Yy1hZTMwLWI0MWMyMDA2MDg3OF8xNzc1NDg3NDc4MzU5In0.-PqeR-B0VpocC9eMgjdOV6KxpQRdu4eAp5yq7U3tCOA",
+  "tokenType": "Bearer",
+  "expiresIn": "7h",
+  "rememberMe": false,
+  "refreshTokenExpiresIn": "30d",
+  "refreshTokenExpiresAt": "2026-05-06T14:57:58.359Z",
+  "session": {
+    "id": "bce45017-0704-4fb3-9615-6cae7fdae7b4",
+    "rememberMe": false,
+    "createdAt": "2026-04-06T14:57:59.081Z",
+    "expiresAt": "2026-05-06T14:57:58.359Z"
+  },
+  "correlationId": "74ec294f-bd60-422e-8a2e-0d4fa3be564e",
+  "timestamp": "2026-04-06T14:57:59.802Z"
+}
