@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import { ImageNotFound } from "@/components/ui/custom/image-not-found";
 import type { SliderSlideProps } from "../types";
@@ -30,18 +30,24 @@ export const SliderSlide: React.FC<SliderSlideProps> = ({
 
   const imageQuality = isMobile ? 100 : 80;
   const fitClass = isMobile ? "object-contain" : "object-cover";
+  const hasValidImage = Boolean(slide.image?.trim());
+
+  useEffect(() => {
+    setHasError(false);
+    setIsLoading(hasValidImage);
+  }, [hasValidImage, slide.image]);
 
   const content = (
     <>
       {/* Loading State */}
-      {isLoading && (
+      {hasValidImage && isLoading && (
         <div className="absolute inset-0 bg-gray-200 animate-pulse flex items-center justify-center z-10">
           <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
         </div>
       )}
 
       {/* Error State usando ImageNotFound */}
-      {hasError && (
+      {(!hasValidImage || hasError) && (
         <ImageNotFound
           size="full"
           variant="muted"
@@ -54,7 +60,7 @@ export const SliderSlide: React.FC<SliderSlideProps> = ({
       )}
 
       {/* Main Image */}
-      {!hasError && (
+      {hasValidImage && !hasError && (
         <Image
           src={slide.image}
           alt={getAltText(slide, index)}

@@ -26,7 +26,7 @@ const initialState: SliderManagerState = {
 // Reducer function
 function sliderManagerReducer(
   state: SliderManagerState,
-  action: SliderAction
+  action: SliderAction,
 ): SliderManagerState {
   switch (action.type) {
     case "SET_SLIDERS":
@@ -53,7 +53,7 @@ function sliderManagerReducer(
                 ...action.payload.updates,
                 updatedAt: new Date().toISOString(),
               }
-            : slider
+            : slider,
         ),
         error: null,
       };
@@ -67,15 +67,13 @@ function sliderManagerReducer(
 
     case "REORDER_SLIDER": {
       // Reorder local array while keeping all positions consistent
-      const sorted = [...state.sliders].sort(
-        (a, b) => a.position - b.position
-      );
+      const sorted = [...state.sliders].sort((a, b) => a.position - b.position);
 
       // Find index of the moved slider (can match either id or orderId)
       const fromIndex = sorted.findIndex(
         (slider) =>
           slider.id === action.payload.id ||
-          (slider as any).orderId === action.payload.id
+          (slider as any).orderId === action.payload.id,
       );
 
       if (fromIndex === -1) {
@@ -154,11 +152,9 @@ export function useSliderManager(props: SliderManagerProps = {}) {
 
   const mountedRef = useRef(true);
 
-  // Initialize sliders
+  // Initialize sliders and keep local state aligned with the parent fetch.
   useEffect(() => {
-    if (initialSliders.length > 0) {
-      dispatch({ type: "SET_SLIDERS", payload: initialSliders });
-    }
+    dispatch({ type: "SET_SLIDERS", payload: initialSliders });
   }, [initialSliders]);
 
   // Cleanup on unmount
@@ -198,6 +194,24 @@ export function useSliderManager(props: SliderManagerProps = {}) {
   }, [onRefreshSliders]);
 
   /**
+   * Refresh after mutations without turning a successful save into a hard error
+   * when the follow-up list request fails.
+   */
+  const refreshAfterMutation = useCallback(async () => {
+    if (!onRefreshSliders) return false;
+
+    try {
+      const fresh = await onRefreshSliders();
+      if (!mountedRef.current) return true;
+      dispatch({ type: "SET_SLIDERS", payload: fresh });
+      return true;
+    } catch (error) {
+      console.error("Erro ao recarregar sliders após mutação:", error);
+      return false;
+    }
+  }, [onRefreshSliders]);
+
+  /**
    * Get next position for new slider
    */
   const getNextPosition = useCallback(() => {
@@ -211,7 +225,7 @@ export function useSliderManager(props: SliderManagerProps = {}) {
     async (sliderData: Omit<Slider, "id" | "createdAt">) => {
       if (typeof maxItems === "number" && state.sliders.length >= maxItems) {
         toastCustom.error(
-          `Limite de ${maxItems} ${entityNamePlural.toLowerCase()} atingido.`
+          `Limite de ${maxItems} ${entityNamePlural.toLowerCase()} atingido.`,
         );
         throw new Error("MAX_ITEMS_REACHED");
       }
@@ -226,19 +240,25 @@ export function useSliderManager(props: SliderManagerProps = {}) {
           position: sliderData.position || getNextPosition(),
         };
 
+        let resultSlider = newSlider;
+
         if (onCreateSlider) {
           const createdSlider = await onCreateSlider(sliderData);
-          dispatch({ type: "ADD_SLIDER", payload: createdSlider });
-          toastCustom.success(`${entityName} criado com sucesso!`);
+          resultSlider = createdSlider;
+          const synced = await refreshAfterMutation();
+          if (!synced) {
+            dispatch({ type: "ADD_SLIDER", payload: createdSlider });
+          }
         } else {
           dispatch({ type: "ADD_SLIDER", payload: newSlider });
-          toastCustom.success(`${entityName} criado com sucesso!`);
         }
+
+        toastCustom.success(`${entityName} criado com sucesso!`);
 
         dispatch({ type: "SET_VIEW", payload: "list" });
         dispatch({ type: "SET_EDITING_SLIDER", payload: null });
 
-        return newSlider;
+        return resultSlider;
       } catch (error) {
         const errorMessage =
           error instanceof Error
@@ -259,7 +279,8 @@ export function useSliderManager(props: SliderManagerProps = {}) {
       state.sliders.length,
       entityNamePlural,
       entityName,
-    ]
+      refreshAfterMutation,
+    ],
   );
 
   /**
@@ -271,14 +292,19 @@ export function useSliderManager(props: SliderManagerProps = {}) {
       dispatch({ type: "SET_ERROR", payload: null });
 
       try {
+        let localUpdates = updates;
+
         if (onUpdateSlider) {
           const updatedSlider = await onUpdateSlider(id, updates);
+          localUpdates = updatedSlider;
+        }
+
+        const synced = await refreshAfterMutation();
+        if (!synced) {
           dispatch({
             type: "UPDATE_SLIDER",
-            payload: { id, updates: updatedSlider },
+            payload: { id, updates: localUpdates },
           });
-        } else {
-          dispatch({ type: "UPDATE_SLIDER", payload: { id, updates } });
         }
 
         toastCustom.success(`${entityName} atualizado com sucesso!`);
@@ -296,7 +322,7 @@ export function useSliderManager(props: SliderManagerProps = {}) {
         dispatch({ type: "SET_LOADING", payload: false });
       }
     },
-    [onUpdateSlider, entityName]
+    [onUpdateSlider, entityName, refreshAfterMutation],
   );
 
   /**
@@ -311,7 +337,10 @@ export function useSliderManager(props: SliderManagerProps = {}) {
         if (onDeleteSlider) {
           await onDeleteSlider(id);
         }
-        dispatch({ type: "DELETE_SLIDER", payload: id });
+        const synced = await refreshAfterMutation();
+        if (!synced) {
+          dispatch({ type: "DELETE_SLIDER", payload: id });
+        }
         toastCustom.success(`${entityName} excluído com sucesso!`);
       } catch (error) {
         const errorMessage =
@@ -325,7 +354,7 @@ export function useSliderManager(props: SliderManagerProps = {}) {
         dispatch({ type: "SET_LOADING", payload: false });
       }
     },
-    [onDeleteSlider, entityName]
+    [onDeleteSlider, entityName, refreshAfterMutation],
   );
 
   /**
@@ -340,15 +369,22 @@ export function useSliderManager(props: SliderManagerProps = {}) {
       dispatch({ type: "SET_ERROR", payload: null });
 
       try {
+        let localUpdates: Partial<Slider> = { status: !slider.status };
+
         if (onUpdateSlider) {
-          await onUpdateSlider(id, { status: !slider.status });
+          localUpdates = await onUpdateSlider(id, { status: !slider.status });
         }
 
-        dispatch({
-          type: "UPDATE_SLIDER",
-          payload: { id, updates: { status: !slider.status } },
-        });
-        toastCustom.success(`Status do ${entityName.toLowerCase()} alterado com sucesso!`);
+        const synced = await refreshAfterMutation();
+        if (!synced) {
+          dispatch({
+            type: "UPDATE_SLIDER",
+            payload: { id, updates: localUpdates },
+          });
+        }
+        toastCustom.success(
+          `Status do ${entityName.toLowerCase()} alterado com sucesso!`,
+        );
       } catch (error) {
         const errorMessage =
           error instanceof Error
@@ -361,7 +397,7 @@ export function useSliderManager(props: SliderManagerProps = {}) {
         // Nada a fazer: loading por item controlado no componente da lista
       }
     },
-    [state.sliders, onUpdateSlider, entityName]
+    [state.sliders, onUpdateSlider, entityName, refreshAfterMutation],
   );
 
   /**
@@ -373,11 +409,16 @@ export function useSliderManager(props: SliderManagerProps = {}) {
         if (onReorderSliders) {
           await onReorderSliders(idOrOrderId, newPosition);
         }
-        dispatch({
-          type: "REORDER_SLIDER",
-          payload: { id: idOrOrderId, position: newPosition },
-        });
-        toastCustom.success(`Ordem dos ${entityNamePlural.toLowerCase()} atualizada!`);
+        const synced = await refreshAfterMutation();
+        if (!synced) {
+          dispatch({
+            type: "REORDER_SLIDER",
+            payload: { id: idOrOrderId, position: newPosition },
+          });
+        }
+        toastCustom.success(
+          `Ordem dos ${entityNamePlural.toLowerCase()} atualizada!`,
+        );
       } catch (error) {
         const errorMessage =
           error instanceof Error
@@ -388,7 +429,7 @@ export function useSliderManager(props: SliderManagerProps = {}) {
         throw error;
       }
     },
-    [onReorderSliders, entityNamePlural]
+    [onReorderSliders, entityNamePlural, refreshAfterMutation],
   );
 
   /**
@@ -427,7 +468,7 @@ export function useSliderManager(props: SliderManagerProps = {}) {
     (id: string) => {
       return state.sliders.find((slider) => slider.id === id) || null;
     },
-    [state.sliders]
+    [state.sliders],
   );
 
   /**

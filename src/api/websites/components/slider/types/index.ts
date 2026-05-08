@@ -8,18 +8,21 @@ export type WebsiteStatus = "PUBLICADO" | "RASCUNHO";
 export interface SlideBackendResponse {
   id: string;
   // ID do recurso de slider (utilizado para PUT/DELETE)
-  sliderId: string;
-  sliderName: string;
-  imagemUrl: string;
-  imagemTitulo: string;
+  sliderId?: string;
+  sliderName?: string;
+  titulo?: string;
+  imagemUrl?: string;
+  imagemTitulo?: string;
   link?: string;
-  orientacao: SliderOrientation | string;
-  status: WebsiteStatus | string;
-  ordem: number;
+  orientacao?: SliderOrientation | string;
+  status?: WebsiteStatus | string | boolean;
+  ordem?: number;
   ordemId?: string;
   ordemCriadoEm?: string;
-  criadoEm: string;
+  criadoEm?: string;
   atualizadoEm?: string;
+  slider?: Partial<SlideBackendResponse>;
+  [key: string]: unknown;
 }
 
 export interface CreateSliderPayload {

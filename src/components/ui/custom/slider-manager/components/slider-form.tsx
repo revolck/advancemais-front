@@ -1,7 +1,7 @@
 "use client";
 
 import type React from "react";
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { ImageIcon, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -22,6 +22,47 @@ import { SelectCustom } from "@/components/ui/custom/select";
 import type { SliderFormProps } from "../types";
 import { SLIDER_MESSAGES, SLIDER_ANIMATIONS } from "../constants";
 import { SLIDER_CONFIG } from "../config";
+
+function getSliderImageTitle(
+  slider: SliderFormProps["slider"],
+  entityName: string,
+): string {
+  const metaTitle = slider?.meta?.imageTitle;
+  if (typeof metaTitle === "string" && metaTitle.trim()) return metaTitle;
+  return slider?.title || `Imagem do ${entityName}`;
+}
+
+function buildFormData(slider: SliderFormProps["slider"]) {
+  return {
+    title: slider?.title || SLIDER_CONFIG.defaultFormData.title,
+    image: slider?.image || SLIDER_CONFIG.defaultFormData.image,
+    url: slider?.url || SLIDER_CONFIG.defaultFormData.url,
+    content: slider?.content ?? SLIDER_CONFIG.defaultFormData.content,
+    status: slider?.status ?? SLIDER_CONFIG.defaultFormData.status,
+    position: slider?.position || SLIDER_CONFIG.defaultFormData.position,
+  };
+}
+
+function buildUploadedFiles(
+  slider: SliderFormProps["slider"],
+  entityName: string,
+): FileUploadItem[] {
+  if (!slider?.image) return [];
+
+  return [
+    {
+      id: "existing-image",
+      name: getSliderImageTitle(slider, entityName),
+      size: 0,
+      type: "image/jpeg",
+      status: "completed" as const,
+      progress: 100,
+      uploadDate: new Date(slider.updatedAt || slider.createdAt || new Date()),
+      uploadedUrl: slider.image,
+      previewUrl: slider.image,
+    },
+  ];
+}
 
 export function SliderForm({
   slider,
@@ -48,44 +89,30 @@ export function SliderForm({
   contentFieldOptions,
 }: SliderFormProps) {
   // Form state
-  const [formData, setFormData] = useState(() => ({
-    title: slider?.title || SLIDER_CONFIG.defaultFormData.title,
-    image: slider?.image || SLIDER_CONFIG.defaultFormData.image,
-    url: slider?.url || SLIDER_CONFIG.defaultFormData.url,
-    content: slider?.content ?? SLIDER_CONFIG.defaultFormData.content,
-    status: slider?.status ?? SLIDER_CONFIG.defaultFormData.status,
-    position: slider?.position || SLIDER_CONFIG.defaultFormData.position,
-  }));
+  const [formData, setFormData] = useState(() => buildFormData(slider));
 
   // File upload state
-  const [uploadedFiles, setUploadedFiles] = useState<FileUploadItem[]>(() => {
-    if (slider?.image) {
-      return [
-        {
-          id: "existing-image",
-          name: slider.title || `Imagem do ${entityName}`,
-          size: 0,
-          type: "image/jpeg",
-          status: "completed" as const,
-          progress: 100,
-          uploadDate: new Date(slider.createdAt || new Date()),
-          uploadedUrl: slider.image,
-          previewUrl: slider.image,
-        },
-      ];
-    }
-    return [];
-  });
+  const [uploadedFiles, setUploadedFiles] = useState<FileUploadItem[]>(() =>
+    buildUploadedFiles(slider, entityName),
+  );
 
   // Guarda a URL atual para só remover do Blob após submit
   const [oldImageUrl, setOldImageUrl] = useState<string | undefined>(
-    slider?.image || undefined
+    slider?.image || undefined,
   );
 
   // UI state
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showSuccess, setShowSuccess] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    setFormData(buildFormData(slider));
+    setUploadedFiles(buildUploadedFiles(slider, entityName));
+    setOldImageUrl(slider?.image || undefined);
+    setErrors({});
+    setShowSuccess(false);
+  }, [slider, entityName]);
 
   // Accent styling by entity
   const isBanner = entityName.toLowerCase() === "banner";
@@ -192,7 +219,7 @@ export function SliderForm({
         setErrors((prev) => ({ ...prev, [field]: "" }));
       }
     },
-    [errors]
+    [errors],
   );
 
   /**
@@ -220,7 +247,7 @@ export function SliderForm({
           uploadResult = await uploadImage(
             latest.file,
             uploadPath,
-            previousUrl
+            previousUrl,
           );
           finalImageUrl = uploadResult.url;
           setFormData((prev) => ({ ...prev, image: finalImageUrl }));
@@ -247,10 +274,16 @@ export function SliderForm({
           content: formData.content || "",
         });
 
+        if (!slider) {
+          setFormData(buildFormData(null));
+          setUploadedFiles([]);
+          setOldImageUrl(undefined);
+        }
+
         setShowSuccess(true);
         setTimeout(
           () => setShowSuccess(false),
-          SLIDER_CONFIG.animations.successMessageDuration
+          SLIDER_CONFIG.animations.successMessageDuration,
         );
       } catch (error) {
         console.error("Erro ao salvar slider:", error);
@@ -259,7 +292,15 @@ export function SliderForm({
         setIsSubmitting(false);
       }
     },
-    [formData, onSubmit, uploadedFiles, validateForm, oldImageUrl, uploadPath]
+    [
+      formData,
+      onSubmit,
+      uploadedFiles,
+      validateForm,
+      oldImageUrl,
+      uploadPath,
+      slider,
+    ],
   );
 
   /**
@@ -335,7 +376,7 @@ export function SliderForm({
                 "text-xs font-medium px-2 py-1 rounded-full transition-colors",
                 formData.status
                   ? "bg-emerald-100 text-emerald-700"
-                  : "bg-red-100 text-red-700"
+                  : "bg-red-100 text-red-700",
               )}
             >
               {formData.status ? "Ativo" : "Desativado"}
@@ -351,7 +392,7 @@ export function SliderForm({
               className={cn(
                 "transition-colors cursor-pointer disabled:cursor-not-allowed",
                 "data-[state=checked]:bg-emerald-400/60 data-[state=unchecked]:bg-red-300/60",
-                "data-[state=checked]:border-emerald-500/50 data-[state=unchecked]:border-red-400/50"
+                "data-[state=checked]:border-emerald-500/50 data-[state=unchecked]:border-red-400/50",
               )}
             />
           </div>
@@ -410,7 +451,7 @@ export function SliderForm({
                           id="title"
                           value={formData.title}
                           onChange={(
-                            e: React.ChangeEvent<HTMLTextAreaElement>
+                            e: React.ChangeEvent<HTMLTextAreaElement>,
                           ) => handleInputChange("title", e.target.value)}
                           maxLength={500}
                           showCharCount={true}

@@ -28,6 +28,7 @@ export function SliderManager({
   onUpdateSlider,
   onDeleteSlider,
   onReorderSliders,
+  onRefreshSliders,
   className,
   uploadPath = "website/slider",
   entityName = "Slider",
@@ -81,8 +82,10 @@ export function SliderManager({
     onUpdateSlider,
     onDeleteSlider,
     onReorderSliders,
+    onRefreshSliders,
     entityName,
     entityNamePlural,
+    maxItems,
   });
 
   /**
@@ -101,7 +104,7 @@ export function SliderManager({
         console.error("Form submission error:", error);
       }
     },
-    [editingSlider, updateSlider, createSlider]
+    [editingSlider, updateSlider, createSlider],
   );
 
   /**
@@ -110,7 +113,7 @@ export function SliderManager({
   const handleCreateNew = useCallback(() => {
     if (typeof maxItems === "number" && sliders.length >= maxItems) {
       toastCustom.error(
-        `Limite de ${maxItems} ${entityNamePlural.toLowerCase()} atingido.`
+        `Limite de ${maxItems} ${entityNamePlural.toLowerCase()} atingido.`,
       );
       return;
     }
@@ -136,10 +139,16 @@ export function SliderManager({
           <div className="flex items-center gap-4">
             {/* Title Section */}
             <div>
-              <motion.div {...SLIDER_ANIMATIONS.FADE_IN} className="flex items-center gap-2">
+              <motion.div
+                {...SLIDER_ANIMATIONS.FADE_IN}
+                className="flex items-center gap-2"
+              >
                 <h3>Gerenciador de {entityNamePlural.toLowerCase()}</h3>
                 {typeof maxItems === "number" && sliders.length >= maxItems && (
-                  <Badge variant="secondary" className="uppercase tracking-wide">
+                  <Badge
+                    variant="secondary"
+                    className="uppercase tracking-wide"
+                  >
                     <Icon name="CircleSlash2" /> Limite atingido
                   </Badge>
                 )}
@@ -167,7 +176,10 @@ export function SliderManager({
               >
                 {isLoading ? (
                   <>
-                    <Icon name="Loader2" className="h-5 w-5 mr-2 animate-spin" />
+                    <Icon
+                      name="Loader2"
+                      className="h-5 w-5 mr-2 animate-spin"
+                    />
                     Processando…
                   </>
                 ) : (
@@ -257,7 +269,9 @@ export function SliderManager({
           <ModalContentWrapper>
             <ModalHeader>
               <ModalTitle className="!text-xl md:text-lg font-semibold">
-                {editingSlider ? `Editar ${entityName.toLowerCase()}` : `Criar novo ${entityName.toLowerCase()}`}
+                {editingSlider
+                  ? `Editar ${entityName.toLowerCase()}`
+                  : `Criar novo ${entityName.toLowerCase()}`}
               </ModalTitle>
             </ModalHeader>
             <ModalBody className="max-h-[70vh] overflow-y-auto pr-1">
@@ -306,8 +320,13 @@ export function SliderManager({
             className="absolute inset-0 z-50 bg-background/60 backdrop-blur-sm flex items-center justify-center"
           >
             <div className="flex items-center gap-3 bg-muted/60 rounded-xl px-4 py-3 border border-border/50 shadow-sm">
-              <Icon name="Loader2" className="h-5 w-5 animate-spin text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">Processando…</span>
+              <Icon
+                name="Loader2"
+                className="h-5 w-5 animate-spin text-muted-foreground"
+              />
+              <span className="text-sm text-muted-foreground">
+                Processando…
+              </span>
             </div>
           </motion.div>
         )}

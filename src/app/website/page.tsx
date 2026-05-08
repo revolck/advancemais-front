@@ -6,6 +6,7 @@ import type { RecrutamentoApiResponse } from "@/api/websites/components/recrutam
 import type { BannerItem } from "@/theme/website/components/banners/types";
 import type { LogoData } from "@/theme/website/components/logo-enterprises/types";
 import type { SlideData } from "@/theme/website/components/slider/types";
+import { mapSliderResponsesToSlideData } from "@/api/websites/components/slider/normalization";
 import Slider from "@/theme/website/components/slider/SliderBasic";
 import AboutSection from "@/theme/website/components/about";
 import BannersGroup from "@/theme/website/components/banners";
@@ -46,15 +47,6 @@ function isPublished(status: unknown): boolean {
   return normalized === "PUBLICADO" || normalized === "PUBLISHED";
 }
 
-function normalizeOrientation(value: unknown): "DESKTOP" | "TABLET_MOBILE" | "" {
-  const normalized = toString(value).toUpperCase();
-  if (normalized.includes("DESKTOP")) return "DESKTOP";
-  if (normalized.includes("MOBILE") || normalized.includes("TABLET")) {
-    return "TABLET_MOBILE";
-  }
-  return "";
-}
-
 function lastItem(records: GenericRecord[]): GenericRecord | null {
   return records.length > 0 ? records[records.length - 1] : null;
 }
@@ -69,7 +61,9 @@ function mapAbout(records: GenericRecord[]): AboutApiResponse | null {
   };
 }
 
-function mapConsultoria(records: GenericRecord[]): ConsultoriaApiResponse | null {
+function mapConsultoria(
+  records: GenericRecord[],
+): ConsultoriaApiResponse | null {
   const item = lastItem(records);
   if (!item) return null;
   return {
@@ -81,7 +75,9 @@ function mapConsultoria(records: GenericRecord[]): ConsultoriaApiResponse | null
   };
 }
 
-function mapRecrutamento(records: GenericRecord[]): RecrutamentoApiResponse | null {
+function mapRecrutamento(
+  records: GenericRecord[],
+): RecrutamentoApiResponse | null {
   const item = lastItem(records);
   if (!item) return null;
   return {
@@ -124,20 +120,9 @@ function mapSlides(
   records: GenericRecord[],
   orientation: "DESKTOP" | "TABLET_MOBILE",
 ): SlideData[] {
-  return records
-    .filter(
-      (item) =>
-        isPublished(item.status) &&
-        normalizeOrientation(item.orientacao) === orientation,
-    )
-    .sort((a, b) => toNumber(a.ordem) - toNumber(b.ordem))
-    .map((item) => ({
-      id: toNumber(item.ordem),
-      image: toString(item.imagemUrl),
-      alt: toString(item.imagemTitulo),
-      link: toString(item.link) || undefined,
-      overlay: false,
-    }));
+  return mapSliderResponsesToSlideData(records, orientation, {
+    assumePublishedWhenStatusMissing: true,
+  });
 }
 
 export default async function WebsiteHomePage() {
@@ -165,11 +150,13 @@ export default async function WebsiteHomePage() {
   const sliderSection = asRecordArray(payload.slider);
   const sliderDesktopData = mapSlides(sliderSection, "DESKTOP");
   const sliderMobileData = mapSlides(sliderSection, "TABLET_MOBILE");
+  const hasStaticSliderData =
+    sliderDesktopData.length > 0 || sliderMobileData.length > 0;
 
   return (
     <div className="min-h-screen">
       <Slider
-        fetchFromApi={!hasSection("slider")}
+        fetchFromApi={!hasSection("slider") || !hasStaticSliderData}
         staticData={sliderDesktopData}
         staticDataMobile={sliderMobileData}
       />

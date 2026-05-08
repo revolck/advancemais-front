@@ -12,21 +12,38 @@ import {
   updateSliderOrder as apiUpdateSliderOrder,
 } from "@/api/websites/components";
 import { updateSliderStatus as apiUpdateSliderStatus } from "@/api/websites/components/slider";
+import {
+  normalizeSliderResponse,
+  type NormalizedSliderResponse,
+} from "@/api/websites/components/slider/normalization";
 import type { SlideBackendResponse } from "@/api/websites/components";
 
-function mapFromBackend(item: SlideBackendResponse): Slider {
+function mapNormalizedToSlider(normalized: NormalizedSliderResponse): Slider {
   return {
-    id: item.sliderId,
-    orderId: item.id,
-    title: item.sliderName,
-    image: item.imagemUrl,
-    url: item.link || "",
+    id: normalized.id,
+    orderId: normalized.orderId,
+    title: normalized.title,
+    image: normalized.image,
+    url: normalized.link || "",
     content: "",
-    status: item.status === "PUBLICADO",
-    position: item.ordem,
-    createdAt: item.criadoEm,
-    updatedAt: item.atualizadoEm,
+    status: normalized.published,
+    position: normalized.order,
+    createdAt: normalized.createdAt,
+    updatedAt: normalized.updatedAt,
+    meta: { imageTitle: normalized.imageTitle },
   };
+}
+
+function mapFromBackend(item: SlideBackendResponse): Slider {
+  return mapNormalizedToSlider(normalizeSliderResponse(item));
+}
+
+function getDesktopSliders(data: SlideBackendResponse[]): Slider[] {
+  return (data || [])
+    .map(normalizeSliderResponse)
+    .filter((item) => item.orientation === "DESKTOP")
+    .sort((a, b) => a.order - b.order)
+    .map(mapNormalizedToSlider);
 }
 
 const statusToBackend = (status: boolean): "PUBLICADO" | "RASCUNHO" =>
@@ -44,10 +61,7 @@ export default function DesktopSliderManager() {
         const data = await listSliders({
           headers: { Accept: "application/json" },
         });
-        const desktop = (data || []).filter((d) => d.orientacao === "DESKTOP");
-        const mapped = desktop
-          .sort((a, b) => a.ordem - b.ordem)
-          .map(mapFromBackend);
+        const mapped = getDesktopSliders(data || []);
         if (mounted) setInitialSliders(mapped);
       } catch (error) {
         toastCustom.error("Não foi possível carregar os sliders (DESKTOP)");
@@ -65,6 +79,7 @@ export default function DesktopSliderManager() {
       const created = await apiCreateSlider({
         sliderName: data.title,
         imagemUrl: data.image,
+        imagemTitulo: data.title,
         link: data.url,
         orientacao: "DESKTOP",
         status: statusToBackend(data.status),
@@ -72,7 +87,7 @@ export default function DesktopSliderManager() {
       });
       return mapFromBackend(created);
     },
-    []
+    [],
   );
 
   const handleUpdate = useCallback(
@@ -87,7 +102,7 @@ export default function DesktopSliderManager() {
         const updated = await apiUpdateSliderStatus(
           id,
           updates.status,
-          "DESKTOP"
+          "DESKTOP",
         );
         return mapFromBackend(updated);
       }
@@ -95,6 +110,7 @@ export default function DesktopSliderManager() {
       const updated = await apiUpdateSlider(id, {
         sliderName: updates.title,
         imagemUrl: updates.image,
+        imagemTitulo: updates.title,
         link: updates.url,
         status:
           updates.status === undefined
@@ -105,7 +121,7 @@ export default function DesktopSliderManager() {
       });
       return mapFromBackend(updated);
     },
-    []
+    [],
   );
 
   const handleDelete = useCallback(async (id: string) => {
@@ -138,10 +154,7 @@ export default function DesktopSliderManager() {
         const data = await listSliders({
           headers: { Accept: "application/json" },
         });
-        return (data || [])
-          .filter((d) => d.orientacao === "DESKTOP")
-          .sort((a, b) => a.ordem - b.ordem)
-          .map(mapFromBackend);
+        return getDesktopSliders(data || []);
       }}
     />
   );

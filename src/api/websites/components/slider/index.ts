@@ -15,45 +15,25 @@ import type {
   WebsiteStatus,
 } from "./types";
 import type { SlideData } from "@/theme/website/components/slider/types";
-
-// Helpers para lidar com variações de valores vindos do backend
-function normalizeOrientation(value: string | undefined): "DESKTOP" | "TABLET_MOBILE" | undefined {
-  if (!value) return undefined;
-  const v = String(value).toUpperCase().replace(/\s+/g, "_");
-  if (v.includes("DESKTOP")) return "DESKTOP";
-  if (v.includes("MOBILE") || v.includes("TABLET")) return "TABLET_MOBILE";
-  return undefined;
-}
-
-function isPublished(status: string | boolean | undefined): boolean {
-  if (typeof status === "boolean") return status;
-  if (!status) return false;
-  const s = String(status).toUpperCase();
-  return s === "PUBLICADO" || s === "PUBLISHED" || s === "PUBLIC";
-}
+import { mapSliderResponsesToSlideData } from "./normalization";
 
 function mapSlideResponse(
   data: SlideBackendResponse[],
-  orientation: SliderOrientation = "DESKTOP"
+  orientation: SliderOrientation = "DESKTOP",
 ): SlideData[] {
-  const target = normalizeOrientation(orientation);
-  return data
-    .filter((item) => isPublished(item.status) && normalizeOrientation(item.orientacao as string) === target)
-    .sort((a, b) => a.ordem - b.ordem)
-    .map((item) => ({
-      id: item.ordem,
-      image: item.imagemUrl,
-      alt: item.imagemTitulo,
-      link: item.link,
-      overlay: false,
-    }));
+  return mapSliderResponsesToSlideData(data, orientation);
 }
 
-export async function getSliderData(orientation: SliderOrientation = "DESKTOP"): Promise<SlideData[]> {
+export async function getSliderData(
+  orientation: SliderOrientation = "DESKTOP",
+): Promise<SlideData[]> {
   try {
-    const raw = await apiFetch<SlideBackendResponse[]>(routes.website.slider.list(), {
-      init: { headers: apiConfig.headers, ...apiConfig.cache.medium },
-    });
+    const raw = await apiFetch<SlideBackendResponse[]>(
+      routes.website.slider.list(),
+      {
+        init: { headers: apiConfig.headers, ...apiConfig.cache.medium },
+      },
+    );
 
     const data = mapSlideResponse(raw, orientation);
     console.log("✅ Slider data loaded:", data);
@@ -67,7 +47,9 @@ export async function getSliderData(orientation: SliderOrientation = "DESKTOP"):
   }
 }
 
-export async function getSliderDataClient(orientation: SliderOrientation = "DESKTOP"): Promise<SlideData[]> {
+export async function getSliderDataClient(
+  orientation: SliderOrientation = "DESKTOP",
+): Promise<SlideData[]> {
   const endpoint = routes.website.slider.list();
 
   try {
@@ -92,7 +74,9 @@ export async function getSliderDataClient(orientation: SliderOrientation = "DESK
 
 // ----- CRUD para Slider (admin) -----
 
-export async function listSliders(init?: RequestInit): Promise<SlideBackendResponse[]> {
+export async function listSliders(
+  init?: RequestInit,
+): Promise<SlideBackendResponse[]> {
   // Admin views must bypass in-memory cache to avoid stale ordering
   return apiFetch<SlideBackendResponse[]>(websiteRoutes.slider.list(), {
     init: init ?? { headers: apiConfig.headers },
@@ -115,9 +99,10 @@ function getAuthHeader(): Record<string, string> {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
-function buildRequest(
-  data: CreateSliderPayload | UpdateSliderPayload
-): { body: BodyInit; headers: Record<string, string> } {
+function buildRequest(data: CreateSliderPayload | UpdateSliderPayload): {
+  body: BodyInit;
+  headers: Record<string, string>;
+} {
   const baseHeaders = {
     Accept: apiConfig.headers.Accept,
     ...getAuthHeader(),
@@ -148,7 +133,7 @@ function buildRequest(
 }
 
 export async function createSlider(
-  data: CreateSliderPayload
+  data: CreateSliderPayload,
 ): Promise<SlideBackendResponse> {
   const { body, headers } = buildRequest(data);
   return apiFetch<SlideBackendResponse>(websiteRoutes.slider.create(), {
@@ -159,7 +144,7 @@ export async function createSlider(
 
 export async function updateSlider(
   id: string,
-  data: UpdateSliderPayload
+  data: UpdateSliderPayload,
 ): Promise<SlideBackendResponse> {
   const { body, headers } = buildRequest(data);
   return apiFetch<SlideBackendResponse>(websiteRoutes.slider.update(id), {
@@ -177,7 +162,7 @@ export async function updateSlider(
 export async function updateSliderStatus(
   id: string,
   status: boolean | string,
-  orientacao?: SliderOrientation
+  orientacao?: SliderOrientation,
 ): Promise<SlideBackendResponse> {
   const statusValue: WebsiteStatus =
     typeof status === "boolean"
@@ -204,7 +189,10 @@ export async function deleteSlider(id: string): Promise<void> {
   });
 }
 
-export async function updateSliderOrder(id: string, ordem: number): Promise<void> {
+export async function updateSliderOrder(
+  id: string,
+  ordem: number,
+): Promise<void> {
   const jsonHeaders = {
     Accept: apiConfig.headers.Accept,
     "Content-Type": "application/json",
@@ -216,10 +204,18 @@ export async function updateSliderOrder(id: string, ordem: number): Promise<void
 
   try {
     if (env.isDevelopment) {
-      console.log("🔁 Reorder (JSON)", { url, ordem: Number(ordem), orderId: id });
+      console.log("🔁 Reorder (JSON)", {
+        url,
+        ordem: Number(ordem),
+        orderId: id,
+      });
     }
     await apiFetch<SlideBackendResponse>(url, {
-      init: { method: "PUT", body: JSON.stringify(payload), headers: jsonHeaders },
+      init: {
+        method: "PUT",
+        body: JSON.stringify(payload),
+        headers: jsonHeaders,
+      },
       cache: "no-cache",
     });
     return;
@@ -235,11 +231,18 @@ export async function updateSliderOrder(id: string, ordem: number): Promise<void
     // Fallback 1: alguns ambientes podem não estar com JSON parser nesta rota
     try {
       if (env.isDevelopment) {
-        console.log("🔁 Reorder (FormData)", { url, ordem: String(ordem), orderId: id });
+        console.log("🔁 Reorder (FormData)", {
+          url,
+          ordem: String(ordem),
+          orderId: id,
+        });
       }
       const form = new FormData();
       form.append("ordem", String(ordem));
-      const headers = { Accept: apiConfig.headers.Accept, ...getAuthHeader() } as Record<string, string>;
+      const headers = {
+        Accept: apiConfig.headers.Accept,
+        ...getAuthHeader(),
+      } as Record<string, string>;
       await apiFetch<SlideBackendResponse>(url, {
         init: { method: "PUT", body: form, headers },
         cache: "no-cache",
@@ -254,10 +257,13 @@ export async function updateSliderOrder(id: string, ordem: number): Promise<void
       }
       // Fallback 2: como último recurso, faz update geral pelo sliderId
       // 1) Busca lista para mapear orderId -> sliderId e orientacao
-      const list = await apiFetch<SlideBackendResponse[]>(websiteRoutes.slider.list(), {
-        init: { headers: apiConfig.headers },
-        cache: "no-cache",
-      });
+      const list = await apiFetch<SlideBackendResponse[]>(
+        websiteRoutes.slider.list(),
+        {
+          init: { headers: apiConfig.headers },
+          cache: "no-cache",
+        },
+      );
       const found = (list || []).find((item) => item.id === id);
       const sliderId = found?.sliderId;
       const orientacao = (found?.orientacao as SliderOrientation) || undefined;
@@ -272,7 +278,10 @@ export async function updateSliderOrder(id: string, ordem: number): Promise<void
       if (!sliderId) throw e;
 
       // 2) Usa o endpoint de update geral com FormData (mesmo formato do toggle)
-      const { body, headers } = buildRequest({ ordem: Number(ordem), orientacao });
+      const { body, headers } = buildRequest({
+        ordem: Number(ordem),
+        orientacao,
+      });
       if (env.isDevelopment) {
         console.log("🔁 Reorder via generic update", {
           endpoint: websiteRoutes.slider.update(sliderId),
@@ -281,10 +290,13 @@ export async function updateSliderOrder(id: string, ordem: number): Promise<void
           orientacao,
         });
       }
-      await apiFetch<SlideBackendResponse>(websiteRoutes.slider.update(sliderId), {
-        init: { method: "PUT", body, headers },
-        cache: "no-cache",
-      });
+      await apiFetch<SlideBackendResponse>(
+        websiteRoutes.slider.update(sliderId),
+        {
+          init: { method: "PUT", body, headers },
+          cache: "no-cache",
+        },
+      );
       return;
     }
   }

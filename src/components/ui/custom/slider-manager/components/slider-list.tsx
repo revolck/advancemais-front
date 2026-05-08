@@ -54,6 +54,18 @@ export function SliderList({
   renderAdditionalInfo,
   showUrlPreview = true,
 }: SliderListProps) {
+  const getDisplayTitle = (slider?: Slider | null) => {
+    if (!slider) return entityName;
+    if (slider.title?.trim()) return slider.title.trim();
+
+    const imageTitle = slider.meta?.imageTitle;
+    if (typeof imageTitle === "string" && imageTitle.trim()) {
+      return imageTitle.trim();
+    }
+
+    return `${entityName} sem título`;
+  };
+
   const formatDateTime = (iso?: string) => {
     if (!iso) return "—";
     try {
@@ -70,7 +82,7 @@ export function SliderList({
 
   // State for ordered sliders to handle drag & drop
   const [orderedSliders, setOrderedSliders] = useState<Slider[]>(() =>
-    [...sliders].sort((a, b) => a.position - b.position)
+    [...sliders].sort((a, b) => a.position - b.position),
   );
 
   // Busy state por item para evitar múltiplos cliques
@@ -92,7 +104,7 @@ export function SliderList({
     async (newOrder: Slider[]) => {
       // Mapeia posições originais antes de atualizar o estado
       const originalPosition = new Map(
-        orderedSliders.map((s) => [s.id, s.position])
+        orderedSliders.map((s) => [s.id, s.position]),
       );
 
       // Atualiza estado local com novas posições (UI/snappy)
@@ -113,15 +125,19 @@ export function SliderList({
         if (idx !== -1) {
           const prev = originalPosition.get(draggingId);
           const nextPos = idx + 1;
-          if (prev !== nextPos) moved = { id: draggingId, newPosition: nextPos };
+          if (prev !== nextPos)
+            moved = { id: draggingId, newPosition: nextPos };
         }
       }
       if (!moved) {
         const firstChanged = newOrder.findIndex(
-          (s, idx) => originalPosition.get(s.id) !== idx + 1
+          (s, idx) => originalPosition.get(s.id) !== idx + 1,
         );
         if (firstChanged !== -1) {
-          moved = { id: newOrder[firstChanged].id, newPosition: firstChanged + 1 };
+          moved = {
+            id: newOrder[firstChanged].id,
+            newPosition: firstChanged + 1,
+          };
         }
       }
 
@@ -136,13 +152,15 @@ export function SliderList({
         }
       }
     },
-    [enableReorder, onReorder, orderedSliders, draggingId]
+    [enableReorder, onReorder, orderedSliders, draggingId],
   );
 
   const moveItem = useCallback(
     async (id: string, direction: "up" | "down") => {
       if (!enableReorder || !onReorder) return;
-      const idx = orderedSliders.findIndex((s) => s.id === id || s.orderId === id);
+      const idx = orderedSliders.findIndex(
+        (s) => s.id === id || s.orderId === id,
+      );
       if (idx === -1) return;
       const targetIdx = direction === "up" ? idx - 1 : idx + 1;
       if (targetIdx < 0 || targetIdx >= orderedSliders.length) return;
@@ -168,7 +186,7 @@ export function SliderList({
         setBusyId(null);
       }
     },
-    [enableReorder, orderedSliders, onReorder, sliders]
+    [enableReorder, orderedSliders, onReorder, sliders],
   );
 
   const handleToggleClick = useCallback(
@@ -181,7 +199,7 @@ export function SliderList({
         setBusyId(null);
       }
     },
-    [isLoading, busyId, onToggleStatus]
+    [isLoading, busyId, onToggleStatus],
   );
 
   /**
@@ -258,9 +276,7 @@ export function SliderList({
                 key={slider.id}
                 value={slider}
                 className={
-                  allowDrag
-                    ? "cursor-grab active:cursor-grabbing"
-                    : ""
+                  allowDrag ? "cursor-grab active:cursor-grabbing" : ""
                 }
                 whileDrag={
                   allowDrag
@@ -309,23 +325,37 @@ export function SliderList({
                                       size="sm"
                                       onClick={() => moveItem(slider.id, "up")}
                                       className="h-7 w-7 p-0 rounded-md hover:bg-primary/10 hover:ring-1 hover:ring-primary/40 cursor-pointer disabled:cursor-not-allowed"
-                                      disabled={isLoading || busyId === slider.id}
+                                      disabled={
+                                        isLoading || busyId === slider.id
+                                      }
                                       aria-label="Mover para cima"
                                     >
                                       <motion.button
                                         whileHover={{ y: -2, scale: 1.05 }}
                                         whileTap={{ scale: 0.92 }}
-                                        transition={{ type: "spring", stiffness: 450, damping: 22 }}
+                                        transition={{
+                                          type: "spring",
+                                          stiffness: 450,
+                                          damping: 22,
+                                        }}
                                       >
                                         {busyId === slider.id ? (
-                                          <Icon name="Loader2" className="h-4 w-4 animate-spin text-muted-foreground" />
+                                          <Icon
+                                            name="Loader2"
+                                            className="h-4 w-4 animate-spin text-muted-foreground"
+                                          />
                                         ) : (
-                                          <Icon name="ChevronUp" className="h-4 w-4" />
+                                          <Icon
+                                            name="ChevronUp"
+                                            className="h-4 w-4"
+                                          />
                                         )}
                                       </motion.button>
                                     </Button>
                                   </TooltipTrigger>
-                                  <TooltipContent>Mover para cima</TooltipContent>
+                                  <TooltipContent>
+                                    Mover para cima
+                                  </TooltipContent>
                                 </Tooltip>
                               )}
 
@@ -346,25 +376,41 @@ export function SliderList({
                                       asChild
                                       variant="ghost"
                                       size="sm"
-                                      onClick={() => moveItem(slider.id, "down")}
+                                      onClick={() =>
+                                        moveItem(slider.id, "down")
+                                      }
                                       className="h-7 w-7 p-0 rounded-md hover:bg-primary/10 hover:ring-1 hover:ring-primary/40 cursor-pointer disabled:cursor-not-allowed"
-                                      disabled={isLoading || busyId === slider.id}
+                                      disabled={
+                                        isLoading || busyId === slider.id
+                                      }
                                       aria-label="Mover para baixo"
                                     >
                                       <motion.button
                                         whileHover={{ y: 2, scale: 1.05 }}
                                         whileTap={{ scale: 0.92 }}
-                                        transition={{ type: "spring", stiffness: 450, damping: 22 }}
+                                        transition={{
+                                          type: "spring",
+                                          stiffness: 450,
+                                          damping: 22,
+                                        }}
                                       >
                                         {busyId === slider.id ? (
-                                          <Icon name="Loader2" className="h-4 w-4 animate-spin text-muted-foreground" />
+                                          <Icon
+                                            name="Loader2"
+                                            className="h-4 w-4 animate-spin text-muted-foreground"
+                                          />
                                         ) : (
-                                          <Icon name="ChevronDown" className="h-4 w-4" />
+                                          <Icon
+                                            name="ChevronDown"
+                                            className="h-4 w-4"
+                                          />
                                         )}
                                       </motion.button>
                                     </Button>
                                   </TooltipTrigger>
-                                  <TooltipContent>Mover para baixo</TooltipContent>
+                                  <TooltipContent>
+                                    Mover para baixo
+                                  </TooltipContent>
                                 </Tooltip>
                               )}
                             </div>
@@ -377,7 +423,7 @@ export function SliderList({
                               {slider.image ? (
                                 <SliderImageWithFallback
                                   src={slider.image}
-                                  alt={slider.title}
+                                  alt={getDisplayTitle(slider)}
                                   width={SLIDER_CONFIG.ui.thumbnail.width}
                                   height={SLIDER_CONFIG.ui.thumbnail.height}
                                 />
@@ -397,7 +443,7 @@ export function SliderList({
                         <div className="flex-1 min-w-0 space-y-3">
                           <div className="flex items-center gap-4 mb-0">
                             <h4 className="font-semibold text-foreground truncate text-xl !mb-0">
-                              {slider.title}
+                              {getDisplayTitle(slider)}
                             </h4>
                             <Badge
                               variant={slider.status ? "default" : "secondary"}
@@ -416,7 +462,7 @@ export function SliderList({
                             <span>
                               Upload:{" "}
                               {formatDateTime(
-                                slider.updatedAt || slider.createdAt
+                                slider.updatedAt || slider.createdAt,
                               )}
                             </span>
                           </div>
@@ -551,7 +597,7 @@ export function SliderList({
               </AlertDialogTitle>
               <AlertDialogDescription className="text-base leading-relaxed text-muted-foreground">
                 {`Você está prestes a excluir o ${entityName.toLowerCase()} `}
-                <strong>"{deleteSlider?.title}"</strong>. {" "}
+                <strong>"{getDisplayTitle(deleteSlider)}"</strong>.{" "}
                 {`Esta ação não pode ser desfeita e o ${entityName.toLowerCase()} será removido permanentemente.`}
               </AlertDialogDescription>
             </AlertDialogHeader>
@@ -559,14 +605,20 @@ export function SliderList({
               <AlertDialogCancel
                 className="rounded-xl cursor-pointer"
                 onClick={handleCloseDeleteDialog}
-                disabled={isLoading || (deleteSlider ? busyId === deleteSlider.id : false)}
+                disabled={
+                  isLoading ||
+                  (deleteSlider ? busyId === deleteSlider.id : false)
+                }
               >
                 Cancelar
               </AlertDialogCancel>
               <AlertDialogAction
                 onClick={handleDeleteSlider}
                 className="bg-destructive hover:bg-destructive/90 !text-destructive-foreground rounded-xl cursor-pointer"
-                disabled={isLoading || (deleteSlider ? busyId === deleteSlider.id : false)}
+                disabled={
+                  isLoading ||
+                  (deleteSlider ? busyId === deleteSlider.id : false)
+                }
               >
                 {deleteSlider && busyId === deleteSlider.id ? (
                   <span className="inline-flex items-center gap-2">
