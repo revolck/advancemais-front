@@ -31,7 +31,6 @@ import { UserRole } from "@/config/roles";
 import { normalizeEstadoUf } from "@/lib/brasil-localidades";
 import {
   isErrorResponse,
-  slugify,
   parseMultiline,
   containsProhibitedInfo,
 } from "../utils/formUtils";
@@ -427,7 +426,7 @@ export function CreateVagaForm({
       usuarioId: formData.usuarioId,
       categoriaVagaId: categoriaVagaValue,
       subcategoriaVagaId: subcategoriaVagaFinal,
-      slug: slugify(formData.titulo).trim(),
+      // A API gera o slug final e resolve colisões de títulos repetidos.
       modoAnonimo: formData.modoAnonimo,
       regimeDeTrabalho:
         formData.regimeDeTrabalho as CreateVagaPayload["regimeDeTrabalho"],

@@ -5,10 +5,12 @@ import { cn } from "@/lib/utils";
 export function VacancyUsageCard({
   published,
   total,
+  isUnlimited = false,
   statusCounts,
 }: {
   published: number;
   total: number;
+  isUnlimited?: boolean;
   statusCounts: {
     rascunho: number;
     emAnalise: number;
@@ -19,10 +21,19 @@ export function VacancyUsageCard({
     expirado: number;
   };
 }) {
-  const percent =
-    total > 0 ? Math.min(100, Math.round((published / total) * 100)) : 0;
+  const percent = isUnlimited
+    ? 100
+    : total > 0
+      ? Math.min(100, Math.round((published / total) * 100))
+      : 0;
   const remaining = Math.max(total - published, 0);
-  const tone = percent >= 80 ? "success" : percent >= 40 ? "warning" : "danger";
+  const tone = isUnlimited
+    ? "success"
+    : percent >= 80
+      ? "success"
+      : percent >= 40
+        ? "warning"
+        : "danger";
   const palette: Record<string, { bar: string; chip: string }> = {
     success: {
       bar: "from-emerald-400 to-emerald-500",
@@ -52,7 +63,7 @@ export function VacancyUsageCard({
           </span>
           <span>
             <span className="font-semibold text-gray-600">Restantes:</span>{" "}
-            {remaining}
+            {isUnlimited ? "Ilimitadas" : remaining}
           </span>
         </div>
         <div className="mt-3 flex items-center gap-2">
@@ -60,7 +71,7 @@ export function VacancyUsageCard({
             <div
               className={cn(
                 "h-full rounded-full bg-gradient-to-r transition-all duration-300",
-                colors.bar
+                colors.bar,
               )}
               style={{ width: `${percent}%` }}
             />
@@ -68,14 +79,14 @@ export function VacancyUsageCard({
           <span
             className={cn(
               "rounded-full px-2 py-0.5 text-xs font-semibold",
-              colors.chip
+              colors.chip,
             )}
           >
             {percent}%
           </span>
         </div>
         <div className="mt-3 text-xs text-gray-500">
-          Limite do plano: {total > 0 ? total : "—"}
+          Limite do plano: {isUnlimited ? "Ilimitado" : total > 0 ? total : "—"}
         </div>
       </div>
 

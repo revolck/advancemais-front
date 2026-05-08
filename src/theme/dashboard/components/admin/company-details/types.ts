@@ -26,6 +26,7 @@ export interface VacancyTabProps {
   vacancies: AdminCompanyVagaItem[];
   publishedVacancies: number;
   totalVacancies: number;
+  isUnlimited?: boolean;
 }
 
 export interface PlanTabProps {

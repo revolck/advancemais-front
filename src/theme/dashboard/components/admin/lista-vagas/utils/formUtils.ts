@@ -9,7 +9,7 @@ import type {
  * Verifica se a resposta da API é um erro
  */
 export function isErrorResponse(
-  response: VagaCreateApiResponse
+  response: VagaCreateApiResponse,
 ): response is VagaErrorResponse | VagaValidationError | VagaLimitReachedError {
   return (
     typeof response === "object" &&

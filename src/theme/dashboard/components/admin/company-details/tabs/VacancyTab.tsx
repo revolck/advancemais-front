@@ -10,6 +10,7 @@ export function VacancyTab({
   vacancies,
   publishedVacancies,
   totalVacancies,
+  isUnlimited = false,
 }: VacancyTabProps) {
   // Usar o hook para gerenciar candidatos
   const {
@@ -70,7 +71,7 @@ export function VacancyTab({
       pausada: 0,
       encerrada: 0,
       expirado: 0,
-    }
+    },
   );
 
   const vacancyMainSection = relevantVacancies.length ? (
@@ -101,6 +102,7 @@ export function VacancyTab({
       <VacancyUsageCard
         published={publishedAndInReview}
         total={totalVacancies}
+        isUnlimited={isUnlimited}
         statusCounts={statusCounts}
       />
     </aside>

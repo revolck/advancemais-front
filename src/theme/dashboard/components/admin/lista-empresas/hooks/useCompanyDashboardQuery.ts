@@ -11,7 +11,7 @@ import { queryKeys } from "@/lib/react-query/queryKeys";
 import type { Partnership } from "../types";
 
 function mapAdminCompanyToPartnership(
-  company: AdminCompanyListItem
+  company: AdminCompanyListItem,
 ): Partnership {
   const plan = company.plano;
   const vagasPublicadas = company.vagasPublicadas ?? 0;
@@ -43,6 +43,7 @@ function mapAdminCompanyToPartnership(
       banimentoAtivo: company.banimentoAtivo ?? null,
       bloqueada: company.bloqueada ?? false,
       bloqueioAtivo: company.bloqueioAtivo ?? null,
+      recursosPremiumVagas: company.recursosPremiumVagas ?? null,
     },
     plano: {
       id: plan?.id ?? `${company.id}-plano`,
@@ -80,7 +81,9 @@ export interface CompanyQueryResult {
   };
 }
 
-function buildParams(filters: NormalizedCompanyFilters): AdminCompanyListParams {
+function buildParams(
+  filters: NormalizedCompanyFilters,
+): AdminCompanyListParams {
   const params: AdminCompanyListParams = {
     page: filters.page,
     pageSize: filters.pageSize,
@@ -95,7 +98,7 @@ function buildParams(filters: NormalizedCompanyFilters): AdminCompanyListParams 
 
 export function useCompanyDashboardQuery(
   filters: NormalizedCompanyFilters,
-  enabled: boolean
+  enabled: boolean,
 ) {
   return useQuery<CompanyQueryResult, Error>({
     queryKey: queryKeys.empresas.list(filters),
@@ -114,7 +117,7 @@ export function useCompanyDashboardQuery(
         total: partnerships.length,
         totalPages: Math.max(
           1,
-          Math.ceil(partnerships.length / filters.pageSize)
+          Math.ceil(partnerships.length / filters.pageSize),
         ),
       };
 
@@ -129,8 +132,8 @@ export function useCompanyDashboardQuery(
             Math.max(
               1,
               Math.ceil(
-                (pagination.total ?? partnerships.length) / filters.pageSize
-              )
+                (pagination.total ?? partnerships.length) / filters.pageSize,
+              ),
             ),
         },
       } satisfies CompanyQueryResult;

@@ -11,6 +11,7 @@ import type {
   AdminCompanyBanHistoryApiResponse,
   AdminCompanyBanCreateApiResponse,
   AdminCompanyBanRevokeApiResponse,
+  AdminCompanyPremiumResourcesApiResponse,
   AdminCompanyVagaListApiResponse,
   AdminCompanyVagaApproveApiResponse,
   AdminCompanyConsolidatedApiResponse,
@@ -25,6 +26,8 @@ import type {
   CreateAdminCompanyPlanoPayload,
   CreateAdminCompanyBanPayload,
   RevokeAdminCompanyBanPayload,
+  ApplyAdminCompanyPremiumResourcesPayload,
+  RemoveAdminCompanyPremiumResourcesPayload,
   BanItem,
   BanListResponse,
   CreateBanPayload,
@@ -68,7 +71,7 @@ function getAuthHeader(): Record<string, string> {
  * Constrói headers padrão para requisições autenticadas
  */
 function buildAuthHeaders(
-  additionalHeaders?: HeadersInit
+  additionalHeaders?: HeadersInit,
 ): Record<string, string> {
   return {
     ...apiConfig.headers,
@@ -112,7 +115,7 @@ function buildQueryString(params: Record<string, any>): string {
  */
 export async function getAdminCompanyDashboard(
   params?: AdminCompanyDashboardParams,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<AdminCompanyDashboardApiResponse> {
   const endpoint = empresasRoutes.adminEmpresas.dashboard();
   const queryParams: Record<string, any> = {};
@@ -149,7 +152,7 @@ export async function getAdminCompanyDashboard(
  */
 export async function listAdminCompanies(
   params?: AdminCompanyListParams,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<AdminCompanyListApiResponse> {
   const endpoint = empresasRoutes.adminEmpresas.list();
   const queryParams: Record<string, any> = {};
@@ -157,6 +160,9 @@ export async function listAdminCompanies(
   if (params?.page) queryParams.page = params.page;
   if (params?.pageSize) queryParams.pageSize = params.pageSize;
   if (params?.search) queryParams.search = params.search;
+  if (params?.elegivelCadastroVaga !== undefined) {
+    queryParams.elegivelCadastroVaga = params.elegivelCadastroVaga;
+  }
 
   const queryString = buildQueryString(queryParams);
   const url = queryString ? `${endpoint}?${queryString}` : endpoint;
@@ -183,7 +189,7 @@ export async function listAdminCompanies(
  */
 export async function validateAdminCompanyCnpj(
   cnpj: string,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<{ exists: boolean; message?: string }> {
   const endpoint = empresasRoutes.adminEmpresas.validateCnpj(cnpj);
 
@@ -209,7 +215,7 @@ export async function validateAdminCompanyCnpj(
  */
 export async function validateAdminCompanyCpf(
   cpf: string,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<{ exists: boolean; message?: string }> {
   const endpoint = empresasRoutes.adminEmpresas.validateCpf(cpf);
 
@@ -235,7 +241,7 @@ export async function validateAdminCompanyCpf(
  */
 export async function createAdminCompany(
   data: CreateAdminCompanyPayload,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<AdminCompanyCreateApiResponse> {
   const endpoint = empresasRoutes.adminEmpresas.create();
 
@@ -269,7 +275,7 @@ export async function createAdminCompany(
 export async function updateAdminCompany(
   id: string,
   data: UpdateAdminCompanyPayload,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<AdminCompanyUpdateApiResponse> {
   const endpoint = empresasRoutes.adminEmpresas.update(id);
 
@@ -301,7 +307,7 @@ export async function updateAdminCompany(
  */
 export async function getAdminCompanyById(
   id: string,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<AdminCompanyDetailApiResponse> {
   const endpoint = empresasRoutes.adminEmpresas.get(id);
 
@@ -330,7 +336,7 @@ export async function getAdminCompanyById(
  */
 export async function getAdminCompanyConsolidated(
   id: string,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<AdminCompanyConsolidatedApiResponse> {
   const endpoint = empresasRoutes.adminEmpresas.get(id);
 
@@ -358,7 +364,7 @@ export async function getAdminCompanyConsolidated(
 export async function updateAdminCompanyPlano(
   id: string,
   data: UpdateAdminCompanyPlanoPayload,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<AdminCompanyUpdateApiResponse> {
   const endpoint = empresasRoutes.adminEmpresas.updatePlano(id);
 
@@ -381,13 +387,63 @@ export async function updateAdminCompanyPlano(
 export async function createAdminCompanyPlano(
   id: string,
   data: CreateAdminCompanyPlanoPayload,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<AdminCompanyUpdateApiResponse> {
   const endpoint = empresasRoutes.adminEmpresas.createPlano(id);
 
   return apiFetch<AdminCompanyUpdateApiResponse>(endpoint, {
     init: {
       method: "POST",
+      ...init,
+      headers: {
+        "Content-Type": "application/json",
+        Accept: apiConfig.headers.Accept,
+        ...getAuthHeader(),
+        ...normalizeHeaders(init?.headers),
+      },
+      body: init?.body ?? JSON.stringify(data),
+    },
+    cache: "no-cache",
+  });
+}
+
+// ============================================================================
+// RECURSOS PREMIUM DE VAGAS
+// ============================================================================
+
+export async function applyAdminCompanyPremiumResources(
+  id: string,
+  data: ApplyAdminCompanyPremiumResourcesPayload,
+  init?: RequestInit,
+): Promise<AdminCompanyPremiumResourcesApiResponse> {
+  const endpoint = empresasRoutes.adminEmpresas.recursosPremiumVagas(id);
+
+  return apiFetch<AdminCompanyPremiumResourcesApiResponse>(endpoint, {
+    init: {
+      method: "POST",
+      ...init,
+      headers: {
+        "Content-Type": "application/json",
+        Accept: apiConfig.headers.Accept,
+        ...getAuthHeader(),
+        ...normalizeHeaders(init?.headers),
+      },
+      body: init?.body ?? JSON.stringify(data),
+    },
+    cache: "no-cache",
+  });
+}
+
+export async function removeAdminCompanyPremiumResources(
+  id: string,
+  data: RemoveAdminCompanyPremiumResourcesPayload,
+  init?: RequestInit,
+): Promise<AdminCompanyPremiumResourcesApiResponse> {
+  const endpoint = empresasRoutes.adminEmpresas.recursosPremiumVagas(id);
+
+  return apiFetch<AdminCompanyPremiumResourcesApiResponse>(endpoint, {
+    init: {
+      method: "DELETE",
       ...init,
       headers: {
         "Content-Type": "application/json",
@@ -419,7 +475,7 @@ export async function createAdminCompanyPlano(
 export async function listAdminCompanyPayments(
   id: string,
   params?: AdminCompanyPaymentParams,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<AdminCompanyPaymentHistoryApiResponse> {
   const endpoint = empresasRoutes.adminEmpresas.pagamentos.list(id);
   const queryParams: Record<string, any> = {};
@@ -458,7 +514,7 @@ export async function listAdminCompanyPayments(
 export async function listAdminCompanyBans(
   id: string,
   params?: AdminCompanyBanParams,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<AdminCompanyBanHistoryApiResponse> {
   const endpoint = empresasRoutes.adminEmpresas.bloqueios.list(id);
   const queryParams: Record<string, any> = {};
@@ -493,7 +549,7 @@ export async function listAdminCompanyBans(
 export async function createAdminCompanyBan(
   id: string,
   data: CreateAdminCompanyBanPayload,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<AdminCompanyBanCreateApiResponse> {
   const endpoint = empresasRoutes.adminEmpresas.bloqueios.create(id);
 
@@ -527,7 +583,7 @@ export async function createAdminCompanyBan(
 export async function revokeAdminCompanyBan(
   id: string,
   data?: RevokeAdminCompanyBanPayload,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<AdminCompanyBanRevokeApiResponse> {
   const endpoint = empresasRoutes.adminEmpresas.bloqueios.revogar(id);
 
@@ -541,7 +597,7 @@ export async function revokeAdminCompanyBan(
         ...getAuthHeader(),
         ...normalizeHeaders(init?.headers),
       },
-      body: data ? init?.body ?? JSON.stringify(data) : undefined,
+      body: data ? (init?.body ?? JSON.stringify(data)) : undefined,
     },
     cache: "no-cache",
   });
@@ -565,7 +621,7 @@ export async function revokeAdminCompanyBan(
 export async function listAdminCompanyVacancies(
   id: string,
   params?: AdminCompanyVagaParams,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<AdminCompanyVagaListApiResponse> {
   const endpoint = empresasRoutes.adminEmpresas.vagas.list(id);
   const queryParams: Record<string, any> = {};
@@ -597,7 +653,7 @@ export async function listAdminCompanyVacancies(
  * @returns Dados completos da empresa autenticada (empresa, plano, vagas)
  */
 export async function getMyCompany(
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<AdminCompanyDetailApiResponse> {
   const endpoint = empresasRoutes.adminEmpresas.minha();
 
@@ -623,7 +679,7 @@ export async function getMyCompany(
  */
 export async function listMyCompanyVacancies(
   params?: AdminCompanyVagaParams,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<AdminCompanyVagaListApiResponse> {
   const endpoint = empresasRoutes.adminEmpresas.vagas.minhas();
   const queryParams: Record<string, any> = {};
@@ -658,7 +714,7 @@ export async function listMyCompanyVacancies(
 export async function listAdminCompanyVacanciesInReview(
   id: string,
   params?: Omit<AdminCompanyVagaParams, "status">,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<AdminCompanyVagaListApiResponse> {
   const endpoint = empresasRoutes.adminEmpresas.vagas.emAnalise(id);
   const queryParams: Record<string, any> = {};
@@ -692,7 +748,7 @@ export async function listAdminCompanyVacanciesInReview(
 export async function approveAdminCompanyVacancy(
   id: string,
   vagaId: string,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<AdminCompanyVagaApproveApiResponse> {
   const endpoint = empresasRoutes.adminEmpresas.vagas.aprovar(id, vagaId);
 
@@ -730,7 +786,7 @@ export async function approveAdminCompanyVacancy(
 export async function listAdminCompanyUserBans(
   id: string,
   params?: AdminCompanyBanParams,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<BanListResponse> {
   const endpoint = empresasRoutes.adminEmpresas.bloqueios.list(id);
   const queryParams: Record<string, any> = {};
@@ -765,7 +821,7 @@ export async function listAdminCompanyUserBans(
 export async function createAdminCompanyUserBan(
   id: string,
   data: CreateBanPayload,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<BanResponse> {
   const endpoint = empresasRoutes.adminEmpresas.bloqueios.create(id);
 
@@ -799,7 +855,7 @@ export async function createAdminCompanyUserBan(
 export async function revokeAdminCompanyUserBan(
   id: string,
   data: RevokeBanPayload,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<void> {
   const endpoint = empresasRoutes.adminEmpresas.bloqueios.revogar(id);
 

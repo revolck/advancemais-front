@@ -9,6 +9,8 @@ import {
   Calendar,
   Clock,
   Loader2,
+  Sparkles,
+  Crown,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { AvatarCustom } from "@/components/ui/custom/avatar";
@@ -53,13 +55,13 @@ function formatCnpj(value?: string | null): string | null {
   if (digits.length <= 12) {
     return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(
       5,
-      8
+      8,
     )}/${digits.slice(8)}`;
   }
 
   return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(
     5,
-    8
+    8,
   )}/${digits.slice(8, 12)}-${digits.slice(12)}`;
 }
 
@@ -176,17 +178,17 @@ function getCompanyStatusBadges(partnership: Partnership) {
     <Badge
       key="company-status"
       className={`${getStatusClasses(
-        status
+        status,
       )} uppercase tracking-wide text-[10px]`}
     >
       {getStatusText(status)}
-    </Badge>
+    </Badge>,
   );
 
   return badges;
 }
 
-export const CompanyRow: React.FC<CompanyRowProps> = ({ 
+export const CompanyRow: React.FC<CompanyRowProps> = ({
   partnership,
   isDisabled = false,
   onNavigateStart,
@@ -208,38 +210,64 @@ export const CompanyRow: React.FC<CompanyRowProps> = ({
   const hasLocation = locationParts.length > 0;
   const locationDisplay = hasLocation ? locationParts.join("/") : "—";
   const companyBadges = getCompanyStatusBadges(partnership);
+  const hasPremiumResources = Boolean(
+    partnership.empresa.recursosPremiumVagas?.ativo ||
+    partnership.raw?.recursosPremiumVagas?.ativo,
+  );
 
   const handleNavigate = (e: React.MouseEvent) => {
     e.preventDefault();
     if (isRowDisabled) return;
-    
+
     setIsNavigating(true);
     onNavigateStart?.();
-    router.push(`/dashboard/empresas/${encodeURIComponent(partnership.empresa.id)}`);
-    
+    router.push(
+      `/dashboard/empresas/${encodeURIComponent(partnership.empresa.id)}`,
+    );
+
     setTimeout(() => {
       setIsNavigating(false);
     }, 5000);
   };
 
   return (
-    <TableRow 
+    <TableRow
       className={cn(
         "border-gray-100 transition-colors",
-        isRowDisabled 
-          ? "opacity-50 pointer-events-none" 
+        isRowDisabled
+          ? "opacity-50 pointer-events-none"
           : "hover:bg-gray-50/50",
-        isNavigating && "bg-blue-50/50"
+        isNavigating && "bg-blue-50/50",
       )}
     >
       <TableCell className="py-4 min-w-[280px] max-w-[320px]">
         <div className="flex items-center gap-3">
-          <AvatarCustom
-            name={partnership.empresa.nome || "Empresa"}
-            src={partnership.empresa.avatarUrl || undefined}
-            size="sm"
-            showStatus={false}
-          />
+          <div className="relative shrink-0">
+            <AvatarCustom
+              name={partnership.empresa.nome || "Empresa"}
+              src={partnership.empresa.avatarUrl || undefined}
+              size="sm"
+              showStatus={false}
+              className={cn(
+                hasPremiumResources && "ring-2 ring-green-700 ring-offset-1",
+              )}
+            />
+            {hasPremiumResources && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span
+                    className="absolute -right-1.5 -top-1.5 inline-flex h-4.5 w-4.5 items-center justify-center rounded-full border-1 border-white bg-green-700 text-white"
+                    aria-label="Recursos premium ativos"
+                  >
+                    <Crown className="h-2.5 w-2.5" aria-hidden="true" />
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent sideOffset={8}>
+                  Recursos premium ativos
+                </TooltipContent>
+              </Tooltip>
+            )}
+          </div>
           <div className="min-w-0 flex flex-1 flex-col">
             <div className="flex items-center gap-2">
               <span className="font-medium text-gray-900 truncate">
@@ -325,10 +353,10 @@ export const CompanyRow: React.FC<CompanyRowProps> = ({
               disabled={isRowDisabled}
               className={cn(
                 "h-8 w-8 rounded-full cursor-pointer",
-                isNavigating 
-                  ? "text-blue-600 bg-blue-100" 
+                isNavigating
+                  ? "text-blue-600 bg-blue-100"
                   : "text-gray-500 hover:text-white hover:bg-[var(--primary-color)]",
-                "disabled:opacity-50 disabled:cursor-wait"
+                "disabled:opacity-50 disabled:cursor-wait",
               )}
               aria-label="Visualizar empresa"
             >

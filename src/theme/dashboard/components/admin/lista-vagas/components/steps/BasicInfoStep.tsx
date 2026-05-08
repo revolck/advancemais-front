@@ -21,10 +21,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Info } from "lucide-react";
-import {
-  listAdminCompanies,
-  type AdminCompanyListItem,
-} from "@/api/empresas";
+import { listAdminCompanies, type AdminCompanyListItem } from "@/api/empresas";
+import { isEmpresaElegivelParaCadastroVaga } from "../../hooks/useEmpresasForSelect";
 
 interface FormState {
   usuarioId: string;
@@ -86,7 +84,7 @@ function formatCnpj(value?: string | null) {
 
   return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(
     5,
-    8
+    8,
   )}/${digits.slice(8, 12)}-${digits.slice(12)}`;
 }
 
@@ -105,47 +103,53 @@ export function BasicInfoStep({
   const [selectedEmpresa, setSelectedEmpresa] =
     React.useState<InputSearchOption<AdminCompanyListItem> | null>(null);
 
-  const empresaSearchApiProps =
-    React.useMemo<InputSearchApiProps<AdminCompanyListItem>>(
-      () => ({
-        fields: ["cnpj", "name", "email", "cod"],
-        minLength: 3,
-        limit: 10,
-        fetcher: async ({ query, limit, signal }) => {
-          const response = await listAdminCompanies(
-            {
-              page: 1,
-              pageSize: limit,
-              search: query,
-            },
-            { signal }
-          );
-
-          if (!response || !("data" in response)) {
-            throw new Error(
-              "Não foi possível buscar empresas. Tente novamente."
-            );
-          }
-
-          return response;
-        },
-        mapItem: (empresa) => ({
-          id: empresa.id,
-          label: empresa.nome,
-          description: [empresa.codUsuario, formatCnpj(empresa.cnpj)]
-            .filter(Boolean)
-            .join(" - "),
-          metadata: {
-            cod: empresa.codUsuario,
-            cnpj: empresa.cnpj,
-            email: empresa.email,
-            name: empresa.nome,
+  const empresaSearchApiProps = React.useMemo<
+    InputSearchApiProps<AdminCompanyListItem>
+  >(
+    () => ({
+      fields: ["cnpj", "name", "email", "cod"],
+      minLength: 3,
+      limit: 10,
+      fetcher: async ({ query, limit, signal }) => {
+        const pageSize = Math.max(limit * 5, 50);
+        const response = await listAdminCompanies(
+          {
+            page: 1,
+            pageSize,
+            search: query,
+            elegivelCadastroVaga: true,
           },
-          raw: empresa,
-        }),
+          { signal },
+        );
+
+        if (!response || !("data" in response)) {
+          throw new Error("Não foi possível buscar empresas. Tente novamente.");
+        }
+
+        return {
+          ...response,
+          data: (response.data ?? [])
+            .filter(isEmpresaElegivelParaCadastroVaga)
+            .slice(0, limit),
+        };
+      },
+      mapItem: (empresa) => ({
+        id: empresa.id,
+        label: empresa.nome,
+        description: [empresa.codUsuario, formatCnpj(empresa.cnpj)]
+          .filter(Boolean)
+          .join(" - "),
+        metadata: {
+          cod: empresa.codUsuario,
+          cnpj: empresa.cnpj,
+          email: empresa.email,
+          name: empresa.nome,
+        },
+        raw: empresa,
       }),
-      []
-    );
+    }),
+    [],
+  );
 
   React.useEffect(() => {
     if (!formData.usuarioId) {
@@ -158,7 +162,7 @@ export function BasicInfoStep({
     }
 
     const empresaOption = empresas.find(
-      (empresa) => empresa.value === formData.usuarioId
+      (empresa) => empresa.value === formData.usuarioId,
     );
 
     if (empresaOption) {
@@ -170,9 +174,9 @@ export function BasicInfoStep({
   }, [empresas, formData.usuarioId, selectedEmpresa?.id]);
 
   const handleEmpresaChange = (
-    value: InputSearchSelection<AdminCompanyListItem>
+    value: InputSearchSelection<AdminCompanyListItem>,
   ) => {
-    const option = Array.isArray(value) ? value[0] ?? null : value;
+    const option = Array.isArray(value) ? (value[0] ?? null) : value;
     setSelectedEmpresa(option);
     onFieldChange("usuarioId", option?.id ?? "");
   };
@@ -245,7 +249,7 @@ export function BasicInfoStep({
               value={selectedEmpresa}
               onChange={handleEmpresaChange}
               apiProps={empresaSearchApiProps}
-              searchHintText="Digite pelo menos 3 caracteres para buscar empresas."
+              searchHintText="Digite pelo menos 3 caracteres para buscar empresas com plano vinculado."
               disabled={isSubmitting}
               error={errors.usuarioId}
               required
@@ -268,7 +272,7 @@ export function BasicInfoStep({
             onChange={(date) =>
               onFieldChange(
                 "inscricoesAte",
-                date ? formatDate(date, "yyyy-MM-dd") : ""
+                date ? formatDate(date, "yyyy-MM-dd") : "",
               )
             }
             placeholder="Selecione a data"
@@ -353,18 +357,18 @@ export function BasicInfoStep({
             defaultOptions={subcategoriaOptions as MultiSelectOption[]}
             options={subcategoriaOptions as MultiSelectOption[]}
             value={subcategoriaOptions.filter((o) =>
-              formData.subareaInteresseId.includes(o.value)
+              formData.subareaInteresseId.includes(o.value),
             )}
             onChange={(opts) =>
               onFieldChange(
                 "subareaInteresseId",
-                (opts || []).map((o) => o.value)
+                (opts || []).map((o) => o.value),
               )
             }
             maxSelected={2}
             onMaxSelected={() =>
               toastCustom.info(
-                "Você pode selecionar no máximo 2 subcategorias."
+                "Você pode selecionar no máximo 2 subcategorias.",
               )
             }
             disabled={
@@ -393,7 +397,7 @@ export function BasicInfoStep({
                   if (n < 1) return ""; // não permitir 0
                   if (n > 9999) return "9999";
                   return String(n);
-                })()
+                })(),
               )
             }
             onKeyDown={(e) => {

@@ -7,6 +7,7 @@ import type {
   AdminCompanyStatus,
   AdminCompanyListParams,
   AdminCompanyListResponse,
+  AdminCompanyPremiumResources,
 } from "@/api/empresas";
 
 export type PartnershipType = AdminCompanyPlanMode;
@@ -33,6 +34,7 @@ export interface Company {
   banimentoAtivo?: AdminCompanyBanItem | null;
   bloqueada?: boolean;
   bloqueioAtivo?: AdminCompanyBanItem | null;
+  recursosPremiumVagas?: AdminCompanyPremiumResources | null;
   cep?: string | null;
   bairro?: string | null;
   logradouro?: string | null;
@@ -83,7 +85,7 @@ export interface CompanyDashboardProps {
   pageSize?: number;
   onDataLoaded?: (
     data: Partnership[],
-    response?: AdminCompanyListResponse | null
+    response?: AdminCompanyListResponse | null,
   ) => void;
   onError?: (message: string) => void;
 }

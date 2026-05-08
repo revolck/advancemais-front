@@ -25,6 +25,7 @@ import {
   KeyRound,
   UserCog,
   MapPin,
+  Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { AdminCompanyDetail } from "@/api/empresas/admin/types";
@@ -40,6 +41,7 @@ interface HeaderInfoProps {
   onBanCompany: () => void;
   onUnbanCompany: () => void;
   onEditSubscription: () => void;
+  onManagePremiumResources: () => void;
   onResetPassword: () => void;
 }
 
@@ -50,6 +52,7 @@ export function HeaderInfo({
   onBanCompany,
   onUnbanCompany,
   onEditSubscription,
+  onManagePremiumResources,
   onResetPassword,
 }: HeaderInfoProps) {
   const [isActionsOpen, setIsActionsOpen] = useState(false);
@@ -57,6 +60,8 @@ export function HeaderInfo({
 
   // Setor de vagas não pode editar assinatura
   const canEditSubscription = userRole !== UserRole.SETOR_DE_VAGAS;
+  const canManagePremiumResources =
+    userRole === UserRole.ADMIN || userRole === UserRole.MODERADOR;
 
   const isCompanyActive = company.status === "ATIVO" || company.ativa;
   const formattedCnpj = formatCnpj(company.cnpj);
@@ -66,15 +71,19 @@ export function HeaderInfo({
   // Verificar se a empresa tem um plano (qualquer tipo de plano)
   const hasPlan = Boolean(
     company.plano &&
-      (company.plano.nome ||
-        company.plano.valor ||
-        company.plano.modo ||
-        company.plano.inicio ||
-        company.plano.fim)
+    (company.plano.nome ||
+      company.plano.valor ||
+      company.plano.modo ||
+      company.plano.inicio ||
+      company.plano.fim),
   );
   const subscriptionActionText = hasPlan
     ? "Editar assinatura"
     : "Adicionar assinatura";
+  const hasPremiumResources = Boolean(company.recursosPremiumVagas?.ativo);
+  const premiumResourcesActionText = hasPremiumResources
+    ? "Remover premium"
+    : "Aplicar premium";
 
   // Verificar se a empresa está bloqueada
   const isCompanyBlocked =
@@ -89,13 +98,13 @@ export function HeaderInfo({
   const statusColor = isCompanyBlocked
     ? "bg-red-500"
     : isCompanyActive
-    ? "bg-emerald-500"
-    : "bg-rose-500";
+      ? "bg-emerald-500"
+      : "bg-rose-500";
   const statusLabel = isCompanyBlocked
     ? "Empresa bloqueada"
     : isCompanyActive
-    ? "Empresa ativa"
-    : "Empresa inativa";
+      ? "Empresa ativa"
+      : "Empresa inativa";
 
   const badges: React.ReactNode[] = [];
   if (company.parceira) {
@@ -105,7 +114,17 @@ export function HeaderInfo({
         className="inline-flex items-center gap-1 rounded-full border border-sky-200/70 bg-sky-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-sky-700"
       >
         Parceira
-      </Badge>
+      </Badge>,
+    );
+  }
+  if (hasPremiumResources) {
+    badges.push(
+      <Badge
+        key="recursos-premium"
+        className="inline-flex items-center gap-1 rounded-full border border-green-200/80 bg-green-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-green-700"
+      >
+        Premium Ativo
+      </Badge>,
     );
   }
   if (isCompanyBlocked) {
@@ -115,7 +134,7 @@ export function HeaderInfo({
         className="inline-flex items-center gap-1 rounded-full border border-red-200/70 bg-red-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-red-700"
       >
         Bloqueada
-      </Badge>
+      </Badge>,
     );
   }
 
@@ -136,7 +155,7 @@ export function HeaderInfo({
                 <span
                   className={cn(
                     "absolute bottom-1 right-1 inline-flex size-4 items-center justify-center rounded-full border-2 border-white cursor-pointer",
-                    statusColor
+                    statusColor,
                   )}
                   aria-label={statusLabel}
                 >
@@ -170,7 +189,7 @@ export function HeaderInfo({
                 <ChevronDown
                   className={cn(
                     "h-4 w-4 transition-transform duration-200",
-                    isActionsOpen ? "rotate-180" : "rotate-0"
+                    isActionsOpen ? "rotate-180" : "rotate-0",
                   )}
                   aria-hidden="true"
                 />
@@ -192,13 +211,24 @@ export function HeaderInfo({
                 <span>Editar endereço</span>
               </DropdownMenuItem>
               {canEditSubscription && (
-              <DropdownMenuItem
-                onSelect={onEditSubscription}
-                className="cursor-pointer"
-              >
-                <CreditCard className="h-4 w-4 text-gray-500" />
-                <span>{subscriptionActionText}</span>
-              </DropdownMenuItem>
+                <DropdownMenuItem
+                  onSelect={onEditSubscription}
+                  className="cursor-pointer"
+                >
+                  <CreditCard className="h-4 w-4 text-gray-500" />
+                  <span>{subscriptionActionText}</span>
+                </DropdownMenuItem>
+              )}
+              {canManagePremiumResources && (
+                <>
+                  <DropdownMenuItem
+                    onSelect={onManagePremiumResources}
+                    className="cursor-pointer"
+                  >
+                    <Sparkles className="h-4 w-4 text-gray-500" />
+                    <span>{premiumResourcesActionText}</span>
+                  </DropdownMenuItem>
+                </>
               )}
               <DropdownMenuItem
                 onSelect={isCompanyBlocked ? onUnbanCompany : onBanCompany}

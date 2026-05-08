@@ -5,3 +5,4 @@ export { DesbloquearEmpresaModal } from "./DesbloquearEmpresaModal";
 export { EditarAssinaturaModal } from "./EditarAssinaturaModal";
 export { AdicionarAssinaturaModal } from "./AdicionarAssinaturaModal";
 export { ResetarSenhaModal } from "./ResetarSenhaModal";
+export { RecursosPremiumVagasModal } from "./RecursosPremiumVagasModal";

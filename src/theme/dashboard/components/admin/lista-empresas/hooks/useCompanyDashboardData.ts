@@ -21,13 +21,15 @@ import type {
 } from "@/api/empresas";
 
 function isAdminCompanyListResponse(
-  response: AdminCompanyListApiResponse | undefined
+  response: AdminCompanyListApiResponse | undefined,
 ): response is AdminCompanyListResponse {
-  return Boolean(response && "data" in response && Array.isArray(response.data));
+  return Boolean(
+    response && "data" in response && Array.isArray(response.data),
+  );
 }
 
 function mapAdminCompanyToPartnership(
-  company: AdminCompanyListItem
+  company: AdminCompanyListItem,
 ): Partnership {
   const plan = company.plano;
   const payment = null;
@@ -60,6 +62,7 @@ function mapAdminCompanyToPartnership(
       banimentoAtivo: company.banimentoAtivo ?? null,
       bloqueada: company.bloqueada ?? false,
       bloqueioAtivo: company.bloqueioAtivo ?? null,
+      recursosPremiumVagas: company.recursosPremiumVagas ?? null,
     },
     plano: {
       id: plan?.id ?? `${company.id}-plano`,
@@ -84,7 +87,7 @@ function mapAdminCompanyToPartnership(
 function buildParams(
   base: AdminCompanyListParams | undefined,
   pageSize: number,
-  override?: Partial<AdminCompanyListParams>
+  override?: Partial<AdminCompanyListParams>,
 ): AdminCompanyListParams {
   const params: AdminCompanyListParams = {
     page: override?.page ?? base?.page ?? 1,
@@ -131,7 +134,7 @@ export function useCompanyDashboardData({
     : null;
 
   const [partnerships, setPartnerships] = useState<Partnership[]>(
-    initialData ?? []
+    initialData ?? [],
   );
   const partnershipsRef = useRef(partnerships);
   const [pagination, setPagination] = useState(initialPagination);
@@ -139,7 +142,7 @@ export function useCompanyDashboardData({
   const [error, setError] = useState<string | null>(null);
 
   const paramsRef = useRef<AdminCompanyListParams>(
-    buildParams(initialParams, pageSize)
+    buildParams(initialParams, pageSize),
   );
 
   const onSuccessRef = useRef(onSuccess);
@@ -157,13 +160,13 @@ export function useCompanyDashboardData({
         normalizedSearch,
       ] as const;
     },
-    [pageSize]
+    [pageSize],
   );
 
   const applyResponse = useCallback(
     (
       response: AdminCompanyListApiResponse | null,
-      params: AdminCompanyListParams
+      params: AdminCompanyListParams,
     ) => {
       if (!response || !("data" in response)) {
         return;
@@ -180,12 +183,12 @@ export function useCompanyDashboardData({
           total: mapped.length,
           totalPages:
             Math.ceil(mapped.length / (params.pageSize ?? pageSize)) || 0,
-        }
+        },
       );
 
       onSuccessRef.current?.(mapped, response);
     },
-    [pageSize]
+    [pageSize],
   );
 
   // Hidratar estado inicial com cache já existente (caso usuário volte à tela)
@@ -194,7 +197,7 @@ export function useCompanyDashboardData({
 
     const params = paramsRef.current;
     const cached = queryClient.getQueryData<AdminCompanyListApiResponse>(
-      buildQueryKey(params)
+      buildQueryKey(params),
     );
 
     if (cached) {
@@ -212,7 +215,7 @@ export function useCompanyDashboardData({
 
   const fetchData = useCallback(
     async (
-      override?: Partial<AdminCompanyListParams>
+      override?: Partial<AdminCompanyListParams>,
     ): Promise<Partnership[]> => {
       if (!enabled) {
         return partnershipsRef.current;
@@ -226,7 +229,10 @@ export function useCompanyDashboardData({
       const cachedResponse =
         queryClient.getQueryData<AdminCompanyListApiResponse>(queryKey);
 
-      if (isAdminCompanyListResponse(cachedResponse) && cachedResponse.data?.length) {
+      if (
+        isAdminCompanyListResponse(cachedResponse) &&
+        cachedResponse.data?.length
+      ) {
         applyResponse(cachedResponse, params);
         setIsLoading(false);
       } else {
@@ -239,7 +245,7 @@ export function useCompanyDashboardData({
         const controller = new AbortController();
         const timeoutId = window.setTimeout(
           () => controller.abort(),
-          COMPANY_DASHBOARD_CONFIG.api.timeout
+          COMPANY_DASHBOARD_CONFIG.api.timeout,
         );
 
         try {
@@ -278,7 +284,7 @@ export function useCompanyDashboardData({
         setIsLoading(false);
       }
     },
-    [enabled, pageSize, buildQueryKey, queryClient, applyResponse]
+    [enabled, pageSize, buildQueryKey, queryClient, applyResponse],
   );
 
   useEffect(() => {

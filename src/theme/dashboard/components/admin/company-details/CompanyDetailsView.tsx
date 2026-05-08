@@ -19,6 +19,7 @@ import {
   EditarAssinaturaModal,
   AdicionarAssinaturaModal,
   ResetarSenhaModal,
+  RecursosPremiumVagasModal,
 } from "./modals";
 import { DesbloquearEmpresaModal } from "./modal-acoes/DesbloquearEmpresaModal";
 import type { CompanyDetailsViewProps } from "./types";
@@ -33,7 +34,7 @@ const COMPANY_QUERY_STALE_TIME = 5 * 60 * 1000; // 5 minutos
 const COMPANY_QUERY_GC_TIME = 30 * 60 * 1000; // 30 minutos
 
 async function fetchCompanyConsolidated(
-  companyId: string
+  companyId: string,
 ): Promise<AdminCompanyConsolidatedResponse> {
   const response = await getAdminCompanyConsolidated(companyId);
   if ("empresa" in response) {
@@ -48,25 +49,20 @@ async function fetchCompanyConsolidated(
 
 function deriveCompanyData(
   baseCompany: AdminCompanyDetail,
-  consolidated: AdminCompanyConsolidatedResponse
+  consolidated: AdminCompanyConsolidatedResponse,
 ): AdminCompanyDetail {
-  const planAtivo = consolidated.planos.ativos?.[0] ?? baseCompany.plano ?? null;
+  const planAtivo =
+    consolidated.planos.ativos?.[0] ?? baseCompany.plano ?? null;
   const pagamentoAtual =
     consolidated.pagamentos.recentes?.[0] ?? baseCompany.pagamento ?? null;
 
   const pagamento: AdminCompanyPagamento = {
     modelo:
-      planAtivo?.modeloPagamento ??
-      baseCompany.pagamento?.modelo ??
-      "MENSAL",
+      planAtivo?.modeloPagamento ?? baseCompany.pagamento?.modelo ?? "MENSAL",
     metodo:
-      planAtivo?.metodoPagamento ??
-      baseCompany.pagamento?.metodo ??
-      "CREDITO",
+      planAtivo?.metodoPagamento ?? baseCompany.pagamento?.metodo ?? "CREDITO",
     status:
-      planAtivo?.statusPagamento ??
-      baseCompany.pagamento?.status ??
-      "PENDENTE",
+      planAtivo?.statusPagamento ?? baseCompany.pagamento?.status ?? "PENDENTE",
     ultimoPagamentoEm:
       pagamentoAtual?.criadoEm ??
       baseCompany.pagamento?.ultimoPagamentoEm ??
@@ -87,12 +83,9 @@ function deriveCompanyData(
       limitePlano:
         planAtivo?.quantidadeVagas ?? baseCompany.vagas?.limitePlano ?? 0,
     },
-    banida:
-      Boolean(consolidated.bloqueios.ativos.length) || baseCompany.banida,
+    banida: Boolean(consolidated.bloqueios.ativos.length) || baseCompany.banida,
     banimentoAtivo:
-      consolidated.bloqueios.ativos[0] ??
-      baseCompany.banimentoAtivo ??
-      null,
+      consolidated.bloqueios.ativos[0] ?? baseCompany.banimentoAtivo ?? null,
   };
 }
 
@@ -105,7 +98,7 @@ export function CompanyDetailsView({
 }: CompanyDetailsViewProps) {
   const queryKey = useMemo(
     () => queryKeys.empresas.detail(company.id),
-    [company.id]
+    [company.id],
   );
 
   const {
@@ -122,7 +115,7 @@ export function CompanyDetailsView({
 
   const companyData = useMemo(
     () => deriveCompanyData(company, consolidatedData),
-    [company, consolidatedData]
+    [company, consolidatedData],
   );
 
   const allPayments =
@@ -165,6 +158,7 @@ export function CompanyDetailsView({
 
   const isCompanyActive = companyData.status === "ATIVO" || companyData.ativa;
   const isReloading = isFetching;
+  const hasPremiumResources = Boolean(companyData.recursosPremiumVagas?.ativo);
 
   const [isEditCompanyOpen, setIsEditCompanyOpen] = useState(false);
   const [isEditAddressOpen, setIsEditAddressOpen] = useState(false);
@@ -173,6 +167,7 @@ export function CompanyDetailsView({
   const [isEditSubscriptionOpen, setIsEditSubscriptionOpen] = useState(false);
   const [isAddSubscriptionOpen, setIsAddSubscriptionOpen] = useState(false);
   const [isResetPasswordOpen, setIsResetPasswordOpen] = useState(false);
+  const [isPremiumResourcesOpen, setIsPremiumResourcesOpen] = useState(false);
 
   const reloadCompanyData = useCallback(async () => {
     const result = await refetch();
@@ -184,11 +179,11 @@ export function CompanyDetailsView({
 
   const hasPlan = Boolean(
     companyData.plano &&
-      (companyData.plano.nome ||
-        companyData.plano.valor ||
-        companyData.plano.modo ||
-        companyData.plano.inicio ||
-        companyData.plano.fim)
+    (companyData.plano.nome ||
+      companyData.plano.valor ||
+      companyData.plano.modo ||
+      companyData.plano.inicio ||
+      companyData.plano.fim),
   );
 
   const handleSubscriptionAction = useCallback(() => {
@@ -198,7 +193,6 @@ export function CompanyDetailsView({
       setIsAddSubscriptionOpen(true);
     }
   }, [hasPlan]);
-
 
   const tabs: HorizontalTabItem[] = [
     {
@@ -230,20 +224,18 @@ export function CompanyDetailsView({
           vacancies={allVacancies}
           publishedVacancies={publishedVacancies}
           totalVacancies={totalVacancies}
+          isUnlimited={hasPremiumResources}
         />
       ),
-      badge: relevantVacanciesCount ? <span>{relevantVacanciesCount}</span> : null,
+      badge: relevantVacanciesCount ? (
+        <span>{relevantVacanciesCount}</span>
+      ) : null,
     },
     {
       value: "historico",
       label: "Histórico",
       icon: "History",
-      content: (
-        <HistoryTab
-          auditoria={allAuditoria}
-          isLoading={isReloading}
-        />
-      ),
+      content: <HistoryTab auditoria={allAuditoria} isLoading={isReloading} />,
       badge: allAuditoria.length ? <span>{allAuditoria.length}</span> : null,
     },
   ];
@@ -257,6 +249,7 @@ export function CompanyDetailsView({
         onBanCompany={() => setIsBanCompanyOpen(true)}
         onUnbanCompany={() => setIsUnbanCompanyOpen(true)}
         onEditSubscription={handleSubscriptionAction}
+        onManagePremiumResources={() => setIsPremiumResourcesOpen(true)}
         onResetPassword={() => setIsResetPasswordOpen(true)}
       />
 
@@ -303,6 +296,12 @@ export function CompanyDetailsView({
         onOpenChange={setIsResetPasswordOpen}
         companyId={companyData.id}
         email={companyData.email}
+      />
+
+      <RecursosPremiumVagasModal
+        isOpen={isPremiumResourcesOpen}
+        onOpenChange={setIsPremiumResourcesOpen}
+        company={companyData}
       />
     </div>
   );

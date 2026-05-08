@@ -94,6 +94,52 @@ export interface AdminCompanyPlano {
 }
 
 // ============================================================================
+// TIPOS DE RECURSOS PREMIUM DE VAGAS
+// ============================================================================
+
+export interface AdminCompanyPremiumResourcesAppliedBy {
+  id: string;
+  nome: string;
+  role: "ADMIN" | "MODERADOR";
+}
+
+export interface AdminCompanyPremiumResources {
+  ativo: boolean;
+  vagasIlimitadas: boolean;
+  destaquesIlimitados: boolean;
+  aplicadoEm: string | null;
+  aplicadoPor: AdminCompanyPremiumResourcesAppliedBy | null;
+  motivo: string | null;
+}
+
+export type AdminCompanyPremiumRemovalVacancyStatus = "RASCUNHO" | "ENCERRADA";
+
+export interface ApplyAdminCompanyPremiumResourcesPayload {
+  motivo: string;
+}
+
+export interface RemoveAdminCompanyPremiumResourcesPayload {
+  motivo: string;
+  novoStatusVagasPublicadas?: AdminCompanyPremiumRemovalVacancyStatus;
+}
+
+export interface AdminCompanyPremiumResourcesEffects {
+  vagasPublicadasAlteradas: number;
+  novoStatusVagasPublicadas: AdminCompanyPremiumRemovalVacancyStatus;
+  destaquesRemovidos: number;
+}
+
+export interface AdminCompanyPremiumResourcesResponse {
+  success: true;
+  message: string;
+  empresa: {
+    id: string;
+    recursosPremiumVagas: AdminCompanyPremiumResources;
+  };
+  efeitos?: AdminCompanyPremiumResourcesEffects;
+}
+
+// ============================================================================
 // TIPOS DE INFORMAÇÕES
 // ============================================================================
 
@@ -219,6 +265,7 @@ export interface AdminCompanyListItem {
   parceira: boolean;
   diasTesteDisponibilizados: number;
   plano: AdminCompanyPlano;
+  recursosPremiumVagas?: AdminCompanyPremiumResources | null;
   vagasPublicadas: number;
   limiteVagasPlano: number;
   banida: boolean;
@@ -248,6 +295,7 @@ export interface AdminCompanyDetail {
   parceira: boolean;
   diasTesteDisponibilizados: number;
   plano: AdminCompanyPlano;
+  recursosPremiumVagas?: AdminCompanyPremiumResources | null;
   vagas: AdminCompanyVagas;
   pagamento: AdminCompanyPagamento;
   banida: boolean;
@@ -474,6 +522,7 @@ export interface AdminCompanyConsolidatedEmpresa {
   parceira: boolean;
   diasTesteDisponibilizados: number;
   planoAtual: AdminCompanyPlano | null;
+  recursosPremiumVagas?: AdminCompanyPremiumResources | null;
   bloqueada: boolean;
   bloqueioAtivo: AdminCompanyBanItem | null;
   informacoes: AdminCompanyInformacoes;
@@ -549,6 +598,7 @@ export interface AdminCompanyListParams {
   page?: number;
   pageSize?: number;
   search?: string;
+  elegivelCadastroVaga?: boolean;
 }
 
 export interface AdminCompanyPaymentParams {
@@ -733,8 +783,7 @@ export interface AdminCompanyDuplicateError extends AdminCompanyErrorResponse {
   code: "DUPLICATE_ERROR";
 }
 
-export interface AdminCompanyBanNotFoundError
-  extends AdminCompanyErrorResponse {
+export interface AdminCompanyBanNotFoundError extends AdminCompanyErrorResponse {
   code: "BANIMENTO_NOT_FOUND";
 }
 
@@ -764,6 +813,10 @@ export type AdminCompanyUpdateApiResponse =
   | AdminCompanyValidationError
   | AdminCompanyNotFoundError
   | AdminCompanyDuplicateError;
+
+export type AdminCompanyPremiumResourcesApiResponse =
+  | AdminCompanyPremiumResourcesResponse
+  | AdminCompanyErrorResponse;
 
 export type AdminCompanyPaymentHistoryApiResponse =
   | AdminCompanyPaymentHistoryResponse

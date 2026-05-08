@@ -18,15 +18,15 @@ export const websiteRoutes = {
   item: {
     get: (recurso: string, id: string) =>
       `${prefix}/website/${encodeURIComponent(recurso)}/${encodeURIComponent(
-        id
+        id,
       )}`,
     update: (recurso: string, id: string) =>
       `${prefix}/website/${encodeURIComponent(recurso)}/${encodeURIComponent(
-        id
+        id,
       )}`,
     delete: (recurso: string, id: string) =>
       `${prefix}/website/${encodeURIComponent(recurso)}/${encodeURIComponent(
-        id
+        id,
       )}`,
   },
   about: {
@@ -227,6 +227,8 @@ export const empresasRoutes = {
     update: (id: string) => `${prefix}/empresas/${id}`,
     updatePlano: (id: string) => `${prefix}/empresas/${id}/plano`,
     createPlano: (id: string) => `${prefix}/empresas/${id}/plano`,
+    recursosPremiumVagas: (id: string) =>
+      `${prefix}/empresas/${id}/recursos-premium-vagas`,
     validateCnpj: (cnpj: string) =>
       `${prefix}/empresas/validate-cnpj?cnpj=${cnpj}`,
     validateCpf: (cpf: string) => `${prefix}/empresas/validate-cpf?cpf=${cpf}`,
@@ -423,15 +425,15 @@ export const usuarioRoutes = {
           `${prefix}/usuarios/usuarios/${encodeURIComponent(userId)}/vinculos-recrutador`,
         remove: (userId: string, vinculoId: string) =>
           `${prefix}/usuarios/usuarios/${encodeURIComponent(
-            userId
+            userId,
           )}/vinculos-recrutador/${encodeURIComponent(vinculoId)}`,
         optionsEmpresas: (userId: string) =>
           `${prefix}/usuarios/usuarios/${encodeURIComponent(
-            userId
+            userId,
           )}/vinculos-recrutador/opcoes/empresas`,
         optionsVagas: (userId: string) =>
           `${prefix}/usuarios/usuarios/${encodeURIComponent(
-            userId
+            userId,
           )}/vinculos-recrutador/opcoes/vagas`,
       },
       bloqueios: {
@@ -441,7 +443,7 @@ export const usuarioRoutes = {
           `${prefix}/usuarios/usuarios/${encodeURIComponent(userId)}/bloqueios`,
         revoke: (userId: string) =>
           `${prefix}/usuarios/usuarios/${encodeURIComponent(
-            userId
+            userId,
           )}/bloqueios/revogar`,
       },
     },
@@ -465,15 +467,15 @@ export const usuarioRoutes = {
     bloqueios: {
       list: (instrutorId: string) =>
         `${prefix}/usuarios/instrutores/${encodeURIComponent(
-          instrutorId
+          instrutorId,
         )}/bloqueios`,
       create: (instrutorId: string) =>
         `${prefix}/usuarios/instrutores/${encodeURIComponent(
-          instrutorId
+          instrutorId,
         )}/bloqueios`,
       revoke: (instrutorId: string) =>
         `${prefix}/usuarios/instrutores/${encodeURIComponent(
-          instrutorId
+          instrutorId,
         )}/bloqueios/revogar`,
     },
   },
@@ -553,15 +555,15 @@ export const vagasRoutes = {
       `${prefix}/empresas/vagas/${encodeURIComponent(vagaId)}/processos`,
     get: (vagaId: string, processoId: string) =>
       `${prefix}/empresas/vagas/${encodeURIComponent(
-        vagaId
+        vagaId,
       )}/processos/${encodeURIComponent(processoId)}`,
     update: (vagaId: string, processoId: string) =>
       `${prefix}/empresas/vagas/${encodeURIComponent(
-        vagaId
+        vagaId,
       )}/processos/${encodeURIComponent(processoId)}`,
     delete: (vagaId: string, processoId: string) =>
       `${prefix}/empresas/vagas/${encodeURIComponent(
-        vagaId
+        vagaId,
       )}/processos/${encodeURIComponent(processoId)}`,
   },
 };
@@ -581,7 +583,7 @@ export const statusProcessoRoutes = {
     `${prefix}/status-processo/${encodeURIComponent(id)}/usage`,
   validateCodigo: (codigo: string) =>
     `${prefix}/status-processo/validate-codigo?codigo=${encodeURIComponent(
-      codigo
+      codigo,
     )}`,
   validateDefault: () => `${prefix}/status-processo/validate-default`,
 };

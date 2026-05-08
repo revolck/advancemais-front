@@ -16,12 +16,18 @@ interface EmpresaOption extends SelectOption {
 }
 
 function isErrorResponse(
-  response: AdminCompanyListApiResponse
+  response: AdminCompanyListApiResponse,
 ): response is Extract<AdminCompanyListApiResponse, { success?: false }> {
   return "success" in response && response.success === false;
 }
 
-function isEmpresaElegivel(empresa: AdminCompanyListItem): boolean {
+export function isEmpresaElegivelParaCadastroVaga(
+  empresa: AdminCompanyListItem,
+): boolean {
+  if (empresa.recursosPremiumVagas?.ativo) {
+    return true;
+  }
+
   const plano = empresa.plano;
 
   if (!plano || !plano.id) {
@@ -61,11 +67,11 @@ const GC_TIME = 30 * 60 * 1000;
 const buildCompanyListQueryKey = (
   page: number,
   pageSize: number,
-  search = ""
+  search = "",
 ) => ["admin-company-list", page, pageSize, search] as const;
 
 async function fetchEligibleCompanies(
-  queryClient: ReturnType<typeof useQueryClient>
+  queryClient: ReturnType<typeof useQueryClient>,
 ): Promise<AdminCompanyListItem[]> {
   const pageSize = 100;
   const collected: AdminCompanyListItem[] = [];
@@ -74,11 +80,11 @@ async function fetchEligibleCompanies(
   let totalPages = 1;
 
   while (currentPage <= totalPages) {
-    const params = { page: currentPage, pageSize };
+    const params = { page: currentPage, pageSize, elegivelCadastroVaga: true };
     const response = await queryClient.fetchQuery({
       queryKey: buildCompanyListQueryKey(
         params.page ?? 1,
-        params.pageSize ?? pageSize
+        params.pageSize ?? pageSize,
       ),
       queryFn: async () => listAdminCompanies(params),
       staleTime: STALE_TIME,
@@ -106,7 +112,7 @@ async function fetchEligibleCompanies(
     currentPage += 1;
   }
 
-  return collected.filter(isEmpresaElegivel);
+  return collected.filter(isEmpresaElegivelParaCadastroVaga);
 }
 
 export function useEmpresasForSelect(enabled: boolean = true) {
@@ -114,7 +120,7 @@ export function useEmpresasForSelect(enabled: boolean = true) {
 
   const queryFn = useCallback(
     () => fetchEligibleCompanies(queryClient),
-    [queryClient]
+    [queryClient],
   );
 
   const {
@@ -160,4 +166,3 @@ export function useEmpresasForSelect(enabled: boolean = true) {
     refetch: handleRefetch,
   };
 }
-
