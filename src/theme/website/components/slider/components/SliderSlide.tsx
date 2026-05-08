@@ -1,7 +1,8 @@
 "use client";
 
+/* eslint-disable @next/next/no-img-element */
+
 import React, { useEffect, useState } from "react";
-import Image from "next/image";
 import { ImageNotFound } from "@/components/ui/custom/image-not-found";
 import type { SliderSlideProps } from "../types";
 
@@ -28,7 +29,6 @@ export const SliderSlide: React.FC<SliderSlideProps> = ({
     setHasError(true);
   };
 
-  const imageQuality = isMobile ? 100 : 80;
   const fitClass = isMobile ? "object-contain" : "object-cover";
   const hasValidImage = Boolean(slide.image?.trim());
 
@@ -61,22 +61,21 @@ export const SliderSlide: React.FC<SliderSlideProps> = ({
 
       {/* Main Image */}
       {hasValidImage && !hasError && (
-        <Image
+        // As imagens do slider ja chegam como URLs finais do storage/CDN.
+        // Usar <img> evita falso erro do otimizador do Next para assets externos.
+        <img
           src={slide.image}
           alt={getAltText(slide, index)}
-          fill
+          loading={index === 0 ? "eager" : "lazy"}
+          decoding="async"
           className={`
+            absolute inset-0 h-full w-full
             ${fitClass} object-center
             transition-opacity duration-500
             ${isLoading ? "opacity-0" : "opacity-100"}
           `}
-          priority={index === 0}
-          quality={imageQuality}
           onLoad={handleImageLoad}
           onError={handleImageError}
-          sizes={
-            isMobile ? "(max-width: 768px) 100vw" : "(min-width: 769px) 100vw"
-          }
         />
       )}
 
