@@ -63,6 +63,14 @@ export function EditCursoModal({
   onSuccess,
   curso,
 }: EditCursoModalProps) {
+  const normalizeBooleanValue = (value: unknown): boolean => {
+    if (typeof value === "boolean") return value;
+    if (typeof value === "number") return value === 1;
+    if (typeof value !== "string") return false;
+    const normalized = value.trim().toLowerCase();
+    return ["true", "1", "sim", "yes", "obrigatorio"].includes(normalized);
+  };
+
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState<FormData>({
     nome: "",
@@ -105,7 +113,7 @@ export function EditCursoModal({
         cargaHoraria: curso.cargaHoraria?.toString() || "",
         categoriaId: curso.categoriaId?.toString() || null,
         subcategoriaId: curso.subcategoriaId?.toString() || null,
-        estagioObrigatorio: curso.estagioObrigatorio || false,
+        estagioObrigatorio: normalizeBooleanValue(curso.estagioObrigatorio),
         statusPadrao: (curso.statusPadrao as StatusPadrao) || "PUBLICADO",
         // Campos de precificação
         tipoCurso,
@@ -345,7 +353,8 @@ export function EditCursoModal({
         ...payload,
         id: String(curso.id),
         valor: payload.valor ?? updatedCurso.valor,
-        valorPromocional: payload.valorPromocional ?? updatedCurso.valorPromocional,
+        valorPromocional:
+          payload.valorPromocional ?? updatedCurso.valorPromocional,
         gratuito: Boolean(payload.gratuito),
       };
       optimisticallyUpsertCursoInCursosListQueries(

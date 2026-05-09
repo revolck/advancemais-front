@@ -114,6 +114,14 @@ export function CreateCursoForm({
 }: CreateCursoFormProps) {
   const queryClient = useQueryClient();
 
+  const normalizeBooleanValue = (value: unknown): boolean => {
+    if (typeof value === "boolean") return value;
+    if (typeof value === "number") return value === 1;
+    if (typeof value !== "string") return false;
+    const normalized = value.trim().toLowerCase();
+    return ["true", "1", "sim", "yes", "obrigatorio"].includes(normalized);
+  };
+
   // Preparar dados iniciais baseado no modo
   const prepareInitialFormData = (): FormData => {
     if (mode === "edit" && initialData) {
@@ -126,7 +134,9 @@ export function CreateCursoForm({
         cargaHoraria: initialData.cargaHoraria?.toString() || "",
         categoriaId: initialData.categoriaId?.toString() || null,
         subcategoriaId: initialData.subcategoriaId?.toString() || null,
-        estagioObrigatorio: initialData.estagioObrigatorio || false,
+        estagioObrigatorio: normalizeBooleanValue(
+          initialData.estagioObrigatorio,
+        ),
         statusPadrao: (initialData.statusPadrao as StatusPadrao) || "PUBLICADO",
         tipoCurso: isGratuito ? "GRATUITO" : "PAGO",
         valor: initialData.valor > 0 ? initialData.valor.toString() : "",
@@ -167,15 +177,15 @@ export function CreateCursoForm({
   };
 
   const [imagemFiles, setImagemFiles] = useState<FileUploadItem[]>(
-    prepareInitialImage()
+    prepareInitialImage(),
   );
   const [imagemUrl, setImagemUrl] = useState<string | null>(
-    mode === "edit" && initialData?.imagemUrl ? initialData.imagemUrl : null
+    mode === "edit" && initialData?.imagemUrl ? initialData.imagemUrl : null,
   );
   const [oldImageUrl, setOldImageUrl] = useState<string | undefined>(
     mode === "edit" && initialData?.imagemUrl
       ? initialData.imagemUrl
-      : undefined
+      : undefined,
   );
   const [imageRemoved, setImageRemoved] = useState(false); // Rastreia se usuário removeu a imagem
 
@@ -183,7 +193,7 @@ export function CreateCursoForm({
     useCursoCategorias();
   const { subcategoriaOptions, isLoading: isLoadingSubcategorias } =
     useCursoSubcategorias(
-      formData.categoriaId ? Number(formData.categoriaId) : null
+      formData.categoriaId ? Number(formData.categoriaId) : null,
     );
 
   const isGratuito = formData.tipoCurso === "GRATUITO";
@@ -254,7 +264,7 @@ export function CreateCursoForm({
     if (!validateForm()) return;
     setIsLoading(true);
     setLoadingStep(
-      mode === "edit" ? "Salvando alterações..." : "Criando curso..."
+      mode === "edit" ? "Salvando alterações..." : "Criando curso...",
     );
 
     let finalImageUrl: string | null = imagemUrl;
@@ -283,7 +293,7 @@ export function CreateCursoForm({
           const uploadResult = await uploadImage(
             fileItem.file,
             "cursos",
-            mode === "edit" ? oldImageUrl : imagemUrl || undefined
+            mode === "edit" ? oldImageUrl : imagemUrl || undefined,
           );
 
           if (!uploadResult?.url || uploadResult.url.trim() === "") {
@@ -296,7 +306,7 @@ export function CreateCursoForm({
           if (process.env.NODE_ENV === "development") {
             console.log(
               "[CreateCursoForm] Upload concluído. URL:",
-              finalImageUrl
+              finalImageUrl,
             );
           }
         } catch (uploadError: any) {
@@ -357,18 +367,18 @@ export function CreateCursoForm({
       if (process.env.NODE_ENV === "development") {
         console.log(
           "[CreateCursoForm] Payload completo sendo enviado:",
-          payload
+          payload,
         );
       }
 
       // PASSO 4: Envia o payload completo para a API
       setLoadingStep(
-        mode === "edit" ? "Salvando alterações..." : "Criando curso..."
+        mode === "edit" ? "Salvando alterações..." : "Criando curso...",
       );
       if (mode === "edit" && cursoId) {
         const updatedCurso = await updateCurso(
           cursoId,
-          payload as UpdateCursoPayload
+          payload as UpdateCursoPayload,
         );
 
         clearApiCache();
@@ -384,7 +394,7 @@ export function CreateCursoForm({
         optimisticallyUpsertCursoInCursosListQueries(
           queryClient,
           cursoForCache,
-          "update"
+          "update",
         );
 
         // Invalida queries de listagem e detalhes
@@ -425,7 +435,7 @@ export function CreateCursoForm({
         optimisticallyUpsertCursoInCursosListQueries(
           queryClient,
           cursoForCache,
-          "create"
+          "create",
         );
 
         // Invalida todas as queries de listagem de cursos para atualizar a lista
@@ -486,7 +496,7 @@ export function CreateCursoForm({
                   "text-xs font-medium px-2 py-1 rounded-full transition-colors",
                   formData.statusPadrao === "PUBLICADO"
                     ? "bg-emerald-100 text-emerald-700"
-                    : "bg-red-100 text-red-700"
+                    : "bg-red-100 text-red-700",
                 )}
               >
                 {formData.statusPadrao === "PUBLICADO"
@@ -499,7 +509,7 @@ export function CreateCursoForm({
                 onCheckedChange={(checked) =>
                   handleInputChange(
                     "statusPadrao",
-                    (checked ? "PUBLICADO" : "RASCUNHO") as StatusPadrao
+                    (checked ? "PUBLICADO" : "RASCUNHO") as StatusPadrao,
                   )
                 }
                 disabled={isLoading}
@@ -584,10 +594,10 @@ export function CreateCursoForm({
                     !formData.categoriaId
                       ? "Selecione uma categoria"
                       : isLoadingSubcategorias
-                      ? "Carregando..."
-                      : subcategoriaOptions.length === 0
-                      ? "Nenhuma subcategoria"
-                      : "Selecionar"
+                        ? "Carregando..."
+                        : subcategoriaOptions.length === 0
+                          ? "Nenhuma subcategoria"
+                          : "Selecionar"
                   }
                   options={subcategoriaOptions}
                   value={formData.subcategoriaId}
@@ -679,7 +689,7 @@ export function CreateCursoForm({
               onChange={(e) =>
                 handleInputChange(
                   "descricao",
-                  (e.target as HTMLTextAreaElement).value
+                  (e.target as HTMLTextAreaElement).value,
                 )
               }
               onHtmlChange={(html) => {
@@ -693,7 +703,9 @@ export function CreateCursoForm({
 
             <RichTextarea
               label="Conteúdo programático"
-              placeholder={"Ex.: Módulo 1: Fundamentos...\nMódulo 2: Prática..."}
+              placeholder={
+                "Ex.: Módulo 1: Fundamentos...\nMódulo 2: Prática..."
+              }
               value={
                 formData.conteudoProgramaticoHtml ||
                 formData.conteudoProgramatico
@@ -701,7 +713,7 @@ export function CreateCursoForm({
               onChange={(e) =>
                 handleInputChange(
                   "conteudoProgramatico",
-                  (e.target as HTMLTextAreaElement).value
+                  (e.target as HTMLTextAreaElement).value,
                 )
               }
               onHtmlChange={(html) => {
@@ -738,8 +750,8 @@ export function CreateCursoForm({
                   ? "Salvando..."
                   : "Cadastrando..."
                 : mode === "edit"
-                ? "Salvar Alterações"
-                : "Cadastrar"}
+                  ? "Salvar Alterações"
+                  : "Cadastrar"}
             </ButtonCustom>
           </div>
         </fieldset>

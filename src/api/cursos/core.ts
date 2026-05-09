@@ -67,7 +67,7 @@ function getAuthHeader(): Record<string, string> {
 
 function buildHeaders(
   additional?: HeadersInit,
-  auth = false
+  auth = false,
 ): Record<string, string> {
   return {
     Accept: apiConfig.headers.Accept,
@@ -120,8 +120,33 @@ function normalizeMoneyValue(value: unknown): number {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+function normalizeBooleanValue(value: unknown): boolean | undefined {
+  if (typeof value === "boolean") return value;
+  if (typeof value === "number") {
+    if (value === 1) return true;
+    if (value === 0) return false;
+    return undefined;
+  }
+  if (typeof value !== "string") return undefined;
+
+  const normalized = value.trim().toLowerCase();
+  if (!normalized) return undefined;
+
+  if (["true", "1", "sim", "yes", "obrigatorio"].includes(normalized)) {
+    return true;
+  }
+
+  if (
+    ["false", "0", "nao", "não", "no", "nao_obrigatorio"].includes(normalized)
+  ) {
+    return false;
+  }
+
+  return undefined;
+}
+
 export async function getCursosMeta(
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<CursosModuleMeta> {
   return apiFetch<CursosModuleMeta>(cursosRoutes.meta(), {
     init: {
@@ -135,7 +160,7 @@ export async function getCursosMeta(
 
 export async function listCursos(
   params?: CursosListParams,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<CursosListResponse> {
   const sp = new URLSearchParams();
   if (params) {
@@ -169,12 +194,17 @@ export async function listCursos(
     ...curso,
     valor: normalizeMoneyValue((curso as any).valor ?? (curso as any).preco),
     valorPromocional:
-      (curso as any).valorPromocional != null || (curso as any).precoPromocional != null
+      (curso as any).valorPromocional != null ||
+      (curso as any).precoPromocional != null
         ? normalizeMoneyValue(
-            (curso as any).valorPromocional ?? (curso as any).precoPromocional
+            (curso as any).valorPromocional ?? (curso as any).precoPromocional,
           ) || undefined
         : undefined,
     gratuito: Boolean(curso.gratuito ?? false),
+    estagioObrigatorio:
+      normalizeBooleanValue((curso as any).estagioObrigatorio) ??
+      normalizeBooleanValue((curso as any).estagio_obrigatorio) ??
+      false,
   }));
 
   return {
@@ -319,15 +349,15 @@ function buildCursoRequest(payload: CreateCursoPayload | UpdateCursoPayload): {
     console.log("[buildCursoRequest] Payload original:", payload);
     console.log(
       "[buildCursoRequest] imagemUrl no payload original:",
-      payload.imagemUrl
+      payload.imagemUrl,
     );
     console.log(
       "[buildCursoRequest] imagemUrl no JSON final:",
-      jsonPayload.imagemUrl
+      jsonPayload.imagemUrl,
     );
     console.log(
       "[buildCursoRequest] JSON stringificado:",
-      JSON.stringify(jsonPayload)
+      JSON.stringify(jsonPayload),
     );
   }
 
@@ -339,7 +369,7 @@ function buildCursoRequest(payload: CreateCursoPayload | UpdateCursoPayload): {
 
 export async function createCurso(
   payload: CreateCursoPayload,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<Curso> {
   const { body, headers } = buildCursoRequest(payload);
 
@@ -379,7 +409,7 @@ export async function createCurso(
               ([field, messages]) =>
                 `${field}: ${
                   Array.isArray(messages) ? messages.join(", ") : messages
-                }`
+                }`,
             )
             .join("; ");
           if (issues) {
@@ -414,7 +444,8 @@ function normalizeTurma(turma: any): CursoTurma {
     metodo: turma.metodo ?? "ONLINE",
     status: turma.status,
     publicacaoStatus: turma.publicacaoStatus ?? turma.statusPublicacao,
-    publicado: typeof turma.publicado === "boolean" ? turma.publicado : undefined,
+    publicado:
+      typeof turma.publicado === "boolean" ? turma.publicado : undefined,
     vagasTotais:
       turma.vagasTotais != null ? Number(turma.vagasTotais) : undefined,
     vagasDisponiveis:
@@ -443,7 +474,9 @@ function normalizeTurma(turma: any): CursoTurma {
     aulas: Array.isArray(turma.aulas) ? turma.aulas : undefined,
     provas: Array.isArray(turma.provas) ? turma.provas : undefined,
     itens: Array.isArray(turma.itens) ? turma.itens : undefined,
-    instrutores: Array.isArray(turma.instrutores) ? turma.instrutores : undefined,
+    instrutores: Array.isArray(turma.instrutores)
+      ? turma.instrutores
+      : undefined,
     alunos: Array.isArray(turma.alunos) ? turma.alunos : undefined,
     instrutor: turma.instrutor
       ? {
@@ -458,7 +491,7 @@ function normalizeTurma(turma: any): CursoTurma {
 
 export async function getCursoById(
   cursoId: number | string,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<Curso & { turmas?: CursoTurma[]; turmasCount?: number }> {
   try {
     const response = await apiFetch<any>(cursosRoutes.cursos.get(cursoId), {
@@ -493,12 +526,17 @@ export async function getCursoById(
       // Campos de precificação
       valor: normalizeMoneyValue(response.valor ?? (response as any).preco),
       valorPromocional:
-        response.valorPromocional != null || (response as any).precoPromocional != null
+        response.valorPromocional != null ||
+        (response as any).precoPromocional != null
           ? normalizeMoneyValue(
-              response.valorPromocional ?? (response as any).precoPromocional
+              response.valorPromocional ?? (response as any).precoPromocional,
             ) || undefined
           : undefined,
       gratuito: Boolean(response.gratuito ?? false),
+      estagioObrigatorio:
+        normalizeBooleanValue((response as any).estagioObrigatorio) ??
+        normalizeBooleanValue((response as any).estagio_obrigatorio) ??
+        false,
       // Nota: Métodos de pagamento são gerenciados pelo Mercado Pago
       // Nota: Disponibilidade é definida por statusPadrao ("PUBLICADO" = disponível)
     };
@@ -533,7 +571,7 @@ export async function getCursoById(
         message: "A resposta da API pode estar em formato inválido",
       });
       throw new Error(
-        "Erro ao processar resposta da API. Verifique se a API está retornando dados válidos."
+        "Erro ao processar resposta da API. Verifique se a API está retornando dados válidos.",
       );
     }
     throw error;
@@ -543,7 +581,7 @@ export async function getCursoById(
 export async function updateCurso(
   cursoId: number | string,
   payload: UpdateCursoPayload,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<Curso> {
   const { body, headers } = buildCursoRequest(payload);
   return apiFetch<Curso>(cursosRoutes.cursos.update(cursoId), {
@@ -559,7 +597,7 @@ export async function updateCurso(
 
 export async function despublicarCurso(
   cursoId: number | string,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<void> {
   return apiFetch<void>(cursosRoutes.cursos.delete(cursoId), {
     init: {
@@ -573,7 +611,7 @@ export async function despublicarCurso(
 
 export async function excluirCursoDefinitivamente(
   cursoId: number | string,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<{ id: string; excluidoEm: string; excluidoPorId: string }> {
   return apiFetch<{ id: string; excluidoEm: string; excluidoPorId: string }>(
     cursosRoutes.cursos.deleteDefinitivo(cursoId),
@@ -584,14 +622,14 @@ export async function excluirCursoDefinitivamente(
         headers: buildHeaders(init?.headers, true),
       },
       cache: "no-cache",
-    }
+    },
   );
 }
 
 // Turmas
 export async function listTurmas(
   cursoId: number | string,
-  options?: RequestInit & ListTurmasParams
+  options?: RequestInit & ListTurmasParams,
 ): Promise<CursoTurma[]> {
   const { page, pageSize, ...init } = options ?? {};
   const hasExplicitPage = typeof page === "number" && Number.isFinite(page);
@@ -621,8 +659,8 @@ export async function listTurmas(
   const turmas: CursoTurma[] = Array.isArray(res)
     ? (res as CursoTurma[])
     : Array.isArray(res?.data)
-    ? (res.data as CursoTurma[])
-    : [];
+      ? (res.data as CursoTurma[])
+      : [];
 
   // Mantém comportamento "lista completa" quando a API retorna paginação
   // e nenhum page explícito foi solicitado.
@@ -637,7 +675,7 @@ export async function listTurmas(
       Number.isFinite(Number(res?.pagination?.pageSize)) &&
       Number(res.pagination.pageSize) > 0
         ? Number(res.pagination.pageSize)
-        : pageSize ?? 50;
+        : (pageSize ?? 50);
     const FETCH_CONCURRENCY = 3;
     let allTurmas = [...turmas];
 
@@ -663,7 +701,7 @@ export async function listTurmas(
               headers: buildHeaders(init?.headers, true),
             },
             cache: "no-cache",
-          })
+          }),
         );
       }
 
@@ -688,7 +726,7 @@ export async function listTurmas(
 export async function getTurmaById(
   cursoId: number | string,
   turmaId: string,
-  options?: RequestInit & GetTurmaByIdParams
+  options?: RequestInit & GetTurmaByIdParams,
 ): Promise<CursoTurma> {
   const { includeAlunos, includeEstrutura, ...init } = options ?? {};
   const searchParams = new URLSearchParams();
@@ -734,7 +772,7 @@ export async function getTurmaById(
         message: "A resposta da API pode estar em formato inválido",
       });
       const parsingError = new Error(
-        "Erro ao processar resposta da API. Verifique se a API está retornando dados válidos."
+        "Erro ao processar resposta da API. Verifique se a API está retornando dados válidos.",
       ) as Error & { status?: number };
       if (status) parsingError.status = status;
       throw parsingError;
@@ -756,7 +794,7 @@ export async function publicarTurma(
   cursoId: number | string,
   turmaId: string,
   publicar: boolean,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<Partial<CursoTurma>> {
   const response = await apiFetch<any>(
     cursosRoutes.cursos.turmas.publicar(cursoId, turmaId),
@@ -769,12 +807,12 @@ export async function publicarTurma(
             "Content-Type": "application/json",
             ...init?.headers,
           },
-          true
+          true,
         ),
         body: JSON.stringify({ publicar }),
       },
       cache: "no-cache",
-    }
+    },
   );
 
   return response?.data ?? response?.turma ?? response?.result ?? response;
@@ -783,14 +821,14 @@ export async function publicarTurma(
 export async function createTurma(
   cursoId: number | string,
   payload: CreateTurmaPayload,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<CursoTurma> {
   return apiFetch<CursoTurma>(cursosRoutes.cursos.turmas.create(cursoId), {
     init: {
       method: "POST",
       headers: buildHeaders(
         { "Content-Type": "application/json", ...init?.headers },
-        true
+        true,
       ),
       body: JSON.stringify(payload),
       ...init,
@@ -803,7 +841,7 @@ export async function syncTurmaInstrutores(
   cursoId: number | string,
   turmaId: string,
   payload: import("./types").SyncTurmaInstrutoresPayload,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<CursoTurma> {
   const response = await apiFetch<any>(
     cursosRoutes.cursos.turmas.instrutores.sync(cursoId, turmaId),
@@ -812,20 +850,17 @@ export async function syncTurmaInstrutores(
         method: "PUT",
         headers: buildHeaders(
           { "Content-Type": "application/json", ...(init?.headers || {}) },
-          true
+          true,
         ),
         body: JSON.stringify(payload),
         ...init,
       },
       cache: "no-cache",
-    }
+    },
   );
 
   const turma =
-    response?.data?.turma ??
-    response?.turma ??
-    response?.data ??
-    response;
+    response?.data?.turma ?? response?.turma ?? response?.data ?? response;
 
   return normalizeTurma(turma);
 }
@@ -834,7 +869,7 @@ export async function appendTurmaEstruturaItem(
   cursoId: number | string,
   turmaId: string,
   payload: import("./types").AppendTurmaEstruturaItemPayload,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<import("./types").AppendTurmaEstruturaItemResponse> {
   const response = await apiFetch<any>(
     cursosRoutes.cursos.turmas.estrutura.itens.create(cursoId, turmaId),
@@ -843,13 +878,13 @@ export async function appendTurmaEstruturaItem(
         method: "POST",
         headers: buildHeaders(
           { "Content-Type": "application/json", ...(init?.headers || {}) },
-          true
+          true,
         ),
         body: JSON.stringify(payload),
         ...init,
       },
       cache: "no-cache",
-    }
+    },
   );
 
   const data = response?.data ?? response ?? {};
@@ -860,8 +895,7 @@ export async function appendTurmaEstruturaItem(
           id: String(data.item.id ?? ""),
           type: data.item.type,
           title: data.item.title,
-          ordem:
-            data.item.ordem != null ? Number(data.item.ordem) : undefined,
+          ordem: data.item.ordem != null ? Number(data.item.ordem) : undefined,
           startDate: data.item.startDate,
           endDate: data.item.endDate,
           instructorIds: Array.isArray(data.item.instructorIds)
@@ -876,7 +910,7 @@ export async function appendTurmaEstruturaItem(
 export async function deleteTurma(
   cursoId: number | string,
   turmaId: string,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<{ id: string; removidoEm?: string; removidoPorId?: string }> {
   const response = await apiFetch<any>(
     cursosRoutes.cursos.turmas.delete(cursoId, turmaId),
@@ -887,7 +921,7 @@ export async function deleteTurma(
         headers: buildHeaders(init?.headers, true),
       },
       cache: "no-cache",
-    }
+    },
   );
 
   return response?.data ?? response ?? { id: turmaId };
@@ -896,27 +930,30 @@ export async function deleteTurma(
 // Vínculo de templates ao curso (pré-requisito de turmas)
 export async function vincularTemplatesAoCurso(
   payload: VincularTemplatesAoCursoPayload,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<VincularTemplatesAoCursoResponse> {
-  return apiFetch<VincularTemplatesAoCursoResponse>(cursosRoutes.templates.vincular(), {
-    init: {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...normalizeHeaders(init?.headers),
+  return apiFetch<VincularTemplatesAoCursoResponse>(
+    cursosRoutes.templates.vincular(),
+    {
+      init: {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...normalizeHeaders(init?.headers),
+        },
+        body: JSON.stringify(payload),
+        ...init,
       },
-      body: JSON.stringify(payload),
-      ...init,
+      cache: "no-cache",
     },
-    cache: "no-cache",
-  });
+  );
 }
 
 // Inscrições
 export async function listInscricoes(
   cursoId: number | string,
   turmaId: string,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<TurmaInscricao[]> {
   try {
     // A API pode retornar {success: true, count: X, data: [...]} ou diretamente o array
@@ -979,7 +1016,7 @@ export async function listInscricoes(
     // Isso pode acontecer se o endpoint não existe ou se não há inscrições
     if (apiError?.status === 404) {
       console.warn(
-        `Endpoint de inscrições não encontrado ou turma sem inscrições: ${cursoId}/${turmaId}`
+        `Endpoint de inscrições não encontrado ou turma sem inscrições: ${cursoId}/${turmaId}`,
       );
       return [];
     }
@@ -1004,7 +1041,7 @@ export async function createInscricao(
   cursoId: number | string,
   turmaId: string,
   payload: CreateInscricaoPayload,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<TurmaInscricao> {
   return apiFetch<TurmaInscricao>(
     cursosRoutes.cursos.turmas.inscricoes.create(cursoId, turmaId),
@@ -1013,13 +1050,13 @@ export async function createInscricao(
         method: "POST",
         headers: buildHeaders(
           { "Content-Type": "application/json", ...init?.headers },
-          true
+          true,
         ),
         body: JSON.stringify(payload),
         ...init,
       },
       cache: "no-cache",
-    }
+    },
   );
 }
 
@@ -1027,7 +1064,7 @@ export async function deleteInscricao(
   cursoId: number | string,
   turmaId: string,
   alunoId: string,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<void> {
   return apiFetch<void>(
     cursosRoutes.cursos.turmas.inscricoes.delete(cursoId, turmaId, alunoId),
@@ -1038,7 +1075,7 @@ export async function deleteInscricao(
         headers: buildHeaders(init?.headers, true),
       },
       cache: "no-cache",
-    }
+    },
   );
 }
 
@@ -1046,7 +1083,7 @@ export async function deleteInscricao(
 export async function listInscricoesCurso(
   cursoId: number | string,
   params?: ListInscricoesCursoParams,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<ListInscricoesCursoResponse> {
   const searchParams = new URLSearchParams();
 
@@ -1107,7 +1144,7 @@ export async function listInscricoesCurso(
 export async function listCursoAuditoria(
   cursoId: number | string,
   params?: ListCursoAuditoriaParams,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<ListCursoAuditoriaResponse> {
   const searchParams = new URLSearchParams();
 
@@ -1137,7 +1174,7 @@ export async function listCursoAuditoria(
 export async function listProvas(
   cursoId: number | string,
   turmaId: string,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<TurmaProva[]> {
   return apiFetch<TurmaProva[]>(
     cursosRoutes.cursos.turmas.provas.list(cursoId, turmaId),
@@ -1148,7 +1185,7 @@ export async function listProvas(
         headers: buildHeaders(init?.headers, true),
       },
       cache: "no-cache",
-    }
+    },
   );
 }
 
@@ -1156,7 +1193,7 @@ export async function getProvaById(
   cursoId: number | string,
   turmaId: string,
   provaId: string,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<TurmaProva> {
   return apiFetch<TurmaProva>(
     cursosRoutes.cursos.turmas.provas.get(cursoId, turmaId, provaId),
@@ -1167,7 +1204,7 @@ export async function getProvaById(
         headers: buildHeaders(init?.headers, true),
       },
       cache: "no-cache",
-    }
+    },
   );
 }
 
@@ -1175,7 +1212,7 @@ export async function createProva(
   cursoId: number | string,
   turmaId: string,
   payload: CreateProvaPayload,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<TurmaProva> {
   const response = await apiFetch<any>(
     cursosRoutes.cursos.turmas.provas.create(cursoId, turmaId),
@@ -1184,13 +1221,13 @@ export async function createProva(
         method: "POST",
         headers: buildHeaders(
           { "Content-Type": "application/json", ...init?.headers },
-          true
+          true,
         ),
         body: JSON.stringify(payload),
         ...init,
       },
       cache: "no-cache",
-    }
+    },
   );
 
   // Suporta diferentes formatos de resposta (compat/legado)
@@ -1214,7 +1251,7 @@ export async function updateProva(
   turmaId: string,
   provaId: string,
   payload: UpdateProvaPayload,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<TurmaProva> {
   return apiFetch<TurmaProva>(
     cursosRoutes.cursos.turmas.provas.update(cursoId, turmaId, provaId),
@@ -1223,13 +1260,13 @@ export async function updateProva(
         method: "PUT",
         headers: buildHeaders(
           { "Content-Type": "application/json", ...init?.headers },
-          true
+          true,
         ),
         body: JSON.stringify(payload),
         ...init,
       },
       cache: "no-cache",
-    }
+    },
   );
 }
 
@@ -1237,7 +1274,7 @@ export async function deleteProva(
   cursoId: number | string,
   turmaId: string,
   provaId: string,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<void> {
   return apiFetch<void>(
     cursosRoutes.cursos.turmas.provas.delete(cursoId, turmaId, provaId),
@@ -1248,7 +1285,7 @@ export async function deleteProva(
         headers: buildHeaders(init?.headers, true),
       },
       cache: "no-cache",
-    }
+    },
   );
 }
 
@@ -1258,7 +1295,7 @@ export async function listProvaTokens(
   turmaId: string,
   provaId: string,
   params?: ListProvaTokensParams,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<ListProvaTokensResponse> {
   const queryParams = new URLSearchParams();
 
@@ -1271,7 +1308,7 @@ export async function listProvaTokens(
   const url = cursosRoutes.cursos.turmas.provas.tokens.list(
     cursoId,
     turmaId,
-    provaId
+    provaId,
   );
   const fullUrl = queryParams.toString()
     ? `${url}?${queryParams.toString()}`
@@ -1292,7 +1329,7 @@ export async function createProvaToken(
   turmaId: string,
   provaId: string,
   payload: CreateProvaTokenPayload,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<ProvaTokenResponse> {
   return apiFetch<ProvaTokenResponse>(
     cursosRoutes.cursos.turmas.provas.tokens.create(cursoId, turmaId, provaId),
@@ -1301,13 +1338,13 @@ export async function createProvaToken(
         method: "POST",
         headers: buildHeaders(
           { "Content-Type": "application/json", ...init?.headers },
-          true
+          true,
         ),
         body: JSON.stringify(payload),
         ...init,
       },
       cache: "no-cache",
-    }
+    },
   );
 }
 
@@ -1316,14 +1353,14 @@ export async function getProvaTokenById(
   turmaId: string,
   provaId: string,
   tokenId: string,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<ProvaTokenResponse> {
   return apiFetch<ProvaTokenResponse>(
     cursosRoutes.cursos.turmas.provas.tokens.get(
       cursoId,
       turmaId,
       provaId,
-      tokenId
+      tokenId,
     ),
     {
       init: {
@@ -1332,13 +1369,13 @@ export async function getProvaTokenById(
         headers: buildHeaders(init?.headers, true),
       },
       cache: "no-cache",
-    }
+    },
   );
 }
 
 export async function getProvaTokenByToken(
   token: string,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<ProvaTokenResponse> {
   return apiFetch<ProvaTokenResponse>(
     cursosRoutes.cursos.turmas.provas.tokens.getByToken(token),
@@ -1349,7 +1386,7 @@ export async function getProvaTokenByToken(
         headers: buildHeaders(init?.headers, true),
       },
       cache: "no-cache",
-    }
+    },
   );
 }
 
@@ -1357,7 +1394,7 @@ export async function getProvaTokenByToken(
 export async function listModulos(
   cursoId: number | string,
   turmaId: string,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<CursoModulo[]> {
   try {
     const res = await apiFetch<any>(
@@ -1370,15 +1407,15 @@ export async function listModulos(
         },
         cache: "no-cache",
         silence404: true, // Pode não existir módulos
-      }
+      },
     );
 
     // Normaliza: pode vir array direto ou objeto { data: [...] }
     const modulos: CursoModulo[] = Array.isArray(res)
       ? (res as CursoModulo[])
       : Array.isArray(res?.data)
-      ? (res.data as CursoModulo[])
-      : [];
+        ? (res.data as CursoModulo[])
+        : [];
 
     return modulos;
   } catch (error: any) {
@@ -1394,7 +1431,7 @@ export async function listModulos(
 export async function listCertificados(
   cursoId: number | string,
   turmaId: string,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<TurmaCertificado[]> {
   return apiFetch<TurmaCertificado[]>(
     cursosRoutes.cursos.turmas.certificados.list(cursoId, turmaId),
@@ -1405,7 +1442,7 @@ export async function listCertificados(
         headers: buildHeaders(init?.headers, true),
       },
       cache: "no-cache",
-    }
+    },
   );
 }
 
@@ -1413,7 +1450,7 @@ export async function createCertificado(
   cursoId: number | string,
   turmaId: string,
   payload: CreateCertificadoPayload,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<TurmaCertificado> {
   return apiFetch<TurmaCertificado>(
     cursosRoutes.cursos.turmas.certificados.create(cursoId, turmaId),
@@ -1422,19 +1459,19 @@ export async function createCertificado(
         method: "POST",
         headers: buildHeaders(
           { "Content-Type": "application/json", ...init?.headers },
-          true
+          true,
         ),
         body: JSON.stringify(payload),
         ...init,
       },
       cache: "no-cache",
-    }
+    },
   );
 }
 
 export async function listCertificadosGlobal(
   params?: ListCertificadosGlobalParams,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<ListCertificadosResponse> {
   const sp = new URLSearchParams();
   if (params?.search) sp.set("search", params.search);
@@ -1494,7 +1531,7 @@ export async function listCertificadosGlobal(
 
 export async function createCertificadoGlobal(
   payload: CreateCertificadoPayload,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<TurmaCertificado> {
   const response = await apiFetch<{
     success?: boolean;
@@ -1504,7 +1541,7 @@ export async function createCertificadoGlobal(
       method: "POST",
       headers: buildHeaders(
         { "Content-Type": "application/json", ...(init?.headers || {}) },
-        true
+        true,
       ),
       body: JSON.stringify(payload),
       ...init,
@@ -1517,7 +1554,7 @@ export async function createCertificadoGlobal(
 
 export async function getCertificadoById(
   certificadoId: string,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<TurmaCertificado> {
   const response = await apiFetch<{
     success?: boolean;
@@ -1539,7 +1576,7 @@ export async function listMeCertificados(
     ListCertificadosGlobalParams,
     "cursoId" | "turmaId" | "emitidoDe" | "emitidoA" | "page" | "pageSize"
   >,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<ListCertificadosResponse> {
   const sp = new URLSearchParams();
   if (params?.cursoId) sp.set("cursoId", params.cursoId);
@@ -1594,7 +1631,7 @@ export async function listMeCertificados(
 }
 
 export async function listCertificadoModelos(
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<CertificadoModeloResumo[]> {
   const response = await apiFetch<{
     success?: boolean;
@@ -1622,7 +1659,7 @@ export async function listCertificadoModelos(
 
 export async function verificarCertificadoPorCodigo(
   codigo: string,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<import("./types").CertificadoVerificacao> {
   const response = await apiFetch<{
     success?: boolean;
@@ -1636,7 +1673,8 @@ export async function verificarCertificadoPorCodigo(
     cache: "no-cache",
   });
 
-  return (response?.data ?? response) as import("./types").CertificadoVerificacao;
+  return (response?.data ??
+    response) as import("./types").CertificadoVerificacao;
 }
 
 export async function createEstagio(
@@ -1644,26 +1682,26 @@ export async function createEstagio(
   turmaId: string,
   inscricaoId: string,
   payload: CreateEstagioPayload,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<TurmaEstagio> {
   return apiFetch<TurmaEstagio>(
     cursosRoutes.cursos.turmas.admin.inscricoes.estagios.create(
       cursoId,
       turmaId,
-      inscricaoId
+      inscricaoId,
     ),
     {
       init: {
         method: "POST",
         headers: buildHeaders(
           { "Content-Type": "application/json", ...init?.headers },
-          true
+          true,
         ),
         body: JSON.stringify(payload),
         ...init,
       },
       cache: "no-cache",
-    }
+    },
   );
 }
 
@@ -1671,7 +1709,7 @@ export async function listEstagiosByInscricao(
   cursoId: number | string,
   turmaId: string,
   inscricaoId: string,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<TurmaEstagio[]> {
   const response = await apiFetch<{
     success?: boolean;
@@ -1681,7 +1719,7 @@ export async function listEstagiosByInscricao(
     cursosRoutes.cursos.turmas.admin.inscricoes.estagios.list(
       cursoId,
       turmaId,
-      inscricaoId
+      inscricaoId,
     ),
     {
       init: {
@@ -1690,7 +1728,7 @@ export async function listEstagiosByInscricao(
         headers: buildHeaders(init?.headers, true),
       },
       cache: "no-cache",
-    }
+    },
   );
 
   const payload = response as any;
@@ -1705,7 +1743,7 @@ export async function listEstagiosByInscricao(
 // Admin - Alunos com inscrições
 export async function listAlunosComInscricao(
   params?: ListAlunosComInscricaoParams,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<ListAlunosComInscricaoResponse> {
   const queryParams = new URLSearchParams();
 
@@ -1771,21 +1809,23 @@ export async function listAlunosComInscricao(
 
     const page = Number(rawPagination?.page ?? params?.page ?? 1);
     const pageSize = Number(
-      rawPagination?.pageSize ?? rawPagination?.limit ?? params?.limit ?? 50
+      rawPagination?.pageSize ?? rawPagination?.limit ?? params?.limit ?? 50,
     );
     const total = Number(rawPagination?.total ?? 0);
     const inferredTotalPages =
       total > 0 ? Math.ceil(total / Math.max(1, pageSize)) : 1;
     const totalPages = Math.max(
       1,
-      Number(rawPagination?.totalPages ?? rawPagination?.pages ?? inferredTotalPages)
+      Number(
+        rawPagination?.totalPages ?? rawPagination?.pages ?? inferredTotalPages,
+      ),
     );
 
     const data = Array.isArray(raw?.data)
       ? (raw.data as AlunoComInscricao[])
       : Array.isArray(raw?.alunos)
-      ? (raw.alunos as AlunoComInscricao[])
-      : [];
+        ? (raw.alunos as AlunoComInscricao[])
+        : [];
 
     // Mapeamento/normalização da resposta
     return {
@@ -1813,7 +1853,7 @@ export async function listAlunosComInscricao(
 
 export async function getCursoAlunoDetalhes(
   alunoId: string,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<CursoAlunoDetalhesResponse> {
   // Preferir as rotas unificadas do módulo de Cursos
   const url = cursosRoutes.alunos.get(alunoId);
@@ -1839,8 +1879,8 @@ export async function getCursoAlunoDetalhes(
     typeof rawData.nome === "string"
       ? rawData.nome
       : typeof rawData.nomeCompleto === "string"
-      ? rawData.nomeCompleto
-      : "";
+        ? rawData.nomeCompleto
+        : "";
 
   const normalizedData: CursoAlunoDetalhes = {
     ...rawData,
@@ -1850,8 +1890,8 @@ export async function getCursoAlunoDetalhes(
       typeof rawData.codigo === "string"
         ? rawData.codigo
         : typeof rawData.codUsuario === "string"
-        ? rawData.codUsuario
-        : undefined,
+          ? rawData.codUsuario
+          : undefined,
     curriculosResumo:
       rawData.curriculosResumo && typeof rawData.curriculosResumo === "object"
         ? {
@@ -1862,7 +1902,7 @@ export async function getCursoAlunoDetalhes(
             principalId:
               typeof rawData.curriculosResumo.principalId === "string"
                 ? rawData.curriculosResumo.principalId
-                : rawData.curriculosResumo.principalId ?? null,
+                : (rawData.curriculosResumo.principalId ?? null),
           }
         : {
             total: 0,
@@ -1875,15 +1915,15 @@ export async function getCursoAlunoDetalhes(
             typeof inscricao?.statusInscricao === "string"
               ? inscricao.statusInscricao
               : typeof inscricao?.status === "string"
-              ? inscricao.status
-              : undefined;
+                ? inscricao.status
+                : undefined;
 
           const criadoEm =
             typeof inscricao?.criadoEm === "string"
               ? inscricao.criadoEm
               : typeof inscricao?.dataInscricao === "string"
-              ? inscricao.dataInscricao
-              : undefined;
+                ? inscricao.dataInscricao
+                : undefined;
 
           const turma = inscricao?.turma;
           const curso = inscricao?.curso;
@@ -1892,8 +1932,8 @@ export async function getCursoAlunoDetalhes(
             typeof progressoRaw === "number"
               ? progressoRaw
               : typeof progressoRaw === "string"
-              ? Number(progressoRaw)
-              : undefined;
+                ? Number(progressoRaw)
+                : undefined;
 
           return {
             ...inscricao,
@@ -1903,14 +1943,8 @@ export async function getCursoAlunoDetalhes(
               typeof progresso === "number" && Number.isFinite(progresso)
                 ? progresso
                 : inscricao?.progresso,
-            turma:
-              turma && typeof turma === "object"
-                ? turma
-                : undefined,
-            curso:
-              curso && typeof curso === "object"
-                ? curso
-                : undefined,
+            turma: turma && typeof turma === "object" ? turma : undefined,
+            curso: curso && typeof curso === "object" ? curso : undefined,
           };
         })
       : [],
@@ -1918,8 +1952,8 @@ export async function getCursoAlunoDetalhes(
       typeof rawData.totalInscricoes === "number"
         ? rawData.totalInscricoes
         : Array.isArray(rawData.inscricoes)
-        ? rawData.inscricoes.length
-        : 0,
+          ? rawData.inscricoes.length
+          : 0,
     criadoEm: typeof rawData.criadoEm === "string" ? rawData.criadoEm : "",
   };
 
@@ -1932,7 +1966,7 @@ export async function getCursoAlunoDetalhes(
 export async function getCursoAlunoEntrevistas(
   alunoId: string,
   params?: CursoAlunoEntrevistasParams,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<CursoAlunoEntrevistasResponse> {
   const sp = new URLSearchParams();
 
@@ -1990,11 +2024,11 @@ export async function getCursoAlunoEntrevistas(
       page:
         typeof paginationRaw.page === "number"
           ? paginationRaw.page
-          : params?.page ?? 1,
+          : (params?.page ?? 1),
       pageSize:
         typeof paginationRaw.pageSize === "number"
           ? paginationRaw.pageSize
-          : params?.pageSize ?? items.length,
+          : (params?.pageSize ?? items.length),
       total:
         typeof paginationRaw.total === "number"
           ? paginationRaw.total
@@ -2059,14 +2093,17 @@ export async function getCursoAlunoEntrevistaOpcoes(
   alunoId: string,
   init?: RequestInit,
 ): Promise<CursoAlunoEntrevistaOpcoesResponse> {
-  const response = await apiFetch<any>(cursosRoutes.alunos.entrevistasOpcoes(alunoId), {
-    init: {
-      method: "GET",
-      ...init,
-      headers: buildHeaders(init?.headers, true),
+  const response = await apiFetch<any>(
+    cursosRoutes.alunos.entrevistasOpcoes(alunoId),
+    {
+      init: {
+        method: "GET",
+        ...init,
+        headers: buildHeaders(init?.headers, true),
+      },
+      cache: "no-cache",
     },
-    cache: "no-cache",
-  });
+  );
 
   const payload =
     response?.data && typeof response.data === "object"
@@ -2143,25 +2180,29 @@ export async function createCursoAlunoEntrevista(
   payload: CursoAlunoCreateEntrevistaPayload,
   init?: RequestInit,
 ): Promise<CursoAlunoCreateEntrevistaResponse> {
-  const response = await apiFetch<any>(cursosRoutes.alunos.entrevistas(alunoId), {
-    init: {
-      method: "POST",
-      ...init,
-      headers: buildHeaders(
-        {
-          "Content-Type": apiConfig.headers["Content-Type"],
-          ...normalizeHeaders(init?.headers),
-        },
-        true,
-      ),
-      body: JSON.stringify(payload),
+  const response = await apiFetch<any>(
+    cursosRoutes.alunos.entrevistas(alunoId),
+    {
+      init: {
+        method: "POST",
+        ...init,
+        headers: buildHeaders(
+          {
+            "Content-Type": apiConfig.headers["Content-Type"],
+            ...normalizeHeaders(init?.headers),
+          },
+          true,
+        ),
+        body: JSON.stringify(payload),
+      },
+      cache: "no-cache",
     },
-    cache: "no-cache",
-  });
+  );
 
-  const item = response?.data && typeof response.data === "object"
-    ? response.data
-    : response;
+  const item =
+    response?.data && typeof response.data === "object"
+      ? response.data
+      : response;
 
   return {
     id: String(item?.id ?? ""),
@@ -2223,7 +2264,7 @@ export async function createCursoAlunoEntrevista(
 }
 
 export async function getVisaoGeral(
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<VisaoGeralResponse> {
   return apiFetch<VisaoGeralResponse>(cursosRoutes.visaoGeral(), {
     init: {
@@ -2247,7 +2288,7 @@ export interface GetVisaoGeralFaturamentoParams {
 
 export async function getVisaoGeralFaturamento(
   params?: GetVisaoGeralFaturamentoParams,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<import("./types").VisaoGeralFaturamentoTendenciasResponse> {
   const sp = new URLSearchParams();
   const period = params?.period ?? "month";
@@ -2272,14 +2313,14 @@ export async function getVisaoGeralFaturamento(
       cache: "no-cache",
       timeout: 60000,
       retries: 1,
-    }
+    },
   );
 }
 
 export async function updateCursoAluno(
   alunoId: string,
   payload: Partial<CursoAlunoDetalhes>,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<CursoAlunoDetalhesResponse> {
   const url = cursosRoutes.alunos.update(alunoId);
   return apiFetch<CursoAlunoDetalhesResponse>(url, {
@@ -2288,7 +2329,7 @@ export async function updateCursoAluno(
       ...init,
       headers: buildHeaders(
         { "Content-Type": "application/json", ...(init?.headers || {}) },
-        true
+        true,
       ),
       body: JSON.stringify(payload),
     },
@@ -2302,19 +2343,19 @@ export async function updateCursoAluno(
 
 export async function getCursoMeta(
   cursoId: string | number,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<import("./types").CursoMeta> {
-  const response = await apiFetch<{ success: boolean; data: import("./types").CursoMeta }>(
-    cursosRoutes.cursos.meta(cursoId),
-    {
-      init: {
-        method: "GET",
-        ...init,
-        headers: buildHeaders(init?.headers, true),
-      },
-      cache: "short",
-    }
-  );
+  const response = await apiFetch<{
+    success: boolean;
+    data: import("./types").CursoMeta;
+  }>(cursosRoutes.cursos.meta(cursoId), {
+    init: {
+      method: "GET",
+      ...init,
+      headers: buildHeaders(init?.headers, true),
+    },
+    cache: "short",
+  });
   return response.data;
 }
 
@@ -2326,7 +2367,7 @@ export async function listFrequencias(
   cursoId: string | number,
   turmaId: string,
   params?: import("./types").ListFrequenciasParams,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<import("./types").ListFrequenciasResponse> {
   const sp = buildListFrequenciasSearchParams(params);
 
@@ -2346,7 +2387,7 @@ export async function listFrequencias(
 
 export async function listFrequenciasGlobal(
   params?: import("./types").ListFrequenciasParams,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<import("./types").ListFrequenciasResponse> {
   const sp = buildListFrequenciasSearchParams(params);
 
@@ -2367,7 +2408,7 @@ export async function listFrequenciasGlobal(
 export async function listFrequenciasByAluno(
   alunoId: string,
   params: import("./types").ListFrequenciasParams,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<import("./types").ListFrequenciasResponse> {
   const sp = buildListFrequenciasSearchParams(params);
 
@@ -2386,7 +2427,7 @@ export async function listFrequenciasByAluno(
 }
 
 function buildListFrequenciasSearchParams(
-  params?: import("./types").ListFrequenciasParams
+  params?: import("./types").ListFrequenciasParams,
 ) {
   const sp = new URLSearchParams();
   if (!params) return sp;
@@ -2413,7 +2454,7 @@ export async function getFrequenciaResumo(
   cursoId: string | number,
   turmaId: string,
   params?: import("./types").ListFrequenciaResumoParams,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<import("./types").FrequenciaResumoResponse> {
   const sp = new URLSearchParams();
   if (params?.periodo) sp.set("periodo", params.periodo);
@@ -2440,23 +2481,23 @@ export async function createFrequencia(
   cursoId: string | number,
   turmaId: string,
   payload: import("./types").CreateFrequenciaPayload,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<import("./types").Frequencia> {
-  const response = await apiFetch<{ success: boolean; data: import("./types").Frequencia }>(
-    cursosRoutes.cursos.turmas.frequencias.create(cursoId, turmaId),
-    {
-      init: {
-        method: "POST",
-        ...init,
-        headers: buildHeaders(
-          { "Content-Type": "application/json", ...(init?.headers || {}) },
-          true
-        ),
-        body: JSON.stringify(payload),
-      },
-      cache: "no-cache",
-    }
-  );
+  const response = await apiFetch<{
+    success: boolean;
+    data: import("./types").Frequencia;
+  }>(cursosRoutes.cursos.turmas.frequencias.create(cursoId, turmaId), {
+    init: {
+      method: "POST",
+      ...init,
+      headers: buildHeaders(
+        { "Content-Type": "application/json", ...(init?.headers || {}) },
+        true,
+      ),
+      body: JSON.stringify(payload),
+    },
+    cache: "no-cache",
+  });
   return response.data;
 }
 
@@ -2464,7 +2505,7 @@ export async function upsertFrequenciaLancamento(
   cursoId: string | number,
   turmaId: string,
   payload: import("./types").UpsertFrequenciaLancamentoPayload,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<import("./types").Frequencia> {
   const response = await apiFetch<{
     success: boolean;
@@ -2475,7 +2516,7 @@ export async function upsertFrequenciaLancamento(
       ...init,
       headers: buildHeaders(
         { "Content-Type": "application/json", ...(init?.headers || {}) },
-        true
+        true,
       ),
       body: JSON.stringify(payload),
     },
@@ -2488,7 +2529,7 @@ export async function upsertFrequenciaLancamento(
 export async function upsertFrequenciaLancamentoByAluno(
   alunoId: string,
   payload: import("./types").UpsertFrequenciaLancamentoByAlunoPayload,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<import("./types").Frequencia> {
   const response = await apiFetch<{
     success: boolean;
@@ -2499,7 +2540,7 @@ export async function upsertFrequenciaLancamentoByAluno(
       ...init,
       headers: buildHeaders(
         { "Content-Type": "application/json", ...(init?.headers || {}) },
-        true
+        true,
       ),
       body: JSON.stringify(payload),
     },
@@ -2514,22 +2555,29 @@ export async function updateFrequencia(
   turmaId: string,
   frequenciaId: string,
   payload: import("./types").UpdateFrequenciaPayload,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<import("./types").Frequencia> {
-  const response = await apiFetch<{ success: boolean; data: import("./types").Frequencia }>(
-    cursosRoutes.cursos.turmas.frequencias.update(cursoId, turmaId, frequenciaId),
+  const response = await apiFetch<{
+    success: boolean;
+    data: import("./types").Frequencia;
+  }>(
+    cursosRoutes.cursos.turmas.frequencias.update(
+      cursoId,
+      turmaId,
+      frequenciaId,
+    ),
     {
       init: {
         method: "PUT",
         ...init,
         headers: buildHeaders(
           { "Content-Type": "application/json", ...(init?.headers || {}) },
-          true
+          true,
         ),
         body: JSON.stringify(payload),
       },
       cache: "no-cache",
-    }
+    },
   );
   return response.data;
 }
@@ -2538,33 +2586,36 @@ export async function listFrequenciaHistorico(
   cursoId: string | number,
   turmaId: string,
   frequenciaId: string,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<import("./types").FrequenciaHistoryEntry[]> {
   const response = await apiFetch<{
     success?: boolean;
     data?: import("./types").FrequenciaHistoryEntry[];
     items?: import("./types").FrequenciaHistoryEntry[];
-  }>(cursosRoutes.cursos.turmas.frequencias.historico(cursoId, turmaId, frequenciaId), {
-    init: {
-      method: "GET",
-      ...init,
-      headers: buildHeaders(init?.headers, true),
+  }>(
+    cursosRoutes.cursos.turmas.frequencias.historico(
+      cursoId,
+      turmaId,
+      frequenciaId,
+    ),
+    {
+      init: {
+        method: "GET",
+        ...init,
+        headers: buildHeaders(init?.headers, true),
+      },
+      cache: "no-cache",
     },
-    cache: "no-cache",
-  });
-
-  return (
-    response.data ??
-    response.items ??
-    []
   );
+
+  return response.data ?? response.items ?? [];
 }
 
 export async function listFrequenciaHistoricoByNaturalKey(
   cursoId: string | number,
   turmaId: string,
   params: import("./types").ListFrequenciaHistoricoByNaturalKeyParams,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<import("./types").FrequenciaHistoryEntry[]> {
   const sp = new URLSearchParams();
   sp.set("inscricaoId", params.inscricaoId);
@@ -2585,17 +2636,13 @@ export async function listFrequenciaHistoricoByNaturalKey(
     cache: "no-cache",
   });
 
-  return (
-    response.data ??
-    response.items ??
-    []
-  );
+  return response.data ?? response.items ?? [];
 }
 
 export async function listFrequenciaHistoricoByAluno(
   alunoId: string,
   frequenciaId: string,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<import("./types").FrequenciaHistoryEntry[]> {
   const response = await apiFetch<{
     success?: boolean;
@@ -2616,7 +2663,7 @@ export async function listFrequenciaHistoricoByAluno(
 export async function listFrequenciaHistoricoByAlunoNaturalKey(
   alunoId: string,
   params: import("./types").ListFrequenciaHistoricoByAlunoNaturalKeyParams,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<import("./types").FrequenciaHistoryEntry[]> {
   const sp = new URLSearchParams();
   sp.set("cursoId", params.cursoId);
@@ -2650,7 +2697,7 @@ export async function listFrequenciaHistoricoByAlunoNaturalKey(
 export async function listNotas(
   cursoId: string | number,
   params: import("./types").ListNotasParams,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<import("./types").ListNotasResponse> {
   const sp = buildListNotasSearchParams(params);
   const url = sp.toString()
@@ -2669,7 +2716,7 @@ export async function listNotas(
 
 export async function listNotasGlobal(
   params: import("./types").ListNotasParams,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<import("./types").ListNotasResponse> {
   const sp = buildListNotasSearchParams(params);
   const url = sp.toString()
@@ -2689,7 +2736,7 @@ export async function listNotasGlobal(
 export async function listNotasByAluno(
   alunoId: string,
   params: import("./types").ListNotasParams,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<import("./types").ListNotasResponse> {
   const sp = buildListNotasSearchParams(params);
   const url = sp.toString()
@@ -2722,23 +2769,23 @@ export async function createNota(
   cursoId: string | number,
   turmaId: string,
   payload: import("./types").CreateNotaPayload,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<import("./types").NotaLancamento> {
-  const response = await apiFetch<{ success: boolean; data: import("./types").NotaLancamento }>(
-    cursosRoutes.cursos.turmas.notas.create(cursoId, turmaId),
-    {
-      init: {
-        method: "POST",
-        ...init,
-        headers: buildHeaders(
-          { "Content-Type": "application/json", ...(init?.headers || {}) },
-          true
-        ),
-        body: JSON.stringify(payload),
-      },
-      cache: "no-cache",
-    }
-  );
+  const response = await apiFetch<{
+    success: boolean;
+    data: import("./types").NotaLancamento;
+  }>(cursosRoutes.cursos.turmas.notas.create(cursoId, turmaId), {
+    init: {
+      method: "POST",
+      ...init,
+      headers: buildHeaders(
+        { "Content-Type": "application/json", ...(init?.headers || {}) },
+        true,
+      ),
+      body: JSON.stringify(payload),
+    },
+    cache: "no-cache",
+  });
   return response.data;
 }
 
@@ -2746,7 +2793,7 @@ export async function deleteNotas(
   cursoId: string | number,
   turmaId: string,
   params: import("./types").DeleteNotasParams,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<void> {
   const sp = new URLSearchParams();
   sp.set("alunoId", params.alunoId);
@@ -2767,7 +2814,7 @@ export async function getNotaHistorico(
   cursoId: string | number,
   turmaId: string,
   notaId: string,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<import("./types").NotaHistoricoItem[]> {
   const response = await apiFetch<import("./types").GetNotaHistoricoResponse>(
     cursosRoutes.cursos.turmas.notas.historico(cursoId, turmaId, notaId),
@@ -2778,7 +2825,7 @@ export async function getNotaHistorico(
         headers: buildHeaders(init?.headers, true),
       },
       cache: "no-cache",
-    }
+    },
   );
 
   if (Array.isArray(response.data?.items)) {
@@ -2798,7 +2845,7 @@ export async function getNotaHistorico(
 
 export async function listAvaliacoes(
   params?: import("./types").ListAvaliacoesParams,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<import("./types").ListAvaliacoesResponse> {
   const sp = new URLSearchParams();
   const setCsv = (key: string, value: unknown) => {
@@ -2834,7 +2881,8 @@ export async function listAvaliacoes(
   if (params?.status) setCsv("status", params.status);
   if (params?.obrigatoria !== undefined)
     sp.set("obrigatoria", String(params.obrigatoria));
-  if (params?.semTurma !== undefined) sp.set("semTurma", String(params.semTurma));
+  if (params?.semTurma !== undefined)
+    sp.set("semTurma", String(params.semTurma));
   if (params?.includeSemCurso !== undefined)
     sp.set("includeSemCurso", String(params.includeSemCurso));
 
@@ -2869,7 +2917,7 @@ export async function listAvaliacoes(
 
 export async function getAvaliacao(
   avaliacaoId: string,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<import("./types").Avaliacao> {
   const response = await apiFetch<
     | {
@@ -2878,17 +2926,14 @@ export async function getAvaliacao(
         avaliacao?: import("./types").Avaliacao;
       }
     | import("./types").Avaliacao
-  >(
-    cursosRoutes.avaliacoes.get(avaliacaoId),
-    {
-      init: {
-        method: "GET",
-        ...init,
-        headers: buildHeaders(init?.headers, true),
-      },
-      cache: "short",
-    }
-  );
+  >(cursosRoutes.avaliacoes.get(avaliacaoId), {
+    init: {
+      method: "GET",
+      ...init,
+      headers: buildHeaders(init?.headers, true),
+    },
+    cache: "short",
+  });
 
   // Compatibilidade com contratos:
   // - { success, data }
@@ -2922,7 +2967,7 @@ export async function getAvaliacao(
 
 export async function listAvaliacaoQuestoes(
   avaliacaoId: string,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<import("./types").AvaliacaoQuestao[]> {
   const response = await apiFetch<
     | {
@@ -2958,52 +3003,52 @@ export async function listAvaliacaoQuestoes(
 
 export async function createAvaliacao(
   payload: import("./types").CreateAvaliacaoPayload,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<import("./types").Avaliacao> {
-  const response = await apiFetch<{ success: boolean; data: import("./types").Avaliacao }>(
-    cursosRoutes.avaliacoes.create(),
-    {
-      init: {
-        method: "POST",
-        ...init,
-        headers: buildHeaders(
-          { "Content-Type": "application/json", ...(init?.headers || {}) },
-          true
-        ),
-        body: JSON.stringify(payload),
-      },
-      cache: "no-cache",
-    }
-  );
+  const response = await apiFetch<{
+    success: boolean;
+    data: import("./types").Avaliacao;
+  }>(cursosRoutes.avaliacoes.create(), {
+    init: {
+      method: "POST",
+      ...init,
+      headers: buildHeaders(
+        { "Content-Type": "application/json", ...(init?.headers || {}) },
+        true,
+      ),
+      body: JSON.stringify(payload),
+    },
+    cache: "no-cache",
+  });
   return response.data;
 }
 
 export async function updateAvaliacao(
   avaliacaoId: string,
   payload: import("./types").UpdateAvaliacaoPayload,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<import("./types").Avaliacao> {
-  const response = await apiFetch<{ success: boolean; data: import("./types").Avaliacao }>(
-    cursosRoutes.avaliacoes.update(avaliacaoId),
-    {
-      init: {
-        method: "PUT",
-        ...init,
-        headers: buildHeaders(
-          { "Content-Type": "application/json", ...(init?.headers || {}) },
-          true
-        ),
-        body: JSON.stringify(payload),
-      },
-      cache: "no-cache",
-    }
-  );
+  const response = await apiFetch<{
+    success: boolean;
+    data: import("./types").Avaliacao;
+  }>(cursosRoutes.avaliacoes.update(avaliacaoId), {
+    init: {
+      method: "PUT",
+      ...init,
+      headers: buildHeaders(
+        { "Content-Type": "application/json", ...(init?.headers || {}) },
+        true,
+      ),
+      body: JSON.stringify(payload),
+    },
+    cache: "no-cache",
+  });
   return response.data;
 }
 
 export async function deleteAvaliacao(
   avaliacaoId: string,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<void> {
   await apiFetch(cursosRoutes.avaliacoes.delete(avaliacaoId), {
     init: {
@@ -3018,7 +3063,7 @@ export async function deleteAvaliacao(
 export async function publicarAvaliacao(
   avaliacaoId: string,
   publicar: boolean,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<import("./types").Avaliacao> {
   const response = await apiFetch<
     | {
@@ -3033,7 +3078,7 @@ export async function publicarAvaliacao(
       ...init,
       headers: buildHeaders(
         { "Content-Type": "application/json", ...(init?.headers || {}) },
-        true
+        true,
       ),
       body: JSON.stringify({ publicar }),
     },
@@ -3041,7 +3086,11 @@ export async function publicarAvaliacao(
   });
 
   if (response && typeof response === "object") {
-    if ("data" in response && response.data && typeof response.data === "object") {
+    if (
+      "data" in response &&
+      response.data &&
+      typeof response.data === "object"
+    ) {
       return response.data as import("./types").Avaliacao;
     }
     if (
@@ -3089,12 +3138,12 @@ export interface AvaliacoesTurmaResponse {
 
 export async function listAvaliacoesTurmas(
   cursoId?: string,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<AvaliacoesTurmaResponse> {
   const url = cursoId
     ? `${cursosRoutes.avaliacoes.turmas()}?cursoId=${cursoId}`
     : cursosRoutes.avaliacoes.turmas();
-    
+
   return apiFetch<AvaliacoesTurmaResponse>(url, {
     init: {
       method: "GET",
@@ -3119,7 +3168,7 @@ export interface AvaliacoesInstrutorResponse {
 }
 
 export async function listAvaliacoesInstrutores(
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<AvaliacoesInstrutorResponse> {
   return apiFetch<AvaliacoesInstrutorResponse>(
     cursosRoutes.avaliacoes.instrutores(),
@@ -3130,7 +3179,7 @@ export async function listAvaliacoesInstrutores(
         headers: buildHeaders(init?.headers, true),
       },
       cache: "short",
-    }
+    },
   );
 }
 
@@ -3138,23 +3187,23 @@ export async function cloneAvaliacaoParaTurma(
   cursoId: string | number,
   turmaId: string,
   avaliacaoId: string,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<import("./types").Avaliacao> {
-  const response = await apiFetch<{ success: boolean; data: import("./types").Avaliacao }>(
-    cursosRoutes.cursos.turmas.avaliacoes.clone(cursoId, turmaId),
-    {
-      init: {
-        method: "POST",
-        ...init,
-        headers: buildHeaders(
-          { "Content-Type": "application/json", ...(init?.headers || {}) },
-          true
-        ),
-        body: JSON.stringify({ avaliacaoId }),
-      },
-      cache: "no-cache",
-    }
-  );
+  const response = await apiFetch<{
+    success: boolean;
+    data: import("./types").Avaliacao;
+  }>(cursosRoutes.cursos.turmas.avaliacoes.clone(cursoId, turmaId), {
+    init: {
+      method: "POST",
+      ...init,
+      headers: buildHeaders(
+        { "Content-Type": "application/json", ...(init?.headers || {}) },
+        true,
+      ),
+      body: JSON.stringify({ avaliacaoId }),
+    },
+    cache: "no-cache",
+  });
   return response.data;
 }
 
@@ -3164,7 +3213,7 @@ export async function cloneAvaliacaoParaTurma(
 
 export async function listEstagiosGlobal(
   params?: import("./types").ListEstagiosParams,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<import("./types").ListEstagiosResponse> {
   const sp = new URLSearchParams();
   if (params?.cursoId) sp.set("cursoId", params.cursoId);
@@ -3198,7 +3247,7 @@ export async function listEstagiosGlobal(
 
 export async function createEstagioGlobal(
   payload: import("./types").CreateEstagioGlobalPayload,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<import("./types").Estagio> {
   const response = await apiFetch<{
     success?: boolean;
@@ -3209,7 +3258,7 @@ export async function createEstagioGlobal(
       ...init,
       headers: buildHeaders(
         { "Content-Type": "application/json", ...(init?.headers || {}) },
-        true
+        true,
       ),
       body: JSON.stringify(payload),
     },
@@ -3221,7 +3270,7 @@ export async function createEstagioGlobal(
 
 export async function getEstagioById(
   estagioId: string,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<import("./types").Estagio> {
   const response = await apiFetch<{
     success?: boolean;
@@ -3246,7 +3295,7 @@ export async function listEstagiosByAluno(
     page?: number;
     pageSize?: number;
   },
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<import("./types").ListEstagiosResponse> {
   const sp = new URLSearchParams();
   if (params?.search) sp.set("search", params.search);
@@ -3271,7 +3320,7 @@ export async function listEstagiosByAluno(
 export async function getEstagioByAluno(
   alunoId: string,
   estagioId: string,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<import("./types").Estagio> {
   const response = await apiFetch<{
     success?: boolean;
@@ -3291,7 +3340,7 @@ export async function getEstagioByAluno(
 export async function updateEstagioGlobal(
   estagioId: string,
   payload: import("./types").UpdateEstagioGlobalPayload,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<import("./types").Estagio> {
   const response = await apiFetch<{
     success?: boolean;
@@ -3302,7 +3351,7 @@ export async function updateEstagioGlobal(
       ...init,
       headers: buildHeaders(
         { "Content-Type": "application/json", ...(init?.headers || {}) },
-        true
+        true,
       ),
       body: JSON.stringify(payload),
     },
@@ -3315,7 +3364,7 @@ export async function updateEstagioGlobal(
 export async function vincularAlunosEstagio(
   estagioId: string,
   payload: import("./types").VincularAlunosEstagioPayload,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<{
   estagioId: string;
   totalVinculados?: number;
@@ -3332,7 +3381,7 @@ export async function vincularAlunosEstagio(
       ...init,
       headers: buildHeaders(
         { "Content-Type": "application/json", ...(init?.headers || {}) },
-        true
+        true,
       ),
       body: JSON.stringify(payload),
     },
@@ -3350,7 +3399,7 @@ export async function alocarAlunoEstagioGrupo(
   estagioId: string,
   estagioAlunoId: string,
   payload: import("./types").AlocarAlunoEstagioGrupoPayload,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<import("./types").EstagioAluno> {
   const response = await apiFetch<{
     success?: boolean;
@@ -3361,7 +3410,7 @@ export async function alocarAlunoEstagioGrupo(
       ...init,
       headers: buildHeaders(
         { "Content-Type": "application/json", ...(init?.headers || {}) },
-        true
+        true,
       ),
       body: JSON.stringify(payload),
     },
@@ -3374,7 +3423,7 @@ export async function alocarAlunoEstagioGrupo(
 export async function listEstagioFrequencias(
   estagioId: string,
   params?: import("./types").ListEstagioFrequenciasParams,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<{
   items: import("./types").EstagioFrequencia[];
   pagination?: import("./types").Pagination;
@@ -3426,7 +3475,7 @@ export async function listEstagioFrequenciasByAluno(
   alunoId: string,
   estagioId: string,
   params?: import("./types").ListEstagioFrequenciasParams,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<{
   items: import("./types").EstagioFrequencia[];
   pagination?: import("./types").Pagination;
@@ -3477,7 +3526,7 @@ export async function listEstagioFrequenciasByAluno(
 export async function listEstagioFrequenciasPeriodo(
   estagioId: string,
   params?: import("./types").ListEstagioFrequenciasPeriodoParams,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<import("./types").EstagioFrequenciasPeriodoResponse> {
   const sp = new URLSearchParams();
   if (params?.dataInicio) sp.set("dataInicio", params.dataInicio);
@@ -3526,7 +3575,7 @@ export async function listEstagioFrequenciasPeriodoByAluno(
   alunoId: string,
   estagioId: string,
   params?: import("./types").ListEstagioFrequenciasPeriodoParams,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<import("./types").EstagioFrequenciasPeriodoResponse> {
   const sp = new URLSearchParams();
   if (params?.dataInicio) sp.set("dataInicio", params.dataInicio);
@@ -3574,7 +3623,7 @@ export async function listEstagioFrequenciasPeriodoByAluno(
 export async function upsertEstagioFrequenciaLancamento(
   estagioId: string,
   payload: import("./types").UpsertEstagioFrequenciaPayload,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<import("./types").EstagioFrequencia> {
   const response = await apiFetch<{
     success?: boolean;
@@ -3585,7 +3634,7 @@ export async function upsertEstagioFrequenciaLancamento(
       ...init,
       headers: buildHeaders(
         { "Content-Type": "application/json", ...(init?.headers || {}) },
-        true
+        true,
       ),
       body: JSON.stringify(payload),
     },
@@ -3599,7 +3648,7 @@ export async function upsertEstagioFrequenciaLancamentoByAluno(
   alunoId: string,
   estagioId: string,
   payload: import("./types").UpsertEstagioFrequenciaPayload,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<import("./types").EstagioFrequencia> {
   const response = await apiFetch<{
     success?: boolean;
@@ -3610,7 +3659,7 @@ export async function upsertEstagioFrequenciaLancamentoByAluno(
       ...init,
       headers: buildHeaders(
         { "Content-Type": "application/json", ...(init?.headers || {}) },
-        true
+        true,
       ),
       body: JSON.stringify(payload),
     },
@@ -3623,7 +3672,7 @@ export async function upsertEstagioFrequenciaLancamentoByAluno(
 export async function listEstagioFrequenciaHistorico(
   estagioId: string,
   frequenciaId: string,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<import("./types").FrequenciaHistoryEntry[]> {
   const response = await apiFetch<{
     success?: boolean;
@@ -3648,7 +3697,7 @@ export async function listEstagioFrequenciaHistoricoPaginado(
   estagioId: string,
   frequenciaId: string,
   params?: import("./types").ListEstagioFrequenciaHistoricoParams,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<import("./types").EstagioFrequenciaHistoricoResponse> {
   const sp = new URLSearchParams();
   if (params?.page) sp.set("page", String(params.page));
@@ -3657,7 +3706,7 @@ export async function listEstagioFrequenciaHistoricoPaginado(
   const url = sp.toString()
     ? `${cursosRoutes.estagiosGlobal.frequenciaHistorico(
         estagioId,
-        frequenciaId
+        frequenciaId,
       )}?${sp.toString()}`
     : cursosRoutes.estagiosGlobal.frequenciaHistorico(estagioId, frequenciaId);
 
@@ -3695,7 +3744,7 @@ export async function listEstagioFrequenciaHistoricoByAlunoPaginado(
   estagioId: string,
   frequenciaId: string,
   params?: import("./types").ListEstagioFrequenciaHistoricoParams,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<import("./types").EstagioFrequenciaHistoricoResponse> {
   const sp = new URLSearchParams();
   if (params?.page) sp.set("page", String(params.page));
@@ -3705,7 +3754,7 @@ export async function listEstagioFrequenciaHistoricoByAlunoPaginado(
     ? `${cursosRoutes.alunos.estagios.historico(
         alunoId,
         estagioId,
-        frequenciaId
+        frequenciaId,
       )}?${sp.toString()}`
     : cursosRoutes.alunos.estagios.historico(alunoId, estagioId, frequenciaId);
 
@@ -3741,7 +3790,7 @@ export async function listEstagioFrequenciaHistoricoByAlunoPaginado(
 export async function concluirEstagioAluno(
   estagioId: string,
   estagioAlunoId: string,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<import("./types").ConcluirEstagioAlunoResponse> {
   const response = await apiFetch<{
     success?: boolean;
@@ -3755,29 +3804,30 @@ export async function concluirEstagioAluno(
     cache: "no-cache",
   });
 
-  return (response?.data ?? response) as import("./types").ConcluirEstagioAlunoResponse;
+  return (response?.data ??
+    response) as import("./types").ConcluirEstagioAlunoResponse;
 }
 
 export async function updateEstagioStatus(
   estagioId: string,
   payload: import("./types").UpdateEstagioStatusPayload,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<import("./types").Estagio> {
-  const response = await apiFetch<{ success: boolean; data: import("./types").Estagio }>(
-    cursosRoutes.estagiosGlobal.updateStatus(estagioId),
-    {
-      init: {
-        method: "PATCH",
-        ...init,
-        headers: buildHeaders(
-          { "Content-Type": "application/json", ...(init?.headers || {}) },
-          true
-        ),
-        body: JSON.stringify(payload),
-      },
-      cache: "no-cache",
-    }
-  );
+  const response = await apiFetch<{
+    success: boolean;
+    data: import("./types").Estagio;
+  }>(cursosRoutes.estagiosGlobal.updateStatus(estagioId), {
+    init: {
+      method: "PATCH",
+      ...init,
+      headers: buildHeaders(
+        { "Content-Type": "application/json", ...(init?.headers || {}) },
+        true,
+      ),
+      body: JSON.stringify(payload),
+    },
+    cache: "no-cache",
+  });
   return response.data;
 }
 
@@ -3787,7 +3837,7 @@ export async function updateEstagioStatus(
 
 export async function iniciarCheckout(
   payload: import("./types").CheckoutPayload,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<import("./types").CheckoutResponse> {
   return apiFetch(cursosRoutes.checkout.iniciar(), {
     init: {
@@ -3795,7 +3845,7 @@ export async function iniciarCheckout(
       ...init,
       headers: buildHeaders(
         { "Content-Type": "application/json", ...(init?.headers || {}) },
-        true
+        true,
       ),
       body: JSON.stringify(payload),
     },
@@ -3805,8 +3855,11 @@ export async function iniciarCheckout(
 
 export async function getCheckoutPagamento(
   paymentId: string,
-  init?: RequestInit
-): Promise<{ success: boolean; data: import("./types").CheckoutPagamentoStatus }> {
+  init?: RequestInit,
+): Promise<{
+  success: boolean;
+  data: import("./types").CheckoutPagamentoStatus;
+}> {
   return apiFetch(cursosRoutes.checkout.pagamento(paymentId), {
     init: {
       method: "GET",
@@ -3820,7 +3873,7 @@ export async function getCheckoutPagamento(
 export async function getVagasDisponiveis(
   cursoId: string | number,
   turmaId: string,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<{ success: boolean; data: import("./types").VagasDisponiveis }> {
   return apiFetch(cursosRoutes.cursos.turmas.vagas(cursoId, turmaId), {
     init: {
@@ -3838,7 +3891,7 @@ export async function getVagasDisponiveis(
 
 export async function listAgenda(
   params?: import("./types").ListAgendaParams,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<{ success: boolean; data: import("./types").AgendaEvento[] }> {
   const sp = new URLSearchParams();
   if (params?.dataInicio) sp.set("dataInicio", params.dataInicio);
@@ -3865,7 +3918,7 @@ export async function listAgenda(
 // ===================================
 
 export async function listCategorias(
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<{ success: boolean; data: import("./types").Categoria[] }> {
   return apiFetch(cursosRoutes.categorias.list(), {
     init: {
@@ -3879,7 +3932,7 @@ export async function listCategorias(
 
 export async function getCategoria(
   categoriaId: string,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<{ success: boolean; data: import("./types").Categoria }> {
   return apiFetch(cursosRoutes.categorias.get(categoriaId), {
     init: {
