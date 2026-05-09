@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
-import Image from "next/image";
+/* eslint-disable @next/next/no-img-element */
+
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { ImageNotFound } from "@/components/ui/custom/image-not-found";
 import { BannerCardProps } from "../types";
@@ -14,9 +15,6 @@ export const BannerCard: React.FC<BannerCardProps> = ({
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
 
-  const IMAGE_WIDTH = 400;
-  const IMAGE_HEIGHT = 600;
-
   const handleImageLoad = () => {
     setIsLoading(false);
   };
@@ -26,6 +24,12 @@ export const BannerCard: React.FC<BannerCardProps> = ({
     setHasError(true);
   };
   const hasLink = Boolean(banner.linkUrl && banner.linkUrl !== "#");
+  const hasValidImage = Boolean(banner.imagemUrl?.trim());
+
+  useEffect(() => {
+    setHasError(false);
+    setIsLoading(hasValidImage);
+  }, [hasValidImage, banner.imagemUrl]);
 
   const baseClasses = `
     ${hasLink ? "group" : ""} relative block w-full
@@ -39,14 +43,14 @@ export const BannerCard: React.FC<BannerCardProps> = ({
   const Content = (
     <>
       {/* Loading State */}
-      {isLoading && (
+      {hasValidImage && isLoading && (
         <div className="absolute inset-0 bg-gray-200 animate-pulse flex items-center justify-center">
           <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
         </div>
       )}
 
       {/* Error State usando o novo ImageNotFound */}
-      {hasError && (
+      {(!hasValidImage || hasError) && (
         <ImageNotFound
           size="full"
           variant="muted"
@@ -59,22 +63,22 @@ export const BannerCard: React.FC<BannerCardProps> = ({
       )}
 
       {/* Main Image */}
-      {!hasError && (
-        <Image
+      {hasValidImage && !hasError && (
+        // As imagens dos banners ja chegam como URLs finais do storage/CDN.
+        // Usar <img> evita falso erro do otimizador do Next para assets externos.
+        <img
           src={banner.imagemUrl}
           alt={banner.alt}
-          width={IMAGE_WIDTH}
-          height={IMAGE_HEIGHT}
-          priority={priority}
+          loading={priority ? "eager" : "lazy"}
+          decoding="async"
           className={`
-            w-full h-full object-cover
+            absolute inset-0 h-full w-full object-cover
             transition-all duration-500 ease-out
             ${hasLink ? "group-hover:scale-105" : ""}
             ${isLoading ? "opacity-0" : "opacity-100"}
           `}
           onLoad={handleImageLoad}
           onError={handleImageError}
-          sizes="(max-width: 768px) 90vw, (max-width: 1200px) 25vw, 20vw"
         />
       )}
 

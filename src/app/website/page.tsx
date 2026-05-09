@@ -6,6 +6,7 @@ import type { RecrutamentoApiResponse } from "@/api/websites/components/recrutam
 import type { BannerItem } from "@/theme/website/components/banners/types";
 import type { LogoData } from "@/theme/website/components/logo-enterprises/types";
 import type { SlideData } from "@/theme/website/components/slider/types";
+import { mapBannerResponsesToBannerItems } from "@/api/websites/components/banner/normalization";
 import { mapSliderResponsesToSlideData } from "@/api/websites/components/slider/normalization";
 import Slider from "@/theme/website/components/slider/SliderBasic";
 import AboutSection from "@/theme/website/components/about";
@@ -90,16 +91,9 @@ function mapRecrutamento(
 }
 
 function mapBanners(records: GenericRecord[]): BannerItem[] {
-  return records
-    .filter((item) => isPublished(item.status))
-    .sort((a, b) => toNumber(a.ordem) - toNumber(b.ordem))
-    .map((item) => ({
-      id: toString(item.id),
-      imagemUrl: toString(item.imagemUrl),
-      linkUrl: toString(item.link) || "#",
-      position: toNumber(item.ordem),
-      alt: toString(item.imagemTitulo),
-    }));
+  return mapBannerResponsesToBannerItems(records, {
+    assumePublishedWhenStatusMissing: true,
+  });
 }
 
 function mapLogos(records: GenericRecord[]): LogoData[] {
