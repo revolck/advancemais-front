@@ -1,14 +1,15 @@
 "use client";
 
-import React, { useState } from "react";
-import Image from "next/image";
+/* eslint-disable @next/next/no-img-element */
+
+import React, { useEffect, useState } from "react";
 import { ImageNotFound } from "@/components/ui/custom/image-not-found";
-import { LOGOS_CONFIG } from "../constants";
 import type { LogoCardProps } from "../types";
 
 export const LogoCard: React.FC<LogoCardProps> = ({ logo, onLogoClick }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
+  const hasValidImage = Boolean(logo.src?.trim());
 
   const handleImageLoad = () => {
     setIsLoading(false);
@@ -29,6 +30,11 @@ export const LogoCard: React.FC<LogoCardProps> = ({ logo, onLogoClick }) => {
       handleClick();
     }
   };
+
+  useEffect(() => {
+    setHasError(false);
+    setIsLoading(hasValidImage);
+  }, [hasValidImage, logo.src]);
 
   return (
     <div
@@ -51,14 +57,14 @@ export const LogoCard: React.FC<LogoCardProps> = ({ logo, onLogoClick }) => {
       title={logo.name}
     >
       {/* Loading State */}
-      {isLoading && !hasError && (
+      {hasValidImage && isLoading && !hasError && (
         <div className="absolute inset-0 bg-gray-100 animate-pulse flex items-center justify-center">
           <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
         </div>
       )}
 
       {/* Error State */}
-      {hasError && (
+      {(!hasValidImage || hasError) && (
         <ImageNotFound
           size="xs"
           variant="muted"
@@ -70,21 +76,21 @@ export const LogoCard: React.FC<LogoCardProps> = ({ logo, onLogoClick }) => {
       )}
 
       {/* Main Image */}
-      {!hasError && (
-        <Image
+      {hasValidImage && !hasError && (
+        // As logos ja chegam como URLs finais do storage/CDN.
+        // Usar <img> evita falso erro do otimizador do Next para assets externos.
+        <img
           src={logo.src}
           alt={logo.alt || logo.name}
-          width={LOGOS_CONFIG.image.maxWidth}
-          height={LOGOS_CONFIG.image.maxHeight}
+          loading="lazy"
+          decoding="async"
           className={`
             transition-opacity duration-500
             ${isLoading ? "opacity-0" : "opacity-100"}
-            object-contain max-h-10 w-auto
+            object-contain max-h-10 max-w-[100px] w-auto
           `}
           onLoad={handleImageLoad}
           onError={handleImageError}
-          quality={LOGOS_CONFIG.image.quality}
-          sizes={LOGOS_CONFIG.image.sizes}
         />
       )}
     </div>

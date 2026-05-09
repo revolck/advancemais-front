@@ -7,6 +7,7 @@ import type { BannerItem } from "@/theme/website/components/banners/types";
 import type { LogoData } from "@/theme/website/components/logo-enterprises/types";
 import type { SlideData } from "@/theme/website/components/slider/types";
 import { mapBannerResponsesToBannerItems } from "@/api/websites/components/banner/normalization";
+import { mapLogoEnterpriseResponsesToLogoData } from "@/api/websites/components/logo-enterprises/normalization";
 import { mapSliderResponsesToSlideData } from "@/api/websites/components/slider/normalization";
 import Slider from "@/theme/website/components/slider/SliderBasic";
 import AboutSection from "@/theme/website/components/about";
@@ -36,16 +37,6 @@ function asRecordArray(value: unknown): GenericRecord[] {
 
 function toString(value: unknown): string {
   return typeof value === "string" ? value : "";
-}
-
-function toNumber(value: unknown): number {
-  return typeof value === "number" && Number.isFinite(value) ? value : 0;
-}
-
-function isPublished(status: unknown): boolean {
-  if (typeof status === "boolean") return status;
-  const normalized = toString(status).toUpperCase();
-  return normalized === "PUBLICADO" || normalized === "PUBLISHED";
 }
 
 function lastItem(records: GenericRecord[]): GenericRecord | null {
@@ -97,17 +88,9 @@ function mapBanners(records: GenericRecord[]): BannerItem[] {
 }
 
 function mapLogos(records: GenericRecord[]): LogoData[] {
-  return records
-    .filter((item) => isPublished(item.status))
-    .sort((a, b) => toNumber(a.ordem) - toNumber(b.ordem))
-    .map((item) => ({
-      id: toString(item.id),
-      name: toString(item.nome),
-      src: toString(item.imagemUrl),
-      alt: toString(item.imagemAlt),
-      website: toString(item.website) || undefined,
-      order: toNumber(item.ordem),
-    }));
+  return mapLogoEnterpriseResponsesToLogoData(records, {
+    assumePublishedWhenStatusMissing: true,
+  });
 }
 
 function mapSlides(
@@ -147,6 +130,7 @@ export default async function WebsiteHomePage() {
   const hasStaticSliderData =
     sliderDesktopData.length > 0 || sliderMobileData.length > 0;
   const hasStaticBannerData = bannersData.length > 0;
+  const hasStaticLogoData = logosData.length > 0;
 
   return (
     <div className="min-h-screen">
@@ -177,7 +161,7 @@ export default async function WebsiteHomePage() {
       />
 
       <LogoEnterprises
-        fetchFromApi={!hasSection("logoEnterprises")}
+        fetchFromApi={!hasSection("logoEnterprises") || !hasStaticLogoData}
         staticData={logosData}
       />
     </div>

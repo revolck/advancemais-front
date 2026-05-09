@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { listLogoEnterprises } from "@/api/websites/components/logo-enterprises";
+import { mapLogoEnterpriseResponsesToLogoData } from "@/api/websites/components/logo-enterprises/normalization";
 import type { LogoData } from "../types";
 
 interface UseLogosDataReturn {
@@ -16,7 +17,7 @@ interface UseLogosDataReturn {
  */
 export function useLogosData(
   fetchFromApi: boolean = true,
-  staticData?: LogoData[]
+  staticData?: LogoData[],
 ): UseLogosDataReturn {
   const [data, setData] = useState<LogoData[]>(staticData || []);
   const [isLoading, setIsLoading] = useState(fetchFromApi);
@@ -35,17 +36,7 @@ export function useLogosData(
 
       const result = await listLogoEnterprises();
 
-      const mapped = result
-        .filter((item) => item.status === "PUBLICADO" || item.status === true)
-        .sort((a, b) => a.ordem - b.ordem)
-        .map<LogoData>((item) => ({
-          id: item.id,
-          name: item.nome,
-          src: item.imagemUrl,
-          alt: item.imagemAlt,
-          website: item.website,
-          order: item.ordem,
-        }));
+      const mapped = mapLogoEnterpriseResponsesToLogoData(result);
 
       setData(mapped);
     } catch (err) {

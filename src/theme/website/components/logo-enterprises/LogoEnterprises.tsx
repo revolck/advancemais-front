@@ -18,9 +18,11 @@ const LogoEnterprises: React.FC<LogoEnterprisesProps> = ({
   onError,
   onLogoClick,
 }) => {
+  const shouldFetchFromApi =
+    fetchFromApi || (staticData !== undefined && staticData.length === 0);
   const { data, isLoading, error, refetch } = useLogosData(
-    fetchFromApi,
-    staticData
+    shouldFetchFromApi,
+    staticData,
   );
 
   // Callbacks quando dados são carregados ou há erro

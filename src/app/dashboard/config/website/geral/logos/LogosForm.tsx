@@ -11,23 +11,23 @@ import {
   deleteLogoEnterprise as apiDeleteLogo,
   updateLogoEnterpriseOrder as apiUpdateLogoOrder,
 } from "@/api/websites/components/logo-enterprises";
+import { normalizeLogoEnterpriseResponse } from "@/api/websites/components/logo-enterprises/normalization";
 import type { LogoEnterpriseBackendResponse } from "@/api/websites/components/logo-enterprises/types";
 
 function mapFromBackend(item: LogoEnterpriseBackendResponse): Slider {
+  const logo = normalizeLogoEnterpriseResponse(item);
+
   return {
-    id: item.logoId,
-    orderId: item.id,
-    title: item.nome,
-    image: item.imagemUrl,
-    url: item.website || "",
+    id: logo.id,
+    orderId: logo.orderId,
+    title: logo.name,
+    image: logo.image,
+    url: logo.website || "",
     content: "",
-    status:
-      (typeof item.status === "string" ? item.status : item.status
-        ? "PUBLICADO"
-        : "RASCUNHO") === "PUBLICADO",
-    position: item.ordem,
-    createdAt: item.criadoEm ?? item.ordemCriadoEm ?? new Date().toISOString(),
-    updatedAt: item.atualizadoEm,
+    status: logo.published,
+    position: logo.order,
+    createdAt: logo.createdAt,
+    updatedAt: logo.updatedAt,
   };
 }
 
@@ -43,7 +43,9 @@ export default function LogosForm() {
     (async () => {
       setLoading(true);
       try {
-        const data = await listLogoEnterprises({ headers: { Accept: "application/json" } });
+        const data = await listLogoEnterprises({
+          headers: { Accept: "application/json" },
+        });
         const mapped = (data || [])
           .sort((a, b) => a.ordem - b.ordem)
           .map(mapFromBackend);
@@ -70,7 +72,7 @@ export default function LogosForm() {
       });
       return mapFromBackend(created);
     },
-    []
+    [],
   );
 
   const handleUpdate = useCallback(
@@ -87,7 +89,7 @@ export default function LogosForm() {
       });
       return mapFromBackend(updated);
     },
-    []
+    [],
   );
 
   const handleDelete = useCallback(async (id: string) => {
@@ -122,7 +124,9 @@ export default function LogosForm() {
       onDeleteSlider={handleDelete}
       onReorderSliders={handleReorder}
       onRefreshSliders={async () => {
-        const data = await listLogoEnterprises({ headers: { Accept: "application/json" } });
+        const data = await listLogoEnterprises({
+          headers: { Accept: "application/json" },
+        });
         return (data || [])
           .sort((a, b) => a.ordem - b.ordem)
           .map(mapFromBackend);
