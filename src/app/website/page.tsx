@@ -146,6 +146,7 @@ export default async function WebsiteHomePage() {
   const sliderMobileData = mapSlides(sliderSection, "TABLET_MOBILE");
   const hasStaticSliderData =
     sliderDesktopData.length > 0 || sliderMobileData.length > 0;
+  const hasStaticBannerData = bannersData.length > 0;
 
   return (
     <div className="min-h-screen">
@@ -161,7 +162,7 @@ export default async function WebsiteHomePage() {
       />
 
       <BannersGroup
-        fetchFromApi={!hasSection("banner")}
+        fetchFromApi={!hasSection("banner") || !hasStaticBannerData}
         staticData={bannersData}
       />
 
