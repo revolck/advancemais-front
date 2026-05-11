@@ -13,24 +13,22 @@ import {
   updateDepoimentoStatus as apiUpdateDepoimentoStatus,
 } from "@/api/websites/components/depoimentos";
 import type { DepoimentoBackendResponse } from "@/api/websites/components/depoimentos/types";
+import { normalizeDepoimentoResponse } from "@/api/websites/components/depoimentos/normalization";
 
 function mapFromBackend(item: DepoimentoBackendResponse): Slider {
+  const normalized = normalizeDepoimentoResponse(item);
+
   return {
-    id: item.depoimentoId,
-    orderId: item.id,
-    title: item.depoimento,
-    image: item.fotoUrl || "",
-    url: item.nome || "",
-    content: item.cargo || "",
-    status:
-      (typeof item.status === "string"
-        ? item.status
-        : item.status
-        ? "PUBLICADO"
-        : "RASCUNHO") === "PUBLICADO",
-    position: item.ordem,
-    createdAt: item.criadoEm ?? item.ordemCriadoEm ?? new Date().toISOString(),
-    updatedAt: item.atualizadoEm,
+    id: normalized.id,
+    orderId: normalized.orderId,
+    title: normalized.testimonial,
+    image: normalized.imageUrl,
+    url: normalized.name,
+    content: normalized.position,
+    status: normalized.published,
+    position: normalized.order,
+    createdAt: normalized.createdAt,
+    updatedAt: normalized.updatedAt,
   };
 }
 
@@ -46,7 +44,9 @@ export default function DepoimentosForm() {
     (async () => {
       setLoading(true);
       try {
-        const data = await listDepoimentos({ headers: { Accept: "application/json" } });
+        const data = await listDepoimentos({
+          headers: { Accept: "application/json" },
+        });
         const mapped = (data || [])
           .sort((a, b) => a.ordem - b.ordem)
           .map(mapFromBackend);
@@ -74,7 +74,7 @@ export default function DepoimentosForm() {
       });
       return mapFromBackend(created);
     },
-    []
+    [],
   );
 
   const handleUpdate = useCallback(
@@ -104,7 +104,7 @@ export default function DepoimentosForm() {
       });
       return mapFromBackend(updated);
     },
-    []
+    [],
   );
 
   const handleDelete = useCallback(async (id: string) => {
@@ -146,7 +146,9 @@ export default function DepoimentosForm() {
       onDeleteSlider={handleDelete}
       onReorderSliders={handleReorder}
       onRefreshSliders={async () => {
-        const data = await listDepoimentos({ headers: { Accept: "application/json" } });
+        const data = await listDepoimentos({
+          headers: { Accept: "application/json" },
+        });
         return (data || [])
           .sort((a, b) => a.ordem - b.ordem)
           .map(mapFromBackend);

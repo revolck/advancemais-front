@@ -13,6 +13,7 @@ import type { LogoData } from "@/theme/website/components/logo-enterprises/types
 import TestimonialsCarousel from "@/theme/website/components/testimonials-carousel/TestimonialsCarousel";
 import type { TestimonialData } from "@/theme/website/components/testimonials-carousel/types";
 import { mapLogoEnterpriseResponsesToLogoData } from "@/api/websites/components/logo-enterprises/normalization";
+import { mapDepoimentoResponsesToTestimonialData } from "@/api/websites/components/depoimentos/normalization";
 
 export const metadata = {
   title: "Sobre nós",
@@ -43,32 +44,6 @@ function toString(value: unknown): string {
 
 function toNumber(value: unknown): number {
   return typeof value === "number" && Number.isFinite(value) ? value : 0;
-}
-
-function firstNonEmptyString(record: GenericRecord, keys: string[]): string {
-  for (const key of keys) {
-    const value = record[key];
-    if (typeof value === "string" && value.trim()) {
-      return value;
-    }
-  }
-  return "";
-}
-
-function firstNumber(record: GenericRecord, keys: string[]): number {
-  for (const key of keys) {
-    const value = record[key];
-    if (typeof value === "number" && Number.isFinite(value)) {
-      return value;
-    }
-    if (typeof value === "string") {
-      const parsed = Number(value);
-      if (Number.isFinite(parsed)) {
-        return parsed;
-      }
-    }
-  }
-  return 0;
 }
 
 function isPublished(status: unknown): boolean {
@@ -207,40 +182,9 @@ function mapLogos(records: GenericRecord[]): LogoData[] {
 }
 
 function mapTestimonials(records: GenericRecord[]): TestimonialData[] {
-  return records
-    .filter((item) => {
-      if (!("status" in item) || item.status === null || item.status === "") {
-        return true;
-      }
-      return isPublished(item.status);
-    })
-    .sort(
-      (a, b) =>
-        firstNumber(a, ["ordem", "order", "position"]) -
-        firstNumber(b, ["ordem", "order", "position"]),
-    )
-    .map((item) => ({
-      id:
-        firstNonEmptyString(item, ["depoimentoId", "id", "orderId"]) ||
-        crypto.randomUUID(),
-      name: firstNonEmptyString(item, ["nome", "name", "url"]),
-      position: firstNonEmptyString(item, ["cargo", "position", "content"]),
-      company: undefined,
-      testimonial: firstNonEmptyString(item, [
-        "depoimento",
-        "testimonial",
-        "title",
-      ]),
-      imageUrl: firstNonEmptyString(item, [
-        "fotoUrl",
-        "imageUrl",
-        "imagemUrl",
-        "image",
-      ]),
-      rating: 5,
-      order: firstNumber(item, ["ordem", "order", "position"]),
-      isActive: true,
-    }));
+  return mapDepoimentoResponsesToTestimonialData(records, {
+    assumePublishedWhenStatusMissing: true,
+  });
 }
 
 export default async function SobrePage() {

@@ -10,6 +10,7 @@ import CommunicationHighlights from "@/theme/website/components/communication-hi
 import type { CommunicationData } from "@/theme/website/components/communication-highlights/types";
 import LogoEnterprises from "@/theme/website/components/logo-enterprises";
 import type { LogoData } from "@/theme/website/components/logo-enterprises/types";
+import { mapLogoEnterpriseResponsesToLogoData } from "@/api/websites/components/logo-enterprises/normalization";
 
 export const metadata = {
   title: "Treinamento",
@@ -37,23 +38,15 @@ function toString(value: unknown): string {
   return typeof value === "string" ? value : "";
 }
 
-function toNumber(value: unknown): number {
-  return typeof value === "number" && Number.isFinite(value) ? value : 0;
-}
-
-function isPublished(status: unknown): boolean {
-  if (typeof status === "boolean") return status;
-  const normalized = toString(status).toUpperCase();
-  return normalized === "PUBLICADO" || normalized === "PUBLISHED";
-}
-
 function mapHeaderForPage(
   records: GenericRecord[],
   currentPage: string,
 ): HeaderPageData | null {
   if (!records.length) return null;
   const match =
-    records.find((item) => toString(item.page).toUpperCase() === "TREINAMENTO") ??
+    records.find(
+      (item) => toString(item.page).toUpperCase() === "TREINAMENTO",
+    ) ??
     records.find((item) => toString(item.page).toUpperCase() === "SERVICOS") ??
     records[0];
 
@@ -143,17 +136,9 @@ function mapServiceBenefits(records: GenericRecord[]): ServiceBenefitsData[] {
 }
 
 function mapLogos(records: GenericRecord[]): LogoData[] {
-  return records
-    .filter((item) => isPublished(item.status))
-    .sort((a, b) => toNumber(a.ordem) - toNumber(b.ordem))
-    .map((item) => ({
-      id: toString(item.id),
-      name: toString(item.nome),
-      src: toString(item.imagemUrl),
-      alt: toString(item.imagemAlt),
-      website: toString(item.website) || undefined,
-      order: toNumber(item.ordem),
-    }));
+  return mapLogoEnterpriseResponsesToLogoData(records, {
+    assumePublishedWhenStatusMissing: true,
+  });
 }
 
 export default async function TreinamentoPage() {
@@ -179,11 +164,14 @@ export default async function TreinamentoPage() {
   const trainingResultsData = mapTrainingResults(
     asRecordArray(payload.treinamentosInCompany),
   );
-  const communicationData = mapCommunication(asRecordArray(payload.conexaoForte));
+  const communicationData = mapCommunication(
+    asRecordArray(payload.conexaoForte),
+  );
   const serviceBenefitsData = mapServiceBenefits(
     asRecordArray(payload.treinamentoCompany),
   );
   const logosData = mapLogos(asRecordArray(payload.logoEnterprises));
+  const hasStaticLogoData = logosData.length > 0;
 
   return (
     <div className="min-h-screen">
@@ -206,7 +194,7 @@ export default async function TreinamentoPage() {
         staticData={serviceBenefitsData}
       />
       <LogoEnterprises
-        fetchFromApi={!hasSection("logoEnterprises")}
+        fetchFromApi={!hasSection("logoEnterprises") || !hasStaticLogoData}
         staticData={logosData}
       />
     </div>

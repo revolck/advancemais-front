@@ -20,6 +20,8 @@ export const TestimonialItem: React.FC<TestimonialItemProps> = ({
     setHasError(true);
   };
 
+  const shouldShowFallbackAvatar = hasError || !data.imageUrl;
+
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-6 h-full flex flex-col hover:border-[var(--primary-color)] hover:shadow-lg transition-all duration-300">
       {/* Texto do depoimento */}
@@ -33,15 +35,17 @@ export const TestimonialItem: React.FC<TestimonialItemProps> = ({
       <div className="flex items-center gap-3 mt-auto">
         {/* Avatar 50x50 redondo com corte */}
         <div className="relative flex-shrink-0 w-[50px] h-[50px] rounded-full overflow-hidden bg-gray-200">
-          {isLoading && <div className="w-full h-full bg-gray-200 animate-pulse" />}
+          {isLoading && data.imageUrl && (
+            <div className="w-full h-full bg-gray-200 animate-pulse" />
+          )}
 
-          {hasError && (
+          {shouldShowFallbackAvatar && (
             <div className="w-full h-full bg-gray-100 flex items-center justify-center">
               <span className="text-[18px] text-gray-400">👤</span>
             </div>
           )}
 
-          {!hasError && (
+          {!shouldShowFallbackAvatar && (
             <Image
               src={data.imageUrl}
               alt={`Avatar de ${data.name}`}

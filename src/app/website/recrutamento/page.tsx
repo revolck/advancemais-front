@@ -12,6 +12,7 @@ import type { ServiceBenefitsData } from "@/theme/website/components/service-ben
 import LogoEnterprises from "@/theme/website/components/logo-enterprises";
 import type { LogoData } from "@/theme/website/components/logo-enterprises/types";
 import PricingPlans from "@/theme/website/components/pricing-plans";
+import { mapLogoEnterpriseResponsesToLogoData } from "@/api/websites/components/logo-enterprises/normalization";
 
 export const metadata = {
   title: "Recrutamento & Seleção",
@@ -55,7 +56,9 @@ function mapHeaderForPage(
 ): HeaderPageData | null {
   if (!records.length) return null;
   const match =
-    records.find((item) => toString(item.page).toUpperCase() === "RECRUTAMENTO") ??
+    records.find(
+      (item) => toString(item.page).toUpperCase() === "RECRUTAMENTO",
+    ) ??
     records.find((item) => toString(item.page).toUpperCase() === "SERVICOS") ??
     records[0];
 
@@ -145,17 +148,9 @@ function mapServiceBenefits(records: GenericRecord[]): ServiceBenefitsData[] {
 }
 
 function mapLogos(records: GenericRecord[]): LogoData[] {
-  return records
-    .filter((item) => isPublished(item.status))
-    .sort((a, b) => toNumber(a.ordem) - toNumber(b.ordem))
-    .map((item) => ({
-      id: toString(item.id),
-      name: toString(item.nome),
-      src: toString(item.imagemUrl),
-      alt: toString(item.imagemAlt),
-      website: toString(item.website) || undefined,
-      order: toNumber(item.ordem),
-    }));
+  return mapLogoEnterpriseResponsesToLogoData(records, {
+    assumePublishedWhenStatusMissing: true,
+  });
 }
 
 export default async function RecrutamentoPage() {
@@ -184,6 +179,7 @@ export default async function RecrutamentoPage() {
     asRecordArray(payload.recrutamentoSelecao),
   );
   const logosData = mapLogos(asRecordArray(payload.logoEnterprises));
+  const hasStaticLogoData = logosData.length > 0;
 
   return (
     <div className="min-h-screen">
@@ -208,7 +204,7 @@ export default async function RecrutamentoPage() {
       />
       <PricingPlans fetchFromApi={true} />
       <LogoEnterprises
-        fetchFromApi={!hasSection("logoEnterprises")}
+        fetchFromApi={!hasSection("logoEnterprises") || !hasStaticLogoData}
         staticData={logosData}
       />
     </div>

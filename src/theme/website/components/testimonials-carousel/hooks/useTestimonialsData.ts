@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import type { TestimonialData } from "../types";
 import { listDepoimentos } from "@/api/websites/components/depoimentos";
+import { mapDepoimentoResponsesToTestimonialData } from "@/api/websites/components/depoimentos/normalization";
 
 interface UseTestimonialsDataReturn {
   data: TestimonialData[];
@@ -16,7 +17,7 @@ interface UseTestimonialsDataReturn {
  */
 export function useTestimonialsData(
   fetchFromApi: boolean = true,
-  staticData?: TestimonialData[]
+  staticData?: TestimonialData[],
 ): UseTestimonialsDataReturn {
   const [data, setData] = useState<TestimonialData[]>(staticData || []);
   const [isLoading, setIsLoading] = useState(fetchFromApi);
@@ -33,23 +34,13 @@ export function useTestimonialsData(
       setIsLoading(true);
       setError(null);
 
-      // Busca depoimentos PUBLICADOS via API compartilhada
-      const backendItems = await listDepoimentos({ headers: { Accept: "application/json" } }, "PUBLICADO");
-
-      const mapped: TestimonialData[] = (backendItems || [])
-        .sort((a, b) => a.ordem - b.ordem)
-        .map((item) => ({
-          id: item.depoimentoId,
-          name: item.nome,
-          position: item.cargo,
-          company: undefined,
-          testimonial: item.depoimento,
-          imageUrl: item.fotoUrl || "",
-          rating: 5,
-          order: item.ordem,
-          isActive: (typeof item.status === "string" ? item.status : item.status ? "PUBLICADO" : "RASCUNHO") === "PUBLICADO",
-        }))
-        .filter((t) => t.isActive);
+      const backendItems = await listDepoimentos(
+        { headers: { Accept: "application/json" } },
+        "PUBLICADO",
+      );
+      const mapped = mapDepoimentoResponsesToTestimonialData(
+        backendItems || [],
+      );
 
       setData(mapped);
     } catch (err) {
