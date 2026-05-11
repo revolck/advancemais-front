@@ -12,6 +12,7 @@ import LogoEnterprises from "@/theme/website/components/logo-enterprises";
 import type { LogoData } from "@/theme/website/components/logo-enterprises/types";
 import TestimonialsCarousel from "@/theme/website/components/testimonials-carousel/TestimonialsCarousel";
 import type { TestimonialData } from "@/theme/website/components/testimonials-carousel/types";
+import { mapLogoEnterpriseResponsesToLogoData } from "@/api/websites/components/logo-enterprises/normalization";
 
 export const metadata = {
   title: "Sobre nós",
@@ -44,6 +45,32 @@ function toNumber(value: unknown): number {
   return typeof value === "number" && Number.isFinite(value) ? value : 0;
 }
 
+function firstNonEmptyString(record: GenericRecord, keys: string[]): string {
+  for (const key of keys) {
+    const value = record[key];
+    if (typeof value === "string" && value.trim()) {
+      return value;
+    }
+  }
+  return "";
+}
+
+function firstNumber(record: GenericRecord, keys: string[]): number {
+  for (const key of keys) {
+    const value = record[key];
+    if (typeof value === "number" && Number.isFinite(value)) {
+      return value;
+    }
+    if (typeof value === "string") {
+      const parsed = Number(value);
+      if (Number.isFinite(parsed)) {
+        return parsed;
+      }
+    }
+  }
+  return 0;
+}
+
 function isPublished(status: unknown): boolean {
   if (typeof status === "boolean") return status;
   const normalized = toString(status).toUpperCase();
@@ -57,8 +84,9 @@ function mapHeaderForPage(
   if (!records.length) return null;
   const expectedCode = currentPage.includes("sobre") ? "SOBRE" : "SOBRE";
   const match =
-    records.find((item) => toString(item.page).toUpperCase() === expectedCode) ??
-    records[0];
+    records.find(
+      (item) => toString(item.page).toUpperCase() === expectedCode,
+    ) ?? records[0];
 
   if (!match) return null;
 
@@ -82,14 +110,15 @@ function mapSobreEmpresa(records: GenericRecord[]): AccordionSectionData[] {
   if (!latest) return [];
 
   const videoUrl = toString(latest.videoUrl);
-  const videoType: AccordionSectionData["videoType"] =
-    videoUrl.includes("youtube")
-      ? "youtube"
-      : videoUrl.includes("vimeo")
+  const videoType: AccordionSectionData["videoType"] = videoUrl.includes(
+    "youtube",
+  )
+    ? "youtube"
+    : videoUrl.includes("vimeo")
       ? "vimeo"
       : videoUrl.endsWith(".mp4")
-      ? "mp4"
-      : "url";
+        ? "mp4"
+        : "url";
 
   return [
     {
@@ -130,7 +159,9 @@ function mapSobreEmpresa(records: GenericRecord[]): AccordionSectionData[] {
   ];
 }
 
-function mapDiferenciais(records: GenericRecord[]): AboutAdvantagesApiData | null {
+function mapDiferenciais(
+  records: GenericRecord[],
+): AboutAdvantagesApiData | null {
   const first = records[0];
   if (!first) return null;
 
@@ -170,32 +201,44 @@ function mapTeam(records: GenericRecord[]): TeamMemberData[] {
 }
 
 function mapLogos(records: GenericRecord[]): LogoData[] {
-  return records
-    .filter((item) => isPublished(item.status))
-    .sort((a, b) => toNumber(a.ordem) - toNumber(b.ordem))
-    .map((item) => ({
-      id: toString(item.id),
-      name: toString(item.nome),
-      src: toString(item.imagemUrl),
-      alt: toString(item.imagemAlt),
-      website: toString(item.website) || undefined,
-      order: toNumber(item.ordem),
-    }));
+  return mapLogoEnterpriseResponsesToLogoData(records, {
+    assumePublishedWhenStatusMissing: true,
+  });
 }
 
 function mapTestimonials(records: GenericRecord[]): TestimonialData[] {
   return records
-    .filter((item) => isPublished(item.status))
-    .sort((a, b) => toNumber(a.ordem) - toNumber(b.ordem))
+    .filter((item) => {
+      if (!("status" in item) || item.status === null || item.status === "") {
+        return true;
+      }
+      return isPublished(item.status);
+    })
+    .sort(
+      (a, b) =>
+        firstNumber(a, ["ordem", "order", "position"]) -
+        firstNumber(b, ["ordem", "order", "position"]),
+    )
     .map((item) => ({
-      id: toString(item.depoimentoId) || toString(item.id),
-      name: toString(item.nome),
-      position: toString(item.cargo),
+      id:
+        firstNonEmptyString(item, ["depoimentoId", "id", "orderId"]) ||
+        crypto.randomUUID(),
+      name: firstNonEmptyString(item, ["nome", "name", "url"]),
+      position: firstNonEmptyString(item, ["cargo", "position", "content"]),
       company: undefined,
-      testimonial: toString(item.depoimento),
-      imageUrl: toString(item.fotoUrl),
+      testimonial: firstNonEmptyString(item, [
+        "depoimento",
+        "testimonial",
+        "title",
+      ]),
+      imageUrl: firstNonEmptyString(item, [
+        "fotoUrl",
+        "imageUrl",
+        "imagemUrl",
+        "image",
+      ]),
       rating: 5,
-      order: toNumber(item.ordem),
+      order: firstNumber(item, ["ordem", "order", "position"]),
       isActive: true,
     }));
 }
@@ -216,12 +259,17 @@ export default async function SobrePage() {
   const hasSection = (section: WebsiteSiteDataSection): boolean =>
     Object.prototype.hasOwnProperty.call(payload, section);
 
-  const headerData = mapHeaderForPage(asRecordArray(payload.headerPages), "/sobre");
+  const headerData = mapHeaderForPage(
+    asRecordArray(payload.headerPages),
+    "/sobre",
+  );
   const accordionData = mapSobreEmpresa(asRecordArray(payload.sobreEmpresa));
   const advantagesData = mapDiferenciais(asRecordArray(payload.diferenciais));
   const teamData = mapTeam(asRecordArray(payload.team));
   const logosData = mapLogos(asRecordArray(payload.logoEnterprises));
   const testimonialsData = mapTestimonials(asRecordArray(payload.depoimentos));
+  const hasStaticLogoData = logosData.length > 0;
+  const hasStaticTestimonialsData = testimonialsData.length > 0;
 
   return (
     <div className="min-h-screen">
@@ -244,11 +292,11 @@ export default async function SobrePage() {
         title="Conheça nossa Equipe"
       />
       <LogoEnterprises
-        fetchFromApi={!hasSection("logoEnterprises")}
+        fetchFromApi={!hasSection("logoEnterprises") || !hasStaticLogoData}
         staticData={logosData}
       />
       <TestimonialsCarousel
-        fetchFromApi={!hasSection("depoimentos")}
+        fetchFromApi={!hasSection("depoimentos") || !hasStaticTestimonialsData}
         staticData={testimonialsData}
       />
     </div>
