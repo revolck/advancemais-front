@@ -30,12 +30,17 @@ export async function listDepoimentos(
   });
 }
 
-export async function getDepoimentoById(id: string): Promise<DepoimentoBackendResponse> {
-  return apiFetch<DepoimentoBackendResponse>(websiteRoutes.depoimentos.get(id), {
-    init: { headers: apiConfig.headers },
-    cache: "no-cache",
-    skipLogoutOn401: true, // Permite acesso público sem autenticação
-  });
+export async function getDepoimentoById(
+  id: string,
+): Promise<DepoimentoBackendResponse> {
+  return apiFetch<DepoimentoBackendResponse>(
+    websiteRoutes.depoimentos.get(id),
+    {
+      init: { headers: apiConfig.headers },
+      cache: "no-cache",
+      skipLogoutOn401: true, // Permite acesso público sem autenticação
+    },
+  );
 }
 
 export async function createDepoimento(
@@ -49,18 +54,21 @@ export async function createDepoimento(
   if (data.status !== undefined) payload.status = data.status;
   if (data.ordem !== undefined) payload.ordem = Number(data.ordem);
 
-  return apiFetch<DepoimentoBackendResponse>(websiteRoutes.depoimentos.create(), {
-    init: {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: apiConfig.headers.Accept,
-        ...getAuthHeader(),
+  return apiFetch<DepoimentoBackendResponse>(
+    websiteRoutes.depoimentos.create(),
+    {
+      init: {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: apiConfig.headers.Accept,
+          ...getAuthHeader(),
+        },
+        body: JSON.stringify(payload),
       },
-      body: JSON.stringify(payload),
+      cache: "no-cache",
     },
-    cache: "no-cache",
-  });
+  );
 }
 
 export async function updateDepoimento(
@@ -75,18 +83,21 @@ export async function updateDepoimento(
   if (data.status !== undefined) payload.status = data.status;
   if (data.ordem !== undefined) payload.ordem = Number(data.ordem);
 
-  return apiFetch<DepoimentoBackendResponse>(websiteRoutes.depoimentos.update(id), {
-    init: {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: apiConfig.headers.Accept,
-        ...getAuthHeader(),
+  return apiFetch<DepoimentoBackendResponse>(
+    websiteRoutes.depoimentos.update(id),
+    {
+      init: {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: apiConfig.headers.Accept,
+          ...getAuthHeader(),
+        },
+        body: JSON.stringify(payload),
       },
-      body: JSON.stringify(payload),
+      cache: "no-cache",
     },
-    cache: "no-cache",
-  });
+  );
 }
 
 export async function deleteDepoimento(id: string): Promise<void> {
@@ -103,18 +114,21 @@ export async function updateDepoimentoOrder(
   id: string,
   ordem: number,
 ): Promise<void> {
-  await apiFetch<DepoimentoBackendResponse>(websiteRoutes.depoimentos.reorder(id), {
-    init: {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: apiConfig.headers.Accept,
-        ...getAuthHeader(),
+  await apiFetch<DepoimentoBackendResponse>(
+    websiteRoutes.depoimentos.reorder(id),
+    {
+      init: {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: apiConfig.headers.Accept,
+          ...getAuthHeader(),
+        },
+        body: JSON.stringify({ ordem: Number(ordem) }),
       },
-      body: JSON.stringify({ ordem: Number(ordem) }),
+      cache: "no-cache",
     },
-    cache: "no-cache",
-  });
+  );
 }
 
 export async function updateDepoimentoStatus(
@@ -122,16 +136,19 @@ export async function updateDepoimentoStatus(
   status: boolean | string,
 ): Promise<DepoimentoBackendResponse> {
   const payload = { status };
-  return apiFetch<DepoimentoBackendResponse>(websiteRoutes.depoimentos.update(id), {
-    init: {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: apiConfig.headers.Accept,
-        ...getAuthHeader(),
+  return apiFetch<DepoimentoBackendResponse>(
+    websiteRoutes.depoimentos.update(id),
+    {
+      init: {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: apiConfig.headers.Accept,
+          ...getAuthHeader(),
+        },
+        body: JSON.stringify(payload),
       },
-      body: JSON.stringify(payload),
+      cache: "no-cache",
     },
-    cache: "no-cache",
-  });
+  );
 }

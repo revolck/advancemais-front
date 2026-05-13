@@ -9,8 +9,11 @@ import type { TrainingResultData } from "@/theme/website/components/training-res
 import CommunicationHighlights from "@/theme/website/components/communication-highlights";
 import type { CommunicationData } from "@/theme/website/components/communication-highlights/types";
 import LogoEnterprises from "@/theme/website/components/logo-enterprises";
-import type { LogoData } from "@/theme/website/components/logo-enterprises/types";
-import { mapLogoEnterpriseResponsesToLogoData } from "@/api/websites/components/logo-enterprises/normalization";
+import {
+  hasSiteDataSection,
+  hasStaticItems,
+  mapWebsiteLogos,
+} from "../_lib/site-data";
 
 export const metadata = {
   title: "Treinamento",
@@ -135,12 +138,6 @@ function mapServiceBenefits(records: GenericRecord[]): ServiceBenefitsData[] {
   ];
 }
 
-function mapLogos(records: GenericRecord[]): LogoData[] {
-  return mapLogoEnterpriseResponsesToLogoData(records, {
-    assumePublishedWhenStatusMissing: true,
-  });
-}
-
 export default async function TreinamentoPage() {
   let payload: Record<string, unknown> = {};
 
@@ -155,7 +152,7 @@ export default async function TreinamentoPage() {
   }
 
   const hasSection = (section: WebsiteSiteDataSection): boolean =>
-    Object.prototype.hasOwnProperty.call(payload, section);
+    hasSiteDataSection(payload, section);
 
   const headerData = mapHeaderForPage(
     asRecordArray(payload.headerPages),
@@ -170,8 +167,8 @@ export default async function TreinamentoPage() {
   const serviceBenefitsData = mapServiceBenefits(
     asRecordArray(payload.treinamentoCompany),
   );
-  const logosData = mapLogos(asRecordArray(payload.logoEnterprises));
-  const hasStaticLogoData = logosData.length > 0;
+  const logosData = mapWebsiteLogos(payload.logoEnterprises);
+  const hasStaticLogoData = hasStaticItems(logosData);
 
   return (
     <div className="min-h-screen">

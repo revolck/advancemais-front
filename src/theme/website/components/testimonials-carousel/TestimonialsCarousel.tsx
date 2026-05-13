@@ -27,7 +27,7 @@ const TestimonialsCarousel: React.FC<TestimonialsCarouselProps> = ({
   const isMobile = useIsMobile();
   const { data, isLoading, error, refetch } = useTestimonialsData(
     fetchFromApi,
-    staticData
+    staticData,
   );
   const [emblaApi, setEmblaApi] = useState<any>(null);
   const [canScrollPrev, setCanScrollPrev] = useState(false);
@@ -103,6 +103,8 @@ const TestimonialsCarousel: React.FC<TestimonialsCarouselProps> = ({
     );
   }
 
+  if (!data.length) return null;
+
   return (
     <section className={cn("py-16", className)}>
       <div className="container mx-auto mb-12">
@@ -136,7 +138,7 @@ const TestimonialsCarousel: React.FC<TestimonialsCarouselProps> = ({
                         "active:scale-95",
                         "shadow-md hover:shadow-xl",
                       ]
-                    : ["bg-gray-200 text-gray-400 cursor-not-allowed"]
+                    : ["bg-gray-200 text-gray-400 cursor-not-allowed"],
                 )}
                 aria-label="Depoimento anterior"
               >
@@ -161,7 +163,7 @@ const TestimonialsCarousel: React.FC<TestimonialsCarouselProps> = ({
                         "active:scale-95",
                         "shadow-md hover:shadow-xl",
                       ]
-                    : ["bg-gray-200 text-gray-400 cursor-not-allowed"]
+                    : ["bg-gray-200 text-gray-400 cursor-not-allowed"],
                 )}
                 aria-label="Próximo depoimento"
               >
@@ -174,7 +176,7 @@ const TestimonialsCarousel: React.FC<TestimonialsCarouselProps> = ({
           <div
             className={cn(
               "w-full",
-              !isMobile && "px-16" // Padding apenas no desktop para acomodar os botões
+              !isMobile && "px-16", // Padding apenas no desktop para acomodar os botões
             )}
           >
             <Carousel
@@ -192,7 +194,7 @@ const TestimonialsCarousel: React.FC<TestimonialsCarouselProps> = ({
                     key={testimonial.id}
                     className={cn(
                       "pl-2 md:pl-4",
-                      isMobile ? "basis-full" : "basis-1/3"
+                      isMobile ? "basis-full" : "basis-1/3",
                     )}
                   >
                     <div className="h-full">

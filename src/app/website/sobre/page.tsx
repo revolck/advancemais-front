@@ -9,11 +9,13 @@ import type { TeamMemberData } from "@/theme/website/components/team-showcase/ty
 import AboutAdvantages from "@/theme/website/components/about-advantages";
 import type { AboutAdvantagesApiData } from "@/theme/website/components/about-advantages/types";
 import LogoEnterprises from "@/theme/website/components/logo-enterprises";
-import type { LogoData } from "@/theme/website/components/logo-enterprises/types";
 import TestimonialsCarousel from "@/theme/website/components/testimonials-carousel/TestimonialsCarousel";
-import type { TestimonialData } from "@/theme/website/components/testimonials-carousel/types";
-import { mapLogoEnterpriseResponsesToLogoData } from "@/api/websites/components/logo-enterprises/normalization";
-import { mapDepoimentoResponsesToTestimonialData } from "@/api/websites/components/depoimentos/normalization";
+import {
+  hasSiteDataSection,
+  hasStaticItems,
+  mapWebsiteLogos,
+  mapWebsiteTestimonials,
+} from "../_lib/site-data";
 
 export const metadata = {
   title: "Sobre nós",
@@ -175,18 +177,6 @@ function mapTeam(records: GenericRecord[]): TeamMemberData[] {
     }));
 }
 
-function mapLogos(records: GenericRecord[]): LogoData[] {
-  return mapLogoEnterpriseResponsesToLogoData(records, {
-    assumePublishedWhenStatusMissing: true,
-  });
-}
-
-function mapTestimonials(records: GenericRecord[]): TestimonialData[] {
-  return mapDepoimentoResponsesToTestimonialData(records, {
-    assumePublishedWhenStatusMissing: true,
-  });
-}
-
 export default async function SobrePage() {
   let payload: Record<string, unknown> = {};
 
@@ -201,7 +191,7 @@ export default async function SobrePage() {
   }
 
   const hasSection = (section: WebsiteSiteDataSection): boolean =>
-    Object.prototype.hasOwnProperty.call(payload, section);
+    hasSiteDataSection(payload, section);
 
   const headerData = mapHeaderForPage(
     asRecordArray(payload.headerPages),
@@ -210,10 +200,10 @@ export default async function SobrePage() {
   const accordionData = mapSobreEmpresa(asRecordArray(payload.sobreEmpresa));
   const advantagesData = mapDiferenciais(asRecordArray(payload.diferenciais));
   const teamData = mapTeam(asRecordArray(payload.team));
-  const logosData = mapLogos(asRecordArray(payload.logoEnterprises));
-  const testimonialsData = mapTestimonials(asRecordArray(payload.depoimentos));
-  const hasStaticLogoData = logosData.length > 0;
-  const hasStaticTestimonialsData = testimonialsData.length > 0;
+  const logosData = mapWebsiteLogos(payload.logoEnterprises);
+  const testimonialsData = mapWebsiteTestimonials(payload.depoimentos);
+  const hasStaticLogoData = hasStaticItems(logosData);
+  const hasStaticTestimonialsData = hasStaticItems(testimonialsData);
 
   return (
     <div className="min-h-screen">

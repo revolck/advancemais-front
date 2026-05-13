@@ -34,10 +34,9 @@ export function useTestimonialsData(
       setIsLoading(true);
       setError(null);
 
-      const backendItems = await listDepoimentos(
-        { headers: { Accept: "application/json" } },
-        "PUBLICADO",
-      );
+      const backendItems = await listDepoimentos({
+        headers: { Accept: "application/json" },
+      });
       const mapped = mapDepoimentoResponsesToTestimonialData(
         backendItems || [],
       );

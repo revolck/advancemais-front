@@ -10,9 +10,12 @@ import ProcessSteps from "@/theme/website/components/process-steps";
 import ServiceBenefits from "@/theme/website/components/service-benefits";
 import type { ServiceBenefitsData } from "@/theme/website/components/service-benefits/types";
 import LogoEnterprises from "@/theme/website/components/logo-enterprises";
-import type { LogoData } from "@/theme/website/components/logo-enterprises/types";
 import PricingPlans from "@/theme/website/components/pricing-plans";
-import { mapLogoEnterpriseResponsesToLogoData } from "@/api/websites/components/logo-enterprises/normalization";
+import {
+  hasSiteDataSection,
+  hasStaticItems,
+  mapWebsiteLogos,
+} from "../_lib/site-data";
 
 export const metadata = {
   title: "Recrutamento & Seleção",
@@ -38,16 +41,6 @@ function asRecordArray(value: unknown): GenericRecord[] {
 
 function toString(value: unknown): string {
   return typeof value === "string" ? value : "";
-}
-
-function toNumber(value: unknown): number {
-  return typeof value === "number" && Number.isFinite(value) ? value : 0;
-}
-
-function isPublished(status: unknown): boolean {
-  if (typeof status === "boolean") return status;
-  const normalized = toString(status).toUpperCase();
-  return normalized === "PUBLICADO" || normalized === "PUBLISHED";
 }
 
 function mapHeaderForPage(
@@ -147,12 +140,6 @@ function mapServiceBenefits(records: GenericRecord[]): ServiceBenefitsData[] {
   ];
 }
 
-function mapLogos(records: GenericRecord[]): LogoData[] {
-  return mapLogoEnterpriseResponsesToLogoData(records, {
-    assumePublishedWhenStatusMissing: true,
-  });
-}
-
 export default async function RecrutamentoPage() {
   let payload: Record<string, unknown> = {};
 
@@ -167,7 +154,7 @@ export default async function RecrutamentoPage() {
   }
 
   const hasSection = (section: WebsiteSiteDataSection): boolean =>
-    Object.prototype.hasOwnProperty.call(payload, section);
+    hasSiteDataSection(payload, section);
 
   const headerData = mapHeaderForPage(
     asRecordArray(payload.headerPages),
@@ -178,8 +165,8 @@ export default async function RecrutamentoPage() {
   const serviceBenefitsData = mapServiceBenefits(
     asRecordArray(payload.recrutamentoSelecao),
   );
-  const logosData = mapLogos(asRecordArray(payload.logoEnterprises));
-  const hasStaticLogoData = logosData.length > 0;
+  const logosData = mapWebsiteLogos(payload.logoEnterprises);
+  const hasStaticLogoData = hasStaticItems(logosData);
 
   return (
     <div className="min-h-screen">

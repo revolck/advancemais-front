@@ -4,10 +4,8 @@ import type { AboutApiResponse } from "@/api/websites/components/about/types";
 import type { ConsultoriaApiResponse } from "@/api/websites/components/consultoria/types";
 import type { RecrutamentoApiResponse } from "@/api/websites/components/recrutamento/types";
 import type { BannerItem } from "@/theme/website/components/banners/types";
-import type { LogoData } from "@/theme/website/components/logo-enterprises/types";
 import type { SlideData } from "@/theme/website/components/slider/types";
 import { mapBannerResponsesToBannerItems } from "@/api/websites/components/banner/normalization";
-import { mapLogoEnterpriseResponsesToLogoData } from "@/api/websites/components/logo-enterprises/normalization";
 import { mapSliderResponsesToSlideData } from "@/api/websites/components/slider/normalization";
 import Slider from "@/theme/website/components/slider/SliderBasic";
 import AboutSection from "@/theme/website/components/about";
@@ -15,6 +13,11 @@ import BannersGroup from "@/theme/website/components/banners";
 import ConsultoriaSection from "@/theme/website/components/consultoria-empresarial";
 import RecrutamentoSection from "@/theme/website/components/recrutamento";
 import LogoEnterprises from "@/theme/website/components/logo-enterprises";
+import {
+  hasSiteDataSection,
+  hasStaticItems,
+  mapWebsiteLogos,
+} from "./_lib/site-data";
 
 type GenericRecord = Record<string, unknown>;
 
@@ -87,12 +90,6 @@ function mapBanners(records: GenericRecord[]): BannerItem[] {
   });
 }
 
-function mapLogos(records: GenericRecord[]): LogoData[] {
-  return mapLogoEnterpriseResponsesToLogoData(records, {
-    assumePublishedWhenStatusMissing: true,
-  });
-}
-
 function mapSlides(
   records: GenericRecord[],
   orientation: "DESKTOP" | "TABLET_MOBILE",
@@ -117,20 +114,20 @@ export default async function WebsiteHomePage() {
   }
 
   const hasSection = (section: WebsiteSiteDataSection): boolean =>
-    Object.prototype.hasOwnProperty.call(payload, section);
+    hasSiteDataSection(payload, section);
 
   const aboutData = mapAbout(asRecordArray(payload.sobre));
   const consultoriaData = mapConsultoria(asRecordArray(payload.consultoria));
   const recrutamentoData = mapRecrutamento(asRecordArray(payload.recrutamento));
   const bannersData = mapBanners(asRecordArray(payload.banner));
-  const logosData = mapLogos(asRecordArray(payload.logoEnterprises));
+  const logosData = mapWebsiteLogos(payload.logoEnterprises);
   const sliderSection = asRecordArray(payload.slider);
   const sliderDesktopData = mapSlides(sliderSection, "DESKTOP");
   const sliderMobileData = mapSlides(sliderSection, "TABLET_MOBILE");
   const hasStaticSliderData =
     sliderDesktopData.length > 0 || sliderMobileData.length > 0;
-  const hasStaticBannerData = bannersData.length > 0;
-  const hasStaticLogoData = logosData.length > 0;
+  const hasStaticBannerData = hasStaticItems(bannersData);
+  const hasStaticLogoData = hasStaticItems(logosData);
 
   return (
     <div className="min-h-screen">

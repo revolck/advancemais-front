@@ -18,10 +18,8 @@ const LogoEnterprises: React.FC<LogoEnterprisesProps> = ({
   onError,
   onLogoClick,
 }) => {
-  const shouldFetchFromApi =
-    fetchFromApi || (staticData !== undefined && staticData.length === 0);
   const { data, isLoading, error, refetch } = useLogosData(
-    shouldFetchFromApi,
+    fetchFromApi,
     staticData,
   );
 
@@ -94,6 +92,8 @@ const LogoEnterprises: React.FC<LogoEnterprisesProps> = ({
       </section>
     );
   }
+
+  if (!data.length) return null;
 
   // Estado normal com dados
   return (

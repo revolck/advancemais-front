@@ -34,6 +34,24 @@ export const LogoCard: React.FC<LogoCardProps> = ({ logo, onLogoClick }) => {
   useEffect(() => {
     setHasError(false);
     setIsLoading(hasValidImage);
+
+    if (!hasValidImage) return;
+
+    const image = new Image();
+    image.onload = () => {
+      setIsLoading(false);
+      setHasError(false);
+    };
+    image.onerror = () => {
+      setIsLoading(false);
+      setHasError(true);
+    };
+    image.src = logo.src;
+
+    return () => {
+      image.onload = null;
+      image.onerror = null;
+    };
   }, [hasValidImage, logo.src]);
 
   return (
