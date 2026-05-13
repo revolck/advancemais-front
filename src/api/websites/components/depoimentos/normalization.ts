@@ -3,6 +3,13 @@ import type { DepoimentoBackendResponse } from "./types";
 
 type AnyRecord = Record<string, unknown>;
 
+type DepoimentosListEnvelope = {
+  data?: unknown;
+  items?: unknown;
+  results?: unknown;
+  depoimentos?: unknown;
+};
+
 const RESOURCE_KEYS = [
   "depoimento",
   "testimonial",
@@ -25,6 +32,29 @@ const IMAGE_OBJECT_KEYS = [
 
 function isRecord(value: unknown): value is AnyRecord {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+export function normalizeDepoimentosListResponse(
+  response: unknown,
+): DepoimentoBackendResponse[] {
+  if (Array.isArray(response)) {
+    return response as DepoimentoBackendResponse[];
+  }
+
+  if (!isRecord(response)) {
+    return [];
+  }
+
+  const envelope = response as DepoimentosListEnvelope;
+  const candidates = [
+    envelope.data,
+    envelope.items,
+    envelope.results,
+    envelope.depoimentos,
+  ];
+
+  const list = candidates.find(Array.isArray);
+  return Array.isArray(list) ? (list as DepoimentoBackendResponse[]) : [];
 }
 
 function readString(record: AnyRecord | undefined, keys: string[]): string {

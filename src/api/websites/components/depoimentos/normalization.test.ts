@@ -1,19 +1,24 @@
 import { describe, expect, it } from "vitest";
-import { mapDepoimentoResponsesToTestimonialData } from "./normalization";
+import {
+  mapDepoimentoResponsesToTestimonialData,
+  normalizeDepoimentosListResponse,
+} from "./normalization";
+
+const publishedDepoimento = {
+  id: "ordem-1",
+  depoimentoId: "depoimento-1",
+  depoimento: "A Advance mudou nossos processos.",
+  nome: "Vitoria Jordany",
+  cargo: "Diretora",
+  fotoUrl: "https://cdn.example.com/vitoria.webp",
+  status: "PUBLICADO",
+  ordem: 2,
+};
 
 describe("mapDepoimentoResponsesToTestimonialData", () => {
   it("normaliza depoimentos publicados com payload direto", () => {
     const result = mapDepoimentoResponsesToTestimonialData([
-      {
-        id: "ordem-1",
-        depoimentoId: "depoimento-1",
-        depoimento: "A Advance mudou nossos processos.",
-        nome: "Vitoria Jordany",
-        cargo: "Diretora",
-        fotoUrl: "https://cdn.example.com/vitoria.webp",
-        status: "PUBLICADO",
-        ordem: 2,
-      },
+      publishedDepoimento,
     ]);
 
     expect(result).toEqual([
@@ -79,5 +84,23 @@ describe("mapDepoimentoResponsesToTestimonialData", () => {
     ]);
 
     expect(result).toEqual([]);
+  });
+});
+
+describe("normalizeDepoimentosListResponse", () => {
+  it("mantem resposta em array direto", () => {
+    expect(normalizeDepoimentosListResponse([publishedDepoimento])).toEqual([
+      publishedDepoimento,
+    ]);
+  });
+
+  it("aceita resposta envelopada em data", () => {
+    expect(
+      normalizeDepoimentosListResponse({ data: [publishedDepoimento] }),
+    ).toEqual([publishedDepoimento]);
+  });
+
+  it("retorna lista vazia para payload sem lista", () => {
+    expect(normalizeDepoimentosListResponse({ success: true })).toEqual([]);
   });
 });

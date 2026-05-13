@@ -6,6 +6,7 @@ import type {
   CreateDepoimentoPayload,
   UpdateDepoimentoPayload,
 } from "./types";
+import { normalizeDepoimentosListResponse } from "./normalization";
 
 function getAuthHeader(): Record<string, string> {
   if (typeof document === "undefined") return {};
@@ -23,11 +24,13 @@ export async function listDepoimentos(
   const url = status
     ? `${websiteRoutes.depoimentos.list()}?status=${encodeURIComponent(status)}`
     : websiteRoutes.depoimentos.list();
-  return apiFetch<DepoimentoBackendResponse[]>(url, {
+  const response = await apiFetch<unknown>(url, {
     init: init ?? { headers: apiConfig.headers },
     cache: "no-cache",
     skipLogoutOn401: true, // Permite acesso público sem autenticação
   });
+
+  return normalizeDepoimentosListResponse(response);
 }
 
 export async function getDepoimentoById(
