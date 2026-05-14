@@ -28,7 +28,7 @@ export const TestimonialItem: React.FC<TestimonialItemProps> = ({
     <div className="bg-white rounded-xl border border-gray-200 p-6 h-full flex flex-col hover:border-[var(--primary-color)] hover:shadow-lg transition-all duration-300">
       {/* Texto do depoimento */}
       {testimonialText && (
-        <div className="flex-1 mb-6">
+        <div className="flex-1 mb-0">
           <p className="text-gray-700 italic !leading-relaxed !text-[15px] line-clamp-4">
             "{testimonialText}"
           </p>
@@ -69,14 +69,14 @@ export const TestimonialItem: React.FC<TestimonialItemProps> = ({
 
         {/* Informações do autor - LAYOUT CORRIGIDO */}
         {hasAuthorInfo && (
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0 mt-3">
             {data.name.trim() && (
-              <h3 className="font-semibold text-[var(--primary-color)] text-lg leading-tight">
+              <h3 className="mb-0! font-semibold! text-[var(--primary-color)]! text-lg! leading-tight!">
                 {data.name}
               </h3>
             )}
             {data.position.trim() && (
-              <p className="text-gray-500 text-sm leading-tight mt-1">
+              <p className="text-gray-500! text-sm! leading-tight! mt-0!">
                 {data.position}
               </p>
             )}
