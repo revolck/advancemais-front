@@ -44,7 +44,7 @@ import type { PricingPlansProps } from "./types";
 const PricingPlans: React.FC<PricingPlansProps> = ({
   className,
   title = "Escolha seu plano",
-  subtitle = "Você pode mudar de plano a qualquer momento.",
+  subtitle = "Veja nossos planos empresariais e escolha o melhor para sua empresa",
   fetchFromApi = true,
   staticData,
   onDataLoaded,
@@ -123,7 +123,7 @@ const PricingPlans: React.FC<PricingPlansProps> = ({
                   ))}
                 </div>
               </div>
-            )
+            ),
           )}
         </div>
       </div>
@@ -181,10 +181,10 @@ const PricingPlans: React.FC<PricingPlansProps> = ({
     <div className={cn("container w-full mx-auto py-24", className)}>
       {/* Header da seção */}
       <div className="text-center animate-fade-in mb-12">
-        <h2 className="text-4xl font-bold text-gray-900 mb-4">{title}</h2>
-        <p className="text-lg text-gray-600 leading-relaxed max-w-2xl mx-auto">
-          {dynamicSubtitle}
-        </p>
+        <h2 className="text-4xl! font-bold! text-[var(--primary-color)]! mb-0!">
+          {title}
+        </h2>
+        <p className="leading-relaxed! max-w-2xl mx-auto">{dynamicSubtitle}</p>
       </div>
 
       {/* Grid de planos */}
