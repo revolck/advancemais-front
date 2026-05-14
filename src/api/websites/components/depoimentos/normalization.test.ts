@@ -71,13 +71,39 @@ describe("mapDepoimentoResponsesToTestimonialData", () => {
     ]);
   });
 
-  it("remove itens sem texto de depoimento para evitar cards vazios", () => {
+  it("mantem depoimentos publicados sem texto quando houver dados do autor", () => {
     const result = mapDepoimentoResponsesToTestimonialData([
       {
         id: "ordem-3",
         depoimentoId: "depoimento-3",
-        nome: "Sem Texto",
+        nome: "Vitória Jordany",
+        cargo: "Gerente de RH",
         fotoUrl: "https://cdn.example.com/sem-texto.webp",
+        status: "PUBLICADO",
+        ordem: 1,
+      },
+    ]);
+
+    expect(result).toEqual([
+      {
+        id: "depoimento-3",
+        name: "Vitória Jordany",
+        position: "Gerente de RH",
+        company: undefined,
+        testimonial: "",
+        imageUrl: "https://cdn.example.com/sem-texto.webp",
+        rating: 5,
+        order: 1,
+        isActive: true,
+      },
+    ]);
+  });
+
+  it("remove itens sem texto e sem dados visiveis", () => {
+    const result = mapDepoimentoResponsesToTestimonialData([
+      {
+        id: "ordem-4",
+        depoimentoId: "depoimento-4",
         status: "PUBLICADO",
         ordem: 1,
       },

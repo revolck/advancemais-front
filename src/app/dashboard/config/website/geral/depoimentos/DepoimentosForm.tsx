@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { SliderManager, type Slider } from "@/components/ui/custom";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toastCustom } from "@/components/ui/custom/toast";
@@ -15,13 +15,29 @@ import {
 import type { DepoimentoBackendResponse } from "@/api/websites/components/depoimentos/types";
 import { normalizeDepoimentoResponse } from "@/api/websites/components/depoimentos/normalization";
 
-function mapFromBackend(item: DepoimentoBackendResponse): Slider {
+function getDepoimentoCacheKeys(
+  item: DepoimentoBackendResponse,
+  slider?: Pick<Slider, "id" | "orderId">,
+): string[] {
+  return Array.from(
+    new Set(
+      [item.id, item.depoimentoId, slider?.id, slider?.orderId].filter(
+        (value): value is string => typeof value === "string" && !!value,
+      ),
+    ),
+  );
+}
+
+function mapFromBackend(
+  item: DepoimentoBackendResponse,
+  fallbackTitle = "",
+): Slider {
   const normalized = normalizeDepoimentoResponse(item);
 
   return {
     id: normalized.id,
     orderId: normalized.orderId,
-    title: normalized.testimonial,
+    title: normalized.testimonial || fallbackTitle,
     image: normalized.imageUrl,
     url: normalized.name,
     content: normalized.position,
@@ -38,6 +54,38 @@ const statusToBackend = (status: boolean): "PUBLICADO" | "RASCUNHO" =>
 export default function DepoimentosForm() {
   const [loading, setLoading] = useState(true);
   const [initialItems, setInitialItems] = useState<Slider[]>([]);
+  const depoimentoTextCacheRef = useRef(new Map<string, string>());
+
+  const rememberDepoimentoText = useCallback(
+    (item: DepoimentoBackendResponse, title?: string) => {
+      const normalizedTitle = title?.trim();
+      if (!normalizedTitle) return;
+
+      const slider = mapFromBackend(item, normalizedTitle);
+      getDepoimentoCacheKeys(item, slider).forEach((key) => {
+        depoimentoTextCacheRef.current.set(key, normalizedTitle);
+      });
+    },
+    [],
+  );
+
+  const mapFromBackendWithCache = useCallback(
+    (item: DepoimentoBackendResponse): Slider => {
+      const cachedTitle = getDepoimentoCacheKeys(item)
+        .map((key) => depoimentoTextCacheRef.current.get(key))
+        .find((value): value is string => typeof value === "string" && !!value);
+
+      const slider = mapFromBackend(item, cachedTitle ?? "");
+      if (slider.title.trim()) {
+        getDepoimentoCacheKeys(item, slider).forEach((key) => {
+          depoimentoTextCacheRef.current.set(key, slider.title.trim());
+        });
+      }
+
+      return slider;
+    },
+    [],
+  );
 
   useEffect(() => {
     let mounted = true;
@@ -49,7 +97,7 @@ export default function DepoimentosForm() {
         });
         const mapped = (data || [])
           .sort((a, b) => a.ordem - b.ordem)
-          .map(mapFromBackend);
+          .map(mapFromBackendWithCache);
         if (mounted) setInitialItems(mapped);
       } catch (error) {
         toastCustom.error("Não foi possível carregar os depoimentos");
@@ -60,7 +108,7 @@ export default function DepoimentosForm() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [mapFromBackendWithCache]);
 
   const handleCreate = useCallback(
     async (data: Omit<Slider, "id" | "createdAt">): Promise<Slider> => {
@@ -72,9 +120,10 @@ export default function DepoimentosForm() {
         status: statusToBackend(data.status),
         ordem: typeof data.position === "number" ? data.position : undefined,
       });
-      return mapFromBackend(created);
+      rememberDepoimentoText(created, data.title);
+      return mapFromBackend(created, data.title);
     },
-    [],
+    [rememberDepoimentoText],
   );
 
   const handleUpdate = useCallback(
@@ -102,9 +151,10 @@ export default function DepoimentosForm() {
             : statusToBackend(!!updates.status),
         ordem: updates.position,
       });
-      return mapFromBackend(updated);
+      rememberDepoimentoText(updated, updates.title);
+      return mapFromBackend(updated, updates.title ?? "");
     },
-    [],
+    [rememberDepoimentoText],
   );
 
   const handleDelete = useCallback(async (id: string) => {
@@ -151,7 +201,7 @@ export default function DepoimentosForm() {
         });
         return (data || [])
           .sort((a, b) => a.ordem - b.ordem)
-          .map(mapFromBackend);
+          .map(mapFromBackendWithCache);
       }}
     />
   );

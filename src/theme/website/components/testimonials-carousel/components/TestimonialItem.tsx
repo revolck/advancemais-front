@@ -10,6 +10,8 @@ export const TestimonialItem: React.FC<TestimonialItemProps> = ({
 }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
+  const testimonialText = data.testimonial.trim();
+  const hasAuthorInfo = Boolean(data.name.trim() || data.position.trim());
 
   const handleImageLoad = () => {
     setIsLoading(false);
@@ -25,11 +27,13 @@ export const TestimonialItem: React.FC<TestimonialItemProps> = ({
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-6 h-full flex flex-col hover:border-[var(--primary-color)] hover:shadow-lg transition-all duration-300">
       {/* Texto do depoimento */}
-      <div className="flex-1 mb-6">
-        <p className="text-gray-700 italic !leading-relaxed !text-[15px] line-clamp-4">
-          "{data.testimonial}"
-        </p>
-      </div>
+      {testimonialText && (
+        <div className="flex-1 mb-6">
+          <p className="text-gray-700 italic !leading-relaxed !text-[15px] line-clamp-4">
+            "{testimonialText}"
+          </p>
+        </div>
+      )}
 
       {/* Informações do autor */}
       <div className="flex items-center gap-3 mt-auto">
@@ -64,15 +68,20 @@ export const TestimonialItem: React.FC<TestimonialItemProps> = ({
         </div>
 
         {/* Informações do autor - LAYOUT CORRIGIDO */}
-        <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-[var(--primary-color)] text-lg leading-tight">
-            {data.name}
-          </h3>
-          <p className="text-gray-500 text-sm leading-tight mt-1">
-            {data.position}
-          </p>
-          {/* Empresa removida */}
-        </div>
+        {hasAuthorInfo && (
+          <div className="flex-1 min-w-0">
+            {data.name.trim() && (
+              <h3 className="font-semibold text-[var(--primary-color)] text-lg leading-tight">
+                {data.name}
+              </h3>
+            )}
+            {data.position.trim() && (
+              <p className="text-gray-500 text-sm leading-tight mt-1">
+                {data.position}
+              </p>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

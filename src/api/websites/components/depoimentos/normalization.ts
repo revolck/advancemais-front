@@ -307,7 +307,7 @@ export function mapDepoimentoResponsesToTestimonialData(
         (item.published ||
           (options?.assumePublishedWhenStatusMissing &&
             item.status === undefined)) &&
-        Boolean(item.testimonial),
+        Boolean(item.testimonial || item.name || item.imageUrl),
     )
     .sort((a, b) => a.order - b.order)
     .map((item, index) => ({
