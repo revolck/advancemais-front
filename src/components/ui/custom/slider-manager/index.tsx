@@ -143,7 +143,7 @@ export function SliderManager({
                 {...SLIDER_ANIMATIONS.FADE_IN}
                 className="flex items-center gap-2"
               >
-                <h3 className="mb-1!">
+                <h3 className="mb-3!">
                   Gerenciador de {entityNamePlural.toLowerCase()}
                 </h3>
                 {typeof maxItems === "number" && sliders.length >= maxItems && (

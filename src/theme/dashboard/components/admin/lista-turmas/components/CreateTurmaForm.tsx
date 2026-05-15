@@ -42,6 +42,11 @@ import { useTemplatesForTurma } from "../hooks/useTemplatesForTurma";
 import { Skeleton } from "@/components/ui/skeleton";
 import { UserRole } from "@/config/roles";
 import { useUserRole } from "@/hooks/useUserRole";
+import {
+  getTurmaEstruturaItemCount,
+  isTurmaStatusPublicado,
+  TURMA_ESTRUTURA_PUBLICACAO_MESSAGE,
+} from "../utils/estrutura";
 
 interface CreateTurmaFormProps {
   onSuccess?: () => void;
@@ -248,7 +253,7 @@ export function CreateTurmaForm({ onSuccess }: CreateTurmaFormProps) {
     const min = new Date(
       minDateTurma.getFullYear(),
       minDateTurma.getMonth(),
-      minDateTurma.getDate()
+      minDateTurma.getDate(),
     ).getTime();
 
     const turmaIni = dataInicio ? toMs(dataInicio) : null;
@@ -262,7 +267,7 @@ export function CreateTurmaForm({ onSuccess }: CreateTurmaFormProps) {
       setDataInicio("");
       setDataFim("");
       toastCustom.error(
-        "O período da turma deve iniciar após o encerramento das inscrições."
+        "O período da turma deve iniciar após o encerramento das inscrições.",
       );
     }
   }, [dataFim, dataInicio, dataInscricaoFim, minDateTurma]);
@@ -337,7 +342,7 @@ export function CreateTurmaForm({ onSuccess }: CreateTurmaFormProps) {
     // Regra do backend: turma não pode iniciar antes do fim das inscrições
     if (turmaIni <= inscrFim) {
       toastCustom.error(
-        "A turma não pode iniciar antes do encerramento das inscrições."
+        "A turma não pode iniciar antes do encerramento das inscrições.",
       );
       return false;
     }
@@ -356,6 +361,16 @@ export function CreateTurmaForm({ onSuccess }: CreateTurmaFormProps) {
   const validateStep3 = (): boolean => {
     const standalone = curriculum.standaloneItems || [];
     const modules = curriculum.modules || [];
+    const itemCount = getTurmaEstruturaItemCount(curriculum);
+
+    if (itemCount === 0) {
+      if (isTurmaStatusPublicado(status)) {
+        toastCustom.error(TURMA_ESTRUTURA_PUBLICACAO_MESSAGE);
+        return false;
+      }
+
+      return true;
+    }
 
     const hasModules = modules.length > 0;
     const hasStandalone = standalone.length > 0;
@@ -367,7 +382,7 @@ export function CreateTurmaForm({ onSuccess }: CreateTurmaFormProps) {
       }
       if (hasStandalone) {
         toastCustom.error(
-          "Estrutura modular: itens avulsos não são permitidos."
+          "Estrutura modular: itens avulsos não são permitidos.",
         );
         return false;
       }
@@ -387,37 +402,18 @@ export function CreateTurmaForm({ onSuccess }: CreateTurmaFormProps) {
     if (estruturaTipo === "DINAMICA") {
       if (!hasModules && !hasStandalone) {
         toastCustom.error(
-          "Estrutura dinâmica: adicione ao menos 1 módulo ou item avulso."
+          "Estrutura dinâmica: adicione ao menos 1 módulo ou item avulso.",
         );
         return false;
       }
     }
 
-    const allItems = [
-      ...modules.flatMap((m) => m.items || []),
-      ...standalone,
-    ];
-
-    if (allItems.length === 0) {
-      toastCustom.error("Adicione itens à estrutura.");
-      return false;
-    }
+    const allItems = [...modules.flatMap((m) => m.items || []), ...standalone];
 
     const missingTemplate = allItems.find((it) => !it.templateId);
     if (missingTemplate) {
       toastCustom.error(
-        "Há itens sem template vinculado. Abra o item e selecione um template."
-      );
-      return false;
-    }
-
-    const hasAula = allItems.some((it) => it.type === "AULA");
-    const hasAvaliacao = allItems.some(
-      (it) => it.type === "PROVA" || it.type === "ATIVIDADE"
-    );
-    if (!hasAula || !hasAvaliacao) {
-      toastCustom.error(
-        "A estrutura deve conter pelo menos 1 AULA e 1 PROVA ou ATIVIDADE."
+        "Há itens sem template vinculado. Abra o item e selecione um template.",
       );
       return false;
     }
@@ -450,14 +446,14 @@ export function CreateTurmaForm({ onSuccess }: CreateTurmaFormProps) {
     try {
       const isUuid = (value: string) =>
         /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(
-          value
+          value,
         );
 
       const aulaStatusById = new Map(
-        (aulaTemplates || []).map((a) => [String(a.id), a.status])
+        (aulaTemplates || []).map((a) => [String(a.id), a.status]),
       );
       const avaliacaoStatusById = new Map(
-        (avaliacaoTemplates || []).map((a) => [String(a.id), a.status])
+        (avaliacaoTemplates || []).map((a) => [String(a.id), a.status]),
       );
 
       const allItems = [
@@ -466,19 +462,21 @@ export function CreateTurmaForm({ onSuccess }: CreateTurmaFormProps) {
       ];
 
       const selectedAulaTemplateIds = new Set(
-        allItems.filter((it) => it.type === "AULA").map((it) => String(it.templateId))
+        allItems
+          .filter((it) => it.type === "AULA")
+          .map((it) => String(it.templateId)),
       );
       const selectedAvaliacaoTemplateIds = new Set(
         allItems
           .filter((it) => it.type === "PROVA" || it.type === "ATIVIDADE")
-          .map((it) => String(it.templateId))
+          .map((it) => String(it.templateId)),
       );
 
       const aulasToLink = (aulaTemplates || []).filter(
-        (t) => selectedAulaTemplateIds.has(String(t.id)) && !t.cursoId
+        (t) => selectedAulaTemplateIds.has(String(t.id)) && !t.cursoId,
       );
       const avaliacoesToLink = (avaliacaoTemplates || []).filter(
-        (t) => selectedAvaliacaoTemplateIds.has(String(t.id)) && !t.cursoId
+        (t) => selectedAvaliacaoTemplateIds.has(String(t.id)) && !t.cursoId,
       );
 
       if (cursoId && (aulasToLink.length > 0 || avaliacoesToLink.length > 0)) {
@@ -490,11 +488,16 @@ export function CreateTurmaForm({ onSuccess }: CreateTurmaFormProps) {
               ? { aulaTemplateIds: aulasToLink.map((t) => String(t.id)) }
               : {}),
             ...(avaliacoesToLink.length > 0
-              ? { avaliacaoTemplateIds: avaliacoesToLink.map((t) => String(t.id)) }
+              ? {
+                  avaliacaoTemplateIds: avaliacoesToLink.map((t) =>
+                    String(t.id),
+                  ),
+                }
               : {}),
           });
         } catch (err: any) {
-          const message = err?.message || "Falha ao vincular templates ao curso.";
+          const message =
+            err?.message || "Falha ao vincular templates ao curso.";
           toastCustom.error({
             title: "Erro ao vincular templates",
             description: message,
@@ -525,11 +528,11 @@ export function CreateTurmaForm({ onSuccess }: CreateTurmaFormProps) {
               type: it.type,
               title:
                 it.title.trim() ||
-              (it.type === "PROVA"
-                ? "Prova"
-                : it.type === "ATIVIDADE"
-                ? "Atividade"
-                : "Aula"),
+                (it.type === "PROVA"
+                  ? "Prova"
+                  : it.type === "ATIVIDADE"
+                    ? "Atividade"
+                    : "Aula"),
               templateId: it.templateId as string,
               ordem: itemIndex + 1,
               ...(it.startDate && it.endDate
@@ -548,46 +551,48 @@ export function CreateTurmaForm({ onSuccess }: CreateTurmaFormProps) {
               ...(it.instructorIds && it.instructorIds.length > 0
                 ? { instructorIds: it.instructorIds }
                 : it.instructorId
-                ? { instructorIds: [it.instructorId] }
-                : {}),
+                  ? { instructorIds: [it.instructorId] }
+                  : {}),
               ...(it.type === "PROVA"
                 ? { recuperacaoFinal: Boolean(it.recuperacaoFinal) }
                 : {}),
             })),
           })),
-          standaloneItems: (curriculum.standaloneItems || []).map((it, itemIndex) => ({
-            type: it.type,
-            title:
-              it.title.trim() ||
-              (it.type === "PROVA"
-                ? "Prova"
-                : it.type === "ATIVIDADE"
-                ? "Atividade"
-                : "Aula"),
-            templateId: it.templateId as string,
-            ordem: itemIndex + 1,
-            ...(it.startDate && it.endDate
-              ? { startDate: it.startDate, endDate: it.endDate }
-              : {}),
-            ...(() => {
-              const status =
-                it.type === "AULA"
-                  ? aulaStatusById.get(String(it.templateId))
-                  : avaliacaoStatusById.get(String(it.templateId));
-              return status && String(status).toUpperCase() === "RASCUNHO"
-                ? { status: "PUBLICADA" }
-                : {};
-            })(),
-            obrigatoria: it.obrigatoria ?? it.obrigatorio ?? true,
-            ...(it.instructorIds && it.instructorIds.length > 0
-              ? { instructorIds: it.instructorIds }
-              : it.instructorId
-              ? { instructorIds: [it.instructorId] }
-              : {}),
-            ...(it.type === "PROVA"
-              ? { recuperacaoFinal: Boolean(it.recuperacaoFinal) }
-              : {}),
-          })),
+          standaloneItems: (curriculum.standaloneItems || []).map(
+            (it, itemIndex) => ({
+              type: it.type,
+              title:
+                it.title.trim() ||
+                (it.type === "PROVA"
+                  ? "Prova"
+                  : it.type === "ATIVIDADE"
+                    ? "Atividade"
+                    : "Aula"),
+              templateId: it.templateId as string,
+              ordem: itemIndex + 1,
+              ...(it.startDate && it.endDate
+                ? { startDate: it.startDate, endDate: it.endDate }
+                : {}),
+              ...(() => {
+                const status =
+                  it.type === "AULA"
+                    ? aulaStatusById.get(String(it.templateId))
+                    : avaliacaoStatusById.get(String(it.templateId));
+                return status && String(status).toUpperCase() === "RASCUNHO"
+                  ? { status: "PUBLICADA" }
+                  : {};
+              })(),
+              obrigatoria: it.obrigatoria ?? it.obrigatorio ?? true,
+              ...(it.instructorIds && it.instructorIds.length > 0
+                ? { instructorIds: it.instructorIds }
+                : it.instructorId
+                  ? { instructorIds: [it.instructorId] }
+                  : {}),
+              ...(it.type === "PROVA"
+                ? { recuperacaoFinal: Boolean(it.recuperacaoFinal) }
+                : {}),
+            }),
+          ),
         },
       };
       if (process.env.NODE_ENV === "development") {
@@ -604,7 +609,7 @@ export function CreateTurmaForm({ onSuccess }: CreateTurmaFormProps) {
         try {
           window.sessionStorage.setItem(
             `turma:create:mapping:${String(result.id)}`,
-            JSON.stringify(mapping)
+            JSON.stringify(mapping),
           );
         } catch {
           // ignore
@@ -622,7 +627,7 @@ export function CreateTurmaForm({ onSuccess }: CreateTurmaFormProps) {
               cursoId: String(cursoId),
               cursoNome,
               createdAt: new Date().toISOString(),
-            })
+            }),
           );
         } catch {
           // ignore
@@ -633,8 +638,17 @@ export function CreateTurmaForm({ onSuccess }: CreateTurmaFormProps) {
       onSuccess?.();
     } catch (err: any) {
       const statusCode = err?.status as number | undefined;
-      const code = err?.details?.code as string | undefined;
+      const code = (err?.details?.code || err?.code) as string | undefined;
       const details = err?.details?.details as any;
+
+      if (
+        statusCode === 422 &&
+        code === "TURMA_ESTRUTURA_OBRIGATORIA_PUBLICACAO"
+      ) {
+        setStep(3);
+        toastCustom.error(err?.message || TURMA_ESTRUTURA_PUBLICACAO_MESSAGE);
+        return;
+      }
 
       if (statusCode === 422 && code === "TURMA_PREREQUISITOS_NAO_ATENDIDOS") {
         const aulasCount =
@@ -761,8 +775,8 @@ export function CreateTurmaForm({ onSuccess }: CreateTurmaFormProps) {
                       opt.value === "MODULAR"
                         ? "250 75% 55%"
                         : opt.value === "DINAMICA"
-                        ? "190 70% 45%"
-                        : "150 60% 40%";
+                          ? "190 70% 45%"
+                          : "150 60% 40%";
                     return (
                       <motion.div
                         key={opt.value}
@@ -854,7 +868,7 @@ export function CreateTurmaForm({ onSuccess }: CreateTurmaFormProps) {
                           // Evita manter templateIds de outro curso
                           if (estruturaTipo) {
                             setCurriculum(
-                              getDefaultBuilder(estruturaTipo as any)
+                              getDefaultBuilder(estruturaTipo as any),
                             );
                           }
                         }}
@@ -885,11 +899,13 @@ export function CreateTurmaForm({ onSuccess }: CreateTurmaFormProps) {
                         placeholder="Selecionar instrutores"
                         options={instrutores}
                         value={instrutores.filter((option) =>
-                          instrutorIds.includes(String(option.value))
+                          instrutorIds.includes(String(option.value)),
                         )}
                         onChange={(selectedOptions) =>
                           setInstrutorIds(
-                            selectedOptions.map((option) => String(option.value))
+                            selectedOptions.map((option) =>
+                              String(option.value),
+                            ),
                           )
                         }
                         emptyIndicator="Nenhum instrutor disponível"
@@ -904,10 +920,7 @@ export function CreateTurmaForm({ onSuccess }: CreateTurmaFormProps) {
                       />
                     )}
                     <p className="flex items-center gap-1.5 text-xs! text-muted-foreground">
-                      <Icon
-                        name="Info"
-                        className="h-4 w-4 shrink-0"
-                      />
+                      <Icon name="Info" className="h-4 w-4 shrink-0" />
                       Vinculo institucional da turma. O dono explicito de aula,
                       prova ou atividade continua prevalecendo.
                     </p>
@@ -928,10 +941,10 @@ export function CreateTurmaForm({ onSuccess }: CreateTurmaFormProps) {
                       }}
                       onChange={(range) => {
                         setDataInscricaoInicio(
-                          range.from ? range.from.toISOString() : ""
+                          range.from ? range.from.toISOString() : "",
                         );
                         setDataInscricaoFim(
-                          range.to ? range.to.toISOString() : ""
+                          range.to ? range.to.toISOString() : "",
                         );
                       }}
                       helperLabel="Período em que os alunos poderão se inscrever"
@@ -947,7 +960,9 @@ export function CreateTurmaForm({ onSuccess }: CreateTurmaFormProps) {
                         to: dataFim ? new Date(dataFim) : null,
                       }}
                       onChange={(range) => {
-                        setDataInicio(range.from ? range.from.toISOString() : "");
+                        setDataInicio(
+                          range.from ? range.from.toISOString() : "",
+                        );
                         setDataFim(range.to ? range.to.toISOString() : "");
                       }}
                       helperLabel="Período previsto de início e término das aulas"
@@ -1012,7 +1027,6 @@ export function CreateTurmaForm({ onSuccess }: CreateTurmaFormProps) {
                       <div className="hidden md:block md:col-span-2" />
                     )}
                   </div>
-
                 </div>
               </StepperContent>
 
@@ -1110,15 +1124,15 @@ export function CreateTurmaForm({ onSuccess }: CreateTurmaFormProps) {
                           Number(vagasTotais) > 0
                             ? vagasTotais
                             : "Ilimitadas"}
+                        </div>
                       </div>
-                    </div>
                       <div>
                         <span className="text-xs font-medium text-gray-500">
                           Tipo de turma
                         </span>
                         <div className="mt-1 text-gray-900">
                           {TEMPLATE_OPTIONS.find(
-                            (o) => o.value === estruturaTipo
+                            (o) => o.value === estruturaTipo,
                           )?.label || "—"}
                         </div>
                       </div>
@@ -1131,13 +1145,13 @@ export function CreateTurmaForm({ onSuccess }: CreateTurmaFormProps) {
                             ? `${
                                 dataInscricaoInicio
                                   ? new Date(
-                                      dataInscricaoInicio
+                                      dataInscricaoInicio,
                                     ).toLocaleDateString("pt-BR")
                                   : "…"
                               } - ${
                                 dataInscricaoFim
                                   ? new Date(
-                                      dataInscricaoFim
+                                      dataInscricaoFim,
                                     ).toLocaleDateString("pt-BR")
                                   : "…"
                               }`
@@ -1153,12 +1167,14 @@ export function CreateTurmaForm({ onSuccess }: CreateTurmaFormProps) {
                             ? `${
                                 dataInicio
                                   ? new Date(dataInicio).toLocaleDateString(
-                                      "pt-BR"
+                                      "pt-BR",
                                     )
                                   : "…"
                               } - ${
                                 dataFim
-                                  ? new Date(dataFim).toLocaleDateString("pt-BR")
+                                  ? new Date(dataFim).toLocaleDateString(
+                                      "pt-BR",
+                                    )
                                   : "…"
                               }`
                             : "—"}
@@ -1179,7 +1195,7 @@ export function CreateTurmaForm({ onSuccess }: CreateTurmaFormProps) {
                         const totalModulos = curriculum.modules.length;
                         const totalItens = curriculum.modules.reduce(
                           (acc, m) => acc + m.items.length,
-                          0
+                          0,
                         );
 
                         if (totalModulos === 0 && totalItens === 0) return null;
@@ -1231,8 +1247,8 @@ export function CreateTurmaForm({ onSuccess }: CreateTurmaFormProps) {
                                         it.type === "AULA"
                                           ? "GraduationCap"
                                           : it.type === "ATIVIDADE"
-                                          ? "Paperclip"
-                                          : "FileText"
+                                            ? "Paperclip"
+                                            : "FileText"
                                       }
                                       className="h-3.5 w-3.5 text-gray-400"
                                     />
@@ -1244,8 +1260,8 @@ export function CreateTurmaForm({ onSuccess }: CreateTurmaFormProps) {
                                       {it.type === "AULA"
                                         ? "aula"
                                         : it.type === "ATIVIDADE"
-                                        ? "atividade"
-                                        : "prova"}
+                                          ? "atividade"
+                                          : "prova"}
                                       )
                                     </span>
                                   </div>
@@ -1285,8 +1301,8 @@ export function CreateTurmaForm({ onSuccess }: CreateTurmaFormProps) {
                                         it.type === "AULA"
                                           ? "GraduationCap"
                                           : it.type === "ATIVIDADE"
-                                          ? "Paperclip"
-                                          : "FileText"
+                                            ? "Paperclip"
+                                            : "FileText"
                                       }
                                       className="h-3.5 w-3.5 text-gray-400"
                                     />
@@ -1298,8 +1314,8 @@ export function CreateTurmaForm({ onSuccess }: CreateTurmaFormProps) {
                                       {it.type === "AULA"
                                         ? "aula"
                                         : it.type === "ATIVIDADE"
-                                        ? "atividade"
-                                        : "prova"}
+                                          ? "atividade"
+                                          : "prova"}
                                       )
                                     </span>
                                   </div>

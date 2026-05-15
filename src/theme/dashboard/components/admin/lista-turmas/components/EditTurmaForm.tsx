@@ -48,6 +48,11 @@ import { getTurmaInstrutoresVinculados } from "../utils/instrutores";
 import { queryKeys } from "@/lib/react-query/queryKeys";
 import { UserRole } from "@/config/roles";
 import { useUserRole } from "@/hooks/useUserRole";
+import {
+  getTurmaEstruturaItemCount,
+  isTurmaStatusPublicado,
+  TURMA_ESTRUTURA_PUBLICACAO_MESSAGE,
+} from "../utils/estrutura";
 
 interface EditTurmaFormProps {
   turmaId: string;
@@ -161,7 +166,7 @@ const normalizeItemType = (type: any): "AULA" | "PROVA" | "ATIVIDADE" => {
 
 const buildBuilderFromPayload = (
   payload?: CreateTurmaPayload["estrutura"] | null,
-  fallbackTemplate: TemplateOptionValue = "PADRAO"
+  fallbackTemplate: TemplateOptionValue = "PADRAO",
 ): BuilderData => {
   if (!payload) return getDefaultBuilder(fallbackTemplate as any);
 
@@ -213,7 +218,7 @@ const buildBuilderFromPayload = (
       id: String(item.id ?? fallbackId),
       title: String(item.title ?? item.titulo ?? item.nome ?? "Item"),
       type: normalizeItemType(
-        item.type ?? item.tipo ?? item.tipoAvaliacao ?? item.tipoAtividade
+        item.type ?? item.tipo ?? item.tipoAvaliacao ?? item.tipoAtividade,
       ),
       templateId: templateId ? String(templateId) : null,
       startDate: item.startDate ?? item.dataInicio ?? null,
@@ -223,9 +228,9 @@ const buildBuilderFromPayload = (
       obrigatoria: item.obrigatoria ?? item.obrigatorio ?? true,
       recuperacaoFinal: Boolean(
         item.recuperacaoFinal ??
-          item.recuperacao_final ??
-          item.isRecuperacaoFinal ??
-          false
+        item.recuperacao_final ??
+        item.isRecuperacaoFinal ??
+        false,
       ),
       ordem: item.ordem ?? order,
     };
@@ -240,7 +245,9 @@ const buildBuilderFromPayload = (
         const built = mapItem(item, `${modId}-item-${index}`, index + 1);
         map.set(String(built.id), built);
       });
-    return Array.from(map.values()).sort((a, b) => (a.ordem ?? 0) - (b.ordem ?? 0));
+    return Array.from(map.values()).sort(
+      (a, b) => (a.ordem ?? 0) - (b.ordem ?? 0),
+    );
   };
 
   const modulesRaw = Array.isArray(raw.modules)
@@ -254,7 +261,9 @@ const buildBuilderFromPayload = (
       ? raw.itensAvulsos
       : Array.isArray(raw.itens)
         ? raw.itens
-        : Array.isArray(raw.aulas) || Array.isArray(raw.provas) || Array.isArray(raw.atividades)
+        : Array.isArray(raw.aulas) ||
+            Array.isArray(raw.provas) ||
+            Array.isArray(raw.atividades)
           ? [
               ...(raw.aulas || []),
               ...(raw.provas || []),
@@ -274,7 +283,7 @@ const buildBuilderFromPayload = (
         Array.isArray(mod.atividades) ? mod.atividades : [],
         Array.isArray(mod.avaliacoes) ? mod.avaliacoes : [],
       ],
-      modId
+      modId,
     );
     return {
       id: modId,
@@ -284,10 +293,8 @@ const buildBuilderFromPayload = (
   });
 
   const standaloneItems = mergeItems(
-    [
-      Array.isArray(standaloneRaw) ? standaloneRaw : [],
-    ],
-    "standalone"
+    [Array.isArray(standaloneRaw) ? standaloneRaw : []],
+    "standalone",
   );
 
   return {
@@ -333,7 +340,7 @@ export function EditTurmaForm({
   const [loadingStep, setLoadingStep] = useState("");
 
   const [cursoId, setCursoId] = useState<string | null>(
-    cursoIdProp ? String(cursoIdProp) : null
+    cursoIdProp ? String(cursoIdProp) : null,
   );
   const [nome, setNome] = useState("");
   const [turno, setTurno] = useState<string | null>(null);
@@ -366,7 +373,10 @@ export function EditTurmaForm({
   const canEditTemplate = false;
   const statusNormalized = turma?.status?.toUpperCase?.() ?? "";
   const turmaJaIniciada = useMemo(() => {
-    if (statusNormalized === "EM_ANDAMENTO" || statusNormalized === "CONCLUIDO") {
+    if (
+      statusNormalized === "EM_ANDAMENTO" ||
+      statusNormalized === "CONCLUIDO"
+    ) {
       return true;
     }
     if (!turma?.dataInicio) return false;
@@ -381,8 +391,7 @@ export function EditTurmaForm({
 
     const estrutura = (turma as any)?.estrutura ?? null;
     const estruturaTipoFromTurma =
-      (turma as any)?.estruturaTipo ??
-      (estrutura?.estruturaTipo || null);
+      (turma as any)?.estruturaTipo ?? (estrutura?.estruturaTipo || null);
     const resolvedTemplate: TemplateOptionValue =
       (estruturaTipoFromTurma as TemplateOptionValue) || "PADRAO";
     const rawPublication =
@@ -409,7 +418,7 @@ export function EditTurmaForm({
       setMetodo(turma.metodo || null);
       setStatus(resolvedStatus);
       setInstrutorIds(
-        getTurmaInstrutoresVinculados(turma).map((instrutor) => instrutor.id)
+        getTurmaInstrutoresVinculados(turma).map((instrutor) => instrutor.id),
       );
       setEstruturaTipo(resolvedTemplate);
       setVagasIlimitadas(turma.vagasIlimitadas ?? true);
@@ -428,12 +437,7 @@ export function EditTurmaForm({
       setCurriculum(buildBuilderFromPayload(estrutura, resolvedTemplate));
       setHasInitializedStructure(true);
     }
-  }, [
-    cursoIdProp,
-    hasInitializedBase,
-    hasInitializedStructure,
-    turma,
-  ]);
+  }, [cursoIdProp, hasInitializedBase, hasInitializedStructure, turma]);
 
   const minDateTurma = useMemo(() => {
     const base = dataInscricaoFim ? new Date(dataInscricaoFim) : new Date();
@@ -449,7 +453,7 @@ export function EditTurmaForm({
     const min = new Date(
       minDateTurma.getFullYear(),
       minDateTurma.getMonth(),
-      minDateTurma.getDate()
+      minDateTurma.getDate(),
     ).getTime();
 
     const turmaIni = dataInicio ? toMs(dataInicio) : null;
@@ -462,7 +466,7 @@ export function EditTurmaForm({
       setDataInicio("");
       setDataFim("");
       toastCustom.error(
-        "O período da turma deve iniciar após o encerramento das inscrições."
+        "O período da turma deve iniciar após o encerramento das inscrições.",
       );
     }
   }, [dataFim, dataInicio, dataInscricaoFim, minDateTurma]);
@@ -527,7 +531,7 @@ export function EditTurmaForm({
 
     if (turmaIni <= inscrFim) {
       toastCustom.error(
-        "A turma não pode iniciar antes do encerramento das inscrições."
+        "A turma não pode iniciar antes do encerramento das inscrições.",
       );
       return false;
     }
@@ -546,6 +550,16 @@ export function EditTurmaForm({
   const validateStep3 = (): boolean => {
     const standalone = curriculum.standaloneItems || [];
     const modules = curriculum.modules || [];
+    const itemCount = getTurmaEstruturaItemCount(curriculum);
+
+    if (itemCount === 0) {
+      if (isTurmaStatusPublicado(status)) {
+        toastCustom.error(TURMA_ESTRUTURA_PUBLICACAO_MESSAGE);
+        return false;
+      }
+
+      return true;
+    }
 
     const hasModules = modules.length > 0;
     const hasStandalone = standalone.length > 0;
@@ -557,7 +571,7 @@ export function EditTurmaForm({
       }
       if (hasStandalone) {
         toastCustom.error(
-          "Estrutura modular: itens avulsos não são permitidos."
+          "Estrutura modular: itens avulsos não são permitidos.",
         );
         return false;
       }
@@ -577,37 +591,18 @@ export function EditTurmaForm({
     if (estruturaTipo === "DINAMICA") {
       if (!hasModules && !hasStandalone) {
         toastCustom.error(
-          "Estrutura dinâmica: adicione ao menos 1 módulo ou item avulso."
+          "Estrutura dinâmica: adicione ao menos 1 módulo ou item avulso.",
         );
         return false;
       }
     }
 
-    const allItems = [
-      ...modules.flatMap((m) => m.items || []),
-      ...standalone,
-    ];
-
-    if (allItems.length === 0) {
-      toastCustom.error("Adicione itens à estrutura.");
-      return false;
-    }
+    const allItems = [...modules.flatMap((m) => m.items || []), ...standalone];
 
     const missingTemplate = allItems.find((it) => !it.templateId);
     if (missingTemplate) {
       toastCustom.error(
-        "Há itens sem template vinculado. Abra o item e selecione um template."
-      );
-      return false;
-    }
-
-    const hasAula = allItems.some((it) => it.type === "AULA");
-    const hasAvaliacao = allItems.some(
-      (it) => it.type === "PROVA" || it.type === "ATIVIDADE"
-    );
-    if (!hasAula || !hasAvaliacao) {
-      toastCustom.error(
-        "A estrutura deve conter pelo menos 1 AULA e 1 PROVA ou ATIVIDADE."
+        "Há itens sem template vinculado. Abra o item e selecione um template.",
       );
       return false;
     }
@@ -640,14 +635,14 @@ export function EditTurmaForm({
     try {
       const isUuid = (value: string) =>
         /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(
-          value
+          value,
         );
 
       const aulaStatusById = new Map(
-        (aulaTemplates || []).map((a) => [String(a.id), a.status])
+        (aulaTemplates || []).map((a) => [String(a.id), a.status]),
       );
       const avaliacaoStatusById = new Map(
-        (avaliacaoTemplates || []).map((a) => [String(a.id), a.status])
+        (avaliacaoTemplates || []).map((a) => [String(a.id), a.status]),
       );
 
       const allItems = [
@@ -656,19 +651,21 @@ export function EditTurmaForm({
       ];
 
       const selectedAulaTemplateIds = new Set(
-        allItems.filter((it) => it.type === "AULA").map((it) => String(it.templateId))
+        allItems
+          .filter((it) => it.type === "AULA")
+          .map((it) => String(it.templateId)),
       );
       const selectedAvaliacaoTemplateIds = new Set(
         allItems
           .filter((it) => it.type === "PROVA" || it.type === "ATIVIDADE")
-          .map((it) => String(it.templateId))
+          .map((it) => String(it.templateId)),
       );
 
       const aulasToLink = (aulaTemplates || []).filter(
-        (t) => selectedAulaTemplateIds.has(String(t.id)) && !t.cursoId
+        (t) => selectedAulaTemplateIds.has(String(t.id)) && !t.cursoId,
       );
       const avaliacoesToLink = (avaliacaoTemplates || []).filter(
-        (t) => selectedAvaliacaoTemplateIds.has(String(t.id)) && !t.cursoId
+        (t) => selectedAvaliacaoTemplateIds.has(String(t.id)) && !t.cursoId,
       );
 
       if (cursoId && (aulasToLink.length > 0 || avaliacoesToLink.length > 0)) {
@@ -680,11 +677,16 @@ export function EditTurmaForm({
               ? { aulaTemplateIds: aulasToLink.map((t) => String(t.id)) }
               : {}),
             ...(avaliacoesToLink.length > 0
-              ? { avaliacaoTemplateIds: avaliacoesToLink.map((t) => String(t.id)) }
+              ? {
+                  avaliacaoTemplateIds: avaliacoesToLink.map((t) =>
+                    String(t.id),
+                  ),
+                }
               : {}),
           });
         } catch (err: any) {
-          const message = err?.message || "Falha ao vincular templates ao curso.";
+          const message =
+            err?.message || "Falha ao vincular templates ao curso.";
           toastCustom.error({
             title: "Erro ao vincular templates",
             description: message,
@@ -696,6 +698,7 @@ export function EditTurmaForm({
       const payload: Partial<CreateTurmaPayload> = {
         nome: nome.trim(),
         turno: turno as any,
+        ...(!isStatusDisabled ? { status } : {}),
         instrutorIds,
         vagasIlimitadas,
         ...(!vagasIlimitadas ? { vagasTotais: Number(vagasTotais) } : {}),
@@ -716,11 +719,11 @@ export function EditTurmaForm({
               type: it.type,
               title:
                 it.title.trim() ||
-              (it.type === "PROVA"
-                ? "Prova"
-                : it.type === "ATIVIDADE"
-                ? "Atividade"
-                : "Aula"),
+                (it.type === "PROVA"
+                  ? "Prova"
+                  : it.type === "ATIVIDADE"
+                    ? "Atividade"
+                    : "Aula"),
               templateId: it.templateId as string,
               ordem: itemIndex + 1,
               ...(it.startDate && it.endDate
@@ -739,46 +742,48 @@ export function EditTurmaForm({
               ...(it.instructorIds && it.instructorIds.length > 0
                 ? { instructorIds: it.instructorIds }
                 : it.instructorId
-                ? { instructorIds: [it.instructorId] }
-                : {}),
+                  ? { instructorIds: [it.instructorId] }
+                  : {}),
               ...(it.type === "PROVA"
                 ? { recuperacaoFinal: Boolean(it.recuperacaoFinal) }
                 : {}),
             })),
           })),
-          standaloneItems: (curriculum.standaloneItems || []).map((it, itemIndex) => ({
-            type: it.type,
-            title:
-              it.title.trim() ||
-              (it.type === "PROVA"
-                ? "Prova"
-                : it.type === "ATIVIDADE"
-                ? "Atividade"
-                : "Aula"),
-            templateId: it.templateId as string,
-            ordem: itemIndex + 1,
-            ...(it.startDate && it.endDate
-              ? { startDate: it.startDate, endDate: it.endDate }
-              : {}),
-            ...(() => {
-              const status =
-                it.type === "AULA"
-                  ? aulaStatusById.get(String(it.templateId))
-                  : avaliacaoStatusById.get(String(it.templateId));
-              return status && String(status).toUpperCase() === "RASCUNHO"
-                ? { status: "PUBLICADA" }
-                : {};
-            })(),
-            obrigatoria: it.obrigatoria ?? it.obrigatorio ?? true,
-            ...(it.instructorIds && it.instructorIds.length > 0
-              ? { instructorIds: it.instructorIds }
-              : it.instructorId
-              ? { instructorIds: [it.instructorId] }
-              : {}),
-            ...(it.type === "PROVA"
-              ? { recuperacaoFinal: Boolean(it.recuperacaoFinal) }
-              : {}),
-          })),
+          standaloneItems: (curriculum.standaloneItems || []).map(
+            (it, itemIndex) => ({
+              type: it.type,
+              title:
+                it.title.trim() ||
+                (it.type === "PROVA"
+                  ? "Prova"
+                  : it.type === "ATIVIDADE"
+                    ? "Atividade"
+                    : "Aula"),
+              templateId: it.templateId as string,
+              ordem: itemIndex + 1,
+              ...(it.startDate && it.endDate
+                ? { startDate: it.startDate, endDate: it.endDate }
+                : {}),
+              ...(() => {
+                const status =
+                  it.type === "AULA"
+                    ? aulaStatusById.get(String(it.templateId))
+                    : avaliacaoStatusById.get(String(it.templateId));
+                return status && String(status).toUpperCase() === "RASCUNHO"
+                  ? { status: "PUBLICADA" }
+                  : {};
+              })(),
+              obrigatoria: it.obrigatoria ?? it.obrigatorio ?? true,
+              ...(it.instructorIds && it.instructorIds.length > 0
+                ? { instructorIds: it.instructorIds }
+                : it.instructorId
+                  ? { instructorIds: [it.instructorId] }
+                  : {}),
+              ...(it.type === "PROVA"
+                ? { recuperacaoFinal: Boolean(it.recuperacaoFinal) }
+                : {}),
+            }),
+          ),
         },
       };
 
@@ -816,8 +821,8 @@ export function EditTurmaForm({
           if (fallbackCursoId) {
             router.push(
               `/dashboard/cursos/turmas/${turmaId}?cursoId=${encodeURIComponent(
-                fallbackCursoId
-              )}`
+                fallbackCursoId,
+              )}`,
             );
           } else {
             router.push(`/dashboard/cursos/turmas/${turmaId}`);
@@ -838,7 +843,7 @@ export function EditTurmaForm({
       if (code === "TURMA_EDICAO_BLOQUEADA_JA_INICIADA") {
         toastCustom.error(
           message ||
-            "Somente o setor pedagógico pode alterar uma turma após o início."
+            "Somente o setor pedagógico pode alterar uma turma após o início.",
         );
         return;
       }
@@ -846,21 +851,22 @@ export function EditTurmaForm({
       if (code === "TURMA_PERIODO_BLOQUEADO_APOS_INICIO") {
         toastCustom.error(
           message ||
-            "Não é possível alterar o período de inscrição ou o período da turma após o início."
+            "Não é possível alterar o período de inscrição ou o período da turma após o início.",
         );
         return;
       }
 
       if (code === "CAMPO_NAO_EDITAVEL") {
         toastCustom.error(
-          message || "Este campo não pode ser alterado na edição da turma."
+          message || "Este campo não pode ser alterado na edição da turma.",
         );
         return;
       }
 
       if (code === "INVALID_VAGAS_TOTAIS") {
         toastCustom.error(
-          message || "Vagas totais não podem ser menores que as inscrições ativas."
+          message ||
+            "Vagas totais não podem ser menores que as inscrições ativas.",
         );
         return;
       }
@@ -868,7 +874,7 @@ export function EditTurmaForm({
       if (code === "STATUS_NAO_EDITAVEL_APOS_INICIO") {
         toastCustom.error(
           message ||
-            "Não é possível alterar o status manualmente após o início da turma."
+            "Não é possível alterar o status manualmente após o início da turma.",
         );
         return;
       }
@@ -876,8 +882,17 @@ export function EditTurmaForm({
       if (statusCode === 422 && code === "TURMA_PREREQUISITOS_NAO_ATENDIDOS") {
         toastCustom.error(
           message ||
-            "A turma ainda não atende os pré-requisitos para publicação."
+            "A turma ainda não atende os pré-requisitos para publicação.",
         );
+        return;
+      }
+
+      if (
+        statusCode === 422 &&
+        code === "TURMA_ESTRUTURA_OBRIGATORIA_PUBLICACAO"
+      ) {
+        setStep(3);
+        toastCustom.error(message || TURMA_ESTRUTURA_PUBLICACAO_MESSAGE);
         return;
       }
 
@@ -987,7 +1002,12 @@ export function EditTurmaForm({
       </div>
 
       <div className="bg-white rounded-3xl p-6">
-        <Stepper value={step} onValueChange={() => {}} variant="minimal" className="space-y-8">
+        <Stepper
+          value={step}
+          onValueChange={() => {}}
+          variant="minimal"
+          className="space-y-8"
+        >
           <form onSubmit={onSubmit} className="flex flex-col gap-8">
             <StepperPanel>
               <StepperContent value={1} className="space-y-6">
@@ -1011,8 +1031,8 @@ export function EditTurmaForm({
                       opt.value === "MODULAR"
                         ? "250 75% 55%"
                         : opt.value === "DINAMICA"
-                        ? "190 70% 45%"
-                        : "150 60% 40%";
+                          ? "190 70% 45%"
+                          : "150 60% 40%";
                     return (
                       <motion.div
                         key={opt.value}
@@ -1034,14 +1054,18 @@ export function EditTurmaForm({
                           }
                           themeColor={theme}
                           selected={isActive}
-                          tooltip={TEMPLATE_TOOLTIP[opt.value as TemplateOptionValue]}
+                          tooltip={
+                            TEMPLATE_TOOLTIP[opt.value as TemplateOptionValue]
+                          }
                           onClick={() => {
                             toastCustom.error(
-                              "A estrutura não pode ser alterada na edição."
+                              "A estrutura não pode ser alterada na edição.",
                             );
                           }}
                           className={`min-h-[360px] md:min-h-[420px] ${
-                            canEditTemplate ? "" : "opacity-80 cursor-not-allowed"
+                            canEditTemplate
+                              ? ""
+                              : "opacity-80 cursor-not-allowed"
                           }`}
                         />
                       </motion.div>
@@ -1149,10 +1173,10 @@ export function EditTurmaForm({
                       }}
                       onChange={(range) => {
                         setDataInscricaoInicio(
-                          range.from ? range.from.toISOString() : ""
+                          range.from ? range.from.toISOString() : "",
                         );
                         setDataInscricaoFim(
-                          range.to ? range.to.toISOString() : ""
+                          range.to ? range.to.toISOString() : "",
                         );
                       }}
                       helperLabel="Período em que os alunos poderão se inscrever"
@@ -1168,7 +1192,9 @@ export function EditTurmaForm({
                         to: dataFim ? new Date(dataFim) : null,
                       }}
                       onChange={(range) => {
-                        setDataInicio(range.from ? range.from.toISOString() : "");
+                        setDataInicio(
+                          range.from ? range.from.toISOString() : "",
+                        );
                         setDataFim(range.to ? range.to.toISOString() : "");
                       }}
                       helperLabel="Período previsto de início e término das aulas"
@@ -1259,7 +1285,9 @@ export function EditTurmaForm({
                     template={(estruturaTipo as any) || undefined}
                     instructorOptions={instrutores}
                     modalidade={metodo as any}
-                    periodMinDate={dataInicio ? new Date(dataInicio) : undefined}
+                    periodMinDate={
+                      dataInicio ? new Date(dataInicio) : undefined
+                    }
                     periodMaxDate={dataFim ? new Date(dataFim) : undefined}
                     aulaTemplates={aulaTemplates}
                     avaliacaoTemplates={avaliacaoTemplates}
@@ -1346,7 +1374,7 @@ export function EditTurmaForm({
                         </span>
                         <div className="mt-1 text-gray-900">
                           {TEMPLATE_OPTIONS.find(
-                            (o) => o.value === estruturaTipo
+                            (o) => o.value === estruturaTipo,
                           )?.label || "—"}
                         </div>
                       </div>
@@ -1359,13 +1387,13 @@ export function EditTurmaForm({
                             ? `${
                                 dataInscricaoInicio
                                   ? new Date(
-                                      dataInscricaoInicio
+                                      dataInscricaoInicio,
                                     ).toLocaleDateString("pt-BR")
                                   : "…"
                               } - ${
                                 dataInscricaoFim
                                   ? new Date(
-                                      dataInscricaoFim
+                                      dataInscricaoFim,
                                     ).toLocaleDateString("pt-BR")
                                   : "…"
                               }`
@@ -1381,12 +1409,14 @@ export function EditTurmaForm({
                             ? `${
                                 dataInicio
                                   ? new Date(dataInicio).toLocaleDateString(
-                                      "pt-BR"
+                                      "pt-BR",
                                     )
                                   : "…"
                               } - ${
                                 dataFim
-                                  ? new Date(dataFim).toLocaleDateString("pt-BR")
+                                  ? new Date(dataFim).toLocaleDateString(
+                                      "pt-BR",
+                                    )
                                   : "…"
                               }`
                             : "—"}
@@ -1404,16 +1434,18 @@ export function EditTurmaForm({
                       </h4>
                       {(() => {
                         const totalModulos = curriculum.modules.length;
-                        const totalItens = curriculum.modules.reduce(
-                          (acc, m) => acc + m.items.length,
-                          0
-                        ) + (curriculum.standaloneItems?.length || 0);
+                        const totalItens =
+                          curriculum.modules.reduce(
+                            (acc, m) => acc + m.items.length,
+                            0,
+                          ) + (curriculum.standaloneItems?.length || 0);
 
                         if (totalModulos === 0 && totalItens === 0) return null;
 
                         return (
                           <span className="text-xs text-gray-500">
-                            {totalModulos} módulo{totalModulos !== 1 ? "s" : ""} · {totalItens} {totalItens === 1 ? "item" : "itens"}
+                            {totalModulos} módulo{totalModulos !== 1 ? "s" : ""}{" "}
+                            · {totalItens} {totalItens === 1 ? "item" : "itens"}
                           </span>
                         );
                       })()}
@@ -1439,7 +1471,8 @@ export function EditTurmaForm({
                                 </div>
                                 {m.items.length > 0 && (
                                   <span className="text-xs text-gray-500">
-                                    {m.items.length} {m.items.length === 1 ? "item" : "itens"}
+                                    {m.items.length}{" "}
+                                    {m.items.length === 1 ? "item" : "itens"}
                                   </span>
                                 )}
                               </div>
@@ -1456,8 +1489,8 @@ export function EditTurmaForm({
                                         it.type === "AULA"
                                           ? "GraduationCap"
                                           : it.type === "ATIVIDADE"
-                                          ? "Paperclip"
-                                          : "FileText"
+                                            ? "Paperclip"
+                                            : "FileText"
                                       }
                                       className="h-3.5 w-3.5 text-gray-400"
                                     />
@@ -1469,8 +1502,8 @@ export function EditTurmaForm({
                                       {it.type === "AULA"
                                         ? "aula"
                                         : it.type === "ATIVIDADE"
-                                        ? "atividade"
-                                        : "prova"}
+                                          ? "atividade"
+                                          : "prova"}
                                       )
                                     </span>
                                   </div>
@@ -1492,7 +1525,10 @@ export function EditTurmaForm({
                                     Itens fora de módulos
                                   </span>
                                   <span className="text-xs text-gray-500">
-                                    {curriculum.standaloneItems.length} {curriculum.standaloneItems.length === 1 ? "item" : "itens"}
+                                    {curriculum.standaloneItems.length}{" "}
+                                    {curriculum.standaloneItems.length === 1
+                                      ? "item"
+                                      : "itens"}
                                   </span>
                                 </div>
                               </div>
@@ -1507,8 +1543,8 @@ export function EditTurmaForm({
                                         it.type === "AULA"
                                           ? "GraduationCap"
                                           : it.type === "ATIVIDADE"
-                                          ? "Paperclip"
-                                          : "FileText"
+                                            ? "Paperclip"
+                                            : "FileText"
                                       }
                                       className="h-3.5 w-3.5 text-gray-400"
                                     />
@@ -1520,8 +1556,8 @@ export function EditTurmaForm({
                                       {it.type === "AULA"
                                         ? "aula"
                                         : it.type === "ATIVIDADE"
-                                        ? "atividade"
-                                        : "prova"}
+                                          ? "atividade"
+                                          : "prova"}
                                       )
                                     </span>
                                   </div>
@@ -1595,7 +1631,6 @@ export function EditTurmaForm({
                   {isSubmitting ? "Salvando..." : "Salvar alterações"}
                 </ButtonCustom>
               )}
-
             </footer>
           </form>
         </Stepper>

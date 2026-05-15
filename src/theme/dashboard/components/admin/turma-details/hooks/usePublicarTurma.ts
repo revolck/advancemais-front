@@ -5,6 +5,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { publicarTurma, type CursoTurma } from "@/api/cursos";
 import { toastCustom } from "@/components/ui/custom";
 import { queryKeys } from "@/lib/react-query/queryKeys";
+import { TURMA_ESTRUTURA_PUBLICACAO_MESSAGE } from "../../lista-turmas/utils/estrutura";
 
 export interface UsePublicarTurmaParams {
   cursoId: number | string;
@@ -27,7 +28,8 @@ export function usePublicarTurma({
 
   const isPublished = useMemo(() => {
     const rawStatus =
-      (turma as { publicacaoStatus?: string; statusPublicacao?: string })?.publicacaoStatus ??
+      (turma as { publicacaoStatus?: string; statusPublicacao?: string })
+        ?.publicacaoStatus ??
       (turma as { statusPublicacao?: string })?.statusPublicacao;
     if (typeof (turma as { publicado?: boolean })?.publicado === "boolean") {
       return Boolean((turma as { publicado: boolean }).publicado);
@@ -43,7 +45,7 @@ export function usePublicarTurma({
 
   const mergeTurmaPatch = (
     current: CursoTurma | undefined,
-    patch: Partial<CursoTurma> | undefined
+    patch: Partial<CursoTurma> | undefined,
   ): CursoTurma => {
     const base = current ?? turma;
     const next = {
@@ -54,17 +56,22 @@ export function usePublicarTurma({
     };
 
     const publicationStatus =
-      (patch as { publicacaoStatus?: string; statusPublicacao?: string } | undefined)
-        ?.publicacaoStatus ??
+      (
+        patch as
+          | { publicacaoStatus?: string; statusPublicacao?: string }
+          | undefined
+      )?.publicacaoStatus ??
       (patch as { statusPublicacao?: string } | undefined)?.statusPublicacao ??
-      (typeof (patch as { publicado?: boolean } | undefined)?.publicado === "boolean"
+      (typeof (patch as { publicado?: boolean } | undefined)?.publicado ===
+      "boolean"
         ? (patch as { publicado?: boolean }).publicado
           ? "PUBLICADO"
           : "RASCUNHO"
         : undefined);
 
     if (publicationStatus) {
-      next.publicacaoStatus = publicationStatus as CursoTurma["publicacaoStatus"];
+      next.publicacaoStatus =
+        publicationStatus as CursoTurma["publicacaoStatus"];
     }
 
     return next;
@@ -76,9 +83,8 @@ export function usePublicarTurma({
     onSuccess: async (data, publicar) => {
       const acao = publicar ? "publicada" : "despublicada";
       toastCustom.success(`Turma ${acao} com sucesso!`);
-      queryClient.setQueryData(
-        detailQueryKey,
-        (current?: CursoTurma) => mergeTurmaPatch(current, data)
+      queryClient.setQueryData(detailQueryKey, (current?: CursoTurma) =>
+        mergeTurmaPatch(current, data),
       );
 
       await queryClient.invalidateQueries({
@@ -102,24 +108,26 @@ export function usePublicarTurma({
 
       if (error?.status === 403 || code === "FORBIDDEN") {
         toastCustom.error("Você não tem permissão para alterar esta turma.");
+      } else if (code === "TURMA_ESTRUTURA_OBRIGATORIA_PUBLICACAO") {
+        toastCustom.error(message || TURMA_ESTRUTURA_PUBLICACAO_MESSAGE);
       } else if (code === "TURMA_PREREQUISITOS_NAO_ATENDIDOS") {
         toastCustom.error(
           message ||
-            "A turma ainda não atende os pré-requisitos para publicação."
+            "A turma ainda não atende os pré-requisitos para publicação.",
         );
       } else if (
         code === "TURMA_DESPUBLICACAO_BLOQUEADA_EM_ANDAMENTO" ||
         code === "TURMA_DESPUBLICACAO_BLOQUEADA_COM_INSCRITOS"
       ) {
         toastCustom.error(
-          message || "Não foi possível despublicar a turma no estado atual."
+          message || "Não foi possível despublicar a turma no estado atual.",
         );
       } else {
         toastCustom.error(
           message ||
             (isPublished
               ? "Erro ao despublicar turma."
-              : "Erro ao publicar turma.")
+              : "Erro ao publicar turma."),
         );
       }
       onSettled?.();

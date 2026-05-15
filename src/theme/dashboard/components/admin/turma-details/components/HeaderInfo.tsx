@@ -23,6 +23,7 @@ import {
 import { cn } from "@/lib/utils";
 import { UserRole } from "@/config/roles";
 import { useUserRole } from "@/hooks/useUserRole";
+import { toastCustom } from "@/components/ui/custom";
 import { useExcluirTurma, usePublicarTurma } from "../hooks";
 import {
   ConfirmarPublicacaoTurmaModal,
@@ -30,6 +31,10 @@ import {
 } from "../modal-acoes";
 import { formatTurmaStatus, getTurmaStatusBadgeClasses } from "../utils";
 import type { HeaderInfoProps } from "../types";
+import {
+  getTurmaEstruturaItemCount,
+  TURMA_ESTRUTURA_PUBLICACAO_MESSAGE,
+} from "../../lista-turmas/utils/estrutura";
 
 export function HeaderInfo({
   turma,
@@ -65,7 +70,10 @@ export function HeaderInfo({
 
   const statusNormalized = turma.status?.toUpperCase?.() ?? "";
   const turmaJaIniciada = useMemo(() => {
-    if (statusNormalized === "EM_ANDAMENTO" || statusNormalized === "CONCLUIDO") {
+    if (
+      statusNormalized === "EM_ANDAMENTO" ||
+      statusNormalized === "CONCLUIDO"
+    ) {
       return true;
     }
     if (!turma.dataInicio) return false;
@@ -79,14 +87,18 @@ export function HeaderInfo({
     !turmaJaIniciada && !(isPublished && possuiInscritosAtivos);
   const canDeleteTurma = !turmaJaIniciada && !possuiInscritosAtivos;
   const canEditTurma = canManage && (!turmaJaIniciada || isPedagogico);
+  const estruturaResumoItemCount = (turma as any)?.estruturaResumo?.itemCount;
+  const estruturaItemCount =
+    typeof estruturaResumoItemCount === "number"
+      ? estruturaResumoItemCount
+      : getTurmaEstruturaItemCount((turma as any)?.estrutura);
+  const canPublishByStructure = isPublished || estruturaItemCount >= 1;
   const hasAvailableActions =
     canManage &&
-    (
-      canEditTurma ||
+    (canEditTurma ||
       canTogglePublication ||
       canDeleteTurma ||
-      canAppendItensOperacionais
-    );
+      canAppendItensOperacionais);
 
   const statusBadge = (
     <Badge
@@ -141,8 +153,8 @@ export function HeaderInfo({
                       }
                       window.location.assign(
                         `/dashboard/cursos/turmas/${turma.id}/editar?cursoId=${encodeURIComponent(
-                          String(cursoId)
-                        )}`
+                          String(cursoId),
+                        )}`,
                       );
                     }}
                     className="cursor-pointer"
@@ -184,6 +196,11 @@ export function HeaderInfo({
                   <DropdownMenuItem
                     onSelect={(event) => {
                       event.preventDefault();
+                      if (!isPublished && !canPublishByStructure) {
+                        toastCustom.error(TURMA_ESTRUTURA_PUBLICACAO_MESSAGE);
+                        setIsActionsOpen(false);
+                        return;
+                      }
                       setIsConfirmModalOpen(true);
                       setIsActionsOpen(false);
                     }}
@@ -257,7 +274,14 @@ export function HeaderInfo({
         isOpen={isConfirmModalOpen}
         onOpenChange={setIsConfirmModalOpen}
         isPublished={isPublished}
-        onConfirm={() => publicarOuDespublicar(!isPublished)}
+        onConfirm={() => {
+          if (!isPublished && !canPublishByStructure) {
+            toastCustom.error(TURMA_ESTRUTURA_PUBLICACAO_MESSAGE);
+            setIsConfirmModalOpen(false);
+            return;
+          }
+          publicarOuDespublicar(!isPublished);
+        }}
         isPending={isPending}
       />
 

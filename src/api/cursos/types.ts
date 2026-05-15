@@ -125,6 +125,11 @@ export interface CursoTurma {
   editadoEm?: string;
   estruturaTipo?: TurmaEstruturaTipo;
   estrutura?: CreateTurmaEstruturaPayload;
+  estruturaResumo?: {
+    itemCount?: number;
+    modulesCount?: number;
+    standaloneItemsCount?: number;
+  };
   aulas?: Array<Record<string, unknown>>;
   provas?: Array<Record<string, unknown>>;
   itens?: Array<Record<string, unknown>>;
@@ -786,8 +791,7 @@ export interface CursoAlunoEntrevistaOpcaoItem {
   enderecoPadraoEntrevista?: EntrevistaEndereco | null;
 }
 
-export interface CursoAlunoEntrevistaOpcoesResponse
-  extends EntrevistaOverviewCapabilities {
+export interface CursoAlunoEntrevistaOpcoesResponse extends EntrevistaOverviewCapabilities {
   google?: EntrevistaGoogleCapability | null;
   items: CursoAlunoEntrevistaOpcaoItem[];
 }
@@ -842,8 +846,10 @@ export type VisaoGeralFaturamentoPeriod =
   | "year"
   | "custom";
 
-export interface VisaoGeralFaturamentoHistoricalPoint
-  extends Record<string, string | number> {
+export interface VisaoGeralFaturamentoHistoricalPoint extends Record<
+  string,
+  string | number
+> {
   date: string; // day: YYYY-MM-DDTHH:00:00 | week/month/custom: YYYY-MM-DD | year: YYYY-MM
   faturamento: number;
   transacoes: number;
@@ -1164,8 +1170,7 @@ export interface UpsertFrequenciaLancamentoPayload {
   modoLancamento?: FrequenciaModoLancamento;
 }
 
-export interface UpsertFrequenciaLancamentoByAlunoPayload
-  extends UpsertFrequenciaLancamentoPayload {
+export interface UpsertFrequenciaLancamentoByAlunoPayload extends UpsertFrequenciaLancamentoPayload {
   cursoId: string;
   turmaId: string;
 }
@@ -1230,8 +1235,7 @@ export interface ListFrequenciaHistoricoByNaturalKeyParams {
   origemId: string;
 }
 
-export interface ListFrequenciaHistoricoByAlunoNaturalKeyParams
-  extends ListFrequenciaHistoricoByNaturalKeyParams {
+export interface ListFrequenciaHistoricoByAlunoNaturalKeyParams extends ListFrequenciaHistoricoByNaturalKeyParams {
   cursoId: string;
   turmaId: string;
 }
@@ -1240,7 +1244,12 @@ export interface ListFrequenciaHistoricoByAlunoNaturalKeyParams
 // NOTAS (API Real)
 // ===================================
 
-export type NotaOrigemTipo = "PROVA" | "ATIVIDADE" | "AULA" | "OUTRO" | "SISTEMA";
+export type NotaOrigemTipo =
+  | "PROVA"
+  | "ATIVIDADE"
+  | "AULA"
+  | "OUTRO"
+  | "SISTEMA";
 export type NotaHistoryAction = "ADDED" | "REMOVED";
 export type NotaHistoricoAcao =
   | "NOTA_MANUAL_ADICIONADA"
@@ -1377,8 +1386,18 @@ export interface DeleteNotasParams {
 
 export type AvaliacaoTipo = "PROVA" | "ATIVIDADE";
 export type AvaliacaoTipoAtividade = "QUESTOES" | "PERGUNTA_RESPOSTA";
-export type AvaliacaoStatus = "RASCUNHO" | "PUBLICADA" | "EM_ANDAMENTO" | "CONCLUIDA" | "CANCELADA";
-export type AvaliacaoModalidade = "ONLINE" | "PRESENCIAL" | "AO_VIVO" | "LIVE" | "SEMIPRESENCIAL";
+export type AvaliacaoStatus =
+  | "RASCUNHO"
+  | "PUBLICADA"
+  | "EM_ANDAMENTO"
+  | "CONCLUIDA"
+  | "CANCELADA";
+export type AvaliacaoModalidade =
+  | "ONLINE"
+  | "PRESENCIAL"
+  | "AO_VIVO"
+  | "LIVE"
+  | "SEMIPRESENCIAL";
 export type AvaliacaoQuestaoTipo = "MULTIPLA_ESCOLHA" | "TEXTO" | "ANEXO";
 
 // Alternativa para criação (sem IDs)
@@ -1780,8 +1799,7 @@ export interface CreateEstagioGlobalPayload {
   grupos?: CreateEstagioGroupPayload[];
 }
 
-export interface UpdateEstagioGlobalPayload
-  extends Partial<CreateEstagioGlobalPayload> {
+export interface UpdateEstagioGlobalPayload extends Partial<CreateEstagioGlobalPayload> {
   status?: EstagioStatus;
 }
 
@@ -1937,7 +1955,11 @@ export type AgendaEventoTipo =
   | "TURMA_INICIO"
   | "TURMA_FIM";
 
-export type AulaModalidade = "ONLINE" | "PRESENCIAL" | "AO_VIVO" | "SEMIPRESENCIAL";
+export type AulaModalidade =
+  | "ONLINE"
+  | "PRESENCIAL"
+  | "AO_VIVO"
+  | "SEMIPRESENCIAL";
 
 export interface AgendaEvento {
   id: string;
