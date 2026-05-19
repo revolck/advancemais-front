@@ -45,7 +45,6 @@ import { useUserRole } from "@/hooks/useUserRole";
 import {
   getTurmaEstruturaItemCount,
   isTurmaStatusPublicado,
-  TURMA_ESTRUTURA_PUBLICACAO_MESSAGE,
 } from "../utils/estrutura";
 
 interface CreateTurmaFormProps {
@@ -355,6 +354,17 @@ export function CreateTurmaForm({ onSuccess }: CreateTurmaFormProps) {
       }
     }
 
+    // Regras de publicação: período deve estar válido e no futuro
+    if (isTurmaStatusPublicado(status)) {
+      const now = Date.now();
+      if (turmaIni <= now) {
+        toastCustom.error(
+          "Para publicar, informe uma data de início futura para a turma.",
+        );
+        return false;
+      }
+    }
+
     return true;
   };
 
@@ -364,11 +374,6 @@ export function CreateTurmaForm({ onSuccess }: CreateTurmaFormProps) {
     const itemCount = getTurmaEstruturaItemCount(curriculum);
 
     if (itemCount === 0) {
-      if (isTurmaStatusPublicado(status)) {
-        toastCustom.error(TURMA_ESTRUTURA_PUBLICACAO_MESSAGE);
-        return false;
-      }
-
       return true;
     }
 
@@ -643,10 +648,13 @@ export function CreateTurmaForm({ onSuccess }: CreateTurmaFormProps) {
 
       if (
         statusCode === 422 &&
-        code === "TURMA_ESTRUTURA_OBRIGATORIA_PUBLICACAO"
+        code === "TURMA_PERIODO_OBRIGATORIO_PUBLICACAO"
       ) {
-        setStep(3);
-        toastCustom.error(err?.message || TURMA_ESTRUTURA_PUBLICACAO_MESSAGE);
+        setStep(2);
+        toastCustom.error(
+          err?.message ||
+            "Para publicar uma turma sem estrutura, informe uma data de início e fim futuras.",
+        );
         return;
       }
 
@@ -1037,6 +1045,18 @@ export function CreateTurmaForm({ onSuccess }: CreateTurmaFormProps) {
                     Monte a estrutura (módulos e aulas).
                   </p>
                 </div>
+                {getTurmaEstruturaItemCount(curriculum) === 0 && (
+                  <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+                    <p className="text-sm! font-semibold! text-amber-900! mb-0!">
+                      Estrutura pendente
+                    </p>
+                    <p className="text-xs! text-amber-800! mb-0!">
+                      {isTurmaStatusPublicado(status)
+                        ? "Você pode publicar e receber inscrições, mas a turma só iniciará quando houver pelo menos 1 item na estrutura."
+                        : "Você pode salvar a turma em rascunho e completar a estrutura depois."}
+                    </p>
+                  </div>
+                )}
                 <BuilderManager
                   value={curriculum}
                   onChange={setCurriculum}

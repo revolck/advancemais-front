@@ -7,7 +7,7 @@ type StructureLike = Partial<BuilderData> & {
 };
 
 export const TURMA_ESTRUTURA_PUBLICACAO_MESSAGE =
-  "Para publicar a turma, adicione pelo menos 1 item na estrutura.";
+  "Turma sem estrutura: voce pode publicar e receber inscricoes, mas ela so iniciara quando houver pelo menos 1 item na estrutura.";
 
 export interface TurmaEstruturaResumo {
   itemCount: number;

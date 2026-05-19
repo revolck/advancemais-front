@@ -130,6 +130,7 @@ export interface CursoTurma {
     modulesCount?: number;
     standaloneItemsCount?: number;
   };
+  inicioBloqueadoPorEstrutura?: boolean;
   aulas?: Array<Record<string, unknown>>;
   provas?: Array<Record<string, unknown>>;
   itens?: Array<Record<string, unknown>>;

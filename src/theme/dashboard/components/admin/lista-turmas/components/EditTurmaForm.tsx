@@ -369,7 +369,6 @@ export function EditTurmaForm({
     isLoading: loadingTemplates,
   } = useTemplatesForTurma({ cursoId, turmaId, includeTurma: true });
 
-  const isStatusDisabled = true;
   const canEditTemplate = false;
   const statusNormalized = turma?.status?.toUpperCase?.() ?? "";
   const turmaJaIniciada = useMemo(() => {
@@ -383,8 +382,14 @@ export function EditTurmaForm({
     const dataInicioMs = new Date(turma.dataInicio).getTime();
     return Number.isFinite(dataInicioMs) && dataInicioMs <= Date.now();
   }, [statusNormalized, turma?.dataInicio]);
-  const periodoBloqueadoAposInicio = turmaJaIniciada;
-  const edicaoBloqueadaAposInicio = turmaJaIniciada && !isPedagogico;
+  const inicioBloqueadoPorEstrutura = Boolean(
+    turma?.inicioBloqueadoPorEstrutura,
+  );
+  const periodoBloqueadoAposInicio =
+    turmaJaIniciada && !inicioBloqueadoPorEstrutura;
+  const edicaoBloqueadaAposInicio =
+    turmaJaIniciada && !inicioBloqueadoPorEstrutura && !isPedagogico;
+  const isStatusDisabled = periodoBloqueadoAposInicio;
 
   useEffect(() => {
     if (!turma) return;
@@ -544,6 +549,16 @@ export function EditTurmaForm({
       }
     }
 
+    if (!periodoBloqueadoAposInicio && isTurmaStatusPublicado(status)) {
+      const now = Date.now();
+      if (turmaIni <= now) {
+        toastCustom.error(
+          "Para publicar, informe uma data de início futura para a turma.",
+        );
+        return false;
+      }
+    }
+
     return true;
   };
 
@@ -553,11 +568,6 @@ export function EditTurmaForm({
     const itemCount = getTurmaEstruturaItemCount(curriculum);
 
     if (itemCount === 0) {
-      if (isTurmaStatusPublicado(status)) {
-        toastCustom.error(TURMA_ESTRUTURA_PUBLICACAO_MESSAGE);
-        return false;
-      }
-
       return true;
     }
 
@@ -896,6 +906,18 @@ export function EditTurmaForm({
         return;
       }
 
+      if (
+        statusCode === 422 &&
+        code === "TURMA_PERIODO_OBRIGATORIO_PUBLICACAO"
+      ) {
+        setStep(2);
+        toastCustom.error(
+          message ||
+            "Para publicar uma turma sem estrutura, informe uma nova data de início e fim futuras.",
+        );
+        return;
+      }
+
       toastCustom.error({
         title: "Erro ao atualizar turma",
         description: message || "Tente novamente.",
@@ -949,6 +971,16 @@ export function EditTurmaForm({
         loadingStep={loadingStep}
         icon={Users}
       />
+
+      {inicioBloqueadoPorEstrutura && (
+        <Alert className="border-amber-200 bg-amber-50 text-amber-900">
+          <AlertDescription>
+            Esta turma não iniciou porque ainda não possui estrutura. Adicione a
+            estrutura ou mantenha a pendência, mas informe uma nova data de
+            início e fim futuras antes de publicar novamente.
+          </AlertDescription>
+        </Alert>
+      )}
 
       <div className="rounded-3xl border border-gray-200 bg-gray-50 p-4">
         <Stepper
@@ -1271,6 +1303,18 @@ export function EditTurmaForm({
                     Monte a estrutura (módulos e aulas).
                   </p>
                 </div>
+                {getTurmaEstruturaItemCount(curriculum) === 0 && (
+                  <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+                    <p className="text-sm! font-semibold! text-amber-900! mb-0!">
+                      Estrutura pendente
+                    </p>
+                    <p className="text-xs! text-amber-800! mb-0!">
+                      {isTurmaStatusPublicado(status)
+                        ? "A turma pode estar pública para inscrições, mas só iniciará quando houver pelo menos 1 item na estrutura."
+                        : "Você pode salvar a turma em rascunho e completar a estrutura depois."}
+                    </p>
+                  </div>
+                )}
                 {loadingTemplates && (
                   <div className="rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-700">
                     Carregando templates do curso selecionado...

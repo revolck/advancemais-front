@@ -472,6 +472,10 @@ function normalizeTurma(turma: any): CursoTurma {
     estruturaTipo: turma.estruturaTipo,
     estrutura: turma.estrutura,
     estruturaResumo: turma.estruturaResumo,
+    inicioBloqueadoPorEstrutura:
+      typeof turma.inicioBloqueadoPorEstrutura === "boolean"
+        ? turma.inicioBloqueadoPorEstrutura
+        : undefined,
     aulas: Array.isArray(turma.aulas) ? turma.aulas : undefined,
     provas: Array.isArray(turma.provas) ? turma.provas : undefined,
     itens: Array.isArray(turma.itens) ? turma.itens : undefined,

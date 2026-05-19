@@ -87,12 +87,48 @@ export function HeaderInfo({
     !turmaJaIniciada && !(isPublished && possuiInscritosAtivos);
   const canDeleteTurma = !turmaJaIniciada && !possuiInscritosAtivos;
   const canEditTurma = canManage && (!turmaJaIniciada || isPedagogico);
-  const estruturaResumoItemCount = (turma as any)?.estruturaResumo?.itemCount;
+  const estruturaResumoItemCount = turma.estruturaResumo?.itemCount;
   const estruturaItemCount =
     typeof estruturaResumoItemCount === "number"
       ? estruturaResumoItemCount
-      : getTurmaEstruturaItemCount((turma as any)?.estrutura);
-  const canPublishByStructure = isPublished || estruturaItemCount >= 1;
+      : getTurmaEstruturaItemCount(turma.estrutura as any);
+  const estruturaPendente = estruturaItemCount === 0;
+  const inicioBloqueadoPorEstrutura = Boolean(
+    turma.inicioBloqueadoPorEstrutura,
+  );
+
+  const validatePublishPeriod = ():
+    | { ok: true }
+    | { ok: false; message: string } => {
+    const rawInicio = turma.dataInicio;
+    const rawFim = turma.dataFim;
+    if (!rawInicio || !rawFim) {
+      return {
+        ok: false,
+        message:
+          "Para publicar, informe uma data de início e fim válidas para a turma.",
+      };
+    }
+    const inicioMs = new Date(rawInicio).getTime();
+    const fimMs = new Date(rawFim).getTime();
+    if (!Number.isFinite(inicioMs) || !Number.isFinite(fimMs)) {
+      return { ok: false, message: "Período da turma inválido." };
+    }
+    if (fimMs <= inicioMs) {
+      return {
+        ok: false,
+        message: "Turma: término deve ser após o início.",
+      };
+    }
+    if (inicioMs <= Date.now()) {
+      return {
+        ok: false,
+        message:
+          "Para publicar, informe uma data de início futura para a turma.",
+      };
+    }
+    return { ok: true };
+  };
   const hasAvailableActions =
     canManage &&
     (canEditTurma ||
@@ -120,6 +156,20 @@ export function HeaderInfo({
               <h3 className="font-semibold !mb-0">{turma.nome}</h3>
               {statusBadge}
             </div>
+            {(estruturaPendente || inicioBloqueadoPorEstrutura) && (
+              <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+                <p className="text-xs! font-semibold! text-amber-900! mb-0!">
+                  {inicioBloqueadoPorEstrutura
+                    ? "Início bloqueado por estrutura"
+                    : "Estrutura pendente"}
+                </p>
+                <p className="text-[11px]! leading-relaxed! text-amber-800! mt-1! mb-0!">
+                  {inicioBloqueadoPorEstrutura
+                    ? "Esta turma não iniciou porque ainda não possui estrutura. Adicione ao menos 1 item e informe uma nova data de início e fim futuras para publicar novamente."
+                    : "Você pode manter a turma pública para inscrições, mas ela só iniciará quando houver pelo menos 1 item na estrutura."}
+                </p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -196,10 +246,18 @@ export function HeaderInfo({
                   <DropdownMenuItem
                     onSelect={(event) => {
                       event.preventDefault();
-                      if (!isPublished && !canPublishByStructure) {
-                        toastCustom.error(TURMA_ESTRUTURA_PUBLICACAO_MESSAGE);
-                        setIsActionsOpen(false);
-                        return;
+                      if (!isPublished) {
+                        const period = validatePublishPeriod();
+                        if (!period.ok) {
+                          toastCustom.error(period.message);
+                          setIsActionsOpen(false);
+                          return;
+                        }
+                        if (estruturaPendente) {
+                          toastCustom.warning(
+                            TURMA_ESTRUTURA_PUBLICACAO_MESSAGE,
+                          );
+                        }
                       }
                       setIsConfirmModalOpen(true);
                       setIsActionsOpen(false);
@@ -275,10 +333,13 @@ export function HeaderInfo({
         onOpenChange={setIsConfirmModalOpen}
         isPublished={isPublished}
         onConfirm={() => {
-          if (!isPublished && !canPublishByStructure) {
-            toastCustom.error(TURMA_ESTRUTURA_PUBLICACAO_MESSAGE);
-            setIsConfirmModalOpen(false);
-            return;
+          if (!isPublished) {
+            const period = validatePublishPeriod();
+            if (!period.ok) {
+              toastCustom.error(period.message);
+              setIsConfirmModalOpen(false);
+              return;
+            }
           }
           publicarOuDespublicar(!isPublished);
         }}

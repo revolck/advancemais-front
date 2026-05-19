@@ -108,6 +108,11 @@ export function usePublicarTurma({
 
       if (error?.status === 403 || code === "FORBIDDEN") {
         toastCustom.error("Você não tem permissão para alterar esta turma.");
+      } else if (code === "TURMA_PERIODO_OBRIGATORIO_PUBLICACAO") {
+        toastCustom.error(
+          message ||
+            "Para publicar uma turma sem estrutura, informe uma nova data de início e fim futuras.",
+        );
       } else if (code === "TURMA_ESTRUTURA_OBRIGATORIA_PUBLICACAO") {
         toastCustom.error(message || TURMA_ESTRUTURA_PUBLICACAO_MESSAGE);
       } else if (code === "TURMA_PREREQUISITOS_NAO_ATENDIDOS") {
