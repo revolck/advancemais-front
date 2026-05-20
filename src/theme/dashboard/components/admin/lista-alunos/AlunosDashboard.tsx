@@ -26,7 +26,8 @@ import { useAlunosDashboardQuery } from "./hooks/useAlunosDashboardQuery";
 import { queryKeys } from "@/lib/react-query/queryKeys";
 
 const MIN_SEARCH_LENGTH = 3;
-const SEARCH_HELPER_TEXT = "Pesquise por nome, email, CPF ou código do aluno.";
+const SEARCH_HELPER_TEXT =
+  "Pesquise por nome, email, CPF, código do aluno ou certificado.";
 
 const getSearchValidationMessage = (value: string): string | null => {
   const trimmed = value.trim();
@@ -130,6 +131,7 @@ export function AlunosDashboard({ className }: { className?: string }) {
           : null,
       search:
         appliedSearchTerm.length >= MIN_SEARCH_LENGTH ? appliedSearchTerm : "",
+      incluirCertificados: true,
     };
   }, [
     currentPage,
@@ -272,7 +274,7 @@ export function AlunosDashboard({ className }: { className?: string }) {
     : "Nenhum aluno listado";
   const emptyStateDescription = selectedCourseId
     ? "Não encontramos alunos com os filtros aplicados. Tente ajustar sua busca."
-    : "Cadastre alunos com inscrições ou ajuste os filtros para visualizar resultados.";
+    : "Cadastre alunos com inscrições ou certificados e ajuste os filtros para visualizar resultados.";
 
   const searchValidationMessage = useMemo(
     () => getSearchValidationMessage(pendingSearchTerm),
@@ -450,7 +452,7 @@ export function AlunosDashboard({ className }: { className?: string }) {
               label: "Pesquisar aluno",
               value: pendingSearchTerm,
               onChange: (value) => setPendingSearchTerm(value),
-              placeholder: "Nome, email, CPF...",
+              placeholder: "Nome, email, CPF ou certificado...",
               onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => {
                 if (e.key === "Enter") {
                   e.preventDefault();

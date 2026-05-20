@@ -615,6 +615,13 @@ export interface CreateCertificadoPayload {
 }
 
 // Alunos
+export interface AlunoUltimoCursoCertificado {
+  id: string;
+  codigo?: string;
+  status?: CertificadoStatus | string;
+  emitidoEm?: string;
+}
+
 export interface AlunoComInscricao {
   id: string;
   codigo?: string;
@@ -625,6 +632,7 @@ export interface AlunoComInscricao {
   cidade?: string;
   estado?: string;
   status?: string;
+  avatarUrl?: string | null;
   ultimoLogin?: string | null;
   criadoEm?: string;
   ultimoCurso?: {
@@ -642,6 +650,7 @@ export interface AlunoComInscricao {
       nome: string;
       codigo?: string;
     };
+    certificado?: AlunoUltimoCursoCertificado | null;
   } | null;
 }
 
@@ -653,6 +662,7 @@ export interface ListAlunosComInscricaoParams {
   cursoId?: string | string[];
   turmaId?: string | string[];
   cidade?: string | string[];
+  incluirCertificados?: boolean;
 }
 
 export interface ListAlunosComInscricaoResponse {

@@ -1754,6 +1754,12 @@ export async function listAlunosComInscricao(
 
   if (params?.page) queryParams.set("page", String(params.page));
   if (params?.limit) queryParams.set("limit", String(params.limit));
+  if (typeof params?.incluirCertificados === "boolean") {
+    queryParams.set(
+      "incluirCertificados",
+      String(params.incluirCertificados),
+    );
+  }
 
   // Suporte para múltiplos status
   if (params?.status) {

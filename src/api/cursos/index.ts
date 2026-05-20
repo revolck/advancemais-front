@@ -195,6 +195,7 @@ export type {
   CreateCertificadoPayload,
   TurmaEstagio,
   CreateEstagioPayload,
+  AlunoUltimoCursoCertificado,
   AlunoComInscricao,
   ListAlunosComInscricaoParams,
   ListAlunosComInscricaoResponse,

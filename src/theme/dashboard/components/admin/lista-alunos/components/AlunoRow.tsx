@@ -108,7 +108,7 @@ const getModalidadeColor = (metodo?: string) => {
 
 const getUltimoCurso = (
   aluno: AlunoComInscricao,
-  cursoFiltradoId?: string | null
+  cursoFiltradoId?: string | null,
 ) => {
   const ultimoCurso = aluno.ultimoCurso;
   if (!ultimoCurso) return null;
@@ -177,7 +177,7 @@ export function AlunoRow({
         <div className="flex items-center gap-3">
           <AvatarCustom
             name={alunoNome}
-            src={(aluno as any)?.avatarUrl ?? undefined}
+            src={aluno.avatarUrl ?? undefined}
             size="sm"
             showStatus={false}
           />

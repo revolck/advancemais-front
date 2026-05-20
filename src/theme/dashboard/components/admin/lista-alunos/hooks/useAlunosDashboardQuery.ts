@@ -17,6 +17,7 @@ export interface NormalizedAlunosFilters {
   turmaId?: string | null;
   cidade?: string | string[] | null;
   search?: string;
+  incluirCertificados?: boolean;
 }
 
 export interface AlunosQueryResult {
@@ -36,6 +37,7 @@ export function useAlunosDashboardQuery(filters: NormalizedAlunosFilters) {
       const params: ListAlunosComInscricaoParams = {
         page: filters.page,
         limit: filters.pageSize,
+        incluirCertificados: filters.incluirCertificados ?? true,
       };
 
       if (filters.status) {
