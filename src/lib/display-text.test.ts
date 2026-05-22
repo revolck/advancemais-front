@@ -20,7 +20,7 @@ describe("formatReadableText", () => {
       formatReadableText(
         "FORMAÇÃO EM CONSULTORIA INTERNA DE RH - CURSO 100% ON-LINE",
       ),
-    ).toBe("Formação em Consultoria Interna de RH - Curso 100% on-line");
+    ).toBe("Formação em Consultoria Interna de RH - Curso 100% Online");
 
     expect(formatReadableText("SPED FISCAL NA PRÁTICA")).toBe(
       "SPED Fiscal na Prática",
@@ -47,7 +47,7 @@ describe("formatReadableText", () => {
     );
     expect(
       formatReadableText("CURSO de ALMOXARIFADO e EXPEDIÇÃO - CURSO 100% ON-LINE"),
-    ).toBe("Curso de Almoxarifado e Expedição - Curso 100% on-line");
+    ).toBe("Curso de Almoxarifado e Expedição - Curso 100% Online");
     expect(formatReadableText("MACEIÓ, AL")).toBe("Maceió, AL");
   });
 });
