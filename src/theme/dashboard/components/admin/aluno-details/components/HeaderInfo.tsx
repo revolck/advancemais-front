@@ -24,6 +24,7 @@ import {
   ShieldOff,
   UserCog,
 } from "lucide-react";
+import { formatReadableText } from "@/lib/display-text";
 import { cn } from "@/lib/utils";
 import { formatCpf } from "../utils/formatters";
 import type { HeaderInfoProps } from "../types";
@@ -37,7 +38,9 @@ export function HeaderInfo({
   onDesbloquearAluno,
 }: HeaderInfoProps) {
   const [isActionsOpen, setIsActionsOpen] = useState(false);
-  const alunoNome = aluno.nome || aluno.nomeCompleto || "Aluno";
+  const alunoNome = formatReadableText(
+    aluno.nome || aluno.nomeCompleto || "Aluno",
+  );
   const hasActions = Boolean(
     onEditAluno ||
       onEditEndereco ||

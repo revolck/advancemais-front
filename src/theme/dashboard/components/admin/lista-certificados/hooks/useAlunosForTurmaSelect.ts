@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import type { SelectOption } from "@/components/ui/custom/select/types";
 import { listInscricoes, type TurmaInscricao } from "@/api/cursos";
+import { formatReadableText } from "@/lib/display-text";
 
 function buildAlunoOption(inscricao: TurmaInscricao): SelectOption {
   const nome =
@@ -10,7 +11,10 @@ function buildAlunoOption(inscricao: TurmaInscricao): SelectOption {
     inscricao.aluno?.nome ||
     inscricao.alunoId ||
     "—";
-  const label = inscricao.alunoId ? `${nome} • ${inscricao.alunoId}` : nome;
+  const nomeDisplay = formatReadableText(nome);
+  const label = inscricao.alunoId
+    ? `${nomeDisplay} • ${inscricao.alunoId}`
+    : nomeDisplay;
   return { value: inscricao.alunoId, label };
 }
 
@@ -47,4 +51,3 @@ export function useAlunosForTurmaSelect(params: {
     refetch: query.refetch,
   };
 }
-

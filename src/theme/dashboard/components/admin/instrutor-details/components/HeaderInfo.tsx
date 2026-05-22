@@ -24,6 +24,7 @@ import {
   ShieldOff,
   UserCog,
 } from "lucide-react";
+import { formatReadableText } from "@/lib/display-text";
 import { cn } from "@/lib/utils";
 import { getInstrutorInitials, formatCpf } from "../utils/formatters";
 import type { HeaderInfoProps } from "../types";
@@ -37,6 +38,9 @@ export function HeaderInfo({
   onDesbloquearInstrutor,
 }: HeaderInfoProps) {
   const [isActionsOpen, setIsActionsOpen] = useState(false);
+  const instrutorNome = formatReadableText(
+    instrutor.nomeCompleto || "Instrutor",
+  );
   const normalized = instrutor.status?.toUpperCase();
   const isBloqueado = normalized === "BLOQUEADO";
   const isAtivo = normalized === "ATIVO";
@@ -57,7 +61,7 @@ export function HeaderInfo({
         <div className="flex items-center gap-5">
           <div className="relative">
             <AvatarCustom
-              name={instrutor.nomeCompleto || "Instrutor"}
+              name={instrutorNome}
               src={instrutor.avatarUrl || undefined}
               size="xl"
               showStatus={false}
@@ -80,7 +84,7 @@ export function HeaderInfo({
           </div>
 
           <div className="space-y-3">
-            <h3 className="font-semibold !mb-0"> {instrutor.nomeCompleto}</h3>
+            <h3 className="font-semibold !mb-0"> {instrutorNome}</h3>
             <div className="flex flex-wrap items-center gap-2 text-xs text-gray-400 font-mono">
               <span>CPF: {formatCpf(instrutor.cpf)}</span>
             </div>

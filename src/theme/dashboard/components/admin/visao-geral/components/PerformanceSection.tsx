@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { TrendingUp, Award, Users, BookOpen, BarChart3 } from "lucide-react";
+import { formatReadableText } from "@/lib/display-text";
 import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
 import { ChartsCustom } from "@/components/ui/custom/charts-custom";
@@ -47,7 +48,10 @@ export function PerformanceSection({ data, isLoading }: PerformanceSectionProps)
   // Dados para gráfico de barras dos cursos mais populares
   const cursosMaisPopulares = data.cursosMaisPopulares ?? data.cursos ?? [];
   const popularChartData: ChartData[] = cursosMaisPopulares.slice(0, 5).map((curso: any) => ({
-    name: (curso.cursoNome ?? curso.nome ?? "").length > 20 ? (curso.cursoNome ?? curso.nome ?? "").substring(0, 20) + "..." : (curso.cursoNome ?? curso.nome ?? ""),
+    name:
+      formatReadableText(curso.cursoNome ?? curso.nome ?? "").length > 20
+        ? formatReadableText(curso.cursoNome ?? curso.nome ?? "").substring(0, 20) + "..."
+        : formatReadableText(curso.cursoNome ?? curso.nome ?? ""),
     inscricoes: curso.totalInscricoes ?? 0,
     turmas: curso.totalTurmas ?? 0,
   }));
@@ -155,7 +159,7 @@ export function PerformanceSection({ data, isLoading }: PerformanceSectionProps)
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-gray-900 truncate">
-                        {curso.cursoNome ?? curso.nome}
+                        {formatReadableText(curso.cursoNome ?? curso.nome)}
                       </p>
                       <p className="text-xs text-gray-500 font-medium">{curso.cursoCodigo ?? curso.codigo ?? ""}</p>
                     </div>
@@ -200,7 +204,7 @@ export function PerformanceSection({ data, isLoading }: PerformanceSectionProps)
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="font-semibold text-gray-900 truncate">
-                          {curso.cursoNome ?? curso.nome}
+                          {formatReadableText(curso.cursoNome ?? curso.nome)}
                         </p>
                         <p className="text-xs text-gray-500 font-medium">{curso.cursoCodigo ?? curso.codigo ?? ""}</p>
                       </div>
@@ -228,4 +232,3 @@ export function PerformanceSection({ data, isLoading }: PerformanceSectionProps)
     </div>
   );
 }
-

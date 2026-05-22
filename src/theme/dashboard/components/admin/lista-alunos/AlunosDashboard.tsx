@@ -16,6 +16,7 @@ import {
   TooltipTrigger,
   TooltipContent,
 } from "@/components/ui/tooltip";
+import { formatReadableText } from "@/lib/display-text";
 import { cn } from "@/lib/utils";
 import { listCursos, listTurmas } from "@/api/cursos";
 import { AlunoRow } from "./components/AlunoRow";
@@ -87,7 +88,10 @@ export function AlunosDashboard({ className }: { className?: string }) {
   const cursosOptions: SelectOption[] = useMemo(() => {
     const cursos = cursosQuery.data?.data ?? [];
     return cursos
-      .map((curso) => ({ value: String(curso.id), label: curso.nome }))
+      .map((curso) => ({
+        value: String(curso.id),
+        label: formatReadableText(curso.nome),
+      }))
       .sort((a, b) => a.label.localeCompare(b.label));
   }, [cursosQuery.data]);
 
@@ -184,7 +188,7 @@ export function AlunosDashboard({ className }: { className?: string }) {
     () =>
       turmasSource.map((turma) => ({
         value: turma.id,
-        label: turma.nome,
+        label: formatReadableText(turma.nome),
       })),
     [turmasSource]
   );
@@ -199,7 +203,7 @@ export function AlunosDashboard({ className }: { className?: string }) {
 
     return Array.from(cidades)
       .sort()
-      .map((cidade) => ({ value: cidade, label: cidade }));
+      .map((cidade) => ({ value: cidade, label: formatReadableText(cidade) }));
   }, [alunos]);
 
   useEffect(() => {

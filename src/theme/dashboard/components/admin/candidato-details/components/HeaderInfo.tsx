@@ -25,6 +25,7 @@ import {
   ShieldOff,
   UserCog,
 } from "lucide-react";
+import { formatReadableText } from "@/lib/display-text";
 import { cn } from "@/lib/utils";
 import { getCandidatoInitials, formatCpf } from "../utils/formatters";
 import type { HeaderInfoProps } from "../types";
@@ -42,6 +43,9 @@ export function HeaderInfo({
   const hasEditActions = Boolean(onEditCandidato || onEditEndereco || onResetSenha);
   const hasBlockActions = Boolean(onBloquearCandidato || onDesbloquearCandidato);
   const hasAnyActions = hasEditActions || hasBlockActions;
+  const candidatoNome = formatReadableText(
+    candidato.nomeCompleto || "Candidato",
+  );
   const normalized = candidato.status?.toUpperCase();
   const isBloqueado = normalized === "BLOQUEADO";
   const isAtivo = normalized === "ATIVO";
@@ -62,7 +66,7 @@ export function HeaderInfo({
         <div className="flex items-center gap-5">
           <div className="relative">
             <AvatarCustom
-              name={candidato.nomeCompleto || "Candidato"}
+              name={candidatoNome}
               src={candidato.avatarUrl || undefined}
               size="xl"
               showStatus={false}
@@ -85,7 +89,7 @@ export function HeaderInfo({
           </div>
 
           <div className="space-y-3">
-            <h3 className="font-semibold !mb-0"> {candidato.nomeCompleto}</h3>
+            <h3 className="font-semibold !mb-0"> {candidatoNome}</h3>
             <div className="flex flex-wrap items-center gap-2 text-xs text-gray-400 font-mono">
               <span>CPF: {formatCpf(candidato.cpf)}</span>
             </div>

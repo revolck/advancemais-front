@@ -11,6 +11,7 @@ import {
   Clock,
   X,
 } from "lucide-react";
+import { formatReadableText } from "@/lib/display-text";
 import { cn } from "@/lib/utils";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import {
@@ -161,9 +162,9 @@ export function FaturamentoSection({
     const cursos = topCursosFaturamento;
     return cursos.slice(0, 5).map((curso: any) => ({
       name:
-        (curso.cursoNome ?? curso.nome ?? "").length > 20
-          ? (curso.cursoNome ?? curso.nome ?? "").substring(0, 20) + "..."
-          : curso.cursoNome ?? curso.nome ?? "",
+        formatReadableText(curso.cursoNome ?? curso.nome ?? "").length > 20
+          ? formatReadableText(curso.cursoNome ?? curso.nome ?? "").substring(0, 20) + "..."
+          : formatReadableText(curso.cursoNome ?? curso.nome ?? ""),
       valor: curso.totalFaturamento ?? curso.faturamento ?? 0,
       transacoes: curso.totalTransacoes ?? 0,
     }));
@@ -520,7 +521,7 @@ export function FaturamentoSection({
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="font-semibold text-gray-900 truncate group-hover:text-blue-700 transition-colors">
-                          {curso.cursoNome ?? curso.nome}
+                          {formatReadableText(curso.cursoNome ?? curso.nome)}
                         </p>
                         <p className="text-xs text-gray-500 font-mono">
                           {curso.cursoCodigo ?? curso.codigo ?? ""}

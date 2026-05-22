@@ -12,6 +12,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Award, BookOpen, Calendar, Download, Eye, Loader2 } from "lucide-react";
+import { formatReadableText } from "@/lib/display-text";
 import { cn } from "@/lib/utils";
 import { getCursoAlunoDetalhes } from "@/api/cursos";
 
@@ -174,6 +175,7 @@ export function CertificadoRow({ certificado }: CertificadoRowProps) {
       : detalhesAlunoQuery.data?.nomeCompleto ||
         detalhesAlunoQuery.data?.nome ||
         "—";
+  const alunoNomeDisplay = formatReadableText(alunoNome);
 
   const codigoMatriculaRaw =
     codigoMatriculaBase || detalhesAlunoQuery.data?.codigo || null;
@@ -183,8 +185,12 @@ export function CertificadoRow({ certificado }: CertificadoRowProps) {
       : null;
   const cpf = cpfBase || detalhesAlunoQuery.data?.cpf || null;
   const avatarUrl = avatarUrlBase || detalhesAlunoQuery.data?.avatarUrl || undefined;
-  const cursoNome = certificado.curso?.nome || certificado.cursoNome || "—";
-  const turmaNome = certificado.turma?.nome || certificado.turmaNome || "—";
+  const cursoNome = formatReadableText(
+    certificado.curso?.nome || certificado.cursoNome || "—",
+  );
+  const turmaNome = formatReadableText(
+    certificado.turma?.nome || certificado.turmaNome || "—",
+  );
   const turmaCodigo = certificado.turma?.codigo || certificado.turmaCodigo || null;
   const codigo = certificado.codigo || certificado.numero || "—";
   const emitido = formatDate(certificado.emitidoEm);
@@ -213,7 +219,7 @@ export function CertificadoRow({ certificado }: CertificadoRowProps) {
       <TableCell className="py-4 px-3">
         <div className="flex items-center gap-3">
           <AvatarCustom
-            name={alunoNome}
+            name={alunoNomeDisplay}
             src={avatarUrl}
             size="sm"
             showStatus={false}
@@ -221,7 +227,7 @@ export function CertificadoRow({ certificado }: CertificadoRowProps) {
           <div className="min-w-0">
             <div className="mb-1 flex items-center gap-2">
               <div className="max-w-[240px] truncate text-sm font-medium text-gray-900">
-                {alunoNome}
+                {alunoNomeDisplay}
               </div>
               {codigoMatricula && (
                 <code className="shrink-0 rounded bg-gray-100 px-1.5 py-0.5 font-mono text-xs text-gray-500">

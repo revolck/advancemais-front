@@ -1,4 +1,5 @@
 import { apiFetch } from "@/api/client";
+import { formatReadableText } from "@/lib/display-text";
 import { apiConfig } from "@/lib/env";
 import { cursosRoutes } from "./routes";
 import type {
@@ -192,6 +193,16 @@ export async function listCursos(
   // Mapeia os campos de precificação para garantir valores padrão
   const cursosNormalizados: Curso[] = (response.data ?? []).map((curso) => ({
     ...curso,
+    nome: formatReadableText(curso.nome),
+    categoria: curso.categoria
+      ? { ...curso.categoria, nome: formatReadableText(curso.categoria.nome) }
+      : curso.categoria,
+    subcategoria: curso.subcategoria
+      ? {
+          ...curso.subcategoria,
+          nome: formatReadableText(curso.subcategoria.nome),
+        }
+      : curso.subcategoria,
     valor: normalizeMoneyValue((curso as any).valor ?? (curso as any).preco),
     valorPromocional:
       (curso as any).valorPromocional != null ||
@@ -439,7 +450,7 @@ function normalizeTurma(turma: any): CursoTurma {
     ...turma,
     id: String(turma.id ?? ""),
     codigo: String(turma.codigo ?? ""),
-    nome: String(turma.nome ?? ""),
+    nome: formatReadableText(String(turma.nome ?? "")),
     turno: turma.turno ?? "MANHA",
     metodo: turma.metodo ?? "ONLINE",
     status: turma.status,
@@ -722,10 +733,10 @@ export async function listTurmas(
       });
     }
 
-    return allTurmas;
+    return allTurmas.map(normalizeTurma);
   }
 
-  return turmas;
+  return turmas.map(normalizeTurma);
 }
 
 export async function getTurmaById(

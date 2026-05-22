@@ -25,6 +25,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { formatReadableText } from "@/lib/display-text";
 import { cn } from "@/lib/utils";
 import {
   User,
@@ -190,7 +191,7 @@ export function AlunosMatriculadosTab({
   const turmaOptions = useMemo(() => {
     return turmas.map((turma) => ({
       value: turma.id,
-      label: `${turma.codigo} - ${turma.nome}`,
+      label: `${turma.codigo} - ${formatReadableText(turma.nome)}`,
     }));
   }, [turmas]);
 
@@ -404,7 +405,7 @@ export function AlunosMatriculadosTab({
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
                         <div className="text-sm font-medium text-gray-900">
-                          {inscricao.aluno.nomeCompleto}
+                          {formatReadableText(inscricao.aluno.nomeCompleto)}
                         </div>
                         {/* codigo não disponível no tipo de aluno */}
                       </div>

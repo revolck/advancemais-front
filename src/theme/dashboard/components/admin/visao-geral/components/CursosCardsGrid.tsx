@@ -5,6 +5,7 @@ import Link from "next/link";
 import { BookOpen, TrendingUp, Award, Calendar } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { formatReadableText } from "@/lib/display-text";
 import { cn } from "@/lib/utils";
 import { CardCustom } from "@/components/ui/custom/card-custom";
 import {
@@ -121,7 +122,7 @@ export function CursosCardsGrid({
       const turma = item as any;
       return {
         id: turma.turmaId,
-        title: turma.cursoNome ?? turma.nome ?? "Turma",
+        title: formatReadableText(turma.cursoNome ?? turma.nome ?? "Turma"),
         subtitle: turma.diasParaInicio != null 
           ? `${turma.diasParaInicio} ${turma.diasParaInicio === 1 ? "dia" : "dias"} • ${formatDate(turma.dataInicio)}`
           : formatDate(turma.dataInicio),
@@ -132,7 +133,7 @@ export function CursosCardsGrid({
       const curso = item as any;
       return {
         id: (curso.cursoId ?? curso.id ?? index).toString(),
-        title: curso.cursoNome ?? curso.nome ?? "Curso",
+        title: formatReadableText(curso.cursoNome ?? curso.nome ?? "Curso"),
         subtitle: `${formatPercentage(curso.taxaConclusao)} • ${curso.totalConcluidos ?? 0}/${curso.totalInscricoes ?? 0} concluídos`,
         href: `/dashboard/cursos/${curso.cursoId ?? curso.id}`,
         imageUrl: DEFAULT_IMAGE,
@@ -141,7 +142,7 @@ export function CursosCardsGrid({
       const curso = item as any;
       return {
         id: (curso.cursoId ?? curso.id ?? index).toString(),
-        title: curso.cursoNome ?? curso.nome ?? "Curso",
+        title: formatReadableText(curso.cursoNome ?? curso.nome ?? "Curso"),
         subtitle: `${curso.totalInscricoes ?? 0} inscrições • ${curso.totalTurmas ?? 0} ${(curso.totalTurmas ?? 0) === 1 ? "turma" : "turmas"}`,
         href: `/dashboard/cursos/${curso.cursoId ?? curso.id}`,
         imageUrl: DEFAULT_IMAGE,
@@ -282,4 +283,3 @@ export function CursosCardsGrid({
     </div>
   );
 }
-

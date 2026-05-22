@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { formatReadableText } from "@/lib/display-text";
 import { cn } from "@/lib/utils";
 import { Check } from "lucide-react";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
@@ -40,6 +41,7 @@ export const CardCustom = React.forwardRef<HTMLDivElement, CardCustomProps>(
     const cardStyle: CardCustomStyle = {
       "--theme-color": themeColor,
     };
+    const readableTitle = formatReadableText(title);
 
     const CardInner = (
       <div
@@ -84,7 +86,7 @@ export const CardCustom = React.forwardRef<HTMLDivElement, CardCustomProps>(
         <div className="relative z-[1] flex h-full flex-col justify-end p-6 text-white">
           <div>
             <h3 className="!md:text-3xl leading-tight drop-shadow-sm !mb-0">
-              {title}
+              {readableTitle}
             </h3>
             {subtitle && (
               <p className="!text-sm !md:text-base !text-white/85 !mt-1">

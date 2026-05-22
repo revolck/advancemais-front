@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Icon } from "@/components/ui/custom";
+import { formatReadableText } from "@/lib/display-text";
 import { cn } from "@/lib/utils";
 import type { AlunoComInscricao } from "@/api/cursos";
 import {
@@ -144,11 +145,18 @@ export function AlunoRow({
   const isRowDisabled = isDisabled || isNavigating;
 
   const alunoNome = aluno.nomeCompleto || aluno.id;
+  const alunoNomeDisplay = formatReadableText(alunoNome);
   const cursoNome = ultimoCurso?.curso?.nome;
+  const cursoNomeDisplay = cursoNome ? formatReadableText(cursoNome) : null;
   const cursoCodigo = ultimoCurso?.curso?.codigo;
   const turmaNome = ultimoCurso?.turma?.nome;
+  const turmaNomeDisplay = turmaNome ? formatReadableText(turmaNome) : null;
   const turmaCodigo = ultimoCurso?.turma?.codigo;
   const statusInscricao = ultimoCurso?.statusInscricao;
+  const localizacaoDisplay =
+    aluno.cidade && aluno.estado
+      ? `${formatReadableText(aluno.cidade)}, ${aluno.estado}`
+      : formatReadableText(aluno.cidade || aluno.estado);
 
   const handleNavigate = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -176,7 +184,7 @@ export function AlunoRow({
       <TableCell className="py-4">
         <div className="flex items-center gap-3">
           <AvatarCustom
-            name={alunoNome}
+            name={alunoNomeDisplay}
             src={aluno.avatarUrl ?? undefined}
             size="sm"
             showStatus={false}
@@ -184,7 +192,7 @@ export function AlunoRow({
           <div className="min-w-0">
             <div className="flex items-center gap-2 mb-1">
               <div className="text-sm text-gray-900 font-medium truncate max-w-[220px]">
-                {alunoNome}
+                {alunoNomeDisplay}
               </div>
               {aluno.codigo && (
                 <code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded font-mono text-gray-500 flex-shrink-0">
@@ -216,9 +224,7 @@ export function AlunoRow({
             />
             <div>
               <div className="text-sm text-gray-900 font-medium">
-                {aluno.cidade && aluno.estado
-                  ? `${aluno.cidade}, ${aluno.estado}`
-                  : aluno.cidade || aluno.estado}
+                {localizacaoDisplay}
               </div>
               {/* modalidade removida - campo não disponível no tipo atual */}
             </div>
@@ -228,7 +234,7 @@ export function AlunoRow({
         )}
       </TableCell>
       <TableCell className="py-4">
-        {cursoNome || turmaNome ? (
+        {cursoNomeDisplay || turmaNomeDisplay ? (
           <div className="flex items-start gap-2 max-w-[320px]">
             <Icon
               name="BookOpen"
@@ -241,7 +247,7 @@ export function AlunoRow({
                   Curso
                 </span>
                 <span className="text-sm text-gray-700 truncate min-w-0">
-                  {cursoNome || "—"}
+                  {cursoNomeDisplay || "—"}
                 </span>
                 {cursoCodigo && (
                   <code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded font-mono text-gray-500 shrink-0">
@@ -254,7 +260,7 @@ export function AlunoRow({
                   Turma
                 </span>
                 <span className="text-sm text-gray-700 truncate min-w-0">
-                  {turmaNome || "—"}
+                  {turmaNomeDisplay || "—"}
                 </span>
                 {turmaCodigo && (
                   <code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded font-mono text-gray-500 shrink-0">

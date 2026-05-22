@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { BookOpen } from "lucide-react";
+import { formatReadableText } from "@/lib/display-text";
 import { cn } from "@/lib/utils";
 import type { CursoPerformance } from "@/api/cursos";
 
@@ -88,7 +89,7 @@ export function CursosPopularesList({
             {/* Info */}
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-gray-900 truncate group-hover:text-blue-600 transition-colors">
-                {curso.cursoNome ?? curso.nome}
+                {formatReadableText(curso.cursoNome ?? curso.nome)}
               </p>
               <p className="text-xs text-gray-500 truncate">
                 {curso.cursoCodigo ?? curso.codigo ?? ""}
@@ -110,4 +111,3 @@ export function CursosPopularesList({
     </div>
   );
 }
-

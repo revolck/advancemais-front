@@ -1,5 +1,28 @@
 const LETTER_REGEX = /\p{L}/gu;
-const FIRST_LETTER_REGEX = /\p{L}/u;
+const WORD_REGEX = /\p{L}+(?:[-'][\p{L}]+)*/gu;
+
+const LOWERCASE_WORDS = new Set([
+  "a",
+  "ao",
+  "aos",
+  "as",
+  "com",
+  "da",
+  "das",
+  "de",
+  "do",
+  "dos",
+  "e",
+  "em",
+  "na",
+  "nas",
+  "no",
+  "nos",
+  "o",
+  "os",
+  "para",
+  "por",
+]);
 
 const PRESERVED_TERMS: Array<[string, string]> = [
   ["api", "API"],
@@ -27,6 +50,8 @@ const PRESERVED_TERMS: Array<[string, string]> = [
   ["lgpd", "LGPD"],
   ["mei", "MEI"],
   ["nr", "NR"],
+  ["on-line", "on-line"],
+  ["online", "online"],
   ["pcd", "PCD"],
   ["pis", "PIS"],
   ["power bi", "Power BI"],
@@ -62,6 +87,10 @@ function isLetterLowercase(letter: string): boolean {
   );
 }
 
+function hasLetters(value: string): boolean {
+  return /\p{L}/u.test(value);
+}
+
 function looksLikeIdentifierCode(value: string): boolean {
   return (
     !/\s/.test(value) &&
@@ -70,27 +99,38 @@ function looksLikeIdentifierCode(value: string): boolean {
   );
 }
 
-function isShoutingText(value: string): boolean {
+function isUppercaseWord(value: string): boolean {
   if (looksLikeIdentifierCode(value)) return false;
 
   const letters = value.match(LETTER_REGEX) ?? [];
-  if (letters.length < 2) return false;
+  if (letters.length === 0) return false;
 
   return letters.some(isLetterUppercase) && !letters.some(isLetterLowercase);
 }
 
-function uppercaseFirstLetter(value: string): string {
-  const match = FIRST_LETTER_REGEX.exec(value);
-  if (!match || match.index === undefined) return value;
+function isPartOfIdentifier(value: string, index: number, word: string): boolean {
+  const before = index > 0 ? value[index - 1] : "";
+  const afterIndex = index + word.length;
+  const after = afterIndex < value.length ? value[afterIndex] : "";
 
-  const index = match.index;
-  const firstLetter = match[0];
+  return /[\p{N}_]/u.test(before) || /[\p{N}_]/u.test(after);
+}
 
-  return (
-    value.slice(0, index) +
-    firstLetter.toLocaleUpperCase("pt-BR") +
-    value.slice(index + firstLetter.length)
-  );
+function capitalizeWord(value: string): string {
+  const lower = value.toLocaleLowerCase("pt-BR");
+
+  return lower
+    .split("-")
+    .map((part) =>
+      part
+        ? part.charAt(0).toLocaleUpperCase("pt-BR") + part.slice(1)
+        : part,
+    )
+    .join("-");
+}
+
+function countLetters(value: string): number {
+  return value.match(LETTER_REGEX)?.length ?? 0;
 }
 
 function restorePreservedTerms(value: string): string {
@@ -111,9 +151,28 @@ export function formatReadableText(value: string | null | undefined): string {
   if (!value) return "";
 
   const normalized = normalizeWhitespace(value);
-  if (!isShoutingText(normalized)) return normalized;
+  if (looksLikeIdentifierCode(normalized)) return normalized;
 
-  const sentenceCase = uppercaseFirstLetter(normalized.toLocaleLowerCase("pt-BR"));
+  let wordCount = 0;
+  const readable = normalized.replace(WORD_REGEX, (word, index) => {
+    if (!hasLetters(word) || isPartOfIdentifier(normalized, index, word)) {
+      return word;
+    }
 
-  return restorePreservedTerms(sentenceCase);
+    wordCount += 1;
+    const lower = word.toLocaleLowerCase("pt-BR");
+
+    if (LOWERCASE_WORDS.has(lower)) {
+      return wordCount > 1 ? lower : capitalizeWord(word);
+    }
+
+    if (isUppercaseWord(word)) {
+      if (countLetters(word) <= 2) return word;
+      return capitalizeWord(word);
+    }
+
+    return word;
+  });
+
+  return restorePreservedTerms(readable);
 }

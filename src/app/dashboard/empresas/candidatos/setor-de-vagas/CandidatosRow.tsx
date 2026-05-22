@@ -21,6 +21,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { formatReadableText } from "@/lib/display-text";
 import { cn } from "@/lib/utils";
 import type { CandidatoOverview, Candidatura } from "@/api/candidatos/types";
 import {
@@ -38,6 +39,7 @@ interface CandidatosRowProps {
 export function CandidatosRow({ candidato }: CandidatosRowProps) {
   const router = useRouter();
   const [isNavigating, setIsNavigating] = useState(false);
+  const candidatoNome = formatReadableText(candidato.nomeCompleto);
   
   // Recrutadores podem ver todos os candidatos mas com foco em avaliação
   const candidaturasRelevantes: Candidatura[] =
@@ -68,12 +70,12 @@ export function CandidatosRow({ candidato }: CandidatosRowProps) {
           <Avatar className="h-10 w-10">
             <AvatarImage src={candidato.avatarUrl || undefined} />
             <AvatarFallback className="bg-blue-100 text-blue-600">
-              {getCandidatoInitials(candidato.nomeCompleto)}
+              {getCandidatoInitials(candidatoNome)}
             </AvatarFallback>
           </Avatar>
           <div className="flex flex-col">
             <div className="font-medium text-gray-900">
-              {candidato.nomeCompleto}
+              {candidatoNome}
             </div>
             <div className="text-sm text-gray-500">{candidato.codUsuario}</div>
           </div>

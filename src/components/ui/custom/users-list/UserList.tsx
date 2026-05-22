@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { formatReadableText } from "@/lib/display-text";
 import { cn } from "@/lib/utils";
 import { InputCustom } from "@/components/ui/custom/input";
 import { ButtonCustom } from "@/components/ui/custom/button";
@@ -243,7 +244,11 @@ export function UserList({
                     <TableCell className="py-3" onClick={(e) => e.stopPropagation()}>
                       <Checkbox checked={checked} onCheckedChange={() => toggle(id, u)} className="translate-y-[1px]" />
                     </TableCell>
-                    <TableCell className="py-3 font-medium truncate">{u.nome || u.email || u.codUsuario || id}</TableCell>
+                    <TableCell className="py-3 font-medium truncate">
+                      {u.nome
+                        ? formatReadableText(u.nome)
+                        : u.email || u.codUsuario || id}
+                    </TableCell>
                     <TableCell className="py-3 truncate text-gray-600">{u.email || "—"}</TableCell>
                     <TableCell className="py-3 truncate text-gray-600">{String(u.codUsuario || "—")}</TableCell>
                     <TableCell className="py-2 pr-4 text-right">

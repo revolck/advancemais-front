@@ -19,6 +19,7 @@ import {
   Clock3,
   Loader2,
 } from "lucide-react";
+import { formatReadableText } from "@/lib/display-text";
 import { cn } from "@/lib/utils";
 import {
   Tooltip,
@@ -50,6 +51,7 @@ export function CandidatoRow({
 }: CandidatoRowProps) {
   const [isNavigating, setIsNavigating] = useState(false);
   const isRowDisabled = isDisabled || isNavigating;
+  const candidatoNome = formatReadableText(candidato.nomeCompleto);
 
   const candidaturas = useMemo(
     () => candidato.candidaturas ?? [],
@@ -241,7 +243,7 @@ export function CandidatoRow({
       <TableCell className="py-4">
         <div className="flex items-start gap-3">
           <AvatarCustom
-            name={candidato.nomeCompleto}
+            name={candidatoNome}
             src={candidato.avatarUrl || undefined}
             size="sm"
             showStatus={false}
@@ -249,7 +251,7 @@ export function CandidatoRow({
           <div className="flex flex-col">
             <div className="flex items-center gap-2">
               <span className="font-medium text-gray-900">
-                {candidato.nomeCompleto}
+                {candidatoNome}
               </span>
               <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">
                 {candidato.codUsuario}

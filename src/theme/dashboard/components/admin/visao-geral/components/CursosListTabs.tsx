@@ -5,6 +5,7 @@ import Link from "next/link";
 import { BookOpen, TrendingUp, Award, Calendar } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { formatReadableText } from "@/lib/display-text";
 import { cn } from "@/lib/utils";
 import type {
   CursoPerformance,
@@ -213,10 +214,10 @@ export function CursosListTabs({
                         currentTab?.hoverColor
                       )}
                     >
-                      {turma.cursoNome}
+                      {formatReadableText(turma.cursoNome)}
                     </p>
                     <p className="text-xs text-gray-500 truncate">
-                      {turma.turmaNome}
+                      {formatReadableText(turma.turmaNome)}
                     </p>
                   </div>
                   <div className="text-right flex-shrink-0">
@@ -257,7 +258,7 @@ export function CursosListTabs({
                         currentTab?.hoverColor
                       )}
                     >
-                      {curso.cursoNome ?? curso.nome}
+                      {formatReadableText(curso.cursoNome ?? curso.nome)}
                     </p>
                     <p className="text-xs text-gray-500 truncate">
                       {curso.cursoCodigo ?? curso.codigo ?? ""}
@@ -304,7 +305,7 @@ export function CursosListTabs({
                         currentTab?.hoverColor
                       )}
                     >
-                      {curso.cursoNome}
+                      {formatReadableText(curso.cursoNome)}
                     </p>
                     <p className="text-xs text-gray-500 truncate">
                       {curso.cursoCodigo}
@@ -327,4 +328,3 @@ export function CursosListTabs({
     </div>
   );
 }
-
