@@ -26,6 +26,7 @@ import {
   type Curso,
   updateCurso,
 } from "@/api/cursos";
+import { formatReadableText } from "@/lib/display-text";
 import { useRouter } from "next/navigation";
 import { toastCustom } from "@/components/ui/custom";
 import { formatCursoStatus, getCursoStatusBadgeClasses } from "../utils";
@@ -64,6 +65,7 @@ export function HeaderInfo({ curso, onEditCurso }: HeaderInfoProps) {
     (hasTurmasStatusLoaded &&
       curso.turmas!.every((turma) => (turma.status ?? "").toUpperCase() === "CONCLUIDO"));
   const canShowPublicationAction = !isPublished || canDespublicarCurso;
+  const cursoNome = formatReadableText(curso.nome);
 
   const handleEditClick = () => {
     router.push(`/dashboard/cursos/${curso.id}/editar`);
@@ -228,7 +230,7 @@ export function HeaderInfo({ curso, onEditCurso }: HeaderInfoProps) {
         <div className="flex items-center gap-5">
           <div className="space-y-0">
             <div className="flex items-center gap-3">
-              <h3 className="font-semibold !mb-0">{curso.nome}</h3>
+              <h3 className="font-semibold !mb-0">{cursoNome}</h3>
               {statusBadge}
             </div>
           </div>

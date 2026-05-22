@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { ShareJobButton } from "@/theme/website/components/career-opportunities/components/ShareJobButton";
+import { formatReadableText } from "@/lib/display-text";
 import { env } from "@/lib/env";
 import { stripHtmlTags } from "@/lib/utils";
 import Image from "next/image";
@@ -130,17 +131,21 @@ function normalizeTurmasPublicadas(curso: any): CourseTurmaPublica[] {
 }
 
 function normalizeCourse(curso: any): CourseData {
+  const subcategoria = curso.subcategoria?.nome || curso.Subcategoria?.nome;
+
   return {
     id: curso.id?.toString() || "",
-    nome: curso.nome || "Curso",
+    nome: formatReadableText(curso.nome || "Curso"),
     descricao: curso.descricao || "",
     conteudoProgramatico:
       typeof curso.conteudoProgramatico === "string"
         ? curso.conteudoProgramatico
         : null,
     cargaHoraria: curso.cargaHoraria || 0,
-    categoria: curso.categoria?.nome || curso.Categoria?.nome || "Geral",
-    subcategoria: curso.subcategoria?.nome || curso.Subcategoria?.nome,
+    categoria: formatReadableText(
+      curso.categoria?.nome || curso.Categoria?.nome || "Geral",
+    ),
+    subcategoria: subcategoria ? formatReadableText(subcategoria) : undefined,
     imagemUrl: curso.imagemUrl,
     statusPadrao: curso.statusPadrao || "PUBLICADO",
     estagioObrigatorio: Boolean(curso.estagioObrigatorio),

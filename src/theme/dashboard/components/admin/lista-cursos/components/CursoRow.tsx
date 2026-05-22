@@ -20,6 +20,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { formatReadableText } from "@/lib/display-text";
 import type { Curso } from "@/api/cursos";
 
 // Formatar valor para exibição
@@ -79,6 +80,11 @@ export function CursoRow({
   const router = useRouter();
   const [isNavigating, setIsNavigating] = useState(false);
   const isRowDisabled = isDisabled || isNavigating;
+  const cursoNome = formatReadableText(curso.nome);
+  const categoriaLabel = categoriaName ? formatReadableText(categoriaName) : "—";
+  const subcategoriaLabel = subcategoriaName
+    ? formatReadableText(subcategoriaName)
+    : null;
 
   const handleNavigate = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -105,7 +111,7 @@ export function CursoRow({
     >
       <TableCell className="py-4">
         <div className="flex items-center gap-3">
-          <div className="font-medium text-gray-900">{curso.nome}</div>
+          <div className="font-medium text-gray-900">{cursoNome}</div>
           <code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded font-mono text-gray-500 flex-shrink-0">
             {curso.codigo}
           </code>
@@ -116,9 +122,11 @@ export function CursoRow({
         <div className="flex items-center gap-2 text-sm text-gray-900">
           <FolderTree className="h-4 w-4 flex-shrink-0 text-gray-400" />
           <div className="flex flex-col">
-            <span className="font-medium">{categoriaName ?? "—"}</span>
-            {subcategoriaName && (
-              <span className="text-xs text-gray-500">{subcategoriaName}</span>
+            <span className="font-medium">{categoriaLabel}</span>
+            {subcategoriaLabel && (
+              <span className="text-xs text-gray-500">
+                {subcategoriaLabel}
+              </span>
             )}
           </div>
         </div>

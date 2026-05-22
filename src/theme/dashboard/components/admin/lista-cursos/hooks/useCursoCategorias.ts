@@ -8,6 +8,7 @@ import type {
   CategoriaCurso,
   SubcategoriaCurso,
 } from "@/api/cursos/categorias/types";
+import { formatReadableText } from "@/lib/display-text";
 import { queryKeys } from "@/lib/react-query/queryKeys";
 
 type NormalizedCategoria = CategoriaCurso & {
@@ -77,7 +78,9 @@ export function useCursoCategorias() {
     () =>
       categorias.map((categoria) => ({
         value: String(categoria.id),
-        label: categoria.nome ?? `Categoria ${categoria.id}`,
+        label: formatReadableText(
+          categoria.nome ?? `Categoria ${categoria.id}`,
+        ),
       })),
     [categorias],
   );
@@ -86,8 +89,9 @@ export function useCursoCategorias() {
     const map: Record<number, string> = {};
     categorias.forEach((categoria) => {
       if (categoria?.id != null) {
-        map[Number(categoria.id)] =
-          categoria.nome ?? `Categoria ${categoria.id}`;
+        map[Number(categoria.id)] = formatReadableText(
+          categoria.nome ?? `Categoria ${categoria.id}`,
+        );
       }
     });
     return map;
@@ -167,8 +171,9 @@ export function useCursoSubcategorias(categoriaId: number | null) {
     () =>
       subcategorias.map((subcategoria) => ({
         value: String(subcategoria.id),
-        label:
+        label: formatReadableText(
           subcategoria.nome ?? `Subcategoria ${String(subcategoria.id ?? "")}`,
+        ),
       })),
     [subcategorias],
   );
@@ -258,8 +263,9 @@ export function useAllSubcategorias() {
     const map: Record<number, string> = {};
     subcategoriasCompletas.forEach((subcategoria) => {
       if (subcategoria?.id != null) {
-        map[Number(subcategoria.id)] =
-          subcategoria.nome ?? `Subcategoria ${subcategoria.id}`;
+        map[Number(subcategoria.id)] = formatReadableText(
+          subcategoria.nome ?? `Subcategoria ${subcategoria.id}`,
+        );
       }
     });
     return map;

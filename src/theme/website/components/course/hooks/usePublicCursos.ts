@@ -2,16 +2,21 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { listCursos } from "@/api/cursos";
+import { formatReadableText } from "@/lib/display-text";
 import type { CourseData, CourseFilters } from "../types";
 
 function mapCursoToData(curso: any): CourseData {
+  const subcategoria = curso.subcategoria?.nome || curso.Subcategoria?.nome;
+
   return {
     id: curso.id?.toString() || "",
-    nome: curso.nome || "Curso",
+    nome: formatReadableText(curso.nome || "Curso"),
     descricao: curso.descricao || "",
     cargaHoraria: curso.cargaHoraria || 0,
-    categoria: curso.categoria?.nome || curso.Categoria?.nome || "Geral",
-    subcategoria: curso.subcategoria?.nome || curso.Subcategoria?.nome,
+    categoria: formatReadableText(
+      curso.categoria?.nome || curso.Categoria?.nome || "Geral",
+    ),
+    subcategoria: subcategoria ? formatReadableText(subcategoria) : undefined,
     imagemUrl: curso.imagemUrl,
     statusPadrao: curso.statusPadrao || "PUBLICADO",
     estagioObrigatorio: Boolean(curso.estagioObrigatorio),

@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { formatReadableText } from "@/lib/display-text";
 import { listarCursosCandidato } from "@/api/candidatos";
 import type {
   CandidatoCursoItem,
@@ -114,6 +115,7 @@ function CursoCard({
   onView: (curso: CandidatoCursoItem) => void;
 }) {
   const [imageError, setImageError] = useState(false);
+  const cursoNome = formatReadableText(curso.nome);
 
   const statusBadge = useMemo(
     () => getStatusBadge(curso.statusRaw, curso.status),
@@ -146,7 +148,7 @@ function CursoCard({
           {!imageError && curso.foto ? (
             <Image
               src={curso.foto}
-              alt={curso.nome}
+              alt={cursoNome}
               fill
               className="object-cover transition-transform duration-500 ease-out group-hover:scale-105"
               onError={() => setImageError(true)}
@@ -183,7 +185,7 @@ function CursoCard({
         <div className="p-6 flex-1 flex flex-col">
           <div className="flex items-start justify-between gap-3 mb-4">
             <h3 className="!text-sm font-semibold text-gray-900 line-clamp-2 leading-snug group-hover:text-[var(--primary-color)] transition-colors flex-1 min-w-0">
-              {curso.nome}
+              {cursoNome}
             </h3>
             {curso.cargaHoraria ? (
               <div className="flex items-center gap-1.5 shrink-0 text-gray-500">
