@@ -1030,6 +1030,7 @@ export interface CreateUsuarioPayload {
   role: Role;
   cpf?: string;
   cnpj?: string;
+  dataNasc?: string;
   dataNascimento?: string;
   genero?: string;
   aceitarTermos?: boolean;

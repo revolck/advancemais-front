@@ -457,7 +457,7 @@ export function CreateUsuarioForm({
       }
 
       if (formData.dataNascimento) {
-        payload.dataNascimento = formData.dataNascimento;
+        payload.dataNasc = formData.dataNascimento;
       }
 
       if (formData.genero) {
