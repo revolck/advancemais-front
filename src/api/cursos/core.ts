@@ -2791,6 +2791,8 @@ export async function listMinhasNotas(
       headers: buildHeaders(init?.headers, true),
     },
     cache: "no-cache",
+    silence403: true,
+    silence404: true,
   });
 }
 
@@ -2807,6 +2809,8 @@ export async function getMinhaNotaHistorico(
         headers: buildHeaders(init?.headers, true),
       },
       cache: "no-cache",
+      silence403: true,
+      silence404: true,
     },
   );
 

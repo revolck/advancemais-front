@@ -4,6 +4,7 @@ import { buildListMinhasNotasSearchParams } from "../../../../../api/cursos/core
 import {
   mapMinhaNotaToListItem,
   mapMinhasNotasCursosToOptions,
+  shouldShowNotasAsEmptyState,
   toApiDate,
 } from "./alunoNotas.mapper";
 
@@ -55,6 +56,12 @@ describe("alunoNotas mapper", () => {
     expect(toApiDate(new Date("2026-05-20T12:00:00.000Z"))).toBe(
       "2026-05-20"
     );
+  });
+
+  it("trata 403 e 404 de notas como empty state defensivo", () => {
+    expect(shouldShowNotasAsEmptyState({ status: 403 })).toBe(true);
+    expect(shouldShowNotasAsEmptyState({ status: 404 })).toBe(true);
+    expect(shouldShowNotasAsEmptyState({ status: 500 })).toBe(false);
   });
 });
 

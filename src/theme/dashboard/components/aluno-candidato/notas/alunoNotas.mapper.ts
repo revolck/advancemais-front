@@ -79,3 +79,8 @@ export function toApiDate(value: Date | string | null | undefined) {
   if (Number.isNaN(value.getTime())) return null;
   return value.toISOString().slice(0, 10);
 }
+
+export function shouldShowNotasAsEmptyState(error: unknown) {
+  const status = (error as { status?: number } | null)?.status;
+  return status === 403 || status === 404;
+}

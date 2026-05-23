@@ -8,10 +8,7 @@ import { cn } from "@/lib/utils";
 import type { FilterField } from "@/components/ui/custom/filters";
 import { useQuery } from "@tanstack/react-query";
 import { getUserProfile } from "@/api/usuarios";
-import {
-  getMinhaNotaHistorico,
-  listMinhasNotas,
-} from "@/api/cursos";
+import { getMinhaNotaHistorico, listMinhasNotas } from "@/api/cursos";
 import { NotaHistoryModal } from "@/theme/dashboard/components/admin/lista-notas/components/NotaHistoryModal";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
@@ -26,6 +23,7 @@ import type { DateRange } from "@/components/ui/custom/date-picker";
 import {
   mapMinhaNotaToListItem,
   mapMinhasNotasCursosToOptions,
+  shouldShowNotasAsEmptyState,
   toApiDate,
   type AlunoNotaListItem,
 } from "./alunoNotas.mapper";
@@ -131,22 +129,45 @@ export function AlunoNotasView() {
       pageSize,
     ],
     queryFn: async () => {
-      const response = await listMinhasNotas({
-        cursoId: selectedCourseId,
-        situacao: selectedSituacao,
-        dataInicio,
-        dataFim,
-        page: currentPage,
-        pageSize,
-        orderBy: "atualizadoEm",
-        order: "desc",
-      });
+      try {
+        const response = await listMinhasNotas({
+          cursoId: selectedCourseId,
+          situacao: selectedSituacao,
+          dataInicio,
+          dataFim,
+          page: currentPage,
+          pageSize,
+          orderBy: "atualizadoEm",
+          order: "desc",
+        });
 
-      return {
-        items: (response.data.items ?? []).map(mapMinhaNotaToListItem),
-        pagination: response.data.pagination,
-        filters: response.data.filters,
-      };
+        return {
+          items: (response.data.items ?? []).map(mapMinhaNotaToListItem),
+          pagination: response.data.pagination,
+          filters: response.data.filters,
+        };
+      } catch (error) {
+        if (shouldShowNotasAsEmptyState(error)) {
+          return {
+            items: [],
+            pagination: {
+              page: 1,
+              requestedPage: currentPage,
+              pageSize,
+              total: 0,
+              totalPages: 1,
+              hasNext: false,
+              hasPrevious: false,
+              isPageAdjusted: false,
+            },
+            filters: {
+              cursos: [],
+            },
+          };
+        }
+
+        throw error;
+      }
     },
     staleTime: 60 * 1000,
   });
@@ -167,9 +188,12 @@ export function AlunoNotasView() {
   const endIndex = Math.min(effectivePage * pageSize, totalItems);
   const notas = notasFiltradas;
 
-  const showEmptyState = !isLoading && !isNotasError && notasFiltradas.length === 0;
+  const showEmptyState =
+    !isLoading && !isNotasError && notasFiltradas.length === 0;
   const shouldShowFilters =
-    isLoading || cursosUnicos.length > 0 || Boolean(selectedCourseId || selectedSituacao);
+    isLoading ||
+    cursosUnicos.length > 0 ||
+    Boolean(selectedCourseId || selectedSituacao || dataInicio || dataFim);
 
   // Reset página quando filtro muda
   useEffect(() => {
