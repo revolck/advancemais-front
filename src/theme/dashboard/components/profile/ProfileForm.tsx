@@ -2,7 +2,12 @@
 
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import type React from "react";
-import { Controller, useForm } from "react-hook-form";
+import {
+  Controller,
+  useForm,
+  type Path,
+  type PathValue,
+} from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
@@ -304,10 +309,25 @@ export function ProfileForm({
     control,
     formState: { errors, isDirty },
     reset,
+    setValue: setProfileFormValue,
   } = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
     defaultValues: emptyDefaultValues,
   });
+
+  const setProfileValue = useCallback(
+    <TFieldName extends Path<ProfileFormData>>(
+      name: TFieldName,
+      value: PathValue<ProfileFormData, TFieldName>
+    ) => {
+      setProfileFormValue(name, value, {
+        shouldDirty: true,
+        shouldTouch: true,
+        shouldValidate: true,
+      });
+    },
+    [setProfileFormValue]
+  );
 
   // Calcular valores iniciais quando o perfil mudar
   useEffect(() => {
@@ -404,8 +424,10 @@ export function ProfileForm({
         console.log("👤 Enviando genero:", generoValue);
       }
 
-      if (data.descricao && data.descricao.trim() !== "") {
-        payload.descricao = data.descricao.trim();
+      const initialDescricao = initialValuesRef.current?.descricao || "";
+      const descricao = data.descricao?.trim() || "";
+      if (descricao !== initialDescricao.trim()) {
+        payload.descricao = descricao || null;
       }
 
       // Log para debug
@@ -690,7 +712,9 @@ export function ProfileForm({
                         name={field.name}
                         label="Nome completo"
                         value={(field.value as string) ?? ""}
-                        onChange={field.onChange}
+                        onChange={(event) =>
+                          setProfileValue("nomeCompleto", event.target.value)
+                        }
                         onBlur={field.onBlur}
                         error={errors.nomeCompleto?.message}
                         required
@@ -756,7 +780,7 @@ export function ProfileForm({
                           onChange={(value) => {
                             const generoValue = value || "";
                             console.log("👤 Gênero selecionado:", generoValue);
-                            field.onChange(generoValue);
+                            setProfileValue("genero", generoValue);
                           }}
                           error={errors.genero?.message}
                         />
@@ -775,7 +799,9 @@ export function ProfileForm({
                         required
                         type="tel"
                         value={(field.value as string) ?? ""}
-                        onChange={field.onChange}
+                        onChange={(event) =>
+                          setProfileValue("telefone", event.target.value)
+                        }
                         onBlur={field.onBlur}
                         error={errors.telefone?.message}
                         icon="Phone"
@@ -808,9 +834,12 @@ export function ProfileForm({
                           value={validDate}
                           onChange={(date) => {
                             if (date && !isNaN(date.getTime())) {
-                              field.onChange(new Date(date).toISOString());
+                              setProfileValue(
+                                "dataNasc",
+                                new Date(date).toISOString()
+                              );
                             } else {
-                              field.onChange("");
+                              setProfileValue("dataNasc", "");
                             }
                           }}
                           placeholder="Selecione a data de nascimento"
@@ -833,7 +862,9 @@ export function ProfileForm({
                       placeholder="Conte um pouco sobre você..."
                       rows={5}
                       value={field.value ?? ""}
-                      onChange={(e) => field.onChange(e.target.value)}
+                      onChange={(event) =>
+                        setProfileValue("descricao", event.target.value)
+                      }
                       error={errors.descricao?.message}
                       maxLength={500}
                       showCharCount
@@ -1132,7 +1163,12 @@ export function ProfileForm({
                         label="LinkedIn"
                         type="url"
                         value={(field.value as string) ?? ""}
-                        onChange={field.onChange}
+                        onChange={(event) =>
+                          setProfileValue(
+                            "socialLinks.linkedin",
+                            event.target.value
+                          )
+                        }
                         onBlur={field.onBlur}
                         icon="Globe"
                         placeholder="https://linkedin.com/in/seu-perfil"
@@ -1150,7 +1186,12 @@ export function ProfileForm({
                         label="Instagram"
                         type="url"
                         value={(field.value as string) ?? ""}
-                        onChange={field.onChange}
+                        onChange={(event) =>
+                          setProfileValue(
+                            "socialLinks.instagram",
+                            event.target.value
+                          )
+                        }
                         onBlur={field.onBlur}
                         icon="Globe"
                         placeholder="https://instagram.com/seu-perfil"
@@ -1168,7 +1209,12 @@ export function ProfileForm({
                         label="Portfólio"
                         type="url"
                         value={(field.value as string) ?? ""}
-                        onChange={field.onChange}
+                        onChange={(event) =>
+                          setProfileValue(
+                            "socialLinks.portfolio",
+                            event.target.value
+                          )
+                        }
                         onBlur={field.onBlur}
                         icon="Globe"
                         placeholder="https://seu-portfolio.com"
@@ -1186,7 +1232,12 @@ export function ProfileForm({
                         label="Website"
                         type="url"
                         value={(field.value as string) ?? ""}
-                        onChange={field.onChange}
+                        onChange={(event) =>
+                          setProfileValue(
+                            "socialLinks.website",
+                            event.target.value
+                          )
+                        }
                         onBlur={field.onBlur}
                         icon="Globe"
                         placeholder="https://seu-website.com"
