@@ -2775,11 +2775,72 @@ export async function listNotasByAluno(
   });
 }
 
+export async function listMinhasNotas(
+  params: import("./types").ListMinhasNotasParams = {},
+  init?: RequestInit,
+): Promise<import("./types").ListMinhasNotasResponse> {
+  const sp = buildListMinhasNotasSearchParams(params);
+  const url = sp.toString()
+    ? `${cursosRoutes.me.notas()}?${sp.toString()}`
+    : cursosRoutes.me.notas();
+
+  return apiFetch(url, {
+    init: {
+      method: "GET",
+      ...init,
+      headers: buildHeaders(init?.headers, true),
+    },
+    cache: "no-cache",
+  });
+}
+
+export async function getMinhaNotaHistorico(
+  notaId: string,
+  init?: RequestInit,
+): Promise<import("./types").NotaHistoricoItem[]> {
+  const response = await apiFetch<import("./types").GetNotaHistoricoResponse>(
+    cursosRoutes.me.notasHistorico(notaId),
+    {
+      init: {
+        method: "GET",
+        ...init,
+        headers: buildHeaders(init?.headers, true),
+      },
+      cache: "no-cache",
+    },
+  );
+
+  if (Array.isArray(response.data?.items)) {
+    return response.data.items;
+  }
+
+  if (Array.isArray(response.items)) {
+    return response.items;
+  }
+
+  return [];
+}
+
 function buildListNotasSearchParams(params: import("./types").ListNotasParams) {
   const sp = new URLSearchParams();
   if (params.cursoId) sp.set("cursoId", params.cursoId);
   if (params.turmaIds) sp.set("turmaIds", params.turmaIds);
   if (params.search) sp.set("search", params.search);
+  if (params.page) sp.set("page", String(params.page));
+  if (params.pageSize) sp.set("pageSize", String(params.pageSize));
+  if (params.orderBy) sp.set("orderBy", params.orderBy);
+  if (params.order) sp.set("order", params.order);
+  return sp;
+}
+
+export function buildListMinhasNotasSearchParams(
+  params: import("./types").ListMinhasNotasParams,
+) {
+  const sp = new URLSearchParams();
+  if (params.cursoId) sp.set("cursoId", params.cursoId);
+  if (params.situacao) sp.set("situacao", params.situacao);
+  if (params.dataInicio) sp.set("dataInicio", params.dataInicio);
+  if (params.dataFim) sp.set("dataFim", params.dataFim);
   if (params.page) sp.set("page", String(params.page));
   if (params.pageSize) sp.set("pageSize", String(params.pageSize));
   if (params.orderBy) sp.set("orderBy", params.orderBy);

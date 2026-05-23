@@ -1331,10 +1331,17 @@ export interface NotaLancamento {
   historicoNotaId?: string | null;
   historicoDisponivel?: boolean;
   cursoId: string;
+  cursoNome?: string;
   turmaId: string;
+  turmaNome?: string;
+  turmaCodigo?: string | null;
   inscricaoId: string;
   alunoId: string;
   alunoNome: string;
+  statusRaw?: string;
+  modalidade?: string | null;
+  dataInicio?: string | null;
+  cargaHoraria?: number | null;
   nota: number | null;
   criadoEm?: string;
   atualizadoEm: string;
@@ -1367,6 +1374,41 @@ export interface ListNotasResponse {
       hasNext?: boolean;
       hasPrevious?: boolean;
       isPageAdjusted?: boolean;
+    };
+  };
+}
+
+export type MinhasNotasSituacao = "APROVADO" | "RECUPERACAO" | "REPROVADO";
+
+export interface ListMinhasNotasParams {
+  cursoId?: string | null;
+  situacao?: MinhasNotasSituacao | null;
+  dataInicio?: string | null;
+  dataFim?: string | null;
+  page?: number;
+  pageSize?: number;
+  orderBy?: "cursoNome" | "nota" | "atualizadoEm";
+  order?: "asc" | "desc";
+}
+
+export interface MinhasNotasCursoFilter {
+  id: string;
+  nome: string;
+  codigo?: string | null;
+  turmas: Array<{
+    id: string;
+    nome: string;
+    codigo?: string | null;
+  }>;
+}
+
+export interface ListMinhasNotasResponse {
+  success: boolean;
+  data: {
+    items: NotaLancamento[];
+    pagination: ListNotasResponse["data"]["pagination"];
+    filters: {
+      cursos: MinhasNotasCursoFilter[];
     };
   };
 }

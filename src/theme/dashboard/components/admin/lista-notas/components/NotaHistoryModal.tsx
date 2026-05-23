@@ -235,6 +235,7 @@ export function NotaHistoryModal(props: {
   turmaId: string;
   historicoNotaId?: string | null;
   fallbackHistory?: NotaHistoryEvent[];
+  fetchHistory?: (notaId: string) => Promise<NotaHistoricoItem[]>;
 }) {
   const {
     isOpen,
@@ -249,6 +250,7 @@ export function NotaHistoryModal(props: {
     turmaId,
     historicoNotaId,
     fallbackHistory,
+    fetchHistory,
   } = props;
 
   const [page, setPage] = useState(1);
@@ -256,8 +258,18 @@ export function NotaHistoryModal(props: {
   const PAGE_SIZE = 4;
 
   const historicoQuery = useQuery<NotaHistoricoItem[], Error>({
-    queryKey: ["notas", "historico", cursoId, turmaId, historicoNotaId],
-    queryFn: () => getNotaHistorico(cursoId, turmaId, String(historicoNotaId)),
+    queryKey: [
+      "notas",
+      "historico",
+      fetchHistory ? "custom" : "admin",
+      cursoId,
+      turmaId,
+      historicoNotaId,
+    ],
+    queryFn: () =>
+      fetchHistory
+        ? fetchHistory(String(historicoNotaId))
+        : getNotaHistorico(cursoId, turmaId, String(historicoNotaId)),
     enabled: isOpen && Boolean(cursoId && turmaId && historicoNotaId),
     staleTime: 30 * 1000,
     gcTime: 5 * 60 * 1000,

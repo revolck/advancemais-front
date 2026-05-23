@@ -248,6 +248,9 @@ export const cursosRoutes = {
   me: {
     agenda: () => `${BASE}/me/agenda`,
     certificados: () => `${BASE}/me/certificados`,
+    notas: () => `${BASE}/me/notas`,
+    notasHistorico: (notaId: string) =>
+      `${BASE}/me/notas/${notaId}/historico`,
     inscricoes: {
       certificados: (inscricaoId: string) =>
         `${BASE}/me/inscricoes/${inscricaoId}/certificados`,

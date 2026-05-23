@@ -1,31 +1,34 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { EmptyState, FilterBar } from "@/components/ui/custom";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ButtonCustom } from "@/components/ui/custom";
 import { cn } from "@/lib/utils";
 import type { FilterField } from "@/components/ui/custom/filters";
 import { useQuery } from "@tanstack/react-query";
 import { getUserProfile } from "@/api/usuarios";
-import { getCursoAlunoDetalhes } from "@/api/cursos";
-import { listNotas, type NotaLancamento, type NotaOrigem } from "@/api/cursos";
 import {
-  getMockAlunoNotas,
-  getMockAlunoCandidatoData,
-} from "@/mockData/aluno-candidato";
+  getMinhaNotaHistorico,
+  listMinhasNotas,
+} from "@/api/cursos";
 import { NotaHistoryModal } from "@/theme/dashboard/components/admin/lista-notas/components/NotaHistoryModal";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { BookOpen, Calendar, Award, TrendingUp, History } from "lucide-react";
+import { Calendar, TrendingUp } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import type { DateRange } from "@/components/ui/custom/date-picker";
+import {
+  mapMinhaNotaToListItem,
+  mapMinhasNotasCursosToOptions,
+  toApiDate,
+  type AlunoNotaListItem,
+} from "./alunoNotas.mapper";
 
 const createEmptyDateRange = (): DateRange => ({ from: null, to: null });
 
@@ -35,25 +38,6 @@ function getCookieValue(name: string): string | null {
   const parts = value.split(`; ${name}=`);
   if (parts.length === 2) return parts.pop()?.split(";").shift() || null;
   return null;
-}
-
-interface NotaListItem {
-  key: string;
-  notaId?: string | null;
-  historicoNotaId?: string | null;
-  historicoDisponivel?: boolean;
-  cursoId: string;
-  cursoNome: string;
-  turmaId: string;
-  turmaNome: string;
-  inscricaoId?: string;
-  alunoId: string;
-  nota: number | null;
-  atualizadoEm: string;
-  motivo?: string | null;
-  origem?: NotaOrigem | null;
-  isManual: boolean;
-  history: any[];
 }
 
 function getSituacao(nota: number | null) {
@@ -94,13 +78,6 @@ function formatNota(nota: number | null): string {
   });
 }
 
-function getOrigemLabel(tipo: string) {
-  if (tipo === "AULA") return "Aula";
-  if (tipo === "PROVA") return "Prova";
-  if (tipo === "ATIVIDADE") return "Atividade";
-  return tipo;
-}
-
 type SituacaoFilter = "APROVADO" | "RECUPERACAO" | "REPROVADO" | null;
 
 export function AlunoNotasView() {
@@ -111,7 +88,7 @@ export function AlunoNotasView() {
     createEmptyDateRange()
   );
   const [selectedNotaHistory, setSelectedNotaHistory] =
-    useState<NotaListItem | null>(null);
+    useState<AlunoNotaListItem | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 6;
 
@@ -128,274 +105,76 @@ export function AlunoNotasView() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const userId = useMemo(() => {
-    return profileResponse && "usuario" in profileResponse
-      ? profileResponse.usuario.id
-      : null;
-  }, [profileResponse]);
+  const dataInicio = useMemo(
+    () => toApiDate(selectedDateRange.from),
+    [selectedDateRange.from]
+  );
+  const dataFim = useMemo(
+    () => toApiDate(selectedDateRange.to),
+    [selectedDateRange.to]
+  );
 
-  // Buscar detalhes do aluno com suas inscrições (usando dados mockados por enquanto)
-  const { data: alunoData, isLoading: isLoadingAluno } = useQuery({
-    queryKey: ["aluno-detalhes", userId],
+  const {
+    data: notasData,
+    isLoading: isLoadingNotas,
+    isError: isNotasError,
+    error: notasError,
+    refetch: refetchNotas,
+  } = useQuery({
+    queryKey: [
+      "aluno-notas-reais",
+      selectedCourseId,
+      selectedSituacao,
+      dataInicio,
+      dataFim,
+      currentPage,
+      pageSize,
+    ],
     queryFn: async () => {
-      // Usar dados mockados por enquanto (até a API estar disponível)
-      const mockData = getMockAlunoCandidatoData();
-
-      // Criar inscrições mockadas baseadas nos cursos e notas
-      // Usar as turmas que existem nas notas mockadas
-      const turmasMap = new Map<
-        string,
-        { cursoId: string; turmaId: string; turmaNome: string }
-      >();
-      mockData.notas.forEach((nota) => {
-        const key = `${nota.cursoId}::${nota.turmaId}`;
-        if (!turmasMap.has(key)) {
-          turmasMap.set(key, {
-            cursoId: nota.cursoId,
-            turmaId: nota.turmaId,
-            turmaNome: nota.turmaNome,
-          });
-        }
-      });
-
-      const inscricoes = Array.from(turmasMap.values()).map((turma) => {
-        const curso = mockData.cursos.find((c) => c.id === turma.cursoId);
-        return {
-          cursoId: turma.cursoId,
-          cursoNome: curso?.nome || turma.cursoId,
-          turmaId: turma.turmaId,
-          turmaNome: turma.turmaNome,
-          alunoId: userId || "aluno-001",
-          statusInscricao: curso?.status || "EM_PROGRESSO",
-        };
+      const response = await listMinhasNotas({
+        cursoId: selectedCourseId,
+        situacao: selectedSituacao,
+        dataInicio,
+        dataFim,
+        page: currentPage,
+        pageSize,
+        orderBy: "atualizadoEm",
+        order: "desc",
       });
 
       return {
-        success: true,
-        data: {
-          id: userId || "aluno-001",
-          nome: "Aluno Teste",
-          email: "aluno@teste.com",
-          inscricoes,
-        },
+        items: (response.data.items ?? []).map(mapMinhaNotaToListItem),
+        pagination: response.data.pagination,
+        filters: response.data.filters,
       };
-
-      // Código para quando a API estiver disponível:
-      // if (!userId) throw new Error("ID do usuário não encontrado");
-      // return getCursoAlunoDetalhes(userId);
     },
-    enabled: true, // Sempre habilitado para usar dados mockados
-    staleTime: 5 * 60 * 1000,
-  });
-
-  // Extrair cursos únicos das inscrições
-  const cursosUnicos = useMemo(() => {
-    if (!alunoData?.data?.inscricoes) return [];
-    const cursosMap = new Map<string, { value: string; label: string }>();
-    alunoData.data.inscricoes.forEach((inscricao: any) => {
-      if (inscricao.cursoId && inscricao.cursoNome) {
-        cursosMap.set(inscricao.cursoId, {
-          value: inscricao.cursoId,
-          label: inscricao.cursoNome,
-        });
-      }
-    });
-    return Array.from(cursosMap.values());
-  }, [alunoData]);
-
-  // Buscar notas (usando dados mockados por enquanto)
-  const { data: notasData, isLoading: isLoadingNotas } = useQuery({
-    queryKey: ["aluno-notas", selectedCourseId, userId],
-    queryFn: async () => {
-      // Usar dados mockados por enquanto (até a API estar disponível)
-      try {
-        const mockData = getMockAlunoCandidatoData();
-
-        // Se houver curso selecionado, filtrar por ele; caso contrário, trazer todas as notas
-        let mockNotas = selectedCourseId
-          ? mockData.notas.filter((nota) => nota.cursoId === selectedCourseId)
-          : mockData.notas;
-
-        // Agrupar por cursoId e manter apenas a nota mais recente (nota final) de cada curso
-        const notasPorCurso = new Map<string, (typeof mockNotas)[0]>();
-
-        mockNotas.forEach((nota) => {
-          const cursoKey = nota.cursoId;
-          const notaExistente = notasPorCurso.get(cursoKey);
-
-          if (!notaExistente) {
-            notasPorCurso.set(cursoKey, nota);
-          } else {
-            // Comparar datas e manter a mais recente
-            const dataExistente = new Date(notaExistente.atualizadoEm);
-            const dataAtual = new Date(nota.atualizadoEm);
-
-            if (dataAtual > dataExistente) {
-              notasPorCurso.set(cursoKey, nota);
-            }
-          }
-        });
-
-        // Converter map para array
-        const notasFinais = Array.from(notasPorCurso.values());
-
-        // Mapear para o formato esperado
-        const items: NotaListItem[] = notasFinais.map((nota) => {
-          const notaWithId = nota as {
-            id?: string;
-            notaId?: string | null;
-            historicoNotaId?: string | null;
-            historicoDisponivel?: boolean;
-          };
-
-          return {
-            key: `${nota.cursoId}::final`,
-            notaId: notaWithId.notaId ?? notaWithId.id ?? null,
-            historicoNotaId:
-              notaWithId.historicoNotaId ?? notaWithId.notaId ?? notaWithId.id ?? null,
-            historicoDisponivel:
-              notaWithId.historicoDisponivel ??
-              (Boolean(
-                notaWithId.historicoNotaId ??
-                  notaWithId.notaId ??
-                  notaWithId.id
-              ) ||
-                (nota.history?.length ?? 0) > 0),
-            cursoId: nota.cursoId,
-            cursoNome: nota.cursoNome,
-            turmaId: nota.turmaId,
-            turmaNome: nota.turmaNome,
-            inscricaoId: nota.inscricaoId,
-            alunoId: nota.alunoId,
-            nota: nota.nota,
-            atualizadoEm: nota.atualizadoEm,
-            motivo: nota.motivo,
-            origem: nota.origem,
-            isManual: nota.isManual,
-            history: nota.history,
-          };
-        });
-
-        return { items };
-      } catch (error) {
-        console.error("Erro ao buscar notas mockadas:", error);
-        return { items: [] };
-      }
-
-      // Código para quando a API estiver disponível:
-      // const response = await listNotas(selectedCourseId, {
-      //   turmaIds: selectedTurmaIds.join(","),
-      // });
-      // const minhasNotas = (response.data?.items ?? []).filter(
-      //   (nota: NotaLancamento) => nota.alunoId === userId
-      // );
-      // const items: NotaListItem[] = minhasNotas.map((nota: NotaLancamento) => {
-      //   const inscricao = alunoData?.data?.inscricoes?.find(
-      //     (i: any) =>
-      //       i.cursoId === nota.cursoId &&
-      //       i.turmaId === nota.turmaId &&
-      //       i.alunoId === nota.alunoId
-      //   );
-      //   return {
-      //     key: `${nota.cursoId}::${nota.turmaId}::${nota.alunoId}`,
-      //     cursoId: nota.cursoId,
-      //     cursoNome: inscricao?.cursoNome || "—",
-      //     turmaId: nota.turmaId,
-      //     turmaNome: inscricao?.turmaNome || "—",
-      //     inscricaoId: nota.inscricaoId,
-      //     alunoId: nota.alunoId,
-      //     nota: nota.nota,
-      //     atualizadoEm: nota.atualizadoEm,
-      //     motivo: nota.motivo,
-      //     origem: nota.origem,
-      //     isManual: nota.isManual,
-      //     history: nota.history ?? [],
-      //   };
-      // });
-      // return { items };
-    },
-    enabled: true, // Sempre habilitado para buscar todas as notas ou filtradas
     staleTime: 60 * 1000,
   });
 
-  const isLoading = isLoadingAluno || isLoadingNotas;
+  const cursosUnicos = useMemo(
+    () => mapMinhasNotasCursosToOptions(notasData?.filters.cursos ?? []),
+    [notasData?.filters.cursos]
+  );
 
-  // Aplicar filtros
-  const notasFiltradas = useMemo(() => {
-    const todasNotas = notasData?.items ?? [];
-    let filtered = todasNotas;
+  const isLoading = isLoadingNotas;
+  const notasFiltradas = notasData?.items ?? [];
 
-    // Filtro por situação
-    if (selectedSituacao) {
-      filtered = filtered.filter((nota) => {
-        const situacao = getSituacao(nota.nota);
-        if (selectedSituacao === "APROVADO") {
-          return situacao.label === "Aprovado";
-        }
-        if (selectedSituacao === "RECUPERACAO") {
-          return situacao.label === "Recuperação";
-        }
-        if (selectedSituacao === "REPROVADO") {
-          return situacao.label === "Reprovado";
-        }
-        return true;
-      });
-    }
+  const pagination = notasData?.pagination;
+  const effectivePage = pagination?.page ?? currentPage;
+  const totalItems = pagination?.total ?? notasFiltradas.length;
+  const totalPages = Math.max(1, pagination?.totalPages ?? 1);
+  const startIndex = totalItems === 0 ? 0 : (effectivePage - 1) * pageSize + 1;
+  const endIndex = Math.min(effectivePage * pageSize, totalItems);
+  const notas = notasFiltradas;
 
-    // Filtro por período
-    if (selectedDateRange.from || selectedDateRange.to) {
-      filtered = filtered.filter((nota) => {
-        const dataNota = new Date(nota.atualizadoEm);
-        const dataInicio = selectedDateRange.from
-          ? new Date(selectedDateRange.from)
-          : null;
-        const dataFim = selectedDateRange.to
-          ? new Date(selectedDateRange.to)
-          : null;
-
-        if (dataInicio && dataFim) {
-          // Ajustar para comparar apenas a data (sem hora)
-          const inicio = new Date(dataInicio);
-          inicio.setHours(0, 0, 0, 0);
-          const fim = new Date(dataFim);
-          fim.setHours(23, 59, 59, 999);
-          const notaDate = new Date(dataNota);
-          notaDate.setHours(0, 0, 0, 0);
-
-          return notaDate >= inicio && notaDate <= fim;
-        }
-        if (dataInicio) {
-          const inicio = new Date(dataInicio);
-          inicio.setHours(0, 0, 0, 0);
-          const notaDate = new Date(dataNota);
-          notaDate.setHours(0, 0, 0, 0);
-          return notaDate >= inicio;
-        }
-        if (dataFim) {
-          const fim = new Date(dataFim);
-          fim.setHours(23, 59, 59, 999);
-          return dataNota <= fim;
-        }
-        return true;
-      });
-    }
-
-    return filtered;
-  }, [notasData?.items, selectedSituacao, selectedDateRange]);
-
-  // Paginação
-  const totalPages = Math.max(1, Math.ceil(notasFiltradas.length / pageSize));
-  const startIndex = (currentPage - 1) * pageSize;
-  const endIndex = startIndex + pageSize;
-  const notas = notasFiltradas.slice(startIndex, endIndex);
-
-  const showEmptyState = !isLoading && notasFiltradas.length === 0;
-  const shouldShowFilters = cursosUnicos.length > 0; // Sempre mostrar filtro se houver cursos
+  const showEmptyState = !isLoading && !isNotasError && notasFiltradas.length === 0;
+  const shouldShowFilters =
+    isLoading || cursosUnicos.length > 0 || Boolean(selectedCourseId || selectedSituacao);
 
   // Reset página quando filtro muda
   useEffect(() => {
     setCurrentPage(1);
-  }, [selectedCourseId, selectedSituacao, selectedDateRange]);
+  }, [selectedCourseId, selectedSituacao, dataInicio, dataFim]);
 
   const handlePageChange = useCallback(
     (page: number) => {
@@ -415,7 +194,7 @@ export function AlunoNotasView() {
       return pages;
     }
 
-    const start = Math.max(1, currentPage - 2);
+    const start = Math.max(1, effectivePage - 2);
     const end = Math.min(totalPages, start + 4);
     const adjustedStart = Math.max(1, end - 4);
 
@@ -424,7 +203,7 @@ export function AlunoNotasView() {
     }
 
     return pages;
-  }, [currentPage, totalPages]);
+  }, [effectivePage, totalPages]);
 
   const situacaoOptions = useMemo(
     () => [
@@ -442,8 +221,8 @@ export function AlunoNotasView() {
         label: "Curso",
         mode: "single" as const,
         options: cursosUnicos,
-        placeholder: isLoadingAluno ? "Carregando..." : "Selecionar",
-        disabled: isLoadingAluno,
+        placeholder: isLoadingNotas ? "Carregando..." : "Selecionar",
+        disabled: isLoadingNotas && cursosUnicos.length === 0,
         emptyPlaceholder: "Sem cursos disponíveis",
       },
       {
@@ -460,7 +239,7 @@ export function AlunoNotasView() {
         placeholder: "Selecionar período",
       },
     ],
-    [cursosUnicos, isLoadingAluno, situacaoOptions]
+    [cursosUnicos, isLoadingNotas, situacaoOptions]
   );
 
   const filterValues = useMemo(
@@ -514,6 +293,24 @@ export function AlunoNotasView() {
         </div>
       )}
 
+      {isNotasError && (
+        <div className="rounded-xl border border-red-200 bg-red-50 p-5 text-sm text-red-700">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <span>
+              {notasError?.message || "Não foi possível carregar suas notas."}
+            </span>
+            <ButtonCustom
+              variant="outline"
+              size="sm"
+              onClick={() => refetchNotas()}
+              className="w-full border-red-200 bg-white text-red-700 hover:bg-red-100 sm:w-auto"
+            >
+              Tentar novamente
+            </ButtonCustom>
+          </div>
+        </div>
+      )}
+
       {/* Empty State */}
       {showEmptyState && (
         <div className="rounded-xl bg-white p-8 border border-gray-200/60">
@@ -533,12 +330,14 @@ export function AlunoNotasView() {
       )}
 
       {/* Lista de Notas */}
-      {!isLoading && notas.length > 0 && (
+      {!isLoading && !isNotasError && notas.length > 0 && (
         <div className="rounded-xl bg-white border border-gray-200/60 overflow-hidden">
           <div className="divide-y divide-gray-200/60">
             {notas.map((nota) => {
               const situacao = getSituacao(nota.nota);
-              const hasHistory = (nota.history?.length ?? 0) > 0;
+              const hasHistory =
+                Boolean(nota.historicoNotaId || nota.notaId) ||
+                (nota.history?.length ?? 0) > 0;
 
               return (
                 <div
@@ -637,13 +436,11 @@ export function AlunoNotasView() {
           </div>
 
           {/* Paginação */}
-          {notasFiltradas.length > 0 && (
+          {totalItems > 0 && (
             <div className="flex flex-col gap-4 px-4 md:px-6 py-4 border-t border-gray-200/60 bg-gray-50/30 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-2 text-sm text-gray-600">
                 <span>
-                  Mostrando {Math.min(startIndex + 1, notasFiltradas.length)} a{" "}
-                  {Math.min(endIndex, notasFiltradas.length)} de{" "}
-                  {notasFiltradas.length}
+                  Mostrando {startIndex} a {endIndex} de {totalItems}
                 </span>
               </div>
 
@@ -652,8 +449,8 @@ export function AlunoNotasView() {
                   <ButtonCustom
                     variant="outline"
                     size="sm"
-                    onClick={() => handlePageChange(currentPage - 1)}
-                    disabled={currentPage === 1}
+                    onClick={() => handlePageChange(effectivePage - 1)}
+                    disabled={effectivePage === 1}
                     className="h-8 px-3"
                   >
                     Anterior
@@ -662,7 +459,7 @@ export function AlunoNotasView() {
                   {visiblePages[0] > 1 && (
                     <>
                       <ButtonCustom
-                        variant={currentPage === 1 ? "primary" : "outline"}
+                        variant={effectivePage === 1 ? "primary" : "outline"}
                         size="sm"
                         onClick={() => handlePageChange(1)}
                         className="h-8 w-8 p-0"
@@ -678,7 +475,7 @@ export function AlunoNotasView() {
                   {visiblePages.map((page) => (
                     <ButtonCustom
                       key={page}
-                      variant={currentPage === page ? "primary" : "outline"}
+                      variant={effectivePage === page ? "primary" : "outline"}
                       size="sm"
                       onClick={() => handlePageChange(page)}
                       className="h-8 w-8 p-0"
@@ -695,7 +492,7 @@ export function AlunoNotasView() {
                       )}
                       <ButtonCustom
                         variant={
-                          currentPage === totalPages ? "primary" : "outline"
+                          effectivePage === totalPages ? "primary" : "outline"
                         }
                         size="sm"
                         onClick={() => handlePageChange(totalPages)}
@@ -709,8 +506,8 @@ export function AlunoNotasView() {
                   <ButtonCustom
                     variant="outline"
                     size="sm"
-                    onClick={() => handlePageChange(currentPage + 1)}
-                    disabled={currentPage === totalPages}
+                    onClick={() => handlePageChange(effectivePage + 1)}
+                    disabled={effectivePage === totalPages}
                     className="h-8 px-3"
                   >
                     Próxima
@@ -739,6 +536,8 @@ export function AlunoNotasView() {
             selectedNotaHistory.historicoNotaId ?? selectedNotaHistory.notaId
           }
           fallbackHistory={selectedNotaHistory.history ?? []}
+          notaAtual={selectedNotaHistory.nota}
+          fetchHistory={getMinhaNotaHistorico}
         />
       )}
     </div>
