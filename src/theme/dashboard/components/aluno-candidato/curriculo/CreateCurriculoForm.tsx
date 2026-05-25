@@ -80,6 +80,11 @@ import {
   type PremioFormItem,
   type PublicacaoFormItem,
 } from "./components/PremiosPublicacoesEditor";
+import {
+  getCurriculoPrincipalCreationState,
+  getEffectivePrincipalChoice,
+  type PrincipalChoice,
+} from "./curriculoPrincipal";
 
 interface CreateCurriculoFormProps {
   onSuccess?: () => void;
@@ -329,8 +334,8 @@ export function CreateCurriculoForm({
 
   const {
     data: curriculosRaw,
-    isLoading: isLoadingCurriculos,
     isError: isErrorCurriculos,
+    refetch: refetchCurriculos,
   } = useQuery({
     queryKey: ["aluno-candidato", "curriculos"],
     queryFn: () => listCurriculos(),
@@ -353,13 +358,24 @@ export function CreateCurriculoForm({
     return null;
   }, [curriculosRaw]);
 
-  const isFirstCurriculo = curriculosCount === 0;
+  const principalCreationState = isEditMode
+    ? null
+    : getCurriculoPrincipalCreationState({
+        curriculosCount,
+        isError: isErrorCurriculos,
+      });
+  const isFirstCurriculo = principalCreationState === "first";
 
   const [titulo, setTitulo] = useState("");
   const [resumo, setResumo] = useState("");
   const [objetivo, setObjetivo] = useState("");
-  const [principalChoice, setPrincipalChoice] = useState<string | null>(null);
+  const [principalChoice, setPrincipalChoice] = useState<PrincipalChoice>(null);
   const [showPrincipalConfirm, setShowPrincipalConfirm] = useState(false);
+  const effectivePrincipalChoice = getEffectivePrincipalChoice({
+    isEditMode,
+    creationState: principalCreationState,
+    principalChoice,
+  });
 
   const [necessitaAcomodacoes, setNecessitaAcomodacoes] = useState(false);
   const [tipoAcomodacao, setTipoAcomodacao] = useState<string[]>([]);
@@ -614,8 +630,8 @@ export function CreateCurriculoForm({
   const totalSteps = CURRICULO_STEPS.length;
   const isFirstStep = step === 1;
   const isLastStep = step === totalSteps;
-  const isBootstrappingCurriculos =
-    isLoadingCurriculos && curriculosCount === null;
+  const isBootstrappingCurriculos = principalCreationState === "loading";
+  const hasCurriculosLookupError = principalCreationState === "error";
 
   const {
     data: profileResponse,
@@ -665,7 +681,7 @@ export function CreateCurriculoForm({
     };
   }, [profileResponse]);
 
-  const principal = useMemo(() => principalChoice === "SIM", [principalChoice]);
+  const principal = effectivePrincipalChoice === "SIM";
   const aceitaRemoto = useMemo(() => remotoChoice === "SIM", [remotoChoice]);
 
   useEffect(() => {
@@ -675,20 +691,6 @@ export function CreateCurriculoForm({
       description: "Não foi possível carregar cidade/estado do seu perfil.",
     });
   }, [isErrorProfile]);
-
-  useEffect(() => {
-    if (isEditMode) return;
-    if (curriculosCount === null) return;
-
-    // Primeiro currículo: sempre principal e bloqueado
-    if (curriculosCount === 0) {
-      setPrincipalChoice("SIM");
-      return;
-    }
-
-    // Já tem currículos: por padrão "Não" (sem sobrescrever escolha manual)
-    setPrincipalChoice((prev) => prev ?? "NAO");
-  }, [curriculosCount, isEditMode]);
 
   const {
     data: curriculoEditRaw,
@@ -1123,9 +1125,15 @@ export function CreateCurriculoForm({
       if (objetivo && objetivo.length > 1000) {
         newErrors.objetivo = "Objetivo deve ter no máximo 1000 caracteres";
       }
-      if (principalChoice !== "SIM" && principalChoice !== "NAO") {
+      if (hasCurriculosLookupError) {
+        newErrors.principal =
+          "Não foi possível verificar seus currículos. Tente novamente.";
+      } else if (
+        effectivePrincipalChoice !== "SIM" &&
+        effectivePrincipalChoice !== "NAO"
+      ) {
         newErrors.principal = "Informe se este currículo é principal";
-      } else if (isFirstCurriculo && principalChoice !== "SIM") {
+      } else if (isFirstCurriculo && effectivePrincipalChoice !== "SIM") {
         newErrors.principal = "O primeiro currículo deve ser principal";
       }
 
@@ -1334,8 +1342,10 @@ export function CreateCurriculoForm({
 
   const handlePrincipalChange = (value: string | null) => {
     if (isEditMode) return;
-    if (value !== "SIM") {
-      setPrincipalChoice(value);
+    const nextValue: PrincipalChoice =
+      value === "SIM" || value === "NAO" ? value : null;
+    if (nextValue !== "SIM") {
+      setPrincipalChoice(nextValue);
       return;
     }
 
@@ -1344,7 +1354,7 @@ export function CreateCurriculoForm({
       return;
     }
 
-    setPrincipalChoice(value);
+    setPrincipalChoice(nextValue);
   };
 
   const handlePrevious = () => {
@@ -1358,10 +1368,19 @@ export function CreateCurriculoForm({
   };
 
   const handleSubmit = async () => {
-    if (!isEditMode && isLoadingCurriculos) {
+    if (!isEditMode && principalCreationState === "loading") {
       toastCustom.error({
         title: "Aguarde um instante",
         description: "Carregando seus currículos...",
+      });
+      return;
+    }
+
+    if (!isEditMode && principalCreationState === "error") {
+      toastCustom.error({
+        title: "Não foi possível continuar",
+        description:
+          "Não foi possível verificar seus currículos. Tente novamente.",
       });
       return;
     }
@@ -1833,21 +1852,47 @@ export function CreateCurriculoForm({
                         <Skeleton className="h-12 w-full" />
                         <Skeleton className="h-3 w-32" />
                       </div>
+                    ) : hasCurriculosLookupError ? (
+                      <div className="space-y-2 md:col-span-1">
+                        <p className="text-sm font-medium text-destructive">
+                          Principal <span aria-hidden="true">*</span>
+                        </p>
+                        <div className="space-y-3 rounded-md border border-destructive/30 bg-destructive/5 p-3">
+                          <p className="text-xs! text-destructive! mb-0!">
+                            Não foi possível verificar seus currículos.
+                          </p>
+                          <ButtonCustom
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => void refetchCurriculos()}
+                            disabled={isSubmitting}
+                            withAnimation={false}
+                          >
+                            Tentar novamente
+                          </ButtonCustom>
+                        </div>
+                      </div>
+                    ) : isFirstCurriculo ? (
+                      <InputCustom
+                        label="Principal"
+                        value="Sim"
+                        disabled
+                        required
+                        helperText="O primeiro currículo será principal."
+                        className="md:col-span-1"
+                      />
                     ) : (
                       <SelectCustom
                         label="Principal"
                         placeholder="Selecionar"
                         options={PRINCIPAL_OPTIONS}
-                        value={principalChoice}
+                        value={effectivePrincipalChoice}
                         onChange={(v) => {
                           handlePrincipalChange(v);
                           clearError("principal");
                         }}
-                        disabled={
-                          isSubmitting ||
-                          isEditMode ||
-                          (isFirstCurriculo && !isErrorCurriculos)
-                        }
+                        disabled={isSubmitting || isEditMode}
                         required
                         className="md:col-span-1"
                         error={errors.principal}
@@ -3283,7 +3328,9 @@ export function CreateCurriculoForm({
                   disabled={
                     isSubmitting ||
                     (step === 1 &&
-                      (isBootstrappingCurriculos || isBootstrappingEdit))
+                      (isBootstrappingCurriculos ||
+                        hasCurriculosLookupError ||
+                        isBootstrappingEdit))
                   }
                   withAnimation
                 >
