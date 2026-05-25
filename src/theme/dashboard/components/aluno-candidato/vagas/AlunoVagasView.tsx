@@ -5,11 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
-import {
-  ButtonCustom,
-  EmptyState,
-  FilterBar,
-} from "@/components/ui/custom";
+import { ButtonCustom, EmptyState, FilterBar } from "@/components/ui/custom";
 import { toastCustom } from "@/components/ui/custom/toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { aplicarVaga, listCurriculos } from "@/api/candidatos";
@@ -45,7 +41,9 @@ function getDefaultCurriculoId(raw: unknown): string | null {
   return first?.id ?? null;
 }
 
-function coerceCurriculoApplyOption(value: unknown): CurriculoApplyOption | null {
+function coerceCurriculoApplyOption(
+  value: unknown,
+): CurriculoApplyOption | null {
   if (!value || typeof value !== "object") return null;
   const v = value as Record<string, unknown>;
   if (typeof v.id !== "string") return null;
@@ -184,7 +182,11 @@ export function AlunoVagasView() {
         isError: curriculosQuery.isError,
         curriculoCount: curriculosOptions.length,
       }),
-    [curriculosOptions.length, curriculosQuery.isError, curriculosQuery.isLoading],
+    [
+      curriculosOptions.length,
+      curriculosQuery.isError,
+      curriculosQuery.isLoading,
+    ],
   );
 
   const applyMutation = useMutation({
@@ -193,7 +195,10 @@ export function AlunoVagasView() {
       curriculoId: string;
       vagaTitulo?: string | null;
     }) => {
-      return aplicarVaga({ vagaId: payload.vagaId, curriculoId: payload.curriculoId });
+      return aplicarVaga({
+        vagaId: payload.vagaId,
+        curriculoId: payload.curriculoId,
+      });
     },
     onSuccess: (_, variables) => {
       setApplyingVagaId(null);
@@ -461,7 +466,7 @@ export function AlunoVagasView() {
           role="status"
           className="flex flex-col gap-4 rounded-lg border border-blue-100 bg-blue-50/70 px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
         >
-          <p className="text-sm text-gray-700">
+          <p className="text-sm! text-gray-700! mb-0!">
             Você não tem currículos cadastrados para se candidatar às vagas.
             Cadastre seu currículo para continuar.
           </p>
@@ -552,7 +557,9 @@ export function AlunoVagasView() {
                       }}
                       onApply={(jobId) => handleApply(jobId, job.titulo)}
                       isApplying={applyMutation.isPending}
-                      isApplyingThis={applyMutation.isPending && applyingVagaId === job.id}
+                      isApplyingThis={
+                        applyMutation.isPending && applyingVagaId === job.id
+                      }
                       isApplicationBlocked={curriculoAvailability.isBlocked}
                       applicationBlockedReason={curriculoAvailability.tooltip}
                     />
@@ -613,11 +620,14 @@ export function AlunoVagasView() {
 
                   {visiblePages[visiblePages.length - 1] < totalPages && (
                     <>
-                      {visiblePages[visiblePages.length - 1] < totalPages - 1 && (
+                      {visiblePages[visiblePages.length - 1] <
+                        totalPages - 1 && (
                         <span className="text-gray-400">...</span>
                       )}
                       <ButtonCustom
-                        variant={currentPage === totalPages ? "primary" : "outline"}
+                        variant={
+                          currentPage === totalPages ? "primary" : "outline"
+                        }
                         size="sm"
                         onClick={() => setPage(totalPages)}
                         className="h-8 w-8 p-0"
