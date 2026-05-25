@@ -464,7 +464,7 @@ export function AlunoVagasView() {
       {curriculoAvailability.status === "missing" && (
         <div
           role="status"
-          className="flex flex-col gap-4 rounded-lg border border-blue-100 bg-blue-50/70 px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
+          className="flex flex-col gap-4 rounded-lg border border-yellow-100 bg-yellow-50/70 px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
         >
           <p className="text-sm! text-gray-700! mb-0!">
             Você não tem currículos cadastrados para se candidatar às vagas.
