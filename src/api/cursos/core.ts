@@ -1594,13 +1594,7 @@ export async function listMeCertificados(
   >,
   init?: RequestInit,
 ): Promise<ListCertificadosResponse> {
-  const sp = new URLSearchParams();
-  if (params?.cursoId) sp.set("cursoId", params.cursoId);
-  if (params?.turmaId) sp.set("turmaId", params.turmaId);
-  if (params?.emitidoDe) sp.set("emitidoDe", params.emitidoDe);
-  if (params?.emitidoA) sp.set("emitidoA", params.emitidoA);
-  if (params?.page) sp.set("page", String(params.page));
-  if (params?.pageSize) sp.set("pageSize", String(params.pageSize));
+  const sp = buildListMeCertificadosSearchParams(params);
 
   const url = sp.toString()
     ? `${cursosRoutes.me.certificados()}?${sp.toString()}`
@@ -1616,6 +1610,7 @@ export async function listMeCertificados(
         };
     items?: TurmaCertificado[];
     pagination?: import("./types").Pagination;
+    filters?: import("./types").ListCertificadosResponse["filters"];
   }>(url, {
     init: {
       method: "GET",
@@ -1627,10 +1622,11 @@ export async function listMeCertificados(
 
   const payload = ((response as any)?.data ?? response) as
     | TurmaCertificado[]
-    | {
-        items?: TurmaCertificado[];
-        pagination?: import("./types").Pagination;
-      }
+      | {
+          items?: TurmaCertificado[];
+          pagination?: import("./types").Pagination;
+          filters?: import("./types").ListCertificadosResponse["filters"];
+        }
     | undefined;
 
   if (Array.isArray(payload)) {
@@ -1643,7 +1639,24 @@ export async function listMeCertificados(
   return {
     items: payload?.items ?? (response as any)?.items ?? [],
     pagination: payload?.pagination ?? response?.pagination,
+    filters: payload?.filters ?? response?.filters,
   };
+}
+
+export function buildListMeCertificadosSearchParams(
+  params?: Pick<
+    ListCertificadosGlobalParams,
+    "cursoId" | "turmaId" | "emitidoDe" | "emitidoA" | "page" | "pageSize"
+  >,
+) {
+  const sp = new URLSearchParams();
+  if (params?.cursoId) sp.set("cursoId", params.cursoId);
+  if (params?.turmaId) sp.set("turmaId", params.turmaId);
+  if (params?.emitidoDe) sp.set("emitidoDe", params.emitidoDe);
+  if (params?.emitidoA) sp.set("emitidoA", params.emitidoA);
+  if (params?.page) sp.set("page", String(params.page));
+  if (params?.pageSize) sp.set("pageSize", String(params.pageSize));
+  return sp;
 }
 
 export async function listCertificadoModelos(
@@ -2425,6 +2438,44 @@ export async function listFrequenciasGlobal(
     },
     cache: "no-cache",
   });
+}
+
+export async function listMinhasFrequencias(
+  params: import("./types").ListMinhasFrequenciasParams = {},
+  init?: RequestInit,
+): Promise<import("./types").ListMinhasFrequenciasResponse> {
+  const sp = buildListMinhasFrequenciasSearchParams(params);
+
+  const url = sp.toString()
+    ? `${cursosRoutes.me.frequencias()}?${sp.toString()}`
+    : cursosRoutes.me.frequencias();
+
+  return apiFetch(url, {
+    init: {
+      method: "GET",
+      ...init,
+      headers: buildHeaders(init?.headers, true),
+    },
+    cache: "no-cache",
+    silence403: true,
+    silence404: true,
+  });
+}
+
+export function buildListMinhasFrequenciasSearchParams(
+  params: import("./types").ListMinhasFrequenciasParams = {},
+) {
+  const sp = new URLSearchParams();
+  if (params.cursoId) sp.set("cursoId", params.cursoId);
+  if (params.aulaId) sp.set("aulaId", params.aulaId);
+  if (params.status) sp.set("status", params.status);
+  if (params.dataInicio) sp.set("dataInicio", params.dataInicio);
+  if (params.dataFim) sp.set("dataFim", params.dataFim);
+  if (params.orderBy) sp.set("orderBy", params.orderBy);
+  if (params.order) sp.set("order", params.order);
+  if (params.page) sp.set("page", String(params.page));
+  if (params.pageSize) sp.set("pageSize", String(params.pageSize));
+  return sp;
 }
 
 export async function listFrequenciasByAluno(
@@ -3330,6 +3381,40 @@ export async function listEstagiosGlobal(
     },
     cache: "short",
   });
+}
+
+export async function listMeusEstagios(
+  params: import("./types").ListMeusEstagiosParams = {},
+  init?: RequestInit,
+): Promise<import("./types").ListMeusEstagiosResponse> {
+  const sp = buildListMeusEstagiosSearchParams(params);
+
+  const url = sp.toString()
+    ? `${cursosRoutes.me.estagios()}?${sp.toString()}`
+    : cursosRoutes.me.estagios();
+
+  return apiFetch(url, {
+    init: {
+      method: "GET",
+      ...init,
+      headers: buildHeaders(init?.headers, true),
+    },
+    cache: "no-cache",
+    silence403: true,
+    silence404: true,
+  });
+}
+
+export function buildListMeusEstagiosSearchParams(
+  params: import("./types").ListMeusEstagiosParams = {},
+) {
+  const sp = new URLSearchParams();
+  if (params.cursoId) sp.set("cursoId", params.cursoId);
+  if (params.dataInicio) sp.set("dataInicio", params.dataInicio);
+  if (params.dataFim) sp.set("dataFim", params.dataFim);
+  if (params.page) sp.set("page", String(params.page));
+  if (params.pageSize) sp.set("pageSize", String(params.pageSize));
+  return sp;
 }
 
 export async function createEstagioGlobal(

@@ -92,6 +92,7 @@ export {
   // API v3 - Frequência
   listFrequencias,
   listFrequenciasGlobal,
+  listMinhasFrequencias,
   listFrequenciasByAluno,
   getFrequenciaResumo,
   createFrequencia,
@@ -124,6 +125,7 @@ export {
   listAvaliacoesInstrutores,
   // API v3 - Estágios (Global)
   listEstagiosGlobal,
+  listMeusEstagios,
   createEstagioGlobal,
   getEstagioById,
   listEstagiosByAluno,
@@ -238,6 +240,8 @@ export type {
   FrequenciaResumoResponse,
   ListFrequenciasParams,
   ListFrequenciasResponse,
+  ListMinhasFrequenciasParams,
+  ListMinhasFrequenciasResponse,
   ListFrequenciaResumoParams,
   CreateFrequenciaPayload,
   UpsertFrequenciaLancamentoPayload,
@@ -299,6 +303,8 @@ export type {
   Estagio,
   ListEstagiosParams,
   ListEstagiosResponse,
+  ListMeusEstagiosParams,
+  ListMeusEstagiosResponse,
   CreateEstagioGlobalPayload,
   CreateEstagioGroupPayload,
   UpdateEstagioGlobalPayload,

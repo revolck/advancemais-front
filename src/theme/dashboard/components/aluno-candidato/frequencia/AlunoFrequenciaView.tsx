@@ -6,12 +6,7 @@ import { ButtonCustom } from "@/components/ui/custom";
 import { cn } from "@/lib/utils";
 import type { FilterField } from "@/components/ui/custom/filters";
 import { useQuery } from "@tanstack/react-query";
-import { getUserProfile } from "@/api/usuarios";
-import { getCursoAlunoDetalhes } from "@/api/cursos";
-import {
-  getMockAlunoFrequencias,
-  getMockAlunoCandidatoData,
-} from "@/mockData/aluno-candidato";
+import { listMinhasFrequencias } from "@/api/cursos";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -30,39 +25,16 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  mapMinhaFrequenciaToListItem,
+  shouldShowAlunoDataAsEmptyState,
+  toApiDate,
+  type AlunoFrequenciaListItem,
+} from "./alunoFrequencia.mapper";
 
 const createEmptyDateRange = (): DateRange => ({ from: null, to: null });
 
-function getCookieValue(name: string): string | null {
-  if (typeof document === "undefined") return null;
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop()?.split(";").shift() || null;
-  return null;
-}
-
-interface FrequenciaListItem {
-  id: string;
-  key: string;
-  cursoId: string;
-  cursoNome: string;
-  turmaId: string;
-  turmaNome: string;
-  aulaId: string;
-  aulaNome: string;
-  inscricaoId: string;
-  alunoId: string;
-  statusAtual: "PRESENTE" | "AUSENTE" | "JUSTIFICADO" | "ATRASADO";
-  justificativa?: string | null;
-  observacoes?: string | null;
-  dataReferencia: string;
-  evidence?: {
-    ultimoLogin?: string | null;
-    tempoAoVivoMin?: number | null;
-  } | null;
-}
-
-function getStatusConfig(status: FrequenciaListItem["statusAtual"]) {
+function getStatusConfig(status: AlunoFrequenciaListItem["statusAtual"]) {
   switch (status) {
     case "PRESENTE":
       return {
@@ -109,217 +81,87 @@ export function AlunoFrequenciaView() {
   );
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 6;
+  const dataInicio = toApiDate(selectedDateRange.from);
+  const dataFim = toApiDate(selectedDateRange.to);
 
-  // Buscar perfil do usuário
-  const { data: profileResponse, isLoading: isLoadingProfile } = useQuery({
-    queryKey: ["aluno-profile"],
+  const {
+    data: frequenciasData,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useQuery({
+    queryKey: [
+      "aluno-frequencias-reais",
+      selectedCourseId,
+      selectedAulaId,
+      selectedStatus,
+      dataInicio,
+      dataFim,
+      currentPage,
+      pageSize,
+    ],
     queryFn: async () => {
-      const token = getCookieValue("token");
-      if (!token) throw new Error("Token não encontrado");
-      return await getUserProfile(token);
-    },
-    staleTime: 5 * 60 * 1000,
-  });
-
-  const userId = useMemo(() => {
-    return profileResponse && "usuario" in profileResponse
-      ? profileResponse.usuario.id
-      : null;
-  }, [profileResponse]);
-
-  // Buscar detalhes do aluno com suas inscrições (usando dados mockados por enquanto)
-  const { data: alunoData, isLoading: isLoadingAluno } = useQuery({
-    queryKey: ["aluno-detalhes", userId],
-    queryFn: async () => {
-      // Usar dados mockados por enquanto (até a API estar disponível)
-      const mockData = getMockAlunoCandidatoData();
-
-      // Criar inscrições mockadas baseadas nos cursos e frequências
-      const turmasMap = new Map<
-        string,
-        { cursoId: string; turmaId: string; turmaNome: string }
-      >();
-      mockData.frequencias?.forEach((freq) => {
-        if (!turmasMap.has(freq.turmaId)) {
-          turmasMap.set(freq.turmaId, {
-            cursoId: freq.cursoId,
-            turmaId: freq.turmaId,
-            turmaNome: freq.turmaNome,
-          });
-        }
-      });
-
-      const inscricoes = Array.from(turmasMap.values()).map((turma) => {
-        const curso = mockData.cursos.find((c) => c.id === turma.cursoId);
-        return {
-          inscricaoId: `inscricao-${turma.turmaId}`,
-          turmaId: turma.turmaId,
-          turmaNome: turma.turmaNome,
-          cursoId: turma.cursoId,
-          cursoNome: curso?.nome || turma.cursoId,
-          alunoId: userId || "aluno-001",
-          statusInscricao: curso?.status || "EM_PROGRESSO",
-        };
-      });
-
-      return {
-        success: true,
-        data: {
-          id: userId || "aluno-001",
-          nome: "Aluno Teste",
-          email: "aluno@teste.com",
-          inscricoes,
-        },
-      };
-    },
-    enabled: true, // Sempre habilitado para usar dados mockados
-    staleTime: 5 * 60 * 1000,
-  });
-
-  // Extrair cursos únicos para o filtro
-  const cursosUnicos = useMemo(() => {
-    const cursosMap = new Map<string, { value: string; label: string }>();
-    alunoData?.data?.inscricoes?.forEach((inscricao: any) => {
-      if (inscricao.cursoId && inscricao.cursoNome) {
-        cursosMap.set(inscricao.cursoId, {
-          value: inscricao.cursoId,
-          label: inscricao.cursoNome,
-        });
-      }
-    });
-    return Array.from(cursosMap.values());
-  }, [alunoData]);
-
-  // Extrair aulas únicas para o filtro (baseado no curso selecionado)
-  const aulasUnicas = useMemo(() => {
-    const mockData = getMockAlunoCandidatoData();
-    const frequencias = mockData.frequencias ?? [];
-
-    let filtered = frequencias;
-    if (selectedCourseId) {
-      filtered = filtered.filter((freq) => freq.cursoId === selectedCourseId);
-    }
-
-    const aulasMap = new Map<string, { value: string; label: string }>();
-    filtered.forEach((freq) => {
-      if (freq.aulaId && freq.aulaNome) {
-        aulasMap.set(freq.aulaId, {
-          value: freq.aulaId,
-          label: freq.aulaNome,
-        });
-      }
-    });
-
-    return Array.from(aulasMap.values()).sort((a, b) =>
-      a.label.localeCompare(b.label, "pt-BR")
-    );
-  }, [selectedCourseId]);
-
-  // Buscar frequências (usando dados mockados por enquanto)
-  const { data: frequenciasData, isLoading: isLoadingFrequencias } = useQuery({
-    queryKey: ["aluno-frequencias", selectedCourseId, selectedAulaId, userId],
-    queryFn: async () => {
-      // Usar dados mockados por enquanto (até a API estar disponível)
       try {
-        const mockData = getMockAlunoCandidatoData();
-        const frequencias = getMockAlunoFrequencias(
-          selectedCourseId || undefined,
-          selectedAulaId || undefined
-        );
-
-        // Mapear para o formato esperado
-        const items: FrequenciaListItem[] = frequencias.map((freq) => ({
-          id: freq.id,
-          key: freq.key,
-          cursoId: freq.cursoId,
-          cursoNome: freq.cursoNome,
-          turmaId: freq.turmaId,
-          turmaNome: freq.turmaNome,
-          aulaId: freq.aulaId,
-          aulaNome: freq.aulaNome,
-          inscricaoId: freq.inscricaoId,
-          alunoId: freq.alunoId,
-          statusAtual: freq.statusAtual,
-          justificativa: freq.justificativa,
-          observacoes: freq.observacoes,
-          dataReferencia: freq.dataReferencia,
-          evidence: freq.evidence ?? undefined,
-        }));
-
-        return { items };
+        const response = await listMinhasFrequencias({
+          cursoId: selectedCourseId,
+          aulaId: selectedAulaId,
+          status: selectedStatus,
+          dataInicio,
+          dataFim,
+          page: currentPage,
+          pageSize,
+          orderBy: "atualizadoEm",
+          order: "desc",
+        });
+        return {
+          items: response.data.items.map(mapMinhaFrequenciaToListItem),
+          pagination: response.data.pagination,
+          filters: response.data.filters,
+        };
       } catch (error) {
-        console.error("Erro ao buscar frequências mockadas:", error);
-        return { items: [] };
+        if (shouldShowAlunoDataAsEmptyState(error)) {
+          return {
+            items: [],
+            pagination: {
+              page: 1,
+              pageSize,
+              total: 0,
+              totalPages: 1,
+            },
+            filters: { cursos: [], aulas: [] },
+          };
+        }
+        throw error;
       }
     },
-    enabled: true,
     staleTime: 60 * 1000,
   });
 
-  const isLoading = isLoadingAluno || isLoadingFrequencias;
-
-  // Aplicar filtros
-  const frequenciasFiltradas = useMemo(() => {
-    const todasFrequencias = frequenciasData?.items ?? [];
-    let filtered = todasFrequencias;
-
-    // Filtro por status
-    if (selectedStatus) {
-      filtered = filtered.filter((freq) => freq.statusAtual === selectedStatus);
-    }
-
-    // Filtro por período
-    if (selectedDateRange.from || selectedDateRange.to) {
-      filtered = filtered.filter((freq) => {
-        const dataFreq = new Date(freq.dataReferencia);
-        const dataInicio = selectedDateRange.from
-          ? new Date(selectedDateRange.from)
-          : null;
-        const dataFim = selectedDateRange.to
-          ? new Date(selectedDateRange.to)
-          : null;
-
-        if (dataInicio && dataFim) {
-          // Ajustar para comparar apenas a data (sem hora)
-          const inicio = new Date(dataInicio);
-          inicio.setHours(0, 0, 0, 0);
-          const fim = new Date(dataFim);
-          fim.setHours(23, 59, 59, 999);
-          const freqDate = new Date(dataFreq);
-          freqDate.setHours(0, 0, 0, 0);
-
-          return freqDate >= inicio && freqDate <= fim;
-        }
-        if (dataInicio) {
-          const inicio = new Date(dataInicio);
-          inicio.setHours(0, 0, 0, 0);
-          const freqDate = new Date(dataFreq);
-          freqDate.setHours(0, 0, 0, 0);
-          return freqDate >= inicio;
-        }
-        if (dataFim) {
-          const fim = new Date(dataFim);
-          fim.setHours(23, 59, 59, 999);
-          return dataFreq <= fim;
-        }
-        return true;
-      });
-    }
-
-    return filtered;
-  }, [frequenciasData?.items, selectedStatus, selectedDateRange]);
-
-  // Paginação
-  const totalPages = Math.max(
-    1,
-    Math.ceil(frequenciasFiltradas.length / pageSize)
+  const cursosUnicos = useMemo(
+    () =>
+      (frequenciasData?.filters.cursos ?? []).map((curso) => ({
+        value: curso.id,
+        label: curso.nome,
+      })),
+    [frequenciasData?.filters.cursos]
   );
-  const startIndex = (currentPage - 1) * pageSize;
-  const endIndex = startIndex + pageSize;
-  const frequencias = frequenciasFiltradas.slice(startIndex, endIndex);
-
-  const showEmptyState = !isLoading && frequenciasFiltradas.length === 0;
-  const shouldShowFilters = true; // Sempre mostrar filtros, pois temos dados mockados
+  const aulasUnicas = useMemo(
+    () =>
+      (frequenciasData?.filters.aulas ?? [])
+        .filter((aula) => !selectedCourseId || aula.cursoId === selectedCourseId)
+        .map((aula) => ({ value: aula.id, label: aula.nome })),
+    [frequenciasData?.filters.aulas, selectedCourseId]
+  );
+  const frequencias = frequenciasData?.items ?? [];
+  const pagination = frequenciasData?.pagination;
+  const effectivePage = pagination?.page ?? currentPage;
+  const totalItems = pagination?.total ?? frequencias.length;
+  const totalPages = Math.max(1, pagination?.totalPages ?? 1);
+  const startIndex = totalItems === 0 ? 0 : (effectivePage - 1) * pageSize + 1;
+  const endIndex = Math.min(effectivePage * pageSize, totalItems);
+  const showEmptyState = !isLoading && !isError && frequencias.length === 0;
+  const shouldShowFilters = true;
 
   // Reset página quando filtro muda
   useEffect(() => {
@@ -355,7 +197,7 @@ export function AlunoFrequenciaView() {
       return pages;
     }
 
-    const start = Math.max(1, currentPage - 2);
+    const start = Math.max(1, effectivePage - 2);
     const end = Math.min(totalPages, start + 4);
     const adjustedStart = Math.max(1, end - 4);
 
@@ -364,7 +206,7 @@ export function AlunoFrequenciaView() {
     }
 
     return pages;
-  }, [currentPage, totalPages]);
+  }, [effectivePage, totalPages]);
 
   const statusOptions = useMemo(
     () => [
@@ -383,8 +225,8 @@ export function AlunoFrequenciaView() {
         label: "Curso",
         mode: "single" as const,
         options: cursosUnicos,
-        placeholder: isLoadingAluno ? "Carregando..." : "Selecionar",
-        disabled: isLoadingAluno,
+        placeholder: isLoading ? "Carregando..." : "Selecionar",
+        disabled: isLoading && cursosUnicos.length === 0,
         emptyPlaceholder: "Sem cursos disponíveis",
       },
       {
@@ -410,7 +252,7 @@ export function AlunoFrequenciaView() {
         placeholder: "Selecionar período",
       },
     ],
-    [cursosUnicos, aulasUnicas, isLoadingAluno, selectedCourseId, statusOptions]
+    [cursosUnicos, aulasUnicas, isLoading, selectedCourseId, statusOptions]
   );
 
   const filterValues = useMemo(
@@ -514,6 +356,25 @@ export function AlunoFrequenciaView() {
         </div>
       )}
 
+      {isError && (
+        <div className="rounded-xl border border-red-200 bg-red-50 p-5 text-sm text-red-700">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <span>
+              {(error as Error)?.message ||
+                "Não foi possível carregar suas frequências."}
+            </span>
+            <ButtonCustom
+              variant="outline"
+              size="sm"
+              onClick={() => refetch()}
+              className="w-full border-red-200 bg-white text-red-700 hover:bg-red-100 sm:w-auto"
+            >
+              Tentar novamente
+            </ButtonCustom>
+          </div>
+        </div>
+      )}
+
       {/* Empty State */}
       {showEmptyState && (
         <div className="bg-white rounded-2xl p-8 border border-gray-200/60">
@@ -534,7 +395,7 @@ export function AlunoFrequenciaView() {
       )}
 
       {/* Lista de Frequências */}
-      {!isLoading && frequencias.length > 0 && (
+      {!isLoading && !isError && frequencias.length > 0 && (
         <div className="bg-white rounded-2xl border border-gray-200/60 overflow-hidden">
           <div className="overflow-x-auto">
             <Table className="min-w-[960px]">
@@ -690,14 +551,12 @@ export function AlunoFrequenciaView() {
           </div>
 
           {/* Paginação */}
-          {frequenciasFiltradas.length > 0 && (
+          {totalItems > 0 && (
             <div className="flex flex-col gap-4 px-4 md:px-6 py-4 border-t border-gray-200/60 bg-gray-50/30 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-2 text-sm text-gray-600">
                 <span>
                   Mostrando{" "}
-                  {Math.min(startIndex + 1, frequenciasFiltradas.length)} a{" "}
-                  {Math.min(endIndex, frequenciasFiltradas.length)} de{" "}
-                  {frequenciasFiltradas.length}
+                  {startIndex} a {endIndex} de {totalItems}
                 </span>
               </div>
 
@@ -706,8 +565,8 @@ export function AlunoFrequenciaView() {
                   <ButtonCustom
                     variant="outline"
                     size="sm"
-                    onClick={() => handlePageChange(currentPage - 1)}
-                    disabled={currentPage === 1}
+                    onClick={() => handlePageChange(effectivePage - 1)}
+                    disabled={effectivePage === 1}
                     className="h-8 px-3"
                   >
                     Anterior
@@ -732,7 +591,7 @@ export function AlunoFrequenciaView() {
                   {visiblePages.map((page) => (
                     <ButtonCustom
                       key={page}
-                      variant={currentPage === page ? "default" : "outline"}
+                      variant={effectivePage === page ? "default" : "outline"}
                       size="sm"
                       onClick={() => handlePageChange(page)}
                       className="h-8 px-3"
@@ -761,8 +620,8 @@ export function AlunoFrequenciaView() {
                   <ButtonCustom
                     variant="outline"
                     size="sm"
-                    onClick={() => handlePageChange(currentPage + 1)}
-                    disabled={currentPage === totalPages}
+                    onClick={() => handlePageChange(effectivePage + 1)}
+                    disabled={effectivePage === totalPages}
                     className="h-8 px-3"
                   >
                     Próxima

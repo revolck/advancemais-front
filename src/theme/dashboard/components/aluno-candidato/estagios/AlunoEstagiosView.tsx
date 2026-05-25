@@ -7,11 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { FilterField } from "@/components/ui/custom/filters";
 import { useQuery } from "@tanstack/react-query";
-import { getUserProfile } from "@/api/usuarios";
-import {
-  getMockAlunoCandidatoData,
-  getMockAlunoEstagios,
-} from "@/mockData/aluno-candidato";
+import { listMeusEstagios } from "@/api/cursos";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -45,19 +41,16 @@ import {
   ModalTitle,
   ModalBody,
 } from "@/components/ui/custom/modal";
-import type { MockEstagioItemData } from "@/mockData/aluno-candidato";
+import {
+  mapMeuEstagioToListItem,
+  shouldShowAlunoDataAsEmptyState,
+  toApiDate,
+  type AlunoEstagioListItem,
+} from "./alunoEstagio.mapper";
 
 const createEmptyDateRange = (): DateRange => ({ from: null, to: null });
 
-function getCookieValue(name: string): string | null {
-  if (typeof document === "undefined") return null;
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop()?.split(";").shift() || null;
-  return null;
-}
-
-function getStatusConfig(status: MockEstagioItemData["status"]) {
+function getStatusConfig(status: AlunoEstagioListItem["status"]) {
   switch (status) {
     case "PENDENTE":
       return {
@@ -79,6 +72,11 @@ function getStatusConfig(status: MockEstagioItemData["status"]) {
         label: "Cancelado",
         className: "bg-red-100 text-red-800 border-red-200",
       };
+    case "REPROVADO":
+      return {
+        label: "Reprovado",
+        className: "bg-red-100 text-red-800 border-red-200",
+      };
     default:
       return {
         label: status,
@@ -94,155 +92,74 @@ export function AlunoEstagiosView() {
   );
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 6;
+  const dataInicio = toApiDate(selectedDateRange.from);
+  const dataFim = toApiDate(selectedDateRange.to);
 
-  // Buscar perfil do usuário
-  const { data: profileResponse } = useQuery({
-    queryKey: ["user-profile"],
+  const {
+    data: estagiosData,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useQuery({
+    queryKey: [
+      "aluno-estagios-reais",
+      selectedCourseId,
+      dataInicio,
+      dataFim,
+      currentPage,
+      pageSize,
+    ],
     queryFn: async () => {
-      const token = getCookieValue("token");
-      if (!token) throw new Error("Token não encontrado");
-      return getUserProfile(token);
-    },
-    staleTime: 5 * 60 * 1000,
-  });
-
-  const userId = useMemo(() => {
-    return profileResponse && "usuario" in profileResponse
-      ? profileResponse.usuario.id
-      : null;
-  }, [profileResponse]);
-
-  // Buscar detalhes do aluno com suas inscrições (usando dados mockados)
-  const { data: alunoData, isLoading: isLoadingAluno } = useQuery({
-    queryKey: ["aluno-detalhes", userId],
-    queryFn: async () => {
-      const mockData = getMockAlunoCandidatoData();
-      const turmasMap = new Map<
-        string,
-        { cursoId: string; turmaId: string; turmaNome: string }
-      >();
-      mockData.cursos.forEach((curso) => {
-        const key = `${curso.id}::turma-001`;
-        if (!turmasMap.has(key)) {
-          turmasMap.set(key, {
-            cursoId: curso.id,
-            turmaId: "turma-001",
-            turmaNome: "Turma A - Manhã",
-          });
-        }
-      });
-
-      const inscricoes = Array.from(turmasMap.values()).map((turma) => {
-        const curso = mockData.cursos.find((c) => c.id === turma.cursoId);
-        return {
-          cursoId: turma.cursoId,
-          cursoNome: curso?.nome || turma.cursoId,
-          turmaId: turma.turmaId,
-          turmaNome: turma.turmaNome,
-          alunoId: userId || "aluno-001",
-          statusInscricao: curso?.status || "EM_PROGRESSO",
-        };
-      });
-
-      return {
-        success: true,
-        data: {
-          id: userId || "aluno-001",
-          nome: "Aluno Teste",
-          email: "aluno@teste.com",
-          inscricoes,
-        },
-      };
-    },
-    enabled: true,
-    staleTime: 5 * 60 * 1000,
-  });
-
-  // Extrair cursos únicos das inscrições
-  const cursosUnicos = useMemo(() => {
-    if (!alunoData?.data?.inscricoes) return [];
-    const cursosMap = new Map<string, { value: string; label: string }>();
-    alunoData.data.inscricoes.forEach((inscricao: any) => {
-      if (inscricao.cursoId && inscricao.cursoNome) {
-        cursosMap.set(inscricao.cursoId, {
-          value: inscricao.cursoId,
-          label: inscricao.cursoNome,
+      try {
+        const response = await listMeusEstagios({
+          cursoId: selectedCourseId,
+          dataInicio,
+          dataFim,
+          page: currentPage,
+          pageSize,
         });
+        return {
+          items: response.data.items.map(mapMeuEstagioToListItem),
+          pagination: response.data.pagination,
+          filters: response.data.filters,
+        };
+      } catch (error) {
+        if (shouldShowAlunoDataAsEmptyState(error)) {
+          return {
+            items: [],
+            pagination: { page: 1, pageSize, total: 0, totalPages: 1 },
+            filters: { cursos: [] },
+          };
+        }
+        throw error;
       }
-    });
-    return Array.from(cursosMap.values());
-  }, [alunoData]);
-
-  // Buscar estágios (mockados por enquanto)
-  const { data: todosEstagios, isLoading: isLoadingEstagios } = useQuery({
-    queryKey: ["aluno-estagios", selectedCourseId],
-    queryFn: async () => {
-      return getMockAlunoEstagios(selectedCourseId || undefined);
     },
-    enabled: true,
     staleTime: 5 * 60 * 1000,
   });
 
-  const isLoading = isLoadingEstagios || isLoadingAluno;
-
-  // Filtrar estágios
-  const estagiosFiltrados = useMemo(() => {
-    const estagios = todosEstagios ?? [];
-    let filtered = [...estagios];
-
-    if (selectedDateRange.from || selectedDateRange.to) {
-      filtered = filtered.filter((estagio) => {
-        const dataInicio = new Date(estagio.dataInicioPrevista);
-        const dataInicioFiltro = selectedDateRange.from
-          ? new Date(selectedDateRange.from)
-          : null;
-        const dataFimFiltro = selectedDateRange.to
-          ? new Date(selectedDateRange.to)
-          : null;
-
-        if (dataInicioFiltro && dataFimFiltro) {
-          const inicio = new Date(dataInicioFiltro);
-          inicio.setHours(0, 0, 0, 0);
-          const fim = new Date(dataFimFiltro);
-          fim.setHours(23, 59, 59, 999);
-          const dataInicioDate = new Date(dataInicio);
-          dataInicioDate.setHours(0, 0, 0, 0);
-          return dataInicioDate >= inicio && dataInicioDate <= fim;
-        }
-        if (dataInicioFiltro) {
-          const inicio = new Date(dataInicioFiltro);
-          inicio.setHours(0, 0, 0, 0);
-          const dataInicioDate = new Date(dataInicio);
-          dataInicioDate.setHours(0, 0, 0, 0);
-          return dataInicioDate >= inicio;
-        }
-        if (dataFimFiltro) {
-          const fim = new Date(dataFimFiltro);
-          fim.setHours(23, 59, 59, 999);
-          return dataInicio <= fim;
-        }
-        return true;
-      });
-    }
-
-    return filtered;
-  }, [todosEstagios, selectedDateRange.from, selectedDateRange.to]);
-
-  // Paginação
-  const totalPages = Math.max(
-    1,
-    Math.ceil(estagiosFiltrados.length / pageSize)
+  const cursosUnicos = useMemo(
+    () =>
+      (estagiosData?.filters.cursos ?? []).map((curso) => ({
+        value: curso.id,
+        label: curso.nome,
+      })),
+    [estagiosData?.filters.cursos]
   );
-  const startIndex = (currentPage - 1) * pageSize;
-  const endIndex = startIndex + pageSize;
-  const estagiosPaginados = estagiosFiltrados.slice(startIndex, endIndex);
+  const estagios = estagiosData?.items ?? [];
+  const pagination = estagiosData?.pagination;
+  const effectivePage = pagination?.page ?? currentPage;
+  const totalItems = pagination?.total ?? estagios.length;
+  const totalPages = Math.max(1, pagination?.totalPages ?? 1);
+  const startIndex = totalItems === 0 ? 0 : (effectivePage - 1) * pageSize + 1;
+  const endIndex = Math.min(effectivePage * pageSize, totalItems);
 
   // Reset página quando filtro muda
   useEffect(() => {
     setCurrentPage(1);
   }, [selectedCourseId, selectedDateRange.from, selectedDateRange.to]);
 
-  const showEmptyState = !isLoading && estagiosFiltrados.length === 0;
+  const showEmptyState = !isLoading && !isError && estagios.length === 0;
   const shouldShowFilters = true;
 
   const filterFields: FilterField[] = useMemo(
@@ -252,8 +169,8 @@ export function AlunoEstagiosView() {
         label: "Curso",
         mode: "single" as const,
         options: cursosUnicos,
-        placeholder: isLoadingAluno ? "Carregando..." : "Selecionar",
-        disabled: isLoadingAluno,
+        placeholder: isLoading ? "Carregando..." : "Selecionar",
+        disabled: isLoading && cursosUnicos.length === 0,
         emptyPlaceholder: "Sem cursos disponíveis",
       },
       {
@@ -263,7 +180,7 @@ export function AlunoEstagiosView() {
         placeholder: "Selecionar período",
       },
     ],
-    [cursosUnicos, isLoadingAluno]
+    [cursosUnicos, isLoading]
   );
 
   const filterValues = useMemo(
@@ -275,9 +192,9 @@ export function AlunoEstagiosView() {
   );
 
   const [selectedEstagio, setSelectedEstagio] =
-    useState<MockEstagioItemData | null>(null);
+    useState<AlunoEstagioListItem | null>(null);
 
-  const formatEndereco = (estagio: MockEstagioItemData): string => {
+  const formatEndereco = (estagio: AlunoEstagioListItem): string => {
     const parts = [
       estagio.rua,
       estagio.numero,
@@ -328,6 +245,26 @@ export function AlunoEstagiosView() {
         </div>
       )}
 
+      {isError && (
+        <div className="rounded-xl border border-red-200 bg-red-50 p-5 text-sm text-red-700">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <span>
+              {(error as Error)?.message ||
+                "Não foi possível carregar seus estágios."}
+            </span>
+            <ButtonCustom
+              variant="outline"
+              size="sm"
+              onClick={() => refetch()}
+              className="w-full border-red-200 bg-white text-red-700 hover:bg-red-100 sm:w-auto"
+              withAnimation={false}
+            >
+              Tentar novamente
+            </ButtonCustom>
+          </div>
+        </div>
+      )}
+
       {/* Empty State */}
       {showEmptyState && (
         <div className="rounded-xl bg-white p-8 border border-gray-200/60">
@@ -344,7 +281,7 @@ export function AlunoEstagiosView() {
       )}
 
       {/* Tabela de Estágios */}
-      {!isLoading && estagiosFiltrados.length > 0 && (
+      {!isLoading && !isError && estagios.length > 0 && (
         <div className="rounded-xl bg-white border border-gray-200/60 overflow-hidden">
           <div className="overflow-x-auto">
             <Table>
@@ -374,7 +311,7 @@ export function AlunoEstagiosView() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {estagiosPaginados.map((estagio) => {
+                {estagios.map((estagio) => {
                   const statusConfig = getStatusConfig(estagio.status);
                   return (
                     <TableRow
@@ -500,9 +437,7 @@ export function AlunoEstagiosView() {
             <div className="border-t border-gray-200/60 px-4 md:px-6 py-4">
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                 <p className="text-sm text-gray-600">
-                  Mostrando {startIndex + 1} a{" "}
-                  {Math.min(endIndex, estagiosFiltrados.length)} de{" "}
-                  {estagiosFiltrados.length}
+                  Mostrando {startIndex} a {endIndex} de {totalItems}
                 </p>
                 <div className="flex items-center gap-2">
                   <ButtonCustom
@@ -511,7 +446,7 @@ export function AlunoEstagiosView() {
                     onClick={() =>
                       setCurrentPage((prev) => Math.max(1, prev - 1))
                     }
-                    disabled={currentPage === 1}
+                    disabled={effectivePage === 1}
                     className="text-sm"
                     withAnimation={false}
                   >
@@ -521,12 +456,12 @@ export function AlunoEstagiosView() {
                     (page) => (
                       <ButtonCustom
                         key={page}
-                        variant={currentPage === page ? "default" : "outline"}
+                        variant={effectivePage === page ? "default" : "outline"}
                         size="sm"
                         onClick={() => setCurrentPage(page)}
                         className={cn(
                           "text-sm min-w-[40px]",
-                          currentPage === page &&
+                          effectivePage === page &&
                             "bg-[var(--primary-color)] text-white hover:bg-[var(--primary-color)]/90"
                         )}
                         withAnimation={false}
@@ -541,7 +476,7 @@ export function AlunoEstagiosView() {
                     onClick={() =>
                       setCurrentPage((prev) => Math.min(totalPages, prev + 1))
                     }
-                    disabled={currentPage === totalPages}
+                    disabled={effectivePage === totalPages}
                     className="text-sm"
                     withAnimation={false}
                   >

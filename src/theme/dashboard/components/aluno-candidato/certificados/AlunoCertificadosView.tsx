@@ -32,27 +32,14 @@ import {
   ModalTitle,
   ModalBody,
 } from "@/components/ui/custom/modal";
+import {
+  mapMeuCertificadoToListItem,
+  shouldShowAlunoDataAsEmptyState,
+  toApiDate,
+  type AlunoCertificadoListItem,
+} from "./alunoCertificado.mapper";
 
 const createEmptyDateRange = (): DateRange => ({ from: null, to: null });
-
-interface CertificadoListItem {
-  id: string;
-  key: string;
-  codigo: string;
-  cursoId: string;
-  cursoNome: string;
-  turmaId: string;
-  turmaNome: string;
-  inscricaoId: string;
-  alunoId: string;
-  emitidoEm: string;
-  pdfUrl?: string | null;
-  previewUrl?: string | null;
-  templateId?: string;
-  cargaHoraria?: number;
-  dataInicio?: string;
-  dataFim?: string;
-}
 
 export function AlunoCertificadosView() {
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
@@ -62,140 +49,76 @@ export function AlunoCertificadosView() {
   );
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 6;
+  const emitidoDe = toApiDate(selectedDateRange.from);
+  const emitidoA = toApiDate(selectedDateRange.to);
 
-  // Buscar certificados do aluno autenticado
-  const { data: todasCertificados, isLoading } = useQuery({
-    queryKey: ["aluno-certificados"],
+  const {
+    data: certificadosData,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useQuery({
+    queryKey: [
+      "aluno-certificados-reais",
+      selectedCourseId,
+      selectedTurmaId,
+      emitidoDe,
+      emitidoA,
+      currentPage,
+      pageSize,
+    ],
     queryFn: async () => {
-      const response = await listMeCertificados({
-        page: 1,
-        pageSize: 200,
-      });
-      return (response.items ?? []).map((item) => ({
-        id: item.id,
-        key: item.id,
-        codigo: item.codigo || item.numero || "—",
-        cursoId: item.curso?.id || item.cursoId || "",
-        cursoNome: item.curso?.nome || "Curso",
-        turmaId: item.turma?.id || item.turmaId || "",
-        turmaNome: item.turma?.nome || "Turma",
-        inscricaoId: item.inscricaoId || "",
-        alunoId: item.aluno?.id || item.alunoId || "",
-        emitidoEm: item.emitidoEm,
-        pdfUrl: item.pdfUrl || null,
-        previewUrl: item.previewUrl || null,
-        templateId: item.modelo?.id || item.templateId,
-      })) as CertificadoListItem[];
+      try {
+        const response = await listMeCertificados({
+          cursoId: selectedCourseId ?? undefined,
+          turmaId: selectedTurmaId ?? undefined,
+          emitidoDe: emitidoDe ?? undefined,
+          emitidoA: emitidoA ?? undefined,
+          page: currentPage,
+          pageSize,
+        });
+        return {
+          items: response.items.map(mapMeuCertificadoToListItem),
+          pagination: response.pagination,
+          filters: response.filters ?? { cursos: [], turmas: [] },
+        };
+      } catch (error) {
+        if (shouldShowAlunoDataAsEmptyState(error)) {
+          return {
+            items: [],
+            pagination: { page: 1, pageSize, total: 0, totalPages: 1 },
+            filters: { cursos: [], turmas: [] },
+          };
+        }
+        throw error;
+      }
     },
-    enabled: true,
     staleTime: 5 * 60 * 1000,
   });
 
-  // Extrair cursos únicos dos certificados
-  const cursosUnicos = useMemo(() => {
-    const certificados = todasCertificados ?? [];
-    if (certificados.length === 0) return [];
-    const cursosMap = new Map<string, { value: string; label: string }>();
-    certificados.forEach((cert) => {
-      if (!cursosMap.has(cert.cursoId)) {
-        cursosMap.set(cert.cursoId, {
-          value: cert.cursoId,
-          label: cert.cursoNome,
-        });
-      }
-    });
-    return Array.from(cursosMap.values());
-  }, [todasCertificados]);
-
-  // Extrair turmas únicas de acordo com o curso selecionado
-  const turmasUnicas = useMemo(() => {
-    if (!selectedCourseId) return [];
-    const certificados = todasCertificados ?? [];
-    if (certificados.length === 0) return [];
-
-    const turmasMap = new Map<string, { value: string; label: string }>();
-    certificados
-      .filter((cert) => cert.cursoId === selectedCourseId)
-      .forEach((cert) => {
-        if (!turmasMap.has(cert.turmaId)) {
-          turmasMap.set(cert.turmaId, {
-            value: cert.turmaId,
-            label: cert.turmaNome,
-          });
-        }
-      });
-
-    return Array.from(turmasMap.values());
-  }, [selectedCourseId, todasCertificados]);
-
-  // Filtrar certificados
-  const certificadosFiltradas = useMemo(() => {
-    const certificados = todasCertificados ?? [];
-    let filtered = [...certificados];
-
-    if (selectedCourseId) {
-      filtered = filtered.filter((cert) => cert.cursoId === selectedCourseId);
-    }
-
-    if (selectedTurmaId) {
-      filtered = filtered.filter((cert) => cert.turmaId === selectedTurmaId);
-    }
-
-    if (selectedDateRange.from || selectedDateRange.to) {
-      filtered = filtered.filter((cert) => {
-        const dataCert = new Date(cert.emitidoEm);
-        const dataInicio = selectedDateRange.from
-          ? new Date(selectedDateRange.from)
-          : null;
-        const dataFim = selectedDateRange.to
-          ? new Date(selectedDateRange.to)
-          : null;
-
-        if (dataInicio && dataFim) {
-          const inicio = new Date(dataInicio);
-          inicio.setHours(0, 0, 0, 0);
-          const fim = new Date(dataFim);
-          fim.setHours(23, 59, 59, 999);
-          const dataCertDate = new Date(dataCert);
-          dataCertDate.setHours(0, 0, 0, 0);
-          return dataCertDate >= inicio && dataCertDate <= fim;
-        }
-        if (dataInicio) {
-          const inicio = new Date(dataInicio);
-          inicio.setHours(0, 0, 0, 0);
-          const dataCertDate = new Date(dataCert);
-          dataCertDate.setHours(0, 0, 0, 0);
-          return dataCertDate >= inicio;
-        }
-        if (dataFim) {
-          const fim = new Date(dataFim);
-          fim.setHours(23, 59, 59, 999);
-          return dataCert <= fim;
-        }
-        return true;
-      });
-    }
-
-    return filtered;
-  }, [
-    todasCertificados,
-    selectedCourseId,
-    selectedTurmaId,
-    selectedDateRange.from,
-    selectedDateRange.to,
-  ]);
-
-  // Paginação
-  const totalPages = Math.max(
-    1,
-    Math.ceil(certificadosFiltradas.length / pageSize)
+  const cursosUnicos = useMemo(
+    () =>
+      (certificadosData?.filters.cursos ?? []).map((curso) => ({
+        value: curso.id,
+        label: curso.nome,
+      })),
+    [certificadosData?.filters.cursos]
   );
-  const startIndex = (currentPage - 1) * pageSize;
-  const endIndex = startIndex + pageSize;
-  const certificadosPaginadas = certificadosFiltradas.slice(
-    startIndex,
-    endIndex
+  const turmasUnicas = useMemo(
+    () =>
+      (certificadosData?.filters.turmas ?? [])
+        .filter((turma) => turma.cursoId === selectedCourseId)
+        .map((turma) => ({ value: turma.id, label: turma.nome })),
+    [certificadosData?.filters.turmas, selectedCourseId]
   );
+  const certificados = certificadosData?.items ?? [];
+  const pagination = certificadosData?.pagination;
+  const effectivePage = pagination?.page ?? currentPage;
+  const totalItems = pagination?.total ?? certificados.length;
+  const totalPages = Math.max(1, pagination?.totalPages ?? 1);
+  const startIndex = totalItems === 0 ? 0 : (effectivePage - 1) * pageSize + 1;
+  const endIndex = Math.min(effectivePage * pageSize, totalItems);
 
   // Reset página quando filtro muda
   useEffect(() => {
@@ -212,7 +135,7 @@ export function AlunoCertificadosView() {
     setSelectedTurmaId(null);
   }, [selectedCourseId]);
 
-  const showEmptyState = !isLoading && certificadosFiltradas.length === 0;
+  const showEmptyState = !isLoading && !isError && certificados.length === 0;
   const shouldShowFilters = true;
 
   const filterFields: FilterField[] = useMemo(
@@ -257,14 +180,14 @@ export function AlunoCertificadosView() {
   );
 
   const [selectedCertificado, setSelectedCertificado] =
-    useState<CertificadoListItem | null>(null);
+    useState<AlunoCertificadoListItem | null>(null);
 
-  const handleView = useCallback((certificado: CertificadoListItem) => {
+  const handleView = useCallback((certificado: AlunoCertificadoListItem) => {
     setSelectedCertificado(certificado);
   }, []);
 
   const handleDownload = useCallback(
-    async (certificado: CertificadoListItem) => {
+    async (certificado: AlunoCertificadoListItem) => {
       const pdfUrl =
         certificado.pdfUrl ||
         `/api/v1/cursos/certificados/${certificado.id}/pdf`;
@@ -317,6 +240,26 @@ export function AlunoCertificadosView() {
         </div>
       )}
 
+      {isError && (
+        <div className="rounded-xl border border-red-200 bg-red-50 p-5 text-sm text-red-700">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <span>
+              {(error as Error)?.message ||
+                "Não foi possível carregar seus certificados."}
+            </span>
+            <ButtonCustom
+              variant="outline"
+              size="sm"
+              onClick={() => refetch()}
+              className="w-full border-red-200 bg-white text-red-700 hover:bg-red-100 sm:w-auto"
+              withAnimation={false}
+            >
+              Tentar novamente
+            </ButtonCustom>
+          </div>
+        </div>
+      )}
+
       {/* Empty State */}
       {showEmptyState && (
         <div className="rounded-xl bg-white p-8 border border-gray-200/60">
@@ -336,7 +279,7 @@ export function AlunoCertificadosView() {
       )}
 
       {/* Tabela de Certificados */}
-      {!isLoading && certificadosFiltradas.length > 0 && (
+      {!isLoading && !isError && certificados.length > 0 && (
         <div className="rounded-xl bg-white border border-gray-200/60 overflow-hidden">
           <div className="overflow-x-auto">
             <Table>
@@ -357,7 +300,7 @@ export function AlunoCertificadosView() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {certificadosPaginadas.map((cert) => (
+                {certificados.map((cert) => (
                   <TableRow
                     key={cert.id}
                     className="border-gray-100 bg-white hover:bg-blue-50/40"
@@ -435,9 +378,7 @@ export function AlunoCertificadosView() {
             <div className="border-t border-gray-200/60 px-4 md:px-6 py-4">
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                 <p className="text-sm text-gray-600">
-                  Mostrando {startIndex + 1} a{" "}
-                  {Math.min(endIndex, certificadosFiltradas.length)} de{" "}
-                  {certificadosFiltradas.length}
+                  Mostrando {startIndex} a {endIndex} de {totalItems}
                 </p>
                 <div className="flex items-center gap-2">
                   <ButtonCustom
@@ -446,7 +387,7 @@ export function AlunoCertificadosView() {
                     onClick={() =>
                       setCurrentPage((prev) => Math.max(1, prev - 1))
                     }
-                    disabled={currentPage === 1}
+                    disabled={effectivePage === 1}
                     className="text-sm"
                     withAnimation={false}
                   >
@@ -456,12 +397,12 @@ export function AlunoCertificadosView() {
                     (page) => (
                       <ButtonCustom
                         key={page}
-                        variant={currentPage === page ? "default" : "outline"}
+                        variant={effectivePage === page ? "default" : "outline"}
                         size="sm"
                         onClick={() => setCurrentPage(page)}
                         className={cn(
                           "text-sm min-w-[40px]",
-                          currentPage === page &&
+                          effectivePage === page &&
                             "bg-[var(--primary-color)] text-white hover:bg-[var(--primary-color)]/90"
                         )}
                         withAnimation={false}
@@ -476,7 +417,7 @@ export function AlunoCertificadosView() {
                     onClick={() =>
                       setCurrentPage((prev) => Math.min(totalPages, prev + 1))
                     }
-                    disabled={currentPage === totalPages}
+                    disabled={effectivePage === totalPages}
                     className="text-sm"
                     withAnimation={false}
                   >

@@ -603,6 +603,15 @@ export interface ListCertificadosGlobalParams {
 export interface ListCertificadosResponse {
   items: TurmaCertificado[];
   pagination?: Pagination;
+  filters?: {
+    cursos: Array<{ id: string; nome: string }>;
+    turmas: Array<{
+      id: string;
+      nome: string;
+      codigo?: string | null;
+      cursoId: string;
+    }>;
+  };
 }
 
 export interface CreateCertificadoPayload {
@@ -1147,6 +1156,30 @@ export interface ListFrequenciasResponse {
         pagination?: Pagination;
       };
   pagination?: Pagination;
+}
+
+export interface ListMinhasFrequenciasParams {
+  cursoId?: string | null;
+  aulaId?: string | null;
+  status?: Exclude<FrequenciaStatus, "PENDENTE"> | null;
+  dataInicio?: string | null;
+  dataFim?: string | null;
+  orderBy?: "atualizadoEm" | "status";
+  order?: "asc" | "desc";
+  page?: number;
+  pageSize?: number;
+}
+
+export interface ListMinhasFrequenciasResponse {
+  success: boolean;
+  data: {
+    items: Frequencia[];
+    pagination: Pagination;
+    filters: {
+      cursos: Array<{ id: string; nome: string }>;
+      aulas: Array<{ id: string; nome: string; cursoId: string }>;
+    };
+  };
 }
 
 export interface ListFrequenciaResumoParams {
@@ -1779,6 +1812,9 @@ export interface Estagio {
   cep?: string;
   rua?: string;
   numero?: string;
+  bairro?: string;
+  cidade?: string;
+  estado?: string;
   dataInicioPrevista?: string;
   dataFimPrevista?: string;
   horarioInicio?: string;
@@ -1817,6 +1853,25 @@ export interface ListEstagiosResponse {
         pagination?: Pagination;
       };
   pagination?: Pagination;
+}
+
+export interface ListMeusEstagiosParams {
+  cursoId?: string | null;
+  dataInicio?: string | null;
+  dataFim?: string | null;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface ListMeusEstagiosResponse {
+  success: boolean;
+  data: {
+    items: Estagio[];
+    pagination: Pagination;
+    filters: {
+      cursos: Array<{ id: string; nome: string }>;
+    };
+  };
 }
 
 export interface CreateEstagioGroupPayload {
