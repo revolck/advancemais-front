@@ -555,17 +555,6 @@ export function AlunoCurriculoView() {
                 title="Nenhum currículo encontrado"
                 description="Crie seu currículo ou ajuste a busca para visualizar resultados."
                 illustration="myFiles"
-                actions={
-                  <ButtonCustom
-                    variant="primary"
-                    onClick={() =>
-                      router.push("/dashboard/curriculo/cadastrar")
-                    }
-                    disabled={isBusy}
-                  >
-                    Criar currículo
-                  </ButtonCustom>
-                }
               />
             </div>
           ) : (

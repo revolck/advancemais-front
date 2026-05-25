@@ -190,10 +190,7 @@ export function AlunoNotasView() {
 
   const showEmptyState =
     !isLoading && !isNotasError && notasFiltradas.length === 0;
-  const shouldShowFilters =
-    isLoading ||
-    cursosUnicos.length > 0 ||
-    Boolean(selectedCourseId || selectedSituacao || dataInicio || dataFim);
+  const shouldShowFilters = true;
 
   // Reset página quando filtro muda
   useEffect(() => {
