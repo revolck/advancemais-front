@@ -126,6 +126,7 @@ export interface JobCardProps {
   isApplied?: boolean;
   applyDisabled?: boolean;
   applyLabel?: string;
+  applyBlockedReason?: string | null;
 }
 
 export interface JobFiltersProps {

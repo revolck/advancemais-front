@@ -9,6 +9,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ButtonCustom } from "@/components/ui/custom/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { verificarCandidatura } from "@/api/candidatos";
 import type { VerificarCandidaturaResponse } from "@/api/candidatos/types";
 import {
@@ -35,6 +40,8 @@ export interface AlunoVagaCardProps {
   onViewDetails?: (job: JobData) => void;
   isApplying?: boolean;
   isApplyingThis?: boolean;
+  isApplicationBlocked?: boolean;
+  applicationBlockedReason?: string | null;
 }
 
 export function AlunoVagaCard({
@@ -44,6 +51,8 @@ export function AlunoVagaCard({
   onViewDetails,
   isApplying,
   isApplyingThis,
+  isApplicationBlocked = false,
+  applicationBlockedReason,
 }: AlunoVagaCardProps) {
   const [logoError, setLogoError] = useState(false);
 
@@ -70,6 +79,22 @@ export function AlunoVagaCard({
 
   const hasApplied = appliedQuery.data?.hasApplied === true;
   const canApply = canCheckApplied;
+  const applicationButton = (
+    <ButtonCustom
+      variant="default"
+      onClick={handleApply}
+      disabled={
+        appliedQuery.isFetching || Boolean(isApplying) || isApplicationBlocked
+      }
+      className="!bg-[#1f8454] hover:!bg-[#16603d] !text-white"
+    >
+      {appliedQuery.isFetching
+        ? "Verificando..."
+        : isApplyingThis
+          ? "Enviando..."
+          : "Candidatar-se"}
+    </ButtonCustom>
+  );
 
   if (canCheckApplied && appliedQuery.isLoading) {
     return (
@@ -198,18 +223,22 @@ export function AlunoVagaCard({
             </ButtonCustom>
 
             {!hasApplied && canApply && (
-              <ButtonCustom
-                variant="default"
-                onClick={handleApply}
-                disabled={appliedQuery.isFetching || Boolean(isApplying)}
-                className="!bg-[#1f8454] hover:!bg-[#16603d] !text-white"
-              >
-                {appliedQuery.isFetching
-                  ? "Verificando..."
-                  : isApplyingThis
-                    ? "Enviando..."
-                    : "Candidatar-se"}
-              </ButtonCustom>
+              <>
+                {isApplicationBlocked && applicationBlockedReason ? (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="inline-flex" tabIndex={0}>
+                        {applicationButton}
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent sideOffset={8}>
+                      {applicationBlockedReason}
+                    </TooltipContent>
+                  </Tooltip>
+                ) : (
+                  applicationButton
+                )}
+              </>
             )}
           </div>
         </div>

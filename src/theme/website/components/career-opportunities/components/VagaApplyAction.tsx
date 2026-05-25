@@ -5,10 +5,16 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { ButtonCustom } from "@/components/ui/custom/button";
 import { toastCustom } from "@/components/ui/custom/toast";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { UserRole } from "@/config/roles";
 import { useUserRole } from "@/hooks/useUserRole";
 import { aplicarVaga, listCurriculos, verificarCandidatura } from "@/api/candidatos";
 import type { VerificarCandidaturaResponse } from "@/api/candidatos/types";
+import { getCurriculoApplicationAvailability } from "@/lib/candidatos/curriculo-application";
 import { CheckCircle2 } from "lucide-react";
 import {
   SelectCurriculoApplyModal,
@@ -113,6 +119,7 @@ export function VagaApplyAction({
     enabled: canCandidateApply,
     staleTime: 60 * 1000,
     retry: 1,
+    refetchOnWindowFocus: true,
   });
 
   const defaultCurriculoId = useMemo(() => {
@@ -126,6 +133,22 @@ export function VagaApplyAction({
   const defaultCurriculoIdFromOptions = useMemo(() => {
     return getDefaultCurriculoIdFromOptions(curriculosApplyOptions);
   }, [curriculosApplyOptions]);
+
+  const curriculoAvailability = useMemo(
+    () =>
+      getCurriculoApplicationAvailability({
+        shouldValidate: canCandidateApply,
+        isLoading: curriculosQuery.isLoading,
+        isError: curriculosQuery.isError,
+        curriculoCount: curriculosApplyOptions.length,
+      }),
+    [
+      canCandidateApply,
+      curriculosApplyOptions.length,
+      curriculosQuery.isError,
+      curriculosQuery.isLoading,
+    ],
+  );
 
   const applyMutation = useMutation({
     mutationFn: async (payload: { vagaId: string; curriculoId: string }) => {
@@ -213,81 +236,75 @@ export function VagaApplyAction({
     );
   }
 
+  const applyButton = (
+    <ButtonCustom
+      variant="default"
+      onClick={() => {
+        if (!isUuid(vagaId)) {
+          toastCustom.error({
+            title: "Vaga inválida",
+            description:
+              "Não foi possível identificar esta vaga para candidatura.",
+          });
+          return;
+        }
+
+        if (curriculoAvailability.isBlocked) {
+          return;
+        }
+
+        if (curriculosApplyOptions.length === 1) {
+          const curriculoId =
+            curriculosApplyOptions[0]?.id ??
+            defaultCurriculoId ??
+            defaultCurriculoIdFromOptions;
+          if (!curriculoId) return;
+          applyMutation.mutate({ vagaId, curriculoId });
+          return;
+        }
+
+        const scrollX = typeof window !== "undefined" ? window.scrollX : 0;
+        const scrollY = typeof window !== "undefined" ? window.scrollY : 0;
+        setSelectedCurriculoId((prev) => {
+          if (prev && curriculosApplyOptions.some((c) => c.id === prev)) return prev;
+          return defaultCurriculoIdFromOptions;
+        });
+        setIsSelectOpen(true);
+        if (typeof window !== "undefined") {
+          requestAnimationFrame(() => {
+            window.scrollTo(scrollX, scrollY);
+            requestAnimationFrame(() => window.scrollTo(scrollX, scrollY));
+          });
+        }
+      }}
+      disabled={
+        isSelectOpen ||
+        applyMutation.isPending ||
+        appliedQuery.isFetching ||
+        curriculoAvailability.isBlocked
+      }
+      className={className ?? "rounded-full text-sm"}
+    >
+      {applyMutation.isPending ? "Enviando..." : "Candidatar-se"}
+    </ButtonCustom>
+  );
+
   return (
     <>
-      <ButtonCustom
-        variant="default"
-        onClick={() => {
-          if (!isUuid(vagaId)) {
-            toastCustom.error({
-              title: "Vaga inválida",
-              description:
-                "Não foi possível identificar esta vaga para candidatura.",
-            });
-            return;
-          }
-
-          if (curriculosQuery.isLoading) {
-            toastCustom.info({
-              title: "Carregando currículos",
-              description: "Aguarde um instante e tente novamente.",
-            });
-            return;
-          }
-
-          if (curriculosApplyOptions.length === 0) {
-            toastCustom.error({
-              title: "Nenhum currículo encontrado",
-              description: "Crie um currículo para conseguir se candidatar às vagas.",
-              linkText: "Criar currículo",
-              linkHref: "/dashboard/curriculo/cadastrar",
-            });
-            return;
-          }
-
-          if (curriculosApplyOptions.length === 1) {
-            const curriculoId =
-              curriculosApplyOptions[0]?.id ??
-              defaultCurriculoId ??
-              defaultCurriculoIdFromOptions;
-            if (!curriculoId) {
-              toastCustom.error({
-                title: "Nenhum currículo encontrado",
-                description:
-                  "Crie um currículo para conseguir se candidatar às vagas.",
-                linkText: "Criar currículo",
-                linkHref: "/dashboard/curriculo/cadastrar",
-              });
-              return;
-            }
-            applyMutation.mutate({ vagaId, curriculoId });
-            return;
-          }
-
-          const scrollX = typeof window !== "undefined" ? window.scrollX : 0;
-          const scrollY = typeof window !== "undefined" ? window.scrollY : 0;
-          setSelectedCurriculoId((prev) => {
-            if (prev && curriculosApplyOptions.some((c) => c.id === prev)) return prev;
-            return defaultCurriculoIdFromOptions;
-          });
-          setIsSelectOpen(true);
-          if (typeof window !== "undefined") {
-            requestAnimationFrame(() => {
-              window.scrollTo(scrollX, scrollY);
-              requestAnimationFrame(() => window.scrollTo(scrollX, scrollY));
-            });
-          }
-        }}
-        disabled={
-          isSelectOpen ||
-          applyMutation.isPending ||
-          appliedQuery.isFetching ||
-          curriculosQuery.isLoading
-        }
-        className={className ?? "rounded-full text-sm"}
-      >
-        {applyMutation.isPending ? "Enviando..." : "Candidatar-se"}
-      </ButtonCustom>
+      {curriculoAvailability.isBlocked && curriculoAvailability.tooltip ? (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className="inline-flex" tabIndex={0}>
+              {applyButton}
+            </span>
+          </TooltipTrigger>
+          <TooltipContent sideOffset={8}>
+            {curriculoAvailability.tooltip}
+          </TooltipContent>
+        </Tooltip>
+      ) : (
+        applyButton
+      )}
 
       <SelectCurriculoApplyModal
         isOpen={isSelectOpen}

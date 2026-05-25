@@ -21,6 +21,7 @@ import { UserRole } from "@/config/roles";
 import { useUserRole } from "@/hooks/useUserRole";
 import { aplicarVaga, listCurriculos, verificarCandidatura } from "@/api/candidatos";
 import type { VerificarCandidaturaResponse } from "@/api/candidatos/types";
+import { getCurriculoApplicationAvailability } from "@/lib/candidatos/curriculo-application";
 import {
   SelectCurriculoApplyModal,
   type CurriculoApplyOption,
@@ -272,6 +273,7 @@ const CareerOpportunities: React.FC<CareerOpportunitiesProps> = ({
     enabled: canCandidateApply,
     staleTime: 60 * 1000,
     retry: 1,
+    refetchOnWindowFocus: true,
   });
 
   const curriculosApplyOptions = useMemo(() => {
@@ -283,6 +285,22 @@ const CareerOpportunities: React.FC<CareerOpportunitiesProps> = ({
     if (fromRaw) return fromRaw;
     return getDefaultCurriculoIdFromOptions(curriculosApplyOptions);
   }, [curriculosApplyOptions, curriculosQuery.data]);
+
+  const curriculoAvailability = useMemo(
+    () =>
+      getCurriculoApplicationAvailability({
+        shouldValidate: userIsCandidate,
+        isLoading: curriculosQuery.isLoading,
+        isError: curriculosQuery.isError,
+        curriculoCount: curriculosApplyOptions.length,
+      }),
+    [
+      curriculosApplyOptions.length,
+      curriculosQuery.isError,
+      curriculosQuery.isLoading,
+      userIsCandidate,
+    ],
+  );
 
   const appliedChecks = useQueries({
     queries: filteredData.map((job) => ({
@@ -459,21 +477,7 @@ const CareerOpportunities: React.FC<CareerOpportunitiesProps> = ({
       return;
     }
 
-    if (curriculosQuery.isLoading) {
-      toastCustom.info({
-        title: "Carregando currículos",
-        description: "Aguarde um instante e tente novamente.",
-      });
-      return;
-    }
-
-    if (!defaultCurriculoId) {
-      toastCustom.error({
-        title: "Nenhum currículo encontrado",
-        description: "Crie um currículo para conseguir se candidatar às vagas.",
-        linkText: "Criar currículo",
-        linkHref: "/dashboard/curriculo/cadastrar",
-      });
+    if (curriculoAvailability.isBlocked) {
       return;
     }
 
@@ -644,8 +648,16 @@ const CareerOpportunities: React.FC<CareerOpportunitiesProps> = ({
                   onApply={() => handleApply(job.id, job.titulo ?? null)}
                   onViewDetails={handleViewDetails}
                   isApplied={hasAppliedByJobId.get(job.id) === true}
-                  applyDisabled={Boolean(pendingApplyById[job.id])}
+                  applyDisabled={
+                    Boolean(pendingApplyById[job.id]) ||
+                    curriculoAvailability.isBlocked
+                  }
                   applyLabel={pendingApplyById[job.id] ? "Enviando..." : "Candidatar-se"}
+                  applyBlockedReason={
+                    curriculoAvailability.isBlocked
+                      ? curriculoAvailability.tooltip
+                      : null
+                  }
                 />
               ))
                   : null}

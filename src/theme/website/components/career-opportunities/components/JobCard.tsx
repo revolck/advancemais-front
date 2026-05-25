@@ -9,6 +9,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ButtonCustom } from "@/components/ui/custom/button";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   MapPin,
   Clock,
   DollarSign,
@@ -28,6 +33,7 @@ export const JobCard: React.FC<JobCardProps> = ({
   isApplied,
   applyDisabled,
   applyLabel,
+  applyBlockedReason,
 }) => {
   const [logoError, setLogoError] = useState(false);
 
@@ -41,6 +47,16 @@ export const JobCard: React.FC<JobCardProps> = ({
   const salaryLabel = job.salario
     ? `R$ ${job.salario.min?.toLocaleString()} - R$ ${job.salario.max?.toLocaleString()}`
     : "A combinar";
+  const applyButton = (
+    <ButtonCustom
+      variant="default"
+      onClick={handleApply}
+      disabled={applyDisabled}
+      className="bg-[#1f8454] hover:bg-[#16603d] text-white rounded-full"
+    >
+      {applyLabel || "Candidatar-se"}
+    </ButtonCustom>
+  );
 
   return (
     <Card
@@ -127,14 +143,22 @@ export const JobCard: React.FC<JobCardProps> = ({
               Ver detalhes
             </ButtonCustom>
             {!isApplied && (
-              <ButtonCustom
-                variant="default"
-                onClick={handleApply}
-                disabled={applyDisabled}
-                className="bg-[#1f8454] hover:bg-[#16603d] text-white rounded-full"
-              >
-                {applyLabel || "Candidatar-se"}
-              </ButtonCustom>
+              <>
+                {applyBlockedReason ? (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="inline-flex" tabIndex={0}>
+                        {applyButton}
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent sideOffset={8}>
+                      {applyBlockedReason}
+                    </TooltipContent>
+                  </Tooltip>
+                ) : (
+                  applyButton
+                )}
+              </>
             )}
           </div>
         </div>

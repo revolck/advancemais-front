@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import {
@@ -12,6 +13,7 @@ import {
 import { toastCustom } from "@/components/ui/custom/toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { aplicarVaga, listCurriculos } from "@/api/candidatos";
+import { getCurriculoApplicationAvailability } from "@/lib/candidatos/curriculo-application";
 import { usePublicVagas } from "@/theme/website/components/career-opportunities/hooks/usePublicVagas";
 import type { JobFilters } from "@/theme/website/components/career-opportunities/types";
 import type { JobData } from "@/theme/website/components/career-opportunities/types";
@@ -46,10 +48,13 @@ function getDefaultCurriculoId(raw: unknown): string | null {
 function coerceCurriculoApplyOption(value: unknown): CurriculoApplyOption | null {
   if (!value || typeof value !== "object") return null;
   const v = value as Record<string, unknown>;
-  if (typeof v.id !== "string" || typeof v.titulo !== "string") return null;
+  if (typeof v.id !== "string") return null;
   return {
     id: v.id,
-    titulo: v.titulo,
+    titulo:
+      typeof v.titulo === "string" && v.titulo.trim()
+        ? v.titulo.trim()
+        : "Currículo",
     resumo: typeof v.resumo === "string" ? v.resumo : null,
     principal: typeof v.principal === "boolean" ? v.principal : undefined,
   };
@@ -158,6 +163,7 @@ export function AlunoVagasView() {
     queryFn: () => listCurriculos({ cache: "no-store" }),
     staleTime: 60 * 1000,
     retry: 1,
+    refetchOnWindowFocus: true,
   });
 
   const curriculosOptions = useMemo<CurriculoApplyOption[]>(() => {
@@ -170,6 +176,16 @@ export function AlunoVagasView() {
   const defaultCurriculoId = useMemo(() => {
     return getDefaultCurriculoId(curriculosQuery.data);
   }, [curriculosQuery.data]);
+
+  const curriculoAvailability = useMemo(
+    () =>
+      getCurriculoApplicationAvailability({
+        isLoading: curriculosQuery.isLoading,
+        isError: curriculosQuery.isError,
+        curriculoCount: curriculosOptions.length,
+      }),
+    [curriculosOptions.length, curriculosQuery.isError, curriculosQuery.isLoading],
+  );
 
   const applyMutation = useMutation({
     mutationFn: async (payload: {
@@ -243,29 +259,7 @@ export function AlunoVagasView() {
         return;
       }
 
-      if (curriculosQuery.isLoading) {
-        toastCustom.info({
-          title: "Carregando currículos",
-          description: "Aguarde um instante e tente novamente.",
-        });
-        return;
-      }
-
-      if (curriculosQuery.isError) {
-        toastCustom.error({
-          title: "Erro ao carregar currículos",
-          description: "Tente novamente em instantes.",
-        });
-        return;
-      }
-
-      if (curriculosOptions.length === 0) {
-        toastCustom.error({
-          title: "Nenhum currículo encontrado",
-          description: "Crie um currículo para conseguir se candidatar às vagas.",
-          linkText: "Criar currículo",
-          linkHref: "/dashboard/curriculo/cadastrar",
-        });
+      if (curriculoAvailability.isBlocked) {
         return;
       }
 
@@ -290,8 +284,7 @@ export function AlunoVagasView() {
     },
     [
       applyMutation,
-      curriculosQuery.isError,
-      curriculosQuery.isLoading,
+      curriculoAvailability.isBlocked,
       curriculosOptions,
       defaultCurriculoId,
     ],
@@ -463,6 +456,27 @@ export function AlunoVagasView() {
         </div>
       </div>
 
+      {curriculoAvailability.status === "missing" && (
+        <div
+          role="status"
+          className="flex flex-col gap-4 rounded-lg border border-blue-100 bg-blue-50/70 px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
+        >
+          <p className="text-sm text-gray-700">
+            Você não tem currículos cadastrados para se candidatar às vagas.
+            Cadastre seu currículo para continuar.
+          </p>
+          <ButtonCustom variant="primary" asChild className="shrink-0">
+            <Link
+              href="/dashboard/curriculo/cadastrar"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Cadastrar currículo
+            </Link>
+          </ButtonCustom>
+        </div>
+      )}
+
       {error ? (
         <div className="rounded-xl border border-gray-200 bg-white p-8">
           <EmptyState
@@ -539,6 +553,8 @@ export function AlunoVagasView() {
                       onApply={(jobId) => handleApply(jobId, job.titulo)}
                       isApplying={applyMutation.isPending}
                       isApplyingThis={applyMutation.isPending && applyingVagaId === job.id}
+                      isApplicationBlocked={curriculoAvailability.isBlocked}
+                      applicationBlockedReason={curriculoAvailability.tooltip}
                     />
                   ))}
             </div>
@@ -637,6 +653,8 @@ export function AlunoVagasView() {
           setViewVagaInitialJob(null);
           handleApply(vagaId, vagaTitulo);
         }}
+        isApplicationBlocked={curriculoAvailability.isBlocked}
+        applicationBlockedReason={curriculoAvailability.tooltip}
         onOpenChange={(open) => {
           if (!open) {
             clearViewParam();

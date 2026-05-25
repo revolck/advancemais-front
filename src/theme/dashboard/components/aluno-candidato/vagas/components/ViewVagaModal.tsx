@@ -15,6 +15,11 @@ import {
 import { EmptyState } from "@/components/ui/custom";
 import { ButtonCustom } from "@/components/ui/custom/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { verificarCandidatura } from "@/api/candidatos";
 import type { VerificarCandidaturaResponse } from "@/api/candidatos/types";
 import type { JobData } from "@/theme/website/components/career-opportunities/types";
@@ -243,6 +248,8 @@ export interface ViewVagaModalProps {
   idOrSlug: string | null;
   initialJob?: JobData | null;
   onApplyClick?: (vagaId: string, vagaTitulo?: string | null) => void;
+  isApplicationBlocked?: boolean;
+  applicationBlockedReason?: string | null;
 }
 
 export function ViewVagaModal({
@@ -251,6 +258,8 @@ export function ViewVagaModal({
   idOrSlug,
   initialJob,
   onApplyClick,
+  isApplicationBlocked = false,
+  applicationBlockedReason,
 }: ViewVagaModalProps) {
   const effectiveId = idOrSlug ?? "";
 
@@ -309,6 +318,19 @@ export function ViewVagaModal({
         "pt-BR",
       )
     : null;
+  const applicationButton = (
+    <ButtonCustom
+      variant="default"
+      onClick={() => {
+        if (!job?.id) return;
+        onApplyClick?.(job.id, job.titulo ?? null);
+      }}
+      disabled={appliedQuery.isFetching || isApplicationBlocked}
+      className="!bg-[#1f8454] hover:!bg-[#16603d] !text-white !px-6"
+    >
+      Candidatar-se
+    </ButtonCustom>
+  );
 
   const infoCards = useMemo(() => {
     if (!job) return [];
@@ -514,17 +536,22 @@ export function ViewVagaModal({
               Fechar
             </ButtonCustom>
             {canApply && (
-              <ButtonCustom
-                variant="default"
-                onClick={() => {
-                  if (!job?.id) return;
-                  onApplyClick?.(job.id, job.titulo ?? null);
-                }}
-                disabled={appliedQuery.isFetching}
-                className="!bg-[#1f8454] hover:!bg-[#16603d] !text-white !px-6"
-              >
-                Candidatar-se
-              </ButtonCustom>
+              <>
+                {isApplicationBlocked && applicationBlockedReason ? (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="inline-flex" tabIndex={0}>
+                        {applicationButton}
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent sideOffset={8}>
+                      {applicationBlockedReason}
+                    </TooltipContent>
+                  </Tooltip>
+                ) : (
+                  applicationButton
+                )}
+              </>
             )}
             {hasApplied && (
               <div className="text-sm text-gray-600 sm:mr-2 sm:self-center">
