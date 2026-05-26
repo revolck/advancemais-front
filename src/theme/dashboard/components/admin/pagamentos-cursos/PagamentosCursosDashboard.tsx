@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useCallback, useEffect } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import {
   Wallet,
@@ -8,12 +8,15 @@ import {
   CalendarCheck,
   AlertCircle,
   Search,
-  BookOpen,
   Receipt,
-  Calendar,
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { ButtonCustom, FilterBar, EmptyState } from "@/components/ui/custom";
+import {
+  ButtonCustom,
+  FilterBar,
+  EmptyState,
+  toastCustom,
+} from "@/components/ui/custom";
 import { VerticalTabs } from "@/components/ui/custom/vertical-tabs";
 import type { VerticalTabItem } from "@/components/ui/custom/vertical-tabs";
 import { CardsStatistics } from "@/components/ui/custom/cards-statistics";
@@ -23,51 +26,35 @@ import type { DateRange } from "@/components/ui/custom/date-picker";
 import { PagamentoCursoTable } from "./components/PagamentoCursoTable";
 import { PixModal, BoletoModal } from "@/theme/dashboard/components/admin/lista-pagamentos/components/modals";
 import { usePagamentosCursosData } from "./hooks/usePagamentosCursosData";
-import { STATUS_OPTIONS, METODO_OPTIONS } from "@/theme/dashboard/components/admin/lista-pagamentos/constants";
+import { METODO_OPTIONS } from "@/theme/dashboard/components/admin/lista-pagamentos/constants";
 import type { PagamentosCursosDashboardProps, PagamentoCurso } from "./types";
+import type { MeuPagamentoStatus } from "@/api/cursos/types";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { MaskService } from "@/services";
-import { getMockPagamentosCursos } from "@/mockData/pagamentos-cursos";
 import { createCheckoutAndGetUrl } from "@/lib/checkout-session";
-import { toastCustom } from "@/components/ui/custom/toast";
-
-function getCookieValue(name: string): string | null {
-  if (typeof document === "undefined") return null;
-  const cookie = document.cookie
-    .split("; ")
-    .find((row) => row.startsWith(`${name}=`));
-  return cookie?.split("=")[1] || null;
-}
 
 const createEmptyDateRange = (): DateRange => ({ from: null, to: null });
+const STATUS_OPTIONS = [
+  { value: "PENDENTE", label: "Pendente" },
+  { value: "PROCESSANDO", label: "Processando" },
+  { value: "APROVADO", label: "Aprovado" },
+  { value: "RECUSADO", label: "Recusado" },
+  { value: "CANCELADO", label: "Cancelado" },
+  { value: "ESTORNADO", label: "Estornado" },
+];
 
 export function PagamentosCursosDashboard({
   className,
 }: PagamentosCursosDashboardProps) {
   const router = useRouter();
+  const [activeTab, setActiveTab] = useState("pendentes");
   const { data, isLoading, error, filters, updateFilters, loadPage } =
     usePagamentosCursosData();
 
-  // Buscar pagamentos pendentes (antes de definir aba padrão) - apenas os que estão realmente abertos para pagamento
-  // Exclui os que já foram pagos e estão em processamento (que têm PIX/Boleto gerado)
-  const pagamentosPendentes = useMemo(() => {
-    const allData = getMockPagamentosCursos();
-    return allData.pagamentos.filter(
-      (p) => p.status === "PENDENTE" && 
-             !p.detalhes?.pix && 
-             !p.detalhes?.boleto &&
-             p.tipoPagamento === "recuperacao-final"
-    );
-  }, []);
-
-  // Estado da aba ativa - padrão "pendentes" se houver pagamentos pendentes
-  const [activeTab, setActiveTab] = useState(() => 
-    pagamentosPendentes.length > 0 ? "pendentes" : "historico"
-  );
-
   const pagamentos = useMemo(() => data?.pagamentos ?? [], [data?.pagamentos]);
+  const pagamentosPendentes = activeTab === "pendentes" ? pagamentos : [];
   const resumo = data?.resumo;
   const pagination = data?.pagination;
 
@@ -81,9 +68,6 @@ export function PagamentosCursosDashboard({
   const [pendingValorMin, setPendingValorMin] = useState<string>("");
   const [pendingValorMax, setPendingValorMax] = useState<string>("");
   // Valores aplicados (enviados para a API)
-  const [valorMin, setValorMin] = useState<string>("");
-  const [valorMax, setValorMax] = useState<string>("");
-
   const maskService = MaskService.getInstance();
 
   // Estados das modais
@@ -95,22 +79,11 @@ export function PagamentosCursosDashboard({
 
   // Buscar cursos únicos para filtro
   const cursoOptions = useMemo(() => {
-    const allData = getMockPagamentosCursos();
-    const cursosMap = new Map<string, { value: string; label: string }>();
-    
-    allData.pagamentos.forEach((p) => {
-      if (p.curso && !cursosMap.has(p.curso.id)) {
-        cursosMap.set(p.curso.id, {
-          value: p.curso.id,
-          label: p.curso.nome,
-        });
-      }
-    });
-
-    return Array.from(cursosMap.values()).sort((a, b) =>
-      a.label.localeCompare(b.label, "pt-BR")
-    );
-  }, []);
+    return (data?.filters.cursos ?? []).map((curso) => ({
+      value: curso.id,
+      label: curso.nome,
+    }));
+  }, [data?.filters.cursos]);
 
   // Cards de resumo
   const summaryCards = useMemo((): StatisticCard[] => {
@@ -203,7 +176,7 @@ export function PagamentosCursosDashboard({
     () => ({
       metodo: selectedMetodo[0] ?? null,
       status: selectedStatus[0] ?? null,
-      curso: null, // Pode adicionar filtro de curso depois
+      curso: filters.cursoId ?? null,
       dateRange: pendingDateRange,
       valorMin: pendingValorMin ?? "",
       valorMax: pendingValorMax ?? "",
@@ -214,6 +187,7 @@ export function PagamentosCursosDashboard({
       pendingDateRange,
       pendingValorMin,
       pendingValorMax,
+      filters.cursoId,
     ]
   );
 
@@ -231,7 +205,7 @@ export function PagamentosCursosDashboard({
         const statusValue = value as string | null;
         setSelectedStatus(statusValue ? [statusValue] : []);
         updateFilters({
-          status: statusValue as any,
+          status: (statusValue as MeuPagamentoStatus | null) ?? undefined,
           page: 1,
         });
       } else if (key === "curso") {
@@ -273,10 +247,6 @@ export function PagamentosCursosDashboard({
       ? maskService.removeMask(pendingValorMax, "money")
       : "";
 
-    // Aplica os valores aos estados aplicados
-    setValorMin(pendingValorMin);
-    setValorMax(pendingValorMax);
-
     // Atualiza os filtros na API
     updateFilters({
       valorMin: valorMinUnmasked ? parseFloat(valorMinUnmasked) : undefined,
@@ -291,8 +261,6 @@ export function PagamentosCursosDashboard({
     setPendingDateRange(createEmptyDateRange());
     setPendingValorMin("");
     setPendingValorMax("");
-    setValorMin("");
-    setValorMax("");
     updateFilters({
       metodo: undefined,
       status: undefined,
@@ -320,20 +288,16 @@ export function PagamentosCursosDashboard({
   };
 
   const handlePayRecuperacao = useCallback((pagamento: PagamentoCurso) => {
-    // Verificar autenticação antes de criar checkout
-    const token = getCookieValue("token");
-    if (!token) {
-      toastCustom.error({
-        title: "Autenticação necessária",
-        description: "Você precisa estar autenticado para realizar o pagamento.",
-      });
-      return;
-    }
-
-    if (!pagamento.prova?.id || !pagamento.curso?.id || !pagamento.turma?.id) {
+    if (
+      !pagamento.podePagar ||
+      pagamento.origem !== "RECUPERACAO_FINAL" ||
+      !pagamento.prova?.id ||
+      !pagamento.curso?.id ||
+      !pagamento.turma?.id
+    ) {
       toastCustom.error({
         title: "Erro",
-        description: "Dados incompletos do pagamento. Não é possível iniciar o checkout.",
+        description: "Esta cobrança não pode ser iniciada no momento.",
       });
       return;
     }
@@ -349,6 +313,7 @@ export function PagamentosCursosDashboard({
         currency: "BRL",
         originUrl: "/dashboard/cursos/pagamentos?tab=pendentes",
         metadata: {
+          pagamentoId: pagamento.id,
           tipoPagamento: "recuperacao-final",
           tipo: "recuperacao-final",
           titulo: pagamento.prova.titulo,
@@ -370,6 +335,34 @@ export function PagamentosCursosDashboard({
       });
     }
   }, [router]);
+
+  const handleTabChange = useCallback(
+    (value: string) => {
+      const tab = value === "historico" ? "historico" : "pendentes";
+      setActiveTab(tab);
+      if (tab === "pendentes") {
+        setSelectedMetodo([]);
+        setSelectedStatus([]);
+        setPendingDateRange(createEmptyDateRange());
+        setPendingValorMin("");
+        setPendingValorMax("");
+        updateFilters({
+          tab,
+          page: 1,
+          metodo: undefined,
+          status: undefined,
+          cursoId: undefined,
+          dataInicio: undefined,
+          dataFim: undefined,
+          valorMin: undefined,
+          valorMax: undefined,
+        });
+        return;
+      }
+      updateFilters({ tab, page: 1 });
+    },
+    [updateFilters]
+  );
 
   // Paginação
   const currentPage = pagination?.page ?? filters.page ?? 1;
@@ -435,7 +428,10 @@ export function PagamentosCursosDashboard({
           <PagamentoCursoTable
             pagamentos={pagamentos}
             isLoading={isLoading}
-            showActions={false}
+            showActions
+            onViewPix={handleViewPix}
+            onViewBoleto={handleViewBoleto}
+            onPayRecuperacao={handlePayRecuperacao}
           />
         </div>
 
@@ -531,7 +527,9 @@ export function PagamentosCursosDashboard({
   // Conteúdo da aba "Pendentes"
   const pendentesContent = (
     <div className="space-y-6">
-      {pagamentosPendentes.length === 0 ? (
+      {isLoading ? (
+        <PagamentoCursoTable pagamentos={[]} isLoading showActions={false} />
+      ) : pagamentosPendentes.length === 0 ? (
         <div className="py-16">
           <EmptyState
             title="Nenhum pagamento pendente"
@@ -592,15 +590,37 @@ export function PagamentosCursosDashboard({
                   </div>
 
                   {/* Botão de ação */}
-                  <div className="flex-shrink-0">
-                    <ButtonCustom
-                      variant="primary"
-                      size="lg"
-                      onClick={() => handlePayRecuperacao(pagamento)}
-                      className="min-w-[120px]"
-                    >
-                      Pagar
-                    </ButtonCustom>
+                  <div className="flex-shrink-0 flex items-center gap-2">
+                    {pagamento.detalhes?.pix && (
+                      <ButtonCustom
+                        variant="outline"
+                        size="lg"
+                        onClick={() => handleViewPix(pagamento)}
+                        className="min-w-[120px]"
+                      >
+                        Visualizar
+                      </ButtonCustom>
+                    )}
+                    {pagamento.detalhes?.boleto && (
+                      <ButtonCustom
+                        variant="outline"
+                        size="lg"
+                        onClick={() => handleViewBoleto(pagamento)}
+                        className="min-w-[120px]"
+                      >
+                        Visualizar
+                      </ButtonCustom>
+                    )}
+                    {pagamento.podePagar && (
+                      <ButtonCustom
+                        variant="primary"
+                        size="lg"
+                        onClick={() => handlePayRecuperacao(pagamento)}
+                        className="min-w-[120px]"
+                      >
+                        Pagar
+                      </ButtonCustom>
+                    )}
                   </div>
                 </div>
               </div>
@@ -617,7 +637,8 @@ export function PagamentosCursosDashboard({
       value: "pendentes",
       label: "Pendentes",
       icon: "Clock",
-      badge: pagamentosPendentes.length > 0 ? pagamentosPendentes.length : undefined,
+      badge:
+        (data?.pendingCount ?? 0) > 0 ? data?.pendingCount : undefined,
       content: pendentesContent,
     },
     {
@@ -642,7 +663,7 @@ export function PagamentosCursosDashboard({
           <VerticalTabs
             items={tabs}
             value={activeTab}
-            onValueChange={setActiveTab}
+            onValueChange={handleTabChange}
             variant="spacious"
             size="sm"
             withAnimation
@@ -667,7 +688,7 @@ export function PagamentosCursosDashboard({
             setIsPixModalOpen(false);
             setSelectedPagamento(null);
           }}
-          pix={selectedPagamento.detalhes.pix as any}
+          pix={selectedPagamento.detalhes.pix}
           valor={selectedPagamento.valorFormatado}
         />
       )}
@@ -679,12 +700,10 @@ export function PagamentosCursosDashboard({
             setIsBoletoModalOpen(false);
             setSelectedPagamento(null);
           }}
-          boleto={selectedPagamento.detalhes.boleto as any}
+          boleto={selectedPagamento.detalhes.boleto}
           valor={selectedPagamento.valorFormatado}
         />
       )}
     </div>
   );
 }
-
-export { PENDING_CURSOS_PAYMENT_KEY } from "@/lib/pending-storage-keys";

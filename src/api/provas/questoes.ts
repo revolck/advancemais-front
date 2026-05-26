@@ -56,9 +56,13 @@ export async function listQuestoes(
   options?: {
     headers?: HeadersInit;
     cache?: "no-cache" | "short" | "medium" | "long";
+    inscricaoId?: string;
   }
 ): Promise<Questao[]> {
-  const url = provasRoutes.questoes.list(cursoId, turmaId, provaId);
+  const endpoint = provasRoutes.questoes.list(cursoId, turmaId, provaId);
+  const url = options?.inscricaoId
+    ? `${endpoint}?inscricaoId=${encodeURIComponent(options.inscricaoId)}`
+    : endpoint;
   const response = await apiFetch<QuestoesListResponse>(
     url,
     {
@@ -234,7 +238,6 @@ export async function corrigirResposta(
   );
   return response.data;
 }
-
 
 
 

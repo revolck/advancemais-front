@@ -16,6 +16,7 @@ interface UseQuestoesParams {
   cursoId: string | number;
   turmaId: string;
   provaId: string;
+  inscricaoId?: string;
   enabled?: boolean;
 }
 
@@ -26,12 +27,13 @@ export function useQuestoes({
   cursoId,
   turmaId,
   provaId,
+  inscricaoId,
   enabled = true,
 }: UseQuestoesParams) {
   return useQuery<Questao[]>({
-    queryKey: ["questoes", cursoId, turmaId, provaId],
+    queryKey: ["questoes", cursoId, turmaId, provaId, inscricaoId],
     queryFn: async () => {
-      return await listQuestoes(cursoId, turmaId, provaId);
+      return await listQuestoes(cursoId, turmaId, provaId, { inscricaoId });
     },
     enabled: enabled && !!cursoId && !!turmaId && !!provaId,
     staleTime: 30000, // 30 segundos
@@ -138,7 +140,6 @@ export function useDeleteQuestao({
     },
   });
 }
-
 
 
 

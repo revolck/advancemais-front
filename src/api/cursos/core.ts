@@ -2888,6 +2888,89 @@ function buildListNotasSearchParams(params: import("./types").ListNotasParams) {
   return sp;
 }
 
+export function buildListMeusPagamentosSearchParams(
+  params: import("./types").ListMeusPagamentosParams,
+) {
+  const sp = new URLSearchParams();
+  if (params.tab) sp.set("tab", params.tab);
+  if (params.status) sp.set("status", params.status);
+  if (params.metodo) sp.set("metodo", params.metodo);
+  if (params.cursoId) sp.set("cursoId", params.cursoId);
+  if (params.turmaId) sp.set("turmaId", params.turmaId);
+  if (params.dataInicio) sp.set("dataInicio", params.dataInicio);
+  if (params.dataFim) sp.set("dataFim", params.dataFim);
+  if (params.valorMin !== undefined) sp.set("valorMin", String(params.valorMin));
+  if (params.valorMax !== undefined) sp.set("valorMax", String(params.valorMax));
+  if (params.page) sp.set("page", String(params.page));
+  if (params.pageSize) sp.set("pageSize", String(params.pageSize));
+  return sp;
+}
+
+export async function listMeusPagamentos(
+  params: import("./types").ListMeusPagamentosParams = {},
+  init?: RequestInit,
+): Promise<import("./types").ListMeusPagamentosResponse["data"]> {
+  const sp = buildListMeusPagamentosSearchParams(params);
+  const url = sp.toString()
+    ? `${cursosRoutes.me.pagamentos()}?${sp.toString()}`
+    : cursosRoutes.me.pagamentos();
+  const response = await apiFetch<import("./types").ListMeusPagamentosResponse>(url, {
+    init: { method: "GET", ...init, headers: buildHeaders(init?.headers, true) },
+    cache: "no-cache",
+  });
+  return response.data;
+}
+
+export async function iniciarCheckoutRecuperacao(
+  pagamentoId: string,
+  payload: import("./types").CheckoutRecuperacaoPayload,
+  init?: RequestInit,
+): Promise<import("./types").CheckoutRecuperacaoResponse> {
+  return apiFetch(cursosRoutes.me.checkoutRecuperacao(pagamentoId), {
+    init: {
+      method: "POST",
+      ...init,
+      headers: buildHeaders(
+        { "Content-Type": "application/json", ...(init?.headers || {}) },
+        true,
+      ),
+      body: JSON.stringify(payload),
+    },
+    cache: "no-cache",
+  });
+}
+
+export async function iniciarCheckoutCurso(
+  payload: import("./types").StartCursoCheckoutPayload,
+  init?: RequestInit,
+): Promise<import("./types").StartCursoCheckoutResponse> {
+  return apiFetch(cursosRoutes.checkout.iniciar(), {
+    init: {
+      method: "POST",
+      ...init,
+      headers: buildHeaders(
+        { "Content-Type": "application/json", ...(init?.headers || {}) },
+        true,
+      ),
+      body: JSON.stringify(payload),
+    },
+    cache: "no-cache",
+  });
+}
+
+export async function getMinhaRecuperacaoAcesso(
+  provaId: string,
+  inscricaoId: string,
+  init?: RequestInit,
+): Promise<import("./types").MinhaRecuperacaoAcessoResponse["data"]> {
+  const endpoint = `${cursosRoutes.me.acessoRecuperacao(provaId)}?inscricaoId=${encodeURIComponent(inscricaoId)}`;
+  const response = await apiFetch<import("./types").MinhaRecuperacaoAcessoResponse>(endpoint, {
+    init: { method: "GET", ...init, headers: buildHeaders(init?.headers, true) },
+    cache: "no-cache",
+  });
+  return response.data;
+}
+
 export function buildListMinhasNotasSearchParams(
   params: import("./types").ListMinhasNotasParams,
 ) {

@@ -5,7 +5,7 @@
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { Clock, CreditCard, Shield } from "lucide-react";
+import { Clock, CreditCard } from "lucide-react";
 import { ButtonCustom } from "@/components/ui/custom/button";
 import { toastCustom } from "@/components/ui/custom/toast";
 import {
@@ -18,11 +18,12 @@ import {
   PENDING_COURSE_PURCHASE_KEY,
   PENDING_CURSOS_PAYMENT_KEY,
 } from "@/lib/pending-storage-keys";
-import { createSinglePayment, startCheckout } from "@/api/mercadopago";
+import { startCheckout } from "@/api/mercadopago";
+import { iniciarCheckoutCurso, iniciarCheckoutRecuperacao } from "@/api/cursos";
+import type { CheckoutRecuperacaoPayload } from "@/api/cursos/types";
 import type {
   CheckoutIntent,
   MetodoPagamento,
-  PaymentPayer,
 } from "@/api/mercadopago/types";
 import { validateCupom } from "@/api/cupons";
 import {
@@ -885,11 +886,66 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
       return;
     }
 
+    if (!hasAcceptedTerms) {
+      toastCustom.warning({
+        title: "Aceite necessário",
+        description: "Aceite os termos para prosseguir com a matrícula.",
+      });
+      return;
+    }
+
+    const pagamento = mapPaymentMethod(paymentMethod);
+    if (pagamento === "card" && !canUseDirectTokenization) {
+      toastCustom.warning({
+        title: "Cartão indisponível neste ambiente",
+        description: "Em ambiente local, utilize PIX ou boleto para testar a matrícula.",
+      });
+      return;
+    }
+
     courseCheckoutStartedRef.current = true;
     setIsProcessing(true);
 
     try {
       const turmaNome = courseMetadata.turmaNome || "Turma";
+      const payer: NonNullable<CheckoutRecuperacaoPayload["payer"]> = {
+        email: payerEmail,
+        identification: {
+          type: getDocumentType(payerDocument),
+          number: sanitizeDocument(payerDocument),
+        },
+        ...(paymentMethod === "boleto"
+          ? {
+              address: {
+                zip_code: payerAddress.zipCode.replace(/\D/g, ""),
+                street_name: payerAddress.streetName,
+                street_number: payerAddress.streetNumber,
+                neighborhood: payerAddress.neighborhood,
+                city: payerAddress.city,
+                federal_unit: payerAddress.federalUnit,
+              },
+            }
+          : {}),
+      };
+
+      let card: { token: string; installments?: number } | undefined;
+      if (pagamento === "card") {
+        let tokenToUse = cardToken;
+        if (!tokenToUse && cardTokenizeRef.current) {
+          const tokenResult = await cardTokenizeRef.current();
+          if (!tokenResult.success || !tokenResult.token) {
+            courseCheckoutStartedRef.current = false;
+            setIsProcessing(false);
+            return;
+          }
+          tokenToUse = tokenResult.token;
+          setCardToken(tokenResult.token);
+          setCardLastFour(tokenResult.lastFourDigits || null);
+          setCardBrand(tokenResult.cardBrand || null);
+        }
+        if (!tokenToUse) throw new Error("Não foi possível tokenizar o cartão.");
+        card = { token: tokenToUse, installments: 1 };
+      }
 
       localStorage.setItem(
         PENDING_COURSE_PURCHASE_KEY,
@@ -903,42 +959,40 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
         })
       );
 
-      const baseUrl = window.location.origin;
-      const externalReference = `curso:${courseMetadata.cursoId}:turma:${courseMetadata.turmaId}:session:${session.sessionId}:aluno:${userId}`;
-
-      const response = await createSinglePayment(
-        {
-          usuarioId: userId,
-          items: [
-            {
-              id: courseMetadata.turmaId,
-              title: session.productName,
-              description: "Matrícula em turma (pagamento único)",
-              quantity: 1,
-              unit_price: session.productPrice,
-              currency_id: session.currency || "BRL",
-            },
-          ],
-          installments: courseMetadata.maxInstallments,
-          successUrl: `${baseUrl}${checkoutResultPaths.courseSuccess}`,
-          failureUrl: `${baseUrl}${checkoutResultPaths.courseFailure}`,
-          pendingUrl: `${baseUrl}${checkoutResultPaths.coursePending}`,
-          externalReference,
-          metadata: {
-            checkoutSessionId: session.sessionId,
-            cursoId: courseMetadata.cursoId,
-            turmaId: courseMetadata.turmaId,
-            turmaNome,
-          },
-        },
-        token
-      );
-
-      if (!response?.initPoint) {
-        throw new Error("Não foi possível iniciar o checkout.");
+      const response = await iniciarCheckoutCurso({
+        cursoId: courseMetadata.cursoId,
+        turmaId: courseMetadata.turmaId,
+        pagamento,
+        payer,
+        ...(card ? { card } : {}),
+        ...(appliedCoupon?.code ? { cupomCodigo: appliedCoupon.code } : {}),
+        aceitouTermos: true,
+        aceitouTermosUserAgent: navigator.userAgent,
+      });
+      const result = response.pagamento;
+      if (result?.tipo === "pix" && result.qrCode) {
+        setPixCode(result.qrCode);
+        setPixQrCode(result.qrCodeBase64 || null);
+        setPixExpiresAt(result.expiresAt || null);
+        setCheckoutId(result.paymentId);
+      } else if (result?.tipo === "boleto" && result.boletoUrl) {
+        setBoletoUrl(result.boletoUrl);
+        setBoletoCode(result.barcode || result.boletoUrl);
+        setBoletoExpiresAt(result.expiresAt || null);
+        setCheckoutId(result.paymentId);
+      } else if (result?.status === "approved") {
+        router.push(
+          `${checkoutResultPaths.courseSuccess}${
+            result.paymentId ? `?payment_id=${encodeURIComponent(result.paymentId)}` : ""
+          }`
+        );
+      } else {
+        router.push(
+          `${checkoutResultPaths.coursePending}${
+            result?.paymentId ? `?payment_id=${encodeURIComponent(result.paymentId)}` : ""
+          }`
+        );
       }
-
-      window.location.href = response.initPoint;
     } catch (error: any) {
       const message =
         error?.message || "Não foi possível iniciar o pagamento. Tente novamente.";
@@ -948,19 +1002,21 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
     }
   }, [
     courseMetadata,
+    appliedCoupon?.code,
+    canUseDirectTokenization,
+    cardToken,
+    hasAcceptedTerms,
     isDataLoading,
+    payerAddress,
+    payerDocument,
+    payerEmail,
+    paymentMethod,
     router,
     session,
     userId,
     checkoutResultPaths.courseSuccess,
-    checkoutResultPaths.courseFailure,
     checkoutResultPaths.coursePending,
   ]);
-
-  useEffect(() => {
-    if (!session || session.productType !== "curso") return;
-    startCoursePurchaseCheckout();
-  }, [session, startCoursePurchaseCheckout]);
 
   const coursePaymentMetadata = useMemo(() => {
     if (!session || session.productType !== "curso_pagamento") return null;
@@ -979,6 +1035,8 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
     const cursoNome = typeof raw.cursoNome === "string" ? raw.cursoNome : null;
     const turmaId = typeof raw.turmaId === "string" ? raw.turmaId : null;
     const turmaNome = typeof raw.turmaNome === "string" ? raw.turmaNome : null;
+    const pagamentoId =
+      typeof raw.pagamentoId === "string" ? raw.pagamentoId : null;
     const provaId = typeof raw.provaId === "string" ? raw.provaId : session.productId;
     const provaTitulo = typeof raw.provaTitulo === "string" ? raw.provaTitulo : null;
     const maxInstallments =
@@ -999,6 +1057,7 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
       cursoNome,
       turmaId,
       turmaNome,
+      pagamentoId,
       provaId,
       provaTitulo,
       maxInstallments,
@@ -1025,7 +1084,7 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
       return;
     }
 
-    if (!coursePaymentMetadata?.provaId) {
+    if (!coursePaymentMetadata?.pagamentoId || !coursePaymentMetadata.provaId) {
       toastCustom.error({
         title: "Sessão inválida",
         description: "Não foi possível identificar o pagamento desta cobrança.",
@@ -1074,12 +1133,7 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
     setIsProcessing(true);
 
     try {
-      const rawPrice = session.productPrice || 0;
-      const discountValue = appliedCoupon?.discount || 0;
-      const discountedPrice = Math.max(0, rawPrice - discountValue);
-
       const returnTo = coursePaymentMetadata.returnTo;
-      const baseUrl = window.location.origin;
       const resultBasePath = "/dashboard/cursos/pagamentos";
       const returnToQuery = encodeURIComponent(returnTo);
 
@@ -1088,7 +1142,7 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
         JSON.stringify({
           tipo: coursePaymentMetadata.tipo ?? "recuperacao-final",
           titulo: coursePaymentMetadata.titulo,
-          valor: discountedPrice,
+          valor: session.productPrice,
           cursoId: coursePaymentMetadata.cursoId,
           turmaId: coursePaymentMetadata.turmaId,
           provaId: coursePaymentMetadata.provaId,
@@ -1097,27 +1151,7 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
         })
       );
 
-      const externalReference = [
-        coursePaymentMetadata.tipo ?? "recuperacao-final",
-        coursePaymentMetadata.cursoId ? `curso:${coursePaymentMetadata.cursoId}` : null,
-        coursePaymentMetadata.turmaId ? `turma:${coursePaymentMetadata.turmaId}` : null,
-        `prova:${coursePaymentMetadata.provaId}`,
-        `session:${session.sessionId}`,
-        `aluno:${userId}`,
-      ]
-        .filter(Boolean)
-        .join(":");
-
-	      const excludedPaymentTypes =
-	        paymentMethod === "pix"
-	          ? (["ticket", "credit_card", "debit_card"] as string[])
-	          : paymentMethod === "boleto"
-	          ? (["bank_transfer", "credit_card", "debit_card"] as string[])
-	          : paymentMethod === "credit" || paymentMethod === "debit"
-	          ? (["bank_transfer", "ticket"] as string[])
-	          : undefined;
-
-	      const payer: PaymentPayer = {
+      const payer: NonNullable<CheckoutRecuperacaoPayload["payer"]> = {
 	        email: payerEmail,
 	        identification: {
 	          type: getDocumentType(payerDocument),
@@ -1126,13 +1160,13 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
 	      };
 
       if (paymentMethod === "boleto") {
-        const streetNumber = Number(
-          payerAddress.streetNumber.replace(/\D/g, "")
-        );
         payer.address = {
           zip_code: payerAddress.zipCode.replace(/\D/g, ""),
           street_name: payerAddress.streetName,
-          street_number: Number.isFinite(streetNumber) ? streetNumber : undefined,
+          street_number: payerAddress.streetNumber,
+          neighborhood: payerAddress.neighborhood,
+          city: payerAddress.city,
+          federal_unit: payerAddress.federalUnit,
         };
       }
 
@@ -1167,49 +1201,52 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
         cardPayload = { token: tokenToUse, installments: 1 };
       }
 
-      const response = await createSinglePayment(
-        {
-          usuarioId: userId,
-          items: [
-            {
-              id: coursePaymentMetadata.provaId,
-              title: coursePaymentMetadata.titulo,
-              description: "Prova de recuperação final (pagamento único)",
-              quantity: 1,
-              unit_price: discountedPrice,
-              currency_id: session.currency || "BRL",
-            },
-          ],
-          installments: coursePaymentMetadata.maxInstallments,
-          ...(cardPayload ? { card: cardPayload } : {}),
-          payer,
-          excludedPaymentTypes,
-          successUrl: `${baseUrl}${resultBasePath}/sucesso?returnTo=${returnToQuery}`,
-          failureUrl: `${baseUrl}${resultBasePath}/falha?returnTo=${returnToQuery}`,
-          pendingUrl: `${baseUrl}${resultBasePath}/pendente?returnTo=${returnToQuery}`,
-          externalReference,
-          metadata: {
-            checkoutSessionId: session.sessionId,
-            tipoPagamento: coursePaymentMetadata.tipo ?? "recuperacao-final",
-            cursoId: coursePaymentMetadata.cursoId,
-            turmaId: coursePaymentMetadata.turmaId,
-            provaId: coursePaymentMetadata.provaId,
-            provaTitulo: coursePaymentMetadata.provaTitulo ?? coursePaymentMetadata.titulo,
-            selectedPaymentMethod: paymentMethod,
-            cupomCodigo: appliedCoupon?.code ?? null,
-            cupomDesconto: discountValue || 0,
-            valorOriginal: rawPrice,
-            valorFinal: discountedPrice,
-          },
-        },
-        token
-      );
-
-      if (!response?.initPoint) {
-        throw new Error("Não foi possível iniciar o checkout.");
+      if (
+        (paymentMethod === "credit" || paymentMethod === "debit") &&
+        !canUseDirectTokenization
+      ) {
+        throw new Error(
+          "Em ambiente local, utilize PIX ou boleto para testar a recuperação."
+        );
       }
 
-      window.location.href = response.initPoint;
+      const response = await iniciarCheckoutRecuperacao(
+        coursePaymentMetadata.pagamentoId,
+        {
+          pagamento: mapPaymentMethod(paymentMethod),
+          payer,
+          ...(cardPayload ? { card: cardPayload } : {}),
+        }
+      );
+      const result = response.pagamento;
+      if (result.tipo === "pix" && result.qrCode) {
+        setPixCode(result.qrCode);
+        setPixQrCode(result.qrCodeBase64 || null);
+        setPixExpiresAt(result.expiresAt || null);
+        setCheckoutId(result.paymentId);
+      } else if (result.tipo === "boleto" && result.boletoUrl) {
+        setBoletoUrl(result.boletoUrl);
+        setBoletoCode(result.barcode || result.boletoUrl);
+        setBoletoExpiresAt(result.expiresAt || null);
+        setCheckoutId(result.paymentId);
+      } else if (result.statusPagamento === "APROVADO") {
+        router.push(
+          `${resultBasePath}/sucesso?returnTo=${returnToQuery}${
+            result.paymentId ? `&payment_id=${encodeURIComponent(result.paymentId)}` : ""
+          }`
+        );
+      } else if (
+        result.statusPagamento === "RECUSADO" ||
+        result.statusPagamento === "CANCELADO"
+      ) {
+        router.push(`${resultBasePath}/falha?returnTo=${returnToQuery}`);
+      } else {
+        router.push(
+          `${resultBasePath}/pendente?returnTo=${returnToQuery}${
+            result.paymentId ? `&payment_id=${encodeURIComponent(result.paymentId)}` : ""
+          }`
+        );
+      }
     } catch (error: any) {
       const status = error?.status as number | undefined;
       const message =
@@ -1222,8 +1259,6 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
     }
   }, [
     coursePaymentMetadata,
-    appliedCoupon?.code,
-    appliedCoupon?.discount,
     canUseDirectTokenization,
     isDataLoading,
     payerAddress,
@@ -1270,114 +1305,9 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
   const seconds = timeLeft % 60;
   const isLowTime = timeLeft < 300;
   const isCoursePayment = session.productType === "curso_pagamento";
+  const isCoursePurchase = session.productType === "curso";
+  const isCourseCheckout = isCoursePayment || isCoursePurchase;
   const isTermsRequired = !isCoursePayment;
-  const finalPrice = Math.max(0, price - (appliedCoupon?.discount || 0));
-
-  if (session.productType === "curso") {
-    const startLabel = courseMetadata?.dataInicio
-      ? new Date(courseMetadata.dataInicio).toLocaleDateString("pt-BR")
-      : null;
-    const endLabel = courseMetadata?.dataFim
-      ? new Date(courseMetadata.dataFim).toLocaleDateString("pt-BR")
-      : null;
-    const dateRange =
-      startLabel && endLabel
-        ? `${startLabel} — ${endLabel}`
-        : startLabel
-        ? `Início: ${startLabel}`
-        : null;
-
-    return (
-      <div
-        className={cn(
-          "min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50",
-          className
-        )}
-      >
-        <div className="container mx-auto px-4 py-10">
-          <div className="max-w-2xl mx-auto">
-            <div className="rounded-3xl border border-zinc-100 bg-white shadow-xl shadow-zinc-200/40 overflow-hidden">
-              <div className="px-6 sm:px-8 py-8 bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-700 text-white">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-white/75">
-                      Checkout seguro
-                    </p>
-                    <h1 className="mt-1 text-xl sm:text-2xl font-bold">
-                      {courseMetadata?.cursoNome || session.productName}
-                    </h1>
-                    {courseMetadata?.turmaNome ? (
-                      <p className="mt-1 text-sm text-white/85">
-                        {courseMetadata.turmaNome}
-                      </p>
-                    ) : null}
-                  </div>
-                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/15 backdrop-blur-sm">
-                    <Shield className="h-5 w-5" />
-                  </div>
-                </div>
-              </div>
-
-              <div className="px-6 sm:px-8 py-8 space-y-5">
-                <div className="rounded-2xl border border-zinc-100 bg-zinc-50 p-5">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="min-w-0">
-                      <div className="text-xs font-semibold uppercase text-zinc-500">
-                        Total
-                      </div>
-                      <div className="mt-1 text-2xl font-bold text-zinc-900">
-                        {formatPrice(session.productPrice || 0)}
-                      </div>
-                      {dateRange ? (
-                        <div className="mt-2 text-sm text-zinc-600">
-                          Período:{" "}
-                          <span className="font-medium">{dateRange}</span>
-                        </div>
-                      ) : null}
-                      <div className="mt-2 text-sm text-zinc-600">
-                        Cartão de crédito em até{" "}
-                        <span className="font-semibold">
-                          {courseMetadata?.maxInstallments || 12}x sem juros
-                        </span>
-                        .
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-zinc-600">
-                      <CreditCard className="h-4 w-4" />
-                      Mercado Pago
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-2">
-                  <ButtonCustom
-                    variant="primary"
-                    fullWidth
-                    isLoading={isProcessing}
-                    onClick={startCoursePurchaseCheckout}
-                  >
-                    Continuar para pagamento
-                  </ButtonCustom>
-                  <ButtonCustom
-                    variant="outline"
-                    fullWidth
-                    disabled={isProcessing}
-                    onClick={handleBack}
-                  >
-                    Voltar
-                  </ButtonCustom>
-                  <p className="text-xs text-zinc-500 text-center">
-                    Você será redirecionado para finalizar o pagamento com
-                    segurança.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   // Tela de PIX gerado
   if (pixCode && session) {
@@ -1387,7 +1317,7 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
         pixQrCode={pixQrCode}
         productName={session.productName}
         productPrice={session.productPrice || 0}
-        appliedCoupon={appliedCoupon}
+        appliedCoupon={isCoursePayment ? null : appliedCoupon}
         sessionTimeLeft={timeLeft}
         checkoutId={checkoutId}
         onBack={handleBackFromPayment}
@@ -1404,7 +1334,7 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
         boletoCode={boletoCode}
         productName={session.productName}
         productPrice={session.productPrice || 0}
-        appliedCoupon={appliedCoupon}
+        appliedCoupon={isCoursePayment ? null : appliedCoupon}
         sessionTimeLeft={timeLeft}
         checkoutId={checkoutId}
         onBack={handleBackFromPayment}
@@ -1513,7 +1443,7 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
             {/* Info PIX ou Boleto */}
             <PaymentMethodInfo
               method={paymentMethod}
-              showCardInfo={isCoursePayment}
+              showCardInfo={isCourseCheckout}
             />
 
             {/* Dados do pagador */}
@@ -1536,7 +1466,13 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
               variant="primary"
               size="lg"
               fullWidth
-              onClick={isCoursePayment ? startCoursePaymentCheckout : handleSubmitPayment}
+              onClick={
+                isCoursePayment
+                  ? startCoursePaymentCheckout
+                  : isCoursePurchase
+                    ? startCoursePurchaseCheckout
+                    : handleSubmitPayment
+              }
               isLoading={isProcessing}
               disabled={
                 !isFormValid() ||
@@ -1544,7 +1480,7 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
                 (isTermsRequired && !hasAcceptedTerms)
               }
             >
-              {isCoursePayment
+              {isCourseCheckout
                 ? "Continuar para pagamento"
                 : paymentMethod === "pix"
                 ? "Gerar QR Code PIX"
@@ -1576,7 +1512,7 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
               <OrderSummary
                 productName={session.productName}
                 price={price}
-                appliedCoupon={appliedCoupon}
+                appliedCoupon={isCoursePayment ? null : appliedCoupon}
                 itemLabel={
                   isCoursePayment
                     ? coursePaymentMetadata?.titulo || session.productName
@@ -1586,22 +1522,24 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
               />
 
               {/* Cupom de desconto */}
-              <CouponSection
-                appliedCoupon={appliedCoupon}
-                couponCode={couponCode}
-                couponError={couponError}
-                couponLoading={couponLoading}
-                showCouponInput={showCouponInput}
-                onCouponCodeChange={setCouponCode}
-                onApplyCoupon={handleApplyCoupon}
-                onRemoveCoupon={() => setAppliedCoupon(null)}
-                onToggleInput={() => setShowCouponInput(!showCouponInput)}
-                onCancelInput={() => {
-                  setShowCouponInput(false);
-                  setCouponCode("");
-                  setCouponError("");
-                }}
-              />
+              {!isCoursePayment && (
+                <CouponSection
+                  appliedCoupon={appliedCoupon}
+                  couponCode={couponCode}
+                  couponError={couponError}
+                  couponLoading={couponLoading}
+                  showCouponInput={showCouponInput}
+                  onCouponCodeChange={setCouponCode}
+                  onApplyCoupon={handleApplyCoupon}
+                  onRemoveCoupon={() => setAppliedCoupon(null)}
+                  onToggleInput={() => setShowCouponInput(!showCouponInput)}
+                  onCancelInput={() => {
+                    setShowCouponInput(false);
+                    setCouponCode("");
+                    setCouponError("");
+                  }}
+                />
+              )}
 
               {/* Segurança */}
               <SecurityBadges />

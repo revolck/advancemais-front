@@ -1,13 +1,12 @@
 "use client";
 
-import React, { useMemo } from "react";
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, Copy, CheckCircle2, XCircle, Key } from "lucide-react";
+import { AlertCircle, CheckCircle2, XCircle, Key } from "lucide-react";
 import { ButtonCustom, EmptyState } from "@/components/ui/custom";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
 import {
   listProvaTokens,
   getProvaById,
@@ -18,15 +17,6 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { UserRole } from "@/config/roles";
 import { toastCustom } from "@/components/ui/custom";
-import {
-  RECUPERACAO_PAGAMENTO_VALOR_CENTS,
-  isRecuperacaoPagamentoPago,
-  registrarRecuperacaoPagamento,
-} from "@/mockData/recuperacaoPagamento";
-import {
-  getNotaForEnrollmentFromStore,
-  getNotasStoreSnapshot,
-} from "@/mockData/notas";
 
 interface TokensTabProps {
   cursoId: number | string;
@@ -43,7 +33,6 @@ interface TokensTabProps {
  */
 export function TokensTab({ cursoId, turmaId, provaId }: TokensTabProps) {
   const { user } = useAuth();
-  const [, setPaymentsRefresh] = React.useState(0);
 
   // Buscar dados da prova para verificar modalidade e instrutor
   const { data: prova } = useQuery<TurmaProva>({
@@ -124,14 +113,6 @@ export function TokensTab({ cursoId, turmaId, provaId }: TokensTabProps) {
     navigator.clipboard.writeText(token);
     toastCustom.success("Token copiado para a área de transferência!");
   };
-
-  const formatBRL = (cents: number) =>
-    (cents / 100).toLocaleString("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    });
-
-  const notasStore = getNotasStoreSnapshot();
 
   if (!isOnlineOrLive) {
     return (
@@ -245,9 +226,6 @@ export function TokensTab({ cursoId, turmaId, provaId }: TokensTabProps) {
                     Respondido em
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Pagamento
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Ações
                   </th>
                 </tr>
@@ -313,121 +291,14 @@ export function TokensTab({ cursoId, turmaId, provaId }: TokensTabProps) {
                         : "-"}
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap">
-                      {(() => {
-                        const alunoId =
-                          token.inscricao?.alunoId || token.aluno?.id || null;
-                        if (!alunoId) {
-                          return (
-                            <span className="text-sm text-gray-400">—</span>
-                          );
-                        }
-
-                        const notaFinal =
-                          getNotaForEnrollmentFromStore(notasStore, {
-                            cursoId: String(cursoId),
-                            turmaId,
-                            alunoId,
-                          }).nota ?? 0;
-
-                        const needsPayment = notaFinal <= 6;
-                        if (!needsPayment) {
-                          return (
-                            <span className="text-sm text-gray-400">—</span>
-                          );
-                        }
-
-                        const paid = isRecuperacaoPagamentoPago({
-                          cursoId: String(cursoId),
-                          turmaId,
-                          provaId,
-                          inscricaoId: token.inscricaoId,
-                        });
-
-                        return paid ? (
-                          <Badge
-                            variant="outline"
-                            className="bg-green-50 text-green-700 border-green-200"
-                          >
-                            Pago
-                          </Badge>
-                        ) : (
-                          <Badge
-                            variant="outline"
-                            className="bg-red-50 text-red-700 border-red-200"
-                          >
-                            Pendente
-                          </Badge>
-                        );
-                      })()}
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      {(() => {
-                        const alunoId =
-                          token.inscricao?.alunoId || token.aluno?.id || null;
-                        const notaFinal =
-                          alunoId
-                            ? getNotaForEnrollmentFromStore(notasStore, {
-                                cursoId: String(cursoId),
-                                turmaId,
-                                alunoId,
-                              }).nota ?? 0
-                            : 0;
-                        const needsPayment = Boolean(alunoId && notaFinal <= 6);
-                        const paid = needsPayment
-                          ? isRecuperacaoPagamentoPago({
-                              cursoId: String(cursoId),
-                              turmaId,
-                              provaId,
-                              inscricaoId: token.inscricaoId,
-                            })
-                          : true;
-
-                        const disabled = needsPayment && !paid;
-
-                        return (
-                          <div className="flex items-center gap-2">
-                            <ButtonCustom
-                              variant="ghost"
-                              size="sm"
-                              icon="Copy"
-                              disabled={disabled}
-                              title={
-                                disabled
-                                  ? `Pagamento pendente (${formatBRL(
-                                      RECUPERACAO_PAGAMENTO_VALOR_CENTS
-                                    )}) — aluno reprovado`
-                                  : undefined
-                              }
-                              onClick={() => handleCopyToken(token.token)}
-                            >
-                              Copiar
-                            </ButtonCustom>
-                            {disabled && canViewAllTokens && (
-                              <ButtonCustom
-                                variant="outline"
-                                size="sm"
-                                icon="CreditCard"
-                                onClick={() => {
-                                  registrarRecuperacaoPagamento({
-                                    cursoId: String(cursoId),
-                                    turmaId,
-                                    provaId,
-                                    inscricaoId: token.inscricaoId,
-                                  });
-                                  setPaymentsRefresh((v) => v + 1);
-                                  toastCustom.success(
-                                    `Pagamento registrado (${formatBRL(
-                                      RECUPERACAO_PAGAMENTO_VALOR_CENTS
-                                    )}).`
-                                  );
-                                }}
-                              >
-                                Registrar pagamento
-                              </ButtonCustom>
-                            )}
-                          </div>
-                        );
-                      })()}
+                      <ButtonCustom
+                        variant="ghost"
+                        size="sm"
+                        icon="Copy"
+                        onClick={() => handleCopyToken(token.token)}
+                      >
+                        Copiar
+                      </ButtonCustom>
                     </td>
                   </tr>
                 ))}

@@ -8,10 +8,6 @@ import { PagamentosCursosDashboard } from "@/theme/dashboard/components/admin/pa
 
 const ALLOWED_ROLES = new Set<UserRole>([
   UserRole.ALUNO_CANDIDATO,
-  UserRole.ADMIN,
-  UserRole.MODERADOR,
-  UserRole.PEDAGOGICO,
-  UserRole.FINANCEIRO,
 ]);
 
 export default function PagamentosCursosPage() {
@@ -49,4 +45,3 @@ export default function PagamentosCursosPage() {
 
   return <div className="space-y-8">{content}</div>;
 }
-

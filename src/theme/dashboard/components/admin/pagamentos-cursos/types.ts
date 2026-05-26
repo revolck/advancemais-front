@@ -3,34 +3,38 @@ import type {
   TipoPagamento,
 } from "@/api/empresas/pagamentos/types";
 import type {
-  PagamentoCurso,
-  PagamentosCursosResumo,
-  PagamentosCursosPagination,
-  PagamentoCursoDetalhes,
-} from "@/mockData/pagamentos-cursos";
+  ListMeusPagamentosParams,
+  MeuPagamentoItem,
+  MeuPagamentoStatus,
+  ListMeusPagamentosResponse,
+} from "@/api/cursos/types";
 
-export type {
-  PagamentoCurso,
-  PagamentosCursosResumo,
-  PagamentosCursosPagination,
-  PagamentoCursoDetalhes,
-};
+export interface PagamentoCurso
+  extends Omit<MeuPagamentoItem, "status"> {
+  status: StatusPagamento | null;
+}
+
+export type PagamentoCursoDetalhes = MeuPagamentoItem["detalhes"];
+export type PagamentosCursosResumo =
+  ListMeusPagamentosResponse["data"]["summary"];
+export type PagamentosCursosPagination =
+  ListMeusPagamentosResponse["data"]["pagination"];
 
 export interface PagamentosCursosDashboardProps {
   className?: string;
 }
 
-export interface PagamentosCursosParams {
-  page?: number;
-  pageSize?: number;
-  status?: StatusPagamento;
-  metodo?: string;
-  cursoId?: string;
-  turmaId?: string;
-  valorMin?: number;
-  valorMax?: number;
-  dataInicio?: string;
-  dataFim?: string;
+export interface PagamentosCursosParams
+  extends Omit<ListMeusPagamentosParams, "status"> {
+  status?: MeuPagamentoStatus;
+}
+
+export interface PagamentosCursosData {
+  pagamentos: PagamentoCurso[];
+  resumo: PagamentosCursosResumo;
+  pagination: PagamentosCursosPagination;
+  pendingCount: number;
+  filters: ListMeusPagamentosResponse["data"]["filters"];
 }
 
 export interface PagamentoCursoTableProps {
@@ -49,4 +53,3 @@ export interface PagamentoCursoRowProps {
   onViewBoleto?: (pagamento: PagamentoCurso) => void;
   onPayRecuperacao?: (pagamento: PagamentoCurso) => void;
 }
-

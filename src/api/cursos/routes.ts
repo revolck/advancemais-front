@@ -253,6 +253,11 @@ export const cursosRoutes = {
     notas: () => `${BASE}/me/notas`,
     notasHistorico: (notaId: string) =>
       `${BASE}/me/notas/${notaId}/historico`,
+    pagamentos: () => `${BASE}/me/pagamentos`,
+    checkoutRecuperacao: (pagamentoId: string) =>
+      `${BASE}/me/pagamentos/recuperacoes/${encodeURIComponent(pagamentoId)}/checkout`,
+    acessoRecuperacao: (provaId: string) =>
+      `${BASE}/me/recuperacoes/${encodeURIComponent(provaId)}/acesso`,
     inscricoes: {
       certificados: (inscricaoId: string) =>
         `${BASE}/me/inscricoes/${inscricaoId}/certificados`,

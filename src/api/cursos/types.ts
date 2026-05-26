@@ -1455,6 +1455,155 @@ export interface GetNotaHistoricoResponse {
   items?: NotaHistoricoItem[];
 }
 
+export type MeuPagamentoStatus =
+  | "PENDENTE"
+  | "PROCESSANDO"
+  | "APROVADO"
+  | "RECUSADO"
+  | "CANCELADO"
+  | "ESTORNADO";
+
+export interface ListMeusPagamentosParams {
+  tab?: "pendentes" | "historico";
+  page?: number;
+  pageSize?: number;
+  status?: MeuPagamentoStatus;
+  metodo?: string;
+  cursoId?: string;
+  turmaId?: string;
+  dataInicio?: string;
+  dataFim?: string;
+  valorMin?: number;
+  valorMax?: number;
+}
+
+export interface MeuPagamentoItem {
+  id: string;
+  origem: "MATRICULA" | "RECUPERACAO_FINAL";
+  tipo: string;
+  tipoDescricao: string;
+  status: MeuPagamentoStatus;
+  statusDescricao: string;
+  valor: number;
+  valorFormatado: string;
+  metodo: string | null;
+  metodoDescricao: string | null;
+  curso: { id: string; nome: string };
+  turma: { id: string; nome: string };
+  prova: { id: string; titulo: string } | null;
+  tipoPagamento: "matricula" | "recuperacao-final";
+  referencia: string;
+  transacaoId: string | null;
+  criadoEm: string;
+  validadeAte: string | null;
+  detalhes: {
+    pix?: { qrCode: string | null; copiaCola: string | null; expiraEm: string | null };
+    boleto?: { codigo: string | null; urlPdf: string | null; vencimento: string | null };
+  } | null;
+  podePagar: boolean;
+}
+
+export interface ListMeusPagamentosResponse {
+  success: boolean;
+  data: {
+    items: MeuPagamentoItem[];
+    summary: {
+      totalPago: number;
+      totalPendente: number;
+      totalTransacoes: number;
+      ultimoPagamento: string | null;
+    };
+    pendingCount: number;
+    filters: {
+      cursos: Array<{ id: string; nome: string }>;
+      turmas: Array<{ id: string; nome: string; cursoId: string }>;
+      metodos: string[];
+      status: MeuPagamentoStatus[];
+    };
+    pagination: {
+      page: number;
+      pageSize: number;
+      total: number;
+      totalPages: number;
+    };
+  };
+}
+
+export interface CheckoutRecuperacaoPayload {
+  pagamento: "pix" | "card" | "boleto";
+  payer?: {
+    email: string;
+    identification: { type: "CPF" | "CNPJ"; number: string };
+    first_name?: string;
+    last_name?: string;
+    address?: {
+      zip_code: string;
+      street_name: string;
+      street_number: string | number;
+      neighborhood?: string;
+      city?: string;
+      federal_unit?: string;
+    };
+  };
+  card?: { token: string; installments?: number };
+}
+
+export interface StartCursoCheckoutPayload {
+  cursoId: string;
+  turmaId: string;
+  pagamento: "pix" | "card" | "boleto";
+  payer?: CheckoutRecuperacaoPayload["payer"];
+  card?: CheckoutRecuperacaoPayload["card"];
+  cupomCodigo?: string;
+  aceitouTermos: true;
+  aceitouTermosUserAgent?: string;
+}
+
+export interface StartCursoCheckoutResponse {
+  success: boolean;
+  inscricao: {
+    id: string;
+    codigo: string;
+    status: string;
+    statusPagamento: string;
+    tokenAcesso?: string | null;
+  };
+  pagamento?: {
+    tipo: "pix" | "card" | "boleto";
+    status: string | null;
+    paymentId: string | null;
+    qrCode?: string | null;
+    qrCodeBase64?: string | null;
+    barcode?: string | null;
+    boletoUrl?: string | null;
+    expiresAt?: string | null;
+  };
+}
+
+export interface CheckoutRecuperacaoResponse {
+  success: boolean;
+  pagamento: {
+    id: string;
+    statusPagamento: MeuPagamentoStatus;
+    tipo: "pix" | "card" | "boleto";
+    paymentId: string | null;
+    qrCode?: string | null;
+    qrCodeBase64?: string | null;
+    barcode?: string | null;
+    boletoUrl?: string | null;
+    expiresAt?: string | null;
+  };
+}
+
+export interface MinhaRecuperacaoAcessoResponse {
+  success: boolean;
+  data: {
+    requiresPayment: boolean;
+    liberado: boolean;
+    pagamento: { id: string; status: MeuPagamentoStatus; valor: number } | null;
+  };
+}
+
 export interface CreateNotaPayload {
   alunoId: string;
   nota: number;

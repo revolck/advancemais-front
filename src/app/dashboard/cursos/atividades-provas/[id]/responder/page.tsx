@@ -1,32 +1,22 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
+import React from "react";
+import { useParams, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, CheckCircle2, ArrowLeft } from "lucide-react";
-import { ButtonCustom, EmptyState, toastCustom } from "@/components/ui/custom";
+import { ButtonCustom, EmptyState } from "@/components/ui/custom";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { listInscricoes } from "@/api/cursos";
+import { getMinhaRecuperacaoAcesso } from "@/api/cursos";
 import {
   useQuestoes,
   useRespostas,
   useResponderQuestao,
 } from "@/theme/dashboard/components/admin/lista-atividades-provas/hooks";
 import { ResponderQuestao } from "@/theme/dashboard/components/admin/lista-atividades-provas/components/ResponderQuestao";
-import { useAuth } from "@/hooks/useAuth";
 import Link from "next/link";
-import {
-  RECUPERACAO_PAGAMENTO_VALOR_CENTS,
-  isRecuperacaoPagamentoPago,
-  registrarRecuperacaoPagamento,
-} from "@/mockData/recuperacaoPagamento";
-import {
-  getNotaForEnrollmentFromStore,
-  getNotasStoreSnapshot,
-} from "@/mockData/notas";
 
 /**
  * Página para aluno responder uma prova
@@ -35,71 +25,25 @@ import {
 export default function ResponderProvaPage() {
   const params = useParams();
   const searchParams = useSearchParams();
-  const router = useRouter();
-  const { user } = useAuth();
   const provaId = params?.id as string;
 
   // Obter parâmetros da URL
   const cursoId = searchParams?.get("cursoId") || "";
   const turmaId = searchParams?.get("turmaId") || "";
-  const inscricaoIdParam = searchParams?.get("inscricaoId") || "";
-  
-  // Estado para inscricaoId (pode vir da URL ou do usuário)
-  const [inscricaoId, setInscricaoId] = useState<string>(inscricaoIdParam);
-  const [paymentsRefresh, setPaymentsRefresh] = useState(0);
+  const inscricaoId = searchParams?.get("inscricaoId") || "";
 
-  const formatBRL = (cents: number) =>
-    (cents / 100).toLocaleString("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    });
-
-  const inscricoesQuery = useQuery({
-    queryKey: ["recuperacao", "inscricoes", cursoId, turmaId],
-    queryFn: () => listInscricoes(cursoId, turmaId),
-    enabled: Boolean(cursoId && turmaId),
+  const acessoRecuperacaoQuery = useQuery({
+    queryKey: ["me", "recuperacao", "acesso", provaId, inscricaoId],
+    queryFn: () => getMinhaRecuperacaoAcesso(provaId, inscricaoId),
+    enabled: Boolean(provaId && inscricaoId),
     staleTime: 30 * 1000,
     gcTime: 5 * 60 * 1000,
   });
 
-  const alunoIdFromInscricao = useMemo(() => {
-    const list = inscricoesQuery.data ?? [];
-    const found = list.find((i: any) => i?.id === inscricaoId);
-    return (found?.alunoId as string | undefined) ?? null;
-  }, [inscricoesQuery.data, inscricaoId]);
-
-  const notaFinal = useMemo(() => {
-    void paymentsRefresh;
-    if (!cursoId || !turmaId || !alunoIdFromInscricao) return null;
-    const store = getNotasStoreSnapshot();
-    return (
-      getNotaForEnrollmentFromStore(store, {
-        cursoId,
-        turmaId,
-        alunoId: alunoIdFromInscricao,
-      }).nota ?? 0
-    );
-  }, [alunoIdFromInscricao, cursoId, turmaId, paymentsRefresh]);
-
-  const requiresPayment = useMemo(() => {
-    // Regra: reprovado (<= 6) precisa pagar para responder
-    if (notaFinal === null) return false;
-    return notaFinal <= 6;
-  }, [notaFinal]);
-
-  const isPaid = useMemo(() => {
-    void paymentsRefresh;
-    if (!requiresPayment) return true;
-    if (!cursoId || !turmaId || !provaId || !inscricaoId) return false;
-    return isRecuperacaoPagamentoPago({
-      cursoId,
-      turmaId,
-      provaId,
-      inscricaoId,
-    });
-  }, [cursoId, inscricaoId, provaId, requiresPayment, turmaId, paymentsRefresh]);
-
-  const canAccess = !requiresPayment || isPaid;
+  const requiresPayment = acessoRecuperacaoQuery.data?.requiresPayment ?? false;
+  const isPaid = acessoRecuperacaoQuery.data?.liberado ?? false;
+  const canAccess =
+    acessoRecuperacaoQuery.isSuccess && (!requiresPayment || isPaid);
 
   // Buscar questões
   const {
@@ -110,6 +54,7 @@ export default function ResponderProvaPage() {
     cursoId,
     turmaId,
     provaId,
+    inscricaoId,
     enabled: !!cursoId && !!turmaId && !!provaId && canAccess,
   });
 
@@ -132,13 +77,6 @@ export default function ResponderProvaPage() {
     turmaId,
     provaId,
   });
-
-  // Atualizar inscricaoId quando vier da URL
-  useEffect(() => {
-    if (inscricaoIdParam) {
-      setInscricaoId(inscricaoIdParam);
-    }
-  }, [inscricaoIdParam]);
 
   // Criar mapa de respostas por questão
   const respostasMap = React.useMemo(() => {
@@ -166,7 +104,7 @@ export default function ResponderProvaPage() {
     // O hook já invalida o cache automaticamente
   };
 
-  if (inscricoesQuery.isLoading) {
+  if (acessoRecuperacaoQuery.isLoading) {
     return (
       <div className="space-y-8">
         <div className="space-y-4">
@@ -174,6 +112,17 @@ export default function ResponderProvaPage() {
           <Skeleton className="h-40 w-full" />
         </div>
       </div>
+    );
+  }
+
+  if (acessoRecuperacaoQuery.isError) {
+    return (
+      <Alert variant="destructive">
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription>
+          Não foi possível validar o acesso a esta recuperação.
+        </AlertDescription>
+      </Alert>
     );
   }
 
@@ -187,18 +136,10 @@ export default function ResponderProvaPage() {
                 Pagamento necessário
               </h1>
               <p className="text-sm text-gray-600">
-                Alunos com nota final ≤ 6 precisam pagar{" "}
-                <span className="font-semibold">
-                  {formatBRL(RECUPERACAO_PAGAMENTO_VALOR_CENTS)}
-                </span>{" "}
-                para responder esta prova/atividade.
+                Esta recuperação exige o pagamento de{" "}
+                <span className="font-semibold">R$ 50,00</span> antes do
+                acesso à prova.
               </p>
-              <div className="text-xs text-gray-500">
-                Sua nota final atual:{" "}
-                <span className="font-semibold tabular-nums text-gray-800">
-                  {notaFinal?.toLocaleString("pt-BR")}
-                </span>
-              </div>
             </div>
             <Link href={`/dashboard/cursos/atividades-provas/${provaId}`}>
               <ButtonCustom variant="outline" icon="ArrowLeft">
@@ -208,26 +149,11 @@ export default function ResponderProvaPage() {
           </div>
 
           <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
-            <ButtonCustom
-              variant="primary"
-              icon="CreditCard"
-              onClick={() => {
-                registrarRecuperacaoPagamento({
-                  cursoId,
-                  turmaId,
-                  provaId,
-                  inscricaoId,
-                });
-                setPaymentsRefresh((v) => v + 1);
-                toastCustom.success({
-                  title: "Pagamento registrado",
-                  description:
-                    "Pagamento confirmado (mock). Você já pode responder.",
-                });
-              }}
-            >
-              Pagar {formatBRL(RECUPERACAO_PAGAMENTO_VALOR_CENTS)}
-            </ButtonCustom>
+            <Link href="/dashboard/cursos/pagamentos?tab=pendentes">
+              <ButtonCustom variant="primary" icon="CreditCard">
+                Ver pagamentos pendentes
+              </ButtonCustom>
+            </Link>
           </div>
         </div>
       </div>

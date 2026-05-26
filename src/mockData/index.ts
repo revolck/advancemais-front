@@ -12,4 +12,3 @@ export * from "./frequencia";
 export * from "./aulas";
 export * from "./aluno-candidato";
 export * from "./certificados";
-export * from "./pagamentos-cursos";

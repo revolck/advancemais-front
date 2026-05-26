@@ -58,9 +58,13 @@ export function PagamentoCursoRow({
 
   const hasPix = Boolean(pagamento.detalhes?.pix);
   const hasBoleto = Boolean(pagamento.detalhes?.boleto);
-  const isPendente = pagamento.status === "PENDENTE" || pagamento.status === "EM_PROCESSAMENTO";
   const isRecuperacaoFinal = pagamento.tipoPagamento === "recuperacao-final";
-  const canPay = isPendente && isRecuperacaoFinal && !hasPix && !hasBoleto && onPayRecuperacao;
+  const canPay =
+    pagamento.podePagar &&
+    isRecuperacaoFinal &&
+    !hasPix &&
+    !hasBoleto &&
+    onPayRecuperacao;
 
   // Descrição do curso/turma/prova
   const descricao = pagamento.prova?.titulo || 
@@ -170,4 +174,3 @@ export function PagamentoCursoRow({
     </tr>
   );
 }
-
