@@ -9,6 +9,7 @@ type AllowedTag =
   | "blockquote"
   | "br"
   | "code"
+  | "del"
   | "div"
   | "em"
   | "h1"
@@ -34,6 +35,7 @@ const ALLOWED_TAGS = new Set<AllowedTag>([
   "blockquote",
   "br",
   "code",
+  "del",
   "div",
   "em",
   "h1",
@@ -76,7 +78,29 @@ function isSafeHref(href: string): boolean {
   return /^(https?:|mailto:|tel:)/i.test(value);
 }
 
-function sanitizeHtml(input: string): string {
+function normalizeLooseTextBlocks(doc: Document): void {
+  Array.from(doc.body.childNodes).forEach((node) => {
+    if (node.nodeType !== Node.TEXT_NODE) return;
+
+    const text = node.textContent ?? "";
+    if (!text.includes("\n") || !text.trim()) return;
+
+    const fragment = doc.createDocumentFragment();
+    text
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .forEach((line) => {
+        const paragraph = doc.createElement("p");
+        paragraph.textContent = line;
+        fragment.appendChild(paragraph);
+      });
+
+    node.replaceWith(fragment);
+  });
+}
+
+export function sanitizeRichTextHtml(input: string): string {
   if (!input) return "";
   if (typeof window === "undefined") {
     return input
@@ -145,6 +169,7 @@ function sanitizeHtml(input: string): string {
     elements.push(walker.currentNode as Element);
   }
   elements.forEach(sanitizeElement);
+  normalizeLooseTextBlocks(doc);
 
   return doc.body.innerHTML;
 }
@@ -158,7 +183,7 @@ export function HtmlContent({ html, className }: HtmlContentProps) {
   const [isClient, setIsClient] = useState(false);
   useEffect(() => setIsClient(true), []);
 
-  const sanitized = useMemo(() => sanitizeHtml(html), [html]);
+  const sanitized = useMemo(() => sanitizeRichTextHtml(html), [html]);
 
   if (!isClient) {
     return null;
@@ -171,12 +196,18 @@ export function HtmlContent({ html, className }: HtmlContentProps) {
         "[&_h1]:text-2xl [&_h1]:font-bold [&_h1]:text-gray-900 [&_h1]:mb-3",
         "[&_h2]:text-xl [&_h2]:font-bold [&_h2]:text-gray-900 [&_h2]:mb-3",
         "[&_h3]:text-lg [&_h3]:font-semibold [&_h3]:text-gray-900 [&_h3]:mb-2",
+        "[&_h4]:text-base [&_h4]:font-semibold [&_h4]:text-gray-900 [&_h4]:mb-2",
+        "[&_h5]:text-sm [&_h5]:font-semibold [&_h5]:text-gray-900 [&_h5]:mb-2",
+        "[&_h6]:text-sm [&_h6]:font-medium [&_h6]:text-gray-900 [&_h6]:mb-2",
         "[&_p]:mb-3 [&_p]:last:mb-0",
+        "[&_div]:mb-3 [&_div]:last:mb-0",
         "[&_ul]:mb-3 [&_ul]:list-disc [&_ul]:pl-6",
         "[&_ol]:mb-3 [&_ol]:list-decimal [&_ol]:pl-6",
         "[&_li]:mb-1",
         "[&_strong]:font-semibold [&_b]:font-semibold",
         "[&_em]:italic [&_i]:italic",
+        "[&_del]:line-through",
+        "[&_u]:underline",
         "[&_a]:text-[var(--primary-color)] [&_a]:underline [&_a:hover]:opacity-90",
         "[&_blockquote]:border-l-4 [&_blockquote]:border-gray-200 [&_blockquote]:pl-4 [&_blockquote]:text-gray-600 [&_blockquote]:my-3",
         "[&_code]:font-mono [&_code]:text-[0.9em] [&_code]:bg-gray-100 [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded",

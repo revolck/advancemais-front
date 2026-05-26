@@ -19,6 +19,8 @@ import {
 import { textareaVariants } from "../variants";
 import type { RichTextareaProps } from "../types";
 import { toastCustom } from "@/components/ui/custom/toast";
+import { sanitizeRichTextHtml } from "../../html-content";
+import { resolvePastedRichTextContent } from "./richTextareaPaste.utils";
 
 const HTML_TAG_PATTERN = /<\/?[a-z][\s\S]*>/i;
 const BLOCK_TAG_NAMES = new Set([
@@ -124,6 +126,43 @@ function getPlainText(element: HTMLElement): string {
   element.childNodes.forEach(walk);
 
   return text.replace(/\u00a0/g, " ");
+}
+
+function insertPastedContent(
+  range: Range,
+  html: string,
+  text: string,
+): void {
+  range.deleteContents();
+
+  const fragment = document.createDocumentFragment();
+  if (html) {
+    const template = document.createElement("template");
+    template.innerHTML = html;
+    fragment.appendChild(template.content);
+  } else {
+    text.split(/\r?\n/).forEach((line, index) => {
+      if (index > 0) {
+        fragment.appendChild(document.createElement("br"));
+      }
+      if (line) {
+        fragment.appendChild(document.createTextNode(line));
+      }
+    });
+  }
+
+  const lastNode = fragment.lastChild;
+  range.insertNode(fragment);
+  if (lastNode) {
+    range.setStartAfter(lastNode);
+  }
+
+  range.collapse(true);
+  const selection = window.getSelection();
+  if (selection) {
+    selection.removeAllRanges();
+    selection.addRange(range);
+  }
 }
 
 const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
@@ -1192,27 +1231,41 @@ const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
       onPaste?.(e);
       if (e.defaultPrevented) return;
 
-      if (maxLength) {
-        e.preventDefault();
-        const clipboardData = e.clipboardData?.getData("text/plain") || "";
-        const currentValue = plainTextValue || "";
-        const availableChars = maxLength - currentValue.length;
+      e.preventDefault();
 
-        if (availableChars <= 0) return;
+      const selection = window.getSelection();
+      if (!selection || selection.rangeCount === 0) return;
 
-        const textToInsert = clipboardData.slice(0, availableChars);
-        const selection = window.getSelection();
+      const range = selection.getRangeAt(0);
+      const clipboardHtml = e.clipboardData?.getData("text/html") || "";
+      const clipboardText = e.clipboardData?.getData("text/plain") || "";
+      const sanitizedHtml = clipboardHtml
+        ? sanitizeRichTextHtml(clipboardHtml)
+        : "";
+      const pastedPlainText = sanitizedHtml
+        ? getInitialPlainText(sanitizedHtml)
+        : clipboardText;
+      const replacedTextLength = range.toString().length;
+      const availableChars = maxLength
+        ? maxLength - plainTextValue.length + replacedTextLength
+        : pastedPlainText.length;
 
-        if (selection && selection.rangeCount > 0) {
-          const range = selection.getRangeAt(0);
-          range.deleteContents();
-          range.insertNode(document.createTextNode(textToInsert));
-          range.collapse(false);
+      if (availableChars <= 0) return;
 
-          updateValues();
-          setTimeout(checkActiveFormats, 10);
-        }
-      }
+      const contentToInsert = resolvePastedRichTextContent(
+        sanitizedHtml,
+        pastedPlainText,
+        availableChars,
+      );
+
+      insertPastedContent(
+        range,
+        contentToInsert.html,
+        contentToInsert.text,
+      );
+      updateValues();
+      setTimeout(adjustHeight, 0);
+      setTimeout(checkActiveFormats, 10);
     };
 
     // Event handlers para detectar mudanças na seleção
