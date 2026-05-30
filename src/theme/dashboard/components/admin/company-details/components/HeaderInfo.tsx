@@ -43,6 +43,7 @@ interface HeaderInfoProps {
   onEditSubscription: () => void;
   onManagePremiumResources: () => void;
   onResetPassword: () => void;
+  onLiberarAcesso?: () => void;
 }
 
 export function HeaderInfo({
@@ -54,6 +55,7 @@ export function HeaderInfo({
   onEditSubscription,
   onManagePremiumResources,
   onResetPassword,
+  onLiberarAcesso,
 }: HeaderInfoProps) {
   const [isActionsOpen, setIsActionsOpen] = useState(false);
   const userRole = useUserRole();
@@ -244,6 +246,15 @@ export function HeaderInfo({
                 <KeyRound className="h-4 w-4 text-gray-500" />
                 <span>Resetar senha</span>
               </DropdownMenuItem>
+              {onLiberarAcesso && (
+                <DropdownMenuItem
+                  onSelect={onLiberarAcesso}
+                  className="cursor-pointer"
+                >
+                  <KeyRound className="h-4 w-4 text-gray-500" />
+                  <span>Liberar acesso</span>
+                </DropdownMenuItem>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
           <Button

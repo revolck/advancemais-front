@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { HorizontalTabs } from "@/components/ui/custom";
 import type { HorizontalTabItem } from "@/components/ui/custom";
@@ -12,6 +12,11 @@ import type {
   AdminCompanyVagaItem,
 } from "@/api/empresas/admin/types";
 import { getAdminCompanyConsolidated } from "@/api/empresas/admin";
+import { liberarUsuarioAcesso } from "@/api/usuarios";
+import type { LiberarUsuarioAcessoPayload } from "@/api/usuarios/types";
+import { useUserRole } from "@/hooks/useUserRole";
+import { UserRole } from "@/config/roles";
+import { toastCustom } from "@/components/ui/custom/toast";
 import {
   EditarEmpresaModal,
   EditarEmpresaEnderecoModal,
@@ -29,6 +34,7 @@ import { PlanTab } from "./tabs/PlanTab";
 import { HistoryTab } from "./tabs/HistoryTab";
 import { queryKeys } from "@/lib/react-query/queryKeys";
 import { HeaderInfo } from "./components/HeaderInfo";
+import { LiberarEmailUsuarioModal as LiberarAcessoUsuarioModal } from "../usuario-details/modal-acoes/LiberarEmailUsuarioModal";
 
 const COMPANY_QUERY_STALE_TIME = 5 * 60 * 1000; // 5 minutos
 const COMPANY_QUERY_GC_TIME = 30 * 60 * 1000; // 30 minutos
@@ -96,6 +102,8 @@ export function CompanyDetailsView({
   auditoria = [],
   initialConsolidated,
 }: CompanyDetailsViewProps) {
+  const userRole = useUserRole();
+  const queryClient = useQueryClient();
   const queryKey = useMemo(
     () => queryKeys.empresas.detail(company.id),
     [company.id],
@@ -168,6 +176,7 @@ export function CompanyDetailsView({
   const [isAddSubscriptionOpen, setIsAddSubscriptionOpen] = useState(false);
   const [isResetPasswordOpen, setIsResetPasswordOpen] = useState(false);
   const [isPremiumResourcesOpen, setIsPremiumResourcesOpen] = useState(false);
+  const [isLiberarAcessoOpen, setIsLiberarAcessoOpen] = useState(false);
 
   const reloadCompanyData = useCallback(async () => {
     const result = await refetch();
@@ -193,6 +202,32 @@ export function CompanyDetailsView({
       setIsAddSubscriptionOpen(true);
     }
   }, [hasPlan]);
+
+  const canLiberarAcesso = useMemo(() => {
+    if (companyData.status !== "PENDENTE") return false;
+    return (
+      userRole === UserRole.ADMIN ||
+      userRole === UserRole.MODERADOR ||
+      userRole === UserRole.SETOR_DE_VAGAS
+    );
+  }, [companyData.status, userRole]);
+
+  const liberarAcessoMutation = useMutation({
+    mutationFn: (payload?: LiberarUsuarioAcessoPayload) =>
+      liberarUsuarioAcesso(companyData.id, payload),
+    onSuccess: async (response) => {
+      await reloadCompanyData();
+      void queryClient.invalidateQueries({
+        queryKey: ["usuarios", "historico", companyData.id],
+        exact: false,
+      });
+      toastCustom.success(
+        response.data.alreadyVerified
+          ? "A conta da empresa foi ativada com o e-mail já verificado."
+          : "Acesso da empresa liberado com sucesso.",
+      );
+    },
+  });
 
   const tabs: HorizontalTabItem[] = [
     {
@@ -251,6 +286,9 @@ export function CompanyDetailsView({
         onEditSubscription={handleSubscriptionAction}
         onManagePremiumResources={() => setIsPremiumResourcesOpen(true)}
         onResetPassword={() => setIsResetPasswordOpen(true)}
+        onLiberarAcesso={
+          canLiberarAcesso ? () => setIsLiberarAcessoOpen(true) : undefined
+        }
       />
 
       <HorizontalTabs items={tabs} defaultValue="sobre" />
@@ -302,6 +340,41 @@ export function CompanyDetailsView({
         isOpen={isPremiumResourcesOpen}
         onOpenChange={setIsPremiumResourcesOpen}
         company={companyData}
+      />
+
+      <LiberarAcessoUsuarioModal
+        isOpen={isLiberarAcessoOpen}
+        onOpenChange={setIsLiberarAcessoOpen}
+        usuarioNome={companyData.nome}
+        usuarioEmail={companyData.email}
+        onConfirm={async (payload) => {
+          try {
+            await liberarAcessoMutation.mutateAsync(payload);
+          } catch (error: any) {
+            const code = error?.response?.data?.code;
+            const message =
+              error?.response?.data?.message ||
+              error?.message ||
+              "Não foi possível liberar o acesso da empresa.";
+
+            if (code === "FORBIDDEN_USER_ROLE") {
+              toastCustom.error(
+                "Você não tem permissão para liberar acesso deste tipo de usuário.",
+              );
+              throw error;
+            }
+
+            if (code === "USER_ACCESS_RELEASE_BLOCKED_BY_STATUS") {
+              toastCustom.error(
+                "Essa empresa precisa de outro fluxo administrativo para voltar a acessar.",
+              );
+              throw error;
+            }
+
+            toastCustom.error(message);
+            throw error;
+          }
+        }}
       />
     </div>
   );

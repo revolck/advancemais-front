@@ -19,6 +19,8 @@ import {
   Ban,
   ChevronDown,
   ChevronLeft,
+  Crown,
+  KeyRound,
   MapPin,
   Shield,
   ShieldOff,
@@ -33,6 +35,8 @@ export function HeaderInfo({
   instrutor,
   onEditInstrutor,
   onEditEndereco,
+  onAlterarFuncaoInstrutor,
+  onLiberarAcessoInstrutor,
   onResetSenha,
   onBloquearInstrutor,
   onDesbloquearInstrutor,
@@ -47,13 +51,13 @@ export function HeaderInfo({
   const statusColor = isBloqueado
     ? "bg-red-500"
     : isAtivo
-    ? "bg-emerald-500"
-    : "bg-rose-500";
+      ? "bg-emerald-500"
+      : "bg-rose-500";
   const statusLabel = isBloqueado
     ? "Instrutor bloqueado"
     : isAtivo
-    ? "Instrutor ativo"
-    : "Instrutor inativo";
+      ? "Instrutor ativo"
+      : "Instrutor inativo";
 
   return (
     <div className="rounded-3xl border border-gray-200 bg-white px-6 py-6 sm:px-8 sm:py-8">
@@ -72,7 +76,7 @@ export function HeaderInfo({
                 <span
                   className={cn(
                     "absolute bottom-1 right-1 inline-flex size-4 items-center justify-center rounded-full border-2 border-white cursor-pointer",
-                    statusColor
+                    statusColor,
                   )}
                   aria-label={statusLabel}
                 >
@@ -130,7 +134,7 @@ export function HeaderInfo({
                 <ChevronDown
                   className={cn(
                     "h-4 w-4 transition-transform duration-200",
-                    isActionsOpen ? "rotate-180" : "rotate-0"
+                    isActionsOpen ? "rotate-180" : "rotate-0",
                   )}
                   aria-hidden="true"
                 />
@@ -155,6 +159,15 @@ export function HeaderInfo({
                   <span>Editar endereço</span>
                 </DropdownMenuItem>
               )}
+              {onAlterarFuncaoInstrutor && (
+                <DropdownMenuItem
+                  onSelect={onAlterarFuncaoInstrutor}
+                  className="cursor-pointer"
+                >
+                  <Crown className="h-4 w-4 text-gray-500" />
+                  <span>Alterar função</span>
+                </DropdownMenuItem>
+              )}
               {onResetSenha && (
                 <DropdownMenuItem
                   onSelect={onResetSenha}
@@ -162,6 +175,15 @@ export function HeaderInfo({
                 >
                   <Shield className="h-4 w-4 text-gray-500" />
                   <span>Resetar senha</span>
+                </DropdownMenuItem>
+              )}
+              {onLiberarAcessoInstrutor && (
+                <DropdownMenuItem
+                  onSelect={onLiberarAcessoInstrutor}
+                  className="cursor-pointer"
+                >
+                  <KeyRound className="h-4 w-4 text-gray-500" />
+                  <span>Liberar acesso</span>
                 </DropdownMenuItem>
               )}
               {isBloqueado

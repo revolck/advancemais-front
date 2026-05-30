@@ -12,6 +12,8 @@ export interface HeaderInfoProps {
   instrutor: InstrutorDetailsData;
   onEditInstrutor?: () => void;
   onEditEndereco?: () => void;
+  onAlterarFuncaoInstrutor?: () => void;
+  onLiberarAcessoInstrutor?: () => void;
   onResetSenha?: () => void;
   onBloquearInstrutor?: () => void;
   onDesbloquearInstrutor?: () => void;

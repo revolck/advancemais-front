@@ -2,26 +2,23 @@
 
 import { useCallback, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import {
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { HorizontalTabs } from "@/components/ui/custom";
 import type { HorizontalTabItem } from "@/components/ui/custom";
-import {
-  getCursoAlunoDetalhes,
-  updateCursoAluno,
-} from "@/api/cursos";
+import { getCursoAlunoDetalhes, updateCursoAluno } from "@/api/cursos";
 import type { CursoAlunoDetalhesResponse } from "@/api/cursos/types";
 import {
   createAlunoBloqueio,
+  liberarUsuarioAcesso,
   revokeAlunoBloqueio,
 } from "@/api/usuarios";
+import type { LiberarUsuarioAcessoPayload } from "@/api/usuarios/types";
+import { toastCustom } from "@/components/ui/custom/toast";
 import { UserRole } from "@/config/roles";
 import { useUserRole } from "@/hooks/useUserRole";
+import { queryKeys } from "@/lib/react-query/queryKeys";
 import { HeaderInfo } from "./components";
 import {
   AboutTab,
@@ -41,6 +38,7 @@ import {
   ResetarSenhaAlunoModal,
   type BloquearAlunoData,
 } from "./modal-acoes";
+import { LiberarEmailUsuarioModal as LiberarAcessoUsuarioModal } from "../usuario-details/modal-acoes/LiberarEmailUsuarioModal";
 import type { AlunoDetailsData, AlunoDetailsViewProps } from "./types";
 
 const ALUNO_QUERY_STALE_TIME = 30 * 1000;
@@ -56,17 +54,14 @@ export function AlunoDetailsView({
   const userRole = useUserRole();
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
-  const queryKey = useMemo(
-    () => buildAlunoQueryKey(alunoId),
-    [alunoId]
-  );
+  const queryKey = useMemo(() => buildAlunoQueryKey(alunoId), [alunoId]);
 
   const initialQueryData = useMemo<CursoAlunoDetalhesResponse>(
     () => ({
       success: true,
       data: initialData,
     }),
-    [initialData]
+    [initialData],
   );
 
   const {
@@ -90,20 +85,31 @@ export function AlunoDetailsView({
   const alunoNome = alunoData?.nome || alunoData?.nomeCompleto || "Aluno";
   const inscricoes = alunoData?.inscricoes ?? [];
   const hasCurriculos = (alunoData?.curriculosResumo?.total ?? 0) > 0;
-  const hasInscricaoEmCurso = inscricoes.some(
-    (inscricao) => Boolean(inscricao?.curso?.id || inscricao?.turma?.id),
+  const hasInscricaoEmCurso = inscricoes.some((inscricao) =>
+    Boolean(inscricao?.curso?.id || inscricao?.turma?.id),
   );
   const isInstrutor = userRole === UserRole.INSTRUTOR;
   const isReadOnlyRole =
     userRole === UserRole.RECRUTADOR || userRole === UserRole.INSTRUTOR;
   const canManageAluno = !isReadOnlyRole;
   const canAccessCareerTabs = !isInstrutor;
+  const canLiberarAcessoAluno = useMemo(() => {
+    const statusPendente = alunoData?.status?.toUpperCase() === "PENDENTE";
+    if (!statusPendente) return false;
+
+    return (
+      userRole === UserRole.ADMIN ||
+      userRole === UserRole.MODERADOR ||
+      userRole === UserRole.PEDAGOGICO ||
+      userRole === UserRole.SETOR_DE_VAGAS
+    );
+  }, [alunoData?.status, userRole]);
 
   const isPending = !initialData && isLoading;
   const queryErrorMessage =
     status === "error"
-      ? (queryError as Error | null)?.message ??
-        "Não foi possível carregar os dados do aluno."
+      ? ((queryError as Error | null)?.message ??
+        "Não foi possível carregar os dados do aluno.")
       : null;
   const isReloading = isFetching && !isLoading;
 
@@ -116,15 +122,14 @@ export function AlunoDetailsView({
       updateCursoAluno(alunoId, payload),
     onSuccess: (response) => {
       // Preserva as inscrições existentes se a resposta não as incluir ou se vierem vazias
-      const currentData = queryClient.getQueryData<CursoAlunoDetalhesResponse>(
-        queryKey
-      );
-      
+      const currentData =
+        queryClient.getQueryData<CursoAlunoDetalhesResponse>(queryKey);
+
       // Verifica se a resposta tem inscrições válidas
       const responseHasInscricoes =
         Array.isArray(response?.data?.inscricoes) &&
         response.data.inscricoes.length > 0;
-      
+
       // Obtém inscrições existentes do cache
       const currentInscricoes =
         Array.isArray(currentData?.data?.inscricoes) &&
@@ -140,13 +145,11 @@ export function AlunoDetailsView({
           // Prioriza inscrições da resposta se existirem, senão preserva as do cache
           inscricoes: responseHasInscricoes
             ? response.data.inscricoes
-            : currentInscricoes ?? response.data.inscricoes ?? [],
+            : (currentInscricoes ?? response.data.inscricoes ?? []),
           // Atualiza totalInscricoes baseado nas inscrições finais
           totalInscricoes: responseHasInscricoes
-            ? response.data.totalInscricoes ?? response.data.inscricoes.length
-            : currentInscricoes?.length ??
-              response.data.totalInscricoes ??
-              0,
+            ? (response.data.totalInscricoes ?? response.data.inscricoes.length)
+            : (currentInscricoes?.length ?? response.data.totalInscricoes ?? 0),
         },
       };
 
@@ -164,9 +167,26 @@ export function AlunoDetailsView({
       revokeAlunoBloqueio(alunoId, payload),
   });
 
+  const liberarAcessoMutation = useMutation({
+    mutationFn: (payload?: LiberarUsuarioAcessoPayload) =>
+      liberarUsuarioAcesso(alunoId, payload),
+    onSuccess: () => {
+      void invalidateAluno();
+      void queryClient.invalidateQueries({
+        queryKey: ["usuarios", "historico", alunoId],
+        exact: false,
+      });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.usuarios.detail(alunoId),
+      });
+      toastCustom.success("Acesso do aluno liberado com sucesso.");
+    },
+  });
+
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isEditEnderecoOpen, setIsEditEnderecoOpen] = useState(false);
   const [isResetSenhaOpen, setIsResetSenhaOpen] = useState(false);
+  const [isLiberarAcessoOpen, setIsLiberarAcessoOpen] = useState(false);
   const [isBloquearModalOpen, setIsBloquearModalOpen] = useState(false);
   const [isDesbloquearModalOpen, setIsDesbloquearModalOpen] = useState(false);
 
@@ -318,6 +338,11 @@ export function AlunoDetailsView({
         onResetSenha={
           canManageAluno ? () => setIsResetSenhaOpen(true) : undefined
         }
+        onLiberarAcessoAluno={
+          canManageAluno && canLiberarAcessoAluno
+            ? () => setIsLiberarAcessoOpen(true)
+            : undefined
+        }
         onBloquearAluno={
           canManageAluno ? () => setIsBloquearModalOpen(true) : undefined
         }
@@ -353,7 +378,7 @@ export function AlunoDetailsView({
         alunoNome={alunoNome}
         onConfirm={async (obs) => {
           await desbloquearAlunoMutation.mutateAsync(
-            obs ? { observacoes: obs } : undefined
+            obs ? { observacoes: obs } : undefined,
           );
           await invalidateAluno();
         }}
@@ -374,9 +399,45 @@ export function AlunoDetailsView({
         email={alunoData.email}
         allowManual={true}
         onManualSubmit={async (senha, confirmarSenha) => {
-          await updateAlunoMutation.mutateAsync(
-            { senha, confirmarSenha } as any
-          );
+          await updateAlunoMutation.mutateAsync({
+            senha,
+            confirmarSenha,
+          } as any);
+        }}
+      />
+
+      <LiberarAcessoUsuarioModal
+        isOpen={isLiberarAcessoOpen}
+        onOpenChange={setIsLiberarAcessoOpen}
+        usuarioNome={alunoNome}
+        usuarioEmail={alunoData.email}
+        onConfirm={async (payload) => {
+          try {
+            await liberarAcessoMutation.mutateAsync(payload);
+          } catch (error: any) {
+            const code = error?.response?.data?.code;
+            const message =
+              error?.response?.data?.message ||
+              error?.message ||
+              "Não foi possível liberar o acesso do aluno.";
+
+            if (code === "FORBIDDEN_USER_ROLE") {
+              toastCustom.error(
+                "Você não tem permissão para liberar acesso deste tipo de usuário.",
+              );
+              throw error;
+            }
+
+            if (code === "USER_ACCESS_RELEASE_BLOCKED_BY_STATUS") {
+              toastCustom.error(
+                "Esse aluno precisa de outro fluxo administrativo para voltar a acessar.",
+              );
+              throw error;
+            }
+
+            toastCustom.error(message);
+            throw error;
+          }
         }}
       />
     </div>

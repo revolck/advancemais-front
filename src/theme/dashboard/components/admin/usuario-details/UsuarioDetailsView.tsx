@@ -1,11 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useCallback } from "react";
-import {
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -67,7 +63,7 @@ const ALL_MANAGEABLE_ROLES: Role[] = [
 
 const MODERADOR_BLOCKED_ROLES: Role[] = ["ADMIN", "MODERADOR"];
 const MODERADOR_ALLOWED_ROLES: Role[] = ALL_MANAGEABLE_ROLES.filter(
-  (role) => !MODERADOR_BLOCKED_ROLES.includes(role)
+  (role) => !MODERADOR_BLOCKED_ROLES.includes(role),
 );
 const PEDAGOGICO_ALLOWED_ROLES: Role[] = ["ALUNO_CANDIDATO", "INSTRUTOR"];
 
@@ -75,7 +71,7 @@ function getAvailableRoleTransitions(
   actorRole: string | null,
   targetRole: Role | undefined,
   actorUserId?: string | null,
-  targetUserId?: string | null
+  targetUserId?: string | null,
 ): Role[] {
   if (!actorRole || !targetRole) return [];
   if (actorUserId && targetUserId && actorUserId === targetUserId) return [];
@@ -111,7 +107,7 @@ export function UsuarioDetailsView({
   const queryClient = useQueryClient();
   const queryKey = useMemo(
     () => queryKeys.usuarios.detail(usuarioId),
-    [usuarioId]
+    [usuarioId],
   );
 
   const initialResponse = useMemo<GetUsuarioResponse>(
@@ -119,7 +115,7 @@ export function UsuarioDetailsView({
       success: true,
       usuario: initialData,
     }),
-    [initialData]
+    [initialData],
   );
 
   const {
@@ -140,9 +136,7 @@ export function UsuarioDetailsView({
   const isPending = !initialData && isLoading;
   const isReloading = isFetching && status === "success";
   const queryErrorMessage =
-    status === "error"
-      ? error?.message ?? "Erro ao carregar usuário."
-      : null;
+    status === "error" ? (error?.message ?? "Erro ao carregar usuário.") : null;
   const currentUserRole = user?.role?.toUpperCase() ?? null;
 
   const invalidateUsuario = useCallback(async () => {
@@ -219,11 +213,10 @@ export function UsuarioDetailsView({
             usuario: {
               ...previous.usuario,
               role: data.role,
-              atualizadoEm:
-                data.atualizadoEm ?? previous.usuario.atualizadoEm,
+              atualizadoEm: data.atualizadoEm ?? previous.usuario.atualizadoEm,
             },
           };
-        }
+        },
       );
 
       void invalidateUsuario();
@@ -232,9 +225,13 @@ export function UsuarioDetailsView({
         queryKey: ["usuarios", "historico", usuarioId],
         exact: false,
       });
+      void queryClient.invalidateQueries({
+        queryKey: ["usuarios", "historico", usuarioId],
+        exact: false,
+      });
 
       toastCustom.success(
-        `Função alterada de ${getRoleLabel(String(data.roleAnterior))} para ${getRoleLabel(data.role)}.`
+        `Função alterada de ${getRoleLabel(String(data.roleAnterior))} para ${getRoleLabel(data.role)}.`,
       );
     },
   });
@@ -262,13 +259,15 @@ export function UsuarioDetailsView({
                 verifiedAt: data.emailVerificadoEm,
                 token: null,
                 tokenExpiration: null,
-                attempts: previous.usuario.UsuariosVerificacaoEmail?.attempts ?? 0,
+                attempts:
+                  previous.usuario.UsuariosVerificacaoEmail?.attempts ?? 0,
                 lastAttemptAt:
-                  previous.usuario.UsuariosVerificacaoEmail?.lastAttemptAt ?? null,
+                  previous.usuario.UsuariosVerificacaoEmail?.lastAttemptAt ??
+                  null,
               },
             },
           };
-        }
+        },
       );
 
       void invalidateUsuario();
@@ -277,7 +276,7 @@ export function UsuarioDetailsView({
       toastCustom.success(
         data.alreadyVerified
           ? "A conta foi ativada com o e-mail já verificado."
-          : "Acesso do usuário liberado com sucesso."
+          : "Acesso do usuário liberado com sucesso.",
       );
     },
   });
@@ -388,7 +387,16 @@ export function UsuarioDetailsView({
 
     if (currentUserRole === "PEDAGOGICO") {
       return (
-        usuarioData.role === "ALUNO_CANDIDATO" || usuarioData.role === "INSTRUTOR"
+        usuarioData.role === "ALUNO_CANDIDATO" ||
+        usuarioData.role === "INSTRUTOR"
+      );
+    }
+
+    if (currentUserRole === "SETOR_DE_VAGAS") {
+      return (
+        usuarioData.role === "EMPRESA" ||
+        usuarioData.role === "ALUNO_CANDIDATO" ||
+        usuarioData.role === "INSTRUTOR"
       );
     }
 
@@ -401,9 +409,9 @@ export function UsuarioDetailsView({
         currentUserRole,
         usuarioData?.role,
         user?.id ?? null,
-        usuarioData?.id ?? null
+        usuarioData?.id ?? null,
       ),
-    [currentUserRole, user?.id, usuarioData?.id, usuarioData?.role]
+    [currentUserRole, user?.id, usuarioData?.id, usuarioData?.role],
   );
 
   const canAlterarFuncao =
@@ -428,14 +436,22 @@ export function UsuarioDetailsView({
 
         if (code === "FORBIDDEN_USER_ROLE") {
           toastCustom.error(
-            "Você não tem permissão para aplicar essa função a este usuário."
+            "Você não tem permissão para aplicar essa função a este usuário.",
           );
           throw error;
         }
 
         if (code === "USER_ROLE_UPDATE_BLOCKED") {
           toastCustom.error(
-            "Essa alteração de função precisa de outro fluxo administrativo."
+            "Essa alteração de função precisa de outro fluxo administrativo.",
+          );
+          throw error;
+        }
+
+        if (code === "INVALID_ROLE_FOR_USER_TYPE") {
+          toastCustom.error(
+            message ||
+              "A função selecionada é incompatível com o tipo de usuário.",
           );
           throw error;
         }
@@ -444,7 +460,7 @@ export function UsuarioDetailsView({
         throw error;
       }
     },
-    [alterarFuncaoMutation]
+    [alterarFuncaoMutation],
   );
 
   const handleLiberarAcesso = useCallback(
@@ -460,14 +476,14 @@ export function UsuarioDetailsView({
 
         if (code === "FORBIDDEN_USER_ROLE") {
           toastCustom.error(
-            "O setor pedagógico só pode liberar alunos e instrutores."
+            "Você não tem permissão para liberar acesso deste tipo de usuário.",
           );
           throw error;
         }
 
         if (code === "USER_ACCESS_RELEASE_BLOCKED_BY_STATUS") {
           toastCustom.error(
-            "Esse usuário precisa de outro fluxo administrativo para voltar a acessar."
+            "Esse usuário precisa de outro fluxo administrativo para voltar a acessar.",
           );
           throw error;
         }
@@ -476,7 +492,7 @@ export function UsuarioDetailsView({
         throw error;
       }
     },
-    [liberarAcessoMutation]
+    [liberarAcessoMutation],
   );
 
   if (isPending) {
@@ -611,7 +627,7 @@ export function UsuarioDetailsView({
             usuarioNome={usuarioData.nomeCompleto}
             onConfirm={async (obs?: string) => {
               await desbloquearUsuarioMutation.mutateAsync(
-                obs ? { observacoes: obs } : undefined
+                obs ? { observacoes: obs } : undefined,
               );
             }}
           />
@@ -630,6 +646,7 @@ export function UsuarioDetailsView({
             onOpenChange={setIsAlterarFuncaoOpen}
             usuarioNome={usuarioData.nomeCompleto}
             usuarioEmail={usuarioData.email}
+            tipoUsuario={usuarioData.tipoUsuario}
             roleAtual={usuarioData.role}
             availableRoles={availableRoleTransitions}
             onConfirm={handleAlterarFuncao}

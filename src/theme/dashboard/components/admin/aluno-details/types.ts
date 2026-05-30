@@ -21,6 +21,7 @@ export interface HeaderInfoProps {
   onEditAluno?: () => void;
   onEditEndereco?: () => void;
   onResetSenha?: () => void;
+  onLiberarAcessoAluno?: () => void;
   onBloquearAluno?: () => void;
   onDesbloquearAluno?: () => void;
 }

@@ -19,6 +19,7 @@ import {
   Ban,
   ChevronDown,
   ChevronLeft,
+  KeyRound,
   MapPin,
   Shield,
   ShieldOff,
@@ -34,6 +35,7 @@ export function HeaderInfo({
   onEditAluno,
   onEditEndereco,
   onResetSenha,
+  onLiberarAcessoAluno,
   onBloquearAluno,
   onDesbloquearAluno,
 }: HeaderInfoProps) {
@@ -43,10 +45,11 @@ export function HeaderInfo({
   );
   const hasActions = Boolean(
     onEditAluno ||
-      onEditEndereco ||
-      onResetSenha ||
-      onBloquearAluno ||
-      onDesbloquearAluno
+    onEditEndereco ||
+    onResetSenha ||
+    onLiberarAcessoAluno ||
+    onBloquearAluno ||
+    onDesbloquearAluno,
   );
   // Status não está disponível em CursoAlunoDetalhes, usando valor padrão
   const isBloqueado = false; // Valor padrão
@@ -54,13 +57,13 @@ export function HeaderInfo({
   const statusColor = isBloqueado
     ? "bg-red-500"
     : isAtivo
-    ? "bg-emerald-500"
-    : "bg-rose-500";
+      ? "bg-emerald-500"
+      : "bg-rose-500";
   const statusLabel = isBloqueado
     ? "Aluno bloqueado"
     : isAtivo
-    ? "Aluno ativo"
-    : "Aluno reprovado";
+      ? "Aluno ativo"
+      : "Aluno reprovado";
 
   return (
     <div className="rounded-3xl border border-gray-200 bg-white px-6 py-6 sm:px-8 sm:py-8">
@@ -79,7 +82,7 @@ export function HeaderInfo({
                 <span
                   className={cn(
                     "absolute bottom-1 right-1 inline-flex size-4 items-center justify-center rounded-full border-2 border-white cursor-pointer",
-                    statusColor
+                    statusColor,
                   )}
                   aria-label={statusLabel}
                 >
@@ -112,7 +115,7 @@ export function HeaderInfo({
                   <ChevronDown
                     className={cn(
                       "h-4 w-4 transition-transform duration-200",
-                      isActionsOpen ? "rotate-180" : "rotate-0"
+                      isActionsOpen ? "rotate-180" : "rotate-0",
                     )}
                     aria-hidden="true"
                   />
@@ -144,6 +147,15 @@ export function HeaderInfo({
                   >
                     <Shield className="h-4 w-4 text-gray-500" />
                     <span>Resetar senha</span>
+                  </DropdownMenuItem>
+                )}
+                {onLiberarAcessoAluno && (
+                  <DropdownMenuItem
+                    onSelect={onLiberarAcessoAluno}
+                    className="cursor-pointer"
+                  >
+                    <KeyRound className="h-4 w-4 text-gray-500" />
+                    <span>Liberar acesso</span>
                   </DropdownMenuItem>
                 )}
                 {isBloqueado

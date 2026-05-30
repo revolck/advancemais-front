@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { listCursos } from "@/api/cursos";
+import { listCategorias } from "@/api/cursos/categorias";
 import { formatReadableText } from "@/lib/display-text";
 import type { CourseData, CourseFilters } from "../types";
 
@@ -36,6 +37,7 @@ function mapCursoToData(curso: any): CourseData {
 interface UsePublicCursosReturn {
   data: CourseData[];
   filteredData: CourseData[];
+  availableCategories: string[];
   isLoading: boolean;
   error: string | null;
   totalCount: number;
@@ -56,8 +58,28 @@ export function usePublicCursos(
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
+  const [availableCategories, setAvailableCategories] = useState<string[]>([]);
 
-  const fetchCursos = async () => {
+  const fetchCategorias = async () => {
+    try {
+      const response = await listCategorias(
+        { page: 1, pageSize: 500, sortBy: "nome", sortOrder: "asc" },
+        { cache: "no-store" },
+      );
+
+      if (!Array.isArray(response)) return;
+
+      const names = response
+        .map((categoria) => formatReadableText(categoria?.nome || ""))
+        .filter(Boolean);
+
+      setAvailableCategories(Array.from(new Set(names)));
+    } catch (err) {
+      console.error("Erro ao buscar categorias de cursos:", err);
+    }
+  };
+
+  const fetchCursos = useCallback(async () => {
     if (!enabled) {
       setData([]);
       setIsLoading(false);
@@ -94,12 +116,16 @@ export function usePublicCursos(
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [currentPage, enabled, filters.busca, pageSize]);
 
   useEffect(() => {
     fetchCursos();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters, currentPage, pageSize, enabled]);
+  }, [fetchCursos]);
+
+  useEffect(() => {
+    if (!enabled) return;
+    fetchCategorias();
+  }, [enabled]);
 
   // Filtros aplicados no client-side
   const filteredData = useMemo(() => {
@@ -119,6 +145,7 @@ export function usePublicCursos(
   return {
     data,
     filteredData,
+    availableCategories,
     isLoading,
     error,
     totalCount,
