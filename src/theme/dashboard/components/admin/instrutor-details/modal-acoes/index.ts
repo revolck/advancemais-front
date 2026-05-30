@@ -3,3 +3,4 @@ export { DesbloquearInstrutorModal } from "./DesbloquearInstrutorModal";
 export { EditarInstrutorModal } from "./EditarInstrutorModal";
 export { EditarInstrutorEnderecoModal } from "./EditarInstrutorEnderecoModal";
 export { ResetarSenhaModal as ResetarSenhaInstrutorModal } from "./ResetarSenhaModal";
+export { AlterarFuncaoUsuarioModal } from "../../usuario-details/modal-acoes/AlterarFuncaoUsuarioModal";

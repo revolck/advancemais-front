@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ButtonCustom,
   SelectCustom,
@@ -16,13 +16,18 @@ import {
   ModalTitle,
 } from "@/components/ui/custom/modal";
 import { getRoleLabel } from "@/config/roles";
-import type { Role, UpdateUsuarioRolePayload } from "@/api/usuarios";
+import type {
+  Role,
+  TipoUsuario,
+  UpdateUsuarioRolePayload,
+} from "@/api/usuarios";
 
 interface AlterarFuncaoUsuarioModalProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   usuarioNome: string;
   usuarioEmail: string;
+  tipoUsuario: TipoUsuario;
   roleAtual: Role;
   availableRoles: Role[];
   onConfirm: (payload: UpdateUsuarioRolePayload) => Promise<void>;
@@ -31,8 +36,7 @@ interface AlterarFuncaoUsuarioModalProps {
 export function AlterarFuncaoUsuarioModal({
   isOpen,
   onOpenChange,
-  usuarioNome,
-  usuarioEmail,
+  tipoUsuario,
   roleAtual,
   availableRoles,
   onConfirm,
@@ -48,30 +52,52 @@ export function AlterarFuncaoUsuarioModal({
     setIsSubmitting(false);
   }, [isOpen, roleAtual]);
 
+  const isRoleCompatibleWithTipoUsuario = useCallback(
+    (role: Role) => {
+      if (tipoUsuario === "PESSOA_JURIDICA") return role === "EMPRESA";
+      return role !== "EMPRESA";
+    },
+    [tipoUsuario],
+  );
+
   const roleOptions = useMemo<SelectOption[]>(
     () =>
-      availableRoles.map((role) => ({
+      availableRoles.filter(isRoleCompatibleWithTipoUsuario).map((role) => ({
         value: role,
         label:
           role === roleAtual
             ? `${getRoleLabel(role)} (Atual)`
             : getRoleLabel(role),
       })),
-    [availableRoles, roleAtual]
+    [availableRoles, isRoleCompatibleWithTipoUsuario, roleAtual],
   );
+
+  useEffect(() => {
+    if (!isOpen) return;
+    if (roleOptions.length === 0) return;
+    if (roleOptions.some((option) => option.value === selectedRole)) return;
+    setSelectedRole(roleOptions[0].value as Role);
+  }, [isOpen, roleOptions, selectedRole]);
 
   const motivoNormalizado = useMemo(() => motivo.trim(), [motivo]);
   const motivoInvalido =
     motivoNormalizado.length > 0 &&
     (motivoNormalizado.length < 3 || motivoNormalizado.length > 500);
   const selectedRoleChanged = selectedRole !== roleAtual;
+  const selectedRoleInvalid = !isRoleCompatibleWithTipoUsuario(selectedRole);
 
   const handleClose = () => {
     if (!isSubmitting) onOpenChange(false);
   };
 
   const handleSubmit = async () => {
-    if (isSubmitting || motivoInvalido || !selectedRoleChanged) return;
+    if (
+      isSubmitting ||
+      motivoInvalido ||
+      !selectedRoleChanged ||
+      selectedRoleInvalid
+    )
+      return;
 
     setIsSubmitting(true);
     try {
@@ -101,25 +127,14 @@ export function AlterarFuncaoUsuarioModal({
         </ModalHeader>
 
         <ModalBody className="space-y-4">
-          <div className="rounded-2xl border border-gray-200 bg-gray-50/60 p-4">
-            <div className="text-sm text-gray-700">
-              Você vai alterar a função de <strong>{usuarioNome}</strong>.
-            </div>
-            <div className="mt-1 text-sm text-gray-500">{usuarioEmail}</div>
-            <div className="mt-3 flex flex-wrap items-center gap-2 text-sm text-gray-600">
-              <span>Função atual:</span>
-              <span className="rounded-full border border-gray-200 bg-white px-2.5 py-1 text-xs font-medium text-gray-700">
-                {getRoleLabel(roleAtual)}
-              </span>
-            </div>
-          </div>
-
           <SelectCustom
             label="Nova função"
             placeholder="Selecione a nova função"
             options={roleOptions}
             value={selectedRole}
-            onChange={(value) => setSelectedRole((value as Role | null) ?? roleAtual)}
+            onChange={(value) =>
+              setSelectedRole((value as Role | null) ?? roleAtual)
+            }
             disabled={isSubmitting}
             clearable={false}
           />
@@ -133,15 +148,19 @@ export function AlterarFuncaoUsuarioModal({
               rows={4}
               disabled={isSubmitting}
             />
-            <div className="flex items-center justify-between gap-3 text-xs text-gray-500">
-              <span>
-                Opcional. Use entre 3 e 500 caracteres quando informar um motivo.
-              </span>
+            <div className="flex items-center justify-end gap-3 text-xs text-gray-500">
               <span>{motivo.length}/500</span>
             </div>
             {motivoInvalido ? (
               <div className="text-xs text-red-600">
                 O motivo deve ter entre 3 e 500 caracteres.
+              </div>
+            ) : null}
+            {selectedRoleInvalid ? (
+              <div className="text-xs text-red-600">
+                {tipoUsuario === "PESSOA_JURIDICA"
+                  ? "Pessoa jurídica só pode ter função EMPRESA."
+                  : "Pessoa física não pode ter função EMPRESA."}
               </div>
             ) : null}
           </div>
@@ -161,7 +180,12 @@ export function AlterarFuncaoUsuarioModal({
               onClick={handleSubmit}
               isLoading={isSubmitting}
               loadingText="Salvando..."
-              disabled={isSubmitting || motivoInvalido || !selectedRoleChanged}
+              disabled={
+                isSubmitting ||
+                motivoInvalido ||
+                !selectedRoleChanged ||
+                selectedRoleInvalid
+              }
             >
               Confirmar alteração
             </ButtonCustom>

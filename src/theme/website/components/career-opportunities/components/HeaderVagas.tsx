@@ -38,6 +38,8 @@ export function HeaderVagas({
   }, [regiao]);
 
   const handleSearch = () => {
+    if (isLoading) return;
+
     // Validação: mínimo de 3 caracteres ou campo vazio (para buscar todos)
     const trimmedBusca = localBusca.trim();
     if (trimmedBusca.length > 0 && trimmedBusca.length < 3) {
@@ -77,6 +79,7 @@ export function HeaderVagas({
               onChange={(e) => setLocalBusca(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder="Cargo ou função desejada"
+              disabled={isLoading}
               className="w-full bg-transparent text-base text-gray-900 placeholder:text-gray-400 focus:outline-none"
             />
           </div>
@@ -88,6 +91,7 @@ export function HeaderVagas({
               onChange={(e) => setLocalRegiao(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder="Cidade ou região"
+              disabled={isLoading}
               className="w-full bg-transparent text-base font-medium text-gray-900 placeholder:text-gray-400 focus:outline-none"
             />
           </div>

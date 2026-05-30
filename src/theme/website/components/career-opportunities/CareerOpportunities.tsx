@@ -19,7 +19,11 @@ import { useQuery, useQueries, useQueryClient } from "@tanstack/react-query";
 import { toastCustom } from "@/components/ui/custom/toast";
 import { UserRole } from "@/config/roles";
 import { useUserRole } from "@/hooks/useUserRole";
-import { aplicarVaga, listCurriculos, verificarCandidatura } from "@/api/candidatos";
+import {
+  aplicarVaga,
+  listCurriculos,
+  verificarCandidatura,
+} from "@/api/candidatos";
 import type { VerificarCandidaturaResponse } from "@/api/candidatos/types";
 import { getCurriculoApplicationAvailability } from "@/lib/candidatos/curriculo-application";
 import {
@@ -106,6 +110,7 @@ const CareerOpportunities: React.FC<CareerOpportunitiesProps> = ({
   const [regionQuery, setRegionQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [knownCategories, setKnownCategories] = useState<string[]>([]);
 
   // Sempre chamar os hooks (não condicionalmente)
   const apiResult = usePublicVagas(filters, itemsPerPage, fetchFromApi);
@@ -113,21 +118,26 @@ const CareerOpportunities: React.FC<CareerOpportunitiesProps> = ({
 
   // Unificar resultados baseado em fetchFromApi
   const data = fetchFromApi ? apiResult.data : mockResult.data;
-  const filteredData = fetchFromApi ? apiResult.filteredData : mockResult.filteredData;
+  const filteredData = fetchFromApi
+    ? apiResult.filteredData
+    : mockResult.filteredData;
   const isLoading = fetchFromApi ? apiResult.isLoading : mockResult.isLoading;
   const error = fetchFromApi ? apiResult.error : mockResult.error;
-  const totalCount = fetchFromApi ? apiResult.totalCount : mockResult.totalCount;
+  const totalCount = fetchFromApi
+    ? apiResult.totalCount
+    : mockResult.totalCount;
   const refetch = fetchFromApi ? apiResult.refetch : mockResult.refetch;
   const currentPage = fetchFromApi ? apiResult.currentPage : 1;
   const totalPages = fetchFromApi ? apiResult.totalPages : 1;
-  const setPage = fetchFromApi ? apiResult.setPage : (() => {});
+  const setPage = fetchFromApi ? apiResult.setPage : () => {};
   const role = useUserRole();
   const queryClient = useQueryClient();
   const userIsCandidate = isAuthenticated && role === UserRole.ALUNO_CANDIDATO;
-  const canCandidateApply = isAuthenticated && role === UserRole.ALUNO_CANDIDATO;
-  const [pendingApplyById, setPendingApplyById] = useState<Record<string, boolean>>(
-    {},
-  );
+  const canCandidateApply =
+    isAuthenticated && role === UserRole.ALUNO_CANDIDATO;
+  const [pendingApplyById, setPendingApplyById] = useState<
+    Record<string, boolean>
+  >({});
   const [applyModalTarget, setApplyModalTarget] = useState<{
     vagaId: string;
     vagaTitulo?: string | null;
@@ -146,6 +156,20 @@ const CareerOpportunities: React.FC<CareerOpportunitiesProps> = ({
     }, 1500);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    const categoriesFromPage = data
+      .map((job) => job.categoria)
+      .filter((value): value is string => Boolean(value));
+
+    if (categoriesFromPage.length === 0) return;
+
+    setKnownCategories((prev) =>
+      Array.from(new Set([...prev, ...categoriesFromPage])).sort((a, b) =>
+        a.localeCompare(b, "pt-BR"),
+      ),
+    );
+  }, [data]);
 
   // Contadores de filtros (derivados dos dados carregados)
   const filterCounts = useMemo(() => {
@@ -170,19 +194,25 @@ const CareerOpportunities: React.FC<CareerOpportunitiesProps> = ({
       categorias.set(job.categoria, (categorias.get(job.categoria) || 0) + 1);
       modalidades.set(
         job.modalidade,
-        (modalidades.get(job.modalidade) || 0) + 1
+        (modalidades.get(job.modalidade) || 0) + 1,
       );
       tiposContrato.set(
         job.tipoContrato,
-        (tiposContrato.get(job.tipoContrato) || 0) + 1
+        (tiposContrato.get(job.tipoContrato) || 0) + 1,
       );
       niveis.set(job.nivel, (niveis.get(job.nivel) || 0) + 1);
     });
 
+    const categorySource =
+      knownCategories.length > 0
+        ? knownCategories
+        : Array.from(categorias.keys());
+
     return {
-      categorias: Array.from(categorias.entries()).map(([nome, count]) => ({
+      categorias: categorySource.map((nome) => ({
         nome,
-        count,
+        // Mantemos as opções visíveis para não variar por paginação.
+        count: 1,
       })),
       modalidades: ALL_MODALIDADES.map((nome) => ({
         nome,
@@ -197,7 +227,7 @@ const CareerOpportunities: React.FC<CareerOpportunitiesProps> = ({
         count: niveis.get(nome) || 0,
       })),
     };
-  }, [data]);
+  }, [data, knownCategories]);
 
   // Callbacks
   useEffect(() => {
@@ -224,7 +254,7 @@ const CareerOpportunities: React.FC<CareerOpportunitiesProps> = ({
       JobFilters,
       "categorias" | "modalidades" | "tiposContrato" | "niveis"
     >,
-    value: string
+    value: string,
   ) => {
     const currentArray = filters[filterType];
     const newArray = currentArray.includes(value)
@@ -302,8 +332,43 @@ const CareerOpportunities: React.FC<CareerOpportunitiesProps> = ({
     ],
   );
 
+  const sortedFilteredData = useMemo(() => {
+    const list = [...filteredData];
+    switch (sortOrder) {
+      case "name_az":
+        return list.sort((a, b) => a.titulo.localeCompare(b.titulo, "pt-BR"));
+      case "name_za":
+        return list.sort((a, b) => b.titulo.localeCompare(a.titulo, "pt-BR"));
+      case "salary_high":
+        return list.sort(
+          (a, b) =>
+            (b.salario?.max ?? b.salario?.min ?? 0) -
+            (a.salario?.max ?? a.salario?.min ?? 0),
+        );
+      case "salary_low":
+        return list.sort(
+          (a, b) =>
+            (a.salario?.min ?? a.salario?.max ?? 0) -
+            (b.salario?.min ?? b.salario?.max ?? 0),
+        );
+      case "relevance":
+        return list.sort((a, b) => Number(b.destaque) - Number(a.destaque));
+      case "recent":
+      default:
+        return list.sort((a, b) => {
+          const dateA = a.inscricoesAte
+            ? new Date(a.inscricoesAte).getTime()
+            : 0;
+          const dateB = b.inscricoesAte
+            ? new Date(b.inscricoesAte).getTime()
+            : 0;
+          return dateB - dateA;
+        });
+    }
+  }, [filteredData, sortOrder]);
+
   const appliedChecks = useQueries({
-    queries: filteredData.map((job) => ({
+    queries: sortedFilteredData.map((job) => ({
       queryKey: ["aluno-candidato", "candidaturas", "verificar", job.id],
       queryFn: () => verificarCandidatura(job.id, { cache: "no-store" }),
       enabled: userIsCandidate && isUuid(job.id),
@@ -314,16 +379,16 @@ const CareerOpportunities: React.FC<CareerOpportunitiesProps> = ({
 
   const isApplyValidationLoading = useMemo(() => {
     if (!userIsCandidate) return false;
-    if (filteredData.length === 0) return false;
+    if (sortedFilteredData.length === 0) return false;
     return appliedChecks.some((q) => q.isLoading);
-  }, [appliedChecks, filteredData.length, userIsCandidate]);
+  }, [appliedChecks, sortedFilteredData.length, userIsCandidate]);
 
   const isUserValidationLoading = isAuthenticated && role === null;
 
   const jobsSignature = useMemo(() => {
-    if (filteredData.length === 0) return "";
-    return filteredData.map((job) => job.id).join("|");
-  }, [filteredData]);
+    if (sortedFilteredData.length === 0) return "";
+    return sortedFilteredData.map((job) => job.id).join("|");
+  }, [sortedFilteredData]);
 
   const isCandidateValidationDone =
     userIsCandidate && validatedJobsSignature === jobsSignature;
@@ -360,16 +425,16 @@ const CareerOpportunities: React.FC<CareerOpportunitiesProps> = ({
       (curriculosQuery.isLoading || isApplyValidationLoading));
 
   // Só mostra dados quando não está carregando/validando
-  const shouldShowData = !showSkeleton && filteredData.length > 0;
+  const shouldShowData = !showSkeleton && sortedFilteredData.length > 0;
 
   const hasAppliedByJobId = useMemo(() => {
     const map = new Map<string, boolean>();
-    filteredData.forEach((job, idx) => {
+    sortedFilteredData.forEach((job, idx) => {
       const q = appliedChecks[idx];
       map.set(job.id, q?.data?.hasApplied === true);
     });
     return map;
-  }, [appliedChecks, filteredData]);
+  }, [appliedChecks, sortedFilteredData]);
   const setPendingApply = useCallback((vagaId: string, pending: boolean) => {
     setPendingApplyById((prev) => {
       if (pending) return { ...prev, [vagaId]: true };
@@ -385,7 +450,11 @@ const CareerOpportunities: React.FC<CareerOpportunitiesProps> = ({
   );
 
   const applyWithCurriculo = useCallback(
-    (jobId: string, jobTitle: string | null | undefined, curriculoId: string) => {
+    (
+      jobId: string,
+      jobTitle: string | null | undefined,
+      curriculoId: string,
+    ) => {
       setPendingApply(jobId, true);
 
       aplicarVaga({ vagaId: jobId, curriculoId })
@@ -491,7 +560,8 @@ const CareerOpportunities: React.FC<CareerOpportunitiesProps> = ({
     const scrollY = typeof window !== "undefined" ? window.scrollY : 0;
     setApplyModalTarget({ vagaId: jobId, vagaTitulo: jobTitle ?? null });
     setSelectedCurriculoId((prev) => {
-      if (prev && curriculosApplyOptions.some((c) => c.id === prev)) return prev;
+      if (prev && curriculosApplyOptions.some((c) => c.id === prev))
+        return prev;
       return getDefaultCurriculoIdFromOptions(curriculosApplyOptions);
     });
     if (typeof window !== "undefined") {
@@ -522,10 +592,8 @@ const CareerOpportunities: React.FC<CareerOpportunitiesProps> = ({
   // Estado de carregamento agora é tratado localmente na lista/filters (sem tela inteira)
 
   const handleSearch = () => {
+    if (isLoading || isSearching) return;
     setIsSearching(true);
-    if (fetchFromApi && apiResult.refetch) {
-      apiResult.refetch();
-    }
   };
 
   // Desativa isSearching quando a busca terminar
@@ -542,19 +610,19 @@ const CareerOpportunities: React.FC<CareerOpportunitiesProps> = ({
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <Card className="border-2 border-red-100 bg-white rounded-2xl">
             <CardContent className="py-16 text-center space-y-4">
-          <ImageNotFound
-            size="lg"
-            variant="error"
-            message="Erro ao carregar vagas"
-            icon="AlertCircle"
+              <ImageNotFound
+                size="lg"
+                variant="error"
+                message="Erro ao carregar vagas"
+                icon="AlertCircle"
                 className="mx-auto mb-4"
-          />
+              />
               <h2 className="!mb-0">Não foi possível carregar as vagas</h2>
               <p className="text-gray-600 max-w-md mx-auto">
-            Não foi possível carregar as vagas disponíveis.
-            {error.includes("padrão") ? " Exibindo dados de exemplo." : ""}
-          </p>
-          {!error.includes("padrão") && (
+                Não foi possível carregar as vagas disponíveis.
+                {error.includes("padrão") ? " Exibindo dados de exemplo." : ""}
+              </p>
+              {!error.includes("padrão") && (
                 <ButtonCustom
                   onClick={refetch}
                   variant="default"
@@ -562,8 +630,8 @@ const CareerOpportunities: React.FC<CareerOpportunitiesProps> = ({
                   className="bg-[#1f8454] hover:bg-[#17623d]"
                 >
                   Tentar novamente
-            </ButtonCustom>
-          )}
+                </ButtonCustom>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -580,7 +648,7 @@ const CareerOpportunities: React.FC<CareerOpportunitiesProps> = ({
         onRegiaoChange={setRegionQuery}
         hasActiveFilters={hasActiveFilters}
         onSearch={handleSearch}
-        isLoading={isLoading}
+        isLoading={showSkeleton}
       />
 
       <section className="bg-[#f4f6f8] pb-16 pt-10">
@@ -599,7 +667,7 @@ const CareerOpportunities: React.FC<CareerOpportunitiesProps> = ({
               onToggleFilter={
                 toggleArrayFilter as (
                   filterType: FilterListKey,
-                  value: string
+                  value: string,
                 ) => void
               }
               hasActiveFilters={hasActiveFilters}
@@ -612,10 +680,10 @@ const CareerOpportunities: React.FC<CareerOpportunitiesProps> = ({
               <div className="space-y-4">
                 {showSkeleton
                   ? Array.from({ length: 3 }).map((_, index) => (
-                        <div
+                      <div
                         key={`card-skeleton-${index}`}
                         className="bg-white border border-gray-200 rounded-2xl p-6 space-y-4 shadow-sm animate-pulse"
-                        >
+                      >
                         <div className="flex items-center gap-3">
                           <div className="h-12 w-12 rounded-2xl bg-gray-200" />
                           <div className="space-y-2 flex-1">
@@ -627,43 +695,49 @@ const CareerOpportunities: React.FC<CareerOpportunitiesProps> = ({
                           <div className="h-4 w-full bg-gray-200 rounded" />
                           <div className="h-4 w-5/6 bg-gray-200 rounded" />
                           <div className="h-4 w-2/3 bg-gray-200 rounded" />
-                    </div>
+                        </div>
                         <div className="flex items-center gap-4 pt-2">
                           <div className="h-4 w-20 bg-gray-200 rounded" />
                           <div className="h-4 w-24 bg-gray-200 rounded" />
                           <div className="h-4 w-16 bg-gray-200 rounded" />
-                  </div>
+                        </div>
                         <div className="flex gap-2 pt-2">
                           <div className="h-10 flex-1 bg-gray-100 rounded-full" />
                           <div className="h-10 flex-1 bg-gray-100 rounded-full" />
-                    </div>
-                  </div>
+                        </div>
+                      </div>
                     ))
                   : shouldShowData
-                  ? filteredData.map((job, index) => (
-                <JobCard
-                  key={job.id}
-                  job={job}
-                  index={index}
-                  onApply={() => handleApply(job.id, job.titulo ?? null)}
-                  onViewDetails={handleViewDetails}
-                  isApplied={hasAppliedByJobId.get(job.id) === true}
-                  applyDisabled={
-                    Boolean(pendingApplyById[job.id]) ||
-                    curriculoAvailability.isBlocked
-                  }
-                  applyLabel={pendingApplyById[job.id] ? "Enviando..." : "Candidatar-se"}
-                  applyBlockedReason={
-                    curriculoAvailability.isBlocked
-                      ? curriculoAvailability.tooltip
-                      : null
-                  }
-                />
-              ))
-                  : null}
+                    ? sortedFilteredData.map((job, index) => (
+                        <JobCard
+                          key={job.id}
+                          job={job}
+                          index={index}
+                          onApply={() =>
+                            handleApply(job.id, job.titulo ?? null)
+                          }
+                          onViewDetails={handleViewDetails}
+                          isApplied={hasAppliedByJobId.get(job.id) === true}
+                          applyDisabled={
+                            Boolean(pendingApplyById[job.id]) ||
+                            curriculoAvailability.isBlocked
+                          }
+                          applyLabel={
+                            pendingApplyById[job.id]
+                              ? "Enviando..."
+                              : "Candidatar-se"
+                          }
+                          applyBlockedReason={
+                            curriculoAvailability.isBlocked
+                              ? curriculoAvailability.tooltip
+                              : null
+                          }
+                        />
+                      ))
+                    : null}
               </div>
 
-              {!showSkeleton && filteredData.length === 0 && (
+              {!showSkeleton && sortedFilteredData.length === 0 && (
                 <div className="bg-white border border-gray-200 rounded-2xl">
                   <div className="py-14 px-6">
                     <EmptyState
@@ -674,11 +748,11 @@ const CareerOpportunities: React.FC<CareerOpportunitiesProps> = ({
                       description="Ajuste os filtros ou limpe todos para visualizar mais oportunidades disponíveis."
                       actions={
                         <ButtonCustom
-                    variant="outline"
-                    onClick={clearAllFilters}
+                          variant="outline"
+                          onClick={clearAllFilters}
                           icon="RotateCcw"
-                  >
-                    Limpar filtros
+                        >
+                          Limpar filtros
                         </ButtonCustom>
                       }
                     />
@@ -686,10 +760,10 @@ const CareerOpportunities: React.FC<CareerOpportunitiesProps> = ({
                 </div>
               )}
 
-              {shouldShowData && filteredData.length > 0 && (
+              {shouldShowData && sortedFilteredData.length > 0 && (
                 <div className="pt-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div className="text-sm text-gray-500">
-                    Mostrando {filteredData.length} de {totalCount} vagas
+                    Mostrando {sortedFilteredData.length} de {totalCount} vagas
                   </div>
                   {totalPages > 1 && (
                     <div className="flex items-center justify-end gap-2">
@@ -712,20 +786,20 @@ const CareerOpportunities: React.FC<CareerOpportunitiesProps> = ({
                       >
                         Próxima
                       </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
-              )}
           </div>
         </div>
-      </div>
 
-      {error && data.length > 0 && (
+        {error && data.length > 0 && (
           <div className="text-center text-sm text-yellow-700 bg-yellow-50 border-t border-yellow-100 py-3 mt-8">
             Alguns dados podem estar indisponíveis no momento. Exibindo conteúdo
             em cache.
-        </div>
-      )}
+          </div>
+        )}
       </section>
 
       <SelectCurriculoApplyModal

@@ -34,6 +34,7 @@ export type UsuarioErrorCode =
   | "INVALID_ID"
   | "VALIDATION_ERROR"
   | "FORBIDDEN_USER_ROLE"
+  | "INVALID_ROLE_FOR_USER_TYPE"
   | "FORBIDDEN_SELF_ROLE_CHANGE"
   | "USER_ACCESS_RELEASE_BLOCKED_BY_STATUS"
   | "USER_ROLE_UPDATE_BLOCKED"
@@ -111,8 +112,7 @@ export interface UsuarioPasswordRecoveryResponse extends UsuarioResponseBase {
   };
 }
 
-export interface UsuarioPasswordRecoveryValidationResponse
-  extends UsuarioResponseBase {
+export interface UsuarioPasswordRecoveryValidationResponse extends UsuarioResponseBase {
   success: boolean;
   message: string;
   data: {
@@ -754,8 +754,7 @@ export interface UsuarioRecrutadorVinculoItem {
   escopo: UsuarioRecrutadorVinculoEscopo;
 }
 
-export interface GetUsuarioRecrutadorVinculosResponse
-  extends UsuarioResponseBase {
+export interface GetUsuarioRecrutadorVinculosResponse extends UsuarioResponseBase {
   success: boolean;
   data: {
     items: UsuarioRecrutadorVinculoItem[];
@@ -771,8 +770,7 @@ export interface UsuarioRecrutadorEmpresaElegivelItem {
   jaVinculadoPorEmpresa: boolean;
 }
 
-export interface GetUsuarioRecrutadorEmpresasElegiveisResponse
-  extends UsuarioResponseBase {
+export interface GetUsuarioRecrutadorEmpresasElegiveisResponse extends UsuarioResponseBase {
   success: boolean;
   data: {
     items: UsuarioRecrutadorEmpresaElegivelItem[];
@@ -789,8 +787,7 @@ export interface UsuarioRecrutadorVagaElegivelItem {
   jaVinculadoNestaVaga: boolean;
 }
 
-export interface GetUsuarioRecrutadorVagasElegiveisResponse
-  extends UsuarioResponseBase {
+export interface GetUsuarioRecrutadorVagasElegiveisResponse extends UsuarioResponseBase {
   success: boolean;
   data: {
     items: UsuarioRecrutadorVagaElegivelItem[];
@@ -803,8 +800,7 @@ export interface CreateUsuarioRecrutadorVinculoPayload {
   vagaId?: string;
 }
 
-export interface CreateUsuarioRecrutadorVinculoResponse
-  extends UsuarioResponseBase {
+export interface CreateUsuarioRecrutadorVinculoResponse extends UsuarioResponseBase {
   success: boolean;
   code?: "RECRUITER_LINK_CREATED";
   message: string;
@@ -818,8 +814,7 @@ export interface CreateUsuarioRecrutadorVinculoResponse
   };
 }
 
-export interface DeleteUsuarioRecrutadorVinculoResponse
-  extends UsuarioResponseBase {
+export interface DeleteUsuarioRecrutadorVinculoResponse extends UsuarioResponseBase {
   success: boolean;
   code?: "RECRUITER_LINK_REMOVED";
   message: string;

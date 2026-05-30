@@ -23,7 +23,6 @@ export function LiberarEmailUsuarioModal({
   isOpen,
   onOpenChange,
   usuarioNome,
-  usuarioEmail,
   onConfirm,
 }: LiberarEmailUsuarioModalProps) {
   const [motivo, setMotivo] = useState("");
@@ -50,7 +49,7 @@ export function LiberarEmailUsuarioModal({
     setIsSubmitting(true);
     try {
       await onConfirm(
-        motivoNormalizado ? { motivo: motivoNormalizado } : undefined
+        motivoNormalizado ? { motivo: motivoNormalizado } : undefined,
       );
       onOpenChange(false);
     } finally {
@@ -79,7 +78,6 @@ export function LiberarEmailUsuarioModal({
               Você vai liberar manualmente o acesso de{" "}
               <strong>{usuarioNome}</strong>.
             </div>
-            <div className="mt-1 text-sm text-gray-500">{usuarioEmail}</div>
             <div className="mt-3 text-sm text-gray-600">
               Essa ação ativa a conta pendente e conclui a liberação de acesso à
               plataforma.
@@ -87,9 +85,7 @@ export function LiberarEmailUsuarioModal({
           </div>
 
           <div className="space-y-2">
-            <div className="text-sm font-medium text-gray-900">
-              Motivo
-            </div>
+            <div className="text-sm font-medium text-gray-900">Motivo</div>
             <SimpleTextarea
               value={motivo}
               onChange={(event) => setMotivo(event.target.value.slice(0, 500))}
@@ -97,10 +93,7 @@ export function LiberarEmailUsuarioModal({
               rows={4}
               disabled={isSubmitting}
             />
-            <div className="flex items-center justify-between gap-3 text-xs text-gray-500">
-              <span>
-                Opcional. Use entre 3 e 500 caracteres quando informar um motivo.
-              </span>
+            <div className="flex items-center justify-end gap-3 text-xs text-gray-500">
               <span>{motivo.length}/500</span>
             </div>
             {motivoInvalido ? (

@@ -34,6 +34,7 @@ export function CourseCatalog({
 
   const data = apiResult.data;
   const filteredData = apiResult.filteredData;
+  const availableCategories = apiResult.availableCategories;
   const isLoading = apiResult.isLoading;
   const error = apiResult.error;
   const totalCount = apiResult.totalCount;
@@ -44,27 +45,45 @@ export function CourseCatalog({
   // Controla quando mostrar skeleton durante busca manual
   const showSkeleton = isLoading || isSearching;
 
-  // Só mostra dados quando não está carregando e não está buscando
-  const shouldShowData = !isLoading && !isSearching && filteredData.length > 0;
-
   // Contadores de filtros
   const filterCounts = useMemo(() => {
-    const categorias = new Map<string, number>();
-
-    data.forEach((course) => {
-      categorias.set(
-        course.categoria,
-        (categorias.get(course.categoria) || 0) + 1,
-      );
-    });
+    const categoriesSource =
+      availableCategories.length > 0
+        ? availableCategories
+        : Array.from(new Set(data.map((course) => course.categoria)));
 
     return {
-      categorias: Array.from(categorias.entries()).map(([nome, count]) => ({
+      categorias: categoriesSource.map((nome) => ({
         nome,
-        count,
+        // Mantemos sempre habilitado para não variar por paginação.
+        count: 1,
       })),
     };
-  }, [data]);
+  }, [availableCategories, data]);
+
+  const sortedFilteredData = useMemo(() => {
+    const list = [...filteredData];
+    switch (sortOrder) {
+      case "name_az":
+        return list.sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+      case "name_za":
+        return list.sort((a, b) => b.nome.localeCompare(a.nome, "pt-BR"));
+      case "carga_high":
+        return list.sort((a, b) => b.cargaHoraria - a.cargaHoraria);
+      case "carga_low":
+        return list.sort((a, b) => a.cargaHoraria - b.cargaHoraria);
+      case "recent":
+      default:
+        return list.sort(
+          (a, b) =>
+            new Date(b.criadoEm).getTime() - new Date(a.criadoEm).getTime(),
+        );
+    }
+  }, [filteredData, sortOrder]);
+
+  // Só mostra dados quando não está carregando e não está buscando
+  const shouldShowData =
+    !isLoading && !isSearching && sortedFilteredData.length > 0;
 
   const updateFilters = (newFilters: Partial<CourseFilters>) => {
     setFilters((prev) => ({ ...prev, ...newFilters }));
@@ -113,10 +132,8 @@ export function CourseCatalog({
   };
 
   const handleSearch = () => {
+    if (isLoading || isSearching) return;
     setIsSearching(true);
-    if (apiResult?.refetch) {
-      apiResult.refetch();
-    }
   };
 
   // Desativa isSearching quando a busca terminar
@@ -133,7 +150,7 @@ export function CourseCatalog({
         onBuscaChange={(value) => updateFilters({ busca: value })}
         hasActiveFilters={hasActiveFilters}
         onSearch={handleSearch}
-        isLoading={isLoading}
+        isLoading={showSkeleton}
       />
 
       <section className="bg-[#f4f6f8] pb-16 pt-10">
@@ -185,7 +202,7 @@ export function CourseCatalog({
                       </div>
                     ))
                   : shouldShowData
-                    ? filteredData.map((course, index) => (
+                    ? sortedFilteredData.map((course, index) => (
                         <CourseCard
                           key={course.id}
                           course={course}
@@ -197,7 +214,7 @@ export function CourseCatalog({
                     : null}
               </div>
 
-              {!showSkeleton && filteredData.length === 0 && (
+              {!showSkeleton && sortedFilteredData.length === 0 && (
                 <div className="bg-white border border-gray-200 rounded-2xl">
                   <div className="py-14 px-6">
                     <EmptyState
@@ -220,10 +237,10 @@ export function CourseCatalog({
                 </div>
               )}
 
-              {shouldShowData && filteredData.length > 0 && (
+              {shouldShowData && sortedFilteredData.length > 0 && (
                 <div className="pt-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div className="text-sm text-gray-500">
-                    Mostrando {filteredData.length} de {totalCount} cursos
+                    Mostrando {sortedFilteredData.length} de {totalCount} cursos
                   </div>
                   {totalPages > 1 && (
                     <div className="flex items-center justify-end gap-2">

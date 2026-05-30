@@ -60,7 +60,7 @@ const decodeJWT = (token: string): any => {
       atob(base64)
         .split("")
         .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
-        .join("")
+        .join(""),
     );
     return JSON.parse(jsonPayload);
   } catch {
@@ -142,6 +142,26 @@ const getAvailableRoles = (userRole: string): Role[] => {
   }
 };
 
+const isRoleCompatibleWithTipoUsuario = (
+  role: Role | null,
+  tipoUsuario: TipoUsuario | null,
+): boolean => {
+  if (!role || !tipoUsuario) return false;
+  if (tipoUsuario === "PESSOA_JURIDICA") return role === "EMPRESA";
+  return role !== "EMPRESA";
+};
+
+const filterRolesByTipoUsuario = (
+  roles: Role[],
+  tipoUsuario: TipoUsuario | null,
+): Role[] => {
+  if (!tipoUsuario) return [];
+  if (tipoUsuario === "PESSOA_JURIDICA") {
+    return roles.includes("EMPRESA") ? ["EMPRESA"] : [];
+  }
+  return roles.filter((role) => role !== "EMPRESA");
+};
+
 // Função para obter role do usuário logado
 const getUserRole = (): string | null => {
   try {
@@ -167,7 +187,7 @@ export function CreateUsuarioForm({
   const [isLoading, setIsLoading] = useState(false);
   const [loadingStep, setLoadingStep] = useState<string>("");
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>(
-    {}
+    {},
   );
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -195,7 +215,7 @@ export function CreateUsuarioForm({
       setIsLoadingEstados(true);
       try {
         const response = await fetch(
-          "https://servicodados.ibge.gov.br/api/v1/localidades/estados?orderBy=nome"
+          "https://servicodados.ibge.gov.br/api/v1/localidades/estados?orderBy=nome",
         );
         if (!response.ok) {
           throw new Error("Erro ao carregar estados");
@@ -222,7 +242,11 @@ export function CreateUsuarioForm({
     { label: "Pessoa Jurídica", value: "PESSOA_JURIDICA" as TipoUsuario },
   ];
 
-  const roleOptions = availableRoles.map((role) => ({
+  const roleOptionsByTipoUsuario = filterRolesByTipoUsuario(
+    availableRoles,
+    formData.tipoUsuario,
+  );
+  const roleSelectOptions = roleOptionsByTipoUsuario.map((role) => ({
     label: role.replace(/_/g, " "),
     value: role,
   }));
@@ -256,7 +280,16 @@ export function CreateUsuarioForm({
       newErrors.telefone = "Telefone é obrigatório";
     if (!formData.tipoUsuario)
       newErrors.tipoUsuario = "Tipo de usuário é obrigatório";
-    if (!formData.role) newErrors.role = "Role é obrigatória";
+    if (!formData.role) {
+      newErrors.role = "Role é obrigatória";
+    } else if (
+      !isRoleCompatibleWithTipoUsuario(formData.role, formData.tipoUsuario)
+    ) {
+      newErrors.role =
+        formData.tipoUsuario === "PESSOA_JURIDICA"
+          ? "Pessoa jurídica só pode ter função EMPRESA"
+          : "Pessoa física não pode ter função EMPRESA";
+    }
 
     if (formData.tipoUsuario === "PESSOA_FISICA" && !formData.cpf.trim()) {
       newErrors.cpf = "CPF é obrigatório para pessoa física";
@@ -285,9 +318,15 @@ export function CreateUsuarioForm({
   };
 
   const handleTipoUsuarioChange = (value: TipoUsuario) => {
+    const compatibleRoles = filterRolesByTipoUsuario(availableRoles, value);
+    const nextRole = compatibleRoles.includes(formData.role as Role)
+      ? formData.role
+      : (compatibleRoles[0] ?? null);
+
     setFormData((prev) => ({
       ...prev,
       tipoUsuario: value,
+      role: nextRole,
       cpf: value === "PESSOA_FISICA" ? prev.cpf : "",
       cnpj: value === "PESSOA_JURIDICA" ? prev.cnpj : "",
     }));
@@ -299,7 +338,22 @@ export function CreateUsuarioForm({
     if (value === "PESSOA_JURIDICA" && errors.cpf) {
       setErrors((prev) => ({ ...prev, cpf: undefined }));
     }
+    if (errors.role) {
+      setErrors((prev) => ({ ...prev, role: undefined }));
+    }
   };
+
+  useEffect(() => {
+    if (!formData.tipoUsuario) return;
+    const compatibleRoles = filterRolesByTipoUsuario(
+      availableRoles,
+      formData.tipoUsuario,
+    );
+    if (compatibleRoles.length === 0) return;
+    if (!compatibleRoles.includes(formData.role as Role)) {
+      setFormData((prev) => ({ ...prev, role: compatibleRoles[0] }));
+    }
+  }, [availableRoles, formData.tipoUsuario, formData.role]);
 
   const normalizeText = (text: string) =>
     text
@@ -309,7 +363,7 @@ export function CreateUsuarioForm({
 
   const applyCityFromOptions = (
     options: SelectOption[],
-    cityToSelect?: string | null
+    cityToSelect?: string | null,
   ) => {
     if (!cityToSelect) {
       handleInputChange("cidade", "");
@@ -318,7 +372,7 @@ export function CreateUsuarioForm({
     const normalizedTarget = normalizeText(cityToSelect);
     const foundOption =
       options.find(
-        (option) => normalizeText(option.value) === normalizedTarget
+        (option) => normalizeText(option.value) === normalizedTarget,
       ) || null;
     handleInputChange("cidade", foundOption ? foundOption.value : "");
   };
@@ -336,7 +390,7 @@ export function CreateUsuarioForm({
     setIsLoadingCidades(true);
     try {
       const response = await fetch(
-        `https://servicodados.ibge.gov.br/api/v1/localidades/estados/${uf}/municipios?orderBy=nome`
+        `https://servicodados.ibge.gov.br/api/v1/localidades/estados/${uf}/municipios?orderBy=nome`,
       );
       if (!response.ok) {
         throw new Error("Erro ao carregar cidades");
@@ -487,16 +541,33 @@ export function CreateUsuarioForm({
       }
     } catch (error: any) {
       console.error("Erro ao criar usuário:", error);
+      const errorCode = error?.code || error?.response?.data?.code;
+      const errorMessage =
+        error?.message ||
+        error?.response?.data?.message ||
+        "Não foi possível cadastrar o usuário";
 
       // Tratamento de erros específicos
-      if (error.code === "FORBIDDEN_ROLE") {
+      if (errorCode === "FORBIDDEN_ROLE") {
         toastCustom.error({
           title: "Permissão Negada",
           description:
-            error.message ||
+            errorMessage ||
             "Você não tem permissão para criar usuários com esta role",
         });
-      } else if (error.code === "USER_ALREADY_EXISTS") {
+      } else if (errorCode === "INVALID_ROLE_FOR_USER_TYPE") {
+        setErrors((prev) => ({
+          ...prev,
+          role:
+            formData.tipoUsuario === "PESSOA_JURIDICA"
+              ? "Pessoa jurídica só pode ter função EMPRESA"
+              : "Pessoa física não pode ter função EMPRESA",
+        }));
+        toastCustom.error({
+          title: "Role incompatível",
+          description: errorMessage,
+        });
+      } else if (errorCode === "USER_ALREADY_EXISTS") {
         toastCustom.error({
           title: "Usuário Já Existe",
           description: "Email, CPF ou CNPJ já cadastrado no sistema",
@@ -517,7 +588,7 @@ export function CreateUsuarioForm({
       } else {
         toastCustom.error({
           title: "Erro ao cadastrar",
-          description: error.message || "Não foi possível cadastrar o usuário",
+          description: errorMessage,
         });
       }
     } finally {
@@ -554,7 +625,9 @@ export function CreateUsuarioForm({
                 label="CPF"
                 placeholder="000.000.000-00"
                 value={formData.cpf}
-                onChange={(e) => handleInputChange("cpf", formatCPF(e.target.value))}
+                onChange={(e) =>
+                  handleInputChange("cpf", formatCPF(e.target.value))
+                }
                 error={errors.cpf}
                 maxLength={14}
                 required
@@ -564,7 +637,9 @@ export function CreateUsuarioForm({
                 label="CNPJ"
                 placeholder="00.000.000/0000-00"
                 value={formData.cnpj}
-                onChange={(e) => handleInputChange("cnpj", formatCNPJ(e.target.value))}
+                onChange={(e) =>
+                  handleInputChange("cnpj", formatCNPJ(e.target.value))
+                }
                 error={errors.cnpj}
                 maxLength={18}
                 required
@@ -595,10 +670,11 @@ export function CreateUsuarioForm({
             <SelectCustom
               label="Função (Role)"
               placeholder="Selecione a função"
-              options={roleOptions}
+              options={roleSelectOptions}
               value={formData.role}
               onChange={(value) => handleInputChange("role", value)}
               error={errors.role}
+              disabled={roleSelectOptions.length === 0}
               required
             />
 
@@ -606,7 +682,9 @@ export function CreateUsuarioForm({
               label="Telefone"
               placeholder="(00) 00000-0000"
               value={formData.telefone}
-              onChange={(e) => handleInputChange("telefone", formatPhone(e.target.value))}
+              onChange={(e) =>
+                handleInputChange("telefone", formatPhone(e.target.value))
+              }
               error={errors.telefone}
               maxLength={15}
               required
@@ -632,7 +710,7 @@ export function CreateUsuarioForm({
               onChange={(date) =>
                 handleInputChange(
                   "dataNascimento",
-                  date ? new Date(date).toISOString().slice(0, 10) : ""
+                  date ? new Date(date).toISOString().slice(0, 10) : "",
                 )
               }
               format="dd/MM/yyyy"
