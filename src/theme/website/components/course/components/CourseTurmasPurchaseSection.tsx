@@ -334,6 +334,10 @@ export function CourseTurmasPurchaseSection({
                 !price.isFree &&
                 price.valorPromocional != null &&
                 price.valorPromocional < price.valor;
+              const lowVacancies =
+                typeof turma.vagasDisponiveis === "number" &&
+                turma.vagasDisponiveis > 0 &&
+                turma.vagasDisponiveis <= 5;
 
               return (
                 <div
@@ -381,9 +385,16 @@ export function CourseTurmasPurchaseSection({
                   </div>
 
                   {!price.isFree ? (
-                    <div className="mt-3 rounded-xl border border-gray-200/70 bg-white/70 px-3 py-2 text-xs text-gray-600">
-                      Pagamento único • até 12x sem juros no cartão
-                    </div>
+                    <>
+                      <div className="mt-3 rounded-xl border border-gray-200/70 bg-white/70 px-3 py-2 text-xs text-gray-600">
+                        Pagamento único • até 12x sem juros no cartão
+                      </div>
+                      {lowVacancies ? (
+                        <div className="mt-2 text-xs font-semibold text-amber-700">
+                          Restam poucas vagas
+                        </div>
+                      ) : null}
+                    </>
                   ) : (
                     <div className="mt-3 rounded-xl border border-gray-200/70 bg-white/70 px-3 py-2 text-xs text-gray-600">
                       Matrícula gratuita • acesso liberado após confirmação
