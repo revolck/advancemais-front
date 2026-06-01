@@ -2937,6 +2937,7 @@ export async function iniciarCheckoutRecuperacao(
       body: JSON.stringify(payload),
     },
     cache: "no-cache",
+    retries: 1,
   });
 }
 
@@ -2955,6 +2956,7 @@ export async function iniciarCheckoutCurso(
       body: JSON.stringify(payload),
     },
     cache: "no-cache",
+    retries: 1,
   });
 }
 

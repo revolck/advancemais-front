@@ -93,6 +93,8 @@ function getCourseCheckoutErrorMessage(error: any): string {
     FINANCIAL_IDENTITY_ERROR:
       "O Mercado Pago não autorizou a criação deste pagamento. Verifique os dados e tente novamente.",
     INVALID_IDENTIFICATION: "CPF ou CNPJ inválido para este pagamento.",
+    MERCADOPAGO_INVALID_TOKEN:
+      "Pagamento indisponível no momento. Tente novamente mais tarde.",
     MERCADOPAGO_ERROR:
       "Não foi possível processar o pagamento no momento. Tente novamente.",
   };
