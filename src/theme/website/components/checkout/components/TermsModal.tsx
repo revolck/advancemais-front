@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useRef, useState, useCallback, useEffect } from "react";
-import { FileText, ChevronDown, Check, Shield } from "lucide-react";
+import { FileText, ChevronDown, Check } from "lucide-react";
 import {
   ModalCustom,
   ModalContentWrapper,
@@ -19,9 +19,10 @@ interface TermsModalProps {
   onClose: () => void;
   onAccept: () => void;
   onCancel?: () => void;
+  variant?: "subscription" | "course";
 }
 
-const termsContent = [
+const subscriptionTermsContent = [
   {
     title: "Objeto do Contrato",
     content:
@@ -69,15 +70,61 @@ const termsContent = [
   },
 ];
 
+const courseTermsContent = [
+  {
+    title: "Objeto da Contratação",
+    content:
+      "Este contrato tem como objeto a compra de matrícula em curso ou turma selecionada pelo CONTRATANTE, com acesso às atividades, conteúdos e condições informadas na página do curso.",
+  },
+  {
+    title: "Pagamento Único",
+    content:
+      "O CONTRATANTE autoriza a cobrança única do valor informado no checkout. Quando houver parcelamento no cartão, a cobrança permanece vinculada a uma compra única, sem assinatura ou renovação automática.",
+  },
+  {
+    title: "Confirmação de Matrícula",
+    content:
+      "A matrícula será confirmada após a aprovação do pagamento pela instituição financeira ou pelo provedor de pagamento. Pagamentos via PIX ou boleto podem depender da compensação informada pelo gateway.",
+  },
+  {
+    title: "Dados do Pagador",
+    content:
+      "O CONTRATANTE é responsável por informar dados cadastrais e documento válidos para emissão e processamento da cobrança.",
+  },
+  {
+    title: "Cancelamento e Reembolso",
+    content:
+      "Solicitações de cancelamento ou reembolso serão analisadas conforme as políticas comerciais vigentes e a legislação aplicável ao serviço contratado.",
+  },
+  {
+    title: "Privacidade e Segurança",
+    content:
+      "Todos os dados fornecidos são protegidos conforme a Lei Geral de Proteção de Dados (LGPD). As transações são processadas em ambiente seguro com certificação SSL e PCI DSS.",
+  },
+  {
+    title: "Acesso ao Curso",
+    content:
+      "O acesso ao curso, turma ou certificado poderá depender da confirmação da matrícula, das regras pedagógicas aplicáveis e do cumprimento dos requisitos definidos para cada curso.",
+  },
+  {
+    title: "Foro e Legislação",
+    content:
+      "Este contrato é regido pelas leis brasileiras. Fica eleito o foro da comarca da sede da CONTRATADA para dirimir quaisquer questões oriundas deste contrato.",
+  },
+];
+
 export const TermsModal: React.FC<TermsModalProps> = ({
   isOpen,
   onClose,
   onAccept,
   onCancel,
+  variant = "subscription",
 }) => {
   const termsContentRef = useRef<HTMLDivElement>(null);
   const [termsScrollComplete, setTermsScrollComplete] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0);
+  const termsContent =
+    variant === "course" ? courseTermsContent : subscriptionTermsContent;
 
   // Reset state when modal opens
   useEffect(() => {
@@ -93,7 +140,7 @@ export const TermsModal: React.FC<TermsModalProps> = ({
     const { scrollTop, scrollHeight, clientHeight } = termsContentRef.current;
     const progress = Math.min(
       100,
-      Math.round((scrollTop / (scrollHeight - clientHeight)) * 100)
+      Math.round((scrollTop / (scrollHeight - clientHeight)) * 100),
     );
     setScrollProgress(progress);
 
@@ -161,7 +208,7 @@ export const TermsModal: React.FC<TermsModalProps> = ({
                   "h-full transition-all duration-300 rounded-full",
                   termsScrollComplete
                     ? "bg-white"
-                    : "bg-gradient-to-r from-white via-white/80 to-white/60"
+                    : "bg-gradient-to-r from-white via-white/80 to-white/60",
                 )}
                 style={{ width: `${scrollProgress}%` }}
               />
@@ -225,7 +272,7 @@ export const TermsModal: React.FC<TermsModalProps> = ({
               disabled={!termsScrollComplete}
               className={cn(
                 "flex-1 sm:flex-none transition-all",
-                termsScrollComplete && "!bg-emerald-600 hover:!bg-emerald-700"
+                termsScrollComplete && "!bg-emerald-600 hover:!bg-emerald-700",
               )}
             >
               {termsScrollComplete ? (

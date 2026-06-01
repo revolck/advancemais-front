@@ -9,12 +9,14 @@ interface ConsentCheckboxProps {
   checked: boolean;
   onOpenTerms: () => void;
   onCheckedChange: (checked: boolean) => void;
+  variant?: "subscription" | "course";
 }
 
 export const ConsentCheckbox: React.FC<ConsentCheckboxProps> = ({
   checked,
   onOpenTerms,
   onCheckedChange,
+  variant = "subscription",
 }) => {
   const handleCheckboxChange = (newChecked: boolean) => {
     // Quando o usuário tenta marcar (clica no checkbox desmarcado)
@@ -40,7 +42,10 @@ export const ConsentCheckbox: React.FC<ConsentCheckboxProps> = ({
         onCheckedChange={handleCheckboxChange}
         className="mt-0.5 bg-zinc-300 border border-zinc-400 data-[state=checked]:border-[var(--primary-color)]"
       />
-      <label htmlFor="checkout-consent" className="leading-relaxed cursor-pointer">
+      <label
+        htmlFor="checkout-consent"
+        className="leading-relaxed cursor-pointer"
+      >
         Li e concordo com os{" "}
         <button
           type="button"
@@ -49,9 +54,10 @@ export const ConsentCheckbox: React.FC<ConsentCheckboxProps> = ({
         >
           Termos de contratação
         </button>{" "}
-        e autorizo a cobrança recorrente do plano selecionado.
+        {variant === "course"
+          ? "e autorizo a compra de pagamento único do curso selecionado."
+          : "e autorizo a cobrança recorrente do plano selecionado."}
       </label>
     </div>
   );
 };
-
