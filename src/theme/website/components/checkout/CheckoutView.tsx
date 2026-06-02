@@ -95,6 +95,8 @@ function getCourseCheckoutErrorMessage(error: any): string {
     INVALID_IDENTIFICATION: "CPF ou CNPJ inválido para este pagamento.",
     MERCADOPAGO_INVALID_TOKEN:
       "Pagamento indisponível no momento. Tente novamente mais tarde.",
+    MERCADOPAGO_UNAUTHORIZED_POLICY:
+      "Pagamento indisponível no momento. Tente novamente mais tarde.",
     MERCADOPAGO_ERROR:
       "Não foi possível processar o pagamento no momento. Tente novamente.",
   };
