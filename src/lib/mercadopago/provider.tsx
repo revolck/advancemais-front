@@ -11,6 +11,7 @@
  */
 
 import React, { createContext, useContext, useEffect, useState, useCallback, useMemo, useRef } from "react";
+import { getPublicMercadoPagoConfig } from "@/api/configuracoes-gerais";
 import { env } from "@/lib/env";
 import type { CardData, CardTokenResult, MercadoPagoContextValue } from "./types";
 
@@ -64,9 +65,29 @@ export function MercadoPagoProvider({
   locale = "pt-BR" 
 }: MercadoPagoProviderProps) {
   const [isReady, setIsReady] = useState(false);
+  const fallbackPublicKey = env.mercadoPagoPublicKey;
+  const [publicKey, setPublicKey] = useState(fallbackPublicKey);
   const mpInstanceRef = useRef<MercadoPagoSDK | null>(null);
-  const publicKey = env.mercadoPagoPublicKey;
-  const isTestMode = publicKey.startsWith("TEST-");
+  const isTestMode = publicKey?.startsWith("TEST-") ?? false;
+
+  useEffect(() => {
+    let mounted = true;
+
+    getPublicMercadoPagoConfig()
+      .then((response) => {
+        if (!mounted || !response.data.publicKey) {
+          return;
+        }
+        setPublicKey(response.data.publicKey);
+      })
+      .catch(() => {
+        setPublicKey(fallbackPublicKey);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, [fallbackPublicKey]);
 
   // Carrega o SDK do Mercado Pago
   useEffect(() => {
@@ -78,6 +99,7 @@ export function MercadoPagoProvider({
     // Verifica se o script já foi carregado
     if (window.MercadoPago) {
       try {
+        setIsReady(false);
         mpInstanceRef.current = new window.MercadoPago(publicKey, { locale });
         setIsReady(true);
         console.log("[MercadoPago] SDK já carregado, instância criada");

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   CalendarDays,
   CheckCircle2,
@@ -20,12 +20,18 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { UserRole } from "@/config/roles";
 import { getUserProfile } from "@/api/usuarios";
 import { createInscricao } from "@/api/cursos";
+import { getPublicMercadoPagoConfig } from "@/api/configuracoes-gerais";
 import type {
   CourseTurmaPublica,
   CourseData,
 } from "@/theme/website/components/course/types";
 
 const PENDING_COURSE_PURCHASE_KEY = "pending_course_purchase_v1";
+
+type CourseInstallmentsConfig = {
+  enabled: boolean;
+  maxInstallments: number;
+};
 
 function getCookieValue(name: string): string | null {
   if (typeof document === "undefined") return null;
@@ -63,7 +69,7 @@ function getTurmaDisplayName(turma: CourseTurmaPublica): string {
 function isTurmaWithinThreeMonthsFromDate(
   turma: CourseTurmaPublica,
   now: Date,
-  cutoff: Date
+  cutoff: Date,
 ): boolean {
   const start = parseDate(turma.dataInicio);
   const end = parseDate(turma.dataFim);
@@ -76,7 +82,7 @@ function isTurmaWithinThreeMonthsFromDate(
 
 function resolvePrice(
   course: CourseData,
-  turma: CourseTurmaPublica
+  turma: CourseTurmaPublica,
 ): {
   isFree: boolean;
   valor: number;
@@ -113,23 +119,51 @@ export function CourseTurmasPurchaseSection({
   variant = "section",
 }: CourseTurmasPurchaseSectionProps) {
   const role = useUserRole();
-  const eligibleTurmas = useMemo(
-    () => {
-      const now = new Date();
-      const cutoff = addMonths(now, 3);
-      return (turmas ?? []).filter((turma) =>
-        isTurmaWithinThreeMonthsFromDate(turma, now, cutoff)
-      );
-    },
-    [turmas]
-  );
+  const eligibleTurmas = useMemo(() => {
+    const now = new Date();
+    const cutoff = addMonths(now, 3);
+    return (turmas ?? []).filter((turma) =>
+      isTurmaWithinThreeMonthsFromDate(turma, now, cutoff),
+    );
+  }, [turmas]);
   const [selectedTurmaId, setSelectedTurmaId] = useState<string | null>(
-    variant === "sidebar" ? null : eligibleTurmas[0]?.id ?? null
+    variant === "sidebar" ? null : (eligibleTurmas[0]?.id ?? null),
   );
   const [submittingTurmaId, setSubmittingTurmaId] = useState<string | null>(
-    null
+    null,
   );
+  const [courseInstallmentsConfig, setCourseInstallmentsConfig] =
+    useState<CourseInstallmentsConfig>({
+      enabled: false,
+      maxInstallments: 1,
+    });
   const isSubmitting = submittingTurmaId != null;
+
+  useEffect(() => {
+    let mounted = true;
+
+    getPublicMercadoPagoConfig()
+      .then((response) => {
+        if (!mounted) return;
+
+        setCourseInstallmentsConfig({
+          enabled: response.data.courseInstallmentsEnabled === true,
+          maxInstallments:
+            typeof response.data.courseInstallmentsMax === "number" &&
+            response.data.courseInstallmentsMax > 0
+              ? Math.min(12, Math.max(1, response.data.courseInstallmentsMax))
+              : 1,
+        });
+      })
+      .catch(() => {
+        if (!mounted) return;
+        setCourseInstallmentsConfig({ enabled: false, maxInstallments: 1 });
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   React.useEffect(() => {
     const hasSelection =
@@ -146,7 +180,7 @@ export function CourseTurmasPurchaseSection({
 
   const selectedTurma = useMemo(() => {
     if (!selectedTurmaId)
-      return variant === "sidebar" ? null : eligibleTurmas[0] ?? null;
+      return variant === "sidebar" ? null : (eligibleTurmas[0] ?? null);
     return (
       eligibleTurmas.find((t) => t.id === selectedTurmaId) ??
       eligibleTurmas[0] ??
@@ -210,7 +244,7 @@ export function CourseTurmasPurchaseSection({
       const turmaName = getTurmaDisplayName(turma);
       const { isFree, valor, valorPromocional } = resolvePrice(
         course as CourseData,
-        turma
+        turma,
       );
       const payable =
         !isFree && valorPromocional != null && valorPromocional < valor
@@ -253,7 +287,10 @@ export function CourseTurmasPurchaseSection({
           turmaNome: turmaName,
           dataInicio: turma.dataInicio ?? null,
           dataFim: turma.dataFim ?? null,
-          maxInstallments: 12,
+          installmentsEnabled: courseInstallmentsConfig.enabled,
+          maxInstallments: courseInstallmentsConfig.enabled
+            ? courseInstallmentsConfig.maxInstallments
+            : 1,
         },
       });
 
@@ -327,8 +364,8 @@ export function CourseTurmasPurchaseSection({
                 start && end
                   ? `${start} — ${end}`
                   : start
-                  ? `Início: ${start}`
-                  : "Datas a confirmar";
+                    ? `Início: ${start}`
+                    : "Datas a confirmar";
 
               const hasPromo =
                 !price.isFree &&
@@ -344,7 +381,7 @@ export function CourseTurmasPurchaseSection({
                   key={turma.id}
                   className={cn(
                     "rounded-2xl border border-gray-200/70 bg-gradient-to-br from-white to-gray-50/40 p-4 transition",
-                    "hover:border-[var(--primary-color)]/35 hover:shadow-sm"
+                    "hover:border-[var(--primary-color)]/35 hover:shadow-sm",
                   )}
                 >
                   <div className="flex items-start justify-between gap-3">
@@ -387,7 +424,10 @@ export function CourseTurmasPurchaseSection({
                   {!price.isFree ? (
                     <>
                       <div className="mt-3 rounded-xl border border-gray-200/70 bg-white/70 px-3 py-2 text-xs text-gray-600">
-                        Pagamento único • até 12x sem juros no cartão
+                        {courseInstallmentsConfig.enabled &&
+                        courseInstallmentsConfig.maxInstallments > 1
+                          ? `Pagamento único • até ${courseInstallmentsConfig.maxInstallments}x no cartão`
+                          : "Pagamento único no cartão"}
                       </div>
                       {lowVacancies ? (
                         <div className="mt-2 text-xs font-semibold text-amber-700">
@@ -479,7 +519,7 @@ export function CourseTurmasPurchaseSection({
                     "hover:border-[var(--primary-color)]/35 hover:bg-[var(--primary-color)]/[0.02]",
                     isSelected
                       ? "border-[var(--primary-color)]/50 bg-[var(--primary-color)]/[0.03] ring-1 ring-[var(--primary-color)]/15"
-                      : "border-gray-200/70 bg-white"
+                      : "border-gray-200/70 bg-white",
                   )}
                 >
                   <div className="flex items-start justify-between gap-4">
@@ -579,8 +619,8 @@ export function CourseTurmasPurchaseSection({
                     {turmaDates.start && turmaDates.end
                       ? `${turmaDates.start} • ${turmaDates.end}`
                       : turmaDates.start
-                      ? `Início: ${turmaDates.start}`
-                      : "A confirmar"}
+                        ? `Início: ${turmaDates.start}`
+                        : "A confirmar"}
                   </span>
                 </div>
                 <div className="flex items-start justify-between gap-3">

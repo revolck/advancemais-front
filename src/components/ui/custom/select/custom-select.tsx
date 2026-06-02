@@ -45,7 +45,7 @@ const Square = ({
     data-square
     className={cn(
       "flex size-5 items-center justify-center rounded bg-muted text-xs font-medium text-muted-foreground",
-      className
+      className,
     )}
     aria-hidden="true"
   >
@@ -109,10 +109,16 @@ export function SelectCustom(props: SelectCustomProps) {
   }, [props.mode, props.options, props.value]);
 
   // Single and User modes share
-  const options = props.mode !== "multiple" ? (props.options as SelectOption[] | UserOption[]) : null;
+  const options =
+    props.mode !== "multiple"
+      ? (props.options as SelectOption[] | UserOption[])
+      : null;
   const value =
     props.mode !== "multiple" ? ((props.value ?? null) as string | null) : null;
-  const onChange = props.mode !== "multiple" ? (props.onChange as (v: string | null) => void) : null;
+  const onChange =
+    props.mode !== "multiple"
+      ? (props.onChange as (v: string | null) => void)
+      : null;
   const currentOptionLabel =
     props.mode !== "multiple"
       ? options?.find((option) => option.value === value)?.label
@@ -123,9 +129,10 @@ export function SelectCustom(props: SelectCustomProps) {
     value !== undefined &&
     value !== "";
   const canClear = clearable && !disabled && hasValue;
-  const searchableSingle = props.mode !== "multiple" ? ((props as any).searchable ?? true) : false;
+  const searchableSingle =
+    props.mode !== "multiple" ? ((props as any).searchable ?? true) : false;
   const searchThreshold = props.searchThreshold ?? 5;
-  const selectValue = props.mode !== "multiple" ? value ?? "" : "";
+  const selectValue = props.mode !== "multiple" ? (value ?? "") : "";
   const handleCommandWheel = (event: React.WheelEvent<HTMLDivElement>) => {
     if (!event.currentTarget) return;
     const { deltaY, deltaX } = event;
@@ -134,7 +141,7 @@ export function SelectCustom(props: SelectCustomProps) {
     event.stopPropagation();
     event.currentTarget.scrollTop += deltaY;
   };
-  
+
   // Hooks movidos para fora do condicional para evitar erro de hooks condicionais
   // Usa useMemo para recalcular quando value ou options mudam (apenas para searchable single)
   const current = useMemo(() => {
@@ -151,7 +158,7 @@ export function SelectCustom(props: SelectCustomProps) {
     }
     return (options as SelectOption[]).find((o) => o.value === value) || null;
   }, [searchThreshold, searchableSingle, props.mode, options, value]);
-  
+
   // Fecha o popover quando o valor é limpo (null) - apenas para searchable single
   useEffect(() => {
     if (
@@ -173,7 +180,6 @@ export function SelectCustom(props: SelectCustomProps) {
       options &&
       (options as SelectOption[]).length > searchThreshold
     ) {
-      
       return (
         <div className={container}>
           {label && (
@@ -182,7 +188,7 @@ export function SelectCustom(props: SelectCustomProps) {
               className={cn(
                 "text-sm font-medium",
                 error && "text-destructive",
-                props.required && "required"
+                props.required && "required",
               )}
             >
               {label}
@@ -200,13 +206,13 @@ export function SelectCustom(props: SelectCustomProps) {
                     size === "md" && "h-12",
                     size === "lg" && "h-14",
                     error && "border-destructive",
-                    canClear ? "pr-20" : "pr-10"
+                    canClear ? "pr-20" : "pr-10",
                   )}
                 >
                   <span
                     className={cn(
                       "truncate text-left flex-1",
-                      !current && "text-muted-foreground"
+                      !current && "text-muted-foreground",
                     )}
                   >
                     {current?.label || placeholder}
@@ -217,7 +223,7 @@ export function SelectCustom(props: SelectCustomProps) {
               <ChevronDownIcon
                 className={cn(
                   "pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 opacity-50 transition-transform duration-200",
-                  open && "rotate-180"
+                  open && "rotate-180",
                 )}
               />
 
@@ -243,7 +249,7 @@ export function SelectCustom(props: SelectCustomProps) {
             </div>
             <PopoverContent
               className={cn(
-                "z-[120] w-[--radix-popover-trigger-width] min-w-[--radix-popover-trigger-width] rounded-md border border-gray-200 bg-white p-0 shadow-none box-border"
+                "z-[120] w-[--radix-popover-trigger-width] min-w-[--radix-popover-trigger-width] rounded-md border border-gray-200 bg-white p-0 shadow-none box-border",
               )}
               style={{
                 width: "var(--radix-popover-trigger-width)",
@@ -260,7 +266,7 @@ export function SelectCustom(props: SelectCustomProps) {
                 </CommandEmpty>
                 <CommandList
                   onWheel={handleCommandWheel}
-                  className="max-h-72 overflow-y-auto pr-0 pb-1.5 scrollbar-thin scrollbar-thumb-gray-400/50 hover:scrollbar-thumb-gray-400/70 scrollbar-track-transparent"
+                  className="max-h-72 overflow-y-scroll pr-1 pb-1.5 scrollbar-thin scrollbar-thumb-gray-400/70 hover:scrollbar-thumb-gray-500/80 scrollbar-track-transparent"
                 >
                   <CommandGroup>
                     {(options as SelectOption[]).map((opt) => (
@@ -271,7 +277,7 @@ export function SelectCustom(props: SelectCustomProps) {
                         disabled={opt.disabled}
                         onSelect={() => {
                           if (onChange) {
-                          onChange(opt.value);
+                            onChange(opt.value);
                           }
                           setOpen(false);
                         }}
@@ -279,7 +285,7 @@ export function SelectCustom(props: SelectCustomProps) {
                           "group cursor-pointer pl-3 pr-3 py-2.5 text-sm transition-colors",
                           "hover:bg-[var(--primary-color)]/6",
                           value === opt.value &&
-                            "bg-[var(--primary-color)]/8 font-medium text-foreground"
+                            "bg-[var(--primary-color)]/8 font-medium text-foreground",
                         )}
                       >
                         <span className="truncate flex-1">{opt.label}</span>
@@ -313,7 +319,7 @@ export function SelectCustom(props: SelectCustomProps) {
             className={cn(
               "text-sm font-medium",
               error && "text-destructive",
-              props.required && "required"
+              props.required && "required",
             )}
           >
             {label}
@@ -341,7 +347,7 @@ export function SelectCustom(props: SelectCustomProps) {
                 size === "md" && "data-[size=default]:h-12",
                 size === "lg" && "data-[size=default]:h-14",
                 error && "border-destructive aria-invalid:border-destructive",
-                canClear ? "pr-20" : "pr-10"
+                canClear ? "pr-20" : "pr-10",
               )}
               aria-required={props.required || undefined}
             >
@@ -394,8 +400,10 @@ export function SelectCustom(props: SelectCustomProps) {
             className={cn(
               "z-[120] w-[--radix-select-trigger-width] max-h-80 rounded-md border border-gray-200 bg-white",
               "[&_[data-slot=select-scroll-up-button]]:hidden [&_[data-slot=select-scroll-down-button]]:hidden",
+              "[&_[data-radix-select-viewport]]:max-h-72 [&_[data-radix-select-viewport]]:overflow-y-scroll [&_[data-radix-select-viewport]]:pr-1",
+              "[&_[data-radix-select-viewport]]:scrollbar-thin [&_[data-radix-select-viewport]]:scrollbar-thumb-gray-400/70 [&_[data-radix-select-viewport]]:scrollbar-track-transparent",
               "[&_[data-slot=select-item]]:cursor-pointer [&_[data-slot=select-item]]:pl-3 [&_[data-slot=select-item]]:pr-3 [&_[data-slot=select-item]]:py-2.5 [&_[data-slot=select-item]]:rounded-md",
-              "[&_[data-slot=select-item][data-state=checked]]:bg-[var(--primary-color)]/8 [&_[data-slot=select-item][data-state=checked]]:font-medium [&_[data-slot=select-item][data-state=checked]]:text-foreground"
+              "[&_[data-slot=select-item][data-state=checked]]:bg-[var(--primary-color)]/8 [&_[data-slot=select-item][data-state=checked]]:font-medium [&_[data-slot=select-item][data-state=checked]]:text-foreground",
             )}
           >
             {props.mode === "user" ? (
@@ -456,7 +464,7 @@ export function SelectCustom(props: SelectCustomProps) {
           className={cn(
             "text-sm font-medium",
             error && "text-destructive",
-            props.required && "required"
+            props.required && "required",
           )}
         >
           {label}
@@ -471,7 +479,7 @@ export function SelectCustom(props: SelectCustomProps) {
               size === "sm" && "h-10",
               size === "md" && "h-12",
               size === "lg" && "h-14",
-              error && "border-destructive"
+              error && "border-destructive",
             )}
             data-invalid={error ? "true" : undefined}
           >
@@ -487,14 +495,14 @@ export function SelectCustom(props: SelectCustomProps) {
             <ChevronDownIcon
               className={cn(
                 "size-4 opacity-50 transition-transform duration-200",
-                open && "rotate-180"
+                open && "rotate-180",
               )}
             />
           </button>
         </PopoverTrigger>
         <PopoverContent
           className={cn(
-            "z-[120] w-[--radix-popover-trigger-width] min-w-[--radix-popover-trigger-width] rounded-md border border-gray-200 bg-white p-0 shadow-none box-border"
+            "z-[120] w-[--radix-popover-trigger-width] min-w-[--radix-popover-trigger-width] rounded-md border border-gray-200 bg-white p-0 shadow-none box-border",
           )}
           style={{
             width: "var(--radix-popover-trigger-width)",
@@ -513,12 +521,13 @@ export function SelectCustom(props: SelectCustomProps) {
             </CommandEmpty>
             {multipleValue.length > 0 && (
               <div className="px-3 py-2 text-xs text-muted-foreground border-b border-gray-200/80">
-                {multipleValue.length} selecionado{multipleValue.length > 1 ? "s" : ""}
+                {multipleValue.length} selecionado
+                {multipleValue.length > 1 ? "s" : ""}
               </div>
             )}
             <CommandList
               onWheel={handleCommandWheel}
-              className="max-h-72 overflow-y-auto pr-0 pb-1.5 scrollbar-thin scrollbar-thumb-gray-400/50 hover:scrollbar-thumb-gray-400/70 scrollbar-track-transparent"
+              className="max-h-72 overflow-y-scroll pr-1 pb-1.5 scrollbar-thin scrollbar-thumb-gray-400/70 hover:scrollbar-thumb-gray-500/80 scrollbar-track-transparent"
             >
               <CommandGroup>
                 {multipleOptions.map((opt) => {
@@ -538,7 +547,7 @@ export function SelectCustom(props: SelectCustomProps) {
                         "group cursor-pointer pl-3 pr-3 py-2.5 text-sm transition-colors",
                         "hover:bg-[var(--primary-color)]/6",
                         checked &&
-                          "bg-[var(--primary-color)]/8 font-medium text-foreground"
+                          "bg-[var(--primary-color)]/8 font-medium text-foreground",
                       )}
                     >
                       <span className="pointer-events-none">

@@ -206,6 +206,18 @@ export const breadcrumbConfig: Record<string, BreadcrumbConfig> = {
       { label: "Empresas", icon: "Building2" },
     ],
   },
+  "/dashboard/config/geral": {
+    title: "Configuração Geral",
+    items: [
+      { label: "Dashboard", href: "/", icon: "Home" },
+      {
+        label: "Configurações",
+        href: "/dashboard/config/geral",
+        icon: "Settings",
+      },
+      { label: "Geral", icon: "Settings" },
+    ],
+  },
   "/config/empresas/cupons": {
     title: "Cupons de Desconto",
     items: [
@@ -653,13 +665,13 @@ export const breadcrumbConfig: Record<string, BreadcrumbConfig> = {
 // Hook para filtrar "Empresas" do breadcrumb para role EMPRESA
 function filterBreadcrumbForEmpresa(
   config: BreadcrumbConfig,
-  isEmpresaRole: boolean
+  isEmpresaRole: boolean,
 ): BreadcrumbConfig {
   if (!isEmpresaRole) return config;
 
   // Remove o item "Empresas" do breadcrumb para role EMPRESA
   const filteredItems = config.items.filter(
-    (item) => item.label !== "Empresas"
+    (item) => item.label !== "Empresas",
   );
 
   return {
@@ -678,7 +690,7 @@ export function useBreadcrumb(): BreadcrumbConfig {
   const cleanPathname = pathname.split("?")[0].split("#")[0];
 
   const atividadeProvaMatch = cleanPathname.match(
-    /^\/dashboard\/cursos\/atividades-provas\/([^/]+)(?:\/.*)?$/
+    /^\/dashboard\/cursos\/atividades-provas\/([^/]+)(?:\/.*)?$/,
   );
   const atividadeProvaId =
     atividadeProvaMatch && atividadeProvaMatch[1] !== "cadastrar"
@@ -717,7 +729,7 @@ export function useBreadcrumb(): BreadcrumbConfig {
           { label: "Detalhes do Candidato", icon: "Eye" },
         ],
       },
-      isEmpresaRole
+      isEmpresaRole,
     );
   }
 
@@ -737,7 +749,7 @@ export function useBreadcrumb(): BreadcrumbConfig {
           { label: "Detalhes da Vaga", icon: "Eye" },
         ],
       },
-      isEmpresaRole
+      isEmpresaRole,
     );
   }
 
@@ -752,7 +764,7 @@ export function useBreadcrumb(): BreadcrumbConfig {
           { label: "Detalhes da Empresa", icon: "Eye" },
         ],
       },
-      isEmpresaRole
+      isEmpresaRole,
     );
   }
 
@@ -770,7 +782,7 @@ export function useBreadcrumb(): BreadcrumbConfig {
           { label: "Visualizando empresa", icon: "Eye" },
         ],
       },
-      isEmpresaRole
+      isEmpresaRole,
     );
   }
 
@@ -793,7 +805,11 @@ export function useBreadcrumb(): BreadcrumbConfig {
       items: [
         { label: "Dashboard", href: "/", icon: "Home" },
         { label: "Cursos", href: "/dashboard/cursos", icon: "BookOpen" },
-        { label: "Estágios", href: "/dashboard/cursos/estagios", icon: "Briefcase" },
+        {
+          label: "Estágios",
+          href: "/dashboard/cursos/estagios",
+          icon: "Briefcase",
+        },
         { label: "Detalhes", icon: "Eye" },
       ],
     };
@@ -802,12 +818,12 @@ export function useBreadcrumb(): BreadcrumbConfig {
   // Item individual do aluno (aula/atividade/prova): /dashboard/cursos/alunos/cursos/[cursoId]/[turmaId]/[itemId]
   if (
     cleanPathname.match(
-      /^\/dashboard\/cursos\/alunos\/cursos\/[^/]+\/[^/]+\/[^/]+$/
+      /^\/dashboard\/cursos\/alunos\/cursos\/[^/]+\/[^/]+\/[^/]+$/,
     )
   ) {
     // Extrair cursoId e aulaId da URL
     const match = cleanPathname.match(
-      /^\/dashboard\/cursos\/alunos\/cursos\/([^/]+)\/([^/]+)\/([^/]+)$/
+      /^\/dashboard\/cursos\/alunos\/cursos\/([^/]+)\/([^/]+)\/([^/]+)$/,
     );
     const cursoIdFromPath = match ? match[1] : null;
     const turmaIdFromPath = match ? match[2] : null;
@@ -816,7 +832,12 @@ export function useBreadcrumb(): BreadcrumbConfig {
     // Buscar nome do curso e do item (aula/prova/atividade) nos dados mockados
     let cursoNome = "Curso";
     let itemNome = "Aula";
-    if (cursoIdFromPath && turmaIdFromPath && aulaIdFromPath && typeof window !== "undefined") {
+    if (
+      cursoIdFromPath &&
+      turmaIdFromPath &&
+      aulaIdFromPath &&
+      typeof window !== "undefined"
+    ) {
       try {
         const cursos = getMockAlunoCursos();
         const curso = cursos.find((c: any) => c.cursoId === cursoIdFromPath);
@@ -825,19 +846,25 @@ export function useBreadcrumb(): BreadcrumbConfig {
         }
 
         // Buscar nome do item na estrutura da turma
-        const estrutura = getMockTurmaEstrutura(cursoIdFromPath, turmaIdFromPath);
+        const estrutura = getMockTurmaEstrutura(
+          cursoIdFromPath,
+          turmaIdFromPath,
+        );
         if (estrutura) {
           // Buscar em todos os módulos
           for (const modulo of estrutura.modules || []) {
             const item = modulo.items.find(
-              (i: any) => i.aulaId === aulaIdFromPath || i.id === aulaIdFromPath
+              (i: any) =>
+                i.aulaId === aulaIdFromPath || i.id === aulaIdFromPath,
             );
             if (item) {
               itemNome = item.title;
               // Se for atividade, tentar buscar o nome da atividade mockada
               if (item.type === "ATIVIDADE" && item.platformActivityId) {
                 try {
-                  const atividade = getMockAtividadeById(item.platformActivityId);
+                  const atividade = getMockAtividadeById(
+                    item.platformActivityId,
+                  );
                   if (atividade?.titulo) {
                     itemNome = atividade.titulo;
                   }
@@ -852,14 +879,17 @@ export function useBreadcrumb(): BreadcrumbConfig {
           // Se não encontrou nos módulos, buscar nos itens avulsos
           if (itemNome === "Aula" && estrutura.standaloneItems) {
             const item = estrutura.standaloneItems.find(
-              (i: any) => i.aulaId === aulaIdFromPath || i.id === aulaIdFromPath
+              (i: any) =>
+                i.aulaId === aulaIdFromPath || i.id === aulaIdFromPath,
             );
             if (item) {
               itemNome = item.title;
               // Se for atividade, tentar buscar o nome da atividade mockada
               if (item.type === "ATIVIDADE" && item.platformActivityId) {
                 try {
-                  const atividade = getMockAtividadeById(item.platformActivityId);
+                  const atividade = getMockAtividadeById(
+                    item.platformActivityId,
+                  );
                   if (atividade?.titulo) {
                     itemNome = atividade.titulo;
                   }
@@ -870,7 +900,7 @@ export function useBreadcrumb(): BreadcrumbConfig {
             }
           }
         }
-        
+
         // Se ainda não encontrou, tentar buscar diretamente como atividade
         if (itemNome === "Aula" && aulaIdFromPath?.startsWith("atividade-")) {
           try {
@@ -906,13 +936,11 @@ export function useBreadcrumb(): BreadcrumbConfig {
 
   // Estrutura de turma do aluno: /dashboard/cursos/alunos/cursos/[cursoId]/[turmaId]
   if (
-    cleanPathname.match(
-      /^\/dashboard\/cursos\/alunos\/cursos\/[^/]+\/[^/]+$/
-    )
+    cleanPathname.match(/^\/dashboard\/cursos\/alunos\/cursos\/[^/]+\/[^/]+$/)
   ) {
     // Extrair cursoId da URL para buscar o nome do curso
     const match = cleanPathname.match(
-      /^\/dashboard\/cursos\/alunos\/cursos\/([^/]+)\/[^/]+$/
+      /^\/dashboard\/cursos\/alunos\/cursos\/([^/]+)\/[^/]+$/,
     );
     const cursoIdFromPath = match ? match[1] : null;
 
@@ -998,7 +1026,9 @@ export function useBreadcrumb(): BreadcrumbConfig {
   }
 
   // Rota antiga de edição de turma: /dashboard/cursos/[id]/turmas/[turmaId]/editar
-  if (cleanPathname.match(/^\/dashboard\/cursos\/\d+\/turmas\/[^/]+\/editar$/)) {
+  if (
+    cleanPathname.match(/^\/dashboard\/cursos\/\d+\/turmas\/[^/]+\/editar$/)
+  ) {
     return {
       title: "Editar Turma",
       items: [
@@ -1066,7 +1096,7 @@ export function useBreadcrumb(): BreadcrumbConfig {
   // Detalhes de atividade/prova: /dashboard/cursos/atividades-provas/[id]
   if (
     cleanPathname.match(
-      /^\/dashboard\/cursos\/atividades-provas\/[^/]+\/respostas\/[^/]+$/
+      /^\/dashboard\/cursos\/atividades-provas\/[^/]+\/respostas\/[^/]+$/,
     )
   ) {
     const detailsLabel =
@@ -1134,7 +1164,9 @@ export function useBreadcrumb(): BreadcrumbConfig {
 
   // Edição de atividade/prova: /dashboard/cursos/atividades-provas/[id]/editar
   if (
-    cleanPathname.match(/^\/dashboard\/cursos\/atividades-provas\/[^/]+\/editar$/)
+    cleanPathname.match(
+      /^\/dashboard\/cursos\/atividades-provas\/[^/]+\/editar$/,
+    )
   ) {
     return {
       title: "Editar Atividade/Prova",
@@ -1173,7 +1205,7 @@ export function useBreadcrumb(): BreadcrumbConfig {
     if (breadcrumbConfig[currentPath]) {
       return filterBreadcrumbForEmpresa(
         breadcrumbConfig[currentPath],
-        isEmpresaRole
+        isEmpresaRole,
       );
     }
   }

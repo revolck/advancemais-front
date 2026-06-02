@@ -588,6 +588,17 @@ export const statusProcessoRoutes = {
   validateDefault: () => `${prefix}/status-processo/validate-default`,
 };
 
+export const configuracoesGeraisRoutes = {
+  list: () => `${prefix}/configuracoes/geral`,
+  update: (categoria: string) =>
+    `${prefix}/configuracoes/geral/${encodeURIComponent(categoria)}`,
+  test: (categoria: string) =>
+    `${prefix}/configuracoes/geral/${encodeURIComponent(categoria)}/testar`,
+  history: (query?: string) =>
+    `${prefix}/configuracoes/geral/historico${query ? `?${query}` : ""}`,
+  publicMercadoPago: () => `${prefix}/configuracoes/publicas/mercadopago`,
+};
+
 export const routes = {
   website: websiteRoutes,
   empresas: empresasRoutes,
@@ -598,6 +609,7 @@ export const routes = {
   permissoes: permissoesRoutes,
   upload: uploadRoutes,
   statusProcesso: statusProcessoRoutes,
+  configuracoesGerais: configuracoesGeraisRoutes,
 };
 
 export type Routes = typeof routes;

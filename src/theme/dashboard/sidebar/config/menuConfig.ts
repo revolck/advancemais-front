@@ -267,6 +267,12 @@ const rawMenuSections: MenuSection[] = [
             route: "/config/candidatos",
             permissions: [UserRole.ADMIN, UserRole.MODERADOR],
           },
+          {
+            icon: null,
+            label: "Geral",
+            route: "/config/geral",
+            permissions: [UserRole.ADMIN, UserRole.MODERADOR],
+          },
         ],
       },
     ],

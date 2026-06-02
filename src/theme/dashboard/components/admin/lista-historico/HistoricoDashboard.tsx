@@ -47,15 +47,18 @@ export function HistoricoDashboard({ className }: { className?: string }) {
   type SortDirection = "asc" | "desc";
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
 
-  const categoriaOptions: SelectOption[] = useMemo(() => [
-    { value: "SISTEMA", label: "Sistema" },
-    { value: "USUARIO", label: "Usuário" },
-    { value: "EMPRESA", label: "Empresa" },
-    { value: "VAGA", label: "Vaga" },
-    { value: "CURSO", label: "Curso" },
-    { value: "PAGAMENTO", label: "Pagamento" },
-    { value: "SEGURANCA", label: "Segurança" },
-  ], []);
+  const categoriaOptions: SelectOption[] = useMemo(
+    () => [
+      { value: "SISTEMA", label: "Sistema" },
+      { value: "USUARIO", label: "Usuário" },
+      { value: "EMPRESA", label: "Empresa" },
+      { value: "VAGA", label: "Vaga" },
+      { value: "CURSO", label: "Curso" },
+      { value: "PAGAMENTO", label: "Pagamento" },
+      { value: "SEGURANCA", label: "Segurança" },
+    ],
+    [],
+  );
 
   const normalizedFilters = useMemo(() => {
     return {
@@ -64,9 +67,7 @@ export function HistoricoDashboard({ className }: { className?: string }) {
       categorias: selectedCategorias.length > 0 ? selectedCategorias : null,
       tipo: selectedTipo,
       search:
-        appliedSearchTerm.length >= MIN_SEARCH_LENGTH
-          ? appliedSearchTerm
-          : "",
+        appliedSearchTerm.length >= MIN_SEARCH_LENGTH ? appliedSearchTerm : "",
       sortBy: "dataHora",
       sortDir: sortDirection,
     };
@@ -80,7 +81,10 @@ export function HistoricoDashboard({ className }: { className?: string }) {
   ]);
 
   const historicoQuery = useHistoricoDashboardQuery(normalizedFilters);
-  const logs = useMemo(() => historicoQuery.data?.logs ?? [], [historicoQuery.data?.logs]);
+  const logs = useMemo(
+    () => historicoQuery.data?.logs ?? [],
+    [historicoQuery.data?.logs],
+  );
   const filtrosDisponiveis = historicoQuery.data?.filtrosDisponiveis;
 
   useEffect(() => {
@@ -93,7 +97,7 @@ export function HistoricoDashboard({ className }: { className?: string }) {
     total: logs.length,
     totalPages: Math.max(
       1,
-      Math.ceil(logs.length / normalizedFilters.pageSize)
+      Math.ceil(logs.length / normalizedFilters.pageSize),
     ),
   };
   const pagination = historicoPagination;
@@ -103,26 +107,30 @@ export function HistoricoDashboard({ className }: { className?: string }) {
       setCurrentPage(Math.max(1, historicoPagination.totalPages));
     }
   }, [historicoPagination.totalPages, currentPage]);
-  
+
   const isLoading = historicoQuery.isLoading;
   const isFetching = historicoQuery.isFetching;
   const showSkeleton = isFetching;
-  
+
   const errorMessage = historicoQuery.error
     ? historicoQuery.error.message || "Erro ao carregar histórico"
     : null;
   const showEmptyState = !isLoading && !isFetching && logs.length === 0;
   const emptyStateTitle = "Nenhum registro encontrado";
-  const emptyStateDescription = "Não encontramos registros com os filtros aplicados. Tente ajustar sua busca.";
+  const emptyStateDescription =
+    "Não encontramos registros com os filtros aplicados. Tente ajustar sua busca.";
 
   const searchValidationMessage = useMemo(
     () => getSearchValidationMessage(pendingSearchTerm),
-    [pendingSearchTerm]
+    [pendingSearchTerm],
   );
   const isSearchInputValid = !searchValidationMessage;
 
   const handlePageChange = (page: number) => {
-    const nextPage = Math.max(1, Math.min(page, Math.max(1, pagination.totalPages)));
+    const nextPage = Math.max(
+      1,
+      Math.min(page, Math.max(1, pagination.totalPages)),
+    );
     setCurrentPage(nextPage);
   };
 
@@ -151,7 +159,7 @@ export function HistoricoDashboard({ className }: { className?: string }) {
     try {
       localStorage.setItem(
         "historicoList.sort",
-        JSON.stringify({ dir: sortDirection })
+        JSON.stringify({ dir: sortDirection }),
       );
     } catch {}
   }, [sortDirection]);
@@ -212,7 +220,7 @@ export function HistoricoDashboard({ className }: { className?: string }) {
         disabled: !filtrosDisponiveis?.tipos?.length,
       },
     ],
-    [categoryOptions, filtrosDisponiveis?.tipos]
+    [categoryOptions, filtrosDisponiveis?.tipos],
   );
 
   const filterValues = useMemo(
@@ -220,7 +228,7 @@ export function HistoricoDashboard({ className }: { className?: string }) {
       categoria: selectedCategorias,
       tipo: selectedTipo,
     }),
-    [selectedCategorias, selectedTipo]
+    [selectedCategorias, selectedTipo],
   );
 
   return (
@@ -234,7 +242,7 @@ export function HistoricoDashboard({ className }: { className?: string }) {
             onChange={(key, value) => {
               if (key === "categoria") {
                 setSelectedCategorias(
-                  Array.isArray(value) ? (value as string[]) : []
+                  Array.isArray(value) ? (value as string[]) : [],
                 );
                 setCurrentPage(1);
               } else if (key === "tipo") {
@@ -332,12 +340,14 @@ export function HistoricoDashboard({ className }: { className?: string }) {
                                 className={cn(
                                   "h-3 w-3 text-gray-400",
                                   sortDirection === "asc" &&
-                                    "text-[var(--primary-color)]"
+                                    "text-[var(--primary-color)]",
                                 )}
                               />
                             </button>
                           </TooltipTrigger>
-                          <TooltipContent sideOffset={6}>Mais antigo primeiro</TooltipContent>
+                          <TooltipContent sideOffset={6}>
+                            Mais antigo primeiro
+                          </TooltipContent>
                         </Tooltip>
                         <Tooltip>
                           <TooltipTrigger asChild>
@@ -351,15 +361,20 @@ export function HistoricoDashboard({ className }: { className?: string }) {
                                 className={cn(
                                   "h-3 w-3 text-gray-400 -mt-0.5",
                                   sortDirection === "desc" &&
-                                    "text-[var(--primary-color)]"
+                                    "text-[var(--primary-color)]",
                                 )}
                               />
                             </button>
                           </TooltipTrigger>
-                          <TooltipContent sideOffset={6}>Mais recente primeiro</TooltipContent>
+                          <TooltipContent sideOffset={6}>
+                            Mais recente primeiro
+                          </TooltipContent>
                         </Tooltip>
                       </div>
                     </div>
+                  </TableHead>
+                  <TableHead className="font-medium text-gray-700 text-right">
+                    Detalhes
                   </TableHead>
                 </TableRow>
               </TableHeader>
@@ -417,12 +432,14 @@ export function HistoricoDashboard({ className }: { className?: string }) {
                                 className={cn(
                                   "h-3 w-3 text-gray-400",
                                   sortDirection === "asc" &&
-                                    "text-[var(--primary-color)]"
+                                    "text-[var(--primary-color)]",
                                 )}
                               />
                             </button>
                           </TooltipTrigger>
-                          <TooltipContent sideOffset={6}>Mais antigo primeiro</TooltipContent>
+                          <TooltipContent sideOffset={6}>
+                            Mais antigo primeiro
+                          </TooltipContent>
                         </Tooltip>
                         <Tooltip>
                           <TooltipTrigger asChild>
@@ -436,15 +453,20 @@ export function HistoricoDashboard({ className }: { className?: string }) {
                                 className={cn(
                                   "h-3 w-3 text-gray-400 -mt-0.5",
                                   sortDirection === "desc" &&
-                                    "text-[var(--primary-color)]"
+                                    "text-[var(--primary-color)]",
                                 )}
                               />
                             </button>
                           </TooltipTrigger>
-                          <TooltipContent sideOffset={6}>Mais recente primeiro</TooltipContent>
+                          <TooltipContent sideOffset={6}>
+                            Mais recente primeiro
+                          </TooltipContent>
                         </Tooltip>
                       </div>
                     </div>
+                  </TableHead>
+                  <TableHead className="font-medium text-gray-700 text-right">
+                    Detalhes
                   </TableHead>
                 </TableRow>
               </TableHeader>
@@ -452,12 +474,7 @@ export function HistoricoDashboard({ className }: { className?: string }) {
                 {showSkeleton ? (
                   <HistoricoTableSkeleton rows={pageSize} />
                 ) : (
-                  logs.map((log) => (
-                    <HistoricoRow
-                      key={log.id}
-                      log={log}
-                    />
-                  ))
+                  logs.map((log) => <HistoricoRow key={log.id} log={log} />)
                 )}
               </TableBody>
             </Table>
@@ -470,12 +487,12 @@ export function HistoricoDashboard({ className }: { className?: string }) {
                   Mostrando{" "}
                   {Math.min(
                     (pagination.page - 1) * pagination.pageSize + 1,
-                    pagination.total
+                    pagination.total,
                   )}{" "}
                   a{" "}
                   {Math.min(
                     pagination.page * pagination.pageSize,
-                    pagination.total
+                    pagination.total,
                   )}{" "}
                   de {pagination.total}{" "}
                   {pagination.total === 1 ? "registro" : "registros"}
@@ -522,7 +539,8 @@ export function HistoricoDashboard({ className }: { className?: string }) {
                     </ButtonCustom>
                   ))}
 
-                  {visiblePages[visiblePages.length - 1] < pagination.totalPages && (
+                  {visiblePages[visiblePages.length - 1] <
+                    pagination.totalPages && (
                     <>
                       {visiblePages[visiblePages.length - 1] <
                         pagination.totalPages - 1 && (

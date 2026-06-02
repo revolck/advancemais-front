@@ -7,6 +7,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Clock, CreditCard } from "lucide-react";
 import { ButtonCustom } from "@/components/ui/custom/button";
+import { SelectCustom } from "@/components/ui/custom/select";
 import { toastCustom } from "@/components/ui/custom/toast";
 import {
   validateCheckoutSession,
@@ -97,6 +98,10 @@ function getCourseCheckoutErrorMessage(error: any): string {
       "Pagamento indisponível no momento. Tente novamente mais tarde.",
     MERCADOPAGO_UNAUTHORIZED_POLICY:
       "Pagamento indisponível no momento. Tente novamente mais tarde.",
+    CURSO_INSTALLMENTS_DISABLED:
+      "O parcelamento está desativado para esta compra de curso.",
+    CURSO_INSTALLMENTS_LIMIT_EXCEEDED:
+      "A quantidade de parcelas escolhida ultrapassa o limite permitido para esta compra.",
     MERCADOPAGO_ERROR:
       "Não foi possível processar o pagamento no momento. Tente novamente.",
   };
@@ -158,6 +163,8 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
 
   // Método de pagamento selecionado
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("credit");
+  const [selectedCourseInstallments, setSelectedCourseInstallments] =
+    useState<number>(1);
 
   // Detecta se está em HTTPS real (não localhost) para tokenização
   const isRealHttps = useIsRealHttps();
@@ -864,10 +871,12 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
     const dataInicio =
       typeof raw.dataInicio === "string" ? raw.dataInicio : null;
     const dataFim = typeof raw.dataFim === "string" ? raw.dataFim : null;
+    const installmentsEnabled =
+      raw.installmentsEnabled === true || raw.installmentsEnabled === "true";
     const maxInstallments =
       typeof raw.maxInstallments === "number" && raw.maxInstallments > 0
         ? raw.maxInstallments
-        : 12;
+        : 1;
 
     return {
       cursoId,
@@ -876,6 +885,7 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
       turmaNome,
       dataInicio,
       dataFim,
+      installmentsEnabled,
       maxInstallments,
     };
   }, [session]);
@@ -985,7 +995,14 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
         }
         if (!tokenToUse)
           throw new Error("Não foi possível tokenizar o cartão.");
-        card = { token: tokenToUse, installments: 1 };
+        const installments =
+          paymentMethod === "credit" && courseMetadata.installmentsEnabled
+            ? Math.min(
+                Math.max(1, selectedCourseInstallments),
+                Math.max(1, courseMetadata.maxInstallments),
+              )
+            : 1;
+        card = { token: tokenToUse, installments };
       }
 
       localStorage.setItem(
@@ -1059,6 +1076,7 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
     payerEmail,
     paymentMethod,
     router,
+    selectedCourseInstallments,
     session,
     userId,
     checkoutResultPaths.courseSuccess,
@@ -1091,7 +1109,7 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
     const maxInstallments =
       typeof raw.maxInstallments === "number" && raw.maxInstallments > 0
         ? raw.maxInstallments
-        : 12;
+        : 1;
 
     const returnTo =
       typeof raw.returnTo === "string" && raw.returnTo.trim()
@@ -1113,6 +1131,29 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
       returnTo,
     };
   }, [session]);
+
+  useEffect(() => {
+    if (
+      session?.productType !== "curso" ||
+      paymentMethod !== "credit" ||
+      !courseMetadata?.installmentsEnabled
+    ) {
+      setSelectedCourseInstallments(1);
+      return;
+    }
+
+    setSelectedCourseInstallments((current) =>
+      Math.min(
+        Math.max(1, current),
+        Math.max(1, courseMetadata.maxInstallments),
+      ),
+    );
+  }, [
+    courseMetadata?.installmentsEnabled,
+    courseMetadata?.maxInstallments,
+    paymentMethod,
+    session?.productType,
+  ]);
 
   const startCoursePaymentCheckout = useCallback(async () => {
     if (!session || session.productType !== "curso_pagamento") return;
@@ -1457,6 +1498,46 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
                     }}
                   />
                 )}
+
+                {isCoursePurchase &&
+                paymentMethod === "credit" &&
+                courseMetadata?.installmentsEnabled &&
+                courseMetadata.maxInstallments > 1 ? (
+                  <div className="rounded-2xl border border-zinc-200 bg-white p-5 space-y-3">
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium text-zinc-900">
+                        Parcelamento no cartão
+                      </p>
+                      <p className="text-sm text-zinc-500">
+                        Escolha entre 1x e {courseMetadata.maxInstallments}x.
+                        Juros e parcelas sem juros seguem a configuração do
+                        Mercado Pago.
+                      </p>
+                    </div>
+                    <SelectCustom
+                      mode="single"
+                      value={String(selectedCourseInstallments)}
+                      onChange={(next) =>
+                        setSelectedCourseInstallments(next ? Number(next) : 1)
+                      }
+                      searchable={false}
+                      placeholder="Selecione as parcelas"
+                      options={Array.from(
+                        { length: courseMetadata.maxInstallments },
+                        (_, index) => {
+                          const value = index + 1;
+                          return {
+                            value: String(value),
+                            label:
+                              value === 1
+                                ? "1x à vista"
+                                : `${value}x no cartão`,
+                          };
+                        },
+                      )}
+                    />
+                  </div>
+                ) : null}
 
                 {/* HTTP/Localhost (Desenvolvimento): cartão via redirect (Checkout Pro) */}
                 {isRealHttps === false && (
