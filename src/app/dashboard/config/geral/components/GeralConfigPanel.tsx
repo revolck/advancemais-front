@@ -10,7 +10,6 @@ import {
 import type {
   ConfigCategoryGroup,
   ConfigItem,
-  SecretConfigAction,
 } from "@/api/configuracoes-gerais/types";
 import { ButtonCustom } from "@/components/ui/custom/button";
 import { InputCustom } from "@/components/ui/custom/input";
@@ -22,13 +21,15 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { toastCustom } from "@/components/ui/custom/toast";
+import {
+  buildConfigPayload,
+  getInitialValue,
+  getNextSecretDraftFromMaskedKey,
+  getSecretFieldInputState,
+  type SecretDraft,
+} from "./geral-config.utils";
 
 type EditableValue = string | number | boolean | null;
-
-type SecretDraft = {
-  action: SecretConfigAction;
-  value?: string;
-};
 
 type MercadoPagoMode = "production" | "test";
 
@@ -256,31 +257,6 @@ const FIELD_HELPERS: Partial<Record<string, string>> = {
     "Senha privada do app do Google. É usada junto com o Client ID para autorizar a integração.",
 };
 
-function getInitialValue(item: ConfigItem): EditableValue {
-  if (item.type === "boolean") return Boolean(item.value);
-  if (item.type === "number") return item.value ?? "";
-  return item.value == null ? "" : String(item.value);
-}
-
-function valueForPayload(item: ConfigItem, value: EditableValue) {
-  if (value === null) return null;
-  if (item.type === "boolean") return Boolean(value);
-  if (item.type === "number") {
-    if (value === "" || value === undefined) return null;
-    return Number(value);
-  }
-  return String(value ?? "");
-}
-
-function valuesAreEqual(item: ConfigItem, draft: EditableValue) {
-  const current = getInitialValue(item);
-  if (draft === null) return item.source === "EMPTY";
-  if (item.type === "number")
-    return Number(current || 0) === Number(draft || 0);
-  if (item.type === "boolean") return Boolean(current) === Boolean(draft);
-  return String(current ?? "") === String(draft ?? "");
-}
-
 function placeholderFor(item: ConfigItem) {
   if (item.secret) {
     return item.configured
@@ -429,32 +405,7 @@ export function GeralConfigPanel({
   }, [group]);
 
   const payload = React.useMemo(() => {
-    if (!group) return { values: {}, secrets: {} };
-
-    const changedValues: Record<string, string | number | boolean | null> = {};
-    const changedSecrets: Record<
-      string,
-      { action: SecretConfigAction; value?: string }
-    > = {};
-
-    group.items.forEach((item) => {
-      if (item.secret) {
-        const draft = secrets[item.key];
-        if (!draft || draft.action === "keep") return;
-        if (draft.action === "replace" && !draft.value?.trim()) return;
-        changedSecrets[item.key] = {
-          action: "replace",
-          value: draft.value?.trim(),
-        };
-        return;
-      }
-
-      const draftValue = values[item.key];
-      if (valuesAreEqual(item, draftValue)) return;
-      changedValues[item.key] = valueForPayload(item, draftValue);
-    });
-
-    return { values: changedValues, secrets: changedSecrets };
+    return buildConfigPayload(group, values, secrets);
   }, [group, values, secrets]);
 
   const dirty =
@@ -505,8 +456,14 @@ export function GeralConfigPanel({
           "As novas informações já estão disponíveis para o sistema.",
       });
     } catch (error) {
+      const apiCode = (error as { details?: { code?: string } })?.details?.code;
       const message =
-        error instanceof Error ? error.message : "Não foi possível salvar.";
+        apiCode === "CONFIG_SECRET_UNAVAILABLE" ||
+        apiCode === "CONFIG_ENCRYPTION_KEY_MISSING"
+          ? "Campos protegidos não podem ser alterados agora porque a chave de segurança da API não está configurada."
+          : error instanceof Error
+            ? error.message
+            : "Não foi possível salvar.";
       toastCustom.error({ title: "Erro ao salvar", description: message });
     } finally {
       setSaving(false);
@@ -872,23 +829,33 @@ function SecretField({
   draft?: SecretDraft;
   onChange: (draft: SecretDraft) => void;
 }) {
-  const showingMaskedValue =
-    Boolean(item.maskedPreview) &&
-    (draft?.action !== "replace" || !(draft.value ?? "").length);
-  const inputValue =
-    draft?.action === "replace"
-      ? (draft.value ?? "")
-      : (item.maskedPreview ?? "");
+  const { showingMaskedValue, inputValue } = getSecretFieldInputState(
+    item,
+    draft,
+  );
 
   return (
     <InputCustom
       id={id}
       type={showingMaskedValue ? "text" : "password"}
       value={inputValue}
-      onFocus={() => {
-        if (showingMaskedValue) {
-          onChange({ action: "replace", value: "" });
-        }
+      onKeyDown={(event) => {
+        if (!showingMaskedValue) return;
+        if (event.ctrlKey || event.metaKey || event.altKey) return;
+
+        const nextDraft = getNextSecretDraftFromMaskedKey(event.key, draft);
+        if (!nextDraft) return;
+
+        event.preventDefault();
+        onChange(nextDraft);
+      }}
+      onPaste={(event) => {
+        if (!showingMaskedValue) return;
+        event.preventDefault();
+        onChange({
+          action: "replace",
+          value: event.clipboardData.getData("text"),
+        });
       }}
       onBlur={(event) => {
         if (!event.target.value.trim() && item.configured) {
