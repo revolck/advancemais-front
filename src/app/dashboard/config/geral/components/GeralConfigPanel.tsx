@@ -24,6 +24,7 @@ import {
 import { toastCustom } from "@/components/ui/custom/toast";
 import {
   buildConfigPayload,
+  getBooleanSelectValue,
   getInitialValue,
   getNextSecretDraftFromMaskedKey,
   getSecretFieldInputState,
@@ -309,11 +310,12 @@ function getVisibleItems(
 
   conditionalRules.forEach(({ enabledKey }) => {
     const currentItem = group.items.find((item) => item.key === enabledKey);
+    const resolvedDraft = getBooleanSelectValue(values?.[enabledKey]);
+    const resolvedCurrent = getBooleanSelectValue(currentItem?.value);
+
     enabledState.set(
       enabledKey,
-      typeof values?.[enabledKey] === "boolean"
-        ? values[enabledKey] === true
-        : currentItem?.value === true,
+      resolvedDraft ? resolvedDraft === "true" : resolvedCurrent === "true",
     );
   });
 
@@ -728,10 +730,13 @@ function PlainField({
   }
 
   if (item.type === "boolean") {
+    const booleanValue =
+      getBooleanSelectValue(value) ?? getBooleanSelectValue(item.value);
+
     return (
       <SelectCustom
         mode="single"
-        value={Boolean(value) ? "true" : "false"}
+        value={booleanValue ?? null}
         onChange={(next) => onChange(next === "true")}
         required={required}
         placeholder="Selecione uma opção"

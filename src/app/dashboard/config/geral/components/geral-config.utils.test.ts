@@ -3,8 +3,11 @@ import { describe, expect, it } from "vitest";
 import type { ConfigCategoryGroup } from "@/api/configuracoes-gerais/types";
 import {
   buildConfigPayload,
+  getBooleanSelectValue,
+  getInitialValue,
   getNextSecretDraftFromMaskedKey,
   getSecretFieldInputState,
+  valuesAreEqual,
 } from "./geral-config.utils";
 
 const baseGroup: ConfigCategoryGroup = {
@@ -124,5 +127,50 @@ describe("geral-config utils", () => {
     expect(payload.values).toEqual({
       course_payment_methods: "pix,card",
     });
+  });
+
+  it("resolve booleans de forma estrita para hidratar o draft", () => {
+    expect(getInitialValue(baseGroup.items[2])).toBe(true);
+    expect(getInitialValue(baseGroup.items[3])).toBe(false);
+    expect(
+      getInitialValue({
+        key: "cron_boleto_enabled",
+        label: "Cron de boletos ativo",
+        type: "boolean",
+        secret: false,
+        configured: false,
+        source: "EMPTY",
+        value: null,
+      }),
+    ).toBeNull();
+  });
+
+  it("expõe o valor correto do select boolean sem assumir false para valor ausente", () => {
+    expect(getBooleanSelectValue(true)).toBe("true");
+    expect(getBooleanSelectValue(false)).toBe("false");
+    expect(getBooleanSelectValue("true")).toBe("true");
+    expect(getBooleanSelectValue("false")).toBe("false");
+    expect(getBooleanSelectValue(undefined)).toBeUndefined();
+    expect(getBooleanSelectValue(null)).toBeUndefined();
+  });
+
+  it("compara booleans de forma estrita sem coerção indevida", () => {
+    expect(valuesAreEqual(baseGroup.items[2], true)).toBe(true);
+    expect(valuesAreEqual(baseGroup.items[2], false)).toBe(false);
+    expect(valuesAreEqual(baseGroup.items[3], false)).toBe(true);
+    expect(
+      valuesAreEqual(
+        {
+          key: "cron_boleto_enabled",
+          label: "Cron de boletos ativo",
+          type: "boolean",
+          secret: false,
+          configured: false,
+          source: "EMPTY",
+          value: null,
+        },
+        null,
+      ),
+    ).toBe(true);
   });
 });

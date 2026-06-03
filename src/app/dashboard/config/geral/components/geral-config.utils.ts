@@ -11,6 +11,30 @@ const MULTI_SELECT_CSV_KEYS = new Set([
 ]);
 const PAYMENT_METHOD_ORDER = ["pix", "boleto", "card"];
 
+function resolveBooleanValue(value: unknown): boolean | null {
+  if (value === true || value === false) return value;
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    if (["true", "1", "sim", "yes", "on"].includes(normalized)) return true;
+    if (["false", "0", "nao", "não", "no", "off", ""].includes(normalized))
+      return false;
+  }
+  if (typeof value === "number") {
+    if (value === 1) return true;
+    if (value === 0) return false;
+  }
+  return null;
+}
+
+export function getBooleanSelectValue(
+  value: unknown,
+): "true" | "false" | undefined {
+  const resolved = resolveBooleanValue(value);
+  if (resolved === true) return "true";
+  if (resolved === false) return "false";
+  return undefined;
+}
+
 export type ConfigEditableValue = string | number | boolean | string[] | null;
 
 export type SecretDraft = {
@@ -27,7 +51,7 @@ function normalizeMultiSelectValues(values: string[]) {
 }
 
 export function getInitialValue(item: ConfigItem): ConfigEditableValue {
-  if (item.type === "boolean") return Boolean(item.value);
+  if (item.type === "boolean") return resolveBooleanValue(item.value);
   if (item.type === "number") return item.value ?? "";
   if (item.type === "csv" && isMultiSelectCsvKey(item.key)) {
     return normalizeMultiSelectValues(
@@ -42,7 +66,7 @@ export function getInitialValue(item: ConfigItem): ConfigEditableValue {
 
 export function valueForPayload(item: ConfigItem, value: ConfigEditableValue) {
   if (value === null) return null;
-  if (item.type === "boolean") return Boolean(value);
+  if (item.type === "boolean") return resolveBooleanValue(value);
   if (item.type === "number") {
     if (value === "" || value === undefined) return null;
     return Number(value);
@@ -58,7 +82,8 @@ export function valuesAreEqual(item: ConfigItem, draft: ConfigEditableValue) {
   if (draft === null) return item.source === "EMPTY";
   if (item.type === "number")
     return Number(current || 0) === Number(draft || 0);
-  if (item.type === "boolean") return Boolean(current) === Boolean(draft);
+  if (item.type === "boolean")
+    return resolveBooleanValue(current) === resolveBooleanValue(draft);
   if (item.type === "csv" && isMultiSelectCsvKey(item.key)) {
     const currentValues = normalizeMultiSelectValues(
       Array.isArray(current) ? current : [],
