@@ -51,9 +51,6 @@ const DEFAULT_RECURRENCE_KEY = "assinaturas_recorrencia_padrao";
 const LOG_LEVEL_KEY = "log_level";
 const MERCADOPAGO_COMMON_KEYS = new Set([
   MP_ACTIVE_MODE_KEY,
-  "mp_user_id",
-  "mp_application_id",
-  "mp_webhook_secret",
   "mp_return_success_url",
   "mp_return_failure_url",
   "mp_return_pending_url",
@@ -77,10 +74,16 @@ const MERCADOPAGO_COMMON_KEYS = new Set([
   "cron_cobranca_schedule",
 ]);
 const MERCADOPAGO_TEST_KEYS = new Set([
+  "mp_test_user_id",
+  "mp_test_application_id",
+  "mp_test_webhook_secret",
   "mp_test_public_key",
   "mp_test_access_token",
 ]);
 const MERCADOPAGO_PRODUCTION_KEYS = new Set([
+  "mp_user_id",
+  "mp_application_id",
+  "mp_webhook_secret",
   "mp_public_key",
   "mp_access_token",
   "mp_client_id",
@@ -155,11 +158,17 @@ const FIELD_HELPERS: Partial<Record<string, string>> = {
   mp_active_mode:
     "Escolha qual ambiente do Mercado Pago o sistema deve usar agora. Só o ambiente selecionado será usado nos pagamentos.",
   mp_user_id:
-    "Identifica a conta do Mercado Pago dona dos recebimentos. Use o código informado no painel da conta.",
+    "User ID da conta de produção que receberá os pagamentos reais. Não use o User ID de teste aqui.",
   mp_application_id:
-    "Identifica o aplicativo da integração no Mercado Pago. É usado para vincular a conta ao sistema.",
+    "Application ID da integração de produção no Mercado Pago. Ele é independente do ambiente de teste.",
   mp_webhook_secret:
-    "Protege as notificações automáticas do Mercado Pago. Teste e Produção usam segredos próprios e independentes neste campo.",
+    "Segredo do webhook de produção. Use um valor exclusivo para notificações de pagamentos reais.",
+  mp_test_user_id:
+    "User ID da conta de teste do Mercado Pago. Este valor não é compartilhado com Produção.",
+  mp_test_application_id:
+    "Application ID da integração de teste. Use o número informado nas credenciais de teste.",
+  mp_test_webhook_secret:
+    "Segredo do webhook de teste. Use um valor exclusivo para notificações do ambiente de teste.",
   mp_test_public_key:
     "Chave pública usada para testes no navegador. Serve para gerar formulários e tokens em ambiente de teste.",
   mp_test_access_token:
@@ -365,12 +374,20 @@ function isFieldRequired(
   if (group.category !== "mercadopago") return Boolean(item.required);
 
   if (activeMercadoPagoMode === "production") {
-    return item.key === "mp_public_key" || item.key === "mp_access_token";
+    return [
+      "mp_user_id",
+      "mp_application_id",
+      "mp_public_key",
+      "mp_access_token",
+    ].includes(item.key);
   }
 
-  return (
-    item.key === "mp_test_public_key" || item.key === "mp_test_access_token"
-  );
+  return [
+    "mp_test_user_id",
+    "mp_test_application_id",
+    "mp_test_public_key",
+    "mp_test_access_token",
+  ].includes(item.key);
 }
 
 function helperTextFor(item: ConfigItem) {

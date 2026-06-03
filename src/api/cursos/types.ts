@@ -1497,8 +1497,16 @@ export interface MeuPagamentoItem {
   criadoEm: string;
   validadeAte: string | null;
   detalhes: {
-    pix?: { qrCode: string | null; copiaCola: string | null; expiraEm: string | null };
-    boleto?: { codigo: string | null; urlPdf: string | null; vencimento: string | null };
+    pix?: {
+      qrCode: string | null;
+      copiaCola: string | null;
+      expiraEm: string | null;
+    };
+    boleto?: {
+      codigo: string | null;
+      urlPdf: string | null;
+      vencimento: string | null;
+    };
   } | null;
   podePagar: boolean;
 }
@@ -1545,7 +1553,12 @@ export interface CheckoutRecuperacaoPayload {
       federal_unit?: string;
     };
   };
-  card?: { token: string; installments?: number };
+  card?: {
+    token: string;
+    installments?: number;
+    paymentMethodId?: string;
+    paymentMethodType?: "credit_card" | "debit_card";
+  };
 }
 
 export interface StartCursoCheckoutPayload {
@@ -1572,6 +1585,7 @@ export interface StartCursoCheckoutResponse {
     tipo: "pix" | "card" | "boleto";
     status: string | null;
     paymentId: string | null;
+    orderId?: string | null;
     qrCode?: string | null;
     qrCodeBase64?: string | null;
     barcode?: string | null;

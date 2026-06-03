@@ -333,19 +333,42 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
   }, [session, router, hasShownWarning, hasExpired]);
 
   // Mapeia o método de pagamento do frontend para o backend
-  const mapPaymentMethod = (method: PaymentMethod): MetodoPagamento => {
-    switch (method) {
-      case "credit":
-      case "debit":
-        return "card";
-      case "pix":
-        return "pix";
-      case "boleto":
-        return "boleto";
-      default:
-        return "pix";
-    }
-  };
+  const mapPaymentMethod = useCallback(
+    (method: PaymentMethod): MetodoPagamento => {
+      switch (method) {
+        case "credit":
+        case "debit":
+          return "card";
+        case "pix":
+          return "pix";
+        case "boleto":
+          return "boleto";
+        default:
+          return "pix";
+      }
+    },
+    [],
+  );
+
+  const mapCardBrandToPaymentMethodId = useCallback((brand?: string | null) => {
+    const normalized = String(brand || "")
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, "_");
+
+    const aliases: Record<string, string> = {
+      mastercard: "master",
+      master_card: "master",
+      american_express: "amex",
+      amex: "amex",
+      hipercard: "hipercard",
+      hiper: "hipercard",
+      visa: "visa",
+      elo: "elo",
+    };
+
+    return aliases[normalized] || normalized || undefined;
+  }, []);
 
   const availablePaymentMethods = useMemo(() => {
     return session?.productType === "curso" ||
@@ -1052,9 +1075,17 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
           : {}),
       };
 
-      let card: { token: string; installments?: number } | undefined;
+      let card:
+        | {
+            token: string;
+            installments?: number;
+            paymentMethodId?: string;
+            paymentMethodType?: "credit_card" | "debit_card";
+          }
+        | undefined;
       if (pagamento === "card") {
         let tokenToUse = cardToken;
+        let tokenCardBrand = cardBrand;
         if (!tokenToUse && cardTokenizeRef.current) {
           const tokenResult = await cardTokenizeRef.current();
           if (!tokenResult.success || !tokenResult.token) {
@@ -1066,6 +1097,7 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
           setCardToken(tokenResult.token);
           setCardLastFour(tokenResult.lastFourDigits || null);
           setCardBrand(tokenResult.cardBrand || null);
+          tokenCardBrand = tokenResult.cardBrand || null;
         }
         if (!tokenToUse)
           throw new Error("Não foi possível tokenizar o cartão.");
@@ -1076,7 +1108,13 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
                 Math.max(1, courseMetadata.maxInstallments),
               )
             : 1;
-        card = { token: tokenToUse, installments };
+        card = {
+          token: tokenToUse,
+          installments,
+          paymentMethodId: mapCardBrandToPaymentMethodId(tokenCardBrand),
+          paymentMethodType:
+            paymentMethod === "debit" ? "debit_card" : "credit_card",
+        };
       }
 
       localStorage.setItem(
@@ -1142,9 +1180,12 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
     courseMetadata,
     appliedCoupon?.code,
     canUseDirectTokenization,
+    cardBrand,
     cardToken,
     hasAcceptedTerms,
     isDataLoading,
+    mapCardBrandToPaymentMethodId,
+    mapPaymentMethod,
     payerAddress,
     payerDocument,
     payerEmail,
@@ -1438,6 +1479,7 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
     payerAddress,
     payerDocument,
     payerEmail,
+    mapPaymentMethod,
     paymentMethod,
     router,
     session,

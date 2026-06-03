@@ -1,0 +1,36 @@
+import { describe, expect, it } from "vitest";
+
+import { canAccessRoute } from "./dashboardRoutes";
+import { UserRole } from "./roles";
+
+const cursoId = "2e035bc5-f6b8-4f2a-84e3-009b9db34780";
+const turmaId = "fb488ecc-4f31-481e-97f1-b859e831ee4b";
+
+describe("dashboardRoutes cursos", () => {
+  it("permite aluno apenas na rota de aprendizagem da turma", () => {
+    expect(
+      canAccessRoute(
+        `/dashboard/cursos/alunos/cursos/${cursoId}/${turmaId}`,
+        UserRole.ALUNO_CANDIDATO
+      )
+    ).toBe(true);
+    expect(
+      canAccessRoute(`/dashboard/cursos/${cursoId}`, UserRole.ALUNO_CANDIDATO)
+    ).toBe(false);
+    expect(
+      canAccessRoute(
+        `/dashboard/cursos/${cursoId}/editar`,
+        UserRole.ALUNO_CANDIDATO
+      )
+    ).toBe(false);
+  });
+
+  it("permite instrutor ver detalhes administrativos, mas não editar", () => {
+    expect(canAccessRoute(`/dashboard/cursos/${cursoId}`, UserRole.INSTRUTOR)).toBe(
+      true
+    );
+    expect(
+      canAccessRoute(`/dashboard/cursos/${cursoId}/editar`, UserRole.INSTRUTOR)
+    ).toBe(false);
+  });
+});

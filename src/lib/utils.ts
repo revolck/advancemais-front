@@ -13,22 +13,27 @@ export function cn(...inputs: ClassValue[]) {
  */
 export function stripHtmlTags(html: string | null | undefined): string {
   if (!html) return "";
+
+  const normalizePlainText = (value: string) =>
+    value
+      .replace(/<!--[\s\S]*?-->/g, "")
+      .replace(/StartFragment|EndFragment/gi, "")
+      .replace(/&nbsp;/g, " ")
+      .replace(/&amp;/g, "&")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/\s+/g, " ")
+      .trim();
   
   // Se estiver no browser, usa DOM para extrair texto (mais preciso)
   if (typeof document !== "undefined") {
     const tmp = document.createElement("div");
-    tmp.innerHTML = html;
-    return tmp.textContent || tmp.innerText || "";
+    tmp.innerHTML = normalizePlainText(html);
+    return normalizePlainText(tmp.textContent || tmp.innerText || "");
   }
   
   // No servidor, usa regex para remover tags HTML
-  return html
-    .replace(/<[^>]*>/g, "") // Remove todas as tags HTML
-    .replace(/&nbsp;/g, " ") // Substitui &nbsp; por espaço
-    .replace(/&amp;/g, "&") // Substitui &amp; por &
-    .replace(/&lt;/g, "<") // Substitui &lt; por <
-    .replace(/&gt;/g, ">") // Substitui &gt; por >
-    .replace(/&quot;/g, '"') // Substitui &quot; por "
-    .replace(/&#39;/g, "'") // Substitui &#39; por '
-    .trim();
+  return normalizePlainText(html.replace(/<[^>]*>/g, ""));
 }

@@ -21,7 +21,7 @@ import type {
 
 import Link from "next/link";
 import Image from "next/image";
-import { cn } from "@/lib/utils";
+import { cn, stripHtmlTags } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { CourseCarousel } from "./components/CourseCarousel";
@@ -76,9 +76,10 @@ function CursoCard({ curso }: { curso: CandidatoDashboardCurso }) {
     STATUS_CONFIG[toStatusConfigKey(String(curso.status))] ||
     STATUS_CONFIG.NAO_INICIADO;
   const [imageError, setImageError] = React.useState(false);
+  const descricao = stripHtmlTags(curso.descricao);
 
   return (
-    <Link href={`/dashboard/cursos/${curso.cursoId}`}>
+    <Link href={`/dashboard/cursos/alunos/cursos/${curso.cursoId}/${curso.turmaId}`}>
       <Card className="border border-gray-200 bg-white transition-all duration-300 hover:border-blue-300 h-full cursor-pointer group overflow-hidden p-0 gap-0 shadow-none">
         <CardContent className="p-0">
           <div className="flex flex-col h-full">
@@ -115,7 +116,7 @@ function CursoCard({ curso }: { curso: CandidatoDashboardCurso }) {
               <h5 className="mb-0!">{curso.nome}</h5>
 
               <p className="text-xs! text-gray-600! mb-4! line-clamp-2! min-h-[2.5em]!">
-                {curso.descricao ?? "—"}
+                {descricao || "—"}
               </p>
 
               <div className="mb-4">
@@ -292,7 +293,14 @@ export function VisaoGeralAlunoCandidato() {
   });
 
   const metricas = dashboardQuery.data?.metricas ?? null;
-  const cursos = dashboardQuery.data?.cursos ?? [];
+  const cursos = useMemo(
+    () =>
+      (dashboardQuery.data?.cursos ?? []).filter((curso) => {
+        const status = normalizeCursoStatus(String(curso.status));
+        return status !== "Cancelado";
+      }),
+    [dashboardQuery.data?.cursos],
+  );
   const candidaturas = dashboardQuery.data?.candidaturas ?? [];
 
   const handleViewVaga = React.useCallback(

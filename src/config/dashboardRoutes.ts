@@ -60,6 +60,14 @@ export const DASHBOARD_ROUTE_RULES: readonly RouteRule[] = Object.freeze([
     roles: [UserRole.ADMIN, UserRole.MODERADOR, UserRole.PEDAGOGICO],
   },
   {
+    pattern: "/dashboard/cursos/alunos/cursos/:cursoId/:turmaId{/*path}",
+    roles: [UserRole.ALUNO_CANDIDATO],
+    validatePath: (path) =>
+      /^\/dashboard\/cursos\/alunos\/cursos\/[0-9a-fA-F-]{36}\/[0-9a-fA-F-]{36}(?:\/.*)?$/.test(
+        path
+      ),
+  },
+  {
     pattern: "/dashboard/cursos/alunos/:id",
     roles: [
       UserRole.ADMIN,
@@ -80,6 +88,23 @@ export const DASHBOARD_ROUTE_RULES: readonly RouteRule[] = Object.freeze([
       UserRole.PEDAGOGICO,
       UserRole.INSTRUTOR,
     ],
+  },
+  {
+    pattern: "/dashboard/cursos/:id/editar",
+    roles: [UserRole.ADMIN, UserRole.MODERADOR, UserRole.PEDAGOGICO],
+    validatePath: (path) =>
+      /^\/dashboard\/cursos\/[0-9a-fA-F-]{36}\/editar(?:\/.*)?$/.test(path),
+  },
+  {
+    pattern: "/dashboard/cursos/:id",
+    roles: [
+      UserRole.ADMIN,
+      UserRole.MODERADOR,
+      UserRole.PEDAGOGICO,
+      UserRole.INSTRUTOR,
+    ],
+    validatePath: (path) =>
+      /^\/dashboard\/cursos\/[0-9a-fA-F-]{36}(?:\/.*)?$/.test(path),
   },
   {
     pattern: "/dashboard/empresas/entrevistas{/*path}",
