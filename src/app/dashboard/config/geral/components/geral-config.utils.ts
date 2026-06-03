@@ -42,6 +42,43 @@ export type SecretDraft = {
   value?: string;
 };
 
+export function hasDraftValue(
+  values: Record<string, ConfigEditableValue>,
+  key: string,
+) {
+  return Object.prototype.hasOwnProperty.call(values, key);
+}
+
+export function getDisplayValue(
+  item: ConfigItem,
+  draft: ConfigEditableValue | undefined,
+  hasDraft: boolean,
+): ConfigEditableValue {
+  return hasDraft ? (draft ?? null) : getInitialValue(item);
+}
+
+export function getStringSelectValue(
+  value: unknown,
+  allowedValues?: readonly string[],
+): string | null {
+  if (value === null || value === undefined) return null;
+  const normalized = String(value).trim();
+  if (!normalized) return null;
+  if (allowedValues && !allowedValues.includes(normalized)) return null;
+  return normalized;
+}
+
+export function getNumberSelectValue(
+  value: unknown,
+  allowedValues?: readonly number[],
+): string | null {
+  if (value === null || value === undefined || value === "") return null;
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return null;
+  if (allowedValues && !allowedValues.includes(parsed)) return null;
+  return String(parsed);
+}
+
 export function isMultiSelectCsvKey(key: string) {
   return MULTI_SELECT_CSV_KEYS.has(key);
 }

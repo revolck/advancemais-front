@@ -24,10 +24,14 @@ import {
 import { toastCustom } from "@/components/ui/custom/toast";
 import {
   buildConfigPayload,
+  getDisplayValue,
   getBooleanSelectValue,
   getInitialValue,
   getNextSecretDraftFromMaskedKey,
+  getNumberSelectValue,
   getSecretFieldInputState,
+  getStringSelectValue,
+  hasDraftValue,
   isMultiSelectCsvKey,
   type ConfigEditableValue,
   type SecretDraft,
@@ -96,6 +100,9 @@ const PAYMENT_METHOD_OPTIONS = [
   { value: "boleto", label: "Boleto" },
   { value: "card", label: "Cartão" },
 ] as const;
+const MP_ACTIVE_MODE_VALUES = ["production", "test"] as const;
+const LOG_LEVEL_VALUES = LOG_LEVEL_OPTIONS.map((option) => option.value);
+const INSTALLMENT_VALUES = Array.from({ length: 12 }, (_, index) => index + 1);
 const CONDITIONAL_FIELDS: Partial<
   Record<
     ConfigCategoryGroup["category"],
@@ -291,13 +298,16 @@ function getMercadoPagoMode(
   group?: ConfigCategoryGroup,
   values?: Record<string, EditableValue>,
 ): MercadoPagoMode {
-  const draftValue = values?.[MP_ACTIVE_MODE_KEY];
-  if (draftValue === "test" || draftValue === "production") return draftValue;
-
-  const currentValue = group?.items.find(
+  const currentItem = group?.items.find(
     (item) => item.key === MP_ACTIVE_MODE_KEY,
-  )?.value;
-  return currentValue === "test" ? "test" : "production";
+  );
+  const hasDraft = values ? hasDraftValue(values, MP_ACTIVE_MODE_KEY) : false;
+  const value = currentItem
+    ? getDisplayValue(currentItem, values?.[MP_ACTIVE_MODE_KEY], hasDraft)
+    : values?.[MP_ACTIVE_MODE_KEY];
+  const resolved = getStringSelectValue(value, MP_ACTIVE_MODE_VALUES);
+
+  return resolved === "test" ? "test" : "production";
 }
 
 function getVisibleItems(
@@ -310,13 +320,14 @@ function getVisibleItems(
 
   conditionalRules.forEach(({ enabledKey }) => {
     const currentItem = group.items.find((item) => item.key === enabledKey);
-    const resolvedDraft = getBooleanSelectValue(values?.[enabledKey]);
-    const resolvedCurrent = getBooleanSelectValue(currentItem?.value);
+    if (!currentItem) return;
 
-    enabledState.set(
-      enabledKey,
-      resolvedDraft ? resolvedDraft === "true" : resolvedCurrent === "true",
+    const hasDraft = values ? hasDraftValue(values, enabledKey) : false;
+    const resolved = getBooleanSelectValue(
+      getDisplayValue(currentItem, values?.[enabledKey], hasDraft),
     );
+
+    enabledState.set(enabledKey, resolved === "true");
   });
 
   const shouldHideDependentField = (key: string) => {
@@ -454,7 +465,12 @@ export function GeralConfigPanel({
 
   const handleSave = async () => {
     if (!group || saving) return;
-    if (!dirty) {
+    const currentPayload = buildConfigPayload(group, values, secrets);
+    const hasCurrentChanges =
+      Object.keys(currentPayload.values).length > 0 ||
+      Object.keys(currentPayload.secrets).length > 0;
+
+    if (!hasCurrentChanges) {
       toastCustom.info("Nenhuma alteração para salvar.");
       return;
     }
@@ -462,8 +478,8 @@ export function GeralConfigPanel({
     setSaving(true);
     try {
       const response = await updateConfiguracaoGeral(group.category, {
-        values: payload.values,
-        secrets: payload.secrets,
+        values: currentPayload.values,
+        secrets: currentPayload.secrets,
         motivo: "Alteração via painel Configurações > Geral",
       });
 
@@ -541,6 +557,7 @@ export function GeralConfigPanel({
             group={group}
             activeMercadoPagoMode={activeMercadoPagoMode}
             value={values[MP_ACTIVE_MODE_KEY]}
+            hasDraftValue={hasDraftValue(values, MP_ACTIVE_MODE_KEY)}
             secretDraft={secrets[MP_ACTIVE_MODE_KEY]}
             onValueChange={(nextValue) =>
               setValues((current) => ({
@@ -568,6 +585,7 @@ export function GeralConfigPanel({
               group={group}
               activeMercadoPagoMode={activeMercadoPagoMode}
               value={values[item.key]}
+              hasDraftValue={hasDraftValue(values, item.key)}
               secretDraft={secrets[item.key]}
               onValueChange={(nextValue) =>
                 setValues((current) => ({ ...current, [item.key]: nextValue }))
@@ -625,6 +643,7 @@ interface ConfigFieldRowProps {
   group: ConfigCategoryGroup;
   activeMercadoPagoMode: MercadoPagoMode;
   value?: EditableValue;
+  hasDraftValue: boolean;
   secretDraft?: SecretDraft;
   onValueChange: (value: EditableValue) => void;
   onSecretChange: (draft: SecretDraft) => void;
@@ -635,6 +654,7 @@ function ConfigFieldRow({
   group,
   activeMercadoPagoMode,
   value,
+  hasDraftValue,
   secretDraft,
   onValueChange,
   onSecretChange,
@@ -643,7 +663,7 @@ function ConfigFieldRow({
   const inputId = `config-${item.key}`;
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2" data-testid={`config-field-${item.key}`}>
       <label
         htmlFor={inputId}
         className="flex items-center gap-2 text-sm font-medium text-foreground"
@@ -688,6 +708,7 @@ function ConfigFieldRow({
           group={group}
           activeMercadoPagoMode={activeMercadoPagoMode}
           value={value}
+          hasDraftValue={hasDraftValue}
           onChange={onValueChange}
         />
       )}
@@ -701,6 +722,7 @@ function PlainField({
   group,
   activeMercadoPagoMode,
   value,
+  hasDraftValue,
   onChange,
 }: {
   id: string;
@@ -708,16 +730,20 @@ function PlainField({
   group: ConfigCategoryGroup;
   activeMercadoPagoMode: MercadoPagoMode;
   value?: EditableValue;
+  hasDraftValue: boolean;
   onChange: (value: EditableValue) => void;
 }) {
   const required = isFieldRequired(item, group, activeMercadoPagoMode);
+  const displayValue = getDisplayValue(item, value, hasDraftValue);
 
   if (item.key === MP_ACTIVE_MODE_KEY) {
+    const modeValue = getStringSelectValue(displayValue, MP_ACTIVE_MODE_VALUES);
+
     return (
       <SelectCustom
         mode="single"
-        value={String(value || "production")}
-        onChange={(next) => onChange((next ?? "production") as MercadoPagoMode)}
+        value={modeValue}
+        onChange={(next) => onChange((next ?? null) as MercadoPagoMode | null)}
         required={required}
         placeholder="Escolha o ambiente"
         searchable={false}
@@ -730,8 +756,7 @@ function PlainField({
   }
 
   if (item.type === "boolean") {
-    const booleanValue =
-      getBooleanSelectValue(value) ?? getBooleanSelectValue(item.value);
+    const booleanValue = getBooleanSelectValue(displayValue);
 
     return (
       <SelectCustom
@@ -750,11 +775,13 @@ function PlainField({
   }
 
   if (item.key === LOG_LEVEL_KEY) {
+    const logLevelValue = getStringSelectValue(displayValue, LOG_LEVEL_VALUES);
+
     return (
       <SelectCustom
         mode="single"
-        value={String(value ?? "info")}
-        onChange={(next) => onChange(next ?? "info")}
+        value={logLevelValue}
+        onChange={(next) => onChange(next ?? null)}
         required={required}
         placeholder="Selecione o nível de log"
         searchable={false}
@@ -782,11 +809,16 @@ function PlainField({
   }
 
   if (item.key === CURSOS_INSTALLMENTS_MAX_KEY) {
+    const installmentsValue = getNumberSelectValue(
+      displayValue,
+      INSTALLMENT_VALUES,
+    );
+
     return (
       <SelectCustom
         mode="single"
-        value={String(value ?? 1)}
-        onChange={(next) => onChange(next ? Number(next) : 1)}
+        value={installmentsValue}
+        onChange={(next) => onChange(next ? Number(next) : null)}
         required={required}
         placeholder="Escolha o limite de parcelas"
         searchable={false}
@@ -804,7 +836,7 @@ function PlainField({
 
   if (item.type === "csv") {
     if (isMultiSelectCsvKey(item.key)) {
-      const selectedValues = Array.isArray(value) ? value : [];
+      const selectedValues = Array.isArray(displayValue) ? displayValue : [];
       return (
         <MultiSelectCustom
           options={PAYMENT_METHOD_OPTIONS.map((option) => ({
@@ -830,7 +862,7 @@ function PlainField({
       <InputCustom
         id={id}
         type="text"
-        value={value == null ? "" : String(value)}
+        value={displayValue == null ? "" : String(displayValue)}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholderFor(item)}
         required={required}
@@ -851,7 +883,7 @@ function PlainField({
               ? "url"
               : "text"
       }
-      value={value == null ? "" : String(value)}
+      value={displayValue == null ? "" : String(displayValue)}
       onChange={(event) => onChange(event.target.value)}
       placeholder={placeholderFor(item)}
       required={required}

@@ -4,9 +4,13 @@ import type { ConfigCategoryGroup } from "@/api/configuracoes-gerais/types";
 import {
   buildConfigPayload,
   getBooleanSelectValue,
+  getDisplayValue,
   getInitialValue,
   getNextSecretDraftFromMaskedKey,
+  getNumberSelectValue,
   getSecretFieldInputState,
+  getStringSelectValue,
+  hasDraftValue,
   valuesAreEqual,
 } from "./geral-config.utils";
 
@@ -35,6 +39,15 @@ const baseGroup: ConfigCategoryGroup = {
       value: 5,
     },
     {
+      key: "mp_active_mode",
+      label: "Modo do Mercado Pago",
+      type: "string",
+      secret: false,
+      configured: true,
+      source: "DB",
+      value: "test",
+    },
+    {
       key: "cron_cobranca_enabled",
       label: "Cron de cobrança ativo",
       type: "boolean",
@@ -60,6 +73,24 @@ const baseGroup: ConfigCategoryGroup = {
       configured: true,
       source: "DB",
       value: "pix,boleto,card",
+    },
+    {
+      key: "log_level",
+      label: "Nível de log",
+      type: "string",
+      secret: false,
+      configured: true,
+      source: "DB",
+      value: "debug",
+    },
+    {
+      key: "cursos_installments_max",
+      label: "Máximo de parcelas",
+      type: "number",
+      secret: false,
+      configured: true,
+      source: "DB",
+      value: 6,
     },
   ],
 };
@@ -130,8 +161,15 @@ describe("geral-config utils", () => {
   });
 
   it("resolve booleans de forma estrita para hidratar o draft", () => {
-    expect(getInitialValue(baseGroup.items[2])).toBe(true);
-    expect(getInitialValue(baseGroup.items[3])).toBe(false);
+    const cronCobranca = baseGroup.items.find(
+      (item) => item.key === "cron_cobranca_enabled",
+    )!;
+    const emailsEnabled = baseGroup.items.find(
+      (item) => item.key === "assinaturas_emails_enabled",
+    )!;
+
+    expect(getInitialValue(cronCobranca)).toBe(true);
+    expect(getInitialValue(emailsEnabled)).toBe(false);
     expect(
       getInitialValue({
         key: "cron_boleto_enabled",
@@ -154,10 +192,45 @@ describe("geral-config utils", () => {
     expect(getBooleanSelectValue(null)).toBeUndefined();
   });
 
+  it("resolve display de campo usando draft quando existe e API quando draft ainda não hidratou", () => {
+    const modeItem = baseGroup.items.find(
+      (item) => item.key === "mp_active_mode",
+    )!;
+    const values = { mp_active_mode: "production" };
+
+    expect(hasDraftValue(values, "mp_active_mode")).toBe(true);
+    expect(getDisplayValue(modeItem, values.mp_active_mode, true)).toBe(
+      "production",
+    );
+    expect(getDisplayValue(modeItem, undefined, false)).toBe("test");
+  });
+
+  it("não força defaults visuais para selects sem valor real", () => {
+    expect(getStringSelectValue(undefined, ["production", "test"])).toBeNull();
+    expect(getStringSelectValue(null, ["production", "test"])).toBeNull();
+    expect(getStringSelectValue("test", ["production", "test"])).toBe("test");
+    expect(getStringSelectValue("production", ["production", "test"])).toBe(
+      "production",
+    );
+    expect(getStringSelectValue("invalid", ["production", "test"])).toBeNull();
+
+    expect(getNumberSelectValue(undefined, [1, 2, 3])).toBeNull();
+    expect(getNumberSelectValue("", [1, 2, 3])).toBeNull();
+    expect(getNumberSelectValue(3, [1, 2, 3])).toBe("3");
+    expect(getNumberSelectValue(4, [1, 2, 3])).toBeNull();
+  });
+
   it("compara booleans de forma estrita sem coerção indevida", () => {
-    expect(valuesAreEqual(baseGroup.items[2], true)).toBe(true);
-    expect(valuesAreEqual(baseGroup.items[2], false)).toBe(false);
-    expect(valuesAreEqual(baseGroup.items[3], false)).toBe(true);
+    const cronCobranca = baseGroup.items.find(
+      (item) => item.key === "cron_cobranca_enabled",
+    )!;
+    const emailsEnabled = baseGroup.items.find(
+      (item) => item.key === "assinaturas_emails_enabled",
+    )!;
+
+    expect(valuesAreEqual(cronCobranca, true)).toBe(true);
+    expect(valuesAreEqual(cronCobranca, false)).toBe(false);
+    expect(valuesAreEqual(emailsEnabled, false)).toBe(true);
     expect(
       valuesAreEqual(
         {
