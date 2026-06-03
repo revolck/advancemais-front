@@ -31,6 +31,7 @@ const PENDING_COURSE_PURCHASE_KEY = "pending_course_purchase_v1";
 type CourseInstallmentsConfig = {
   enabled: boolean;
   maxInstallments: number;
+  cardEnabled: boolean;
 };
 
 function getCookieValue(name: string): string | null {
@@ -136,6 +137,7 @@ export function CourseTurmasPurchaseSection({
     useState<CourseInstallmentsConfig>({
       enabled: false,
       maxInstallments: 1,
+      cardEnabled: true,
     });
   const isSubmitting = submittingTurmaId != null;
 
@@ -153,11 +155,17 @@ export function CourseTurmasPurchaseSection({
             response.data.courseInstallmentsMax > 0
               ? Math.min(12, Math.max(1, response.data.courseInstallmentsMax))
               : 1,
+          cardEnabled:
+            response.data.coursePaymentMethods?.includes("card") ?? true,
         });
       })
       .catch(() => {
         if (!mounted) return;
-        setCourseInstallmentsConfig({ enabled: false, maxInstallments: 1 });
+        setCourseInstallmentsConfig({
+          enabled: false,
+          maxInstallments: 1,
+          cardEnabled: true,
+        });
       });
 
     return () => {
@@ -425,9 +433,12 @@ export function CourseTurmasPurchaseSection({
                     <>
                       <div className="mt-3 rounded-xl border border-gray-200/70 bg-white/70 px-3 py-2 text-xs text-gray-600">
                         {courseInstallmentsConfig.enabled &&
+                        courseInstallmentsConfig.cardEnabled &&
                         courseInstallmentsConfig.maxInstallments > 1
                           ? `Pagamento único • até ${courseInstallmentsConfig.maxInstallments}x no cartão`
-                          : "Pagamento único no cartão"}
+                          : courseInstallmentsConfig.cardEnabled
+                            ? "Pagamento único no cartão"
+                            : "Pagamento único com métodos configurados no checkout"}
                       </div>
                       {lowVacancies ? (
                         <div className="mt-2 text-xs font-semibold text-amber-700">

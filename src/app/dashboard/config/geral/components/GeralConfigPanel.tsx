@@ -13,6 +13,7 @@ import type {
 } from "@/api/configuracoes-gerais/types";
 import { ButtonCustom } from "@/components/ui/custom/button";
 import { InputCustom } from "@/components/ui/custom/input";
+import { MultiSelectCustom } from "@/components/ui/custom/multiselect";
 import { SelectCustom } from "@/components/ui/custom/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -26,16 +27,20 @@ import {
   getInitialValue,
   getNextSecretDraftFromMaskedKey,
   getSecretFieldInputState,
+  isMultiSelectCsvKey,
+  type ConfigEditableValue,
   type SecretDraft,
 } from "./geral-config.utils";
 
-type EditableValue = string | number | boolean | null;
+type EditableValue = ConfigEditableValue;
 
 type MercadoPagoMode = "production" | "test";
 
 const MP_ACTIVE_MODE_KEY = "mp_active_mode";
 const CURSOS_INSTALLMENTS_ENABLED_KEY = "cursos_installments_enabled";
 const CURSOS_INSTALLMENTS_MAX_KEY = "cursos_installments_max";
+const COURSE_PAYMENT_METHODS_KEY = "course_payment_methods";
+const SUBSCRIPTION_PAYMENT_METHODS_KEY = "subscription_payment_methods";
 const DEFAULT_CURRENCY_KEY = "assinaturas_default_currency";
 const DEFAULT_RECURRENCE_KEY = "assinaturas_recorrencia_padrao";
 const LOG_LEVEL_KEY = "log_level";
@@ -48,6 +53,8 @@ const MERCADOPAGO_COMMON_KEYS = new Set([
   "mp_return_failure_url",
   "mp_return_pending_url",
   "mp_billing_portal_url",
+  COURSE_PAYMENT_METHODS_KEY,
+  SUBSCRIPTION_PAYMENT_METHODS_KEY,
   CURSOS_INSTALLMENTS_ENABLED_KEY,
   CURSOS_INSTALLMENTS_MAX_KEY,
   "assinaturas_default_currency",
@@ -82,6 +89,11 @@ const LOG_LEVEL_OPTIONS = [
   { value: "debug", label: "Diagnóstico" },
   { value: "trace", label: "Detalhado" },
   { value: "silent", label: "Sem logs" },
+] as const;
+const PAYMENT_METHOD_OPTIONS = [
+  { value: "pix", label: "PIX" },
+  { value: "boleto", label: "Boleto" },
+  { value: "card", label: "Cartão" },
 ] as const;
 const CONDITIONAL_FIELDS: Partial<
   Record<
@@ -143,9 +155,9 @@ const FIELD_HELPERS: Partial<Record<string, string>> = {
   mp_test_access_token:
     "Token privado de teste usado pela API para criar pagamentos sem afetar a conta de produção.",
   mp_public_key:
-    "Chave pública usada no site e no checkout real. É a chave que o navegador usa em produção.",
+    "Chave pública usada no site e no checkout real. No fluxo integrado de Checkout Transparente, ela é usada pelo navegador para tokenizar os dados com segurança.",
   mp_access_token:
-    "Token privado principal do Mercado Pago. É ele que autoriza a API a criar e consultar pagamentos reais.",
+    "Token privado principal do Mercado Pago. É ele que autoriza a API a criar e consultar pagamentos reais no Checkout Transparente.",
   mp_client_id:
     "Identificador OAuth do aplicativo no Mercado Pago. Use apenas se a integração exigir conexão autorizada entre contas.",
   mp_client_secret:
@@ -158,10 +170,14 @@ const FIELD_HELPERS: Partial<Record<string, string>> = {
     "Página para onde o usuário volta quando o pagamento fica aguardando confirmação.",
   mp_billing_portal_url:
     "Link do portal usado para consultar ou gerenciar cobranças recorrentes.",
+  course_payment_methods:
+    "Define quais meios aparecem no checkout de cursos e turmas. Cartão mantém as opções visuais de crédito e débito, mas o processamento continua centralizado como cartão.",
+  subscription_payment_methods:
+    "Define quais meios aparecem no checkout de assinaturas. Cartão cobre a recorrência automática. Pix e boleto ficam disponíveis no fluxo assistido de pagamento.",
   cursos_installments_enabled:
-    "Esta opção vale apenas para cursos e turmas. Planos recorrentes de empresas continuam sem parcelamento.",
+    "Esta opção vale apenas para cursos e turmas. Planos recorrentes de empresas continuam sem parcelamento. O fluxo integrado recomendado do Mercado Pago é Checkout Transparente via Checkout API / Orders.",
   cursos_installments_max:
-    "Escolha o maior número de parcelas permitido no cartão para cursos e turmas. Juros e condições seguem a configuração da sua conta Mercado Pago.",
+    "Escolha o maior número de parcelas permitido no cartão para cursos e turmas. Juros, parcelas sem juros e condições finais seguem a configuração da sua conta Mercado Pago.",
   assinaturas_default_currency:
     "A moeda das cobranças está fixa em BRL neste produto.",
   assinaturas_recorrencia_padrao:
@@ -171,7 +187,7 @@ const FIELD_HELPERS: Partial<Record<string, string>> = {
   assinaturas_emails_enabled:
     "Escolha se o sistema deve enviar e-mails automáticos sobre cobranças e assinaturas.",
   assinaturas_assistida_pix_boleto:
-    "Ativa o fluxo assistido para PIX e boleto, com acompanhamento operacional pelo sistema.",
+    "Ativa o fluxo assistido para Pix e boleto, com acompanhamento operacional pelo sistema. Esses meios dependem da configuração ativa da conta no Mercado Pago.",
   assinaturas_boleto_grace_days:
     "Quantidade de dias extras para boletos antes de marcar a cobrança como vencida.",
   cron_boleto_enabled:
@@ -782,6 +798,29 @@ function PlainField({
   }
 
   if (item.type === "csv") {
+    if (isMultiSelectCsvKey(item.key)) {
+      const selectedValues = Array.isArray(value) ? value : [];
+      return (
+        <MultiSelectCustom
+          options={PAYMENT_METHOD_OPTIONS.map((option) => ({
+            value: option.value,
+            label: option.label,
+          }))}
+          value={PAYMENT_METHOD_OPTIONS.filter((option) =>
+            selectedValues.includes(option.value),
+          )}
+          onChange={(nextOptions) =>
+            onChange(nextOptions.map((option) => option.value))
+          }
+          placeholder="Selecione os métodos aceitos"
+          hidePlaceholderWhenSelected={false}
+          hideClearAllButton
+          maxVisibleTags={3}
+          required={required}
+        />
+      );
+    }
+
     return (
       <InputCustom
         id={id}

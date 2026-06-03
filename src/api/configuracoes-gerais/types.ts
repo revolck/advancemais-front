@@ -49,7 +49,7 @@ export interface ConfiguracoesGeraisListResponse {
 export type SecretConfigAction = "keep" | "replace" | "clear";
 
 export interface UpdateConfiguracaoGeralPayload {
-  values?: Record<string, string | number | boolean | null>;
+  values?: Record<string, string | number | boolean | string[] | null>;
   secrets?: Record<string, { action: SecretConfigAction; value?: string }>;
   motivo?: string;
 }
@@ -122,5 +122,7 @@ export interface PublicMercadoPagoConfigResponse {
     activeMode?: "production" | "test";
     courseInstallmentsEnabled?: boolean;
     courseInstallmentsMax?: number;
+    coursePaymentMethods?: Array<"pix" | "boleto" | "card">;
+    subscriptionPaymentMethods?: Array<"pix" | "boleto" | "card">;
   };
 }

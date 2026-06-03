@@ -31,6 +31,33 @@ const baseGroup: ConfigCategoryGroup = {
       source: "ENV",
       value: 5,
     },
+    {
+      key: "cron_cobranca_enabled",
+      label: "Cron de cobrança ativo",
+      type: "boolean",
+      secret: false,
+      configured: true,
+      source: "DB",
+      value: true,
+    },
+    {
+      key: "assinaturas_emails_enabled",
+      label: "Enviar e-mails de assinaturas",
+      type: "boolean",
+      secret: false,
+      configured: true,
+      source: "DB",
+      value: false,
+    },
+    {
+      key: "course_payment_methods",
+      label: "Métodos de pagamento para cursos e turmas",
+      type: "csv",
+      secret: false,
+      configured: true,
+      source: "DB",
+      value: "pix,boleto,card",
+    },
   ],
 };
 
@@ -66,5 +93,36 @@ describe("geral-config utils", () => {
       value: "",
     });
     expect(getNextSecretDraftFromMaskedKey("Tab")).toBeNull();
+  });
+
+  it("envia toggles booleanos alterados e preserva os que não mudaram", () => {
+    const payload = buildConfigPayload(
+      baseGroup,
+      {
+        assinaturas_grace_days: 5,
+        cron_cobranca_enabled: false,
+        assinaturas_emails_enabled: false,
+      },
+      { mp_access_token: { action: "keep", value: "" } },
+    );
+
+    expect(payload.values).toEqual({
+      cron_cobranca_enabled: false,
+    });
+    expect(payload.secrets).toEqual({});
+  });
+
+  it("serializa multiselect CSV apenas quando houver mudança real", () => {
+    const payload = buildConfigPayload(
+      baseGroup,
+      {
+        course_payment_methods: ["pix", "card"],
+      },
+      { mp_access_token: { action: "keep", value: "" } },
+    );
+
+    expect(payload.values).toEqual({
+      course_payment_methods: "pix,card",
+    });
   });
 });

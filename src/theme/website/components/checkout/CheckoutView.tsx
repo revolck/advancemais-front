@@ -24,6 +24,7 @@ import { iniciarCheckoutCurso, iniciarCheckoutRecuperacao } from "@/api/cursos";
 import type { CheckoutRecuperacaoPayload } from "@/api/cursos/types";
 import type { CheckoutIntent, MetodoPagamento } from "@/api/mercadopago/types";
 import { validateCupom } from "@/api/cupons";
+import { getPublicMercadoPagoConfig } from "@/api/configuracoes-gerais";
 import {
   formatPrice,
   sanitizeDocument,
@@ -50,6 +51,8 @@ import {
   type DocumentValidationResult,
 } from "./components";
 import { useCheckoutData } from "./hooks";
+
+type MercadoPagoCheckoutMethod = "pix" | "boleto" | "card";
 
 /**
  * Verifica se estamos em ambiente com HTTPS real (não localhost)
@@ -102,6 +105,12 @@ function getCourseCheckoutErrorMessage(error: any): string {
       "O parcelamento está desativado para esta compra de curso.",
     CURSO_INSTALLMENTS_LIMIT_EXCEEDED:
       "A quantidade de parcelas escolhida ultrapassa o limite permitido para esta compra.",
+    CURSO_PAYMENT_METHOD_DISABLED:
+      "Este método de pagamento está desativado para cursos e turmas.",
+    ASSINATURA_PAYMENT_METHOD_DISABLED:
+      "Este método de pagamento está desativado para assinaturas.",
+    ASSINATURA_CARD_DISABLED:
+      "O pagamento com cartão está desativado para assinaturas.",
     MERCADOPAGO_ERROR:
       "Não foi possível processar o pagamento no momento. Tente novamente.",
   };
@@ -165,6 +174,12 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("credit");
   const [selectedCourseInstallments, setSelectedCourseInstallments] =
     useState<number>(1);
+  const [coursePaymentMethods, setCoursePaymentMethods] = useState<
+    MercadoPagoCheckoutMethod[]
+  >(["pix", "boleto", "card"]);
+  const [subscriptionPaymentMethods, setSubscriptionPaymentMethods] = useState<
+    MercadoPagoCheckoutMethod[]
+  >(["pix", "boleto", "card"]);
 
   // Detecta se está em HTTPS real (não localhost) para tokenização
   const isRealHttps = useIsRealHttps();
@@ -254,6 +269,32 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
     setIsValidating(false);
   }, [sessionId, securityToken]);
 
+  useEffect(() => {
+    let mounted = true;
+
+    getPublicMercadoPagoConfig()
+      .then((response) => {
+        if (!mounted) return;
+
+        const nextCourseMethods: MercadoPagoCheckoutMethod[] = response.data
+          .coursePaymentMethods?.length
+          ? [...response.data.coursePaymentMethods]
+          : ["pix", "boleto", "card"];
+        const nextSubscriptionMethods: MercadoPagoCheckoutMethod[] = response
+          .data.subscriptionPaymentMethods?.length
+          ? [...response.data.subscriptionPaymentMethods]
+          : ["pix", "boleto", "card"];
+
+        setCoursePaymentMethods(nextCourseMethods);
+        setSubscriptionPaymentMethods(nextSubscriptionMethods);
+      })
+      .catch(() => undefined);
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   // Timer
   useEffect(() => {
     if (!session) return;
@@ -305,6 +346,39 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
         return "pix";
     }
   };
+
+  const availablePaymentMethods = useMemo(() => {
+    return session?.productType === "curso" ||
+      session?.productType === "curso_pagamento"
+      ? coursePaymentMethods
+      : subscriptionPaymentMethods;
+  }, [coursePaymentMethods, session?.productType, subscriptionPaymentMethods]);
+
+  useEffect(() => {
+    const supportsCard = availablePaymentMethods.includes("card");
+    const supportsPix = availablePaymentMethods.includes("pix");
+    const supportsBoleto = availablePaymentMethods.includes("boleto");
+
+    const currentSupported =
+      ((paymentMethod === "credit" || paymentMethod === "debit") &&
+        supportsCard) ||
+      (paymentMethod === "pix" && supportsPix) ||
+      (paymentMethod === "boleto" && supportsBoleto);
+
+    if (currentSupported) return;
+
+    if (supportsCard) {
+      setPaymentMethod("credit");
+      return;
+    }
+    if (supportsPix) {
+      setPaymentMethod("pix");
+      return;
+    }
+    if (supportsBoleto) {
+      setPaymentMethod("boleto");
+    }
+  }, [availablePaymentMethods, paymentMethod]);
 
   // Processa pagamento
   const handleSubmitPayment = async () => {
@@ -1464,6 +1538,7 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
             <PaymentMethodSelector
               selected={paymentMethod}
               onChange={setPaymentMethod}
+              availableMethods={availablePaymentMethods}
             />
 
             {/* Formulário de Cartão - depende do ambiente (HTTPS real ou HTTP/localhost) */}
