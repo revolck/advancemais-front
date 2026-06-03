@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useState, useRef } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  useRef,
+} from "react";
 import { UsuarioTable } from "./components";
 import { useUsuarioDashboardData } from "./hooks";
 import { cn } from "@/lib/utils";
@@ -50,7 +56,7 @@ export function UsuariosDashboard({
 
   // Detectar mudanças nos filtros para mostrar skeleton imediatamente
   useEffect(() => {
-    const filtersChanged = 
+    const filtersChanged =
       prevFiltersRef.current.search !== filters.search ||
       prevFiltersRef.current.role !== filters.role ||
       prevFiltersRef.current.status !== filters.status ||
@@ -71,10 +77,6 @@ export function UsuariosDashboard({
     }
   }, [isFetching, isLoading]);
 
-  // Estado de ordenação
-  type SortDirection = "asc" | "desc";
-  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
-
   // Estado de navegação global
   const [isNavigating, setIsNavigating] = useState(false);
   const handleNavigateStart = useCallback(() => {
@@ -83,7 +85,7 @@ export function UsuariosDashboard({
   }, []);
 
   const [pendingSearchTerm, setPendingSearchTerm] = useState(
-    filters.search ?? ""
+    filters.search ?? "",
   );
 
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
@@ -116,8 +118,8 @@ export function UsuariosDashboard({
       new Set(
         usuarios
           .map((usuario) => usuario.cidade)
-          .filter((cidade): cidade is string => !!cidade)
-      )
+          .filter((cidade): cidade is string => !!cidade),
+      ),
     ).sort();
 
     const options = cidades.map((cidade) => ({
@@ -129,7 +131,7 @@ export function UsuariosDashboard({
 
   const searchValidationMessage = useMemo(
     () => getSearchValidationMessage(pendingSearchTerm),
-    [pendingSearchTerm]
+    [pendingSearchTerm],
   );
   const isSearchInputValid = !searchValidationMessage;
 
@@ -143,7 +145,7 @@ export function UsuariosDashboard({
       setIsFiltering(true); // Ativar loading imediatamente
       updateFilters({ search: trimmedValue || undefined });
     },
-    [filters.search, pendingSearchTerm, updateFilters]
+    [filters.search, pendingSearchTerm, updateFilters],
   );
 
   const filterFields: FilterField[] = useMemo(
@@ -173,7 +175,7 @@ export function UsuariosDashboard({
         placeholder: "Selecionar status",
       },
     ],
-    [cidadesOptions]
+    [cidadesOptions],
   );
 
   const filterValues = useMemo(
@@ -182,7 +184,7 @@ export function UsuariosDashboard({
       cidade: selectedCidades,
       status: selectedStatuses,
     }),
-    [selectedRoles, selectedCidades, selectedStatuses]
+    [selectedRoles, selectedCidades, selectedStatuses],
   );
 
   const handleFilterChange = useCallback(
@@ -192,7 +194,9 @@ export function UsuariosDashboard({
         const roles = (value as string[]) || [];
         setSelectedRoles(roles);
         // Se não há seleção, remove o filtro (undefined para não enviar à API)
-        updateFilters({ role: roles.length > 0 ? (roles[0] as any) : undefined });
+        updateFilters({
+          role: roles.length > 0 ? (roles[0] as any) : undefined,
+        });
       } else if (key === "cidade") {
         const cidades = (value as string[]) || [];
         setSelectedCidades(cidades);
@@ -202,10 +206,12 @@ export function UsuariosDashboard({
         const statuses = (value as string[]) || [];
         setSelectedStatuses(statuses);
         // Se não há seleção, remove o filtro
-        updateFilters({ status: statuses.length > 0 ? statuses[0] : undefined });
+        updateFilters({
+          status: statuses.length > 0 ? statuses[0] : undefined,
+        });
       }
     },
-    [updateFilters]
+    [updateFilters],
   );
 
   const handlePageChange = useCallback(
@@ -214,23 +220,8 @@ export function UsuariosDashboard({
       setIsFiltering(true); // Ativar loading imediatamente
       loadPage(page);
     },
-    [loadPage, pagination]
+    [loadPage, pagination],
   );
-
-  // Ordenar usuários
-  const sortedUsuarios = useMemo(() => {
-    const sorted = [...usuarios];
-    sorted.sort((a, b) => {
-      const nameA = (a.nomeCompleto || a.id).toLowerCase();
-      const nameB = (b.nomeCompleto || b.id).toLowerCase();
-      if (sortDirection === "asc") {
-        return nameA.localeCompare(nameB, "pt-BR");
-      } else {
-        return nameB.localeCompare(nameA, "pt-BR");
-      }
-    });
-    return sorted;
-  }, [usuarios, sortDirection]);
 
   // Mostrar skeleton quando está carregando inicialmente OU quando está filtrando
   const showLoading = isLoading || (isFiltering && isFetching);
@@ -312,11 +303,9 @@ export function UsuariosDashboard({
       {/* Tabela com paginação integrada */}
       {!showEmptyState && (
         <UsuarioTable
-          usuarios={sortedUsuarios}
+          usuarios={usuarios}
           isLoading={showLoading}
           pageSize={pageSize}
-          sortDirection={sortDirection}
-          onSortChange={setSortDirection}
           pagination={
             pagination
               ? {

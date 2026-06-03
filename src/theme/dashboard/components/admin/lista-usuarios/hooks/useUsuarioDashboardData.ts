@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { listUsuarios, type ListUsuariosParams } from "@/api/usuarios";
 import type {
   UsuarioDashboardFilters,
@@ -20,7 +20,7 @@ interface UseUsuarioDashboardDataReturn {
 }
 
 export function useUsuarioDashboardData(
-  initialFilters?: Partial<UsuarioDashboardFilters>
+  initialFilters?: Partial<UsuarioDashboardFilters>,
 ): UseUsuarioDashboardDataReturn {
   const [filters, setFilters] = useState<UsuarioDashboardFilters>({
     page: 1,
@@ -58,7 +58,7 @@ export function useUsuarioDashboardData(
       normalizedFilters.role,
       normalizedFilters.search,
       normalizedFilters.status,
-    ]
+    ],
   );
 
   const buildParams = useCallback(
@@ -87,14 +87,14 @@ export function useUsuarioDashboardData(
 
       return params;
     },
-    []
+    [],
   );
 
   const usuariosQuery = useQuery({
     queryKey: queryKeys.usuarios.list(queryFilters),
     queryFn: async () => {
       const params = buildParams(queryFilters);
-      
+
       // Log para debug (apenas em desenvolvimento)
       if (process.env.NODE_ENV === "development") {
         console.log("📋 Buscando usuários com parâmetros:", {
@@ -102,9 +102,9 @@ export function useUsuarioDashboardData(
           queryFilters,
         });
       }
-      
+
       const response = await listUsuarios(params);
-      
+
       // Log para debug (apenas em desenvolvimento)
       if (process.env.NODE_ENV === "development") {
         console.log("✅ Usuários retornados:", {
@@ -112,21 +112,26 @@ export function useUsuarioDashboardData(
           usuarios: response.usuarios?.length,
           pagination: response.pagination,
         });
-        
+
         // Log detalhado para verificar vínculos de ALUNO_CANDIDATO
         const alunosCandidatos = (response.usuarios || []).filter(
-          (u) => u.role === "ALUNO_CANDIDATO"
+          (u) => u.role === "ALUNO_CANDIDATO",
         );
-        
+
         if (alunosCandidatos.length > 0) {
-          console.log("🎓 Alunos/Candidatos encontrados:", alunosCandidatos.map((u) => ({
-            id: u.id,
-            nome: u.nomeCompleto,
-            role: u.role,
-            curriculos: u.curriculos?.length ?? 0,
-            cursosInscricoes: u.cursosInscricoes?.length ?? 0,
-            temVinculos: (u.curriculos?.length ?? 0) > 0 || (u.cursosInscricoes?.length ?? 0) > 0,
-          })));
+          console.log(
+            "🎓 Alunos/Candidatos encontrados:",
+            alunosCandidatos.map((u) => ({
+              id: u.id,
+              nome: u.nomeCompleto,
+              role: u.role,
+              curriculos: u.curriculos?.length ?? 0,
+              cursosInscricoes: u.cursosInscricoes?.length ?? 0,
+              temVinculos:
+                (u.curriculos?.length ?? 0) > 0 ||
+                (u.cursosInscricoes?.length ?? 0) > 0,
+            })),
+          );
         }
       }
       const usuarios: UsuarioOverview[] = (response.usuarios || []).map(
@@ -151,24 +156,24 @@ export function useUsuarioDashboardData(
           // A API retorna Array<{ id: string }> apenas para ALUNO_CANDIDATO
           curriculos: u.curriculos,
           cursosInscricoes: u.cursosInscricoes,
-        })
+        }),
       );
 
       const rawPagination = (response as any)?.pagination ?? {};
       const page = Number(
-        rawPagination?.page ?? queryFilters.page ?? normalizedFilters.page
+        rawPagination?.page ?? queryFilters.page ?? normalizedFilters.page,
       );
       const pageSize = Number(
         rawPagination?.limit ??
           rawPagination?.pageSize ??
           queryFilters.pageSize ??
-          normalizedFilters.pageSize
+          normalizedFilters.pageSize,
       );
       const total = Number(rawPagination?.total ?? usuarios.length);
       const totalPages = Number(
         rawPagination?.pages ??
           rawPagination?.totalPages ??
-          Math.max(1, Math.ceil(total / Math.max(1, pageSize)))
+          Math.max(1, Math.ceil(total / Math.max(1, pageSize))),
       );
 
       return {
@@ -182,10 +187,9 @@ export function useUsuarioDashboardData(
         },
       } as UsuariosDashboardData;
     },
-    placeholderData: keepPreviousData,
     staleTime: 0, // Sempre considerar os dados como stale para forçar refetch
     gcTime: 5 * 60 * 1000, // 5 minutos
-    refetchOnMount: 'always', // Sempre refetch quando o componente é montado
+    refetchOnMount: "always", // Sempre refetch quando o componente é montado
     refetchOnWindowFocus: false, // Não refetch ao focar na janela (evita refetch desnecessário)
   });
 
@@ -197,7 +201,7 @@ export function useUsuarioDashboardData(
     (newFilters: Partial<UsuarioDashboardFilters>) => {
       setFilters((prev) => ({ ...prev, ...newFilters, page: 1 }));
     },
-    []
+    [],
   );
 
   const loadPage = useCallback((page: number) => {
