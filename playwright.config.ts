@@ -5,6 +5,9 @@ const e2eBaseUrl = process.env.PLAYWRIGHT_BASE_URL ?? `http://localhost:${e2ePor
 const e2eWebServerCommand =
   process.env.PLAYWRIGHT_WEB_SERVER_COMMAND ??
   `pnpm exec next dev --turbopack --port ${e2ePort}`;
+const shouldUseLocalWebServer = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i.test(
+  e2eBaseUrl,
+);
 
 /**
  * Configuração do Playwright para testes E2E
@@ -49,10 +52,12 @@ export default defineConfig({
   ],
 
   /* Executar servidor de desenvolvimento antes de iniciar os testes */
-  webServer: {
-    command: e2eWebServerCommand,
-    url: e2eBaseUrl,
-    reuseExistingServer: true,
-    timeout: 180 * 1000,
-  },
+  webServer: shouldUseLocalWebServer
+    ? {
+        command: e2eWebServerCommand,
+        url: e2eBaseUrl,
+        reuseExistingServer: true,
+        timeout: 180 * 1000,
+      }
+    : undefined,
 });

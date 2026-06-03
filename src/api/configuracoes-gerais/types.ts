@@ -38,6 +38,8 @@ export interface ConfigCategoryGroup {
   category: ConfigCategory;
   label: string;
   description: string;
+  secretEditingAvailable?: boolean;
+  secretEditingReason?: "CONFIG_ENCRYPTION_KEY_MISSING" | null;
   items: ConfigItem[];
 }
 

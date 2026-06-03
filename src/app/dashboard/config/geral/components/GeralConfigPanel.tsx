@@ -103,6 +103,8 @@ const PAYMENT_METHOD_OPTIONS = [
 const MP_ACTIVE_MODE_VALUES = ["production", "test"] as const;
 const LOG_LEVEL_VALUES = LOG_LEVEL_OPTIONS.map((option) => option.value);
 const INSTALLMENT_VALUES = Array.from({ length: 12 }, (_, index) => index + 1);
+const SECRET_EDITING_UNAVAILABLE_MESSAGE =
+  "Os campos protegidos estão em modo de leitura porque a chave de segurança da API ainda não foi configurada.";
 const CONDITIONAL_FIELDS: Partial<
   Record<
     ConfigCategoryGroup["category"],
@@ -157,15 +159,15 @@ const FIELD_HELPERS: Partial<Record<string, string>> = {
   mp_application_id:
     "Identifica o aplicativo da integração no Mercado Pago. É usado para vincular a conta ao sistema.",
   mp_webhook_secret:
-    "Protege as notificações automáticas do Mercado Pago. Use o segredo configurado no webhook oficial.",
+    "Protege as notificações automáticas do Mercado Pago. Teste e Produção usam segredos próprios e independentes neste campo.",
   mp_test_public_key:
     "Chave pública usada para testes no navegador. Serve para gerar formulários e tokens em ambiente de teste.",
   mp_test_access_token:
-    "Token privado de teste usado pela API para criar pagamentos sem afetar a conta de produção.",
+    "Use apenas a credencial de teste do Mercado Pago. Este valor não é compartilhado com Produção.",
   mp_public_key:
     "Chave pública usada no site e no checkout real. No fluxo integrado de Checkout Transparente, ela é usada pelo navegador para tokenizar os dados com segurança.",
   mp_access_token:
-    "Token privado principal do Mercado Pago. É ele que autoriza a API a criar e consultar pagamentos reais no Checkout Transparente.",
+    "Use apenas a credencial de produção do Mercado Pago. Este valor não é compartilhado com Teste.",
   mp_client_id:
     "Identificador OAuth do aplicativo no Mercado Pago. Use apenas se a integração exigir conexão autorizada entre contas.",
   mp_client_secret:
@@ -405,6 +407,20 @@ function helperTextFor(item: ConfigItem) {
   return "Preencha este campo com a informação usada pelo sistema.";
 }
 
+function hasSecretFields(group?: ConfigCategoryGroup) {
+  return Boolean(group?.items.some((item) => item.secret));
+}
+
+function getSecretEditingNotice(group?: ConfigCategoryGroup) {
+  if (!group || group.secretEditingAvailable !== false) return null;
+
+  if (group.secretEditingReason === "CONFIG_ENCRYPTION_KEY_MISSING") {
+    return SECRET_EDITING_UNAVAILABLE_MESSAGE;
+  }
+
+  return "Os campos protegidos estão indisponíveis para edição neste momento.";
+}
+
 export function GeralConfigPanel({
   group,
   loading,
@@ -447,6 +463,10 @@ export function GeralConfigPanel({
   const visibleItems = React.useMemo(
     () => (group ? getVisibleItems(group, activeMercadoPagoMode, values) : []),
     [group, activeMercadoPagoMode, values],
+  );
+  const secretEditingNotice = React.useMemo(
+    () => getSecretEditingNotice(group),
+    [group],
   );
 
   const resetDraft = React.useCallback(() => {
@@ -547,6 +567,12 @@ export function GeralConfigPanel({
       className="flex flex-col"
       onSubmit={(event) => event.preventDefault()}
     >
+      {hasSecretFields(group) && secretEditingNotice ? (
+        <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          {secretEditingNotice}
+        </div>
+      ) : null}
+
       {group.category === "mercadopago" && (
         <div className="mb-6 max-w-md">
           <ConfigFieldRow
@@ -556,6 +582,7 @@ export function GeralConfigPanel({
             }
             group={group}
             activeMercadoPagoMode={activeMercadoPagoMode}
+            secretEditingAvailable={group.secretEditingAvailable !== false}
             value={values[MP_ACTIVE_MODE_KEY]}
             hasDraftValue={hasDraftValue(values, MP_ACTIVE_MODE_KEY)}
             secretDraft={secrets[MP_ACTIVE_MODE_KEY]}
@@ -584,6 +611,7 @@ export function GeralConfigPanel({
               item={item}
               group={group}
               activeMercadoPagoMode={activeMercadoPagoMode}
+              secretEditingAvailable={group.secretEditingAvailable !== false}
               value={values[item.key]}
               hasDraftValue={hasDraftValue(values, item.key)}
               secretDraft={secrets[item.key]}
@@ -642,6 +670,7 @@ interface ConfigFieldRowProps {
   item: ConfigItem;
   group: ConfigCategoryGroup;
   activeMercadoPagoMode: MercadoPagoMode;
+  secretEditingAvailable: boolean;
   value?: EditableValue;
   hasDraftValue: boolean;
   secretDraft?: SecretDraft;
@@ -653,6 +682,7 @@ function ConfigFieldRow({
   item,
   group,
   activeMercadoPagoMode,
+  secretEditingAvailable,
   value,
   hasDraftValue,
   secretDraft,
@@ -698,6 +728,7 @@ function ConfigFieldRow({
           id={inputId}
           item={item}
           required={isFieldRequired(item, group, activeMercadoPagoMode)}
+          readOnly={!secretEditingAvailable}
           draft={secretDraft}
           onChange={onSecretChange}
         />
@@ -896,12 +927,14 @@ function SecretField({
   id,
   item,
   required,
+  readOnly,
   draft,
   onChange,
 }: {
   id: string;
   item: ConfigItem;
   required: boolean;
+  readOnly: boolean;
   draft?: SecretDraft;
   onChange: (draft: SecretDraft) => void;
 }) {
@@ -915,7 +948,9 @@ function SecretField({
       id={id}
       type={showingMaskedValue ? "text" : "password"}
       value={inputValue}
+      readOnly={readOnly}
       onKeyDown={(event) => {
+        if (readOnly) return;
         if (!showingMaskedValue) return;
         if (event.ctrlKey || event.metaKey || event.altKey) return;
 
@@ -926,6 +961,7 @@ function SecretField({
         onChange(nextDraft);
       }}
       onPaste={(event) => {
+        if (readOnly) return;
         if (!showingMaskedValue) return;
         event.preventDefault();
         onChange({
@@ -934,18 +970,20 @@ function SecretField({
         });
       }}
       onBlur={(event) => {
+        if (readOnly) return;
         if (!event.target.value.trim() && item.configured) {
           onChange({ action: "keep", value: "" });
         }
       }}
-      onChange={(event) =>
-        onChange({ action: "replace", value: event.target.value })
-      }
+      onChange={(event) => {
+        if (readOnly) return;
+        onChange({ action: "replace", value: event.target.value });
+      }}
       placeholder={placeholderFor(item)}
       autoComplete="new-password"
       spellCheck={false}
       required={required}
-      className={`h-12 ${showingMaskedValue ? "font-mono" : ""}`}
+      className={`h-12 ${showingMaskedValue ? "font-mono" : ""} ${readOnly ? "bg-muted/40 text-muted-foreground" : ""}`}
     />
   );
 }

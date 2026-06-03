@@ -24,6 +24,8 @@ type ConfigItem = {
 type ConfigGroup = {
   category: ConfigCategory;
   label: string;
+  secretEditingAvailable?: boolean;
+  secretEditingReason?: "CONFIG_ENCRYPTION_KEY_MISSING" | null;
   items: ConfigItem[];
 };
 
@@ -231,6 +233,14 @@ test("selects de Configurações > Geral exibem exatamente os valores da API ap�
     await expect(field(page, scenario.key).getByRole("combobox")).toContainText(
       expected,
     );
+  }
+
+  const mercadoPagoGroup = groups.find((group) => group.category === "mercadopago");
+  if (mercadoPagoGroup?.secretEditingAvailable === false) {
+    await openTab(page, "Mercado Pago");
+    await expect(
+      page.getByText(/campos protegidos estão em modo de leitura/i),
+    ).toBeVisible();
   }
 });
 
