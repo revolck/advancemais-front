@@ -19,7 +19,11 @@ import {
   PENDING_CURSOS_PAYMENT_KEY,
 } from "@/lib/pending-storage-keys";
 import { startCheckout } from "@/api/mercadopago";
-import { iniciarCheckoutCurso, iniciarCheckoutRecuperacao } from "@/api/cursos";
+import {
+  cancelarCheckoutPagamento,
+  iniciarCheckoutCurso,
+  iniciarCheckoutRecuperacao,
+} from "@/api/cursos";
 import type { CheckoutRecuperacaoPayload } from "@/api/cursos/types";
 import type { CheckoutIntent, MetodoPagamento } from "@/api/mercadopago/types";
 import { validateCupom } from "@/api/cupons";
@@ -917,7 +921,21 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
   }, [router]);
 
   // Callback para voltar e limpar o PIX/Boleto (gerar novo)
-  const handleBackFromPayment = useCallback(() => {
+  const handleBackFromPayment = useCallback(async () => {
+    if (checkoutId) {
+      try {
+        await cancelarCheckoutPagamento(checkoutId, "usuario_voltou");
+      } catch (error: any) {
+        toastCustom.error({
+          title: "Não foi possível cancelar",
+          description:
+            error?.message ||
+            "Tente novamente antes de iniciar outro pagamento para esta turma.",
+        });
+        return;
+      }
+    }
+
     setPixCode(null);
     setPixQrCode(null);
     setPixExpiresAt(null);
@@ -925,7 +943,9 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
     setBoletoCode(null);
     setBoletoExpiresAt(null);
     setCheckoutId(null);
-  }, []);
+    setIsProcessing(false);
+    courseCheckoutStartedRef.current = false;
+  }, [checkoutId]);
 
   // Limpa o token quando mudar o método de pagamento
   useEffect(() => {

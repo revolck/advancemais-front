@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { ButtonCustom } from "@/components/ui/custom/button";
 import { cn } from "@/lib/utils";
+import { getCheckoutPagamento } from "@/api/cursos";
 import { formatPrice } from "../utils/formatters";
 import { CheckoutHeader } from "./CheckoutHeader";
 import type { AppliedCoupon } from "../types";
@@ -27,7 +28,7 @@ interface PixSuccessScreenProps {
   sessionTimeLeft: number; // Tempo restante da sessão de checkout (em segundos)
   expiresAt?: string | null;
   checkoutId?: string | null;
-  onBack: () => void;
+  onBack: () => void | Promise<void>;
   onPaymentConfirmed?: () => void;
 }
 
@@ -53,6 +54,7 @@ export const PixSuccessScreen: React.FC<PixSuccessScreenProps> = ({
   const [timeLeft, setTimeLeft] = useState<number>(() => getInitialTimeLeft());
   const [isExpired, setIsExpired] = useState(() => getInitialTimeLeft() <= 0);
   const [isPolling, setIsPolling] = useState(true);
+  const [isLeaving, setIsLeaving] = useState(false);
 
   // Continua o contador da sessão de checkout
   useEffect(() => {
@@ -80,26 +82,43 @@ export const PixSuccessScreen: React.FC<PixSuccessScreenProps> = ({
     setIsExpired(nextTimeLeft <= 0);
   }, [getInitialTimeLeft]);
 
-  // Polling para verificar status do pagamento
   useEffect(() => {
-    if (!isPolling || !checkoutId) return;
+    if (!isPolling || !checkoutId || isExpired) return;
 
     const pollInterval = setInterval(async () => {
       try {
-        // TODO: Implementar endpoint de verificação de status
-        // const response = await fetch(`/api/v1/empresas/planos/${checkoutId}`);
-        // const data = await response.json();
-        // if (data.statusPagamento === 'APROVADO') {
-        //   setIsPolling(false);
-        //   onPaymentConfirmed?.();
-        // }
+        const response = await getCheckoutPagamento(checkoutId);
+        const statusPagamento =
+          response.data.statusPagamento || response.data.status;
+        if (statusPagamento === "APROVADO") {
+          setIsPolling(false);
+          onPaymentConfirmed?.();
+        }
+        if (
+          statusPagamento === "CANCELADO" ||
+          statusPagamento === "RECUSADO" ||
+          response.data.canRetry
+        ) {
+          setIsPolling(false);
+          setIsExpired(true);
+        }
       } catch (error) {
         console.error("Erro ao verificar status:", error);
       }
     }, 5000); // Verifica a cada 5 segundos
 
     return () => clearInterval(pollInterval);
-  }, [isPolling, checkoutId, onPaymentConfirmed]);
+  }, [isExpired, isPolling, checkoutId, onPaymentConfirmed]);
+
+  const handleBack = useCallback(async () => {
+    if (isLeaving) return;
+    setIsLeaving(true);
+    try {
+      await onBack();
+    } finally {
+      setIsLeaving(false);
+    }
+  }, [isLeaving, onBack]);
 
   const copyPixCode = useCallback(() => {
     navigator.clipboard.writeText(pixCode);
@@ -127,8 +146,13 @@ export const PixSuccessScreen: React.FC<PixSuccessScreenProps> = ({
           <p className="text-zinc-500 text-sm mb-6">
             O tempo para pagamento expirou. Por favor, inicie um novo checkout.
           </p>
-          <ButtonCustom variant="primary" fullWidth onClick={onBack}>
-            Voltar aos planos
+          <ButtonCustom
+            variant="primary"
+            fullWidth
+            onClick={handleBack}
+            disabled={isLeaving}
+          >
+            {isLeaving ? "Cancelando..." : "Voltar"}
           </ButtonCustom>
         </div>
       </div>
@@ -142,7 +166,7 @@ export const PixSuccessScreen: React.FC<PixSuccessScreenProps> = ({
         minutes={minutes}
         seconds={seconds}
         isLowTime={isLowTime}
-        onBack={onBack}
+        onBack={handleBack}
       />
 
       {/* Conteúdo principal */}
@@ -177,7 +201,7 @@ export const PixSuccessScreen: React.FC<PixSuccessScreenProps> = ({
             </div>
 
             {pixQrCode && (
-              <div className="bg-white border-2 border-zinc-100 p-6 rounded-2xl mb-6 flex justify-center relative w-56 h-56 mx-auto">
+              <div className="bg-white border-2 border-zinc-100 p-6 rounded-2xl mb-6 flex items-center justify-center relative w-64 h-64 mx-auto">
                 <Image
                   src={
                     pixQrCode.startsWith("data:")

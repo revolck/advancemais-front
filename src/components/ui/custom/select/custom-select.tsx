@@ -397,6 +397,8 @@ export function SelectCustom(props: SelectCustomProps) {
             )}
           </div>
           <SelectContent
+            position="popper"
+            sideOffset={4}
             className={cn(
               "z-[120] w-[--radix-select-trigger-width] max-h-80 rounded-md border border-gray-200 bg-white",
               "[&_[data-slot=select-scroll-up-button]]:hidden [&_[data-slot=select-scroll-down-button]]:hidden",

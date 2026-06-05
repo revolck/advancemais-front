@@ -151,6 +151,7 @@ export {
   // API v3 - Checkout
   iniciarCheckout,
   getCheckoutPagamento,
+  cancelarCheckoutPagamento,
   getVagasDisponiveis,
   // API v3 - Agenda
   listAgenda,

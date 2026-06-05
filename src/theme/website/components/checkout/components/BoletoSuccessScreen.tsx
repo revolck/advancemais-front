@@ -29,7 +29,7 @@ interface BoletoSuccessScreenProps {
   sessionTimeLeft: number; // Tempo restante da sessão de checkout (em segundos)
   expiresAt?: string | null;
   checkoutId?: string | null;
-  onBack: () => void;
+  onBack: () => void | Promise<void>;
   onGoHome?: () => void;
 }
 
@@ -54,6 +54,7 @@ export const BoletoSuccessScreen: React.FC<BoletoSuccessScreenProps> = ({
   const [hasDownloaded, setHasDownloaded] = useState(false);
   const [timeLeft, setTimeLeft] = useState<number>(() => getInitialTimeLeft());
   const [isExpired, setIsExpired] = useState(() => getInitialTimeLeft() <= 0);
+  const [isLeaving, setIsLeaving] = useState(false);
 
   // Continua o contador da sessão de checkout
   useEffect(() => {
@@ -124,6 +125,16 @@ export const BoletoSuccessScreen: React.FC<BoletoSuccessScreenProps> = ({
     window.open(boletoUrl, "_blank");
   }, [boletoUrl]);
 
+  const handleBack = useCallback(async () => {
+    if (isLeaving) return;
+    setIsLeaving(true);
+    try {
+      await onBack();
+    } finally {
+      setIsLeaving(false);
+    }
+  }, [isLeaving, onBack]);
+
   const discount = appliedCoupon?.discount || 0;
   const total = productPrice - discount;
 
@@ -144,8 +155,13 @@ export const BoletoSuccessScreen: React.FC<BoletoSuccessScreenProps> = ({
           <p className="text-zinc-500 text-sm mb-6">
             O tempo para pagamento expirou. Por favor, inicie um novo checkout.
           </p>
-          <ButtonCustom variant="primary" fullWidth onClick={onBack}>
-            Voltar aos planos
+          <ButtonCustom
+            variant="primary"
+            fullWidth
+            onClick={handleBack}
+            disabled={isLeaving}
+          >
+            {isLeaving ? "Cancelando..." : "Voltar"}
           </ButtonCustom>
         </div>
       </div>
@@ -159,7 +175,7 @@ export const BoletoSuccessScreen: React.FC<BoletoSuccessScreenProps> = ({
         minutes={minutes}
         seconds={seconds}
         isLowTime={isLowTime}
-        onBack={onBack}
+        onBack={handleBack}
       />
 
       {/* Conteúdo principal */}
@@ -346,7 +362,7 @@ export const BoletoSuccessScreen: React.FC<BoletoSuccessScreenProps> = ({
               variant="outline"
               size="lg"
               fullWidth
-              onClick={onGoHome || onBack}
+              onClick={onGoHome || handleBack}
               className="cursor-pointer"
             >
               <Home className="w-4 h-4 mr-2" />

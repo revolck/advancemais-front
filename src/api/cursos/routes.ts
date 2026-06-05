@@ -144,13 +144,13 @@ export const cursosRoutes = {
           create: (
             cursoId: number | string,
             turmaId: string,
-            provaId: string
+            provaId: string,
           ) => `${BASE}/${cursoId}/turmas/${turmaId}/provas/${provaId}/tokens`,
           get: (
             cursoId: number | string,
             turmaId: string,
             provaId: string,
-            tokenId: string
+            tokenId: string,
           ) =>
             `${BASE}/${cursoId}/turmas/${turmaId}/provas/${provaId}/tokens/${tokenId}`,
           getByToken: (token: string) => `${BASE}/provas/tokens/${token}`,
@@ -167,8 +167,11 @@ export const cursosRoutes = {
           `${BASE}/${cursoId}/turmas/${turmaId}/notas/${notaId}`,
         delete: (cursoId: number | string, turmaId: string, notaId: string) =>
           `${BASE}/${cursoId}/turmas/${turmaId}/notas/${notaId}`,
-        historico: (cursoId: number | string, turmaId: string, notaId: string) =>
-          `${BASE}/${cursoId}/turmas/${turmaId}/notas/${notaId}/historico`,
+        historico: (
+          cursoId: number | string,
+          turmaId: string,
+          notaId: string,
+        ) => `${BASE}/${cursoId}/turmas/${turmaId}/notas/${notaId}/historico`,
       },
       frequencias: {
         list: (cursoId: number | string, turmaId: string) =>
@@ -182,7 +185,7 @@ export const cursosRoutes = {
         historico: (
           cursoId: number | string,
           turmaId: string,
-          frequenciaId: string
+          frequenciaId: string,
         ) =>
           `${BASE}/${cursoId}/turmas/${turmaId}/frequencias/${frequenciaId}/historico`,
         historicoByNaturalKey: (cursoId: number | string, turmaId: string) =>
@@ -190,17 +193,17 @@ export const cursosRoutes = {
         get: (
           cursoId: number | string,
           turmaId: string,
-          frequenciaId: string
+          frequenciaId: string,
         ) => `${BASE}/${cursoId}/turmas/${turmaId}/frequencias/${frequenciaId}`,
         update: (
           cursoId: number | string,
           turmaId: string,
-          frequenciaId: string
+          frequenciaId: string,
         ) => `${BASE}/${cursoId}/turmas/${turmaId}/frequencias/${frequenciaId}`,
         delete: (
           cursoId: number | string,
           turmaId: string,
-          frequenciaId: string
+          frequenciaId: string,
         ) => `${BASE}/${cursoId}/turmas/${turmaId}/frequencias/${frequenciaId}`,
       },
       avaliacoes: {
@@ -231,13 +234,13 @@ export const cursosRoutes = {
             list: (
               cursoId: number | string,
               turmaId: string,
-              inscricaoId: string
+              inscricaoId: string,
             ) =>
               `${BASE}/${cursoId}/turmas/${turmaId}/inscricoes/${inscricaoId}/estagios`,
             create: (
               cursoId: number | string,
               turmaId: string,
-              inscricaoId: string
+              inscricaoId: string,
             ) =>
               `${BASE}/${cursoId}/turmas/${turmaId}/inscricoes/${inscricaoId}/estagios`,
           },
@@ -251,8 +254,7 @@ export const cursosRoutes = {
     frequencias: () => `${BASE}/me/frequencias`,
     estagios: () => `${BASE}/me/estagios`,
     notas: () => `${BASE}/me/notas`,
-    notasHistorico: (notaId: string) =>
-      `${BASE}/me/notas/${notaId}/historico`,
+    notasHistorico: (notaId: string) => `${BASE}/me/notas/${notaId}/historico`,
     pagamentos: () => `${BASE}/me/pagamentos`,
     checkoutRecuperacao: (pagamentoId: string) =>
       `${BASE}/me/pagamentos/recuperacoes/${encodeURIComponent(pagamentoId)}/checkout`,
@@ -316,10 +318,12 @@ export const cursosRoutes = {
     list: () => `${BASE}/avaliacoes`,
     create: () => `${BASE}/avaliacoes`,
     get: (avaliacaoId: string) => `${BASE}/avaliacoes/${avaliacaoId}`,
-    questoes: (avaliacaoId: string) => `${BASE}/avaliacoes/${avaliacaoId}/questoes`,
+    questoes: (avaliacaoId: string) =>
+      `${BASE}/avaliacoes/${avaliacaoId}/questoes`,
     update: (avaliacaoId: string) => `${BASE}/avaliacoes/${avaliacaoId}`,
     delete: (avaliacaoId: string) => `${BASE}/avaliacoes/${avaliacaoId}`,
-    publicar: (avaliacaoId: string) => `${BASE}/avaliacoes/${avaliacaoId}/publicar`,
+    publicar: (avaliacaoId: string) =>
+      `${BASE}/avaliacoes/${avaliacaoId}/publicar`,
     turmas: () => `${BASE}/avaliacoes/turmas`,
     instrutores: () => `${BASE}/avaliacoes/instrutores`,
   },
@@ -352,13 +356,13 @@ export const cursosRoutes = {
     create: () => `${BASE}/estagios`,
     get: (estagioId: string) => `${BASE}/estagios/${estagioId}`,
     update: (estagioId: string) => `${BASE}/estagios/${estagioId}`,
-    updateStatus: (estagioId: string) =>
-      `${BASE}/estagios/${estagioId}/status`,
+    updateStatus: (estagioId: string) => `${BASE}/estagios/${estagioId}/status`,
     vincularAlunos: (estagioId: string) =>
       `${BASE}/estagios/${estagioId}/alunos/vincular`,
     alocarAlunoGrupo: (estagioId: string, estagioAlunoId: string) =>
       `${BASE}/estagios/${estagioId}/alunos/${estagioAlunoId}/grupo`,
-    frequencias: (estagioId: string) => `${BASE}/estagios/${estagioId}/frequencias`,
+    frequencias: (estagioId: string) =>
+      `${BASE}/estagios/${estagioId}/frequencias`,
     frequenciasPeriodo: (estagioId: string) =>
       `${BASE}/estagios/${estagioId}/frequencias/periodo`,
     upsertFrequenciaLancamento: (estagioId: string) =>
@@ -374,6 +378,8 @@ export const cursosRoutes = {
     webhook: () => `${BASE}/checkout/webhook`,
     validarToken: (token: string) => `${BASE}/checkout/validar-token/${token}`,
     pagamento: (paymentId: string) => `${BASE}/checkout/pagamento/${paymentId}`,
+    cancelarPagamento: (paymentId: string) =>
+      `${BASE}/checkout/pagamento/${paymentId}/cancelar`,
   },
   // Agenda
   agenda: () => `${BASE}/agenda`,

@@ -2278,12 +2278,16 @@ export interface CheckoutResponse {
 }
 
 export interface CheckoutPagamentoStatus {
-  paymentId: string;
+  paymentId: string | null;
+  orderId?: string | null;
   status: string;
+  statusPagamento?: string;
   statusDetail: string;
   valor: number;
   cursoId: string;
   turmaId: string;
+  expiresAt?: string | null;
+  canRetry?: boolean;
 }
 
 export interface VagasDisponiveis {

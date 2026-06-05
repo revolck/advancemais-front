@@ -1622,11 +1622,11 @@ export async function listMeCertificados(
 
   const payload = ((response as any)?.data ?? response) as
     | TurmaCertificado[]
-      | {
-          items?: TurmaCertificado[];
-          pagination?: import("./types").Pagination;
-          filters?: import("./types").ListCertificadosResponse["filters"];
-        }
+    | {
+        items?: TurmaCertificado[];
+        pagination?: import("./types").Pagination;
+        filters?: import("./types").ListCertificadosResponse["filters"];
+      }
     | undefined;
 
   if (Array.isArray(payload)) {
@@ -1779,10 +1779,7 @@ export async function listAlunosComInscricao(
   if (params?.page) queryParams.set("page", String(params.page));
   if (params?.limit) queryParams.set("limit", String(params.limit));
   if (typeof params?.incluirCertificados === "boolean") {
-    queryParams.set(
-      "incluirCertificados",
-      String(params.incluirCertificados),
-    );
+    queryParams.set("incluirCertificados", String(params.incluirCertificados));
   }
 
   // Suporte para múltiplos status
@@ -2899,8 +2896,10 @@ export function buildListMeusPagamentosSearchParams(
   if (params.turmaId) sp.set("turmaId", params.turmaId);
   if (params.dataInicio) sp.set("dataInicio", params.dataInicio);
   if (params.dataFim) sp.set("dataFim", params.dataFim);
-  if (params.valorMin !== undefined) sp.set("valorMin", String(params.valorMin));
-  if (params.valorMax !== undefined) sp.set("valorMax", String(params.valorMax));
+  if (params.valorMin !== undefined)
+    sp.set("valorMin", String(params.valorMin));
+  if (params.valorMax !== undefined)
+    sp.set("valorMax", String(params.valorMax));
   if (params.page) sp.set("page", String(params.page));
   if (params.pageSize) sp.set("pageSize", String(params.pageSize));
   return sp;
@@ -2914,10 +2913,17 @@ export async function listMeusPagamentos(
   const url = sp.toString()
     ? `${cursosRoutes.me.pagamentos()}?${sp.toString()}`
     : cursosRoutes.me.pagamentos();
-  const response = await apiFetch<import("./types").ListMeusPagamentosResponse>(url, {
-    init: { method: "GET", ...init, headers: buildHeaders(init?.headers, true) },
-    cache: "no-cache",
-  });
+  const response = await apiFetch<import("./types").ListMeusPagamentosResponse>(
+    url,
+    {
+      init: {
+        method: "GET",
+        ...init,
+        headers: buildHeaders(init?.headers, true),
+      },
+      cache: "no-cache",
+    },
+  );
   return response.data;
 }
 
@@ -2966,8 +2972,14 @@ export async function getMinhaRecuperacaoAcesso(
   init?: RequestInit,
 ): Promise<import("./types").MinhaRecuperacaoAcessoResponse["data"]> {
   const endpoint = `${cursosRoutes.me.acessoRecuperacao(provaId)}?inscricaoId=${encodeURIComponent(inscricaoId)}`;
-  const response = await apiFetch<import("./types").MinhaRecuperacaoAcessoResponse>(endpoint, {
-    init: { method: "GET", ...init, headers: buildHeaders(init?.headers, true) },
+  const response = await apiFetch<
+    import("./types").MinhaRecuperacaoAcessoResponse
+  >(endpoint, {
+    init: {
+      method: "GET",
+      ...init,
+      headers: buildHeaders(init?.headers, true),
+    },
     cache: "no-cache",
   });
   return response.data;
@@ -4124,6 +4136,31 @@ export async function getCheckoutPagamento(
       headers: buildHeaders(init?.headers, true),
     },
     cache: "no-cache",
+    retries: 1,
+  });
+}
+
+export async function cancelarCheckoutPagamento(
+  paymentId: string,
+  motivo = "manual",
+  init?: RequestInit,
+): Promise<{
+  success: boolean;
+  cancelled: boolean;
+  alreadyTerminal?: boolean;
+}> {
+  return apiFetch(cursosRoutes.checkout.cancelarPagamento(paymentId), {
+    init: {
+      method: "POST",
+      ...init,
+      headers: buildHeaders(
+        { "Content-Type": "application/json", ...(init?.headers || {}) },
+        true,
+      ),
+      body: JSON.stringify({ motivo }),
+    },
+    cache: "no-cache",
+    retries: 1,
   });
 }
 
