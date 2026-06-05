@@ -27,6 +27,7 @@ interface BoletoSuccessScreenProps {
   productPrice: number;
   appliedCoupon: AppliedCoupon | null;
   sessionTimeLeft: number; // Tempo restante da sessão de checkout (em segundos)
+  expiresAt?: string | null;
   checkoutId?: string | null;
   onBack: () => void;
   onGoHome?: () => void;
@@ -39,13 +40,20 @@ export const BoletoSuccessScreen: React.FC<BoletoSuccessScreenProps> = ({
   productPrice,
   appliedCoupon,
   sessionTimeLeft,
+  expiresAt,
   onBack,
   onGoHome,
 }) => {
+  const getInitialTimeLeft = useCallback(() => {
+    if (!expiresAt) return sessionTimeLeft;
+    const expiresAtTime = new Date(expiresAt).getTime();
+    if (Number.isNaN(expiresAtTime)) return sessionTimeLeft;
+    return Math.max(0, Math.floor((expiresAtTime - Date.now()) / 1000));
+  }, [expiresAt, sessionTimeLeft]);
   const [codeCopied, setCodeCopied] = useState(false);
   const [hasDownloaded, setHasDownloaded] = useState(false);
-  const [timeLeft, setTimeLeft] = useState<number>(sessionTimeLeft);
-  const [isExpired, setIsExpired] = useState(sessionTimeLeft <= 0);
+  const [timeLeft, setTimeLeft] = useState<number>(() => getInitialTimeLeft());
+  const [isExpired, setIsExpired] = useState(() => getInitialTimeLeft() <= 0);
 
   // Continua o contador da sessão de checkout
   useEffect(() => {
@@ -66,8 +74,18 @@ export const BoletoSuccessScreen: React.FC<BoletoSuccessScreenProps> = ({
     return () => clearInterval(interval);
   }, [isExpired]);
 
-  // Calcula a data de vencimento (3 dias úteis)
+  useEffect(() => {
+    const nextTimeLeft = getInitialTimeLeft();
+    setTimeLeft(nextTimeLeft);
+    setIsExpired(nextTimeLeft <= 0);
+  }, [getInitialTimeLeft]);
+
+  // Calcula a data de vencimento
   const getExpiryDate = () => {
+    if (expiresAt) {
+      const parsed = new Date(expiresAt);
+      if (!Number.isNaN(parsed.getTime())) return parsed;
+    }
     const date = new Date();
     date.setDate(date.getDate() + 3);
     return date;
@@ -188,7 +206,7 @@ export const BoletoSuccessScreen: React.FC<BoletoSuccessScreenProps> = ({
                     onClick={copyBoletoCode}
                     className={cn(
                       "h-8 text-xs cursor-pointer",
-                      codeCopied && "text-emerald-600"
+                      codeCopied && "text-emerald-600",
                     )}
                   >
                     {codeCopied ? (
@@ -236,7 +254,7 @@ export const BoletoSuccessScreen: React.FC<BoletoSuccessScreenProps> = ({
                     Pague até {formattedExpiryDate}
                   </p>
                   <p className="!text-xs !text-amber-600">
-                    O boleto vence em 3 dias úteis
+                    O boleto fica reservado até esta data
                   </p>
                 </div>
               </div>

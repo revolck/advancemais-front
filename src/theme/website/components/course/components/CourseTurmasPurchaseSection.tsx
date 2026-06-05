@@ -67,6 +67,23 @@ function getTurmaDisplayName(turma: CourseTurmaPublica): string {
   return turma.nome?.trim() || `Turma ${turma.id.slice(0, 6)}`;
 }
 
+function getAvailableVacancies(turma: CourseTurmaPublica): number | null {
+  const value =
+    turma.vagasDisponiveisCalculadas ??
+    turma.vagasDisponiveis ??
+    turma.vagas ??
+    null;
+
+  return typeof value === "number" ? value : null;
+}
+
+function hasAvailableVacancy(turma: CourseTurmaPublica): boolean {
+  if (turma.vagasIlimitadas) return true;
+  const value = getAvailableVacancies(turma);
+  if (value == null) return true;
+  return value > 0;
+}
+
 function isTurmaWithinThreeMonthsFromDate(
   turma: CourseTurmaPublica,
   now: Date,
@@ -127,8 +144,12 @@ export function CourseTurmasPurchaseSection({
       isTurmaWithinThreeMonthsFromDate(turma, now, cutoff),
     );
   }, [turmas]);
+  const availableTurmas = useMemo(
+    () => eligibleTurmas.filter(hasAvailableVacancy),
+    [eligibleTurmas],
+  );
   const [selectedTurmaId, setSelectedTurmaId] = useState<string | null>(
-    variant === "sidebar" ? null : (eligibleTurmas[0]?.id ?? null),
+    variant === "sidebar" ? null : (availableTurmas[0]?.id ?? null),
   );
   const [submittingTurmaId, setSubmittingTurmaId] = useState<string | null>(
     null,
@@ -176,25 +197,25 @@ export function CourseTurmasPurchaseSection({
   React.useEffect(() => {
     const hasSelection =
       selectedTurmaId != null &&
-      eligibleTurmas.some((turma) => turma.id === selectedTurmaId);
+      availableTurmas.some((turma) => turma.id === selectedTurmaId);
 
     if (variant === "sidebar") {
       if (selectedTurmaId != null && !hasSelection) setSelectedTurmaId(null);
       return;
     }
 
-    if (!hasSelection) setSelectedTurmaId(eligibleTurmas[0]?.id ?? null);
-  }, [eligibleTurmas, selectedTurmaId, variant]);
+    if (!hasSelection) setSelectedTurmaId(availableTurmas[0]?.id ?? null);
+  }, [availableTurmas, selectedTurmaId, variant]);
 
   const selectedTurma = useMemo(() => {
     if (!selectedTurmaId)
-      return variant === "sidebar" ? null : (eligibleTurmas[0] ?? null);
+      return variant === "sidebar" ? null : (availableTurmas[0] ?? null);
     return (
-      eligibleTurmas.find((t) => t.id === selectedTurmaId) ??
-      eligibleTurmas[0] ??
+      availableTurmas.find((t) => t.id === selectedTurmaId) ??
+      availableTurmas[0] ??
       null
     );
-  }, [eligibleTurmas, selectedTurmaId, variant]);
+  }, [availableTurmas, selectedTurmaId, variant]);
 
   const selectedPrice = useMemo(() => {
     if (!selectedTurma) return { isFree: true, valor: 0 };
@@ -343,6 +364,29 @@ export function CourseTurmasPurchaseSection({
     );
   }
 
+  if (availableTurmas.length === 0) {
+    return (
+      <section id="turmas" className={cn("scroll-mt-24", className)}>
+        <div className="rounded-3xl border border-gray-200/70 bg-white p-6 sm:p-8">
+          <div className="flex items-start gap-3">
+            <div className="mt-1 flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-50 text-amber-700">
+              <Users className="h-5 w-5" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Turma sem vagas no momento
+              </h3>
+              <p className="text-sm text-gray-600">
+                As turmas disponíveis dentro do período estão sem vagas. Aguarde
+                uma nova abertura ou entre em contato com a equipe.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   if (variant === "sidebar") {
     return (
       <section id="turmas" className={cn("scroll-mt-24", className)}>
@@ -362,7 +406,7 @@ export function CourseTurmasPurchaseSection({
           </div>
 
           <div className="mt-4 space-y-3 max-h-96 overflow-y-auto pr-1">
-            {eligibleTurmas.map((turma) => {
+            {availableTurmas.map((turma) => {
               const price = resolvePrice(course as CourseData, turma);
               const start = formatDate(turma.dataInicio);
               const end = formatDate(turma.dataFim);
@@ -380,9 +424,9 @@ export function CourseTurmasPurchaseSection({
                 price.valorPromocional != null &&
                 price.valorPromocional < price.valor;
               const lowVacancies =
-                typeof turma.vagasDisponiveis === "number" &&
-                turma.vagasDisponiveis > 0 &&
-                turma.vagasDisponiveis <= 5;
+                typeof getAvailableVacancies(turma) === "number" &&
+                (getAvailableVacancies(turma) ?? 0) > 0 &&
+                (getAvailableVacancies(turma) ?? 0) <= 5;
 
               return (
                 <div
@@ -501,14 +545,13 @@ export function CourseTurmasPurchaseSection({
 
         <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
           <div className="space-y-3">
-            {eligibleTurmas.map((turma) => {
+            {availableTurmas.map((turma) => {
               const isSelected = turma.id === selectedTurma?.id;
               const price = resolvePrice(course as CourseData, turma);
               const start = formatDate(turma.dataInicio);
               const end = formatDate(turma.dataFim);
               const vagasValue =
-                turma.vagasDisponiveis ??
-                turma.vagas ??
+                getAvailableVacancies(turma) ??
                 (typeof turma.vagasTotais === "number"
                   ? turma.vagasTotais
                   : null);

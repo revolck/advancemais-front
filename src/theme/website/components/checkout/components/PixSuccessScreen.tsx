@@ -25,6 +25,7 @@ interface PixSuccessScreenProps {
   productPrice: number;
   appliedCoupon: AppliedCoupon | null;
   sessionTimeLeft: number; // Tempo restante da sessão de checkout (em segundos)
+  expiresAt?: string | null;
   checkoutId?: string | null;
   onBack: () => void;
   onPaymentConfirmed?: () => void;
@@ -37,13 +38,20 @@ export const PixSuccessScreen: React.FC<PixSuccessScreenProps> = ({
   productPrice,
   appliedCoupon,
   sessionTimeLeft,
+  expiresAt,
   checkoutId,
   onBack,
   onPaymentConfirmed,
 }) => {
+  const getInitialTimeLeft = useCallback(() => {
+    if (!expiresAt) return sessionTimeLeft;
+    const expiresAtTime = new Date(expiresAt).getTime();
+    if (Number.isNaN(expiresAtTime)) return sessionTimeLeft;
+    return Math.max(0, Math.floor((expiresAtTime - Date.now()) / 1000));
+  }, [expiresAt, sessionTimeLeft]);
   const [pixCopied, setPixCopied] = useState(false);
-  const [timeLeft, setTimeLeft] = useState<number>(sessionTimeLeft);
-  const [isExpired, setIsExpired] = useState(sessionTimeLeft <= 0);
+  const [timeLeft, setTimeLeft] = useState<number>(() => getInitialTimeLeft());
+  const [isExpired, setIsExpired] = useState(() => getInitialTimeLeft() <= 0);
   const [isPolling, setIsPolling] = useState(true);
 
   // Continua o contador da sessão de checkout
@@ -65,6 +73,12 @@ export const PixSuccessScreen: React.FC<PixSuccessScreenProps> = ({
 
     return () => clearInterval(interval);
   }, [isExpired]);
+
+  useEffect(() => {
+    const nextTimeLeft = getInitialTimeLeft();
+    setTimeLeft(nextTimeLeft);
+    setIsExpired(nextTimeLeft <= 0);
+  }, [getInitialTimeLeft]);
 
   // Polling para verificar status do pagamento
   useEffect(() => {
@@ -163,7 +177,7 @@ export const PixSuccessScreen: React.FC<PixSuccessScreenProps> = ({
             </div>
 
             {pixQrCode && (
-              <div className="bg-white border-2 border-zinc-100 p-6 rounded-2xl mb-6 flex justify-center relative w-56 h-56">
+              <div className="bg-white border-2 border-zinc-100 p-6 rounded-2xl mb-6 flex justify-center relative w-56 h-56 mx-auto">
                 <Image
                   src={
                     pixQrCode.startsWith("data:")

@@ -31,8 +31,10 @@ export interface CourseTurmaPublica {
   turno?: string;
   metodo?: string;
   status?: string;
+  vagasIlimitadas?: boolean;
   vagasTotais?: number;
   vagasDisponiveis?: number;
+  vagasDisponiveisCalculadas?: number | null;
   vagas?: number;
   valor?: number;
   valorPromocional?: number;

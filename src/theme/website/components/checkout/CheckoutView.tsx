@@ -106,6 +106,8 @@ function getCourseCheckoutErrorMessage(error: any): string {
       "A quantidade de parcelas escolhida ultrapassa o limite permitido para esta compra.",
     CURSO_PAYMENT_METHOD_DISABLED:
       "Este método de pagamento está desativado para cursos e turmas.",
+    SEM_VAGAS:
+      "Essa turma ficou sem vagas. Escolha outra turma ou aguarde uma nova abertura.",
     ASSINATURA_PAYMENT_METHOD_DISABLED:
       "Este método de pagamento está desativado para assinaturas.",
     ASSINATURA_CARD_DISABLED:
@@ -1534,6 +1536,7 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
         productPrice={session.productPrice || 0}
         appliedCoupon={isCoursePayment ? null : appliedCoupon}
         sessionTimeLeft={timeLeft}
+        expiresAt={pixExpiresAt}
         checkoutId={checkoutId}
         onBack={handleBackFromPayment}
         onPaymentConfirmed={handlePaymentConfirmed}
@@ -1551,6 +1554,7 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
         productPrice={session.productPrice || 0}
         appliedCoupon={isCoursePayment ? null : appliedCoupon}
         sessionTimeLeft={timeLeft}
+        expiresAt={boletoExpiresAt}
         checkoutId={checkoutId}
         onBack={handleBackFromPayment}
         onGoHome={handleGoHome}
