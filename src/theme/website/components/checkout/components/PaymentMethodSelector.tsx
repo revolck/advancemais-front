@@ -18,25 +18,21 @@ const paymentMethods = [
     id: "credit" as const,
     label: "Cartão de Crédito",
     icon: CreditCard,
-    sublabel: "À vista",
   },
   {
     id: "debit" as const,
     label: "Cartão de Débito",
     icon: CreditCard,
-    sublabel: "À vista",
   },
   {
     id: "pix" as const,
     label: "PIX",
     icon: QrCode,
-    sublabel: "Aprovação imediata",
   },
   {
     id: "boleto" as const,
     label: "Boleto",
     icon: FileText,
-    sublabel: "Vence em 3 dias",
   },
 ];
 
@@ -88,11 +84,6 @@ export const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
             >
               {method.label}
             </span>
-            {method.sublabel && (
-              <span className="text-[10px] text-zinc-400">
-                {method.sublabel}
-              </span>
-            )}
           </button>
         ))}
       </div>

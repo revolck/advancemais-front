@@ -15,6 +15,7 @@
 
 import React, { useState, useCallback, useEffect } from "react";
 import { InputCustom } from "@/components/ui/custom/input";
+import { SelectCustom } from "@/components/ui/custom/select";
 import { CardBrandIcon } from "./CardBrandIcon";
 import { detectCardBrand } from "../utils/card-brand";
 import { formatCardNumber, formatExpiry, formatCVV } from "../utils/formatters";
@@ -51,6 +52,9 @@ interface CardFormTokenizedProps {
   className?: string;
   /** Ref para expor método de tokenização externamente - retorna resultado completo */
   tokenizeRef?: React.MutableRefObject<(() => Promise<TokenizeResult>) | null>;
+  installmentsOptions?: Array<{ value: string; label: string }>;
+  selectedInstallments?: number;
+  onInstallmentsChange?: (value: number) => void;
 }
 
 export const CardFormTokenized: React.FC<CardFormTokenizedProps> = ({
@@ -61,6 +65,9 @@ export const CardFormTokenized: React.FC<CardFormTokenizedProps> = ({
   disabled = false,
   className,
   tokenizeRef,
+  installmentsOptions,
+  selectedInstallments = 1,
+  onInstallmentsChange,
 }) => {
   // Estado dos campos
   const [cardNumber, setCardNumber] = useState("");
@@ -223,8 +230,15 @@ export const CardFormTokenized: React.FC<CardFormTokenizedProps> = ({
         </div>
       </div>
 
-      {/* Validade e CVV */}
-      <div className="grid grid-cols-2 gap-4">
+      {/* Validade, CVV e parcelamento */}
+      <div
+        className={cn(
+          "grid gap-4",
+          installmentsOptions?.length
+            ? "grid-cols-1 md:grid-cols-3"
+            : "grid-cols-2",
+        )}
+      >
         <InputCustom
           label="Validade"
           name="cardExpiry"
@@ -255,6 +269,23 @@ export const CardFormTokenized: React.FC<CardFormTokenizedProps> = ({
           disabled={disabled || isTokenizing}
           error={fieldErrors.cardCVV}
         />
+        {installmentsOptions?.length ? (
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-zinc-700">
+              Parcelamento
+            </label>
+            <SelectCustom
+              mode="single"
+              value={String(selectedInstallments)}
+              onChange={(next) =>
+                onInstallmentsChange?.(next ? Number(next) : 1)
+              }
+              searchable={false}
+              placeholder="Selecione as parcelas"
+              options={installmentsOptions}
+            />
+          </div>
+        ) : null}
       </div>
 
       {/* Nome no cartão */}

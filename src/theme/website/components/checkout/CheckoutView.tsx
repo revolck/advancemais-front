@@ -7,7 +7,6 @@ import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Clock, CreditCard } from "lucide-react";
 import { ButtonCustom } from "@/components/ui/custom/button";
-import { SelectCustom } from "@/components/ui/custom/select";
 import { toastCustom } from "@/components/ui/custom/toast";
 import {
   validateCheckoutSession,
@@ -1583,6 +1582,11 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
               availableMethods={availablePaymentMethods}
             />
 
+            <PaymentMethodInfo
+              method={paymentMethod}
+              showCardInfo={isCourseCheckout}
+            />
+
             {/* Formulário de Cartão - depende do ambiente (HTTPS real ou HTTP/localhost) */}
             {(paymentMethod === "credit" || paymentMethod === "debit") && (
               <>
@@ -1601,6 +1605,28 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
                     documentNumber={payerDocument}
                     disabled={isProcessing}
                     tokenizeRef={cardTokenizeRef}
+                    installmentsOptions={
+                      isCoursePurchase &&
+                      paymentMethod === "credit" &&
+                      courseMetadata?.installmentsEnabled &&
+                      courseMetadata.maxInstallments > 1
+                        ? Array.from(
+                            { length: courseMetadata.maxInstallments },
+                            (_, index) => {
+                              const value = index + 1;
+                              return {
+                                value: String(value),
+                                label:
+                                  value === 1
+                                    ? "1x à vista"
+                                    : `${value}x no cartão`,
+                              };
+                            },
+                          )
+                        : undefined
+                    }
+                    selectedInstallments={selectedCourseInstallments}
+                    onInstallmentsChange={setSelectedCourseInstallments}
                     onTokenGenerated={(token, lastFour, brand) => {
                       setCardToken(token);
                       setCardLastFour(lastFour);
@@ -1615,46 +1641,6 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
                     }}
                   />
                 )}
-
-                {isCoursePurchase &&
-                paymentMethod === "credit" &&
-                courseMetadata?.installmentsEnabled &&
-                courseMetadata.maxInstallments > 1 ? (
-                  <div className="rounded-2xl border border-zinc-200 bg-white p-5 space-y-3">
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium text-zinc-900">
-                        Parcelamento no cartão
-                      </p>
-                      <p className="text-sm text-zinc-500">
-                        Escolha entre 1x e {courseMetadata.maxInstallments}x.
-                        Juros e parcelas sem juros seguem a configuração do
-                        Mercado Pago.
-                      </p>
-                    </div>
-                    <SelectCustom
-                      mode="single"
-                      value={String(selectedCourseInstallments)}
-                      onChange={(next) =>
-                        setSelectedCourseInstallments(next ? Number(next) : 1)
-                      }
-                      searchable={false}
-                      placeholder="Selecione as parcelas"
-                      options={Array.from(
-                        { length: courseMetadata.maxInstallments },
-                        (_, index) => {
-                          const value = index + 1;
-                          return {
-                            value: String(value),
-                            label:
-                              value === 1
-                                ? "1x à vista"
-                                : `${value}x no cartão`,
-                          };
-                        },
-                      )}
-                    />
-                  </div>
-                ) : null}
 
                 {/* HTTP/Localhost (Desenvolvimento): cartão via redirect (Checkout Pro) */}
                 {isRealHttps === false && (
@@ -1694,12 +1680,6 @@ export const CheckoutView: React.FC<CheckoutViewProps> = ({
                 )}
               </>
             )}
-
-            {/* Info PIX ou Boleto */}
-            <PaymentMethodInfo
-              method={paymentMethod}
-              showCardInfo={isCourseCheckout}
-            />
 
             {/* Dados do pagador */}
             <PayerDataForm
