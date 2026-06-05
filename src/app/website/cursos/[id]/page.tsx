@@ -33,6 +33,12 @@ type CursoApiResponse =
   | (Record<string, any> & { id: string; statusPadrao?: string })
   | null;
 
+function toFiniteNumber(value: unknown): number | undefined {
+  if (value == null || value === "") return undefined;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
 function normalizeTurmasPublicadas(curso: any): CourseTurmaPublica[] {
   const rawCandidates: any[] =
     (Array.isArray(curso?.turmasPublicadas) && curso.turmasPublicadas) ||
@@ -72,32 +78,29 @@ function normalizeTurmasPublicadas(curso: any): CourseTurmaPublica[] {
       turma.inscricaoFim ||
       turma.inscricaoFimEm;
 
-    const vagas =
-      turma.vagasDisponiveis ??
-      turma.vagas ??
-      turma.quantidadeVagas ??
-      turma.limiteVagas ??
-      undefined;
-
-    const vagasTotais =
+    const vagasCalculadas = toFiniteNumber(turma.vagasDisponiveisCalculadas);
+    const vagasDisponiveis = toFiniteNumber(
+      vagasCalculadas ??
+        turma.disponiveis ??
+        turma.vagasDisponiveis ??
+        turma.vagas,
+    );
+    const vagas = toFiniteNumber(
+      turma.vagas ?? turma.quantidadeVagas ?? turma.limiteVagas,
+    );
+    const vagasTotais = toFiniteNumber(
       turma.vagasTotais ??
-      turma.totalVagas ??
-      turma.quantidadeVagasTotais ??
-      turma.limiteVagas ??
-      undefined;
-
-    const vagasDisponiveis =
-      turma.vagasDisponiveis ??
-      turma.disponiveis ??
-      turma.vagasDisponiveisCalculadas ??
-      undefined;
+        turma.totalVagas ??
+        turma.quantidadeVagasTotais ??
+        turma.limiteVagas,
+    );
 
     const valor =
       turma.valor != null
         ? Number(turma.valor)
         : turma.preco != null
-        ? Number(turma.preco)
-        : undefined;
+          ? Number(turma.preco)
+          : undefined;
     const valorPromocional =
       turma.valorPromocional != null
         ? Number(turma.valorPromocional)
@@ -117,10 +120,11 @@ function normalizeTurmasPublicadas(curso: any): CourseTurmaPublica[] {
       metodo: turma.metodo || turma.modalidade || turma.tipo || undefined,
       turno: turma.turno || undefined,
       status: turma.status || turma.statusPadrao || undefined,
-      vagasTotais: typeof vagasTotais === "number" ? vagasTotais : undefined,
-      vagasDisponiveis:
-        typeof vagasDisponiveis === "number" ? vagasDisponiveis : undefined,
-      vagas: typeof vagas === "number" ? vagas : undefined,
+      vagasTotais,
+      vagasDisponiveis,
+      vagasDisponiveisCalculadas:
+        turma.vagasDisponiveisCalculadas === null ? null : vagasCalculadas,
+      vagas,
       valor,
       valorPromocional,
       gratuito,
@@ -177,7 +181,7 @@ function resolveApiUrl(path: string, origin: string): string {
 
 async function fetchCursoById(
   id: string,
-  origin: string
+  origin: string,
 ): Promise<CourseData | null> {
   const normalize = (data: any): any => {
     if (!data) return null;
@@ -213,7 +217,7 @@ async function fetchCursoById(
   let curso: CursoApiResponse = null;
 
   curso = await doFetch(
-    `/api/v1/cursos/publico/cursos/${encodeURIComponent(id)}`
+    `/api/v1/cursos/publico/cursos/${encodeURIComponent(id)}`,
   );
 
   if (!curso) {
@@ -277,13 +281,13 @@ export default async function CourseDetailsPage({
   const descricaoText = stripHtmlTags(course.descricao)?.trim() ?? "";
   const descricaoHtml = course.descricao?.trim() ?? "";
   const isHtmlDescription = Boolean(
-    descricaoHtml && /<[^>]+>/.test(descricaoHtml)
+    descricaoHtml && /<[^>]+>/.test(descricaoHtml),
   );
   const conteudoProgramaticoHtml = course.conteudoProgramatico?.trim() ?? "";
   const conteudoProgramaticoText =
     stripHtmlTags(conteudoProgramaticoHtml)?.trim() ?? "";
   const isHtmlConteudoProgramatico = Boolean(
-    conteudoProgramaticoHtml && /<[^>]+>/.test(conteudoProgramaticoHtml)
+    conteudoProgramaticoHtml && /<[^>]+>/.test(conteudoProgramaticoHtml),
   );
   const descricaoResumo =
     descricaoText.length > 220
@@ -334,16 +338,16 @@ export default async function CourseDetailsPage({
   const precoLabel = course.gratuito
     ? "Gratuito"
     : hasCoursePrice
-    ? formatCurrency(precoBase)
-    : "Consulte a turma";
+      ? formatCurrency(precoBase)
+      : "Consulte a turma";
 
   const precoSubLabel = course.gratuito
     ? "Sem custo para matrícula"
     : !hasCoursePrice
-    ? "Valor definido por turma"
-    : hasPromo && desconto
-    ? `De ${formatCurrency(course.valor)} • ${desconto.toFixed(0)}% OFF`
-    : "Preço base do curso";
+      ? "Valor definido por turma"
+      : hasPromo && desconto
+        ? `De ${formatCurrency(course.valor)} • ${desconto.toFixed(0)}% OFF`
+        : "Preço base do curso";
 
   const parseTurmaDate = (value?: string): Date | null => {
     if (!value) return null;
