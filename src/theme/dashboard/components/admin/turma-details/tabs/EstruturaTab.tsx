@@ -117,31 +117,40 @@ const getItemStyle = (type: EstruturaItemType) =>
     selectedRing: "ring-gray-300",
   };
 
+const getArrayData = <T,>(value: unknown): T[] => {
+  if (Array.isArray(value)) return value;
+  if (
+    value &&
+    typeof value === "object" &&
+    Array.isArray((value as any).data)
+  ) {
+    return (value as any).data as T[];
+  }
+  return [];
+};
+
 const buildFromPayload = (
   payload?: CreateTurmaEstruturaPayload | null,
 ): EstruturaData | null => {
   if (!payload) return null;
   const raw = payload as any;
-  const modulesRaw = Array.isArray(raw.modules)
-    ? raw.modules
-    : Array.isArray(raw.modulos)
-      ? raw.modulos
-      : [];
-  const standaloneRaw = Array.isArray(raw.standaloneItems)
-    ? raw.standaloneItems
-    : Array.isArray(raw.itensAvulsos)
-      ? raw.itensAvulsos
-      : Array.isArray(raw.itens)
-        ? raw.itens
-        : [];
+  const modulesRaw =
+    getArrayData<any>(raw.modules).length > 0
+      ? getArrayData<any>(raw.modules)
+      : getArrayData<any>(raw.modulos);
+  const standaloneRaw =
+    getArrayData<any>(raw.standaloneItems).length > 0
+      ? getArrayData<any>(raw.standaloneItems)
+      : getArrayData<any>(raw.itensAvulsos).length > 0
+        ? getArrayData<any>(raw.itensAvulsos)
+        : getArrayData<any>(raw.itens);
 
   const modules: EstruturaModule[] = modulesRaw.map(
     (mod: any, index: number) => {
-      const itemsRaw = Array.isArray(mod.items)
-        ? mod.items
-        : Array.isArray(mod.itens)
-          ? mod.itens
-          : [];
+      const itemsRaw =
+        getArrayData<any>(mod.items).length > 0
+          ? getArrayData<any>(mod.items)
+          : getArrayData<any>(mod.itens);
       const items = itemsRaw.map((item: any, itemIndex: number) => ({
         id: String(item.id ?? `${mod.id ?? index}-item-${itemIndex}`),
         title: String(item.title ?? item.titulo ?? item.nome ?? "Item"),
@@ -152,7 +161,7 @@ const buildFromPayload = (
         order: parseOrder(item.ordem ?? item.order ?? item.posicao),
         instructorId: Array.isArray(item.instructorIds)
           ? String(item.instructorIds[0] ?? "")
-          : item.instructorId ?? item.instrutorId ?? null,
+          : (item.instructorId ?? item.instrutorId ?? null),
         instructorName: item.instructorName ?? item.instrutorNome ?? null,
         attachmentsCount: Array.isArray(item.materiais)
           ? item.materiais.length
@@ -181,7 +190,7 @@ const buildFromPayload = (
       order: parseOrder(item.ordem ?? item.order ?? item.posicao),
       instructorId: Array.isArray(item.instructorIds)
         ? String(item.instructorIds[0] ?? "")
-        : item.instructorId ?? item.instrutorId ?? null,
+        : (item.instructorId ?? item.instrutorId ?? null),
       instructorName: item.instructorName ?? item.instrutorNome ?? null,
       attachmentsCount: Array.isArray(item.materiais)
         ? item.materiais.length
@@ -262,7 +271,9 @@ async function fetchEstruturaLegacy(
     ),
   ]);
 
-  let aulas = aulasResponse.data ?? [];
+  const modulosNormalizados = getArrayData<any>(modulos);
+  const provasNormalizadas = getArrayData<any>(provas);
+  let aulas = getArrayData<any>(aulasResponse.data);
   const totalPages = aulasResponse.pagination?.totalPages ?? 1;
   if (totalPages > 1) {
     const maxPages = 20;
@@ -273,7 +284,7 @@ async function fetchEstruturaLegacy(
         page,
         pageSize: 200,
       });
-      aulas = aulas.concat(response.data ?? []);
+      aulas = aulas.concat(getArrayData<any>(response.data));
     }
   }
 
@@ -292,7 +303,7 @@ async function fetchEstruturaLegacy(
     }
   });
 
-  provas.forEach((prova) => {
+  provasNormalizadas.forEach((prova) => {
     const moduloId = prova?.moduloId ? String(prova.moduloId) : null;
     const item = mapProvaToItem(prova);
     if (moduloId) {
@@ -304,7 +315,7 @@ async function fetchEstruturaLegacy(
     }
   });
 
-  const modules: EstruturaModule[] = modulos.map((modulo) => ({
+  const modules: EstruturaModule[] = modulosNormalizados.map((modulo) => ({
     id: String(modulo.id ?? ""),
     title: String(modulo.nome ?? "Módulo"),
     order: parseOrder(modulo.ordem),
@@ -363,7 +374,10 @@ export function EstruturaTab({
     rawInstrutores.forEach((instrutor) => {
       if (!instrutor?.id) return;
       const label =
-        instrutor.nome || instrutor.email || instrutor.codUsuario || instrutor.id;
+        instrutor.nome ||
+        instrutor.email ||
+        instrutor.codUsuario ||
+        instrutor.id;
       map.set(String(instrutor.id), String(label));
     });
     return map;
@@ -382,13 +396,13 @@ export function EstruturaTab({
     queryKey: ["admin-turma-estrutura", String(cursoId), turmaId],
     queryFn: () => fetchEstrutura(cursoId, turmaId),
     enabled: Boolean(cursoId && turmaId),
-    initialData: hasInitialStructure ? initialData ?? undefined : undefined,
+    initialData: hasInitialStructure ? (initialData ?? undefined) : undefined,
     staleTime: 20 * 1000,
   });
 
   const estrutura = useMemo(
     () => data ?? { modules: [], standaloneItems: [] },
-    [data]
+    [data],
   );
   const resolvedEstrutura = useMemo(() => {
     const resolveName = (item: EstruturaItem) => {
@@ -614,7 +628,8 @@ export function EstruturaTab({
                                 {item.instructorId && isInstrutoresLoading ? (
                                   <Skeleton className="h-3 w-28 inline-block" />
                                 ) : (
-                                  item.instructorName || "Instrutor não definido"
+                                  item.instructorName ||
+                                  "Instrutor não definido"
                                 )}
                               </span>
                               {attachmentsLabel && (

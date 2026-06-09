@@ -149,183 +149,187 @@ export function HeaderInfo({
 
   return (
     <section className="relative overflow-hidden rounded-3xl bg-white">
-      <div className="relative flex flex-col gap-6 px-6 py-6 sm:px-8 sm:py-8 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex items-center gap-3">
-          <div className="space-y-0">
+      <div className="relative px-6 py-6 sm:px-8 sm:py-8">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex items-center gap-3">
             <div className="flex items-center gap-3">
-              <h3 className="font-semibold !mb-0">{turma.nome}</h3>
+              <h3 className="mb-0! font-semibold">{turma.nome}</h3>
               {statusBadge}
             </div>
-            {(estruturaPendente || inicioBloqueadoPorEstrutura) && (
-              <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
-                <p className="text-xs! font-semibold! text-amber-900! mb-0!">
-                  {inicioBloqueadoPorEstrutura
-                    ? "Início bloqueado por estrutura"
-                    : "Estrutura pendente"}
-                </p>
-                <p className="text-[11px]! leading-relaxed! text-amber-800! mt-1! mb-0!">
-                  {inicioBloqueadoPorEstrutura
-                    ? "Esta turma não iniciou porque ainda não possui estrutura. Adicione ao menos 1 item e informe uma nova data de início e fim futuras para publicar novamente."
-                    : "Você pode manter a turma pública para inscrições, mas ela só iniciará quando houver pelo menos 1 item na estrutura."}
-                </p>
-              </div>
+          </div>
+
+          <div className="flex w-full flex-col items-stretch gap-2 sm:w-auto sm:flex-row sm:items-center">
+            {hasAvailableActions && (
+              <DropdownMenu
+                open={isActionsOpen}
+                onOpenChange={setIsActionsOpen}
+              >
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    aria-expanded={isActionsOpen}
+                    className="flex cursor-pointer items-center gap-2 rounded-full bg-[var(--primary-color)] px-6 py-2 text-sm font-semibold text-white hover:bg-[var(--primary-color)]/90"
+                  >
+                    Ações
+                    <ChevronDown
+                      className={cn(
+                        "h-4 w-4 transition-transform duration-200",
+                        isActionsOpen ? "rotate-180" : "rotate-0",
+                      )}
+                      aria-hidden="true"
+                    />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  {canEditTurma && (
+                    <DropdownMenuItem
+                      onSelect={(event) => {
+                        event.preventDefault();
+                        setIsActionsOpen(false);
+                        if (onEditTurma) {
+                          onEditTurma();
+                          return;
+                        }
+                        window.location.assign(
+                          `/dashboard/cursos/turmas/${turma.id}/editar?cursoId=${encodeURIComponent(
+                            String(cursoId),
+                          )}`,
+                        );
+                      }}
+                      className="cursor-pointer"
+                    >
+                      <Edit className="h-4 w-4 text-gray-500" />
+                      <span>Editar</span>
+                    </DropdownMenuItem>
+                  )}
+
+                  {canAppendItensOperacionais && onCreateAula && (
+                    <DropdownMenuItem
+                      onSelect={(event) => {
+                        event.preventDefault();
+                        setIsActionsOpen(false);
+                        onCreateAula();
+                      }}
+                      className="cursor-pointer"
+                    >
+                      <PlusCircle className="h-4 w-4 text-gray-500" />
+                      <span>Nova aula</span>
+                    </DropdownMenuItem>
+                  )}
+
+                  {canAppendItensOperacionais && onCreateAvaliacao && (
+                    <DropdownMenuItem
+                      onSelect={(event) => {
+                        event.preventDefault();
+                        setIsActionsOpen(false);
+                        onCreateAvaliacao();
+                      }}
+                      className="cursor-pointer"
+                    >
+                      <PlusCircle className="h-4 w-4 text-gray-500" />
+                      <span>Nova atividade/prova</span>
+                    </DropdownMenuItem>
+                  )}
+
+                  {canTogglePublication && (
+                    <DropdownMenuItem
+                      onSelect={(event) => {
+                        event.preventDefault();
+                        if (!isPublished) {
+                          const period = validatePublishPeriod();
+                          if (!period.ok) {
+                            toastCustom.error(period.message);
+                            setIsActionsOpen(false);
+                            return;
+                          }
+                          if (estruturaPendente) {
+                            toastCustom.warning(
+                              TURMA_ESTRUTURA_PUBLICACAO_MESSAGE,
+                            );
+                          }
+                        }
+                        setIsConfirmModalOpen(true);
+                        setIsActionsOpen(false);
+                      }}
+                      disabled={isPending}
+                      className="cursor-pointer"
+                    >
+                      {isPending ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
+                          <span>
+                            {isPublished ? "Atualizando..." : "Publicando..."}
+                          </span>
+                        </>
+                      ) : isPublished ? (
+                        <>
+                          <EyeOff className="h-4 w-4 text-gray-500" />
+                          <span>Despublicar</span>
+                        </>
+                      ) : (
+                        <>
+                          <Eye className="h-4 w-4 text-gray-500" />
+                          <span>Publicar</span>
+                        </>
+                      )}
+                    </DropdownMenuItem>
+                  )}
+
+                  {canDeleteTurma && (
+                    <DropdownMenuItem
+                      onSelect={(event) => {
+                        event.preventDefault();
+                        setIsDeleteModalOpen(true);
+                        setIsActionsOpen(false);
+                      }}
+                      disabled={isDeletePending}
+                      className="cursor-pointer text-red-600 focus:text-red-600"
+                    >
+                      {isDeletePending ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin text-red-600" />
+                          <span>Excluindo...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Trash2 className="h-4 w-4 text-red-600" />
+                          <span>Excluir</span>
+                        </>
+                      )}
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
             )}
+            <Button
+              asChild
+              variant="outline"
+              className="rounded-full border-none bg-gray-100/70 px-5 py-2 text-sm font-medium transition-all duration-200 hover:bg-gray-200 hover:text-accent-foreground"
+            >
+              <Link
+                href="/dashboard/cursos/turmas"
+                className="flex items-center gap-2"
+              >
+                <ChevronLeft className="h-4 w-4" />
+                Voltar
+              </Link>
+            </Button>
           </div>
         </div>
 
-        <div className="flex w-full flex-col items-stretch gap-2 sm:w-auto sm:flex-row sm:items-center">
-          {hasAvailableActions && (
-            <DropdownMenu open={isActionsOpen} onOpenChange={setIsActionsOpen}>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  aria-expanded={isActionsOpen}
-                  className="flex items-center gap-2 rounded-full bg-[var(--primary-color)] px-6 py-2 text-sm font-semibold text-white hover:bg-[var(--primary-color)]/90 cursor-pointer"
-                >
-                  Ações
-                  <ChevronDown
-                    className={cn(
-                      "h-4 w-4 transition-transform duration-200",
-                      isActionsOpen ? "rotate-180" : "rotate-0",
-                    )}
-                    aria-hidden="true"
-                  />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                {canEditTurma && (
-                  <DropdownMenuItem
-                    onSelect={(event) => {
-                      event.preventDefault();
-                      setIsActionsOpen(false);
-                      if (onEditTurma) {
-                        onEditTurma();
-                        return;
-                      }
-                      window.location.assign(
-                        `/dashboard/cursos/turmas/${turma.id}/editar?cursoId=${encodeURIComponent(
-                          String(cursoId),
-                        )}`,
-                      );
-                    }}
-                    className="cursor-pointer"
-                  >
-                    <Edit className="h-4 w-4 text-gray-500" />
-                    <span>Editar</span>
-                  </DropdownMenuItem>
-                )}
-
-                {canAppendItensOperacionais && onCreateAula && (
-                  <DropdownMenuItem
-                    onSelect={(event) => {
-                      event.preventDefault();
-                      setIsActionsOpen(false);
-                      onCreateAula();
-                    }}
-                    className="cursor-pointer"
-                  >
-                    <PlusCircle className="h-4 w-4 text-gray-500" />
-                    <span>Nova aula</span>
-                  </DropdownMenuItem>
-                )}
-
-                {canAppendItensOperacionais && onCreateAvaliacao && (
-                  <DropdownMenuItem
-                    onSelect={(event) => {
-                      event.preventDefault();
-                      setIsActionsOpen(false);
-                      onCreateAvaliacao();
-                    }}
-                    className="cursor-pointer"
-                  >
-                    <PlusCircle className="h-4 w-4 text-gray-500" />
-                    <span>Nova atividade/prova</span>
-                  </DropdownMenuItem>
-                )}
-
-                {canTogglePublication && (
-                  <DropdownMenuItem
-                    onSelect={(event) => {
-                      event.preventDefault();
-                      if (!isPublished) {
-                        const period = validatePublishPeriod();
-                        if (!period.ok) {
-                          toastCustom.error(period.message);
-                          setIsActionsOpen(false);
-                          return;
-                        }
-                        if (estruturaPendente) {
-                          toastCustom.warning(
-                            TURMA_ESTRUTURA_PUBLICACAO_MESSAGE,
-                          );
-                        }
-                      }
-                      setIsConfirmModalOpen(true);
-                      setIsActionsOpen(false);
-                    }}
-                    disabled={isPending}
-                    className="cursor-pointer"
-                  >
-                    {isPending ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
-                        <span>
-                          {isPublished ? "Atualizando..." : "Publicando..."}
-                        </span>
-                      </>
-                    ) : isPublished ? (
-                      <>
-                        <EyeOff className="h-4 w-4 text-gray-500" />
-                        <span>Despublicar</span>
-                      </>
-                    ) : (
-                      <>
-                        <Eye className="h-4 w-4 text-gray-500" />
-                        <span>Publicar</span>
-                      </>
-                    )}
-                  </DropdownMenuItem>
-                )}
-
-                {canDeleteTurma && (
-                  <DropdownMenuItem
-                    onSelect={(event) => {
-                      event.preventDefault();
-                      setIsDeleteModalOpen(true);
-                      setIsActionsOpen(false);
-                    }}
-                    disabled={isDeletePending}
-                    className="cursor-pointer text-red-600 focus:text-red-600"
-                  >
-                    {isDeletePending ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin text-red-600" />
-                        <span>Excluindo...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Trash2 className="h-4 w-4 text-red-600" />
-                        <span>Excluir</span>
-                      </>
-                    )}
-                  </DropdownMenuItem>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-          <Button
-            asChild
-            variant="outline"
-            className="rounded-full border-none px-5 py-2 text-sm font-medium hover:bg-gray-200 bg-gray-100/70 hover:text-accent-foreground transition-all duration-200"
-          >
-            <Link
-              href="/dashboard/cursos/turmas"
-              className="flex items-center gap-2"
-            >
-              <ChevronLeft className="h-4 w-4" />
-              Voltar
-            </Link>
-          </Button>
-        </div>
+        {(estruturaPendente || inicioBloqueadoPorEstrutura) && (
+          <div className="mt-4 max-w-2xl rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
+            <p className="mb-0! text-xs! font-semibold! text-amber-900!">
+              {inicioBloqueadoPorEstrutura
+                ? "Início bloqueado por estrutura"
+                : "Estrutura pendente"}
+            </p>
+            <p className="mt-1! mb-0! text-[11px]! leading-relaxed! text-amber-800!">
+              {inicioBloqueadoPorEstrutura
+                ? "Esta turma não iniciou porque ainda não possui estrutura. Adicione ao menos 1 item e informe uma nova data de início e fim futuras para publicar novamente."
+                : "Você pode manter a turma pública para inscrições, mas ela só iniciará quando houver pelo menos 1 item na estrutura."}
+            </p>
+          </div>
+        )}
       </div>
 
       <ConfirmarPublicacaoTurmaModal

@@ -1192,7 +1192,7 @@ export async function listProvas(
   turmaId: string,
   init?: RequestInit,
 ): Promise<TurmaProva[]> {
-  return apiFetch<TurmaProva[]>(
+  const response = await apiFetch<any>(
     cursosRoutes.cursos.turmas.provas.list(cursoId, turmaId),
     {
       init: {
@@ -1203,6 +1203,16 @@ export async function listProvas(
       cache: "no-cache",
     },
   );
+
+  if (Array.isArray(response)) {
+    return response as TurmaProva[];
+  }
+
+  if (Array.isArray(response?.data)) {
+    return response.data as TurmaProva[];
+  }
+
+  return [];
 }
 
 export async function getProvaById(
