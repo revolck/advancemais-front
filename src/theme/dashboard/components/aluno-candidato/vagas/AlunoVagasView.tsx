@@ -231,6 +231,39 @@ export function AlunoVagasView() {
       const code = error?.details?.code || error?.code;
       const message = error?.details?.message || error?.message;
 
+      if (
+        code === "CANDIDATURA_DUPLICADA" ||
+        (typeof message === "string" &&
+          message.includes("já se candidatou para esta vaga"))
+      ) {
+        if (applyTarget?.vagaId) {
+          queryClient.setQueryData(
+            [
+              "aluno-candidato",
+              "candidaturas",
+              "verificar",
+              applyTarget.vagaId,
+            ],
+            { hasApplied: true },
+          );
+          queryClient.invalidateQueries({
+            queryKey: [
+              "aluno-candidato",
+              "candidaturas",
+              "verificar",
+              applyTarget.vagaId,
+            ],
+          });
+        }
+
+        toastCustom.info({
+          title: "Candidatura já registrada",
+          description:
+            "Essa vaga já está vinculada ao currículo selecionado.",
+        });
+        return;
+      }
+
       if (code === "APPLY_ERROR" && typeof message === "string") {
         toastCustom.error({
           title: "Não foi possível se candidatar",
