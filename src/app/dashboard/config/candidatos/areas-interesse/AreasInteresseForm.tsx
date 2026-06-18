@@ -205,6 +205,7 @@ export function AreasInteresseForm() {
       emptyStateTitle="Nenhuma área de interesse encontrada"
       emptyStateFirstItemText="Comece criando a primeira área de interesse."
       createButtonText="Nova área"
+      disableAutoToasts
       tableColumns={[
         {
           key: "categoria",
@@ -228,4 +229,3 @@ export function AreasInteresseForm() {
     />
   );
 }
-
