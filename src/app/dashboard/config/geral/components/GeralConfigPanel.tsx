@@ -3,6 +3,7 @@
 import React from "react";
 import { Info, RotateCcw, Save, TestTube2 } from "lucide-react";
 
+import { sendTestEmail } from "@/api/brevo";
 import {
   testarConfiguracaoGeral,
   updateConfiguracaoGeral,
@@ -22,6 +23,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { toastCustom } from "@/components/ui/custom/toast";
+import EmailTestModal from "./EmailTestModal";
 import {
   buildConfigPayload,
   getDisplayValue,
@@ -447,6 +449,8 @@ export function GeralConfigPanel({
   const [secrets, setSecrets] = React.useState<Record<string, SecretDraft>>({});
   const [saving, setSaving] = React.useState(false);
   const [testing, setTesting] = React.useState(false);
+  const [isEmailTestModalOpen, setIsEmailTestModalOpen] = React.useState(false);
+  const [emailTestRecipient, setEmailTestRecipient] = React.useState("");
 
   React.useEffect(() => {
     if (!group) return;
@@ -577,6 +581,109 @@ export function GeralConfigPanel({
     }
   };
 
+  const handleTestClick = () => {
+    if (!group || testing) return;
+
+    if (group.category === "emails") {
+      setIsEmailTestModalOpen(true);
+      return;
+    }
+
+    void handleTest();
+  };
+
+  const handleEmailTestSubmit = async () => {
+    if (!group || group.category !== "emails" || testing) return;
+
+    const recipient = emailTestRecipient.trim().toLowerCase();
+    const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient);
+
+    if (!isValidEmail) {
+      toastCustom.error({
+        title: "E-mail inválido",
+        description: "Informe um endereço válido para testar o envio.",
+      });
+      return;
+    }
+
+    setTesting(true);
+    try {
+      const response = await sendTestEmail({
+        email: recipient,
+        type: "config-geral",
+      });
+
+      if (!response.success) {
+        throw new Error(response.message || "Não foi possível enviar.");
+      }
+
+      toastCustom.success({
+        title: "Teste enviado",
+        description:
+          response.data.simulated === true
+            ? `O teste foi simulado para ${recipient}.`
+            : `O teste foi enviado para ${recipient}.`,
+      });
+      setIsEmailTestModalOpen(false);
+      setEmailTestRecipient("");
+    } catch (error) {
+      const apiCode = (error as { details?: { code?: string } })?.details?.code;
+
+      if (apiCode === "PRODUCTION_BLOCKED") {
+        try {
+          const configResponse = await testarConfiguracaoGeral("emails");
+          const checks = Array.isArray(configResponse.data.checks)
+            ? configResponse.data.checks
+            : [];
+          const failed = checks.filter((check) => !check.ok);
+          const ok =
+            configResponse.data.ok ??
+            configResponse.data.success ??
+            failed.length === 0;
+
+          if (ok) {
+            toastCustom.warning({
+              title: "Disparo real bloqueado",
+              description:
+                "A configuração de e-mail está válida, mas este ambiente da API bloqueia envios de teste em produção.",
+            });
+            setIsEmailTestModalOpen(false);
+            setEmailTestRecipient("");
+            return;
+          }
+
+          toastCustom.warning({
+            title: "Configuração com pendências",
+            description:
+              failed.map((check) => check.message).join(" | ") ||
+              configResponse.data.message ||
+              "Revise os campos obrigatórios da configuração de e-mail.",
+          });
+          return;
+        } catch (configError) {
+          const configMessage =
+            configError instanceof Error
+              ? configError.message
+              : "Não foi possível validar a configuração de e-mail.";
+          toastCustom.error({
+            title: "Teste indisponível",
+            description: configMessage,
+          });
+          return;
+        }
+      }
+
+      const message =
+        error instanceof Error ? error.message : "Não foi possível enviar.";
+      toastCustom.error({
+        title: "Erro ao testar e-mail",
+        description: message,
+      });
+    } finally {
+      setTesting(false);
+    }
+  };
+
   if (loading || !group) return <GeralConfigSkeleton />;
 
   return (
@@ -649,7 +756,7 @@ export function GeralConfigPanel({
           size="md"
           withAnimation={false}
           isLoading={testing}
-          onClick={handleTest}
+          onClick={handleTestClick}
           disabled={testing || saving}
         >
           {!testing && <TestTube2 className="h-4 w-4" />}
@@ -679,6 +786,18 @@ export function GeralConfigPanel({
           Salvar
         </ButtonCustom>
       </footer>
+
+      <EmailTestModal
+        isOpen={isEmailTestModalOpen}
+        isLoading={testing}
+        recipient={emailTestRecipient}
+        onRecipientChange={setEmailTestRecipient}
+        onClose={() => {
+          if (testing) return;
+          setIsEmailTestModalOpen(false);
+        }}
+        onSubmit={handleEmailTestSubmit}
+      />
     </form>
   );
 }

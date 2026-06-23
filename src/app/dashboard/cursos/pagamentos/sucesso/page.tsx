@@ -12,13 +12,14 @@ export default function PagamentosCursosSucessoPage() {
   const [returnTo, setReturnTo] = useState<string>("/dashboard");
 
   const paymentId =
-    searchParams.get("payment_id") ||
-    searchParams.get("collection_id") ||
-    searchParams.get("paymentId");
-  const status = searchParams.get("status") || searchParams.get("collection_status");
+    searchParams?.get("payment_id") ||
+    searchParams?.get("collection_id") ||
+    searchParams?.get("paymentId");
+  const status =
+    searchParams?.get("status") || searchParams?.get("collection_status");
 
   useEffect(() => {
-    const fromQuery = searchParams.get("returnTo");
+    const fromQuery = searchParams?.get("returnTo");
     if (fromQuery) {
       setReturnTo(fromQuery);
       return;

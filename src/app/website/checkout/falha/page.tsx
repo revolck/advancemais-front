@@ -38,16 +38,19 @@ export default function CheckoutFalhaPage() {
       : "/recrutamento";
 
   // Parâmetros da URL
-  const paymentId = searchParams.get("payment_id");
-  const statusDetail = searchParams.get("status_detail");
-  const planId = searchParams.get("plan_id");
-  const planName = searchParams.get("plan_name");
-  const planPrice = searchParams.get("plan_price");
+  const paymentId = searchParams?.get("payment_id");
+  const statusDetail = searchParams?.get("status_detail");
+  const planId = searchParams?.get("plan_id");
+  const planName = searchParams?.get("plan_name");
+  const planPrice = searchParams?.get("plan_price");
 
   // Verifica se o usuário tem acesso válido à página
   useEffect(() => {
     const checkAccess = () => {
-      const result = canAccessCheckoutResultPage(searchParams, "rejected");
+      const result = canAccessCheckoutResultPage(
+        new URLSearchParams(searchParams?.toString()),
+        "rejected",
+      );
 
       if (result.allowed) {
         setHasAccess(true);

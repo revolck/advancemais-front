@@ -6,7 +6,7 @@ import { CreateProvaForm } from "@/theme/dashboard/components/admin/lista-ativid
 export default function CadastrarAtividadeProvaPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const tipoParam = (searchParams.get("tipo") || "").toUpperCase();
+  const tipoParam = (searchParams?.get("tipo") || "").toUpperCase();
   const defaultTipo =
     tipoParam === "PROVA"
       ? "PROVA"

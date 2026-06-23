@@ -21,7 +21,8 @@ export default function CheckoutCursoPendentePage() {
   const searchParams = useSearchParams();
   const [pending, setPending] = useState<PendingCoursePurchase | null>(null);
 
-  const status = searchParams.get("status") || searchParams.get("collection_status");
+  const status =
+    searchParams?.get("status") || searchParams?.get("collection_status");
 
   useEffect(() => {
     try {
@@ -84,4 +85,3 @@ export default function CheckoutCursoPendentePage() {
     </div>
   );
 }
-

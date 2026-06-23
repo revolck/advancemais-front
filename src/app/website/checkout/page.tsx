@@ -14,10 +14,10 @@ function CheckoutContent() {
   const pathname = usePathname() || "";
   const [isVerifying, setIsVerifying] = useState(true);
 
-  const sessionId = searchParams.get("sid");
-  const token = searchParams.get("token");
-  const ref = searchParams.get("ref");
-  const plan = searchParams.get("plan");
+  const sessionId = searchParams?.get("sid");
+  const token = searchParams?.get("token");
+  const ref = searchParams?.get("ref");
+  const plan = searchParams?.get("plan");
   const plansPath =
     pathname === "/dashboard" || pathname.startsWith("/dashboard/")
       ? "/dashboard/upgrade"

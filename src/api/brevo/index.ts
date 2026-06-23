@@ -1,5 +1,6 @@
 import { apiFetch } from "@/api/client";
 import { brevoRoutes } from "@/api/routes";
+import { buildAuthHeaders } from "@/lib/auth-utils";
 import { apiConfig } from "@/lib/env";
 
 import type {
@@ -146,7 +147,10 @@ export async function getConfigStatus(): Promise<BrevoConfigResponse> {
   return apiFetch<BrevoConfigResponse>(brevoRoutes.config(), {
     init: {
       method: "GET",
-      headers: ACCEPT_HEADER,
+      headers: {
+        ...ACCEPT_HEADER,
+        ...buildAuthHeaders(),
+      },
     },
     cache: "no-cache",
   });
@@ -162,10 +166,15 @@ export async function sendTestEmail(
   return apiFetch<BrevoTestEmailResponse>(brevoRoutes.test.email(), {
     init: {
       method: "POST",
-      headers: JSON_HEADERS,
+      headers: {
+        ...JSON_HEADERS,
+        ...buildAuthHeaders(),
+      },
       body: JSON.stringify(payload),
     },
     cache: "no-cache",
+    silence403: true,
+    retries: 1,
   });
 }
 
@@ -175,9 +184,14 @@ export async function sendTestSms(
   return apiFetch<BrevoTestSmsResponse>(brevoRoutes.test.sms(), {
     init: {
       method: "POST",
-      headers: JSON_HEADERS,
+      headers: {
+        ...JSON_HEADERS,
+        ...buildAuthHeaders(),
+      },
       body: JSON.stringify(payload),
     },
     cache: "no-cache",
+    silence403: true,
+    retries: 1,
   });
 }

@@ -312,7 +312,7 @@ export function AlunoDetailsView({
       : []),
   ];
 
-  const tabFromUrl = searchParams.get("tab");
+  const tabFromUrl = searchParams?.get("tab");
   const defaultTabValue =
     tabFromUrl && tabs.some((tab) => tab.value === tabFromUrl)
       ? tabFromUrl

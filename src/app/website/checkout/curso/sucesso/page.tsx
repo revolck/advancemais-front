@@ -32,10 +32,11 @@ export default function CheckoutCursoSucessoPage() {
   const [isFinalizing, setIsFinalizing] = useState(true);
 
   const paymentId =
-    searchParams.get("payment_id") ||
-    searchParams.get("collection_id") ||
-    searchParams.get("paymentId");
-  const status = searchParams.get("status") || searchParams.get("collection_status");
+    searchParams?.get("payment_id") ||
+    searchParams?.get("collection_id") ||
+    searchParams?.get("paymentId");
+  const status =
+    searchParams?.get("status") || searchParams?.get("collection_status");
 
   useEffect(() => {
     try {

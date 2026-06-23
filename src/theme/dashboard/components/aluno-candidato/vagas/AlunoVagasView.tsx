@@ -83,7 +83,7 @@ function buildJobFilters({
 export function AlunoVagasView() {
   const queryClient = useQueryClient();
   const router = useRouter();
-  const pathname = usePathname();
+  const pathname = usePathname() || "";
   const searchParams = useSearchParams();
   const [viewVagaIdOrSlug, setViewVagaIdOrSlug] = useState<string | null>(null);
   const [viewVagaInitialJob, setViewVagaInitialJob] = useState<JobData | null>(
@@ -127,10 +127,10 @@ export function AlunoVagasView() {
     });
   }, [appliedModalidade, appliedRegime, appliedSearchTerm, appliedSenioridade]);
 
-  const viewParam = searchParams.get("view");
+  const viewParam = searchParams?.get("view");
 
   const clearViewParam = useCallback(() => {
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams(searchParams?.toString());
     if (!params.has("view")) return;
     params.delete("view");
     const next = params.toString();

@@ -35,14 +35,17 @@ export default function CheckoutPendentePage() {
       ? "/dashboard/upgrade"
       : "/recrutamento";
 
-  const paymentId = searchParams.get("payment_id");
-  const preferenceId = searchParams.get("preference_id");
-  const externalReference = searchParams.get("external_reference");
+  const paymentId = searchParams?.get("payment_id");
+  const preferenceId = searchParams?.get("preference_id");
+  const externalReference = searchParams?.get("external_reference");
 
   // Verifica se o usuário tem acesso válido à página
   useEffect(() => {
     const checkAccess = () => {
-      const result = canAccessCheckoutResultPage(searchParams, "pending");
+      const result = canAccessCheckoutResultPage(
+        new URLSearchParams(searchParams?.toString()),
+        "pending",
+      );
 
       if (result.allowed) {
         setHasAccess(true);

@@ -11,10 +11,11 @@ export default function PagamentosCursosPendentePage() {
   const searchParams = useSearchParams();
   const [returnTo, setReturnTo] = useState<string>("/dashboard");
 
-  const status = searchParams.get("status") || searchParams.get("collection_status");
+  const status =
+    searchParams?.get("status") || searchParams?.get("collection_status");
 
   useEffect(() => {
-    const fromQuery = searchParams.get("returnTo");
+    const fromQuery = searchParams?.get("returnTo");
     if (fromQuery) {
       setReturnTo(fromQuery);
       return;

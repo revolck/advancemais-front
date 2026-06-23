@@ -118,11 +118,11 @@ function normalizeCpf(value?: string | null): string | null {
 
 export function EstagiosTab({ aluno, inscricoes, isLoading }: InscricoesTabProps) {
   const router = useRouter();
-  const pathname = usePathname();
+  const pathname = usePathname() || "";
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const initialEstagioStatus = useMemo(
-    () => searchParams.get("estagiosStatus") || null,
+    () => searchParams?.get("estagiosStatus") || null,
     [searchParams]
   );
   const [selectedEstagioId, setSelectedEstagioId] = useState<string | null>(null);
@@ -158,7 +158,7 @@ export function EstagiosTab({ aluno, inscricoes, isLoading }: InscricoesTabProps
   );
 
   useEffect(() => {
-    const urlStatus = searchParams.get("estagiosStatus") || null;
+    const urlStatus = searchParams?.get("estagiosStatus") || null;
 
     if (urlStatus !== estagioStatusFilter) {
       setEstagioStatusFilter(urlStatus);
@@ -166,7 +166,7 @@ export function EstagiosTab({ aluno, inscricoes, isLoading }: InscricoesTabProps
   }, [estagioStatusFilter, searchParams]);
 
   useEffect(() => {
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams(searchParams?.toString());
 
     if (estagioStatusFilter) {
       params.set("estagiosStatus", estagioStatusFilter);
@@ -175,7 +175,7 @@ export function EstagiosTab({ aluno, inscricoes, isLoading }: InscricoesTabProps
     }
 
     const nextQuery = params.toString();
-    const currentQuery = searchParams.toString();
+    const currentQuery = searchParams?.toString() ?? "";
     if (nextQuery === currentQuery) return;
 
     router.replace(nextQuery ? `${pathname}?${nextQuery}` : pathname, {

@@ -144,7 +144,7 @@ export default function CheckoutSucessoPage() {
   const [showConfetti, setShowConfetti] = useState(false);
   const [confettiKey, setConfettiKey] = useState(0);
 
-  const paymentId = searchParams.get("payment_id");
+  const paymentId = searchParams?.get("payment_id");
   const plansPath =
     pathname === "/dashboard" || pathname.startsWith("/dashboard/")
       ? "/dashboard/upgrade"
@@ -153,7 +153,10 @@ export default function CheckoutSucessoPage() {
   // Verifica se o usuário tem acesso válido à página
   useEffect(() => {
     const checkAccess = () => {
-      const result = canAccessCheckoutResultPage(searchParams, "approved");
+      const result = canAccessCheckoutResultPage(
+        new URLSearchParams(searchParams?.toString()),
+        "approved",
+      );
 
       if (result.allowed) {
         setHasAccess(true);

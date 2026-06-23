@@ -22,7 +22,7 @@ export default function CheckoutCursoFalhaPage() {
   const [pending, setPending] = useState<PendingCoursePurchase | null>(null);
 
   const statusDetail =
-    searchParams.get("status_detail") || searchParams.get("statusDetail");
+    searchParams?.get("status_detail") || searchParams?.get("statusDetail");
 
   useEffect(() => {
     try {
@@ -86,4 +86,3 @@ export default function CheckoutCursoFalhaPage() {
     </div>
   );
 }
-

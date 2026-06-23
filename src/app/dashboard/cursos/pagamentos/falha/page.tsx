@@ -13,10 +13,10 @@ export default function PagamentosCursosFalhaPage() {
   const [retryHref, setRetryHref] = useState<string>("/dashboard/cursos/pagamentos");
 
   const statusDetail =
-    searchParams.get("status_detail") || searchParams.get("statusDetail");
+    searchParams?.get("status_detail") || searchParams?.get("statusDetail");
 
   useEffect(() => {
-    const fromQuery = searchParams.get("returnTo");
+    const fromQuery = searchParams?.get("returnTo");
     if (fromQuery) setReturnTo(fromQuery);
 
     try {

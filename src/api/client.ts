@@ -126,6 +126,10 @@ export async function apiFetch<T = unknown>(
           }
         }
 
+        const isSilencedStatus =
+          (res.status === 404 && silence404) ||
+          (res.status === 403 && silence403);
+
         const errorObj = new Error(errorMessage) as Error & {
           status?: number;
           details?: any;
@@ -133,20 +137,14 @@ export async function apiFetch<T = unknown>(
         errorObj.status = res.status;
         if (errorDetails) errorObj.details = errorDetails;
         
-        // Silencia 403/404 se a opção estiver ativada (não loga como erro)
-        if (env.isDevelopment) {
-          if (res.status === 404 && silence404) {
-            console.warn(`API 404 (silenciado) (${endpoint}): Endpoint não encontrado ou recurso não existe`);
-          } else if (res.status === 403 && silence403) {
-            console.warn(`API 403 (silenciado) (${endpoint}): Sem permissão para acessar este recurso`);
-          } else {
-            console.error(`API Error ${res.status} (${endpoint}):`, {
-              status: res.status,
-              statusText: res.statusText,
-              message: errorMessage,
-              details: errorDetails,
-            });
-          }
+        // 403/404 silenciados são casos esperados em alguns fluxos do painel.
+        if (env.isDevelopment && !isSilencedStatus) {
+          console.error(`API Error ${res.status} (${endpoint}):`, {
+            status: res.status,
+            statusText: res.statusText,
+            message: errorMessage,
+            details: errorDetails,
+          });
         }
         
         if (res.status === 401 && !skipLogoutOn401) {
@@ -155,7 +153,7 @@ export async function apiFetch<T = unknown>(
         
         // Marca o erro para não fazer retry em casos específicos
         (errorObj as any).noRetry = res.status === 401 || res.status === 403 || res.status === 404;
-        (errorObj as any).silenced = (res.status === 403 && silence403) || (res.status === 404 && silence404);
+        (errorObj as any).silenced = isSilencedStatus;
         
         throw errorObj;
       }
