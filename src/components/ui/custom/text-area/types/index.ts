@@ -48,6 +48,9 @@ export interface RichTextareaProps
   onPaste?: (event: React.ClipboardEvent<HTMLDivElement>) => void;
   onFocus?: (event: React.FocusEvent<HTMLDivElement>) => void;
   onBlur?: (event: React.FocusEvent<HTMLDivElement>) => void;
+  showHeadingSelect?: boolean;
+  minEditorHeight?: number;
+  maxEditorHeight?: number;
 }
 
 export type SimpleTextareaProps = BaseTextareaProps;

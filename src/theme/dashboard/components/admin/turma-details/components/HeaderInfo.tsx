@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
+  AlertTriangle,
   ChevronDown,
   ChevronLeft,
   Edit,
@@ -151,17 +152,22 @@ export function HeaderInfo({
     <>
       {(estruturaPendente || inicioBloqueadoPorEstrutura) && (
         <section>
-          <div className="mb-4 max-w-2xl rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
-            <p className="mb-0! text-xs! font-semibold! text-amber-900!">
-              {inicioBloqueadoPorEstrutura
-                ? "Início bloqueado por estrutura"
-                : "Estrutura pendente"}
-            </p>
-            <p className="mt-1! mb-0! text-[11px]! leading-relaxed! text-amber-800!">
-              {inicioBloqueadoPorEstrutura
-                ? "Esta turma não iniciou porque ainda não possui estrutura. Adicione ao menos 1 item e informe uma nova data de início e fim futuras para publicar novamente."
-                : "Você pode manter a turma pública para inscrições, mas ela só iniciará quando houver pelo menos 1 item na estrutura."}
-            </p>
+          <div className="mb-1 flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
+            <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-700">
+              <AlertTriangle className="h-4 w-4" aria-hidden="true" />
+            </div>
+            <div>
+              <p className="mb-0! text-xs! font-semibold! text-amber-900!">
+                {inicioBloqueadoPorEstrutura
+                  ? "Início bloqueado por estrutura"
+                  : "Estrutura pendente"}
+              </p>
+              <p className="mt-1! mb-0! text-[11px]! leading-relaxed! text-amber-800!">
+                {inicioBloqueadoPorEstrutura
+                  ? "Esta turma não iniciou porque ainda não possui estrutura. Adicione ao menos 1 item e informe uma nova data de início e fim futuras para publicar novamente."
+                  : "Você pode manter a turma pública para inscrições, mas ela só iniciará quando houver pelo menos 1 item na estrutura."}
+              </p>
+            </div>
           </div>
         </section>
       )}

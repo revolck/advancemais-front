@@ -10,6 +10,7 @@ import {
   OfflineModal,
   FormLoadingModal,
 } from "@/components/ui/custom";
+import RegisterEmailSentModal from "@/components/partials/auth/register/RegisterEmailSentModal";
 import TermsOfUseModal from "@/components/partials/auth/register/terms-of-use-modal";
 import PrivacyPolicyModal from "@/components/partials/auth/register/privacy-policy-modal";
 import { DocumentValidationModal } from "@/theme/website/components/checkout/components/DocumentValidationModal";
@@ -98,6 +99,9 @@ const RegisterPage = () => {
   );
   const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
   const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
+  const [isRegisterConfirmationOpen, setIsRegisterConfirmationOpen] =
+    useState(false);
+  const [confirmationEmail, setConfirmationEmail] = useState("");
 
   // Modal de validação de documento (CPF/CNPJ)
   const [isDocumentModalOpen, setIsDocumentModalOpen] = useState(false);
@@ -419,13 +423,11 @@ const RegisterPage = () => {
 
         if (response.success) {
           setLoadingStep("Finalizando...");
-          toastCustom.success(
-            response.message ||
-              "Cadastro realizado com sucesso! Verifique seu email para confirmar."
-          );
-          resetForm();
-          // Redirecionar imediatamente para a tela de login
-          window.location.href = "https://auth.advancemais.com/login";
+          setConfirmationEmail(payloadForApi.email);
+          localStorage.removeItem("registerFormData");
+          localStorage.removeItem("registerSelectedType");
+          setAcceptTerms(false);
+          setIsRegisterConfirmationOpen(true);
         } else {
           // Tratar erros da API
           let errorMessage =
@@ -906,6 +908,15 @@ const RegisterPage = () => {
         onClose={() => setIsDocumentModalOpen(false)}
         documentType={invalidDocumentType}
         documentValue={formData.document}
+      />
+      <RegisterEmailSentModal
+        isOpen={isRegisterConfirmationOpen}
+        email={confirmationEmail}
+        onConfirm={() => {
+          setIsRegisterConfirmationOpen(false);
+          resetForm();
+          window.location.href = "https://auth.advancemais.com/login";
+        }}
       />
       <OfflineModal />
       <FormLoadingModal

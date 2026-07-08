@@ -52,6 +52,10 @@ export const DASHBOARD_ROUTE_RULES: readonly RouteRule[] = Object.freeze([
     roles: [UserRole.ADMIN],
   },
   {
+    pattern: "/dashboard/marketing{/*path}",
+    roles: [UserRole.ADMIN, UserRole.MODERADOR],
+  },
+  {
     pattern: "/dashboard/auditoria{/*path}",
     roles: [UserRole.ADMIN],
   },
@@ -64,7 +68,7 @@ export const DASHBOARD_ROUTE_RULES: readonly RouteRule[] = Object.freeze([
     roles: [UserRole.ALUNO_CANDIDATO],
     validatePath: (path) =>
       /^\/dashboard\/cursos\/alunos\/cursos\/[0-9a-fA-F-]{36}\/[0-9a-fA-F-]{36}(?:\/.*)?$/.test(
-        path
+        path,
       ),
   },
   {
@@ -193,6 +197,14 @@ export const DASHBOARD_ROUTE_RULES: readonly RouteRule[] = Object.freeze([
       UserRole.RECRUTADOR,
     ],
   },
+  {
+    pattern: "/dashboard/config/cursos{/*path}",
+    roles: [UserRole.ADMIN, UserRole.MODERADOR, UserRole.PEDAGOGICO],
+  },
+  {
+    pattern: "/dashboard/config{/*path}",
+    roles: [UserRole.ADMIN, UserRole.MODERADOR],
+  },
   // Regra genérica para visão geral do dashboard (deve vir depois das específicas)
   {
     pattern: "/dashboard{/*path}",
@@ -268,15 +280,18 @@ export function canAccessRoute(path: string, role: UserRole): boolean {
 
 /** Lista de módulos de primeiro nível do dashboard */
 export const SYSTEM_MODULES = Array.from(
-  new Set(DASHBOARD_ROUTE_RULES.map((rule) => rule.pattern.split("/")[1]))
+  new Set(DASHBOARD_ROUTE_RULES.map((rule) => rule.pattern.split("/")[1])),
 );
 
 /** Mapeamento inverso: módulos permitidos por papel */
 export const ROLE_PERMISSIONS: Record<UserRole, string[]> = Object.values(
-  UserRole
-).reduce((acc, role) => {
-  acc[role] = SYSTEM_MODULES.filter((module) =>
-    canAccessRoute(`/${module}`, role)
-  );
-  return acc;
-}, {} as Record<UserRole, string[]>);
+  UserRole,
+).reduce(
+  (acc, role) => {
+    acc[role] = SYSTEM_MODULES.filter((module) =>
+      canAccessRoute(`/${module}`, role),
+    );
+    return acc;
+  },
+  {} as Record<UserRole, string[]>,
+);

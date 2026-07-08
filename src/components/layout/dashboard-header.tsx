@@ -49,6 +49,14 @@ export function DashboardHeader({
     /^\/dashboard\/cursos\/alunos\/cursos\/[^/]+\/[^/]+\/[^/]+$/
   );
 
+  const isMarketingPopupEditorPage = pathname?.match(
+    /^\/dashboard\/marketing\/popup\/(criar|editor|[^/]+\/editar)$/
+  );
+
+  const isMarketingEmailEditorPage = pathname?.match(
+    /^\/dashboard\/marketing\/emails\/(criar|editor|[^/]+\/editar)$/
+  );
+
   // Buscar tipo de turma para exibir badge de modalidade
   const turmaTipo = useMemo(() => {
     if (!isEstruturaCursoPage || !params) return null;
@@ -76,7 +84,10 @@ export function DashboardHeader({
     <header className={cn("flex items-center justify-between pb-6", className)}>
       {/* Lado esquerdo - Título */}
       <div className="flex items-center gap-3">
-        {(isEstruturaCursoPage || isAulaPage) && (
+        {(isEstruturaCursoPage ||
+          isAulaPage ||
+          isMarketingPopupEditorPage ||
+          isMarketingEmailEditorPage) && (
           <button
             onClick={() => router.back()}
             className="flex items-center mt-[-15px] justify-center w-6 h-6 shrink-0 self-center"

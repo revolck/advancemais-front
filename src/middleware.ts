@@ -33,6 +33,8 @@ const SYSTEM_CONFIG = {
     "/",
     "/advance-mais-local",
     "/sobre",
+    "/como-funciona",
+    "/como-comprar",
     "/treinamento",
     "/recrutamento",
     "/vagas",
@@ -46,6 +48,7 @@ const SYSTEM_CONFIG = {
     "/termos",
     "/termos-uso",
     "/cookies",
+    "/ouvidoria",
     "/faq",
     "/components",
     "/checkout",
@@ -82,7 +85,7 @@ const SYSTEM_CONFIG = {
  */
 function isDashboardRoute(pathname: string): boolean {
   return SYSTEM_CONFIG.dashboardRoutes.some((route) =>
-    pathname.startsWith(route)
+    pathname.startsWith(route),
   );
 }
 
@@ -94,7 +97,7 @@ function isWebsiteRoute(pathname: string): boolean {
   if (pathname === "/") return true;
 
   return SYSTEM_CONFIG.websiteRoutes.some(
-    (route) => route !== "/" && pathname.startsWith(route)
+    (route) => route !== "/" && pathname.startsWith(route),
   );
 }
 
@@ -110,7 +113,7 @@ function isAuthRoute(pathname: string): boolean {
  */
 function isAcademiaRoute(pathname: string): boolean {
   return SYSTEM_CONFIG.academiaRoutes.some((route) =>
-    pathname.startsWith(route)
+    pathname.startsWith(route),
   );
 }
 
@@ -127,12 +130,20 @@ function extractCertificadoPreviewId(pathname: string): string | null {
   return match?.[1] ?? null;
 }
 
+export function getLegacyDashboardRedirectPath(pathname: string): string | null {
+  if (pathname === "/config" || pathname.startsWith("/config/")) {
+    return `/dashboard${pathname}`;
+  }
+
+  return null;
+}
+
 /**
  * Configura cookies de desenvolvimento
  */
 function setupDevCookies(
   request: NextRequest,
-  response: NextResponse
+  response: NextResponse,
 ): NextResponse {
   if (process.env.NODE_ENV === "development") {
     // Tenant para desenvolvimento
@@ -181,7 +192,7 @@ function setupDevCookies(
  */
 function applyWebsiteHeaders(
   response: NextResponse,
-  pathname: string
+  pathname: string,
 ): NextResponse {
   // Headers de segurança
   response.headers.set("X-Frame-Options", "SAMEORIGIN");
@@ -201,7 +212,7 @@ function applyWebsiteHeaders(
   if (staticPages.includes(pathname)) {
     response.headers.set(
       "Cache-Control",
-      "public, max-age=3600, s-maxage=86400, stale-while-revalidate=86400"
+      "public, max-age=3600, s-maxage=86400, stale-while-revalidate=86400",
     );
   }
 
@@ -232,6 +243,13 @@ export function middleware(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = `/api/certificados/${certificadoPreviewId}/preview`;
     return NextResponse.rewrite(url);
+  }
+
+  const legacyDashboardRedirectPath = getLegacyDashboardRedirectPath(pathname);
+  if (legacyDashboardRedirectPath) {
+    const url = request.nextUrl.clone();
+    url.pathname = legacyDashboardRedirectPath;
+    return NextResponse.redirect(url, { status: 308 });
   }
 
   const host = request.headers.get("host") || "";

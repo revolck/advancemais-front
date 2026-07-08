@@ -10,7 +10,12 @@ const RecrutamentoContent = ({ title, description, buttonUrl, buttonLabel }: Rec
       <h1 className="text-[var(--primary-color)] font-bold !leading-tight">{title}</h1>
       <p className="!leading-relaxed !text-justify">{description}</p>
       <Link href={buttonUrl}>
-        <ButtonCustom size="lg" variant="secondary" withAnimation>
+        <ButtonCustom
+          size="lg"
+          variant="secondary"
+          withAnimation
+          data-popup-target="website-recrutamento-cta"
+        >
           {buttonLabel}
         </ButtonCustom>
       </Link>

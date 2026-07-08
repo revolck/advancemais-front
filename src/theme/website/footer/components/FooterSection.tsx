@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import { useCookieConsent } from "@/components/cookies/CookieConsentProvider";
 import {
   ExternalLink,
   Users,
@@ -57,6 +58,7 @@ export const FooterSection: React.FC<FooterSectionProps> = ({
   isMobile = false,
 }) => {
   const SectionIcon = getIcon(section.icon);
+  const { openPreferences } = useCookieConsent();
 
   return (
     <div className="flex-1">
@@ -77,15 +79,43 @@ export const FooterSection: React.FC<FooterSectionProps> = ({
         {section.links.map((link, index) => {
           const LinkIcon = getIcon(link.icon);
 
+          if (link.disabled) {
+            return (
+              <li key={index}>
+                <span className="flex items-center gap-2 text-gray-500">
+                  {LinkIcon && <LinkIcon className="w-3 h-3 text-gray-600" />}
+                  <span>{link.label}</span>
+                </span>
+              </li>
+            );
+          }
+
           return (
             <li key={index}>
               <Link
                 href={link.href}
+                data-popup-target={link.popupTarget}
                 {...(link.external && {
                   target: "_blank",
                   rel: "noopener noreferrer",
                 })}
                 className="text-gray-400 hover:text-white transition-colors duration-200 flex items-center group gap-2"
+                onClick={(event) => {
+                  const opensPreferences = link.href === "/cookies";
+                  if (!opensPreferences) return;
+                  if (
+                    event.defaultPrevented ||
+                    event.button !== 0 ||
+                    event.metaKey ||
+                    event.altKey ||
+                    event.ctrlKey ||
+                    event.shiftKey
+                  ) {
+                    return;
+                  }
+                  event.preventDefault();
+                  openPreferences();
+                }}
               >
                 {LinkIcon && (
                   <LinkIcon className="w-3 h-3 text-gray-500 group-hover:text-red-600 transition-colors" />

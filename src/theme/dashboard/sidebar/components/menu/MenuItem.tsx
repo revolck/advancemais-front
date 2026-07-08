@@ -44,6 +44,7 @@ export function MenuItem({
     const menuContent = (
       <button
         onClick={hasSubmenu ? toggleSubmenu : handleItemNavigation}
+        data-popup-target="dashboard-sidebar-item"
         className={cn(
           "relative w-10 h-10 mx-auto my-2 flex items-center justify-center rounded-md transition-colors",
           isActive || isSubmenuOpen
@@ -91,6 +92,7 @@ export function MenuItem({
                     <Link
                       href={subItem.route}
                       onClick={handleItemNavigation}
+                      data-popup-target="dashboard-sidebar-item"
                       className={cn(
                         "flex items-center px-2 py-1.5 text-sm rounded-md",
                         "hover:bg-gray-100",
@@ -113,6 +115,7 @@ export function MenuItem({
                         e.stopPropagation();
                         toggleSubmenu(e);
                       }}
+                      data-popup-target="dashboard-sidebar-item"
                       className="flex items-center justify-between w-full px-2 py-1.5 text-sm rounded-md hover:bg-gray-100 text-gray-700"
                     >
                       <div className="flex items-center">
@@ -150,6 +153,7 @@ export function MenuItem({
         <Link
           href={item.route}
           onClick={handleItemNavigation}
+          data-popup-target="dashboard-sidebar-item"
           className={cn(
             "flex items-center px-4 py-2.5 text-sm rounded-md transition-colors w-full",
             "hover:bg-white/10",
@@ -167,6 +171,7 @@ export function MenuItem({
       ) : (
         <button
           onClick={toggleSubmenu}
+          data-popup-target="dashboard-sidebar-item"
           className={cn(
             "flex items-center justify-between w-full px-4 py-2.5 text-sm rounded-md transition-colors",
             "hover:bg-white/10",

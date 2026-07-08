@@ -375,7 +375,10 @@ export function VagasDashboard({
                 icon="Plus"
                 className="w-full sm:w-auto"
               >
-                <Link href="/dashboard/empresas/vagas/cadastrar">
+                <Link
+                  href="/dashboard/empresas/vagas/cadastrar"
+                  data-popup-target="dashboard-vagas-create-button"
+                >
                   Cadastrar vaga
                 </Link>
               </ButtonCustom>

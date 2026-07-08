@@ -61,11 +61,7 @@ export function ViewCurriculoModal({
 
   const experienciasArray = useMemo(() => {
     const raw: any = (curriculo as any)?.experiencias;
-    if (Array.isArray(raw)) return raw;
-    if (raw && typeof raw === "object" && Array.isArray(raw.experiencias)) {
-      return raw.experiencias;
-    }
-    return [];
+    return Array.isArray(raw) ? raw : [];
   }, [curriculo]);
 
   const cursosCertificacoesFlat = useMemo(() => {
@@ -670,6 +666,7 @@ export function ViewCurriculoModal({
       value: "experiencia",
       label: "Experiência",
       icon: "Briefcase",
+      testId: "curriculo-tab-experiencia",
       badge:
         experienciasArray.length > 0 ? experienciasArray.length : undefined,
       content: experienciaContent,

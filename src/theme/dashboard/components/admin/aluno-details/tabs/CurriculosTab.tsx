@@ -28,6 +28,7 @@ import { ViewCurriculoModal } from "../modal-acoes/ViewCurriculoModal";
 import type { Curriculo } from "@/api/candidatos/types";
 import type { UsuarioCurriculo } from "@/api/usuarios/types";
 import { generateCurriculoPdf } from "../utils/generateCurriculoPdf";
+import { normalizeCurriculoDetail } from "@/lib/candidatos/normalizeCurriculoDetail";
 
 interface CurriculosTabProps {
   aluno: AlunoDetailsData;
@@ -48,43 +49,6 @@ export function CurriculosTab({
       Array.isArray((curriculo as any)?.experiencias) ||
       Array.isArray((curriculo as any)?.formacao)
     );
-  };
-
-  const unwrapCurriculo = (response: unknown): Curriculo => {
-    const raw: any = response as any;
-    const data =
-      raw?.data && typeof raw.data === "object"
-        ? raw.data
-        : raw?.curriculo && typeof raw.curriculo === "object"
-        ? raw.curriculo
-        : raw;
-
-    const safe: any = data && typeof data === "object" ? data : {};
-    return {
-      id: String(safe.id ?? ""),
-      usuarioId: String(safe.usuarioId ?? aluno.id ?? ""),
-      titulo: String(safe.titulo ?? "Currículo"),
-      resumo: safe.resumo ?? null,
-      objetivo: safe.objetivo ?? null,
-      principal: Boolean(safe.principal ?? false),
-      areasInteresse: safe.areasInteresse ?? {},
-      preferencias: safe.preferencias ?? null,
-      habilidades: safe.habilidades ?? {},
-      idiomas: Array.isArray(safe.idiomas) ? safe.idiomas : [],
-      experiencias: Array.isArray(safe.experiencias) ? safe.experiencias : [],
-      formacao: Array.isArray(safe.formacao) ? safe.formacao : [],
-      cursosCertificacoes: Array.isArray(safe.cursosCertificacoes)
-        ? safe.cursosCertificacoes
-        : [],
-      premiosPublicacoes: Array.isArray(safe.premiosPublicacoes)
-        ? safe.premiosPublicacoes
-        : [],
-      acessibilidade: safe.acessibilidade ?? null,
-      consentimentos: safe.consentimentos ?? null,
-      ultimaAtualizacao: String(safe.ultimaAtualizacao ?? safe.atualizadoEm ?? ""),
-      criadoEm: String(safe.criadoEm ?? ""),
-      atualizadoEm: String(safe.atualizadoEm ?? ""),
-    } as Curriculo;
   };
 
   const [loadingStates, setLoadingStates] = useState<Record<string, boolean>>(
@@ -123,7 +87,7 @@ export function CurriculosTab({
     setLoadingStates((prev) => ({ ...prev, [curriculoId]: true }));
     try {
       const response = await getCurriculo(curriculoId);
-      setSelectedCurriculo(unwrapCurriculo(response));
+      setSelectedCurriculo(normalizeCurriculoDetail(response, aluno.id));
       setIsModalOpen(true);
     } catch (error) {
       console.error("Erro ao carregar currículo:", error);
@@ -155,7 +119,7 @@ export function CurriculosTab({
       // Buscar o currículo completo se necessário
       const curriculoCompleto = isCurriculoDetalhado(curriculo)
         ? (curriculo as Curriculo)
-        : unwrapCurriculo(await getCurriculo(curriculo.id));
+        : normalizeCurriculoDetail(await getCurriculo(curriculo.id), aluno.id);
       
       await generateCurriculoPdf(
         curriculoCompleto,
@@ -287,6 +251,8 @@ export function CurriculosTab({
                             handleViewCurriculo(curriculo.id, curriculo.titulo)
                           }
                           disabled={loadingStates[curriculo.id]}
+                          aria-label="Visualizar currículo"
+                          data-testid={`view-curriculo-${curriculo.id}`}
                         >
                           {loadingStates[curriculo.id] ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
@@ -307,6 +273,8 @@ export function CurriculosTab({
                           className="h-8 w-8 rounded-full text-gray-500 hover:text-white hover:bg-[var(--primary-color)] cursor-pointer"
                           onClick={(e) => handleDownloadPDF(curriculo, e)}
                           disabled={loadingDownload[curriculo.id]}
+                          aria-label="Baixar currículo em PDF"
+                          data-testid={`download-curriculo-${curriculo.id}`}
                         >
                           {loadingDownload[curriculo.id] ? (
                             <Loader2 className="h-4 w-4 animate-spin" />

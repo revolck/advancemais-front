@@ -691,6 +691,7 @@ export async function getRecrutadorCandidatoEntrevistaOpcoes(
   const items = Array.isArray(payload?.items)
     ? payload.items.map((item: any) => ({
         candidaturaId: String(item?.candidaturaId ?? ""),
+        statusId: item?.statusId ?? null,
         empresa: item?.empresa
           ? {
               id: String(item.empresa.id ?? ""),

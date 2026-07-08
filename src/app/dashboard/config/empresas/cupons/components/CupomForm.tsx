@@ -1,43 +1,51 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+
+import { listPlanosEmpresariais } from "@/api/empresas/planos-empresariais";
+import { listCursos } from "@/api/cursos";
+import type { CupomDesconto, CupomFormData } from "@/api/cupons/types";
+import {
+  COURSE_COUPON_APPLICATION_OPTIONS,
+  CUPOM_ORIENTATION_OPTIONS,
+  LIMITE_POR_USUARIO_OPCOES,
+  LIMITE_USO_TOTAL_OPCOES,
+  PERIODO_TIPO_OPCOES,
+  SUBSCRIPTION_COUPON_APPLICATION_OPTIONS,
+  TIPOS_DESCONTO,
+} from "@/api/cupons/types";
 import { ButtonCustom } from "@/components/ui/custom/button";
+import {
+  DatePickerRangeCustom,
+  type DateRange,
+} from "@/components/ui/custom/date-picker";
+import { MultiSelectFilter } from "@/components/ui/custom/filters";
 import { InputCustom } from "@/components/ui/custom/input";
 import { SelectCustom } from "@/components/ui/custom/select";
 import { Label } from "@/components/ui/label";
-import { DateTimeCustom } from "@/components/ui/custom/date-time";
-import type { DateRangeValue } from "@/components/ui/custom/date-time";
-import type { CupomDesconto, CupomFormData } from "@/api/cupons/types";
-import {
-  TIPOS_DESCONTO,
-  APLICACAO_CUPOM_OPCOES,
-  LIMITE_USO_TOTAL_OPCOES,
-  LIMITE_POR_USUARIO_OPCOES,
-  PERIODO_TIPO_OPCOES,
-} from "@/api/cupons/types";
-import { listPlanosEmpresariais } from "@/api/empresas/planos-empresariais";
-import { MultiSelectFilter } from "@/components/ui/custom/filters";
 
-// Schema de validação
 const cupomSchema = z
   .object({
     codigo: z
       .string()
       .min(1, "Código é obrigatório")
       .max(50, "Código deve ter no máximo 50 caracteres"),
-    // descricao removido do formulário
+    orientacao: z.enum(["COURSES", "SUBSCRIPTIONS"]),
     tipoDesconto: z.enum(["PORCENTAGEM", "VALOR_FIXO"]),
     valorPercentual: z.number().min(0).max(100).optional(),
     valorFixo: z.number().min(0).optional(),
-    // aplicarEm é fixo como APENAS_CURSOS
-    aplicacaoCupom: z.enum(["TODAS_ASSINATURAS", "ASSINATURA_ESPECIFICA"]),
-    assinaturasSelecionadas: z.array(z.string()),
-    aplicarEmTodosItens: z.boolean(),
-    cursosIds: z.array(z.number()),
-    planosIds: z.array(z.string()),
+    aplicacaoCupom: z.enum([
+      "TODOS_CURSOS",
+      "CURSO_ESPECIFICO",
+      "TODAS_ASSINATURAS",
+      "ASSINATURA_ESPECIFICA",
+    ]),
+    assinaturasSelecionadas: z.array(z.string()).default([]),
+    cursosIds: z.array(z.number()).default([]),
+    planosIds: z.array(z.string()).default([]),
     limiteUsoTotalTipo: z.enum(["ILIMITADO", "LIMITADO"]),
     limiteUsoTotalQuantidade: z.number().min(1).optional(),
     limitePorUsuarioTipo: z.enum(["ILIMITADO", "PRIMEIRA_COMPRA", "LIMITADO"]),
@@ -45,138 +53,91 @@ const cupomSchema = z
     periodoTipo: z.enum(["ILIMITADO", "PERIODO"]),
     periodoInicio: z.string().optional(),
     periodoFim: z.string().optional(),
-    // ativo removido - sempre true por padrão
   })
-  .refine(
-    (data) => {
-      if (
-        data.tipoDesconto === "PORCENTAGEM" &&
-        (!data.valorPercentual || data.valorPercentual <= 0)
-      ) {
-        return false;
-      }
-      if (
-        data.tipoDesconto === "VALOR_FIXO" &&
-        (!data.valorFixo || data.valorFixo <= 0)
-      ) {
-        return false;
-      }
-      return true;
-    },
-    {
-      message: "Valor do desconto é obrigatório",
-      path: ["valorPercentual", "valorFixo"],
+  .superRefine((data, ctx) => {
+    if (
+      data.tipoDesconto === "PORCENTAGEM" &&
+      (!data.valorPercentual || data.valorPercentual <= 0)
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["valorPercentual"],
+        message: "Valor percentual é obrigatório",
+      });
     }
-  )
-  .refine(
-    (data) => {
-      if (
-        data.tipoDesconto === "PORCENTAGEM" &&
-        data.valorPercentual !== undefined
-      ) {
-        return data.valorPercentual >= 0 && data.valorPercentual <= 100;
-      }
-      return true;
-    },
-    {
-      message: "Valor percentual deve estar entre 0 e 100",
-      path: ["valorPercentual"],
+
+    if (
+      data.tipoDesconto === "VALOR_FIXO" &&
+      (!data.valorFixo || data.valorFixo <= 0)
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["valorFixo"],
+        message: "Valor fixo é obrigatório",
+      });
     }
-  )
-  .refine(
-    (data) => {
-      if (data.tipoDesconto === "VALOR_FIXO" && data.valorFixo !== undefined) {
-        return data.valorFixo >= 0 && data.valorFixo <= 999.99;
-      }
-      return true;
-    },
-    {
-      message: "Valor fixo deve estar entre 0 e 999,99",
-      path: ["valorFixo"],
+
+    if (
+      data.aplicacaoCupom === "CURSO_ESPECIFICO" &&
+      data.cursosIds.length === 0
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["cursosIds"],
+        message: "Selecione ao menos um curso",
+      });
     }
-  )
-  .refine(
-    (data) => {
-      if (
-        data.limiteUsoTotalTipo === "LIMITADO" &&
-        (!data.limiteUsoTotalQuantidade || data.limiteUsoTotalQuantidade <= 0)
-      ) {
-        return false;
-      }
-      return true;
-    },
-    {
-      message: "Quantidade de usos totais é obrigatória quando limitado",
-      path: ["limiteUsoTotalQuantidade"],
+
+    if (
+      data.aplicacaoCupom === "ASSINATURA_ESPECIFICA" &&
+      data.planosIds.length === 0
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["planosIds"],
+        message: "Selecione ao menos uma assinatura",
+      });
     }
-  )
-  .refine(
-    (data) => {
-      if (
-        data.limitePorUsuarioTipo === "LIMITADO" &&
-        (!data.limitePorUsuarioQuantidade ||
-          data.limitePorUsuarioQuantidade <= 0)
-      ) {
-        return false;
-      }
-      return true;
-    },
-    {
-      message: "Quantidade de usos por usuário é obrigatória quando limitado",
-      path: ["limitePorUsuarioQuantidade"],
+
+    if (
+      data.limiteUsoTotalTipo === "LIMITADO" &&
+      (!data.limiteUsoTotalQuantidade || data.limiteUsoTotalQuantidade <= 0)
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["limiteUsoTotalQuantidade"],
+        message: "Quantidade de usos totais é obrigatória quando limitado",
+      });
     }
-  )
-  .refine(
-    (data) => {
-      if (
-        data.limiteUsoTotalTipo === "LIMITADO" &&
-        data.limiteUsoTotalQuantidade &&
-        (data.limiteUsoTotalQuantidade < 1 ||
-          data.limiteUsoTotalQuantidade > 9999)
-      ) {
-        return false;
-      }
-      return true;
-    },
-    {
-      message: "Quantidade de usos totais deve estar entre 1 e 9999",
-      path: ["limiteUsoTotalQuantidade"],
+
+    if (
+      data.limitePorUsuarioTipo === "LIMITADO" &&
+      (!data.limitePorUsuarioQuantidade ||
+        data.limitePorUsuarioQuantidade <= 0)
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["limitePorUsuarioQuantidade"],
+        message: "Quantidade por usuário é obrigatória quando limitado",
+      });
     }
-  )
-  .refine(
-    (data) => {
-      if (
-        data.limitePorUsuarioTipo === "LIMITADO" &&
-        data.limitePorUsuarioQuantidade &&
-        (data.limitePorUsuarioQuantidade < 1 ||
-          data.limitePorUsuarioQuantidade > 9999)
-      ) {
-        return false;
+
+    if (data.periodoTipo === "PERIODO") {
+      if (!data.periodoInicio || !data.periodoFim) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["periodoInicio"],
+          message: "Período de validade é obrigatório",
+        });
+      } else if (new Date(data.periodoInicio) >= new Date(data.periodoFim)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["periodoFim"],
+          message: "A data final deve ser posterior à data inicial",
+        });
       }
-      return true;
-    },
-    {
-      message: "Quantidade por usuário deve estar entre 1 e 9999",
-      path: ["limitePorUsuarioQuantidade"],
     }
-  )
-  .refine(
-    (data) => {
-      if (data.periodoTipo === "PERIODO") {
-        if (!data.periodoInicio || !data.periodoFim) {
-          return false;
-        }
-        if (new Date(data.periodoInicio) >= new Date(data.periodoFim)) {
-          return false;
-        }
-      }
-      return true;
-    },
-    {
-      message: "Período de validade inválido",
-      path: ["periodoInicio", "periodoFim"],
-    }
-  );
+  });
 
 interface CupomFormProps {
   cupom?: CupomDesconto;
@@ -185,42 +146,76 @@ interface CupomFormProps {
   isSubmitting?: boolean;
 }
 
+type SelectOption = { value: string; label: string };
+
+function inferOrientation(cupom?: CupomDesconto): CupomFormData["orientacao"] {
+  if (!cupom) return "SUBSCRIPTIONS";
+  return cupom.aplicarEm === "APENAS_CURSOS" ? "COURSES" : "SUBSCRIPTIONS";
+}
+
+function inferApplication(cupom?: CupomDesconto): CupomFormData["aplicacaoCupom"] {
+  if (!cupom) return "TODAS_ASSINATURAS";
+
+  if (cupom.aplicarEm === "APENAS_CURSOS") {
+    return cupom.aplicarEmTodosItens ? "TODOS_CURSOS" : "CURSO_ESPECIFICO";
+  }
+
+  return cupom.aplicarEmTodosItens || cupom.aplicarEm === "TODA_PLATAFORMA"
+    ? "TODAS_ASSINATURAS"
+    : "ASSINATURA_ESPECIFICA";
+}
+
+function parseDateRange(cupom?: CupomDesconto): DateRange {
+  if (!cupom?.periodoInicio || !cupom?.periodoFim) {
+    return { from: null, to: null };
+  }
+
+  return {
+    from: new Date(cupom.periodoInicio),
+    to: new Date(cupom.periodoFim),
+  };
+}
+
 export function CupomForm({
   cupom,
   onSubmit,
   onCancel,
   isSubmitting = false,
 }: CupomFormProps) {
-  const [periodoRange, setPeriodoRange] = useState<DateRangeValue>({
-    from: "",
-    to: "",
-  });
+  const [periodoRange, setPeriodoRange] = useState<DateRange>(
+    parseDateRange(cupom),
+  );
   const [valorFixoFormatado, setValorFixoFormatado] = useState<string>("0,00");
-  const [assinaturas, setAssinaturas] = useState<
-    Array<{ value: string; label: string }>
-  >([]);
-  const [assinaturasSelecionadas, setAssinaturasSelecionadas] = useState<
-    string[]
-  >([]);
+  const [cursosOptions, setCursosOptions] = useState<SelectOption[]>([]);
+  const [planosOptions, setPlanosOptions] = useState<SelectOption[]>([]);
+  const [cursosSelecionados, setCursosSelecionados] = useState<string[]>(
+    (cupom?.cursosAplicados ?? []).map((item) => String(item.cursoId)),
+  );
+  const [planosSelecionados, setPlanosSelecionados] = useState<string[]>(
+    (cupom?.planosAplicados ?? []).map((item) => item.planoId),
+  );
 
   const {
-    register,
-    handleSubmit,
     watch,
     setValue,
+    handleSubmit,
     formState: { errors },
   } = useForm<CupomFormData>({
     resolver: zodResolver(cupomSchema) as any,
     defaultValues: {
       codigo: cupom?.codigo || "",
-      // descricao removido do formulário
+      orientacao: inferOrientation(cupom),
       tipoDesconto: cupom?.tipoDesconto || "PORCENTAGEM",
       valorPercentual: cupom?.valorPercentual || undefined,
       valorFixo: cupom?.valorFixo || 0,
-      // aplicarEm é fixo como "APENAS_CURSOS" - não incluído no form
-      aplicacaoCupom: "TODAS_ASSINATURAS" as const,
-      assinaturasSelecionadas: [],
-      // planosIds removido - cupons aplicam apenas em cursos
+      aplicacaoCupom: inferApplication(cupom),
+      assinaturasSelecionadas: (cupom?.planosAplicados ?? []).map(
+        (item) => item.planoId,
+      ),
+      cursosIds: (cupom?.cursosAplicados ?? []).map((item) =>
+        Number(item.cursoId),
+      ),
+      planosIds: (cupom?.planosAplicados ?? []).map((item) => item.planoId),
       limiteUsoTotalTipo: cupom?.limiteUsoTotalTipo || "ILIMITADO",
       limiteUsoTotalQuantidade: cupom?.limiteUsoTotalQuantidade || undefined,
       limitePorUsuarioTipo: cupom?.limitePorUsuarioTipo || "ILIMITADO",
@@ -229,372 +224,234 @@ export function CupomForm({
       periodoTipo: cupom?.periodoTipo || "ILIMITADO",
       periodoInicio: cupom?.periodoInicio || undefined,
       periodoFim: cupom?.periodoFim || undefined,
-      // ativo sempre true por padrão
     },
   });
-  const isDisabled = isSubmitting;
 
+  const watchedOrientacao = watch("orientacao");
   const watchedTipoDesconto = watch("tipoDesconto");
   const watchedAplicacaoCupom = watch("aplicacaoCupom");
   const watchedLimiteUsoTotalTipo = watch("limiteUsoTotalTipo");
   const watchedLimitePorUsuarioTipo = watch("limitePorUsuarioTipo");
   const watchedPeriodoTipo = watch("periodoTipo");
+  const isDisabled = isSubmitting;
 
-  // Inicializar datas quando em modo de edição
-  useEffect(() => {
-    if (cupom?.periodoInicio && cupom?.periodoFim) {
-      setPeriodoRange({
-        from: cupom.periodoInicio.split("T")[0], // Converte para yyyy-mm-dd
-        to: cupom.periodoFim.split("T")[0], // Converte para yyyy-mm-dd
-      });
-    }
-  }, [cupom]);
+  const aplicacaoOptions = useMemo(
+    () =>
+      watchedOrientacao === "COURSES"
+        ? [...COURSE_COUPON_APPLICATION_OPTIONS]
+        : [...SUBSCRIPTION_COUPON_APPLICATION_OPTIONS],
+    [watchedOrientacao],
+  );
 
-  // Inicializar valor formatado quando o cupom mudar
   useEffect(() => {
     if (cupom?.valorFixo) {
-      const formatted = cupom.valorFixo.toLocaleString("pt-BR", {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      });
-      setValorFixoFormatado(formatted);
-    } else {
-      setValorFixoFormatado("0,00");
+      setValorFixoFormatado(
+        cupom.valorFixo.toLocaleString("pt-BR", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        }),
+      );
+      return;
     }
+
+    setValorFixoFormatado("0,00");
   }, [cupom]);
 
-  // Carregar assinaturas disponíveis
   useEffect(() => {
-    const loadAssinaturas = async () => {
+    const loadTargets = async () => {
       try {
-        const response = await listPlanosEmpresariais();
-        // A resposta é um array direto ou um erro
-        if (Array.isArray(response)) {
-          const assinaturasOptions = response.map((plano: any) => ({
-            value: plano.id,
-            label: plano.nome,
-          }));
-          setAssinaturas(assinaturasOptions);
+        const [planosResponse, cursosResponse] = await Promise.all([
+          listPlanosEmpresariais(),
+          listCursos({ page: 1, pageSize: 200, statusPadrao: "PUBLICADO" }),
+        ]);
+
+        if (Array.isArray(planosResponse)) {
+          setPlanosOptions(
+            planosResponse.map((plano: any) => ({
+              value: plano.id,
+              label: plano.nome,
+            })),
+          );
         }
+
+        setCursosOptions(
+          (cursosResponse.data ?? []).map((curso) => ({
+            value: String(curso.id),
+            label: curso.nome,
+          })),
+        );
       } catch (error) {
-        console.error("Erro ao carregar assinaturas:", error);
+        console.error("Erro ao carregar opções de cupons:", error);
       }
     };
 
-    loadAssinaturas();
+    void loadTargets();
   }, []);
 
-  // Atualizar valores quando as datas mudarem
   useEffect(() => {
-    if (periodoRange.from) {
-      setValue("periodoInicio", new Date(periodoRange.from).toISOString());
-    }
-    if (periodoRange.to) {
-      setValue("periodoFim", new Date(periodoRange.to).toISOString());
-    }
+    setValue(
+      "periodoInicio",
+      periodoRange.from ? periodoRange.from.toISOString() : undefined,
+    );
+    setValue(
+      "periodoFim",
+      periodoRange.to ? periodoRange.to.toISOString() : undefined,
+    );
   }, [periodoRange, setValue]);
 
-  // Sincronizar assinaturas selecionadas
   useEffect(() => {
-    setValue("assinaturasSelecionadas", assinaturasSelecionadas);
-  }, [assinaturasSelecionadas, setValue]);
+    setValue("assinaturasSelecionadas", planosSelecionados);
+    setValue("planosIds", planosSelecionados);
+  }, [planosSelecionados, setValue]);
 
-  const onFormSubmit = async (data: any) => {
-    // Garantir que aplicarEm seja sempre APENAS_CURSOS, ativo sempre true e remover descrição
-    const formData = {
+  useEffect(() => {
+    setValue(
+      "cursosIds",
+      cursosSelecionados
+        .map((item) => Number(item))
+        .filter((item) => Number.isFinite(item)),
+    );
+  }, [cursosSelecionados, setValue]);
+
+  useEffect(() => {
+    if (
+      watchedOrientacao === "COURSES" &&
+      (watchedAplicacaoCupom === "TODAS_ASSINATURAS" ||
+        watchedAplicacaoCupom === "ASSINATURA_ESPECIFICA")
+    ) {
+      setValue("aplicacaoCupom", "TODOS_CURSOS");
+      return;
+    }
+
+    if (
+      watchedOrientacao === "SUBSCRIPTIONS" &&
+      (watchedAplicacaoCupom === "TODOS_CURSOS" ||
+        watchedAplicacaoCupom === "CURSO_ESPECIFICO")
+    ) {
+      setValue("aplicacaoCupom", "TODAS_ASSINATURAS");
+    }
+  }, [watchedAplicacaoCupom, watchedOrientacao, setValue]);
+
+  const onFormSubmit = async (data: CupomFormData) => {
+    await onSubmit({
       ...data,
-      aplicarEm: "APENAS_CURSOS" as const,
-      ativo: true, // Sempre ativo por padrão
-      // descricao removido do formulário
-    };
-    await onSubmit(formData as CupomFormData);
+      cursosIds: cursosSelecionados
+        .map((item) => Number(item))
+        .filter((item) => Number.isFinite(item)),
+      planosIds: planosSelecionados,
+      assinaturasSelecionadas: planosSelecionados,
+    });
   };
-
-  // Funções de planos removidas - cupons aplicam apenas em cursos
 
   return (
     <form onSubmit={handleSubmit(onFormSubmit)} className="p-1">
       <fieldset disabled={isDisabled} className="space-y-6">
-      {/* Linha 1: Código do Cupom (full width) */}
-      <InputCustom
-        label="Código do Cupom"
-        name="codigo"
-        value={watch("codigo")}
-        onChange={(e) => setValue("codigo", e.target.value)}
-        placeholder="Ex: ADVANCE50"
-        error={errors.codigo?.message}
-        required
-        size="md"
-        disabled={isDisabled}
-      />
-
-      {/* Linha 2: Tipo de Desconto + Valor (relacionados) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <SelectCustom
-          label="Tipo de Desconto"
-          mode="single"
-          options={[...TIPOS_DESCONTO]}
-          value={watchedTipoDesconto}
-          onChange={(value) =>
-            setValue("tipoDesconto", value as "PORCENTAGEM" | "VALOR_FIXO")
-          }
-          placeholder="Selecione o tipo"
+        <InputCustom
+          label="Código do Cupom"
+          name="codigo"
+          value={watch("codigo")}
+          onChange={(e) => setValue("codigo", e.target.value.toUpperCase())}
+          placeholder="Ex: ADVANCE50"
+          error={errors.codigo?.message}
           required
           size="md"
           disabled={isDisabled}
         />
 
-        {watchedTipoDesconto === "PORCENTAGEM" ? (
-          <InputCustom
-            label="Valor Percentual (%)"
-            name="valorPercentual"
-            type="number"
-            min="0"
-            max="100"
-            value={watch("valorPercentual")?.toString() || ""}
-            onChange={(e) => {
-              const value = parseFloat(e.target.value) || 0;
-              if (value >= 0 && value <= 100) {
-                setValue("valorPercentual", value);
-              } else if (value > 100) {
-                // Se exceder 100, limita a 100
-                setValue("valorPercentual", 100);
-                e.target.value = "100";
-              }
-            }}
-            onBlur={(e) => {
-              const value = parseFloat(e.target.value) || 0;
-              if (value > 100) {
-                // Se exceder 100, limita a 100
-                setValue("valorPercentual", 100);
-                e.target.value = "100";
-              } else if (value < 0) {
-                // Se for negativo, limita a 0
-                setValue("valorPercentual", 0);
-                e.target.value = "0";
-              }
-            }}
-            placeholder="Ex: 25"
-            error={errors.valorPercentual?.message}
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <SelectCustom
+            label="Orientação"
+            mode="single"
+            options={[...CUPOM_ORIENTATION_OPTIONS]}
+            value={watchedOrientacao}
+            onChange={(value) =>
+              setValue(
+                "orientacao",
+                (value ?? "SUBSCRIPTIONS") as CupomFormData["orientacao"],
+              )
+            }
+            placeholder="Selecione a orientação"
             required
             size="md"
             disabled={isDisabled}
           />
-        ) : (
-          <InputCustom
-            label="Valor Fixo (R$)"
-            name="valorFixo"
-            value={valorFixoFormatado}
-            onChange={(e) => {
-              // Função para formatar valor monetário (mesma lógica dos planos)
-              const formatCurrency = (value: string) => {
-                // Remove tudo que não é dígito
-                const numbers = value.replace(/\D/g, "");
 
-                // Se vazio, retorna 0,00
-                if (numbers === "") return "0,00";
-
-                // Converte para número e divide por 100 para ter centavos
-                const amount = parseInt(numbers) / 100;
-
-                // Formata com 2 casas decimais e vírgula
-                return amount.toLocaleString("pt-BR", {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                });
-              };
-
-              // Extrai o valor numérico para validar
-              const numbers = e.target.value.replace(/\D/g, "");
-              const numericValue = numbers === "" ? 0 : parseInt(numbers) / 100;
-
-              // Validação: valor fixo deve estar entre 0 e 999,99
-              if (numericValue >= 0 && numericValue <= 999.99) {
-                const formatted = formatCurrency(e.target.value);
-                setValorFixoFormatado(formatted);
-                setValue("valorFixo", numericValue);
-              } else if (numericValue > 999.99) {
-                // Se exceder 999,99, limita a 999,99
-                setValue("valorFixo", 999.99);
-                setValorFixoFormatado("999,99");
-                e.target.value = "999,99";
-              }
-            }}
-            onBlur={(e) => {
-              // Garante que sempre tenha um valor válido ao sair do campo
-              const formatCurrency = (value: string) => {
-                const numbers = value.replace(/\D/g, "");
-                if (numbers === "") return "0,00";
-                const amount = parseInt(numbers) / 100;
-                return amount.toLocaleString("pt-BR", {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                });
-              };
-
-              const formatted = formatCurrency(e.target.value);
-              setValorFixoFormatado(formatted);
-
-              const numbers = e.target.value.replace(/\D/g, "");
-              const numericValue = numbers === "" ? 0 : parseInt(numbers) / 100;
-
-              // Validação: valor fixo deve estar entre 0 e 999,99
-              if (numericValue >= 0 && numericValue <= 999.99) {
-                setValue("valorFixo", numericValue);
-              } else if (numericValue > 999.99) {
-                // Se exceder 999,99, limita a 999,99
-                setValue("valorFixo", 999.99);
-                setValorFixoFormatado("999,99");
-              }
-            }}
-            onKeyDown={(e) => {
-              // Permite apenas números e teclas de controle
-              if (
-                !/[0-9]/.test(e.key) &&
-                e.key !== "Backspace" &&
-                e.key !== "Delete" &&
-                e.key !== "ArrowLeft" &&
-                e.key !== "ArrowRight" &&
-                e.key !== "Tab" &&
-                e.key !== "Enter"
-              ) {
-                e.preventDefault();
-              }
-
-              // Se for um número, verifica se não excederá 999,99
-              if (/[0-9]/.test(e.key)) {
-                const currentValue = e.currentTarget.value.replace(/\D/g, "");
-                const newValue = currentValue + e.key;
-                const numericValue = parseInt(newValue) / 100;
-
-                if (numericValue > 999.99) {
-                  e.preventDefault();
-                }
-              }
-            }}
-            placeholder="0,00"
-            error={errors.valorFixo?.message}
+          <SelectCustom
+            label="Aplicação do Cupom"
+            mode="single"
+            options={aplicacaoOptions}
+            value={watchedAplicacaoCupom}
+            onChange={(value) =>
+              setValue(
+                "aplicacaoCupom",
+                (value ?? aplicacaoOptions[0].value) as CupomFormData["aplicacaoCupom"],
+              )
+            }
+            placeholder="Selecione a aplicação"
             required
             size="md"
-            disabled={isDisabled}
-          />
-        )}
-      </div>
-
-      {/* Linha 3: Aplicação do Cupom + Tipo de Período (independentes) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <SelectCustom
-          label="Aplicação do Cupom"
-          mode="single"
-          options={[...APLICACAO_CUPOM_OPCOES]}
-          value={watchedAplicacaoCupom}
-          onChange={(value) =>
-            setValue(
-              "aplicacaoCupom",
-              value as "TODAS_ASSINATURAS" | "ASSINATURA_ESPECIFICA"
-            )
-          }
-          placeholder="Selecione a aplicação"
-          required
-          size="md"
-        />
-
-        <SelectCustom
-          label="Tipo de Período"
-          mode="single"
-          options={[...PERIODO_TIPO_OPCOES]}
-          value={watchedPeriodoTipo}
-          onChange={(value) => setValue("periodoTipo", value as any)}
-          placeholder="Selecione o tipo"
-          size="md"
-        />
-      </div>
-
-      {/* Linha 4: Assinaturas (condicional - full width quando aparece) */}
-      {watchedAplicacaoCupom === "ASSINATURA_ESPECIFICA" && (
-        <div className="space-y-2">
-          <Label>Assinaturas</Label>
-          <MultiSelectFilter
-            title="Assinaturas"
-            placeholder="Selecione as assinaturas"
-            options={assinaturas}
-            selectedValues={assinaturasSelecionadas}
-            onSelectionChange={setAssinaturasSelecionadas}
-            className="w-full"
             disabled={isDisabled}
           />
         </div>
-      )}
 
-      {/* Linha 5: Período de Validade (condicional - full width quando aparece) */}
-      {watchedPeriodoTipo === "PERIODO" && (
-        <DateTimeCustom
-          mode="date-range"
-          label="Período de Validade"
-          value={periodoRange}
-          onChange={setPeriodoRange}
-          required
-          size="md"
-          disabled={isDisabled}
-        />
-      )}
-
-      {/* Linha 6: Limites de Uso (2 colunas com subcampos) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Coluna 1: Limite Total */}
-        <div className="space-y-2">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <SelectCustom
-            label="Limite Total de Usos"
+            label="Tipo de Desconto"
             mode="single"
-            options={[...LIMITE_USO_TOTAL_OPCOES]}
-            value={watchedLimiteUsoTotalTipo}
-            onChange={(value) => setValue("limiteUsoTotalTipo", value as any)}
-            placeholder="Selecione o limite"
+            options={[...TIPOS_DESCONTO]}
+            value={watchedTipoDesconto}
+            onChange={(value) =>
+              setValue(
+                "tipoDesconto",
+                (value ?? "PORCENTAGEM") as CupomFormData["tipoDesconto"],
+              )
+            }
+            placeholder="Selecione o tipo"
+            required
             size="md"
             disabled={isDisabled}
           />
 
-          {watchedLimiteUsoTotalTipo === "LIMITADO" && (
+          {watchedTipoDesconto === "PORCENTAGEM" ? (
             <InputCustom
-              label="Quantidade Total de Usos"
-              name="limiteUsoTotalQuantidade"
+              label="Valor Percentual (%)"
+              name="valorPercentual"
               type="number"
-              min="1"
-              max="9999"
-              value={watch("limiteUsoTotalQuantidade")?.toString() || ""}
+              min="0"
+              max="100"
+              value={watch("valorPercentual")?.toString() || ""}
               onChange={(e) => {
-                const value = parseInt(e.target.value) || 0;
-                if (value >= 1 && value <= 9999) {
-                  setValue("limiteUsoTotalQuantidade", value);
-                } else if (value > 9999) {
-                  setValue("limiteUsoTotalQuantidade", 9999);
-                  e.target.value = "9999";
-                }
+                const nextValue = Math.min(
+                  100,
+                  Math.max(0, Number(e.target.value || 0)),
+                );
+                setValue("valorPercentual", nextValue);
               }}
-              onBlur={(e) => {
-                const value = parseInt(e.target.value) || 0;
-                if (value > 9999) {
-                  setValue("limiteUsoTotalQuantidade", 9999);
-                  e.target.value = "9999";
-                } else if (value < 1) {
-                  setValue("limiteUsoTotalQuantidade", 1);
-                  e.target.value = "1";
-                }
+              placeholder="Ex: 25"
+              error={errors.valorPercentual?.message}
+              required
+              size="md"
+              disabled={isDisabled}
+            />
+          ) : (
+            <InputCustom
+              label="Valor Fixo (R$)"
+              name="valorFixo"
+              value={valorFixoFormatado}
+              onChange={(e) => {
+                const numbers = e.target.value.replace(/\D/g, "");
+                const numericValue = numbers === "" ? 0 : parseInt(numbers) / 100;
+                const nextValue = Math.min(999.99, numericValue);
+                setValorFixoFormatado(
+                  nextValue.toLocaleString("pt-BR", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  }),
+                );
+                setValue("valorFixo", nextValue);
               }}
-              onKeyDown={(e) => {
-                // Se for um número, verifica se não excederá 9999
-                if (/[0-9]/.test(e.key)) {
-                  const currentValue = e.currentTarget.value;
-                  const newValue = currentValue + e.key;
-                  const numericValue = parseInt(newValue);
-
-                  if (numericValue > 9999) {
-                    e.preventDefault();
-                  }
-                }
-              }}
-              placeholder="Ex: 100"
-              error={errors.limiteUsoTotalQuantidade?.message}
+              placeholder="0,00"
+              error={errors.valorFixo?.message}
               required
               size="md"
               disabled={isDisabled}
@@ -602,90 +459,168 @@ export function CupomForm({
           )}
         </div>
 
-        {/* Coluna 2: Limite por Usuário */}
-        <div className="space-y-2">
+        {watchedAplicacaoCupom === "CURSO_ESPECIFICO" ? (
+          <div className="space-y-2">
+            <Label>Cursos</Label>
+            <MultiSelectFilter
+              title="Cursos"
+              placeholder="Selecione os cursos"
+              options={cursosOptions}
+              selectedValues={cursosSelecionados}
+              onSelectionChange={setCursosSelecionados}
+              className="w-full"
+              disabled={isDisabled}
+            />
+            {errors.cursosIds?.message ? (
+              <p className="!text-xs text-red-500">{errors.cursosIds.message}</p>
+            ) : null}
+          </div>
+        ) : null}
+
+        {watchedAplicacaoCupom === "ASSINATURA_ESPECIFICA" ? (
+          <div className="space-y-2">
+            <Label>Assinaturas</Label>
+            <MultiSelectFilter
+              title="Assinaturas"
+              placeholder="Selecione as assinaturas"
+              options={planosOptions}
+              selectedValues={planosSelecionados}
+              onSelectionChange={setPlanosSelecionados}
+              className="w-full"
+              disabled={isDisabled}
+            />
+            {errors.planosIds?.message ? (
+              <p className="!text-xs text-red-500">{errors.planosIds.message}</p>
+            ) : null}
+          </div>
+        ) : null}
+
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <SelectCustom
+            label="Tipo de Período"
+            mode="single"
+            options={[...PERIODO_TIPO_OPCOES]}
+            value={watchedPeriodoTipo}
+            onChange={(value) =>
+              setValue("periodoTipo", (value ?? "ILIMITADO") as any)
+            }
+            placeholder="Selecione o tipo"
+            size="md"
+            disabled={isDisabled}
+          />
+
           <SelectCustom
             label="Limite por Usuário"
             mode="single"
             options={[...LIMITE_POR_USUARIO_OPCOES]}
             value={watchedLimitePorUsuarioTipo}
-            onChange={(value) => setValue("limitePorUsuarioTipo", value as any)}
+            onChange={(value) =>
+              setValue("limitePorUsuarioTipo", (value ?? "ILIMITADO") as any)
+            }
             placeholder="Selecione o limite"
             size="md"
             disabled={isDisabled}
           />
+        </div>
 
-          {watchedLimitePorUsuarioTipo === "LIMITADO" && (
-            <InputCustom
-              label="Quantidade por Usuário"
-              name="limitePorUsuarioQuantidade"
-              type="number"
-              min="1"
-              max="9999"
-              value={watch("limitePorUsuarioQuantidade")?.toString() || ""}
-              onChange={(e) => {
-                const value = parseInt(e.target.value) || 0;
-                if (value >= 1 && value <= 9999) {
-                  setValue("limitePorUsuarioQuantidade", value);
-                } else if (value > 9999) {
-                  setValue("limitePorUsuarioQuantidade", 9999);
-                  e.target.value = "9999";
-                }
-              }}
-              onBlur={(e) => {
-                const value = parseInt(e.target.value) || 0;
-                if (value > 9999) {
-                  setValue("limitePorUsuarioQuantidade", 9999);
-                  e.target.value = "9999";
-                } else if (value < 1) {
-                  setValue("limitePorUsuarioQuantidade", 1);
-                  e.target.value = "1";
-                }
-              }}
-              onKeyDown={(e) => {
-                // Se for um número, verifica se não excederá 9999
-                if (/[0-9]/.test(e.key)) {
-                  const currentValue = e.currentTarget.value;
-                  const newValue = currentValue + e.key;
-                  const numericValue = parseInt(newValue);
+        {watchedPeriodoTipo === "PERIODO" ? (
+          <DatePickerRangeCustom
+            label="Período de Validade"
+            value={periodoRange}
+            onChange={setPeriodoRange}
+            required
+            size="md"
+            disabled={isDisabled}
+            error={
+              errors.periodoInicio?.message || errors.periodoFim?.message
+            }
+          />
+        ) : null}
 
-                  if (numericValue > 9999) {
-                    e.preventDefault();
-                  }
-                }
-              }}
-              placeholder="Ex: 1"
-              error={errors.limitePorUsuarioQuantidade?.message}
-              required
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-[minmax(0,0.78fr)_minmax(0,1.45fr)]">
+            <SelectCustom
+              label="Limite Total de Usos"
+              mode="single"
+              options={[...LIMITE_USO_TOTAL_OPCOES]}
+              value={watchedLimiteUsoTotalTipo}
+              onChange={(value) =>
+                setValue("limiteUsoTotalTipo", (value ?? "ILIMITADO") as any)
+              }
+              placeholder="Selecione o limite"
               size="md"
               disabled={isDisabled}
             />
-          )}
-        </div>
-      </div>
 
-      {/* Linha 7: Botões de Ação (full width) */}
-      <div className="flex justify-end space-x-3 pt-4">
-        <ButtonCustom
-          type="button"
-          variant="outline"
-          onClick={onCancel}
-          size="md"
-          disabled={isDisabled}
-        >
-          Cancelar
-        </ButtonCustom>
-        <ButtonCustom
-          type="submit"
-          variant="default"
-          disabled={isDisabled}
-          isLoading={isSubmitting}
-          loadingText="Salvando..."
-          size="md"
-        >
-          {cupom ? "Atualizar Cupom" : "Criar Cupom"}
-        </ButtonCustom>
-      </div>
+            {watchedLimiteUsoTotalTipo === "LIMITADO" ? (
+              <InputCustom
+                label="Quantidade Total de Usos"
+                name="limiteUsoTotalQuantidade"
+                type="number"
+                min="1"
+                max="9999"
+                value={watch("limiteUsoTotalQuantidade")?.toString() || ""}
+                onChange={(e) =>
+                  setValue(
+                    "limiteUsoTotalQuantidade",
+                    Math.min(9999, Math.max(1, Number(e.target.value || 1))),
+                  )
+                }
+                placeholder="Ex: 100"
+                error={errors.limiteUsoTotalQuantidade?.message}
+                required
+                size="md"
+                disabled={isDisabled}
+              />
+            ) : null}
+          </div>
+
+          <div className="space-y-2 md:max-w-[50%]">
+            {watchedLimitePorUsuarioTipo === "LIMITADO" ? (
+              <InputCustom
+                label="Quantidade por Usuário"
+                name="limitePorUsuarioQuantidade"
+                type="number"
+                min="1"
+                max="9999"
+                value={watch("limitePorUsuarioQuantidade")?.toString() || ""}
+                onChange={(e) =>
+                  setValue(
+                    "limitePorUsuarioQuantidade",
+                    Math.min(9999, Math.max(1, Number(e.target.value || 1))),
+                  )
+                }
+                placeholder="Ex: 1"
+                error={errors.limitePorUsuarioQuantidade?.message}
+                required
+                size="md"
+                disabled={isDisabled}
+              />
+            ) : null}
+          </div>
+        </div>
+
+        <div className="flex justify-end space-x-3 pt-4">
+          <ButtonCustom
+            type="button"
+            variant="outline"
+            onClick={onCancel}
+            size="md"
+            disabled={isDisabled}
+          >
+            Cancelar
+          </ButtonCustom>
+          <ButtonCustom
+            type="submit"
+            variant="default"
+            disabled={isDisabled}
+            isLoading={isSubmitting}
+            loadingText="Salvando..."
+            size="md"
+          >
+            {cupom ? "Atualizar Cupom" : "Criar Cupom"}
+          </ButtonCustom>
+        </div>
       </fieldset>
     </form>
   );

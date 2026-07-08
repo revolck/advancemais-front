@@ -243,6 +243,7 @@ export interface RecrutadorVagaCandidatosCurriculoResumo {
 
 export interface RecrutadorVagaCandidatosItem {
   candidaturaId: string;
+  statusId?: string | null;
   candidato: {
     id: string;
     nomeCompleto: string;

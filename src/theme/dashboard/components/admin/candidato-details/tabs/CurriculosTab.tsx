@@ -258,6 +258,8 @@ export function CurriculosTab({
                           className="h-8 w-8 rounded-full text-gray-500 hover:text-white hover:bg-[var(--primary-color)] cursor-pointer"
                           onClick={(e) => handleDownloadPDF(curriculo, e)}
                           disabled={loadingDownload[curriculo.id]}
+                          aria-label="Baixar currículo em PDF"
+                          data-testid={`download-curriculo-${curriculo.id}`}
                         >
                           {loadingDownload[curriculo.id] ? (
                             <Loader2 className="h-4 w-4 animate-spin" />

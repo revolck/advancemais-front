@@ -27,6 +27,7 @@ export * from "./loader";
 export * from "./image-not-found";
 
 export * from "./text-area";
+export * from "./comment";
 
 export * from "./icon-selector";
 
@@ -69,6 +70,12 @@ export * from "./users-list";
 export * from "./calendar";
 
 export * from "./aulas-provas";
+
+export * from "./build-marketing";
+
+export * from "./coupons";
+
+export * from "./roulette";
 
 export * from "./RecuperacaoFinalPagamentoModal";
 

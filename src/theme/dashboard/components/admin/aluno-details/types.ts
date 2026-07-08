@@ -31,6 +31,11 @@ export interface AboutTabProps {
   isLoading?: boolean;
 }
 
+export interface HistoryTabProps {
+  aluno: AlunoDetailsData;
+  isLoading?: boolean;
+}
+
 export interface InscricoesTabProps {
   aluno: AlunoDetailsData;
   inscricoes: AlunoInscricao[];

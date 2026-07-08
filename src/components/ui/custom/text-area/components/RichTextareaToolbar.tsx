@@ -12,7 +12,7 @@ import {
 import {
   Bold,
   Italic,
-  Strikethrough,
+  Underline,
   RemoveFormatting,
   Link as LinkIcon,
 } from "lucide-react";
@@ -39,10 +39,10 @@ const TOOLBAR_BUTTONS = [
     tag: "em",
   },
   {
-    icon: Strikethrough,
-    action: "strikethrough" as const,
-    tooltip: "Riscado (Ctrl+U)",
-    tag: "del",
+    icon: Underline,
+    action: "underline" as const,
+    tooltip: "Sublinhado (Ctrl+U)",
+    tag: "u",
   },
 ] as const;
 
@@ -69,6 +69,7 @@ export interface RichTextareaToolbarProps {
   activeLink: { url: string; element: HTMLAnchorElement } | null;
   onHeadingChange: (value: string) => void;
   onToolbarAction: (action: ToolbarAction) => void;
+  showHeadingSelect?: boolean;
 }
 
 export function RichTextareaToolbar({
@@ -77,25 +78,29 @@ export function RichTextareaToolbar({
   activeLink,
   onHeadingChange,
   onToolbarAction,
+  showHeadingSelect = true,
 }: RichTextareaToolbarProps) {
   return (
     <TooltipProvider delayDuration={300}>
       <div className="flex items-center gap-1 border-b border-input p-2 flex-shrink-0 bg-background z-10">
-        {/* Select para headings */}
-        <Select value={activeHeading || "p"} onValueChange={onHeadingChange}>
-          <SelectTrigger className="h-8 w-[140px] text-xs bg-white">
-            <SelectValue placeholder="Parágrafo" />
-          </SelectTrigger>
-          <SelectContent>
-            {HEADING_OPTIONS.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {showHeadingSelect ? (
+          <>
+            <Select value={activeHeading || "p"} onValueChange={onHeadingChange}>
+              <SelectTrigger className="h-8 w-[140px] text-xs bg-white">
+                <SelectValue placeholder="Parágrafo" />
+              </SelectTrigger>
+              <SelectContent>
+                {HEADING_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-        <div className="h-4 border-l border-input mx-1" />
+            <div className="h-4 border-l border-input mx-1" />
+          </>
+        ) : null}
 
         {TOOLBAR_BUTTONS.map((button) => (
           <Tooltip key={button.action}>
@@ -179,7 +184,6 @@ export function RichTextareaToolbar({
     </TooltipProvider>
   );
 }
-
 
 
 

@@ -14,6 +14,14 @@ export const Navigation: React.FC<NavigationProps> = ({
   onDropdownEnter,
   onDropdownLeave,
 }) => {
+  const getPopupTarget = (href: string) => {
+    if (href === "/") return "website-nav-home";
+    if (href === "/sobre") return "website-nav-about";
+    if (href === "/cursos") return "website-nav-courses";
+    if (href === "/vagas") return "website-nav-vagas";
+    return undefined;
+  };
+
   return (
     <div className="hidden md:flex items-center justify-center flex-grow space-x-6 lg:space-x-8 px-4">
       {NAVIGATION_ITEMS.map((item) => {
@@ -25,7 +33,11 @@ export const Navigation: React.FC<NavigationProps> = ({
               onMouseEnter={() => onDropdownEnter(item.key)}
               onMouseLeave={onDropdownLeave}
             >
-              <NavLink href={item.href} hasDropdown>
+              <NavLink
+                href={item.href}
+                hasDropdown
+                popupTarget={getPopupTarget(item.href)}
+              >
                 {item.label}
               </NavLink>
               <DropdownMenu
@@ -37,7 +49,11 @@ export const Navigation: React.FC<NavigationProps> = ({
         }
 
         return (
-          <NavLink key={item.key} href={item.href}>
+          <NavLink
+            key={item.key}
+            href={item.href}
+            popupTarget={getPopupTarget(item.href)}
+          >
             {item.label}
           </NavLink>
         );

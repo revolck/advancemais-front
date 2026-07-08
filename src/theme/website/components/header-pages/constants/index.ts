@@ -39,4 +39,7 @@ export const ROUTE_LABELS: Record<string, string> = {
   certificados: "Certificados",
   processo: "Processo Seletivo",
   programas: "Programas",
+  "como-funciona": "Como Funciona",
+  "como-comprar": "Como Comprar",
+  ouvidoria: "Ouvidoria",
 };

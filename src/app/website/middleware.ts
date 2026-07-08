@@ -28,6 +28,8 @@ const WEBSITE_CONFIG: WebsiteConfig = {
   availablePages: [
     "/",
     "/sobre",
+    "/como-funciona",
+    "/como-comprar",
     "/recrutamento",
     "/contato",
     "/cursos",
@@ -67,6 +69,8 @@ const WEBSITE_CONFIG: WebsiteConfig = {
   staticPages: [
     "/",
     "/sobre",
+    "/como-funciona",
+    "/como-comprar",
     "/recrutamento",
     "/privacidade",
     "/termos",
@@ -103,25 +107,25 @@ function getTemporaryRedirect(pathname: string): string | null {
  */
 function applyCacheHeaders(
   response: NextResponse,
-  pathname: string
+  pathname: string,
 ): NextResponse {
   if (WEBSITE_CONFIG.staticPages.includes(pathname)) {
     // Cache longo para páginas estáticas
     response.headers.set(
       "Cache-Control",
-      "public, max-age=3600, s-maxage=86400, stale-while-revalidate=86400"
+      "public, max-age=3600, s-maxage=86400, stale-while-revalidate=86400",
     );
   } else if (WEBSITE_CONFIG.dynamicPages.includes(pathname)) {
     // Sem cache para páginas dinâmicas
     response.headers.set(
       "Cache-Control",
-      "no-cache, no-store, must-revalidate"
+      "no-cache, no-store, must-revalidate",
     );
   } else {
     // Cache médio para outras páginas
     response.headers.set(
       "Cache-Control",
-      "public, max-age=1800, s-maxage=3600, stale-while-revalidate=3600"
+      "public, max-age=1800, s-maxage=3600, stale-while-revalidate=3600",
     );
   }
 
@@ -133,7 +137,7 @@ function applyCacheHeaders(
  */
 function applySEOHeaders(
   response: NextResponse,
-  pathname: string
+  pathname: string,
 ): NextResponse {
   // Headers de segurança
   response.headers.set("X-Frame-Options", "DENY");
@@ -157,7 +161,7 @@ function applySEOHeaders(
  */
 function handleABTesting(
   request: NextRequest,
-  pathname: string
+  pathname: string,
 ): string | null {
   // Exemplo de A/B testing para página inicial
   if (pathname === "/" && process.env.ENABLE_AB_TESTING === "true") {
@@ -191,7 +195,7 @@ export function websiteMiddleware(request: NextRequest) {
     const redirectUrl = new URL(permanentRedirectUrl, request.url);
 
     console.log(
-      `[Website] Permanent redirect: ${pathname} -> ${redirectUrl.pathname}`
+      `[Website] Permanent redirect: ${pathname} -> ${redirectUrl.pathname}`,
     );
 
     return NextResponse.redirect(redirectUrl, { status: 301 });
@@ -203,7 +207,7 @@ export function websiteMiddleware(request: NextRequest) {
     const redirectUrl = new URL(temporaryRedirectUrl, request.url);
 
     console.log(
-      `[Website] Temporary redirect: ${pathname} -> ${redirectUrl.pathname}`
+      `[Website] Temporary redirect: ${pathname} -> ${redirectUrl.pathname}`,
     );
 
     return NextResponse.redirect(redirectUrl, { status: 302 });

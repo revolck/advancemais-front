@@ -10,6 +10,7 @@ export interface CupomDesconto {
   id: string;
   codigo: string;
   descricao?: string;
+  status: "PUBLICADO" | "RASCUNHO";
   tipoDesconto: "PORCENTAGEM" | "VALOR_FIXO";
   valorPercentual?: number;
   valorFixo?: number;
@@ -37,7 +38,7 @@ export interface CupomDesconto {
 }
 
 export interface CursoAplicado {
-  cursoId: number;
+  cursoId: number | string;
   codigo: string;
   nome: string;
 }
@@ -68,7 +69,7 @@ export interface CreateCupomPayload {
   periodoTipo: "ILIMITADO" | "PERIODO";
   periodoInicio?: string;
   periodoFim?: string;
-  // ativo removido - sempre true por padrão
+  status?: "PUBLICADO" | "RASCUNHO";
 }
 
 export interface UpdateCupomPayload {
@@ -88,7 +89,7 @@ export interface UpdateCupomPayload {
   periodoTipo?: "ILIMITADO" | "PERIODO";
   periodoInicio?: string;
   periodoFim?: string;
-  ativo?: boolean;
+  status?: "PUBLICADO" | "RASCUNHO";
 }
 
 // ============================================================================
@@ -134,6 +135,8 @@ export interface CuponsListParams {
   sortBy?: string;
   sortOrder?: "asc" | "desc";
   ativo?: boolean;
+  status?: "PUBLICADO" | "RASCUNHO";
+  apenasAtivos?: boolean;
   tipoDesconto?: "PORCENTAGEM" | "VALOR_FIXO";
   aplicarEm?: "TODA_PLATAFORMA" | "APENAS_ASSINATURA" | "APENAS_CURSOS";
 }
@@ -142,18 +145,24 @@ export interface CuponsListParams {
 // TIPOS PARA FORMULÁRIOS
 // ============================================================================
 
+export type CupomDomain = "COURSES" | "SUBSCRIPTIONS";
+export type CupomAplicacaoAdmin =
+  | "TODOS_CURSOS"
+  | "CURSO_ESPECIFICO"
+  | "TODAS_ASSINATURAS"
+  | "ASSINATURA_ESPECIFICA";
+
 export interface CupomFormData {
   codigo: string;
   // descricao removido do formulário
+  orientacao: CupomDomain;
   tipoDesconto: "PORCENTAGEM" | "VALOR_FIXO";
   valorPercentual?: number;
   valorFixo?: number;
-  // aplicarEm é fixo como "APENAS_CURSOS" - removido do form
-  aplicacaoCupom: "TODAS_ASSINATURAS" | "ASSINATURA_ESPECIFICA";
+  aplicacaoCupom: CupomAplicacaoAdmin;
   assinaturasSelecionadas: string[];
-  aplicarEmTodosItens: boolean;
   cursosIds: number[];
-  // planosIds removido - cupons aplicam apenas em cursos
+  planosIds: string[];
   limiteUsoTotalTipo: "ILIMITADO" | "LIMITADO";
   limiteUsoTotalQuantidade?: number;
   limitePorUsuarioTipo: "ILIMITADO" | "LIMITADO" | "PRIMEIRA_COMPRA";
@@ -179,7 +188,17 @@ export const APLICAR_EM_OPCOES = [
   { value: "APENAS_CURSOS", label: "Apenas Cursos" },
 ] as const;
 
-export const APLICACAO_CUPOM_OPCOES = [
+export const CUPOM_ORIENTATION_OPTIONS = [
+  { value: "COURSES", label: "Cursos" },
+  { value: "SUBSCRIPTIONS", label: "Assinaturas" },
+] as const;
+
+export const COURSE_COUPON_APPLICATION_OPTIONS = [
+  { value: "TODOS_CURSOS", label: "Em todos os cursos" },
+  { value: "CURSO_ESPECIFICO", label: "Em curso específico" },
+] as const;
+
+export const SUBSCRIPTION_COUPON_APPLICATION_OPTIONS = [
   { value: "TODAS_ASSINATURAS", label: "Em todas as assinaturas" },
   { value: "ASSINATURA_ESPECIFICA", label: "Em assinatura específica" },
 ] as const;

@@ -92,6 +92,9 @@ export async function listCupons(
   if (params?.sortOrder) searchParams.append("sortOrder", params.sortOrder);
   if (params?.ativo !== undefined)
     searchParams.append("ativo", params.ativo.toString());
+  if (params?.status) searchParams.append("status", params.status);
+  if (params?.apenasAtivos !== undefined)
+    searchParams.append("apenasAtivos", params.apenasAtivos.toString());
   if (params?.tipoDesconto)
     searchParams.append("tipoDesconto", params.tipoDesconto);
   if (params?.aplicarEm) searchParams.append("aplicarEm", params.aplicarEm);

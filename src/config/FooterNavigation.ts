@@ -3,31 +3,74 @@ import type { FooterConfig } from "../theme/website/footer/types";
 export const FOOTER_CONFIG: FooterConfig = {
   sections: [
     {
+      id: "about",
       title: "Sobre Nós",
       icon: "users",
       links: [
-        { label: "Quem Somos", href: "/sobre" },
-        { label: "Página Inicial", href: "/" },
-        { label: "Contato", href: "/contato" },
+        {
+          label: "Quem Somos",
+          href: "/sobre",
+          popupTarget: "website-footer-about",
+        },
+        {
+          label: "Como funciona",
+          href: "/como-funciona",
+          popupTarget: "website-footer-how-it-works",
+        },
+        {
+          label: "Como comprar",
+          href: "/como-comprar",
+          popupTarget: "website-footer-how-to-buy",
+        },
+        {
+          label: "Preferências de Cookies",
+          href: "/cookies",
+          popupTarget: "website-footer-cookie-preferences",
+        },
       ],
     },
     {
+      id: "quick-access",
       title: "Acesso Rápido",
       icon: "zap",
       links: [
-        { label: "Cursos", href: "/cursos" },
-        { label: "Soluções", href: "/solucoes" },
-        { label: "Plataforma", href: "/plataforma" },
-        { label: "Suporte", href: "/suporte" },
+        {
+          label: "Cursos",
+          href: "/cursos",
+          popupTarget: "website-footer-courses",
+        },
+        {
+          label: "Para empresas",
+          href: "/recrutamento",
+          popupTarget: "website-footer-for-business",
+        },
+        {
+          label: "Para candidatos",
+          href: "/vagas",
+          popupTarget: "website-footer-for-candidates",
+        },
+        {
+          label: "FAQ",
+          href: "/faq",
+          popupTarget: "website-footer-faq",
+        },
       ],
     },
     {
+      id: "contact",
       title: "Fale Conosco",
       icon: "message-circle",
       links: [
-        { label: "Fale Conosco", href: "/contato" },
-        { label: "Ouvidoria", href: "/ouvidoria" },
-        { label: "FAQ", href: "/faq" },
+        {
+          label: "Central de Ajuda",
+          href: "#",
+          popupTarget: "website-footer-help-center",
+        },
+        {
+          label: "Ouvidoria",
+          href: "/ouvidoria",
+          popupTarget: "website-footer-ombudsman",
+        },
       ],
     },
   ],

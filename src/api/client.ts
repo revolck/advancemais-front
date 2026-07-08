@@ -63,6 +63,7 @@ export async function apiFetch<T = unknown>(
 ): Promise<T> {
   const url = endpoint.startsWith("http") ? endpoint : buildApiUrl(endpoint);
   const cacheKey = `${url}-${JSON.stringify(init)}`;
+  const maxAttempts = Math.max(1, retries);
 
   // Verifica cache primeiro
   if (cache !== "no-cache") {
@@ -76,10 +77,10 @@ export async function apiFetch<T = unknown>(
   // Executa request com retry e timeout
   let lastError: Error | null = null;
 
-  for (let attempt = 1; attempt <= retries; attempt++) {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
       if (env.isDevelopment) {
-        console.log(`🌐 API Request [${attempt}/${retries}]: ${endpoint}`);
+        console.log(`🌐 API Request [${attempt}/${maxAttempts}]: ${endpoint}`);
       }
 
       const controller = new AbortController();
@@ -195,7 +196,7 @@ export async function apiFetch<T = unknown>(
 
       // Não loga AbortError (requisição cancelada intencionalmente) ou erros silenciados
       if ((error as any)?.name !== "AbortError" && !(error as any)?.silenced) {
-        console.warn(`⚠️ API Error [${attempt}/${retries}]:`, error);
+        console.warn(`⚠️ API Error [${attempt}/${maxAttempts}]:`, error);
       }
 
       // Não faz retry para erros 401, 403, 404 ou conexão (não vai mudar com retry)
@@ -204,7 +205,7 @@ export async function apiFetch<T = unknown>(
       }
 
       // Aguarda antes do próximo retry (backoff exponencial)
-      if (attempt < retries) {
+      if (attempt < maxAttempts) {
         const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
         await new Promise((resolve) => setTimeout(resolve, delay));
       }
@@ -231,9 +232,9 @@ export async function apiFetch<T = unknown>(
   // Não loga se o erro foi silenciado
   if (!(lastError as any)?.silenced) {
     if (process.env.NODE_ENV === "development") {
-      console.warn(`❌ API Failed após ${retries} tentativas:`, lastError!);
+      console.warn(`❌ API Failed após ${maxAttempts} tentativa(s):`, lastError!);
     } else {
-      console.error(`❌ API Failed após ${retries} tentativas:`, lastError!);
+      console.error(`❌ API Failed após ${maxAttempts} tentativa(s):`, lastError!);
     }
   }
 

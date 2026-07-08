@@ -8,6 +8,7 @@ import { CookieConsentBanner } from "@/components/cookies/CookieConsentBanner";
 import { CookiePreferencesModal } from "@/components/cookies/CookiePreferencesModal";
 import { FloatingWhatsAppButton } from "@/components/whatsapp/FloatingWhatsAppButton";
 import { LoadingProvider } from "./loading-context";
+import { MarketingPopupRenderer } from "@/components/marketing-popups/MarketingPopupRenderer";
 
 /**
  * Layout Client Simplificado
@@ -38,6 +39,8 @@ export default function LayoutClient({ children }: { children: ReactNode }) {
 
         {/* CTA: WhatsApp (se configurado em /dashboard/config/website/geral) */}
         <FloatingWhatsAppButton />
+
+        <MarketingPopupRenderer scope="WEBSITE" />
 
         {/* Sistema de notificações */}
         <ToasterCustom

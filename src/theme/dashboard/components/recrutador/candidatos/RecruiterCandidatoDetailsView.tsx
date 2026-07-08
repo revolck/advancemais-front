@@ -55,6 +55,7 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { ViewCurriculoModal } from "@/theme/dashboard/components/admin/candidato-details/modal-acoes/ViewCurriculoModal";
+import { normalizeCurriculoDetail } from "@/lib/candidatos/normalizeCurriculoDetail";
 import { EntrevistaModalView } from "@/theme/dashboard/components/admin/lista-entrevistas/components/EntrevistaModalView";
 import { generateCurriculoPdf } from "@/theme/dashboard/components/admin/candidato-details/utils/generateCurriculoPdf";
 import { MarcarEntrevistaRecrutadorModal } from "./modal-acoes/MarcarEntrevistaRecrutadorModal";
@@ -423,7 +424,9 @@ function CandidateCandidaturasSection({
         throw new Error(response.message || "Não foi possível carregar o currículo.");
       }
 
-      setSelectedCurriculo(response.data);
+      setSelectedCurriculo(
+        normalizeCurriculoDetail(response.data, candidatoId),
+      );
       setIsModalOpen(true);
     } catch (error) {
       toastCustom.error({
@@ -678,7 +681,9 @@ function CandidateCurriculosSection({
         throw new Error(response.message || "Não foi possível carregar o currículo.");
       }
 
-      setSelectedCurriculo(response.data);
+      setSelectedCurriculo(
+        normalizeCurriculoDetail(response.data, candidatoId),
+      );
       setIsModalOpen(true);
     } catch (error) {
       toastCustom.error({
@@ -706,7 +711,12 @@ function CandidateCurriculosSection({
         throw new Error(response.message || "Não foi possível carregar o currículo.");
       }
 
-      await generateCurriculoPdf(response.data, candidato.nomeCompleto, {
+      const normalizedCurriculo = normalizeCurriculoDetail(
+        response.data,
+        candidatoId,
+      );
+
+      await generateCurriculoPdf(normalizedCurriculo, candidato.nomeCompleto, {
         avatarUrl: candidato.avatarUrl ?? null,
         email: candidato.email ?? null,
         telefone: candidato.telefone ?? null,

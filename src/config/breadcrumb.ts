@@ -127,82 +127,82 @@ export const breadcrumbConfig: Record<string, BreadcrumbConfig> = {
     ],
   },
 
-  "/config/website/pagina-inicial": {
+  "/dashboard/config/website/pagina-inicial": {
     title: "Configuração Página Inicial",
     items: [
       { label: "Dashboard", href: "/", icon: "Home" },
-      { label: "Configurações", href: "/config", icon: "Settings" },
-      { label: "Website", href: "/config/website", icon: "Globe" },
+      { label: "Configurações", href: "/dashboard/config/geral", icon: "Settings" },
+      { label: "Website", href: "/dashboard/config/website/geral", icon: "Globe" },
       { label: "Página Inicial", icon: "Layout" },
     ],
   },
-  "/config/website/geral": {
+  "/dashboard/config/website/geral": {
     title: "Configurações Gerais",
     items: [
       { label: "Dashboard", href: "/", icon: "Home" },
-      { label: "Configurações", href: "/config", icon: "Settings" },
-      { label: "Website", href: "/config/website", icon: "Globe" },
+      { label: "Configurações", href: "/dashboard/config/geral", icon: "Settings" },
+      { label: "Website", href: "/dashboard/config/website/geral", icon: "Globe" },
       { label: "Geral", icon: "Settings" },
     ],
   },
-  "/config/website/sobre": {
+  "/dashboard/config/website/sobre": {
     title: "Configuração Sobre",
     items: [
       { label: "Dashboard", href: "/", icon: "Home" },
-      { label: "Configurações", href: "/config", icon: "Settings" },
-      { label: "Website", href: "/config/website", icon: "Globe" },
+      { label: "Configurações", href: "/dashboard/config/geral", icon: "Settings" },
+      { label: "Website", href: "/dashboard/config/website/geral", icon: "Globe" },
       { label: "Sobre", icon: "Info" },
     ],
   },
-  "/config/website/recrutamento": {
+  "/dashboard/config/website/recrutamento": {
     title: "Configuração Recrutamento",
     items: [
       { label: "Dashboard", href: "/", icon: "Home" },
-      { label: "Configurações", href: "/config", icon: "Settings" },
-      { label: "Website", href: "/config/website", icon: "Globe" },
+      { label: "Configurações", href: "/dashboard/config/geral", icon: "Settings" },
+      { label: "Website", href: "/dashboard/config/website/geral", icon: "Globe" },
       { label: "Recrutamento", icon: "Briefcase" },
     ],
   },
-  "/config/website/treinamento": {
+  "/dashboard/config/website/treinamento": {
     title: "Configuração Treinamento",
     items: [
       { label: "Dashboard", href: "/", icon: "Home" },
-      { label: "Configurações", href: "/config", icon: "Settings" },
-      { label: "Website", href: "/config/website", icon: "Globe" },
+      { label: "Configurações", href: "/dashboard/config/geral", icon: "Settings" },
+      { label: "Website", href: "/dashboard/config/website/geral", icon: "Globe" },
       { label: "Treinamento", icon: "BookOpen" },
     ],
   },
-  "/config/dashboard/geral": {
+  "/dashboard/config/dashboard/geral": {
     title: "Configuração Dashboard",
     items: [
       { label: "Dashboard", href: "/", icon: "Home" },
-      { label: "Configurações", href: "/config", icon: "Settings" },
+      { label: "Configurações", href: "/dashboard/config/geral", icon: "Settings" },
       {
         label: "Dashboard",
-        href: "/config/dashboard",
+        href: "/dashboard/config/dashboard/geral",
         icon: "LayoutDashboard",
       },
       { label: "Geral", icon: "Settings" },
     ],
   },
-  "/config/dashboard/cursos": {
+  "/dashboard/config/dashboard/cursos": {
     title: "Configuração Cursos",
     items: [
       { label: "Dashboard", href: "/", icon: "Home" },
-      { label: "Configurações", href: "/config", icon: "Settings" },
+      { label: "Configurações", href: "/dashboard/config/geral", icon: "Settings" },
       {
         label: "Dashboard",
-        href: "/config/dashboard",
+        href: "/dashboard/config/dashboard/geral",
         icon: "LayoutDashboard",
       },
       { label: "Cursos", icon: "BookOpen" },
     ],
   },
-  "/config/empresas": {
+  "/dashboard/config/empresas": {
     title: "Configuração Empresas",
     items: [
       { label: "Dashboard", href: "/", icon: "Home" },
-      { label: "Configurações", href: "/config", icon: "Settings" },
+      { label: "Configurações", href: "/dashboard/config/geral", icon: "Settings" },
       { label: "Empresas", icon: "Building2" },
     ],
   },
@@ -218,12 +218,12 @@ export const breadcrumbConfig: Record<string, BreadcrumbConfig> = {
       { label: "Geral", icon: "Settings" },
     ],
   },
-  "/config/empresas/cupons": {
+  "/dashboard/config/empresas/cupons": {
     title: "Cupons de Desconto",
     items: [
       { label: "Dashboard", href: "/", icon: "Home" },
-      { label: "Configurações", href: "/config", icon: "Settings" },
-      { label: "Empresas", href: "/config/empresas", icon: "Building2" },
+      { label: "Configurações", href: "/dashboard/config/geral", icon: "Settings" },
+      { label: "Empresas", href: "/dashboard/config/empresas", icon: "Building2" },
       { label: "Cupons", icon: "Tag" },
     ],
   },
@@ -256,6 +256,112 @@ export const breadcrumbConfig: Record<string, BreadcrumbConfig> = {
       { label: "Empresas", href: "/dashboard/empresas", icon: "Building2" },
       { label: "Vagas", href: "/dashboard/empresas/vagas", icon: "Briefcase" },
       { label: "Cadastrar", icon: "FileText" },
+    ],
+  },
+  "/dashboard/marketing/ouvidoria": {
+    title: "Marketing - Ouvidoria",
+    items: [
+      { label: "Dashboard", href: "/", icon: "Home" },
+      { label: "Marketing", icon: "Mail" },
+      { label: "Ouvidoria", icon: "Info" },
+    ],
+  },
+  "/dashboard/marketing/newsletter": {
+    title: "E-mails",
+    items: [
+      { label: "Dashboard", href: "/", icon: "Home" },
+      { label: "E-mails", icon: "Mail" },
+    ],
+  },
+  "/dashboard/marketing/emails": {
+    title: "E-mails",
+    items: [
+      { label: "Dashboard", href: "/", icon: "Home" },
+      { label: "E-mails", icon: "Mail" },
+    ],
+  },
+  "/dashboard/marketing/listas": {
+    title: "Listas",
+    items: [
+      { label: "Dashboard", href: "/", icon: "Home" },
+      { label: "Marketing", icon: "Mail" },
+      { label: "Listas", icon: "Folder" },
+    ],
+  },
+  "/dashboard/marketing/listas/criar": {
+    title: "Criar Lista",
+    items: [
+      { label: "Dashboard", href: "/", icon: "Home" },
+      { label: "Marketing", href: "/dashboard/marketing/listas", icon: "Mail" },
+      { label: "Listas", href: "/dashboard/marketing/listas", icon: "Folder" },
+      { label: "Criar", icon: "Plus" },
+    ],
+  },
+  "/dashboard/marketing/listas/[id]/editar": {
+    title: "Editar Lista",
+    items: [
+      { label: "Dashboard", href: "/", icon: "Home" },
+      { label: "Marketing", href: "/dashboard/marketing/listas", icon: "Mail" },
+      { label: "Listas", href: "/dashboard/marketing/listas", icon: "Folder" },
+      { label: "Editar", icon: "Edit" },
+    ],
+  },
+  "/dashboard/marketing/emails/criar": {
+    title: "Criar E-mail",
+    items: [
+      { label: "Dashboard", href: "/", icon: "Home" },
+      { label: "E-mails", href: "/dashboard/marketing/emails", icon: "Mail" },
+      { label: "Criar", icon: "Plus" },
+    ],
+  },
+  "/dashboard/marketing/emails/editor": {
+    title: "Editor de E-mail",
+    items: [
+      { label: "Dashboard", href: "/", icon: "Home" },
+      { label: "E-mails", href: "/dashboard/marketing/emails", icon: "Mail" },
+      { label: "Editor", icon: "Edit" },
+    ],
+  },
+  "/dashboard/marketing/emails/[id]/editar": {
+    title: "Editar E-mail",
+    items: [
+      { label: "Dashboard", href: "/", icon: "Home" },
+      { label: "E-mails", href: "/dashboard/marketing/emails", icon: "Mail" },
+      { label: "Editar", icon: "Edit" },
+    ],
+  },
+  "/dashboard/marketing/popup": {
+    title: "Popup",
+    items: [
+      { label: "Dashboard", href: "/", icon: "Home" },
+      { label: "Marketing", icon: "Mail" },
+      { label: "Popup", icon: "Layout" },
+    ],
+  },
+  "/dashboard/marketing/popup/criar": {
+    title: "Criar Popup",
+    items: [
+      { label: "Dashboard", href: "/", icon: "Home" },
+      { label: "Marketing", href: "/dashboard/marketing/popup", icon: "Mail" },
+      { label: "Popup", href: "/dashboard/marketing/popup", icon: "Layout" },
+      { label: "Criar", icon: "Plus" },
+    ],
+  },
+  "/dashboard/marketing/popup/editor": {
+    title: "Editor de Popup",
+    items: [
+      { label: "Dashboard", href: "/", icon: "Home" },
+      { label: "Marketing", href: "/dashboard/marketing/popup", icon: "Mail" },
+      { label: "Popup", href: "/dashboard/marketing/popup", icon: "Layout" },
+      { label: "Editor", icon: "Edit" },
+    ],
+  },
+  "/dashboard/marketing/contatos": {
+    title: "Contatos",
+    items: [
+      { label: "Dashboard", href: "/", icon: "Home" },
+      { label: "Marketing", icon: "Mail" },
+      { label: "Contatos", icon: "Users" },
     ],
   },
   "/dashboard/empresas/candidatos": {
@@ -606,20 +712,20 @@ export const breadcrumbConfig: Record<string, BreadcrumbConfig> = {
       { label: "Criar", icon: "Plus" },
     ],
   },
-  "/config/candidatos": {
+  "/dashboard/config/candidatos": {
     title: "Configuração Candidatos",
     items: [
       { label: "Dashboard", href: "/", icon: "Home" },
-      { label: "Configurações", href: "/config", icon: "Settings" },
+      { label: "Configurações", href: "/dashboard/config/geral", icon: "Settings" },
       { label: "Candidatos", icon: "Users" },
     ],
   },
-  "/config/candidatos/status-processos": {
+  "/dashboard/config/candidatos/status-processos": {
     title: "Status de Processos",
     items: [
       { label: "Dashboard", href: "/", icon: "Home" },
-      { label: "Configurações", href: "/config", icon: "Settings" },
-      { label: "Candidatos", href: "/config/candidatos", icon: "Users" },
+      { label: "Configurações", href: "/dashboard/config/geral", icon: "Settings" },
+      { label: "Candidatos", href: "/dashboard/config/candidatos", icon: "Users" },
       { label: "Status de Processos", icon: "Settings" },
     ],
   },
@@ -794,6 +900,19 @@ export function useBreadcrumb(): BreadcrumbConfig {
         { label: "Dashboard", href: "/", icon: "Home" },
         { label: "Usuários", href: "/dashboard/usuarios", icon: "Users" },
         { label: "Detalhes do Usuário", icon: "Eye" },
+      ],
+    };
+  }
+
+  // Detalhes de contato: /dashboard/marketing/contatos/[id]
+  if (cleanPathname.match(/^\/dashboard\/marketing\/contatos\/[^/]+$/)) {
+    return {
+      title: "Detalhes do contato",
+      items: [
+        { label: "Dashboard", href: "/", icon: "Home" },
+        { label: "Marketing", href: "/dashboard/marketing/contatos", icon: "Mail" },
+        { label: "Contatos", href: "/dashboard/marketing/contatos", icon: "Users" },
+        { label: "Detalhes do contato", icon: "Eye" },
       ],
     };
   }

@@ -1,0 +1,1 @@
+export { RecipientListDeleteModal } from "./RecipientListDeleteModal";

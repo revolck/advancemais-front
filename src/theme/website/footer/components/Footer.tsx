@@ -8,24 +8,23 @@ import { FooterSection } from "./FooterSection";
 import { ContactInfo } from "./ContactInfo";
 import { FooterBottom } from "./FooterBottom";
 import { FOOTER_CONFIG } from "@/config/FooterNavigation";
-import type { InformacoesGeraisBackendResponse } from "@/api/websites/components";
 import type { HorarioItem } from "@/api/websites/components/informacoes-gerais/types";
 import { listInformacoesGerais } from "@/api/websites/components";
 
 export const Footer: React.FC = () => {
   const isMobile = useIsMobile();
-  const [info, setInfo] = React.useState<InformacoesGeraisBackendResponse | null>(
-    null,
-  );
   const [address, setAddress] = React.useState<string>(
     FOOTER_CONFIG.contact.address,
   );
-  const [phones, setPhones] = React.useState<string[]>(FOOTER_CONFIG.contact.phones);
+  const [phones, setPhones] = React.useState<string[]>(
+    FOOTER_CONFIG.contact.phones,
+  );
   const [hours, setHours] = React.useState<string>(FOOTER_CONFIG.contact.hours);
   const [socials, setSocials] = React.useState<
     Partial<Record<"facebook" | "linkedin" | "instagram" | "youtube", string>>
   >({});
   const [email, setEmail] = React.useState<string | undefined>(undefined);
+  const [workWithUsUrl, setWorkWithUsUrl] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     let mounted = true;
@@ -34,7 +33,6 @@ export const Footer: React.FC = () => {
         const data = await listInformacoesGerais();
         const first = Array.isArray(data) && data.length > 0 ? data[0] : null;
         if (!mounted || !first) return;
-        setInfo(first);
 
         const composedAddress = [
           first.endereco,
@@ -52,13 +50,15 @@ export const Footer: React.FC = () => {
         if (phoneList.length) setPhones(phoneList);
 
         // Horários: prioriza array `horarios`, senão usa `horarioDeFuncionamento`
-        let hoursStr = first.horarios && first.horarios.length
-          ? formatHorarios(first.horarios)
-          : first.horarioDeFuncionamento || "";
+        let hoursStr =
+          first.horarios && first.horarios.length
+            ? formatHorarios(first.horarios)
+            : first.horarioDeFuncionamento || "";
         hoursStr = hoursStr || FOOTER_CONFIG.contact.hours;
         setHours(hoursStr);
 
         setEmail(first.email || undefined);
+        setWorkWithUsUrl(normalizeExternalUrl(first.trabalheConoscoUrl));
 
         setSocials({
           facebook: first.facebook || "",
@@ -75,6 +75,26 @@ export const Footer: React.FC = () => {
       mounted = false;
     };
   }, []);
+
+  const footerSections = React.useMemo(() => {
+    return FOOTER_CONFIG.sections.map((section) => {
+      if (section.id !== "about") return section;
+
+      const links = [...section.links];
+      if (workWithUsUrl) {
+        links.splice(3, 0, {
+          label: "Trabalhe conosco",
+          href: workWithUsUrl,
+          external: true,
+        });
+      }
+
+      return {
+        ...section,
+        links,
+      };
+    });
+  }, [workWithUsUrl]);
 
   function formatHorarios(horarios: HorarioItem[]): string {
     // Ordem e labels em PT-BR
@@ -152,8 +172,25 @@ export const Footer: React.FC = () => {
     };
 
     // Monta frase com separador " e "
-    const parts = groups.map((g) => `${toDayRange(g.start, g.end)}, ${toTime(g)}`);
+    const parts = groups.map(
+      (g) => `${toDayRange(g.start, g.end)}, ${toTime(g)}`,
+    );
     return parts.join(" e ");
+  }
+
+  function normalizeExternalUrl(value: unknown): string | null {
+    if (typeof value !== "string") return null;
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+
+    try {
+      const url = new URL(trimmed);
+      return url.protocol === "http:" || url.protocol === "https:"
+        ? url.toString()
+        : null;
+    } catch {
+      return null;
+    }
   }
 
   return (
@@ -169,7 +206,7 @@ export const Footer: React.FC = () => {
 
             {/* Seções de Links - Alinhadas à esquerda */}
             <div className="grid grid-cols-1 gap-8">
-              {FOOTER_CONFIG.sections.map((section, index) => (
+              {footerSections.map((section, index) => (
                 <FooterSection
                   key={index}
                   section={section}
@@ -197,7 +234,7 @@ export const Footer: React.FC = () => {
               </div>
 
               {/* Seções de Navegação */}
-              {FOOTER_CONFIG.sections.map((section, index) => (
+              {footerSections.map((section, index) => (
                 <div key={index} className="flex-1 lg:basis-[17.5%]">
                   <FooterSection section={section} isMobile={isMobile} />
                 </div>
@@ -205,7 +242,10 @@ export const Footer: React.FC = () => {
 
               {/* Informações de Contato */}
               <div className="flex-1 lg:basis-[17.5%]">
-                <ContactInfo contact={{ address, phones, hours, email }} isMobile={isMobile} />
+                <ContactInfo
+                  contact={{ address, phones, hours, email }}
+                  isMobile={isMobile}
+                />
               </div>
             </div>
           </div>

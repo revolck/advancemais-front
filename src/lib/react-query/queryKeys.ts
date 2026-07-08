@@ -3,10 +3,8 @@ const createListKey =
   (filters: T) =>
     [scope, filters] as const;
 
-const createDetailKey =
-  (scope: string) =>
-  (id: string | number) =>
-    [scope, String(id)] as const;
+const createDetailKey = (scope: string) => (id: string | number) =>
+  [scope, String(id)] as const;
 
 const createCompositeDetailKey =
   (scope: string) =>
@@ -77,5 +75,28 @@ export const queryKeys = {
   },
   entrevistas: {
     list: createListKey<unknown>("admin-entrevistas-list"),
+  },
+  marketingPopups: {
+    list: createListKey<unknown>("admin-marketing-popups-list"),
+    detail: createDetailKey("admin-marketing-popup-detail"),
+    active: createListKey<unknown>("marketing-popups-active"),
+    contacts: createListKey<unknown>("admin-marketing-popup-contacts"),
+    contactDetail: createDetailKey("admin-marketing-popup-contact-detail"),
+    contactHistory: createDetailKey("admin-marketing-popup-contact-history"),
+    contactActivity: createDetailKey("admin-marketing-popup-contact-activity"),
+  },
+  marketingEmails: {
+    list: createListKey<unknown>("admin-marketing-emails-list"),
+    detail: createDetailKey("admin-marketing-email-detail"),
+  },
+  marketingRecipientLists: {
+    list: createListKey<unknown>("admin-marketing-recipient-lists"),
+    detail: createDetailKey("admin-marketing-recipient-list-detail"),
+    statuses: createListKey<unknown>("admin-marketing-recipient-list-statuses"),
+    folders: createListKey<unknown>("admin-marketing-recipient-list-folders"),
+    ruleOptions: () => ["admin-marketing-recipient-list-rule-options"] as const,
+    recipientsOptions: createListKey<unknown>(
+      "admin-marketing-recipient-list-recipients-options",
+    ),
   },
 };

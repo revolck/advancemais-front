@@ -12,6 +12,7 @@ interface NavLinkProps {
   hasDropdown?: boolean;
   className?: string;
   onClick?: (event: ReactMouseEvent<HTMLAnchorElement>) => void;
+  popupTarget?: string;
 }
 
 export const NavLink: React.FC<NavLinkProps> = ({
@@ -20,10 +21,12 @@ export const NavLink: React.FC<NavLinkProps> = ({
   hasDropdown = false,
   className = "",
   onClick,
+  popupTarget,
 }) => (
   <motion.a
     href={href}
     onClick={onClick}
+    data-popup-target={popupTarget}
     className={cn(
       "relative group text-base font-semibold text-gray-200 hover:text-[var(--secondary-color)] transition-colors duration-200 flex items-center py-1",
       className

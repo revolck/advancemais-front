@@ -76,6 +76,8 @@ import {
   formatSenioridade,
   formatVagaStatus,
   formatCurrency,
+  getProcessStatusBadgeClasses,
+  getProcessStatusLabel,
   getVagaStatusBadgeClasses,
   formatJornada,
 } from "../../admin/vaga-details/utils";
@@ -83,6 +85,7 @@ import { generateCurriculoPdf } from "../../admin/candidato-details/utils/genera
 import { EditarStatusCandidatoModal } from "../../admin/vaga-details/modal-acoes";
 import { VerCandidatoDetalheModal } from "../../admin/vaga-details/modal-acoes";
 import type { CandidatoItem as AdminVagaCandidatoItem } from "../../admin/vaga-details/types";
+import { normalizeCurriculoDetail } from "@/lib/candidatos/normalizeCurriculoDetail";
 
 interface RecruiterVagaDetailsViewProps {
   vagaId: string;
@@ -722,13 +725,15 @@ function CandidatosTab({ vaga }: { vaga: RecrutadorVagaResumo }) {
       cpf: item.candidato.cpf,
       candidaturaId: item.candidaturaId,
       curriculoId: item.curriculo?.id,
+      statusId: item.statusId ?? null,
       nome: item.candidato.nomeCompleto,
       email: item.candidato.email || "",
       telefone: item.candidato.telefone || undefined,
       avatarUrl: item.candidato.avatarUrl || null,
       dataInscricao: item.criadoEm || "",
-      status: (item.statusCandidatura ||
-        "RECEBIDA") as unknown as AdminVagaCandidatoItem["status"],
+      status: item.statusCandidatura || "Pendente",
+      statusLabel:
+        item.statusCandidaturaLabel ?? item.statusCandidatura ?? "Pendente",
       experiencia: item.experienciaResumo || undefined,
       formacao: item.formacaoResumo || undefined,
       createdAt: item.criadoEm || "",
@@ -766,12 +771,42 @@ function CandidatosTab({ vaga }: { vaga: RecrutadorVagaResumo }) {
         description: "O status do candidato foi atualizado com sucesso.",
       });
 
-      await queryClient.invalidateQueries({
-        queryKey: ["recrutador-vaga-candidatos", vaga.id],
+      const updatedStatusId = response.data?.statusId ?? statusId;
+      const updatedStatusLabel =
+        response.data?.statusLabel ??
+        response.data?.status ??
+        selectedCandidato?.statusLabel ??
+        selectedCandidato?.status ??
+        null;
+
+      queryClient.setQueryData(candidatosQueryKey, (current: any) => {
+        if (!current?.data?.items) return current;
+
+        return {
+          ...current,
+          data: {
+            ...current.data,
+            items: current.data.items.map((item: RecrutadorVagaCandidatosItem) =>
+              item.candidaturaId === candidaturaId
+                ? {
+                    ...item,
+                    statusId: updatedStatusId,
+                    statusCandidatura: updatedStatusLabel || item.statusCandidatura,
+                    statusCandidaturaLabel:
+                      updatedStatusLabel || item.statusCandidaturaLabel,
+                  }
+                : item,
+            ),
+          },
+        };
       });
 
       setIsEditModalOpen(false);
       setSelectedCandidato(null);
+
+      void queryClient.invalidateQueries({
+        queryKey: ["recrutador-vaga-candidatos", vaga.id],
+      });
     } catch (saveError) {
       toastCustom.error({
         title: "Erro ao atualizar",
@@ -811,7 +846,10 @@ function CandidatosTab({ vaga }: { vaga: RecrutadorVagaResumo }) {
           );
         }
 
-        curriculo = curriculoResponse.data;
+        curriculo = normalizeCurriculoDetail(
+          curriculoResponse.data,
+          selectedItem.candidato.id,
+        );
       }
 
       return {
@@ -835,21 +873,6 @@ function CandidatosTab({ vaga }: { vaga: RecrutadorVagaResumo }) {
     },
     [detailsCandidato, items],
   );
-
-  const statusBadgeClasses = (status?: string | null) => {
-    const normalized = String(status || "").toUpperCase();
-    if (["CONTRATADO", "APROVADO"].includes(normalized))
-      return "border-green-200 bg-green-50 text-green-700";
-    if (["RECUSADO", "REJEITADO", "CANCELADO", "DESISTIU"].includes(normalized))
-      return "border-red-200 bg-red-50 text-red-700";
-    if (
-      ["EM_PROCESSO", "EM_ANALISE", "EM_TRIAGEM", "ENTREVISTA"].includes(
-        normalized,
-      )
-    )
-      return "border-amber-200 bg-amber-50 text-amber-700";
-    return "border-slate-200 bg-slate-50 text-slate-700";
-  };
 
   const handleDownloadCurriculo = async (
     item: RecrutadorVagaCandidatosItem,
@@ -879,7 +902,12 @@ function CandidatosTab({ vaga }: { vaga: RecrutadorVagaResumo }) {
         );
       }
 
-      await generateCurriculoPdf(response.data, item.candidato.nomeCompleto, {
+      const normalizedCurriculo = normalizeCurriculoDetail(
+        response.data,
+        item.candidato.id,
+      );
+
+      await generateCurriculoPdf(normalizedCurriculo, item.candidato.nomeCompleto, {
         avatarUrl: item.candidato.avatarUrl ?? null,
         email: item.candidato.email ?? null,
         telefone: item.candidato.telefone ?? null,
@@ -1092,12 +1120,15 @@ function CandidatosTab({ vaga }: { vaga: RecrutadorVagaResumo }) {
                         <Badge
                           className={cn(
                             "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border",
-                            statusBadgeClasses(item.statusCandidatura),
+                            getProcessStatusBadgeClasses(
+                              item.statusCandidaturaLabel || item.statusCandidatura,
+                              item.statusId,
+                            ),
                           )}
                         >
-                          {item.statusCandidaturaLabel ||
-                            item.statusCandidatura ||
-                            "—"}
+                          {getProcessStatusLabel(
+                            item.statusCandidaturaLabel || item.statusCandidatura,
+                          )}
                         </Badge>
                       </TableCell>
                       <TableCell className="px-4 py-3">
@@ -1244,6 +1275,7 @@ function CandidatosTab({ vaga }: { vaga: RecrutadorVagaResumo }) {
         isOpen={isEditModalOpen}
         onOpenChange={setIsEditModalOpen}
         candidato={selectedCandidato}
+        currentStatusId={selectedCandidato?.statusId ?? undefined}
         onSaveStatus={handleSaveStatus}
         isSaving={isSavingStatus}
       />

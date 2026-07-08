@@ -21,6 +21,7 @@ export interface InformacoesGeraisBackendResponse {
   facebook?: string;
   instagram: string;
   youtube?: string;
+  trabalheConoscoUrl?: string | null;
   email: string;
   criadoEm?: string;
   atualizadoEm?: string;

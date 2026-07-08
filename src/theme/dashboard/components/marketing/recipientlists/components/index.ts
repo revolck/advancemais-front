@@ -1,0 +1,1 @@
+export { RecipientListsTable } from "./RecipientListsTable";

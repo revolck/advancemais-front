@@ -10,6 +10,7 @@ import ContatoForm from "./contato/ContatoForm";
 import AtendimentoForm from "./atendimento/AtendimentoForm";
 import ScriptsForm from "./scripts/ScriptsForm";
 import LoginForm from "./login/LoginForm";
+import WorkWithUsForm from "./trabalhe-conosco/WorkWithUsForm";
 
 export default function GeralPage() {
   const items: VerticalTabItem[] = [
@@ -60,6 +61,12 @@ export default function GeralPage() {
       label: "Login",
       icon: "LogIn",
       content: <LoginForm />,
+    },
+    {
+      value: "work-with-us",
+      label: "Trabalhe Conosco",
+      icon: "Briefcase",
+      content: <WorkWithUsForm />,
     },
   ];
 

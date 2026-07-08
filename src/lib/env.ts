@@ -173,6 +173,11 @@ export const apiConfig = {
  */
 export function buildApiUrl(endpoint: string): string {
   const cleanEndpoint = endpoint.startsWith("/") ? endpoint.slice(1) : endpoint;
+
+  if (typeof window !== "undefined" && cleanEndpoint.startsWith("api/")) {
+    return `/${cleanEndpoint}`;
+  }
+
   const cleanBaseUrl = env.apiBaseUrl.endsWith("/")
     ? env.apiBaseUrl.slice(0, -1)
     : env.apiBaseUrl;

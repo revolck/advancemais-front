@@ -9,6 +9,7 @@ export interface HorizontalTabItem {
   content: ReactNode;
   disabled?: boolean;
   icon?: IconName;
+  testId?: string;
 }
 
 export interface HorizontalTabsProps {

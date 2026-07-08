@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   ButtonCustom,
   Icon,
+  MultiSelectCustom,
   Stepper,
   StepperContent,
   StepperDescription,
@@ -323,7 +324,8 @@ export function EditTurmaForm({
     error: cursosError,
     refetch: refetchCursos,
   } = useCursosForSelect();
-  const { instrutores } = useInstrutoresForSelect();
+  const { instrutores, isLoading: loadingInstrutores } =
+    useInstrutoresForSelect();
 
   const { data: turma, isLoading: loadingTurma } = useQuery<CursoTurma>({
     queryKey: queryKeys.turmas.detail(cursoIdProp, turmaId),
@@ -1171,15 +1173,44 @@ export function EditTurmaForm({
                   </div>
 
                   <div className="grid grid-cols-1 gap-4">
-                    <SelectCustom
-                      mode="multiple"
-                      label="Instrutores vinculados"
-                      placeholder="Selecionar instrutores"
-                      options={instrutores}
-                      value={instrutorIds}
-                      onChange={setInstrutorIds}
-                      helperText="Vínculo institucional da turma. O dono explícito de aula, prova ou atividade continua prevalecendo."
-                    />
+                    {loadingInstrutores ? (
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium">
+                          Instrutores vinculados
+                        </Label>
+                        <Skeleton className="h-12 w-full" />
+                      </div>
+                    ) : (
+                      <MultiSelectCustom
+                        label="Instrutores vinculados"
+                        placeholder="Selecionar instrutores"
+                        options={instrutores}
+                        value={instrutores.filter((option) =>
+                          instrutorIds.includes(String(option.value)),
+                        )}
+                        onChange={(selectedOptions) =>
+                          setInstrutorIds(
+                            selectedOptions.map((option) =>
+                              String(option.value),
+                            ),
+                          )
+                        }
+                        emptyIndicator="Nenhum instrutor disponível"
+                        maxVisibleTags={6}
+                        hidePlaceholderWhenSelected={false}
+                        commandProps={{
+                          className: "overflow-visible",
+                        }}
+                        inputProps={{
+                          className: "text-sm!",
+                        }}
+                      />
+                    )}
+                    <p className="flex items-center gap-1.5 text-xs! text-muted-foreground">
+                      <Icon name="Info" className="h-4 w-4 shrink-0" />
+                      Vínculo institucional da turma. O dono explícito de aula,
+                      prova ou atividade continua prevalecendo.
+                    </p>
                   </div>
 
                   {periodoBloqueadoAposInicio && (

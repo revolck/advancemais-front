@@ -26,6 +26,7 @@ import {
   CurriculosTab,
   CandidaturasTab,
   EntrevistasTab,
+  HistoryTab,
   NotasTab,
   FrequenciaTab,
   EstagiosTab,
@@ -93,6 +94,10 @@ export function AlunoDetailsView({
     userRole === UserRole.RECRUTADOR || userRole === UserRole.INSTRUTOR;
   const canManageAluno = !isReadOnlyRole;
   const canAccessCareerTabs = !isInstrutor;
+  const canViewHistory =
+    userRole === UserRole.ADMIN ||
+    userRole === UserRole.MODERADOR ||
+    userRole === UserRole.PEDAGOGICO;
   const canLiberarAcessoAluno = useMemo(() => {
     const statusPendente = alunoData?.status?.toUpperCase() === "PENDENTE";
     if (!statusPendente) return false;
@@ -307,6 +312,16 @@ export function AlunoDetailsView({
                 isLoading={isReloading}
               />
             ),
+          } satisfies HorizontalTabItem,
+        ]
+      : []),
+    ...(canViewHistory
+      ? [
+          {
+            value: "historico",
+            label: "Histórico",
+            icon: "History",
+            content: <HistoryTab aluno={alunoData} isLoading={isReloading} />,
           } satisfies HorizontalTabItem,
         ]
       : []),

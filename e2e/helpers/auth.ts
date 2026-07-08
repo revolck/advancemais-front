@@ -82,6 +82,16 @@ function ensureAuthCacheDir(authCacheFile: string) {
   fs.mkdirSync(path.dirname(authCacheFile), { recursive: true });
 }
 
+function readAuthCacheFile(authCacheFile: string): LoginResponse | null {
+  if (!fs.existsSync(authCacheFile)) return null;
+
+  try {
+    return JSON.parse(fs.readFileSync(authCacheFile, "utf8")) as LoginResponse;
+  } catch {
+    return null;
+  }
+}
+
 function getJwtExpiration(token?: string | null): number | null {
   if (!token) return null;
 
@@ -117,10 +127,10 @@ function readCachedAuth(
     };
   }
 
-  if (!fs.existsSync(authCacheFile)) return null;
+  const cached = readAuthCacheFile(authCacheFile);
+  if (!cached) return null;
 
   try {
-    const cached = JSON.parse(fs.readFileSync(authCacheFile, "utf8")) as LoginResponse;
     const now = Date.now();
     const tokenExpiresAt = getJwtExpiration(cached.token);
     const refreshTokenExpiresAt = getJwtExpiration(cached.refreshToken);
@@ -151,6 +161,33 @@ function readCachedAuth(
 function writeCachedAuth(authCacheFile: string, auth: LoginResponse) {
   ensureAuthCacheDir(authCacheFile);
   fs.writeFileSync(authCacheFile, JSON.stringify(auth, null, 2));
+}
+
+async function refreshCachedAuth(authCacheFile: string): Promise<LoginResponse | null> {
+  const cached = readAuthCacheFile(authCacheFile);
+  if (!cached?.refreshToken) return null;
+
+  const refreshTokenExpiresAt = getJwtExpiration(cached.refreshToken);
+  if (refreshTokenExpiresAt && Date.now() >= refreshTokenExpiresAt - 60_000) {
+    return null;
+  }
+
+  const response = await fetch(`${BASE_URL}/api/v1/usuarios/refresh`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      refreshToken: cached.refreshToken,
+    }),
+  });
+
+  const body = (await response.json().catch(() => ({}))) as LoginResponse;
+
+  if (!response.ok || !body?.success || !body?.token || !body?.refreshToken) {
+    return null;
+  }
+
+  writeCachedAuth(authCacheFile, body);
+  return body;
 }
 
 function getPrimaryEndereco(profile?: UserProfileResponse["usuario"]) {
@@ -204,6 +241,13 @@ async function autenticarViaApi(options: {
     return cachedAuth;
   }
 
+  if (!options.env?.token || !options.env?.refreshToken) {
+    const refreshedAuth = await refreshCachedAuth(options.authCacheFile);
+    if (refreshedAuth) {
+      return refreshedAuth;
+    }
+  }
+
   const response = await fetch(`${BASE_URL}/api/v1/usuarios/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -228,6 +272,31 @@ async function autenticarViaApi(options: {
 
   writeCachedAuth(options.authCacheFile, body);
   return body;
+}
+
+export async function authenticateWithApiCredentials(
+  credentials: E2ECredentials,
+): Promise<Required<Pick<LoginResponse, "token" | "refreshToken">> & LoginResponse> {
+  const response = await fetch(`${BASE_URL}/api/v1/usuarios/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      documento: credentials.documento,
+      senha: credentials.senha,
+      rememberMe: false,
+    }),
+  });
+
+  const body = (await response.json().catch(() => ({}))) as LoginResponse;
+
+  if (!response.ok || !body.success || !body.token || !body.refreshToken) {
+    throw new Error(
+      body?.message || `Login API falhou com status ${response.status}`,
+    );
+  }
+
+  return body as Required<Pick<LoginResponse, "token" | "refreshToken">> &
+    LoginResponse;
 }
 
 async function autenticarAdminViaApi(): Promise<LoginResponse> {
@@ -373,7 +442,10 @@ async function loginWithAuthBody(
     }
   }, [firstName]);
 
-  await page.goto("/dashboard", { waitUntil: "domcontentloaded" });
+  await page.goto("/dashboard", {
+    waitUntil: "domcontentloaded",
+    timeout: 60_000,
+  });
 
   if (page.url().includes("/auth/login")) {
     throw new Error(
@@ -391,5 +463,13 @@ export async function loginAsAdmin(page: Page) {
 
 export async function loginAsInstrutor(page: Page) {
   const body = await getInstrutorApiAuth();
+  await loginWithAuthBody(page, body);
+}
+
+export async function loginWithCredentials(
+  page: Page,
+  credentials: E2ECredentials,
+) {
+  const body = await authenticateWithApiCredentials(credentials);
   await loginWithAuthBody(page, body);
 }

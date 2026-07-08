@@ -173,6 +173,37 @@ export {
   updateWebsiteScript,
   deleteWebsiteScript,
 } from "./scripts";
+export {
+  listPopups,
+  getPopupById,
+  createPopup,
+  updatePopup,
+  deletePopup,
+  listActivePopups,
+  createPopupContact,
+  listPopupContacts,
+} from "./popups";
+export {
+  listMarketingEmails,
+  getMarketingEmailById,
+  createMarketingEmail,
+  updateMarketingEmail,
+  deleteMarketingEmail,
+} from "./emailsmarketing";
+export {
+  listRecipientLists,
+  getRecipientListById,
+  createRecipientList,
+  updateRecipientList,
+  deleteRecipientList,
+  recalculateRecipientList,
+  listRecipientListFolders,
+  createRecipientListFolder,
+  updateRecipientListFolder,
+  deleteRecipientListFolder,
+  getRecipientListRuleOptions,
+  getRecipientListRecipientsOptions,
+} from "./recipientlists";
 
 export type {
   AboutApiResponse,
@@ -204,6 +235,20 @@ export type {
   CreateRecrutamentoPayload,
   UpdateRecrutamentoPayload,
 } from "./recrutamento/types";
+export type {
+  CreateMarketingEmailPayload,
+  ListMarketingEmailsParams,
+  ListMarketingEmailsResponse,
+  MarketingEmail,
+  MarketingEmailContentConfig,
+  MarketingEmailDetail,
+  MarketingEmailListItem,
+  MarketingEmailPagination,
+  MarketingEmailStatus,
+  MarketingEmailTargetConfig,
+  MarketingEmailType,
+  UpdateMarketingEmailPayload,
+} from "./emailsmarketing";
 
 export type {
   SobreEmpresaBackendResponse,
@@ -276,7 +321,11 @@ export {
   deleteTeam,
   updateTeamOrder,
 } from "./team";
-export type { TeamBackendResponse, CreateTeamPayload, UpdateTeamPayload } from "./team/types";
+export type {
+  TeamBackendResponse,
+  CreateTeamPayload,
+  UpdateTeamPayload,
+} from "./team/types";
 export type {
   HeaderPageBackendResponse,
   CreateHeaderPagePayload,
@@ -294,3 +343,4 @@ export type {
   CreateLoginImagePayload,
   UpdateLoginImagePayload,
 } from "./imagem-login/types";
+export type * from "./popups/types";

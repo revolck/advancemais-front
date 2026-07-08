@@ -12,7 +12,11 @@ import {
 } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
-import { formatDate } from "../utils";
+import {
+  formatDate,
+  getProcessStatusBadgeClasses,
+  getProcessStatusLabel,
+} from "../utils";
 import { getInitials } from "../utils/formatters";
 import { AvatarCustom } from "@/components/ui/custom/avatar";
 import {
@@ -41,12 +45,7 @@ import {
   getCandidaturaDetalhe,
   atualizarStatusCandidaturaById,
 } from "@/api/candidatos";
-import type {
-  CandidatoOverview,
-  Candidatura,
-  CandidatosFilters,
-  Curriculo,
-} from "@/api/candidatos/types";
+import type { CandidatoOverview, CandidatosFilters, Curriculo } from "@/api/candidatos/types";
 import { generateCurriculoPdf } from "../../candidato-details/utils/generateCurriculoPdf";
 import { queryKeys } from "@/lib/react-query/queryKeys";
 import { toastCustom } from "@/components/ui/custom/toast";
@@ -106,61 +105,6 @@ function isUUID(value: string): boolean {
     /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   return uuidRegex.test(value);
 }
-
-// Mapeia status do backend para o enum local exibido
-function mapBackendStatusToUi(
-  status?: Candidatura["status"],
-): CandidatoItem["status"] {
-  switch (status) {
-    case "CONTRATADO":
-      return "aprovado";
-    case "RECUSADO":
-    case "DESISTIU":
-    case "NAO_COMPARECEU":
-    case "ARQUIVADO":
-    case "CANCELADO":
-      return "rejeitado";
-    case "EM_ANALISE":
-    case "EM_TRIAGEM":
-    case "ENTREVISTA":
-    case "DESAFIO":
-    case "DOCUMENTACAO":
-      return "em_analise";
-    case "RECEBIDA":
-    default:
-      return "pendente";
-  }
-}
-
-// Função para obter cor do status
-const getStatusColor = (status: CandidatoItem["status"]) => {
-  switch (status) {
-    case "aprovado":
-      return "text-green-600 bg-green-50 border-green-200";
-    case "rejeitado":
-      return "text-red-600 bg-red-50 border-red-200";
-    case "em_analise":
-      return "text-yellow-600 bg-yellow-50 border-yellow-200";
-    case "pendente":
-    default:
-      return "text-gray-600 bg-gray-50 border-gray-200";
-  }
-};
-
-// Função para obter label do status
-const getStatusLabel = (status: CandidatoItem["status"]) => {
-  switch (status) {
-    case "aprovado":
-      return "Aprovado";
-    case "rejeitado":
-      return "Rejeitado";
-    case "em_analise":
-      return "Em Análise";
-    case "pendente":
-    default:
-      return "Pendente";
-  }
-};
 
 // Extrai resumo de experiência do currículo
 function getExperienciaSummary(candidato: CandidatoOverview): string {
@@ -398,7 +342,16 @@ export function CandidatosTab({ vaga }: AboutTabProps) {
         const candidatura = (cand.candidaturas || []).find(
           (c) => c.vagaId === vaga.id,
         );
-        const statusUI = mapBackendStatusToUi(candidatura?.status);
+        const statusNome =
+          (candidatura as any)?.statusProcessosCandidatos?.nome ||
+          (candidatura as any)?.status_processo?.nome ||
+          candidatura?.status ||
+          null;
+        const statusId =
+          (candidatura as any)?.statusId ||
+          (candidatura as any)?.statusProcessosCandidatos?.id ||
+          (candidatura as any)?.status_processo?.id ||
+          null;
         const aplicadaEm = candidatura?.aplicadaEm || cand.criadoEm;
 
         // Fallback seguro para o nome: se vier vazio ou for UUID, mostra email
@@ -427,7 +380,9 @@ export function CandidatosTab({ vaga }: AboutTabProps) {
           telefone: cand.telefone ?? undefined,
           avatarUrl: cand.avatarUrl,
           dataInscricao: aplicadaEm,
-          status: statusUI,
+          status: statusNome || "Pendente",
+          statusLabel: statusNome,
+          statusId,
           experiencia,
           formacao,
           createdAt: aplicadaEm,
@@ -564,24 +519,55 @@ export function CandidatosTab({ vaga }: AboutTabProps) {
   const handleSaveStatus = async (candidaturaId: string, statusId: string) => {
     setIsSavingStatus(true);
     try {
-      await atualizarStatusCandidaturaById(candidaturaId, statusId);
+      const response = await atualizarStatusCandidaturaById(
+        candidaturaId,
+        statusId,
+      );
+
+      const updatedStatusId = response?.candidatura?.statusId ?? statusId;
+      const updatedStatusLabel =
+        response?.candidatura?.status_processo?.nome ??
+        response?.candidatura?.status ??
+        selectedCandidato?.statusLabel ??
+        selectedCandidato?.status ??
+        null;
+
+      queryClient.setQueryData(
+        queryKeys.candidatos.byVagaFiltered(vaga.id, normalizedFilters),
+        (current: any) => {
+          if (!current?.candidatos) return current;
+
+          return {
+            ...current,
+            candidatos: current.candidatos.map((item: CandidatoItem) =>
+              item.candidaturaId === candidaturaId
+                ? {
+                    ...item,
+                    statusId: updatedStatusId,
+                    status: updatedStatusLabel || item.status,
+                    statusLabel: updatedStatusLabel || item.statusLabel,
+                  }
+                : item,
+            ),
+          };
+        },
+      );
 
       toastCustom.success({
         title: "Status atualizado",
         description: "O status do candidato foi atualizado com sucesso.",
       });
 
-      // Invalidar queries para atualizar a lista
-      await queryClient.invalidateQueries({
+      // Fecha a modal com a atualização otimista já aplicada e refaz a consulta em segundo plano.
+      setIsEditModalOpen(false);
+      setSelectedCandidato(null);
+
+      void queryClient.invalidateQueries({
         queryKey: queryKeys.candidatos.byVagaFiltered(
           vaga.id,
           normalizedFilters,
         ),
       });
-
-      // Fechar modal e limpar seleção
-      setIsEditModalOpen(false);
-      setSelectedCandidato(null);
     } catch (error) {
       console.error("Erro ao atualizar status:", error);
       toastCustom.error({
@@ -750,11 +736,15 @@ export function CandidatosTab({ vaga }: AboutTabProps) {
         {/* Status */}
         <td className="px-4 py-3">
           <span
-            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(
-              candidato.status,
-            )}`}
+            className={cn(
+              "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border",
+              getProcessStatusBadgeClasses(
+                candidato.statusLabel || candidato.status,
+                candidato.statusId,
+              ),
+            )}
           >
-            {getStatusLabel(candidato.status)}
+            {getProcessStatusLabel(candidato.statusLabel || candidato.status)}
           </span>
         </td>
 
@@ -1086,6 +1076,7 @@ export function CandidatosTab({ vaga }: AboutTabProps) {
         isOpen={isEditModalOpen}
         onOpenChange={setIsEditModalOpen}
         candidato={selectedCandidato}
+        currentStatusId={selectedCandidato?.statusId ?? undefined}
         onSaveStatus={handleSaveStatus}
         isSaving={isSavingStatus}
       />

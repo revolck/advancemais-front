@@ -97,6 +97,7 @@ export function HorizontalTabs({
                   key={item.value}
                   value={item.value}
                   disabled={item.disabled}
+                  data-testid={item.testId}
                   className={cn(
                     "group relative flex cursor-pointer items-center gap-2 rounded-full px-5 py-2 text-sm font-medium",
                     "transition-all duration-200 ease-out",

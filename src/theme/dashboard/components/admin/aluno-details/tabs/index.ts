@@ -6,3 +6,4 @@ export { EntrevistasTab } from "./EntrevistasTab";
 export { NotasTab } from "./NotasTab";
 export { FrequenciaTab } from "./FrequenciaTab";
 export { EstagiosTab } from "./EstagiosTab";
+export { HistoryTab } from "./HistoryTab";

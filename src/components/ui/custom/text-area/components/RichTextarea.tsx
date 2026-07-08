@@ -192,6 +192,9 @@ const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
       name,
       id,
       autoFocus,
+      showHeadingSelect = true,
+      minEditorHeight = 250,
+      maxEditorHeight = 1000,
       ...props
     },
     ref,
@@ -233,8 +236,8 @@ const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
     const charCount = plainTextValue.length;
 
     // Constantes de altura
-    const MIN_HEIGHT = 250;
-    const MAX_HEIGHT = 1000;
+    const MIN_HEIGHT = minEditorHeight;
+    const MAX_HEIGHT = maxEditorHeight;
 
     // Função para ajustar altura automaticamente baseada no conteúdo
     const adjustHeight = React.useCallback(() => {
@@ -372,7 +375,7 @@ const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
           const actionMap: Record<string, string> = {
             strong: "bold",
             em: "italic",
-            del: "strikethrough",
+            u: "underline",
           };
 
           if (actionMap[tagName]) {
@@ -692,7 +695,7 @@ const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
       const actionToTagMap: Record<string, string> = {
         bold: "strong",
         italic: "em",
-        strikethrough: "del",
+        underline: "u",
       };
 
       const tagName = actionToTagMap[format];
@@ -1180,7 +1183,7 @@ const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
             return;
           case "u":
             e.preventDefault();
-            toggleFormat("strikethrough");
+            toggleFormat("underline");
             return;
           case "k": // Ctrl+K para adicionar link
             e.preventDefault();
@@ -1317,6 +1320,7 @@ const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
             activeLink={activeLink}
             onHeadingChange={handleHeadingChange}
             onToolbarAction={handleToolbarAction}
+            showHeadingSelect={showHeadingSelect}
           />
 
           <div className="flex-1 overflow-hidden flex flex-col min-h-0 relative">

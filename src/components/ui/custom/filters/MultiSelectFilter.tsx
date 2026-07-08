@@ -84,7 +84,7 @@ export function MultiSelectFilter({
     }
 
     setTemp((prev) =>
-      prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]
+      prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value],
     );
   };
 
@@ -150,7 +150,7 @@ export function MultiSelectFilter({
               "bg-transparent hover:bg-gray-300/10 rounded-md border",
               "text-base transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm aria-invalid:ring-destructive/20 aria-invalid:border-destructive w-full text-foreground focus-visible:border-ring/20 focus-visible:ring-ring/50 focus-visible:ring-[1px] h-12",
               "text-foreground font-medium text-sm",
-              "shadow-none cursor-pointer"
+              "shadow-none cursor-pointer",
             )}
           >
             <span
@@ -158,7 +158,7 @@ export function MultiSelectFilter({
                 "truncate text-left",
                 selectedValues.length === 0
                   ? "text-muted-foreground"
-                  : "text-foreground"
+                  : "text-foreground",
               )}
             >
               {displayText}
@@ -167,7 +167,7 @@ export function MultiSelectFilter({
               className={cn(
                 "ml-2 h-4 w-4 shrink-0 transition-transform duration-200",
                 isOpen && "rotate-180",
-                "text-muted-foreground"
+                "text-muted-foreground",
               )}
             />
           </Button>
@@ -176,7 +176,7 @@ export function MultiSelectFilter({
           className={cn(
             "p-0 z-[9999]",
             "bg-popover border-border/60 rounded-[10px] shadow-lg",
-            "animate-in fade-in-0 zoom-in-95 duration-200"
+            "animate-in fade-in-0 zoom-in-95 duration-200",
           )}
           style={{
             width: "var(--radix-dropdown-menu-trigger-width)",
@@ -199,7 +199,7 @@ export function MultiSelectFilter({
                   checkedCount > 0
                     ? "text-[var(--secondary-color)] hover:text-[var(--secondary-color)]/90 cursor-pointer"
                     : "text-muted-foreground",
-                  "disabled:text-muted-foreground disabled:cursor-not-allowed"
+                  "disabled:text-muted-foreground disabled:cursor-not-allowed",
                 )}
               >
                 Limpar
@@ -216,7 +216,7 @@ export function MultiSelectFilter({
                     className={cn(
                       "flex items-center space-x-2.5 p-2 -mx-1",
                       "hover:bg-gray-200/10 rounded-lg transition-all duration-200",
-                      "group"
+                      "group",
                     )}
                   >
                     <CheckboxCustom
@@ -230,7 +230,7 @@ export function MultiSelectFilter({
                       className={cn(
                         "text-sm leading-none cursor-pointer flex-1 truncate",
                         "text-foreground group-hover:text-foreground/90",
-                        "transition-colors duration-150"
+                        "transition-colors duration-150",
                       )}
                     >
                       {opt.label}

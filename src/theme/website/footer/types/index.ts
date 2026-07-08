@@ -3,9 +3,12 @@ export interface FooterLink {
   href: string;
   external?: boolean;
   icon?: string;
+  disabled?: boolean;
+  popupTarget?: string;
 }
 
 export interface FooterSection {
+  id?: string;
   title: string;
   icon?: string;
   links: FooterLink[];

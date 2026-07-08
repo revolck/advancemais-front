@@ -14,6 +14,7 @@ export type BrevoErrorCode =
   | "ACCOUNT_INACTIVE"
   | "MISSING_PHONE"
   | "PRODUCTION_BLOCKED"
+  | "BREVO_DELIVERY_FAILED"
   | "SEND_ERROR"
   | "INTERNAL_ERROR";
 

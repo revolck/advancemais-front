@@ -128,6 +128,75 @@ export const websiteRoutes = {
     delete: (id: string) => `${prefix}/website/slider/${id}`,
     reorder: (id: string) => `${prefix}/website/slider/${id}/reorder`,
   },
+  popups: {
+    list: () => `${prefix}/website/popups`,
+    create: () => `${prefix}/website/popups`,
+    get: (id: string) => `${prefix}/website/popups/${encodeURIComponent(id)}`,
+    update: (id: string) =>
+      `${prefix}/website/popups/${encodeURIComponent(id)}`,
+    delete: (id: string) =>
+      `${prefix}/website/popups/${encodeURIComponent(id)}`,
+    active: () => `${prefix}/website/popups/active`,
+    createContact: (id: string) =>
+      `${prefix}/website/popups/${encodeURIComponent(id)}/contacts`,
+    contacts: () => `${prefix}/website/popups/contacts`,
+    contact: (id: string) =>
+      `${prefix}/website/popups/contacts/${encodeURIComponent(id)}`,
+    contactHistory: (id: string) =>
+      `${prefix}/website/popups/contacts/${encodeURIComponent(id)}/history`,
+    contactActivity: (id: string) =>
+      `${prefix}/website/popups/contacts/${encodeURIComponent(id)}/activity`,
+    contactNotes: (id: string) =>
+      `${prefix}/website/popups/contacts/${encodeURIComponent(id)}/notes`,
+    contactNote: (id: string, noteId: string) =>
+      `${prefix}/website/popups/contacts/${encodeURIComponent(id)}/notes/${encodeURIComponent(noteId)}`,
+    contactInterests: (id: string) =>
+      `${prefix}/website/popups/contacts/${encodeURIComponent(id)}/interests`,
+    contactInterest: (id: string, interestId: string) =>
+      `${prefix}/website/popups/contacts/${encodeURIComponent(id)}/interests/${encodeURIComponent(interestId)}`,
+    contactOpportunities: (id: string) =>
+      `${prefix}/website/popups/contacts/${encodeURIComponent(id)}/opportunities`,
+    contactOpportunity: (id: string, opportunityId: string) =>
+      `${prefix}/website/popups/contacts/${encodeURIComponent(id)}/opportunities/${encodeURIComponent(opportunityId)}`,
+  },
+  emailsMarketing: {
+    list: () => `${prefix}/website/emails-marketing`,
+    create: () => `${prefix}/website/emails-marketing`,
+    filterOptions: () =>
+      `${prefix}/website/emails-marketing/options/filters`,
+    recipientOptions: () =>
+      `${prefix}/website/emails-marketing/options/recipients`,
+    get: (id: string) =>
+      `${prefix}/website/emails-marketing/${encodeURIComponent(id)}`,
+    update: (id: string) =>
+      `${prefix}/website/emails-marketing/${encodeURIComponent(id)}`,
+    delete: (id: string) =>
+      `${prefix}/website/emails-marketing/${encodeURIComponent(id)}`,
+  },
+  recipientLists: {
+    list: () => `${prefix}/website/recipient-lists`,
+    create: () => `${prefix}/website/recipient-lists`,
+    statuses: () => `${prefix}/website/recipient-lists/status`,
+    rulesOptions: () => `${prefix}/website/recipient-lists/options/rules`,
+    recipientsOptions: () =>
+      `${prefix}/website/recipient-lists/options/recipients`,
+    get: (id: string) =>
+      `${prefix}/website/recipient-lists/${encodeURIComponent(id)}`,
+    update: (id: string) =>
+      `${prefix}/website/recipient-lists/${encodeURIComponent(id)}`,
+    delete: (id: string) =>
+      `${prefix}/website/recipient-lists/${encodeURIComponent(id)}`,
+    recalculate: (id: string) =>
+      `${prefix}/website/recipient-lists/${encodeURIComponent(id)}/recalculate`,
+  },
+  recipientListFolders: {
+    list: () => `${prefix}/website/recipient-list-folders`,
+    create: () => `${prefix}/website/recipient-list-folders`,
+    update: (id: string) =>
+      `${prefix}/website/recipient-list-folders/${encodeURIComponent(id)}`,
+    delete: (id: string) =>
+      `${prefix}/website/recipient-list-folders/${encodeURIComponent(id)}`,
+  },
   banner: {
     list: () => `${prefix}/website/banner`,
     create: () => `${prefix}/website/banner`,

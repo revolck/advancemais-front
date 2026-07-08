@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import Image from "next/image";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -8,7 +9,12 @@ export const Logo: React.FC = () => {
   const isMobile = useIsMobile();
 
   return (
-    <div className="flex items-center flex-shrink-0">
+    <Link
+      href="/"
+      data-popup-target="website-logo"
+      aria-label="Ir para a página inicial"
+      className="flex flex-shrink-0 items-center"
+    >
       <Image
         src="/images/logos/logo_branco.webp"
         alt={`Logo ${isMobile ? "Mobile" : "Desktop"}`}
@@ -17,6 +23,6 @@ export const Logo: React.FC = () => {
         quality={100}
         className={isMobile ? "h-3 w-auto" : "h-5 w-auto"}
       />
-    </div>
+    </Link>
   );
 };

@@ -452,6 +452,21 @@ export function GeralConfigPanel({
   const [isEmailTestModalOpen, setIsEmailTestModalOpen] = React.useState(false);
   const [emailTestRecipient, setEmailTestRecipient] = React.useState("");
 
+  const buildEmailTestFailureMessage = React.useCallback(
+    (errorMessage?: string | null) => {
+      if (!errorMessage) {
+        return "A Brevo não confirmou o envio real. Revise a chave ativa, o remetente e os IPs autorizados.";
+      }
+
+      if (errorMessage.includes("HTTP request failed")) {
+        return "A Brevo não confirmou o envio real. A chamada da API falhou antes da entrega. Verifique os IPs autorizados e a chave ativa.";
+      }
+
+      return `A Brevo não confirmou o envio real. Detalhe: ${errorMessage}`;
+    },
+    [],
+  );
+
   React.useEffect(() => {
     if (!group) return;
 
@@ -617,12 +632,17 @@ export function GeralConfigPanel({
         throw new Error(response.message || "Não foi possível enviar.");
       }
 
+      if (response.data.simulated === true) {
+        toastCustom.error({
+          title: "Envio não confirmado",
+          description: buildEmailTestFailureMessage(response.data.error),
+        });
+        return;
+      }
+
       toastCustom.success({
         title: "Teste enviado",
-        description:
-          response.data.simulated === true
-            ? `O teste foi simulado para ${recipient}.`
-            : `O teste foi enviado para ${recipient}.`,
+        description: `O teste foi enviado para ${recipient}.`,
       });
       setIsEmailTestModalOpen(false);
       setEmailTestRecipient("");

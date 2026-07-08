@@ -7,12 +7,14 @@ export interface CandidatoItem {
   cpf?: string;
   candidaturaId?: string;
   curriculoId?: string;
+  statusId?: string | null;
   nome: string;
   email: string;
   telefone?: string;
   avatarUrl?: string | null;
   dataInscricao: string;
-  status: "pendente" | "aprovado" | "rejeitado" | "em_analise";
+  status: string;
+  statusLabel?: string | null;
   experiencia?: string;
   formacao?: string;
   createdAt: string;

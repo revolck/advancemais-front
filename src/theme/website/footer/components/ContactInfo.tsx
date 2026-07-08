@@ -10,6 +10,24 @@ interface ContactInfoProps {
 }
 
 export const ContactInfo: React.FC<ContactInfoProps> = ({ contact }) => {
+  const formatPhoneDisplay = (phone: string) => {
+    const rawDigits = phone.replace(/\D/g, "");
+    const digits =
+      rawDigits.length > 11 && rawDigits.startsWith("55")
+        ? rawDigits.slice(2)
+        : rawDigits;
+
+    if (digits.length === 11) {
+      return digits.replace(/^(\d{2})(\d{5})(\d{4})$/, "($1) $2-$3");
+    }
+
+    if (digits.length === 10) {
+      return digits.replace(/^(\d{2})(\d{4})(\d{4})$/, "($1) $2-$3");
+    }
+
+    return phone;
+  };
+
   return (
     <div className="flex-1">
       {/* Horário de Atendimento */}
@@ -26,9 +44,7 @@ export const ContactInfo: React.FC<ContactInfoProps> = ({ contact }) => {
         </div>
         <ul className="space-y-2">
           <li>
-            <p className="text-gray-400! text-sm! mb-0!">
-              {contact.hours}
-            </p>
+            <p className="text-gray-400! text-sm! mb-0!">{contact.hours}</p>
           </li>
         </ul>
       </div>
@@ -52,7 +68,7 @@ export const ContactInfo: React.FC<ContactInfoProps> = ({ contact }) => {
                 href={`tel:${phone.replace(/\D/g, "")}`}
                 className="text-gray-400! hover:text-white! transition-colors! duration-200! text-sm! mb-0!"
               >
-                {phone}
+                {formatPhoneDisplay(phone)}
               </a>
             </li>
           ))}

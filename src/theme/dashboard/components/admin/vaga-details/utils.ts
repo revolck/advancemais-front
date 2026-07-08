@@ -121,6 +121,50 @@ export function getVagaStatusBadgeClasses(status?: string | null): string {
   }
 }
 
+const STATUS_BADGE_PALETTE = [
+  "border-sky-200 bg-sky-50 text-sky-700",
+  "border-emerald-200 bg-emerald-50 text-emerald-700",
+  "border-amber-200 bg-amber-50 text-amber-700",
+  "border-violet-200 bg-violet-50 text-violet-700",
+  "border-rose-200 bg-rose-50 text-rose-700",
+  "border-cyan-200 bg-cyan-50 text-cyan-700",
+  "border-lime-200 bg-lime-50 text-lime-700",
+  "border-fuchsia-200 bg-fuchsia-50 text-fuchsia-700",
+  "border-orange-200 bg-orange-50 text-orange-700",
+  "border-teal-200 bg-teal-50 text-teal-700",
+] as const;
+
+function hashString(value: string): number {
+  let hash = 0;
+
+  for (let index = 0; index < value.length; index += 1) {
+    hash = (hash * 31 + value.charCodeAt(index)) >>> 0;
+  }
+
+  return hash;
+}
+
+export function getProcessStatusBadgeClasses(
+  status?: string | null,
+  statusId?: string | null,
+): string {
+  const seed = String(statusId || status || "status-default")
+    .trim()
+    .toLowerCase();
+  const paletteIndex = hashString(seed) % STATUS_BADGE_PALETTE.length;
+
+  return STATUS_BADGE_PALETTE[paletteIndex];
+}
+
+export function getProcessStatusLabel(status?: string | null): string {
+  if (!status) return "—";
+
+  return String(status)
+    .replace(/_/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 export function toDateInputValue(value?: string | null): string {
   if (!value) return "";
   const date = new Date(value);

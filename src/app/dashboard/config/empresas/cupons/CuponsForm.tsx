@@ -12,7 +12,7 @@ import {
   updateCupom,
   deleteCupom,
 } from "@/api/cupons";
-import type { CupomDesconto } from "@/api/cupons/types";
+import type { CupomDesconto, CupomFormData } from "@/api/cupons/types";
 import { CupomRow } from "./components/CupomRow";
 import { CupomForm } from "./components/CupomForm";
 
@@ -21,7 +21,6 @@ function mapFromBackend(item: CupomDesconto): ListItem {
     id: item.id,
     title: item.codigo,
     // description removido do formulário
-    status: true, // Sempre ativo por padrão
     createdAt: item.criadoEm,
     updatedAt: item.atualizadoEm,
     // Dados específicos do cupom
@@ -30,6 +29,8 @@ function mapFromBackend(item: CupomDesconto): ListItem {
     valorFixo: item.valorFixo,
     aplicarEm: item.aplicarEm,
     aplicarEmTodosItens: item.aplicarEmTodosItens,
+    status: item.status === "PUBLICADO",
+    cupomStatus: item.status,
     limiteUsoTotalTipo: item.limiteUsoTotalTipo,
     limiteUsoTotalQuantidade: item.limiteUsoTotalQuantidade,
     limitePorUsuarioTipo: item.limitePorUsuarioTipo,
@@ -53,6 +54,7 @@ function mapToBackend(item: ListItem): CupomDesconto {
     valorFixo: item.valorFixo,
     aplicarEm: item.aplicarEm || "TODA_PLATAFORMA",
     aplicarEmTodosItens: item.aplicarEmTodosItens || false,
+    status: item.cupomStatus === "RASCUNHO" ? "RASCUNHO" : "PUBLICADO",
     limiteUsoTotalTipo: item.limiteUsoTotalTipo || "ILIMITADO",
     limiteUsoTotalQuantidade: item.limiteUsoTotalQuantidade,
     limitePorUsuarioTipo: item.limitePorUsuarioTipo || "ILIMITADO",
@@ -117,14 +119,17 @@ export function CuponsForm() {
 
         const response = await createCupom({
           codigo: data.title,
-          // descricao removido do formulário
           tipoDesconto: data.tipoDesconto || "PORCENTAGEM",
           valorPercentual: data.valorPercentual,
           valorFixo: data.valorFixo,
-          aplicarEm: data.aplicarEm || "TODA_PLATAFORMA",
+          aplicarEm: data.aplicarEm || "APENAS_ASSINATURA",
           aplicarEmTodosItens: data.aplicarEmTodosItens || false,
-          cursosIds: data.cursosAplicados?.map((c: any) => c.cursoId) || [],
-          // planosIds removido - cupons aplicam apenas em cursos
+          cursosIds:
+            data.cursosAplicados?.map((curso: any) => Number(curso.cursoId)) ||
+            [],
+          planosIds:
+            data.planosAplicados?.map((plano: any) => String(plano.planoId)) ||
+            [],
           limiteUsoTotalTipo: data.limiteUsoTotalTipo || "ILIMITADO",
           limiteUsoTotalQuantidade: data.limiteUsoTotalQuantidade,
           limitePorUsuarioTipo: data.limitePorUsuarioTipo || "ILIMITADO",
@@ -132,7 +137,6 @@ export function CuponsForm() {
           periodoTipo: data.periodoTipo || "ILIMITADO",
           periodoInicio: data.periodoInicio,
           periodoFim: data.periodoFim,
-          // ativo removido - sempre true por padrão
         });
 
         // Verificar se a resposta é um erro
@@ -171,8 +175,12 @@ export function CuponsForm() {
           valorFixo: updates.valorFixo,
           aplicarEm: updates.aplicarEm,
           aplicarEmTodosItens: updates.aplicarEmTodosItens,
-          cursosIds: updates.cursosAplicados?.map((c: any) => c.cursoId),
-          // planosIds removido - cupons aplicam apenas em cursos
+          cursosIds: updates.cursosAplicados?.map((curso: any) =>
+            Number(curso.cursoId),
+          ),
+          planosIds: updates.planosAplicados?.map((plano: any) =>
+            String(plano.planoId),
+          ),
           limiteUsoTotalTipo: updates.limiteUsoTotalTipo,
           limiteUsoTotalQuantidade: updates.limiteUsoTotalQuantidade,
           limitePorUsuarioTipo: updates.limitePorUsuarioTipo,
@@ -180,7 +188,11 @@ export function CuponsForm() {
           periodoTipo: updates.periodoTipo,
           periodoInicio: updates.periodoInicio,
           periodoFim: updates.periodoFim,
-          ativo: updates.status,
+          status:
+            updates.cupomStatus === "PUBLICADO" ||
+            updates.cupomStatus === "RASCUNHO"
+              ? updates.cupomStatus
+              : undefined,
         });
 
         // Verificar se a resposta é um erro
@@ -254,24 +266,34 @@ export function CuponsForm() {
       isLoading?: boolean
     ) => (
       <CupomForm
-        onSubmit={async (formData) => {
-          // Mapear CupomFormData para ListItem
+        onSubmit={async (formData: CupomFormData) => {
+          const isCourses = formData.orientacao === "COURSES";
+          const aplicarEm = isCourses
+            ? "APENAS_CURSOS"
+            : "APENAS_ASSINATURA";
+          const aplicarEmTodosItens = isCourses
+            ? formData.aplicacaoCupom === "TODOS_CURSOS"
+            : formData.aplicacaoCupom === "TODAS_ASSINATURAS";
+
           const listItemData: Omit<ListItem, "id" | "createdAt"> = {
             title: formData.codigo,
-            // description removido do formulário
-            status: true, // Sempre ativo por padrão
+            status: true,
+            cupomStatus: "PUBLICADO",
             createdAt: new Date().toISOString(),
             tipoDesconto: formData.tipoDesconto,
             valorPercentual: formData.valorPercentual,
             valorFixo: formData.valorFixo,
-            aplicarEm: "APENAS_CURSOS", // Fixo para cursos
-            aplicarEmTodosItens: formData.aplicarEmTodosItens,
+            aplicarEm,
+            aplicarEmTodosItens,
             cursosAplicados: formData.cursosIds.map((id: number) => ({
               cursoId: id,
               codigo: "",
               nome: "",
             })),
-            // planosAplicados removido - cupons aplicam apenas em cursos
+            planosAplicados: formData.planosIds.map((planoId) => ({
+              planoId,
+              nome: "",
+            })),
             limiteUsoTotalTipo: formData.limiteUsoTotalTipo,
             limiteUsoTotalQuantidade: formData.limiteUsoTotalQuantidade,
             limitePorUsuarioTipo: formData.limitePorUsuarioTipo,
@@ -300,23 +322,33 @@ export function CuponsForm() {
     ) => (
       <CupomForm
         cupom={mapToBackend(item)}
-        onSubmit={async (formData) => {
-          // Mapear CupomFormData para Partial<ListItem>
+        onSubmit={async (formData: CupomFormData) => {
+          const isCourses = formData.orientacao === "COURSES";
+          const aplicarEm = isCourses
+            ? "APENAS_CURSOS"
+            : "APENAS_ASSINATURA";
+          const aplicarEmTodosItens = isCourses
+            ? formData.aplicacaoCupom === "TODOS_CURSOS"
+            : formData.aplicacaoCupom === "TODAS_ASSINATURAS";
+
           const listItemData: Partial<ListItem> = {
             title: formData.codigo,
-            // description removido do formulário
-            status: true, // Sempre ativo por padrão
+            status: true,
+            cupomStatus: "PUBLICADO",
             tipoDesconto: formData.tipoDesconto,
             valorPercentual: formData.valorPercentual,
             valorFixo: formData.valorFixo,
-            aplicarEm: "APENAS_CURSOS", // Fixo para cursos
-            aplicarEmTodosItens: formData.aplicarEmTodosItens,
+            aplicarEm,
+            aplicarEmTodosItens,
             cursosAplicados: formData.cursosIds.map((id: number) => ({
               cursoId: id,
               codigo: "",
               nome: "",
             })),
-            // planosAplicados removido - cupons aplicam apenas em cursos
+            planosAplicados: formData.planosIds.map((planoId) => ({
+              planoId,
+              nome: "",
+            })),
             limiteUsoTotalTipo: formData.limiteUsoTotalTipo,
             limiteUsoTotalQuantidade: formData.limiteUsoTotalQuantidade,
             limitePorUsuarioTipo: formData.limitePorUsuarioTipo,

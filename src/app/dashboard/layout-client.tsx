@@ -13,6 +13,7 @@ import {
   GoogleConnectedModalController,
   RecoveryPaymentModalController,
 } from "@/theme/dashboard/components/rotinas";
+import { MarketingPopupRenderer } from "@/components/marketing-popups/MarketingPopupRenderer";
 
 interface DashboardLayoutClientProps {
   children: ReactNode;
@@ -168,7 +169,7 @@ export default function DashboardLayoutClient({
         setConfettiKey(config.confettiKey);
       }
     },
-    []
+    [],
   );
 
   // Efeito para manipulação do estado inicial
@@ -252,6 +253,7 @@ export default function DashboardLayoutClient({
       {/* Modais globais do dashboard (isoladas como microfrontends) */}
       <GoogleConnectedModalController onConfettiChange={handleConfettiChange} />
       <RecoveryPaymentModalController />
+      <MarketingPopupRenderer scope="DASHBOARD" />
 
       {/* Toast global */}
       <ToasterCustom />

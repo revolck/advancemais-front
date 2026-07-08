@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useSearchParams } from "next/navigation";
 import { VerticalTabs, type VerticalTabItem } from "@/components/ui/custom";
 
 import { getConfiguracoesGerais } from "@/api/configuracoes-gerais";
@@ -8,6 +9,7 @@ import type {
   ConfigCategory,
   ConfigCategoryGroup,
 } from "@/api/configuracoes-gerais/types";
+import { CuponsForm } from "@/app/dashboard/config/empresas/cupons/CuponsForm";
 import { toastCustom } from "@/components/ui/custom/toast";
 import { GeralConfigPanel } from "./components/GeralConfigPanel";
 
@@ -33,6 +35,7 @@ const TAB_ORDER: ConfigCategory[] = [
 ];
 
 export default function GeralConfigPage() {
+  const searchParams = useSearchParams();
   const [groups, setGroups] = React.useState<ConfigCategoryGroup[]>([]);
   const [loading, setLoading] = React.useState(true);
 
@@ -90,12 +93,26 @@ export default function GeralConfigPage() {
     ),
   }));
 
+  items.push({
+    value: "cupons",
+    label: "Cupons",
+    icon: "Tag",
+    content: <CuponsForm />,
+  });
+
+  const defaultTab = React.useMemo(() => {
+    const tab = searchParams?.get("tab");
+    return items.some((item) => item.value === tab)
+      ? (tab ?? "mercadopago")
+      : "mercadopago";
+  }, [items, searchParams]);
+
   return (
     <div className="bg-white rounded-3xl p-5 h-full min-h-[calc(100vh-8rem)] flex flex-col">
       <div className="flex-1 min-h-0">
         <VerticalTabs
           items={items}
-          defaultValue="mercadopago"
+          defaultValue={defaultTab}
           variant="spacious"
           size="sm"
           withAnimation

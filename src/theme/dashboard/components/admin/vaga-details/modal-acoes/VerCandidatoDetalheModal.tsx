@@ -553,6 +553,7 @@ export function VerCandidatoDetalheModal({
       value: "experiencia",
       label: "Experiências",
       icon: "Briefcase",
+      testId: "curriculo-tab-experiencia",
       badge: experiencias.length > 0 ? experiencias.length : undefined,
       content: experienciaContent,
     },

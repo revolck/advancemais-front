@@ -34,3 +34,23 @@ describe("dashboardRoutes cursos", () => {
     ).toBe(false);
   });
 });
+
+describe("dashboardRoutes config", () => {
+  it("protege as rotas reais de configuração em /dashboard/config", () => {
+    expect(
+      canAccessRoute("/dashboard/config/empresas", UserRole.ADMIN)
+    ).toBe(true);
+    expect(
+      canAccessRoute("/dashboard/config/empresas", UserRole.ALUNO_CANDIDATO)
+    ).toBe(false);
+  });
+
+  it("mantem acesso pedagogico apenas em configuracoes de cursos", () => {
+    expect(
+      canAccessRoute("/dashboard/config/cursos", UserRole.PEDAGOGICO)
+    ).toBe(true);
+    expect(
+      canAccessRoute("/dashboard/config/empresas", UserRole.PEDAGOGICO)
+    ).toBe(false);
+  });
+});

@@ -4,7 +4,6 @@ import React from "react";
 import { VerticalTabs, type VerticalTabItem } from "@/components/ui/custom";
 
 import PlanosForm from "./planos/PlanosForm";
-import { CuponsForm } from "./cupons/CuponsForm";
 import { CategoriasForm } from "./categorias/CategoriasForm";
 import { SubcategoriasForm } from "./subcategorias/SubcategoriasForm";
 
@@ -15,12 +14,6 @@ export default function PlanosDashboardPage() {
       label: "Planos",
       icon: "BadgeDollarSign",
       content: <PlanosForm />,
-    },
-    {
-      value: "Cupons",
-      label: "Cupons",
-      icon: "Tag",
-      content: <CuponsForm />,
     },
     {
       value: "Categorias",

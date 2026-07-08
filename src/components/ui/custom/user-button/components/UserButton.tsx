@@ -6,12 +6,13 @@ import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AvatarCustom } from "@/components/ui/custom/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Icon } from "@/components/ui/custom/Icons";
 import { cn } from "@/lib/utils";
 import { getUserProfile, logoutUserSession } from "@/api/usuarios";
@@ -32,13 +33,16 @@ interface User {
   role?: string;
 }
 
+const DASHBOARD_URL = "https://app.advancemais.com/dashboard";
+
 const UserButtonSkeleton = () => (
-  <div className="flex items-center justify-center gap-3 px-0">
-    <Skeleton className="h-8 w-8 rounded-full bg-white/20" />
-    <div className="hidden md:block">
+  <div className="flex items-center gap-2 rounded-full bg-white/10 px-2 py-1">
+    <Skeleton className="h-9 w-9 rounded-full bg-white/20" />
+    <div className="hidden min-w-0 md:block">
       <Skeleton className="h-4 w-24 bg-white/20" />
+      <Skeleton className="mt-1 h-3 w-32 bg-white/10" />
     </div>
-    <Skeleton className="h-3 w-3 rounded bg-white/10" />
+    <Skeleton className="h-4 w-4 rounded bg-white/10" />
   </div>
 );
 
@@ -78,8 +82,7 @@ export function UserButton({ className, onNavigate }: UserButtonProps) {
 
     const full = profileResponse.usuario.nomeCompleto?.trim();
     const parts = full ? full.split(" ") : [];
-    const firstName =
-      parts[0] || profileResponse.usuario.email.split("@")[0];
+    const firstName = parts[0] || profileResponse.usuario.email.split("@")[0];
     const lastName = parts.slice(1).join(" ") || undefined;
 
     return {
@@ -95,13 +98,33 @@ export function UserButton({ className, onNavigate }: UserButtonProps) {
   const menuItems = useMemo(() => {
     if (user?.role === "EMPRESA") {
       return [
-        { key: "upgrade", icon: "Sparkles" as const, label: "Fazer upgrade agora" },
+        {
+          key: "dashboard",
+          icon: "LayoutDashboard" as const,
+          label: "Meu painel",
+        },
+        {
+          key: "upgrade",
+          icon: "Sparkles" as const,
+          label: "Fazer upgrade agora",
+        },
         { key: "profile", icon: "User" as const, label: "Perfil" },
-        { key: "subscription", icon: "CreditCard" as const, label: "Assinatura" },
+        {
+          key: "subscription",
+          icon: "CreditCard" as const,
+          label: "Assinatura",
+        },
       ];
     }
 
-    return [{ key: "profile", icon: "User" as const, label: "Perfil" }];
+    return [
+      {
+        key: "dashboard",
+        icon: "LayoutDashboard" as const,
+        label: "Meu painel",
+      },
+      { key: "profile", icon: "User" as const, label: "Perfil" },
+    ];
   }, [user?.role]);
 
   const handleLogout = async () => {
@@ -127,7 +150,9 @@ export function UserButton({ className, onNavigate }: UserButtonProps) {
       onNavigate(key);
     } else {
       // Navegação padrão baseada na chave
-      if (key === "profile") {
+      if (key === "dashboard") {
+        window.location.assign(DASHBOARD_URL);
+      } else if (key === "profile") {
         router.push("/perfil");
       } else if (key === "upgrade") {
         router.push("/dashboard/upgrade");
@@ -138,13 +163,26 @@ export function UserButton({ className, onNavigate }: UserButtonProps) {
   };
 
   const displayName = user?.firstName ?? "";
+  const fullName = [user?.firstName, user?.lastName].filter(Boolean).join(" ");
+  const initials = fullName
+    .split(" ")
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+  const primaryItems = menuItems.filter((item) =>
+    ["dashboard", "profile"].includes(item.key),
+  );
+  const secondaryItems = menuItems.filter((item) =>
+    ["upgrade", "subscription"].includes(item.key),
+  );
 
   if (isLoading) {
     return (
       <div
         className={cn(
           "relative h-10 px-3 rounded-lg transition-all duration-200",
-          className
+          className,
         )}
       >
         <UserButtonSkeleton />
@@ -174,35 +212,39 @@ export function UserButton({ className, onNavigate }: UserButtonProps) {
         <Button
           type="button"
           variant="ghost"
+          data-popup-target="website-user-menu"
           className={cn(
-            "group relative h-10 pl-2 pr-3 rounded-full active:scale-95",
-            "transition-all duration-200 text-left text-white",
-            "hover:bg-white/10 focus-visible:outline-none focus-visible:ring-0",
-            className
+            "group relative h-auto rounded-full border border-white/10 bg-white/8 pl-2 pr-3 py-1.5 active:scale-95",
+            "transition-all duration-200 text-left text-white shadow-[0_10px_24px_-18px_rgba(15,23,42,0.8)] backdrop-blur-sm",
+            "hover:border-white/20 hover:bg-white/14 focus-visible:outline-none focus-visible:ring-0",
+            className,
           )}
         >
           <div className="flex items-center gap-2">
-              <AvatarCustom
-                name={displayName}
-                size="sm"
-                showStatus={false}
+            <Avatar className="size-9 rounded-full border border-white/20 bg-white/95 shadow-sm">
+              <AvatarImage
                 src={user?.avatarUrl ?? undefined}
+                alt={fullName || displayName}
               />
-            <div className="hidden md:flex flex-col leading-tight max-w-[160px] text-left">
-              <span className="text-sm font-semibold truncate text-[var(--secondary-color)]">
-                Bem-vindo(a), {displayName}
+              <AvatarFallback className="rounded-full bg-slate-100 text-sm font-semibold text-[var(--color-blue)]">
+                {initials || "US"}
+              </AvatarFallback>
+            </Avatar>
+            <div className="hidden max-w-[190px] min-w-0 md:flex md:flex-col md:leading-tight md:text-left">
+              <span className="truncate text-sm font-semibold text-white">
+                {fullName || displayName}
               </span>
-              <span className="text-[11px] text-white/70 truncate">
+              <span className="truncate text-xs text-white/68">
                 {user.email}
               </span>
             </div>
             <div
               className={cn(
-                "transition-transform duration-200",
-                isOpen ? "rotate-180" : "rotate-0"
+                "transition-transform duration-200 text-white/70",
+                isOpen ? "rotate-180" : "rotate-0",
               )}
             >
-              <Icon name="ChevronDown" size={14} className="text-white/70" />
+              <Icon name="ChevronDown" size={14} />
             </div>
           </div>
           <span className="sr-only">Menu do usuário</span>
@@ -212,45 +254,98 @@ export function UserButton({ className, onNavigate }: UserButtonProps) {
       <DropdownMenuContent
         align="end"
         sideOffset={8}
-        className="w-[230px] rounded-2xl border border-black/5 bg-white p-1 shadow-xl"
+        className="w-64 rounded-[22px] border border-slate-200 bg-white p-1.5 shadow-[0_20px_50px_-28px_rgba(15,23,42,0.38)]"
       >
-        <div className="py-1">
-          {menuItems.map((item) => (
-            <DropdownMenuItem
-              key={item.key}
-              className="px-3 py-2 cursor-pointer flex items-center gap-3 rounded-none hover:bg-gray-50 focus:bg-gray-50"
-              onClick={() => handleMenuClick(item.key)}
-            >
-              <div className="w-8 h-8 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center">
-                <Icon name={item.icon} size={16} />
+        <div className="mb-1 rounded-[18px] bg-slate-50 px-3 py-3">
+          <div className="flex items-center gap-3">
+            <Avatar className="size-10 rounded-full">
+              <AvatarImage
+                src={user?.avatarUrl ?? undefined}
+                alt={fullName || displayName}
+              />
+              <AvatarFallback className="rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-500 text-sm font-semibold text-white">
+                {initials || "US"}
+              </AvatarFallback>
+            </Avatar>
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-sm font-semibold text-slate-900">
+                {fullName || displayName}
               </div>
-              <span className="text-sm text-gray-900 font-medium">
-                {item.label}
-              </span>
-            </DropdownMenuItem>
-          ))}
+              <div className="truncate text-xs text-slate-500">
+                {user.email}
+              </div>
+            </div>
+          </div>
         </div>
 
-        <DropdownMenuSeparator className="my-0" />
+        <DropdownMenuSeparator className="mx-0 my-1 bg-slate-200/80" />
 
-          <DropdownMenuItem
-          className="px-3 py-2 cursor-pointer text-red-600 focus:text-red-700 hover:bg-red-50 focus:bg-red-50"
-            onClick={handleLogout}
-            disabled={isLoggingOut}
-          >
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-red-100 text-red-600 flex items-center justify-center">
-                {isLoggingOut ? (
-                <Icon name="Loader2" size={16} className="animate-spin" />
-                ) : (
-                <Icon name="LogOut" size={16} />
-                )}
-              </div>
-            <span className="text-sm font-medium">
-                  {isLoggingOut ? "Saindo..." : "Sair"}
-            </span>
-            </div>
-          </DropdownMenuItem>
+        <DropdownMenuGroup>
+          {primaryItems.map((item) => (
+            <DropdownMenuItem
+              key={item.key}
+              className="cursor-pointer gap-2.5 rounded-2xl px-3 py-3 text-sm font-medium text-slate-800"
+              onClick={() => handleMenuClick(item.key)}
+            >
+              <Icon
+                name={item.icon}
+                size={16}
+                className="text-slate-500 opacity-75"
+              />
+              <span>{item.label}</span>
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuGroup>
+
+        {secondaryItems.length > 0 ? (
+          <>
+            <DropdownMenuSeparator className="mx-0 my-1 bg-slate-200/80" />
+            <DropdownMenuGroup>
+              {secondaryItems.map((item) => (
+                <DropdownMenuItem
+                  key={item.key}
+                  className="cursor-pointer gap-2.5 rounded-2xl px-3 py-3 text-sm font-medium text-slate-800"
+                  onClick={() => handleMenuClick(item.key)}
+                >
+                  <Icon
+                    name={item.icon}
+                    size={16}
+                    className="text-slate-500 opacity-75"
+                  />
+                  <span className="flex-1">{item.label}</span>
+                  {item.key === "upgrade" ? (
+                    <span className="rounded-md bg-fuchsia-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-fuchsia-700">
+                      Pro
+                    </span>
+                  ) : null}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuGroup>
+          </>
+        ) : null}
+
+        <DropdownMenuSeparator className="mx-0 my-1 bg-slate-200/80" />
+
+        <DropdownMenuItem
+          className="cursor-pointer gap-2.5 rounded-2xl px-3 py-3 text-sm font-medium text-red-600 focus:bg-red-50 focus:text-red-700"
+          onClick={handleLogout}
+          disabled={isLoggingOut}
+        >
+          {isLoggingOut ? (
+            <Icon
+              name="Loader2"
+              size={16}
+              className="animate-spin text-red-500"
+            />
+          ) : (
+            <Icon
+              name="LogOut"
+              size={16}
+              className="text-red-500"
+            />
+          )}
+          <span>{isLoggingOut ? "Saindo..." : "Sair"}</span>
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

@@ -244,6 +244,7 @@ export async function listarCandidatosOverview(
       ...init,
       headers: buildAuthHeaders(init?.headers),
     },
+    cache: "no-cache",
   });
 }
 

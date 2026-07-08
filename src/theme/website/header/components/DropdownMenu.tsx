@@ -9,6 +9,12 @@ interface DropdownMenuProps {
   items: DropdownItemType[];
 }
 
+function getPopupTarget(href: string) {
+  if (href === "/recrutamento") return "website-nav-recruitment";
+  if (href === "/treinamento") return "website-nav-training";
+  return undefined;
+}
+
 export const DropdownMenu: React.FC<DropdownMenuProps> = ({
   isOpen,
   items,
@@ -28,6 +34,7 @@ export const DropdownMenu: React.FC<DropdownMenuProps> = ({
               key={index}
               href={item.href}
               icon={item.icon}
+              popupTarget={getPopupTarget(item.href)}
               className="px-6 py-3 text-white hover:bg-blue-700/50 transition-colors duration-200 whitespace-nowrap text-base font-medium"
             >
               {item.label}

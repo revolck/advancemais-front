@@ -123,6 +123,7 @@ export default function UserMenuSimple() {
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
         <button
+          data-popup-target="dashboard-user-menu"
           className="flex items-center gap-2.5 px-1 py-1 rounded-lg hover:bg-white/5 transition-all duration-200 group focus:outline-none focus:ring-2 focus:ring-white/20 focus:ring-offset-2 focus:ring-offset-[var(--color-blue)]"
           aria-label="Menu do usuário"
         >
