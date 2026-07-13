@@ -1,7 +1,8 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   buildCursoApiUrl,
+  fetchCursoById,
   normalizeCourse,
   normalizeTurmasPublicadas,
 } from "./curso-detail-data";
@@ -15,6 +16,11 @@ const publishedCourse = {
   categoria: { nome: "Gestao e Negocios" },
   criadoEm: "2026-07-01T00:00:00.000Z",
 };
+
+afterEach(() => {
+  vi.restoreAllMocks();
+  vi.unstubAllGlobals();
+});
 
 describe("buildCursoApiUrl", () => {
   it("monta URL quando a base nao tem /api", () => {
@@ -131,5 +137,42 @@ describe("normalizeCourse", () => {
       "turma-publica",
     ]);
     expect(course?.totalTurmas).toBe(1);
+  });
+});
+
+describe("fetchCursoById", () => {
+  it("usa a listagem publicada quando o detalhe publico nao encontra o curso", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ success: false }), { status: 404 }),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            data: [{ ...publishedCourse, turmasCount: 0 }],
+            pagination: { totalPages: 1 },
+          }),
+          { status: 200 },
+        ),
+      );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const course = await fetchCursoById(
+      publishedCourse.id,
+      "https://front.exemplo.com",
+    );
+
+    expect(course?.id).toBe(publishedCourse.id);
+    expect(course?.nome).toBe("Gestao Financeira");
+    expect(course?.totalTurmas).toBe(0);
+    expect(course?.turmasPublicadas).toEqual([]);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock.mock.calls[0]?.[0]).toContain(
+      `/api/v1/cursos/publico/cursos/${publishedCourse.id}`,
+    );
+    expect(fetchMock.mock.calls[1]?.[0]).toContain(
+      "/api/v1/cursos?page=1&pageSize=100&statusPadrao=PUBLICADO",
+    );
   });
 });

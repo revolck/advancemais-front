@@ -262,6 +262,16 @@ function unwrapCursoApiResponse(data: any): CursoApiResponse {
   return data;
 }
 
+function unwrapCursoListResponse(data: any): any[] {
+  if (!data) return [];
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data?.data)) return data.data;
+  if (Array.isArray(data?.data?.cursos)) return data.data.cursos;
+  if (Array.isArray(data?.cursos)) return data.cursos;
+  if (Array.isArray(data?.items)) return data.items;
+  return [];
+}
+
 async function fetchCursoPayload(
   path: string,
   origin: string,
@@ -289,6 +299,59 @@ async function fetchCursoPayload(
   }
 }
 
+async function fetchCursoFromPublishedList(
+  id: string,
+  origin: string,
+): Promise<CursoApiResponse> {
+  const pageSize = 100;
+  let page = 1;
+  let totalPages = 1;
+
+  while (page <= totalPages && page <= 5) {
+    const params = new URLSearchParams({
+      page: String(page),
+      pageSize: String(pageSize),
+      statusPadrao: PUBLIC_COURSE_STATUS,
+    });
+    const url = buildCursoApiUrl(`/api/v1/cursos?${params.toString()}`, origin);
+
+    try {
+      console.log("[curso-detalhe][list-fallback] GET", url);
+      const res = await fetch(url, {
+        cache: "no-store",
+        next: { revalidate: 0 },
+      });
+
+      if (!res.ok) {
+        console.log("[curso-detalhe][list-fallback] FAIL", res.status, url);
+        return null;
+      }
+
+      const data = await res.json();
+      const cursos = unwrapCursoListResponse(data);
+      const found = cursos.find((curso) => String(curso?.id) === id);
+      if (found) {
+        console.log("[curso-detalhe][list-fallback] OK", url);
+        return found;
+      }
+
+      const parsedTotalPages = Number(data?.pagination?.totalPages);
+      totalPages =
+        Number.isFinite(parsedTotalPages) && parsedTotalPages > 0
+          ? parsedTotalPages
+          : cursos.length < pageSize
+            ? page
+            : page + 1;
+      page += 1;
+    } catch {
+      console.log("[curso-detalhe][list-fallback] ERROR", url);
+      return null;
+    }
+  }
+
+  return null;
+}
+
 export async function fetchCursoById(
   id: string,
   origin: string,
@@ -300,6 +363,12 @@ export async function fetchCursoById(
   );
   const normalizedPublicCurso = normalizeCourse(publicCurso);
   if (normalizedPublicCurso) return normalizedPublicCurso;
+
+  const publishedListCurso = await fetchCursoFromPublishedList(id, origin);
+  const normalizedPublishedListCurso = normalizeCourse(publishedListCurso, {
+    filterPublicTurmas: true,
+  });
+  if (normalizedPublishedListCurso) return normalizedPublishedListCurso;
 
   const fallbackCurso = await fetchCursoPayload(
     `/api/v1/cursos/${encodedId}`,
