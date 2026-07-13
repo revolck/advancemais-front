@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { CourseCard } from "./components/CourseCard";
 import { CourseHeader } from "./components/CourseHeader";
@@ -18,6 +19,8 @@ export function CourseCatalog({
   staticData,
   itemsPerPage = 12,
 }: CourseCatalogProps) {
+  const router = useRouter();
+
   // Estados para filtros
   const [filters, setFilters] = useState<CourseFilters>({
     busca: "",
@@ -120,15 +123,13 @@ export function CourseCatalog({
     filters.categorias.length + (filters.apenasComVagas ? 1 : 0);
 
   const handleViewDetails = (course: CourseData) => {
-    if (typeof window === "undefined") return;
-    const detailsUrl = `/cursos/${course.id}`;
-    window.open(detailsUrl, "_blank", "noopener,noreferrer");
+    if (!course?.id) return;
+    router.push(`/cursos/${encodeURIComponent(course.id)}`);
   };
 
   const handleEnroll = (course: CourseData) => {
-    if (typeof window === "undefined") return;
     if (!course?.id) return;
-    window.location.href = `/cursos/${course.id}#turmas`;
+    router.push(`/cursos/${encodeURIComponent(course.id)}#turmas`);
   };
 
   const handleSearch = () => {

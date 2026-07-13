@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { getLegacyDashboardRedirectPath } from "./middleware";
+import {
+  getLegacyDashboardRedirectPath,
+  getWebsiteRewritePath,
+} from "./middleware";
 
 describe("middleware legacy dashboard routes", () => {
   it("redireciona rotas legadas de configuracao para o dashboard real", () => {
@@ -20,5 +23,15 @@ describe("middleware legacy dashboard routes", () => {
     expect(getLegacyDashboardRedirectPath("/api/v1/configuracoes/geral")).toBe(
       null
     );
+  });
+});
+
+describe("middleware website rewrites", () => {
+  it("trata detalhes de curso como rota do website", () => {
+    expect(
+      getWebsiteRewritePath(
+        "/cursos/4767cfe1-32e7-46cf-8fc3-9b984d09374b",
+      ),
+    ).toBe("/website/cursos/4767cfe1-32e7-46cf-8fc3-9b984d09374b");
   });
 });

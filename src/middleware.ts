@@ -125,6 +125,11 @@ function getWebsiteRedirect(pathname: string): string | null {
   return redirects[pathname] || null;
 }
 
+export function getWebsiteRewritePath(pathname: string): string | null {
+  if (!isWebsiteRoute(pathname) && pathname !== "/") return null;
+  return pathname === "/" ? "/website" : `/website${pathname}`;
+}
+
 function extractCertificadoPreviewId(pathname: string): string | null {
   const match = pathname.match(/^\/certificados\/([^/]+)\/visualizar\/?$/);
   return match?.[1] ?? null;
@@ -433,14 +438,10 @@ export function middleware(request: NextRequest) {
 
   if (isWebsiteRoute(pathname) || pathname === "/") {
     // Rotas do website - reescrever para /website/[...slug]
-    let websitePath: string;
-
-    if (pathname === "/") {
-      // Rota raiz vai para /website/page.tsx
-      websitePath = "/website";
-    } else {
-      // Outras rotas vão para /website/[pasta]/page.tsx
-      websitePath = `/website${pathname}`;
+    const websitePath = getWebsiteRewritePath(pathname);
+    if (!websitePath) {
+      const response = NextResponse.next();
+      return setupDevCookies(request, response);
     }
 
     console.log(`[Middleware] Website rewrite: ${pathname} -> ${websitePath}`);
