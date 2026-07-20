@@ -329,6 +329,8 @@ export function CreateUsuarioForm({
       role: nextRole,
       cpf: value === "PESSOA_FISICA" ? prev.cpf : "",
       cnpj: value === "PESSOA_JURIDICA" ? prev.cnpj : "",
+      dataNascimento: value === "PESSOA_FISICA" ? prev.dataNascimento : "",
+      genero: value === "PESSOA_FISICA" ? prev.genero : "",
     }));
     if (errors.tipoUsuario)
       setErrors((prev) => ({ ...prev, tipoUsuario: undefined }));
@@ -337,6 +339,13 @@ export function CreateUsuarioForm({
     }
     if (value === "PESSOA_JURIDICA" && errors.cpf) {
       setErrors((prev) => ({ ...prev, cpf: undefined }));
+    }
+    if (value === "PESSOA_JURIDICA" && (errors.dataNascimento || errors.genero)) {
+      setErrors((prev) => ({
+        ...prev,
+        dataNascimento: undefined,
+        genero: undefined,
+      }));
     }
     if (errors.role) {
       setErrors((prev) => ({ ...prev, role: undefined }));
@@ -510,11 +519,11 @@ export function CreateUsuarioForm({
         payload.cnpj = formData.cnpj.replace(/\D/g, "");
       }
 
-      if (formData.dataNascimento) {
+      if (formData.tipoUsuario === "PESSOA_FISICA" && formData.dataNascimento) {
         payload.dataNasc = formData.dataNascimento;
       }
 
-      if (formData.genero) {
+      if (formData.tipoUsuario === "PESSOA_FISICA" && formData.genero) {
         payload.genero = formData.genero;
       }
 
@@ -666,7 +675,13 @@ export function CreateUsuarioForm({
             />
           </div>
 
-          <div className="grid grid-cols-1 md:[grid-template-columns:0.2fr_0.2fr_0.25fr_0.2fr_0.15fr] gap-4">
+          <div
+            className={
+              formData.tipoUsuario === "PESSOA_JURIDICA"
+                ? "grid grid-cols-1 md:grid-cols-3 gap-4"
+                : "grid grid-cols-1 md:[grid-template-columns:0.2fr_0.2fr_0.25fr_0.2fr_0.15fr] gap-4"
+            }
+          >
             <SelectCustom
               label="Função (Role)"
               placeholder="Selecione a função"
@@ -700,31 +715,35 @@ export function CreateUsuarioForm({
               required
             />
 
-            <DatePickerCustom
-              label="Data de Nascimento"
-              value={
-                formData.dataNascimento
-                  ? new Date(`${formData.dataNascimento}T00:00:00`)
-                  : null
-              }
-              onChange={(date) =>
-                handleInputChange(
-                  "dataNascimento",
-                  date ? new Date(date).toISOString().slice(0, 10) : "",
-                )
-              }
-              format="dd/MM/yyyy"
-              error={errors.dataNascimento}
-            />
+            {formData.tipoUsuario === "PESSOA_FISICA" && (
+              <>
+                <DatePickerCustom
+                  label="Data de Nascimento"
+                  value={
+                    formData.dataNascimento
+                      ? new Date(`${formData.dataNascimento}T00:00:00`)
+                      : null
+                  }
+                  onChange={(date) =>
+                    handleInputChange(
+                      "dataNascimento",
+                      date ? new Date(date).toISOString().slice(0, 10) : "",
+                    )
+                  }
+                  format="dd/MM/yyyy"
+                  error={errors.dataNascimento}
+                />
 
-            <SelectCustom
-              label="Gênero"
-              placeholder="Selecione o gênero"
-              options={generoOptions}
-              value={formData.genero}
-              onChange={(value) => handleInputChange("genero", value)}
-              error={errors.genero}
-            />
+                <SelectCustom
+                  label="Gênero"
+                  placeholder="Selecione o gênero"
+                  options={generoOptions}
+                  value={formData.genero}
+                  onChange={(value) => handleInputChange("genero", value)}
+                  error={errors.genero}
+                />
+              </>
+            )}
           </div>
 
           <div className="grid grid-cols-1 md:[grid-template-columns:0.2fr_0.2fr_0.3fr_0.3fr] gap-4">
