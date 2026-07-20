@@ -32,6 +32,8 @@ export function mapMeuPagamentoToCurso(item: MeuPagamentoItem): PagamentoCurso {
         ? "EM_PROCESSAMENTO"
         : item.status === "ESTORNADO"
           ? "CANCELADO"
+          : item.status === "CONTESTADO"
+            ? "ERRO"
           : item.status,
   };
 }
@@ -123,4 +125,3 @@ export function usePagamentosCursosData(
     refetch,
   };
 }
-

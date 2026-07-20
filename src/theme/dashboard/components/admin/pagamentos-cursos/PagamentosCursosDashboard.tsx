@@ -43,6 +43,7 @@ const STATUS_OPTIONS = [
   { value: "RECUSADO", label: "Recusado" },
   { value: "CANCELADO", label: "Cancelado" },
   { value: "ESTORNADO", label: "Estornado" },
+  { value: "CONTESTADO", label: "Contestado" },
 ];
 
 export function PagamentosCursosDashboard({

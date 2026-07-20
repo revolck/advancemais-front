@@ -1461,7 +1461,8 @@ export type MeuPagamentoStatus =
   | "APROVADO"
   | "RECUSADO"
   | "CANCELADO"
-  | "ESTORNADO";
+  | "ESTORNADO"
+  | "CONTESTADO";
 
 export interface ListMeusPagamentosParams {
   tab?: "pendentes" | "historico";

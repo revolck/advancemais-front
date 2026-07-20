@@ -11,7 +11,10 @@ import type {
 } from "@/api/configuracoes-gerais/types";
 import { CuponsForm } from "@/app/dashboard/config/empresas/cupons/CuponsForm";
 import { toastCustom } from "@/components/ui/custom/toast";
+import { UserRole } from "@/config/roles";
+import { useUserRole } from "@/hooks/useUserRole";
 import { GeralConfigPanel } from "./components/GeralConfigPanel";
+import { SandboxEmailPanel } from "./components/SandboxEmailPanel";
 
 const TAB_META: Record<
   ConfigCategory,
@@ -36,6 +39,7 @@ const TAB_ORDER: ConfigCategory[] = [
 
 export default function GeralConfigPage() {
   const searchParams = useSearchParams();
+  const role = useUserRole();
   const [groups, setGroups] = React.useState<ConfigCategoryGroup[]>([]);
   const [loading, setLoading] = React.useState(true);
 
@@ -92,6 +96,15 @@ export default function GeralConfigPage() {
       />
     ),
   }));
+
+  if (role === UserRole.ADMIN) {
+    items.push({
+      value: "sandbox",
+      label: "Sandbox",
+      icon: "TestTube2",
+      content: <SandboxEmailPanel />,
+    });
+  }
 
   items.push({
     value: "cupons",

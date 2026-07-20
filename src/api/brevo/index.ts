@@ -13,6 +13,9 @@ import type {
   BrevoConfigResponse,
   BrevoTestEmailPayload,
   BrevoTestEmailResponse,
+  BrevoSandboxEmailPayload,
+  BrevoSandboxEmailResponse,
+  BrevoSandboxEmailRotinasResponse,
   BrevoTestSmsPayload,
   BrevoTestSmsResponse,
 } from "./types";
@@ -192,6 +195,44 @@ export async function sendTestSms(
     },
     cache: "no-cache",
     silence403: true,
+    retries: 1,
+  });
+}
+
+// ----------------------------------------------------------------------------
+// Sandbox de emails (produção, somente ADMIN)
+// ----------------------------------------------------------------------------
+
+export async function getSandboxEmailRotinas(): Promise<BrevoSandboxEmailRotinasResponse> {
+  return apiFetch<BrevoSandboxEmailRotinasResponse>(
+    brevoRoutes.sandbox.emailRotinas(),
+    {
+      init: {
+        method: "GET",
+        headers: {
+          ...ACCEPT_HEADER,
+          ...buildAuthHeaders(),
+        },
+      },
+      cache: "no-cache",
+      retries: 1,
+    },
+  );
+}
+
+export async function sendSandboxEmail(
+  payload: BrevoSandboxEmailPayload,
+): Promise<BrevoSandboxEmailResponse> {
+  return apiFetch<BrevoSandboxEmailResponse>(brevoRoutes.sandbox.email(), {
+    init: {
+      method: "POST",
+      headers: {
+        ...JSON_HEADERS,
+        ...buildAuthHeaders(),
+      },
+      body: JSON.stringify(payload),
+    },
+    cache: "no-cache",
     retries: 1,
   });
 }

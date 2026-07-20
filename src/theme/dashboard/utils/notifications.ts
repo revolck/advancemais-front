@@ -113,6 +113,62 @@ export const TYPE_META: Record<
     tagBg: "bg-red-50",
     tagText: "text-red-700",
   },
+  CURSO_PAGAMENTO_PENDENTE: {
+    label: "Curso",
+    icon: "Clock",
+    bgColor: "bg-amber-100",
+    textColor: "text-amber-700",
+    tagBg: "bg-amber-50",
+    tagText: "text-amber-700",
+  },
+  CURSO_PAGAMENTO_PROCESSANDO: {
+    label: "Curso",
+    icon: "LoaderCircle",
+    bgColor: "bg-blue-100",
+    textColor: "text-blue-600",
+    tagBg: "bg-blue-50",
+    tagText: "text-blue-700",
+  },
+  CURSO_PAGAMENTO_APROVADO: {
+    label: "Curso",
+    icon: "BadgeCheck",
+    bgColor: "bg-emerald-100",
+    textColor: "text-emerald-600",
+    tagBg: "bg-emerald-50",
+    tagText: "text-emerald-700",
+  },
+  CURSO_PAGAMENTO_RECUSADO: {
+    label: "Curso",
+    icon: "XCircle",
+    bgColor: "bg-red-100",
+    textColor: "text-red-600",
+    tagBg: "bg-red-50",
+    tagText: "text-red-700",
+  },
+  CURSO_PAGAMENTO_CANCELADO: {
+    label: "Curso",
+    icon: "Ban",
+    bgColor: "bg-slate-100",
+    textColor: "text-slate-600",
+    tagBg: "bg-slate-50",
+    tagText: "text-slate-700",
+  },
+  CURSO_PAGAMENTO_ESTORNADO: {
+    label: "Curso",
+    icon: "Undo2",
+    bgColor: "bg-violet-100",
+    textColor: "text-violet-600",
+    tagBg: "bg-violet-50",
+    tagText: "text-violet-700",
+  },
+  CURSO_PAGAMENTO_CONTESTADO: {
+    label: "Curso",
+    icon: "ShieldAlert",
+    bgColor: "bg-red-100",
+    textColor: "text-red-600",
+    tagBg: "bg-red-50",
+    tagText: "text-red-700",
+  },
   SISTEMA: {
     label: "Sistema",
     icon: "Bell",
@@ -139,8 +195,29 @@ export const SISTEMA_TYPES: NotificacaoTipo[] = [
   "RECUPERACAO_FINAL_PAGAMENTO_PENDENTE",
   "RECUPERACAO_FINAL_PAGAMENTO_APROVADO",
   "RECUPERACAO_FINAL_PAGAMENTO_RECUSADO",
+  "CURSO_PAGAMENTO_PENDENTE",
+  "CURSO_PAGAMENTO_PROCESSANDO",
+  "CURSO_PAGAMENTO_APROVADO",
+  "CURSO_PAGAMENTO_RECUSADO",
+  "CURSO_PAGAMENTO_CANCELADO",
+  "CURSO_PAGAMENTO_ESTORNADO",
+  "CURSO_PAGAMENTO_CONTESTADO",
   "SISTEMA",
 ];
+
+const CURSO_PAGAMENTO_TYPES: NotificacaoTipo[] = [
+  "CURSO_PAGAMENTO_PENDENTE",
+  "CURSO_PAGAMENTO_PROCESSANDO",
+  "CURSO_PAGAMENTO_APROVADO",
+  "CURSO_PAGAMENTO_RECUSADO",
+  "CURSO_PAGAMENTO_CANCELADO",
+  "CURSO_PAGAMENTO_ESTORNADO",
+  "CURSO_PAGAMENTO_CONTESTADO",
+];
+
+function isCursoPagamentoType(tipo: NotificacaoTipo) {
+  return CURSO_PAGAMENTO_TYPES.includes(tipo);
+}
 
 export interface NotificationVisualMeta {
   label: string;
@@ -312,22 +389,45 @@ export function getNotificationAction(notification: Notificacao): {
       : null;
 
   if (explicitHref) {
-    return {
-      href: explicitHref,
-      label: candidaturaStatusData
-        ? "Ver vaga"
-        : recruiterLinkData
-        ? recruiterLinkData.tipoVinculo === "VAGA"
-          ? "Ver vaga"
-          : "Ver empresas"
-        : notification.tipo === "RECUPERACAO_FINAL_PAGAMENTO_PENDENTE"
-          ? "Pagar"
-          : notification.tipo.startsWith("VAGA_") ||
-            notification.tipo === "NOVO_CANDIDATO" ||
-            notification.tipo === "VAGA_PREENCHIDA"
-          ? "Ver vaga"
-          : "Ver detalhes",
-    };
+    let label = "Ver detalhes";
+    if (candidaturaStatusData) {
+      label = "Ver vaga";
+    } else if (recruiterLinkData) {
+      label = recruiterLinkData.tipoVinculo === "VAGA" ? "Ver vaga" : "Ver empresas";
+    } else if (notification.tipo === "CURSO_PAGAMENTO_APROVADO") {
+      label = "Acessar curso";
+    } else if (isCursoPagamentoType(notification.tipo)) {
+      label = "Ver pagamento";
+    } else if (notification.tipo === "RECUPERACAO_FINAL_PAGAMENTO_PENDENTE") {
+      label = "Pagar";
+    } else if (
+      notification.tipo.startsWith("VAGA_") ||
+      notification.tipo === "NOVO_CANDIDATO" ||
+      notification.tipo === "VAGA_PREENCHIDA"
+    ) {
+      label = "Ver vaga";
+    }
+
+    return { href: explicitHref, label };
+  }
+
+  if (isCursoPagamentoType(notification.tipo)) {
+    const dados = notification.dados ?? null;
+    const cursoId = readString(dados, "cursoId");
+    const turmaId = readString(dados, "turmaId");
+
+    if (notification.tipo === "CURSO_PAGAMENTO_APROVADO" && cursoId && turmaId) {
+      return {
+        href: `/dashboard/cursos/alunos/cursos/${cursoId}/${turmaId}`,
+        label: "Acessar curso",
+      };
+    }
+
+    if (notification.tipo === "CURSO_PAGAMENTO_APROVADO") {
+      return { href: "/dashboard/cursos/alunos/cursos", label: "Acessar curso" };
+    }
+
+    return { href: "/dashboard/cursos/pagamentos", label: "Ver pagamento" };
   }
 
   if (candidaturaStatusData?.vagaId) {

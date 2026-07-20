@@ -13,7 +13,11 @@ export type BrevoErrorCode =
   | "USER_NOT_FOUND"
   | "ACCOUNT_INACTIVE"
   | "MISSING_PHONE"
+  | "MISSING_PASSWORD"
   | "PRODUCTION_BLOCKED"
+  | "INSUFFICIENT_PERMISSIONS"
+  | "INVALID_PASSWORD"
+  | "INVALID_SANDBOX_ROUTINE"
   | "BREVO_DELIVERY_FAILED"
   | "SEND_ERROR"
   | "INTERNAL_ERROR";
@@ -191,4 +195,61 @@ export interface BrevoTestSmsPayload {
 
 export type BrevoTestSmsResponse =
   | BrevoTestSuccessResponse
+  | BrevoErrorResponse;
+
+// ----------------------------------------------------------------------------
+// Sandbox de emails (produção, somente ADMIN)
+// ----------------------------------------------------------------------------
+
+export type BrevoSandboxEmailRotina =
+  | "NOVO_CADASTRO"
+  | "RECUPERACAO_SENHA"
+  | "CREDENCIAIS_EMPRESA_ADMIN"
+  | "PLANO_ATIVADO"
+  | "PLANO_PAGAMENTO_RECUSADO"
+  | "PLANO_UPGRADE"
+  | "PLANO_DOWNGRADE"
+  | "CURSO_PAGAMENTO_PENDENTE"
+  | "CURSO_PAGAMENTO_PROCESSANDO"
+  | "CURSO_PAGAMENTO_APROVADO"
+  | "CURSO_PAGAMENTO_RECUSADO"
+  | "CURSO_PAGAMENTO_CANCELADO"
+  | "CURSO_PAGAMENTO_ESTORNADO"
+  | "CURSO_PAGAMENTO_CONTESTADO"
+  | "ESTAGIO_CONVOCACAO"
+  | "ESTAGIO_ENCERRAMENTO"
+  | "USUARIO_BLOQUEADO"
+  | "USUARIO_DESBLOQUEADO";
+
+export interface BrevoSandboxEmailRotinaItem {
+  value: BrevoSandboxEmailRotina;
+  label: string;
+  group: string;
+  description?: string;
+}
+
+export interface BrevoSandboxEmailRotinasResponse {
+  success: true;
+  data: BrevoSandboxEmailRotinaItem[];
+}
+
+export interface BrevoSandboxEmailPayload {
+  rotina: BrevoSandboxEmailRotina;
+  destinatarioEmail: string;
+  senha: string;
+}
+
+export interface BrevoSandboxEmailSuccessResponse {
+  success: true;
+  message: string;
+  data: {
+    rotina: BrevoSandboxEmailRotina;
+    recipient: string;
+    simulated?: boolean;
+    messageId?: string;
+  };
+}
+
+export type BrevoSandboxEmailResponse =
+  | BrevoSandboxEmailSuccessResponse
   | BrevoErrorResponse;

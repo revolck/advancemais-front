@@ -384,6 +384,10 @@ export const brevoRoutes = {
     email: () => `${prefix}/brevo/test/email`,
     sms: () => `${prefix}/brevo/test/sms`,
   },
+  sandbox: {
+    emailRotinas: () => `${prefix}/brevo/sandbox/email-rotinas`,
+    email: () => `${prefix}/brevo/sandbox/email`,
+  },
 };
 
 /**
