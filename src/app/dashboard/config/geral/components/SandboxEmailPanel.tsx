@@ -1,18 +1,19 @@
 "use client";
 
 import React from "react";
-import { MailCheck, Send, ShieldCheck } from "lucide-react";
+import { Send, ShieldCheck } from "lucide-react";
 
-import {
-  getSandboxEmailRotinas,
-  sendSandboxEmail,
-} from "@/api/brevo";
+import { getSandboxEmailRotinas, sendSandboxEmail } from "@/api/brevo";
 import type {
   BrevoSandboxEmailRotina,
   BrevoSandboxEmailRotinaItem,
 } from "@/api/brevo/types";
 import { getUserProfile } from "@/api/usuarios";
-import { ButtonCustom, InputCustom, SelectCustom } from "@/components/ui/custom";
+import {
+  ButtonCustom,
+  InputCustom,
+  SelectCustom,
+} from "@/components/ui/custom";
 import {
   ModalBody,
   ModalContentWrapper,
@@ -52,8 +53,9 @@ export function SandboxEmailPanel() {
   const [rotinas, setRotinas] = React.useState<BrevoSandboxEmailRotinaItem[]>(
     [],
   );
-  const [rotina, setRotina] =
-    React.useState<BrevoSandboxEmailRotina | null>(null);
+  const [rotina, setRotina] = React.useState<BrevoSandboxEmailRotina | null>(
+    null,
+  );
   const [recipient, setRecipient] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [loading, setLoading] = React.useState(true);
@@ -99,7 +101,9 @@ export function SandboxEmailPanel() {
         const profile = await getUserProfile();
         if (!mounted || !profile.success || !("usuario" in profile)) return;
         setRecipient((current) =>
-          !current || current === user?.email ? profile.usuario.email || "" : current,
+          !current || current === user?.email
+            ? profile.usuario.email || ""
+            : current,
         );
       } catch {
         if (!mounted) return;
@@ -205,9 +209,11 @@ export function SandboxEmailPanel() {
     return (
       <div className="space-y-6">
         <Skeleton className="h-8 w-56" />
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(280px,360px)_auto]">
+        <div className="space-y-6">
           <Skeleton className="h-12 w-full" />
           <Skeleton className="h-12 w-full" />
+        </div>
+        <div className="mt-10 flex justify-end border-t border-border pt-6">
           <Skeleton className="h-12 w-32" />
         </div>
       </div>
@@ -215,23 +221,8 @@ export function SandboxEmailPanel() {
   }
 
   return (
-    <section className="space-y-6">
-      <div className="flex items-start gap-3">
-        <div className="mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-          <MailCheck className="h-5 w-5" />
-        </div>
-        <div>
-          <h3 className="text-lg font-semibold text-foreground">
-            Sandbox de emails
-          </h3>
-          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-            Envie templates reais para validar aparência e entrega, usando dados
-            fictícios e sem executar rotinas de negócio.
-          </p>
-        </div>
-      </div>
-
-      <div className="grid items-end gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(280px,360px)_auto]">
+    <section className="flex flex-col">
+      <div className="space-y-6">
         <SelectCustom
           mode="single"
           label="Rotina"
@@ -252,7 +243,15 @@ export function SandboxEmailPanel() {
           required
           className="h-12"
         />
+      </div>
 
+      {selectedRotina?.description ? (
+        <p className="mt-4 text-sm text-muted-foreground">
+          {selectedRotina.description}
+        </p>
+      ) : null}
+
+      <footer className="mt-10 flex flex-wrap items-center justify-end gap-3 border-t border-border pt-6">
         <ButtonCustom
           type="button"
           variant="primary"
@@ -265,13 +264,7 @@ export function SandboxEmailPanel() {
           <Send className="h-4 w-4" />
           Enviar
         </ButtonCustom>
-      </div>
-
-      {selectedRotina?.description ? (
-        <p className="text-sm text-muted-foreground">
-          {selectedRotina.description}
-        </p>
-      ) : null}
+      </footer>
 
       <ModalCustom
         isOpen={passwordModalOpen}
