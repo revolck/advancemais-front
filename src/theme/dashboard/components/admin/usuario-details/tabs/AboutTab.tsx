@@ -4,6 +4,7 @@ import { EmptyState } from "@/components/ui/custom";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { AboutTabProps } from "../types";
 import { normalizeCep } from "@/lib/cep";
+import { formatCnpj as formatCnpjDocument } from "@/lib/documentos";
 import { getRoleLabel } from "@/config/roles";
 import {
   CalendarDays,
@@ -36,12 +37,7 @@ const formatCpf = (cpf?: string | null): string => {
 
 const formatCnpj = (cnpj?: string | null): string => {
   if (!cnpj) return "—";
-  const digits = cnpj.replace(/\D/g, "");
-  if (digits.length !== 14) return cnpj;
-  return digits.replace(
-    /(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/,
-    "$1.$2.$3/$4-$5"
-  );
+  return formatCnpjDocument(cnpj);
 };
 
 export function AboutTab({ usuario, isLoading = false }: AboutTabProps) {

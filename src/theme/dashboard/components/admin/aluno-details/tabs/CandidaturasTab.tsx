@@ -34,16 +34,12 @@ import type { AlunoDetailsData } from "../types";
 import { formatDate } from "../utils/formatters";
 import { buscarCandidatoPorId } from "@/api/candidatos/admin";
 import type { Candidatura } from "@/api/candidatos/types";
+import { formatCnpj as formatCnpjDocument } from "@/lib/documentos";
 
 // Função para formatar CNPJ
 const formatCnpj = (cnpj?: string | null): string => {
   if (!cnpj) return "—";
-  const digits = cnpj.replace(/\D/g, "");
-  if (digits.length !== 14) return cnpj;
-  return digits.replace(
-    /(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/,
-    "$1.$2.$3/$4-$5"
-  );
+  return formatCnpjDocument(cnpj);
 };
 
 // Função para obter iniciais da empresa

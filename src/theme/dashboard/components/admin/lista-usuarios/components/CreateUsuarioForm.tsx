@@ -19,23 +19,15 @@ import { Eye, EyeOff, Loader2, User } from "lucide-react";
 import { FormLoadingModal } from "@/components/ui/custom/form-loading-modal";
 import { invalidateUsuarios } from "@/lib/react-query/invalidation";
 import { lookupCep, normalizeCep } from "@/lib/cep";
+import { formatCnpj, formatCpf, normalizeCnpj, normalizeCpf } from "@/lib/documentos";
 
 // Funções de formatação com máscaras
 const formatCPF = (value: string): string => {
-  const digits = value.replace(/\D/g, "").slice(0, 11);
-  return digits
-    .replace(/(\d{3})(\d)/, "$1.$2")
-    .replace(/(\d{3})(\d)/, "$1.$2")
-    .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+  return formatCpf(value);
 };
 
 const formatCNPJ = (value: string): string => {
-  const digits = value.replace(/\D/g, "").slice(0, 14);
-  return digits
-    .replace(/(\d{2})(\d)/, "$1.$2")
-    .replace(/(\d{3})(\d)/, "$1.$2")
-    .replace(/(\d{3})(\d)/, "$1/$2")
-    .replace(/(\d{4})(\d{1,2})$/, "$1-$2");
+  return formatCnpj(value);
 };
 
 const formatPhone = (value: string): string => {
@@ -512,11 +504,11 @@ export function CreateUsuarioForm({
       };
 
       if (formData.tipoUsuario === "PESSOA_FISICA" && formData.cpf) {
-        payload.cpf = formData.cpf.replace(/\D/g, "");
+        payload.cpf = normalizeCpf(formData.cpf);
       }
 
       if (formData.tipoUsuario === "PESSOA_JURIDICA" && formData.cnpj) {
-        payload.cnpj = formData.cnpj.replace(/\D/g, "");
+        payload.cnpj = normalizeCnpj(formData.cnpj);
       }
 
       if (formData.tipoUsuario === "PESSOA_FISICA" && formData.dataNascimento) {
@@ -644,7 +636,7 @@ export function CreateUsuarioForm({
             ) : (
               <InputCustom
                 label="CNPJ"
-                placeholder="00.000.000/0000-00"
+                placeholder="XX.XXX.XXX/XXXX-XX"
                 value={formData.cnpj}
                 onChange={(e) =>
                   handleInputChange("cnpj", formatCNPJ(e.target.value))

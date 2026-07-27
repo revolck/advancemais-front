@@ -89,17 +89,17 @@ export function PasswordRecoveryModal({
       };
     }
 
-    const digits = maskService.removeMask(value, "cpfCnpj");
-    if (digits.length === 11) {
+    const documento = maskService.removeMask(value, "cpfCnpj");
+    if (documento.length === 11 && /^\d+$/.test(documento)) {
       return {
-        identificador: digits,
-        cpf: digits,
+        identificador: documento,
+        cpf: documento,
       };
     }
 
     return {
-      identificador: digits,
-      cnpj: digits,
+      identificador: documento,
+      cnpj: documento,
     };
   };
 

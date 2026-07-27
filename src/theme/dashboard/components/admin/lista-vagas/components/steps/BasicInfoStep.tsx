@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/tooltip";
 import { Info } from "lucide-react";
 import { listAdminCompanies, type AdminCompanyListItem } from "@/api/empresas";
+import { formatCnpj as formatCnpjDocument } from "@/lib/documentos";
 import { isEmpresaElegivelParaCadastroVaga } from "../../hooks/useEmpresasForSelect";
 
 interface FormState {
@@ -79,13 +80,8 @@ interface BasicInfoStepProps {
 }
 
 function formatCnpj(value?: string | null) {
-  const digits = (value ?? "").replace(/\D/g, "");
-  if (digits.length !== 14) return value ?? "";
-
-  return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(
-    5,
-    8,
-  )}/${digits.slice(8, 12)}-${digits.slice(12)}`;
+  if (!value) return "";
+  return formatCnpjDocument(value);
 }
 
 export function BasicInfoStep({

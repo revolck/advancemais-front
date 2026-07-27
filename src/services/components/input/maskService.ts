@@ -5,6 +5,18 @@
  */
 
 import { MaskType, MaskConfig } from "@/types/components/input";
+import {
+  formatCnpj,
+  formatCpf,
+  formatCpfCnpj,
+  isValidCnpj,
+  isValidCpf,
+  isValidCpfCnpj,
+  normalizeCnpj,
+  normalizeCnpjForInput,
+  normalizeCpf,
+  normalizeLoginDocument,
+} from "@/lib/documentos";
 
 class MaskService {
   private static instance: MaskService | null = null;
@@ -18,7 +30,7 @@ class MaskService {
       alwaysShowMask: false,
     },
     cnpj: {
-      mask: "99.999.999/9999-99",
+      mask: "**.***.***/****-99",
       alwaysShowMask: false,
     },
     cpfCnpj: null,
@@ -73,7 +85,7 @@ class MaskService {
     password: /^.{6,}$/, // Mínimo 6 caracteres
     phone: /^\(\d{2}\) \d{4,5}-\d{4}$/,
     cpf: /^\d{3}\.\d{3}\.\d{3}-\d{2}$/,
-    cnpj: /^\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}$/,
+    cnpj: /^[A-Z0-9]{2}\.[A-Z0-9]{3}\.[A-Z0-9]{3}\/[A-Z0-9]{4}-\d{2}$/,
     cep: /^\d{5}-\d{3}$/,
   };
 
@@ -133,6 +145,18 @@ class MaskService {
       });
     }
 
+    if (maskType === "cpf") {
+      return formatCpf(value);
+    }
+
+    if (maskType === "cnpj") {
+      return formatCnpj(value);
+    }
+
+    if (maskType === "cpfCnpj") {
+      return formatCpfCnpj(value);
+    }
+
     const config = this.getMaskConfig(maskType, customConfig);
     if (!config || !config.mask) return value;
 
@@ -185,8 +209,11 @@ class MaskService {
   public removeMask(value: string, maskType: MaskType): string {
     switch (maskType) {
       case "cpf":
+        return normalizeCpf(value);
       case "cnpj":
+        return normalizeCnpjForInput(value);
       case "cpfCnpj":
+        return normalizeLoginDocument(value);
       case "phone":
       case "cep":
       case "date":
@@ -219,44 +246,13 @@ class MaskService {
       case "phone":
         return value.length === 0 || this.validationPatterns.phone.test(value);
       case "cpf":
-        // Validação básica de formato
-        if (!this.validationPatterns.cpf.test(value)) return false;
-
-        // Validação completa de CPF
-        const cpf = value.replace(/[^\d]/g, "");
-        if (cpf.length !== 11 || /^(\d)\1{10}$/.test(cpf)) return false;
-
-        // Algoritmo de validação de CPF
-        let sum = 0;
-        let remainder;
-
-        for (let i = 1; i <= 9; i++) {
-          sum += parseInt(cpf.substring(i - 1, i)) * (11 - i);
-        }
-
-        remainder = (sum * 10) % 11;
-        if (remainder === 10 || remainder === 11) remainder = 0;
-        if (remainder !== parseInt(cpf.substring(9, 10))) return false;
-
-        sum = 0;
-        for (let i = 1; i <= 10; i++) {
-          sum += parseInt(cpf.substring(i - 1, i)) * (12 - i);
-        }
-
-        remainder = (sum * 10) % 11;
-        if (remainder === 10 || remainder === 11) remainder = 0;
-        if (remainder !== parseInt(cpf.substring(10, 11))) return false;
-
-        return true;
+        return isValidCpf(value);
 
       case "cnpj":
-        return this.validationPatterns.cnpj.test(value);
+        return isValidCnpj(value);
 
       case "cpfCnpj":
-        return (
-          this.validationPatterns.cpf.test(value) ||
-          this.validationPatterns.cnpj.test(value)
-        );
+        return isValidCpfCnpj(value);
 
       case "cep":
         return this.validationPatterns.cep.test(value);
@@ -310,14 +306,20 @@ class MaskService {
     }
 
     if (maskType === "cpfCnpj") {
-      const digits = value.replace(/[^\d]/g, "");
-      const targetMask: MaskType = digits.length > 11 ? "cnpj" : "cpf";
-      return this.applyMask(digits, targetMask);
+      return formatCpfCnpj(value);
     }
 
     // Formatação especial para money
     if (maskType === "money") {
       return this.formatMoney(value);
+    }
+
+    if (maskType === "cpf") {
+      return formatCpf(value);
+    }
+
+    if (maskType === "cnpj") {
+      return formatCnpj(value);
     }
 
     const unmaskedValue = this.removeMask(value, maskType);

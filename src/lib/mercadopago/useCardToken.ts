@@ -10,6 +10,7 @@
 import { useState, useCallback } from "react";
 import { useMercadoPago } from "./provider";
 import type { CardData, CardTokenResult } from "./types";
+import { isValidCnpj, isValidCpf, normalizeCnpj, normalizeCpf } from "@/lib/documentos";
 
 interface UseCardTokenReturn {
   /** Cria um token a partir dos dados do cartão */
@@ -178,12 +179,15 @@ function validateCardData(data: CardData): string | null {
   }
 
   // Documento
-  const docNumber = data.identificationNumber.replace(/\D/g, "");
-  if (data.identificationType === "CPF" && docNumber.length !== 11) {
-    return "CPF deve ter 11 dígitos";
+  const docNumber =
+    data.identificationType === "CNPJ"
+      ? normalizeCnpj(data.identificationNumber)
+      : normalizeCpf(data.identificationNumber);
+  if (data.identificationType === "CPF" && !isValidCpf(docNumber)) {
+    return "CPF inválido";
   }
-  if (data.identificationType === "CNPJ" && docNumber.length !== 14) {
-    return "CNPJ deve ter 14 dígitos";
+  if (data.identificationType === "CNPJ" && !isValidCnpj(docNumber)) {
+    return "CNPJ inválido";
   }
 
   return null;
@@ -212,4 +216,3 @@ function luhnCheck(cardNumber: string): boolean {
 
   return sum % 10 === 0;
 }
-

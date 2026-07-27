@@ -299,7 +299,7 @@ export const empresasRoutes = {
     recursosPremiumVagas: (id: string) =>
       `${prefix}/empresas/${id}/recursos-premium-vagas`,
     validateCnpj: (cnpj: string) =>
-      `${prefix}/empresas/validate-cnpj?cnpj=${cnpj}`,
+      `${prefix}/empresas/validate-cnpj?cnpj=${encodeURIComponent(cnpj)}`,
     validateCpf: (cpf: string) => `${prefix}/empresas/validate-cpf?cpf=${cpf}`,
     pagamentos: {
       list: (id: string) => `${prefix}/empresas/${id}/pagamentos`,

@@ -20,6 +20,7 @@ import { useCardToken } from "@/lib/mercadopago";
 import { toastCustom } from "@/components/ui/custom/toast";
 import { MaskService } from "@/services/components/input";
 import { cn } from "@/lib/utils";
+import { normalizeCnpj, normalizeCpf } from "@/lib/documentos";
 
 interface AddCardViewProps {
   onBack: () => void;
@@ -59,27 +60,27 @@ function isValidCPF(cpf: string): boolean {
 
 // Validação de CNPJ (algoritmo)
 function isValidCNPJ(cnpj: string): boolean {
-  const cleaned = cnpj.replace(/\D/g, "");
+  const cleaned = normalizeCnpj(cnpj);
   if (cleaned.length !== 14) return false;
-  if (/^(\d)\1+$/.test(cleaned)) return false;
+  if (!/^[A-Z0-9]{12}\d{2}$/.test(cleaned)) return false;
 
   const weights1 = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
   let sum = 0;
   for (let i = 0; i < 12; i++) {
-    sum += parseInt(cleaned[i]) * weights1[i];
+    sum += (cleaned.charCodeAt(i) - 48) * weights1[i];
   }
   let remainder = sum % 11;
   const digit1 = remainder < 2 ? 0 : 11 - remainder;
-  if (digit1 !== parseInt(cleaned[12])) return false;
+  if (digit1 !== Number(cleaned[12])) return false;
 
   const weights2 = [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
   sum = 0;
   for (let i = 0; i < 13; i++) {
-    sum += parseInt(cleaned[i]) * weights2[i];
+    sum += (cleaned.charCodeAt(i) - 48) * weights2[i];
   }
   remainder = sum % 11;
   const digit2 = remainder < 2 ? 0 : 11 - remainder;
-  if (digit2 !== parseInt(cleaned[13])) return false;
+  if (digit2 !== Number(cleaned[13])) return false;
 
   return true;
 }
@@ -116,7 +117,7 @@ export function AddCardView({ onBack, onSuccess }: AddCardViewProps) {
 
   // Validação do documento
   const validateDocument = useCallback((doc: string, type: "CPF" | "CNPJ") => {
-    const clean = doc.replace(/\D/g, "");
+    const clean = type === "CPF" ? normalizeCpf(doc) : normalizeCnpj(doc);
     const expectedLength = type === "CPF" ? 11 : 14;
 
     if (clean.length < expectedLength) {
@@ -203,7 +204,8 @@ export function AddCardView({ onBack, onSuccess }: AddCardViewProps) {
         expirationYear: cardData.year,
         securityCode: cardData.cvv,
         identificationType: documentType,
-        identificationNumber: documentNumber.replace(/\D/g, ""),
+        identificationNumber:
+          documentType === "CNPJ" ? normalizeCnpj(documentNumber) : normalizeCpf(documentNumber),
       });
 
       if (!tokenResult.success || !tokenResult.token) {

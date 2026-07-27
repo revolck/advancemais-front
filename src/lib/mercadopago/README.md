@@ -175,10 +175,9 @@ const paymentIntent: SinglePaymentIntent = {
 ### Erro de identificação
 
 - CPF deve ter 11 dígitos (apenas números)
-- CNPJ deve ter 14 dígitos (apenas números)
+- CNPJ deve ter 14 caracteres; as 12 primeiras posições aceitam letras maiúsculas e números, e as 2 últimas são numéricas
 
 ## Referências
 
 - [Documentação Mercado Pago - Checkout API](https://www.mercadopago.com.br/developers/pt/docs/checkout-api/landing)
 - [SDK React do Mercado Pago](https://github.com/mercadopago/sdk-react)
-

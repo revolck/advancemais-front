@@ -8,6 +8,7 @@ import { toastCustom } from "@/components/ui/custom/toast";
 import { ALL_ROLES, UserRole } from "@/config/roles";
 import { getLoginImageDataClient } from "@/api/websites/components";
 import { getUserProfile, loginUser } from "@/api/usuarios";
+import { normalizeLoginDocument } from "@/lib/documentos";
 
 const SignInPageDemo = () => {
   const [userName, setUserName] = useState<string | null>(null);
@@ -61,7 +62,7 @@ const SignInPageDemo = () => {
         senha: string;
         rememberMe: string;
       };
-      const documentoLimpo = documento.replace(/\D/g, "");
+      const documentoLimpo = normalizeLoginDocument(documento);
       const remember = rememberMe === "true";
 
       try {

@@ -1,5 +1,16 @@
 // src/theme/website/components/checkout/utils/formatters.ts
 
+import {
+  formatCnpj,
+  formatCpf,
+  getLoginDocumentType,
+  isValidCnpj,
+  isValidCpf,
+  normalizeCnpj,
+  normalizeCpf,
+  normalizeLoginDocument,
+} from "@/lib/documentos";
+
 export function formatPrice(value: number): string {
   return new Intl.NumberFormat("pt-BR", {
     style: "currency",
@@ -25,35 +36,25 @@ export function formatCVV(value: string): string {
 }
 
 export function formatCNPJ(value: string): string {
-  const digits = value.replace(/\D/g, "").slice(0, 14);
-  return digits
-    .replace(/^(\d{2})(\d)/, "$1.$2")
-    .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
-    .replace(/\.(\d{3})(\d)/, ".$1/$2")
-    .replace(/(\d{4})(\d)/, "$1-$2");
+  return formatCnpj(value);
 }
 
 export function formatCPF(value: string): string {
-  const digits = value.replace(/\D/g, "").slice(0, 11);
-  return digits
-    .replace(/(\d{3})(\d)/, "$1.$2")
-    .replace(/(\d{3})(\d)/, "$1.$2")
-    .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+  return formatCpf(value);
 }
 
 /**
  * Remove formatação do documento (pontos, traços, barras)
  */
 export function sanitizeDocument(doc: string): string {
-  return doc.replace(/\D/g, "");
+  return normalizeLoginDocument(doc);
 }
 
 /**
  * Detecta o tipo de documento baseado no tamanho
  */
 export function getDocumentType(doc: string): "CPF" | "CNPJ" {
-  const clean = sanitizeDocument(doc);
-  return clean.length <= 11 ? "CPF" : "CNPJ";
+  return getLoginDocumentType(doc) ?? "CPF";
 }
 
 /**
@@ -62,32 +63,7 @@ export function getDocumentType(doc: string): "CPF" | "CNPJ" {
  * @returns true se o CPF é válido
  */
 export function isValidCPF(cpf: string): boolean {
-  const digits = cpf.replace(/\D/g, "");
-
-  // Deve ter 11 dígitos
-  if (digits.length !== 11) return false;
-
-  // Não pode ser sequência repetida (ex: 111.111.111-11)
-  if (/^(\d)\1+$/.test(digits)) return false;
-
-  // Validação do primeiro dígito verificador
-  let sum = 0;
-  for (let i = 0; i < 9; i++) {
-    sum += parseInt(digits[i]) * (10 - i);
-  }
-  let rest = (sum * 10) % 11;
-  if (rest === 10 || rest === 11) rest = 0;
-  if (rest !== parseInt(digits[9])) return false;
-
-  // Validação do segundo dígito verificador
-  sum = 0;
-  for (let i = 0; i < 10; i++) {
-    sum += parseInt(digits[i]) * (11 - i);
-  }
-  rest = (sum * 10) % 11;
-  if (rest === 10 || rest === 11) rest = 0;
-
-  return rest === parseInt(digits[10]);
+  return isValidCpf(cpf);
 }
 
 /**
@@ -96,36 +72,7 @@ export function isValidCPF(cpf: string): boolean {
  * @returns true se o CNPJ é válido
  */
 export function isValidCNPJ(cnpj: string): boolean {
-  const digits = cnpj.replace(/\D/g, "");
-
-  // Deve ter 14 dígitos
-  if (digits.length !== 14) return false;
-
-  // Não pode ser sequência repetida (ex: 11.111.111/1111-11)
-  if (/^(\d)\1+$/.test(digits)) return false;
-
-  // Pesos para cálculo dos dígitos verificadores
-  const weights1 = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
-  const weights2 = [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
-
-  // Validação do primeiro dígito verificador
-  let sum = 0;
-  for (let i = 0; i < 12; i++) {
-    sum += parseInt(digits[i]) * weights1[i];
-  }
-  let rest = sum % 11;
-  const digit1 = rest < 2 ? 0 : 11 - rest;
-  if (digit1 !== parseInt(digits[12])) return false;
-
-  // Validação do segundo dígito verificador
-  sum = 0;
-  for (let i = 0; i < 13; i++) {
-    sum += parseInt(digits[i]) * weights2[i];
-  }
-  rest = sum % 11;
-  const digit2 = rest < 2 ? 0 : 11 - rest;
-
-  return digit2 === parseInt(digits[13]);
+  return isValidCnpj(cnpj);
 }
 
 /**
@@ -142,7 +89,7 @@ export function validateDocument(doc: string): {
   const type = getDocumentType(doc);
 
   if (type === "CPF") {
-    if (clean.length !== 11) {
+    if (normalizeCpf(clean).length !== 11) {
       return {
         valid: false,
         type,
@@ -157,11 +104,11 @@ export function validateDocument(doc: string): {
       };
     }
   } else {
-    if (clean.length !== 14) {
+    if (normalizeCnpj(clean).length !== 14) {
       return {
         valid: false,
         type,
-        message: "CNPJ deve ter 14 dígitos",
+        message: "CNPJ deve ter 14 caracteres",
       };
     }
     if (!isValidCNPJ(clean)) {
@@ -175,4 +122,3 @@ export function validateDocument(doc: string): {
 
   return { valid: true, type };
 }
-

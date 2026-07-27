@@ -24,6 +24,7 @@ import {
   EyeOff,
   Accessibility,
 } from "lucide-react";
+import { formatCnpj as formatCnpjDocument } from "@/lib/documentos";
 import { cn } from "@/lib/utils";
 import type { VagaHeaderInfoProps } from "../types";
 import { formatVagaStatus, getVagaStatusBadgeClasses } from "../utils";
@@ -33,16 +34,7 @@ import { DespublicarVagaModal } from "../modal-acoes";
 // Função para formatar CNPJ com máscara
 function formatCNPJ(cnpj?: string): string {
   if (!cnpj) return "";
-  // Remove caracteres não numéricos
-  const cleaned = cnpj.replace(/\D/g, "");
-  // Aplica máscara: XX.XXX.XXX/XXXX-XX
-  if (cleaned.length === 14) {
-    return cleaned.replace(
-      /^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/,
-      "$1.$2.$3/$4-$5"
-    );
-  }
-  return cnpj;
+  return formatCnpjDocument(cnpj);
 }
 
 export function HeaderInfo({

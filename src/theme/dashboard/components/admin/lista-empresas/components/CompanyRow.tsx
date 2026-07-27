@@ -21,6 +21,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { formatCnpj as formatCnpjDocument } from "@/lib/documentos";
 import { cn } from "@/lib/utils";
 import type { Partnership } from "../types";
 import { TRIAL_PARTNERSHIP_TYPES } from "../constants";
@@ -41,28 +42,7 @@ interface CompanyRowProps {
 
 function formatCnpj(value?: string | null): string | null {
   if (!value) return null;
-
-  const digits = value.replace(/\D/g, "").slice(0, 14);
-  if (digits.length === 0) return null;
-
-  if (digits.length <= 2) return digits;
-  if (digits.length <= 5) {
-    return `${digits.slice(0, 2)}.${digits.slice(2)}`;
-  }
-  if (digits.length <= 8) {
-    return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5)}`;
-  }
-  if (digits.length <= 12) {
-    return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(
-      5,
-      8,
-    )}/${digits.slice(8)}`;
-  }
-
-  return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(
-    5,
-    8,
-  )}/${digits.slice(8, 12)}-${digits.slice(12)}`;
+  return formatCnpjDocument(value);
 }
 
 function formatCurrency(value?: string | null): string {

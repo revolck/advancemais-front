@@ -2,11 +2,12 @@
 
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import { getUserProfile } from "@/api/usuarios";
 import { getVisaoGeralEmpresa } from "@/api/empresas/dashboard";
 import { formatCNPJ, formatCPF } from "../utils/formatters";
 import type { PayerAddress } from "../components/PayerDataForm";
+import { normalizeCnpj, normalizeCpf } from "@/lib/documentos";
 
 /**
  * Hook para carregar dados do usuário logado para o checkout.
@@ -43,14 +44,22 @@ export function useCheckoutData() {
     return String(value).replace(/\D/g, "");
   }
 
-  function applyDocumentAutofill(type: "CPF" | "CNPJ", digits: string) {
-    if (!digits) return;
-    const expectedLength = type === "CPF" ? 11 : 14;
-    if (digits.length !== expectedLength) return;
+  const normalizeDocumentByType = useCallback((type: "CPF" | "CNPJ", value: unknown) => {
+    return type === "CPF" ? normalizeCpf(value) : normalizeCnpj(value);
+  }, []);
 
-    setDocumentType(type);
-    setPayerDocument(type === "CPF" ? formatCPF(digits) : formatCNPJ(digits));
-  }
+  const applyDocumentAutofill = useCallback(
+    (type: "CPF" | "CNPJ", value: string) => {
+      const normalized = normalizeDocumentByType(type, value);
+      if (!normalized) return;
+      const expectedLength = type === "CPF" ? 11 : 14;
+      if (normalized.length !== expectedLength) return;
+
+      setDocumentType(type);
+      setPayerDocument(type === "CPF" ? formatCPF(normalized) : formatCNPJ(normalized));
+    },
+    [normalizeDocumentByType],
+  );
 
   // Busca dados do perfil do usuário logado
   useEffect(() => {
@@ -92,7 +101,7 @@ export function useCheckoutData() {
 
           // Tenta obter CNPJ/CPF do perfil
           // O backend pode retornar esses campos dependendo do tipo de usuário
-          const cnpjDigits = onlyDigits(
+          const cnpjNormalized = normalizeCnpj(
             usuario.cnpj ??
               usuario.documento ??
               usuario.documentoCnpj ??
@@ -115,23 +124,23 @@ export function useCheckoutData() {
             const isCompany =
               role === "EMPRESA" || tipoUsuario === "PESSOA_JURIDICA";
 
-            if (isCompany && cnpjDigits.length === 14) {
-              applyDocumentAutofill("CNPJ", cnpjDigits);
+            if (isCompany && cnpjNormalized.length === 14) {
+              applyDocumentAutofill("CNPJ", cnpjNormalized);
             } else if (!isCompany && cpfDigits.length === 11) {
               applyDocumentAutofill("CPF", cpfDigits);
-            } else if (cnpjDigits.length === 14) {
-              applyDocumentAutofill("CNPJ", cnpjDigits);
+            } else if (cnpjNormalized.length === 14) {
+              applyDocumentAutofill("CNPJ", cnpjNormalized);
             } else if (cpfDigits.length === 11) {
               applyDocumentAutofill("CPF", cpfDigits);
             } else if (isCompany) {
               // Fallback: tenta buscar dados da empresa (cnpj) no dashboard
               try {
                 const visao = await getVisaoGeralEmpresa();
-                const dashboardCnpjDigits = onlyDigits(
+                const dashboardCnpj = normalizeCnpj(
                   visao?.data?.empresa?.cnpj
                 );
-                if (dashboardCnpjDigits.length === 14) {
-                  applyDocumentAutofill("CNPJ", dashboardCnpjDigits);
+                if (dashboardCnpj.length === 14) {
+                  applyDocumentAutofill("CNPJ", dashboardCnpj);
                 }
               } catch {
                 // não bloqueia o checkout
@@ -175,7 +184,7 @@ export function useCheckoutData() {
     };
 
     fetchUserProfile();
-  }, [payerDocument]);
+  }, [applyDocumentAutofill, payerDocument]);
 
   return {
     userId,

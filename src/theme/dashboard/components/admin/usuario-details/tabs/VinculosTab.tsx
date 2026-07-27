@@ -32,6 +32,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { formatCnpj as formatCnpjDocument } from "@/lib/documentos";
 import { queryKeys } from "@/lib/react-query/queryKeys";
 import { cn } from "@/lib/utils";
 import { CreateVinculoRecrutadorModal } from "../modal-acoes";
@@ -65,15 +66,7 @@ function formatStatusLabel(status?: string | null): string {
 
 function formatCnpj(value?: string | null): string | null {
   if (!value) return null;
-
-  const digits = value.replace(/\D/g, "").slice(0, 14);
-
-  if (digits.length !== 14) return null;
-
-  return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(
-    5,
-    8,
-  )}/${digits.slice(8, 12)}-${digits.slice(12)}`;
+  return formatCnpjDocument(value);
 }
 
 function buildTipoBadgeClasses(tipo: UsuarioRecrutadorVinculoTipo): string {

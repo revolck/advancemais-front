@@ -18,6 +18,12 @@ describe('MaskService applyMask deletion', () => {
     expect(withoutDigit).toBe('12.345.678/0001');
   });
 
+  it('formats alphanumeric CNPJ preserving letters as uppercase', () => {
+    const formatted = service.processInput('12.abc.345/01de-35', 'cnpj');
+    expect(formatted).toBe('12.ABC.345/01DE-35');
+    expect(service.removeMask(formatted, 'cnpj')).toBe('12ABC34501DE35');
+  });
+
   it('applies CPF format when using cpfCnpj mask with 11 digits', () => {
     const formatted = service.processInput('12345678901', 'cpfCnpj');
     expect(formatted).toBe('123.456.789-01');
@@ -26,5 +32,10 @@ describe('MaskService applyMask deletion', () => {
   it('switches to CNPJ format when using cpfCnpj mask with more than 11 digits', () => {
     const formatted = service.processInput('12345678901234', 'cpfCnpj');
     expect(formatted).toBe('12.345.678/9012-34');
+  });
+
+  it('treats letters in cpfCnpj mask as CNPJ', () => {
+    const formatted = service.processInput('ab12cd34ef5602', 'cpfCnpj');
+    expect(formatted).toBe('AB.12C.D34/EF56-02');
   });
 });

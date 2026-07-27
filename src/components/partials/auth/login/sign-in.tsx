@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { InputCustom, ButtonCustom } from "@/components/ui/custom";
 import { Checkbox } from "@/components/ui/radix-checkbox";
 import Image from "next/image";
+import MaskService from "@/services/components/input/maskService";
 
 // --- TYPE DEFINITIONS ---
 
@@ -45,12 +46,12 @@ export const SignInPage: React.FC<SignInPageProps> = ({
   // Não resetamos automaticamente aqui - o pai controla quando desbloquear
   const isSubmitting = isLoading;
 
-  // Determina se é CPF (11 dígitos) ou CNPJ (14 dígitos)
-  const documentoDigits = documento.replace(/\D/g, "");
+  const maskService = MaskService.getInstance();
 
   // Validação do formulário
   const isFormValid =
-    (documentoDigits.length === 11 || documentoDigits.length === 14) &&
+    documento.trim().length > 0 &&
+    maskService.validate(documento, "cpfCnpj") &&
     senha.length > 0;
 
   return (

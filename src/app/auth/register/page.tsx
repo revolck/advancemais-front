@@ -537,7 +537,7 @@ const RegisterPage = () => {
                 onChange={(e) => handleInputChange("document", e.target.value)}
                 mask={isCompany ? "cnpj" : "cpf"}
                 placeholder={
-                  isCompany ? "00.000.000/0000-00" : "000.000.000-00"
+                  isCompany ? "XX.XXX.XXX/XXXX-XX" : "000.000.000-00"
                 }
                 size="md"
                 className="text-sm"

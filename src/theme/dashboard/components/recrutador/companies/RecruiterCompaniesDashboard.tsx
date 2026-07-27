@@ -25,6 +25,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { formatCnpj as formatCnpjDocument, normalizeCnpj } from "@/lib/documentos";
 import { cn } from "@/lib/utils";
 
 const ITEMS_PER_PAGE = 10;
@@ -35,11 +36,7 @@ function getCompanyLocationLabel(company: RecrutadorEmpresa): string {
 
 function formatCnpj(value?: string | null): string | null {
   if (!value) return null;
-
-  const digits = value.replace(/\D/g, "").slice(0, 14);
-  if (digits.length !== 14) return value;
-
-  return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8, 12)}-${digits.slice(12)}`;
+  return formatCnpjDocument(value);
 }
 
 function formatPhone(value?: string | null): string {
@@ -169,7 +166,7 @@ export function RecruiterCompaniesDashboard() {
       const name = String(company.nomeExibicao || company.nome || "").toLowerCase();
       const code = String(company.codUsuario || "").toLowerCase();
       const cnpj = String(company.cnpj || "");
-      const normalizedCnpj = cnpj.replace(/\D/g, "");
+      const normalizedCnpj = normalizeCnpj(cnpj);
       const locationLabel = getCompanyLocationLabel(company);
 
       const matchesSearch =
@@ -177,6 +174,7 @@ export function RecruiterCompaniesDashboard() {
         name.includes(term) ||
         code.includes(term) ||
         cnpj.toLowerCase().includes(term) ||
+        normalizedCnpj.toLowerCase().includes(term) ||
         (numericTerm.length > 0 && normalizedCnpj.includes(numericTerm));
 
       const matchesLocation =

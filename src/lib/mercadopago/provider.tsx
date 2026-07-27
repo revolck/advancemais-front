@@ -13,6 +13,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { getPublicMercadoPagoConfig } from "@/api/configuracoes-gerais";
 import { env } from "@/lib/env";
+import { normalizeCnpj, normalizeCpf } from "@/lib/documentos";
 import type { CardData, CardTokenResult, MercadoPagoContextValue } from "./types";
 
 // Tipo para o SDK do Mercado Pago
@@ -176,7 +177,10 @@ export function MercadoPagoProvider({
           : cardData.expirationYear,
         securityCode: cardData.securityCode,
         identificationType: cardData.identificationType,
-        identificationNumber: cardData.identificationNumber.replace(/\D/g, ""),
+        identificationNumber:
+          cardData.identificationType === "CNPJ"
+            ? normalizeCnpj(cardData.identificationNumber)
+            : normalizeCpf(cardData.identificationNumber),
       };
 
       console.log("[MercadoPago] Criando token...", {
