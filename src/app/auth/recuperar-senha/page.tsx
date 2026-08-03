@@ -36,7 +36,7 @@ const PASSWORD_REQUIREMENTS = [
   },
 ];
 
-type PageState = "loading" | "ready" | "invalid" | "success";
+type PageState = "loading" | "ready" | "invalid" | "rateLimited" | "success";
 
 type Requirement = (typeof PASSWORD_REQUIREMENTS)[number];
 
@@ -90,7 +90,8 @@ export default function PasswordResetPage() {
       .catch((error) => {
         console.error("Erro ao validar token de recuperação", error);
         if (!isActive) return;
-        setPageState("invalid");
+        const status = (error as { status?: number }).status;
+        setPageState(status === 429 ? "rateLimited" : "invalid");
         setLoadingStep("");
       });
 
@@ -180,6 +181,32 @@ export default function PasswordResetPage() {
           illustrationAlt="Link inválido ou expirado"
           title="Link inválido ou expirado"
           description="Solicite um novo e-mail de recuperação para garantir sua segurança. O link pode ter sido usado ou expirou."
+          maxContentWidth="md"
+          actions={
+            <ButtonCustom
+              asChild
+              variant="primary"
+              size="lg"
+              withAnimation
+              className="inline-flex items-center gap-2"
+            >
+              <Link href="/login">
+                <ArrowLeft className="w-4 h-4" />
+                Voltar para o login
+              </Link>
+            </ButtonCustom>
+          }
+        />
+      );
+    }
+
+    if (pageState === "rateLimited") {
+      return (
+        <EmptyState
+          illustration="fileNotFound"
+          illustrationAlt="Muitas tentativas de validação"
+          title="Muitas tentativas"
+          description="Aguarde alguns instantes e abra o link de recuperação novamente."
           maxContentWidth="md"
           actions={
             <ButtonCustom
