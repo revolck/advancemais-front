@@ -51,7 +51,7 @@ export interface AdicionarCartaoPayload {
 // Response ao adicionar cartão
 export interface AdicionarCartaoResponse {
   success: boolean;
-  data: {
+  data?: {
     cartao: CartaoEmpresa;
     validacao: {
       sucesso: boolean;
@@ -66,6 +66,8 @@ export interface AdicionarCartaoResponse {
       perguntarSeDesejaPagar: boolean;
     };
   };
+  /** Formato legado retornado pela API antes do contrato data.cartao */
+  cartao?: CartaoEmpresa;
   message?: string;
 }
 
@@ -125,4 +127,3 @@ export interface AtualizarPreferenciaPayload {
   metodo: MetodoPagamentoPreferido;
   cartaoId?: string;
 }
-

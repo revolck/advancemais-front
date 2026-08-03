@@ -535,9 +535,8 @@ export function AddCardView({ onBack, onSuccess }: AddCardViewProps) {
                 Seus dados estão seguros
               </p>
               <p className="!text-sm !text-blue-700 !mb-0">
-                Ao salvar, faremos uma validação de R$ 1,00 que será estornada
-                imediatamente. Seus dados são protegidos e criptografados pelo
-                Mercado Pago.
+                Ao salvar, seus dados serão tokenizados pelo Mercado Pago e
+                armazenados com segurança para uso nos pagamentos do plano.
               </p>
             </div>
           </div>

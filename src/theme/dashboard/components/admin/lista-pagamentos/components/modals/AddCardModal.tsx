@@ -642,9 +642,9 @@ export function AddCardModal({
             <div className="flex items-start gap-2">
               <CheckCircle2 className="size-4 text-blue-600 mt-0.5 shrink-0" />
               <p className="text-xs! text-blue-700! mb-0!">
-                <strong>Seguro:</strong> Ao salvar, faremos uma validação de R$
-                1,00 que será estornada imediatamente. Seus dados são protegidos
-                e criptografados pelo Mercado Pago.
+                <strong>Seguro:</strong> Ao salvar, seus dados serão
+                tokenizados pelo Mercado Pago e armazenados com segurança para
+                uso nos pagamentos do plano.
               </p>
             </div>
           </div>

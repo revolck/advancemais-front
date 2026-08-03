@@ -52,6 +52,9 @@ export function useAdicionarCartao() {
       if (!response.success) {
         throw new Error(response.message || "Erro ao adicionar cartão");
       }
+      if (!response.data) {
+        throw new Error(response.message || "Resposta inválida ao adicionar cartão");
+      }
       return response.data;
     },
     onSuccess: () => {
@@ -199,5 +202,4 @@ export function cartaoExpirado(cartao: CartaoEmpresa): boolean {
   const expiracao = new Date(cartao.anoExpiracao, cartao.mesExpiracao - 1);
   return expiracao < hoje;
 }
-
 

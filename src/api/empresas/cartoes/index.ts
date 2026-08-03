@@ -23,7 +23,7 @@ export async function getCartoes(): Promise<ListarCartoesResponse> {
 
 /**
  * Adiciona um novo cartão
- * - Valida o cartão com cobrança de R$ 1,00 + estorno
+ * - Salva o cartão tokenizado no Mercado Pago
  * - Retorna informação sobre pagamento pendente se houver
  *
  * @param payload - Token do cartão gerado pelo SDK do MP
@@ -31,7 +31,7 @@ export async function getCartoes(): Promise<ListarCartoesResponse> {
 export async function adicionarCartao(
   payload: AdicionarCartaoPayload
 ): Promise<AdicionarCartaoResponse> {
-  return apiFetch<AdicionarCartaoResponse>(cartoesRoutes.add(), {
+  const response = await apiFetch<AdicionarCartaoResponse>(cartoesRoutes.add(), {
     init: {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -39,8 +39,23 @@ export async function adicionarCartao(
     },
     cache: "no-cache",
     retries: 1,
-    timeout: 30000, // Timeout maior pois valida cartão
+    timeout: 30000,
   });
+
+  if (response.success && !response.data && response.cartao) {
+    return {
+      ...response,
+      data: {
+        cartao: response.cartao,
+        validacao: {
+          sucesso: true,
+          mensagem: response.message || "Cartão cadastrado com sucesso.",
+        },
+      },
+    };
+  }
+
+  return response;
 }
 
 /**
@@ -137,5 +152,4 @@ export async function atualizarPreferenciaPagamento(
 
 export * from "./types";
 export { cartoesRoutes } from "./routes";
-
 
