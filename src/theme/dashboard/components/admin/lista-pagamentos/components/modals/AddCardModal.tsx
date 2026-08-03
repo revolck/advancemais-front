@@ -637,17 +637,6 @@ export function AddCardModal({
             </div>
           )}
 
-          {/* Info sobre validação */}
-          <div className="p-3 rounded-lg bg-blue-50 border border-blue-100">
-            <div className="flex items-start gap-2">
-              <CheckCircle2 className="size-4 text-blue-600 mt-0.5 shrink-0" />
-              <p className="text-xs! text-blue-700! mb-0!">
-                <strong>Seguro:</strong> Ao salvar, seus dados serão
-                tokenizados pelo Mercado Pago e armazenados com segurança para
-                uso nos pagamentos do plano.
-              </p>
-            </div>
-          </div>
         </ModalBody>
 
         <ModalFooter>

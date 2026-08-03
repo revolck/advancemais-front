@@ -6,7 +6,6 @@ import {
   CreditCard,
   AlertCircle,
   CheckCircle2,
-  Shield,
 } from "lucide-react";
 import { ButtonCustom, InputCustom } from "@/components/ui/custom";
 import {
@@ -525,22 +524,6 @@ export function AddCardView({ onBack, onSuccess }: AddCardViewProps) {
             </div>
           </div>
         )}
-
-        {/* Info sobre segurança */}
-        <div className="p-4 rounded-xl bg-blue-50 border border-blue-100">
-          <div className="flex items-start gap-3">
-            <Shield className="size-5 text-blue-600 mt-0.5 shrink-0" />
-            <div>
-              <p className="!text-sm !font-medium !text-blue-800 !mb-1">
-                Seus dados estão seguros
-              </p>
-              <p className="!text-sm !text-blue-700 !mb-0">
-                Ao salvar, seus dados serão tokenizados pelo Mercado Pago e
-                armazenados com segurança para uso nos pagamentos do plano.
-              </p>
-            </div>
-          </div>
-        </div>
 
         {/* Botões de Ação */}
         <div className="flex flex-col sm:flex-row gap-3 pt-2 sm:justify-end">
