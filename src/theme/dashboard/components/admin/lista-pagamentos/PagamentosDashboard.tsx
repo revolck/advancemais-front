@@ -34,6 +34,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { MaskService } from "@/services";
 import { useTenantCompany } from "@/hooks/useTenantCompany";
+import { useCartoes } from "@/hooks";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const createEmptyDateRange = (): DateRange => ({ from: null, to: null });
@@ -42,6 +43,11 @@ export function PagamentosDashboard({ className }: PagamentosDashboardProps) {
   const { data, isLoading, error, filters, updateFilters, loadPage } =
     usePagamentosData();
   const { company, isLoading: isLoadingCompany } = useTenantCompany();
+  const {
+    data: cartoes = [],
+    isLoading: isLoadingCartoes,
+    error: cartoesError,
+  } = useCartoes();
 
   const pagamentos = useMemo(() => data?.pagamentos ?? [], [data?.pagamentos]);
   const resumo = data?.resumo;
@@ -344,6 +350,11 @@ export function PagamentosDashboard({ className }: PagamentosDashboardProps) {
 
   const vagasInfo = company?.vagas;
 
+  const formatCardExpiration = (mes: string | number, ano: string | number) => {
+    const normalizedMonth = String(mes).padStart(2, "0");
+    return `${normalizedMonth}/${ano}`;
+  };
+
   // Helper para obter config do status
   const getStatusConfig = (status: string) => {
     switch (status) {
@@ -545,13 +556,74 @@ export function PagamentosDashboard({ className }: PagamentosDashboardProps) {
           </ButtonCustom>
         </div>
 
-        {/* Empty State */}
-        <EmptyState
-          illustration="subscription"
-          title="Nenhum cartão cadastrado"
-          description="Adicione um cartão para renovação automática do seu plano"
-          size="sm"
-        />
+        {isLoadingCartoes ? (
+          <div className="grid gap-3 md:grid-cols-2">
+            <Skeleton className="h-28 rounded-lg" />
+            <Skeleton className="h-28 rounded-lg" />
+          </div>
+        ) : cartoesError ? (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              Erro ao carregar cartões cadastrados.
+            </AlertDescription>
+          </Alert>
+        ) : cartoes.length > 0 ? (
+          <div className="grid gap-3 md:grid-cols-2">
+            {cartoes.map((cartao) => (
+              <div
+                key={cartao.id}
+                className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex min-w-0 items-start gap-3">
+                    <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-700">
+                      <CreditCard className="size-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="!mb-1 truncate !text-sm !font-semibold !text-gray-900">
+                        {cartao.bandeira || "Cartão"} final{" "}
+                        {cartao.ultimos4Digitos}
+                      </p>
+                      <p className="!mb-0 truncate !text-xs !text-gray-500">
+                        {cartao.nomeNoCartao}
+                      </p>
+                    </div>
+                  </div>
+                  {cartao.isPadrao && (
+                    <span className="shrink-0 rounded-full bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700">
+                      Padrão
+                    </span>
+                  )}
+                </div>
+                <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-xs text-gray-500">
+                  <span>
+                    Tipo:{" "}
+                    <strong className="font-medium text-gray-700">
+                      {cartao.tipo === "debito" ? "Débito" : "Crédito"}
+                    </strong>
+                  </span>
+                  <span>
+                    Validade:{" "}
+                    <strong className="font-medium text-gray-700">
+                      {formatCardExpiration(
+                        cartao.mesExpiracao,
+                        cartao.anoExpiracao
+                      )}
+                    </strong>
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <EmptyState
+            illustration="subscription"
+            title="Nenhum cartão cadastrado"
+            description="Adicione um cartão para renovação automática do seu plano"
+            size="sm"
+          />
+        )}
       </div>
     </div>
   );
