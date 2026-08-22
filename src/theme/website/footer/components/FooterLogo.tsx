@@ -15,6 +15,10 @@ export const FooterLogo: React.FC = () => {
         priority={false}
         quality={90}
       />
+      <span className="sr-only">
+        Advance+ | Plataforma integrada de educação, cursos
+        profissionalizantes e soluções tecnológicas para empresas e pessoas
+      </span>
     </div>
   );
 };

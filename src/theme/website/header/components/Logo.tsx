@@ -17,7 +17,7 @@ export const Logo: React.FC = () => {
     >
       <Image
         src="/images/logos/logo_branco.webp"
-        alt={`Logo ${isMobile ? "Mobile" : "Desktop"}`}
+        alt="Advance+"
         width={isMobile ? 120 : 240}
         height={40}
         quality={100}
