@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from "react";
 import { SliderContainer } from "./components/SliderContainer";
-import { Icon } from "@/components/ui/custom/Icons";
 import { SLIDER_CONFIG } from "./constants/config";
 import { useSlider } from "./hooks/useSlider";
 import { useSliderAutoplay } from "./hooks/useSliderAutoplay";
@@ -21,7 +20,9 @@ const SliderBasic: React.FC<SliderBasicProps> = ({
   staticData,
   staticDataMobile,
 }) => {
-  const [slides, setSlides] = useState<SlideData[]>([]);
+  const [slides, setSlides] = useState<SlideData[]>(() =>
+    !fetchFromApi ? (staticData ?? []) : [],
+  );
   const [isLoading, setIsLoading] = useState(fetchFromApi);
 
   const {
@@ -98,17 +99,22 @@ const SliderBasic: React.FC<SliderBasicProps> = ({
     return <div className="w-full" style={{ height: h, minHeight: h, maxHeight: h }} />;
   }
 
-  // Se não há slides, renderiza um fallback com cor primária
+  // Se não há slides, renderiza uma explicação do produto em vez de um placeholder vazio
   if (!slides || slides.length === 0) {
     const h = SLIDER_CONFIG.ui.height;
     return (
       <div
-        className="w-full bg-[var(--primary-color)] flex items-center justify-center"
+        className="w-full bg-[var(--primary-color)] flex items-center justify-center px-4"
         style={{ height: h, minHeight: h, maxHeight: h }}
       >
-        <div className="flex flex-col items-center gap-3">
-          <Icon name="ImageOff" className="w-8 h-8 text-white opacity-90" />
-          <span className="text-white/90">Nenhum slider disponível</span>
+        <div className="flex flex-col items-center gap-2 text-center max-w-2xl">
+          <h2 className="text-white text-2xl md:text-3xl font-bold">
+            Advance+ | Inovação em Educação e Tecnologia
+          </h2>
+          <p className="text-white/90">
+            Plataforma integrada de educação, cursos profissionalizantes e
+            soluções tecnológicas para empresas e pessoas.
+          </p>
         </div>
       </div>
     );
