@@ -190,7 +190,7 @@ export function VisaoGeralRecrutador() {
               ) : isGoogleConnected ? (
                 <>
                   <Link2 className="h-3.5 w-3.5" />
-                  Conectado{googleStatus?.email ? ` (${googleStatus.email})` : ""}
+                  Conectado
                 </>
               ) : (
                 <>

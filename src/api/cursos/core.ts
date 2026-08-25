@@ -11,6 +11,7 @@ import type {
   Curso,
   CreateTurmaPayload,
   CursoTurma,
+  TurmaAlerta,
   VincularTemplatesAoCursoPayload,
   VincularTemplatesAoCursoResponse,
   CursoModulo,
@@ -801,6 +802,29 @@ export async function getTurmaById(
 
     throw error;
   }
+}
+
+/**
+ * Detalhe de um alerta de frequência/qualidade da turma (token válido por 7 dias).
+ */
+export async function getTurmaAlerta(
+  turmaId: string,
+  token: string,
+  init?: RequestInit,
+): Promise<TurmaAlerta> {
+  const response = await apiFetch<{ success: boolean; alerta: TurmaAlerta }>(
+    `/api/v1/cursos/turmas/${turmaId}/alertas/${token}`,
+    {
+      init: {
+        method: "GET",
+        ...init,
+        headers: buildHeaders(init?.headers, true),
+      },
+      cache: "no-cache",
+    },
+  );
+
+  return response.alerta;
 }
 
 /**
@@ -1905,7 +1929,7 @@ export async function getCursoAlunoDetalhes(
       ...init,
       headers: buildHeaders(init?.headers, true),
     },
-    cache: "short",
+    cache: "no-cache",
   });
 
   const raw: any = response;
@@ -3016,10 +3040,13 @@ export async function createNota(
   payload: import("./types").CreateNotaPayload,
   init?: RequestInit,
 ): Promise<import("./types").NotaLancamento> {
-  const response = await apiFetch<{
-    success: boolean;
-    data: import("./types").NotaLancamento;
-  }>(cursosRoutes.cursos.turmas.notas.create(cursoId, turmaId), {
+  const response = await apiFetch<
+    | {
+        success?: boolean;
+        data?: import("./types").NotaLancamento;
+      }
+    | import("./types").NotaLancamento
+  >(cursosRoutes.cursos.turmas.notas.create(cursoId, turmaId), {
     init: {
       method: "POST",
       ...init,
@@ -3031,7 +3058,66 @@ export async function createNota(
     },
     cache: "no-cache",
   });
-  return response.data;
+  return unwrapNotaResponse(response);
+}
+
+function unwrapNotaResponse(
+  response:
+    | {
+        success?: boolean;
+        data?: import("./types").NotaLancamento;
+      }
+    | import("./types").NotaLancamento,
+): import("./types").NotaLancamento {
+  if ("data" in response && response.data) {
+    return response.data;
+  }
+  return response as import("./types").NotaLancamento;
+}
+
+export async function updateNota(
+  cursoId: string | number,
+  turmaId: string,
+  notaId: string,
+  payload: import("./types").UpdateNotaPayload,
+  init?: RequestInit,
+): Promise<import("./types").NotaLancamento> {
+  const response = await apiFetch<
+    | {
+        success?: boolean;
+        data?: import("./types").NotaLancamento;
+      }
+    | import("./types").NotaLancamento
+  >(cursosRoutes.cursos.turmas.notas.update(cursoId, turmaId, notaId), {
+    init: {
+      method: "PUT",
+      ...init,
+      headers: buildHeaders(
+        { "Content-Type": "application/json", ...(init?.headers || {}) },
+        true,
+      ),
+      body: JSON.stringify(payload),
+    },
+    cache: "no-cache",
+  });
+
+  return unwrapNotaResponse(response);
+}
+
+export async function deleteNota(
+  cursoId: string | number,
+  turmaId: string,
+  notaId: string,
+  init?: RequestInit,
+): Promise<void> {
+  await apiFetch(cursosRoutes.cursos.turmas.notas.delete(cursoId, turmaId, notaId), {
+    init: {
+      method: "DELETE",
+      ...init,
+      headers: buildHeaders(init?.headers, true),
+    },
+    cache: "no-cache",
+  });
 }
 
 export async function deleteNotas(

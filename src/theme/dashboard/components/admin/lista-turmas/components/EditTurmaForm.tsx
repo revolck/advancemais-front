@@ -224,6 +224,8 @@ const buildBuilderFromPayload = (
       templateId: templateId ? String(templateId) : null,
       startDate: item.startDate ?? item.dataInicio ?? null,
       endDate: item.endDate ?? item.dataFim ?? null,
+      horaInicio: item.horaInicio ?? null,
+      horaFim: item.horaFim ?? item.horaTermino ?? null,
       instructorIds,
       instructorId: instructorIds[0] ?? null,
       obrigatoria: item.obrigatoria ?? item.obrigatorio ?? true,
@@ -741,6 +743,8 @@ export function EditTurmaForm({
               ...(it.startDate && it.endDate
                 ? { startDate: it.startDate, endDate: it.endDate }
                 : {}),
+              ...(it.horaInicio ? { horaInicio: it.horaInicio } : {}),
+              ...(it.horaFim ? { horaFim: it.horaFim } : {}),
               ...(() => {
                 const status =
                   it.type === "AULA"
@@ -776,6 +780,8 @@ export function EditTurmaForm({
               ...(it.startDate && it.endDate
                 ? { startDate: it.startDate, endDate: it.endDate }
                 : {}),
+              ...(it.horaInicio ? { horaInicio: it.horaInicio } : {}),
+              ...(it.horaFim ? { horaFim: it.horaFim } : {}),
               ...(() => {
                 const status =
                   it.type === "AULA"

@@ -28,6 +28,7 @@ export * from "./image-not-found";
 
 export * from "./text-area";
 export * from "./comment";
+export * from "./reddit-nested-thread-reply";
 
 export * from "./icon-selector";
 

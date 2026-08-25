@@ -32,6 +32,7 @@ const TURMA_QUERY_GC_TIME = 30 * 60 * 1000;
 const INSCRICOES_PAGE_SIZE = 50;
 const INSCRICOES_HISTORY_PAGE_SIZE = 200;
 const INSCRICOES_HISTORY_FETCH_CONCURRENCY = 3;
+const INSCRICOES_PROGRESS_REFETCH_INTERVAL = 15 * 1000;
 
 interface InscricoesPagination {
   total: number;
@@ -292,11 +293,18 @@ export function TurmaDetailsView({
           inscricoesSearch
         )
       ).items,
-    enabled: false,
+    enabled:
+      !!turma &&
+      !initialError &&
+      activeTab === "inscricoes",
     staleTime: 15 * 1000,
     gcTime: TURMA_QUERY_GC_TIME,
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
+    refetchInterval: activeTab === "inscricoes"
+      ? INSCRICOES_PROGRESS_REFETCH_INTERVAL
+      : false,
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
     retry: (failureCount, error) => {
       const apiError = error as { status?: number };
       if (apiError?.status === 404) {
@@ -460,11 +468,7 @@ export function TurmaDetailsView({
         setInscricoesPage(1);
         setInscricoesSearch(value);
       }}
-      onLoadProgress={() => {
-        void inscricoesProgressQuery.refetch();
-      }}
       isLoadingProgress={inscricoesProgressQuery.isFetching}
-      hasLoadedProgress={inscricoesProgressQuery.status === "success"}
     />
   );
 

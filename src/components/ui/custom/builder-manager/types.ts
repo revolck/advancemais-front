@@ -19,6 +19,8 @@ export interface BuilderItem {
   templateId?: string | null;
   startDate?: string | null;
   endDate?: string | null;
+  horaInicio?: string | null;
+  horaFim?: string | null;
   instructorId?: string | null;
   instructorIds?: string[];
   // Preferir `obrigatoria` (API v1). Mantém `obrigatorio` por compatibilidade interna.

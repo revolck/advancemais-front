@@ -281,6 +281,14 @@ function readNumber(data: Record<string, unknown> | null | undefined, key: strin
   return null;
 }
 
+function isAvaliacaoRespostaComentario(notification: Notificacao) {
+  return (
+    notification.tipo === "SISTEMA" &&
+    readString(notification.dados, "evento") ===
+      "AVALIACAO_RESPOSTA_COMENTARIO"
+  );
+}
+
 export function getRecruiterLinkNotificationData(
   notification: Notificacao
 ): RecruiterLinkNotificationData | null {
@@ -338,6 +346,17 @@ export function getCandidaturaStatusNotificationData(
 export function getNotificationMeta(
   notification: Notificacao
 ): NotificationVisualMeta {
+  if (isAvaliacaoRespostaComentario(notification)) {
+    return {
+      label: "Comentário em atividade",
+      icon: "MessageSquareText",
+      bgColor: "bg-sky-100",
+      textColor: "text-sky-700",
+      tagBg: "bg-sky-50",
+      tagText: "text-sky-700",
+    };
+  }
+
   const recruiterLinkData = getRecruiterLinkNotificationData(notification);
   const candidaturaStatusData =
     getCandidaturaStatusNotificationData(notification);
@@ -390,7 +409,9 @@ export function getNotificationAction(notification: Notificacao): {
 
   if (explicitHref) {
     let label = "Ver detalhes";
-    if (candidaturaStatusData) {
+    if (isAvaliacaoRespostaComentario(notification)) {
+      label = "Ver comentário";
+    } else if (candidaturaStatusData) {
       label = "Ver vaga";
     } else if (recruiterLinkData) {
       label = recruiterLinkData.tipoVinculo === "VAGA" ? "Ver vaga" : "Ver empresas";

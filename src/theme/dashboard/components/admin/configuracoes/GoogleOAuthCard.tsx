@@ -129,10 +129,8 @@ export function GoogleOAuthCard() {
   }
 
   const isConectado = status?.conectado ?? false;
-  const expiresAt = status?.expiresAt
-    ? new Date(status.expiresAt)
-    : null;
-  const isExpired = expiresAt ? expiresAt < new Date() : false;
+  const expiraEm = status?.expiraEm ? new Date(status.expiraEm) : null;
+  const isExpired = status?.expirado ?? false;
 
   return (
     <>
@@ -200,15 +198,10 @@ export function GoogleOAuthCard() {
                   Conta conectada com sucesso!
                 </span>
               </div>
-              {status?.email && (
-                <p className="text-sm text-green-600">
-                  Conectado como: <strong>{status.email}</strong>
-                </p>
-              )}
-              {expiresAt && !isExpired && (
+              {expiraEm && !isExpired && (
                 <p className="text-xs text-green-600">
                   Expira em:{" "}
-                  {expiresAt.toLocaleDateString("pt-BR", {
+                  {expiraEm.toLocaleDateString("pt-BR", {
                     day: "2-digit",
                     month: "2-digit",
                     year: "numeric",

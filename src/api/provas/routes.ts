@@ -33,8 +33,19 @@ export const provasRoutes = {
         `${BASE}/avaliacoes/${avaliacaoId}/respostas/${respostaId}`,
       corrigir: (avaliacaoId: string, respostaId: string) =>
         `${BASE}/avaliacoes/${avaliacaoId}/respostas/${respostaId}/correcao`,
+      comentarios: {
+        list: (avaliacaoId: string, respostaId: string) =>
+          `${BASE}/avaliacoes/${avaliacaoId}/respostas/${respostaId}/comentarios`,
+        create: (avaliacaoId: string, respostaId: string) =>
+          `${BASE}/avaliacoes/${avaliacaoId}/respostas/${respostaId}/comentarios`,
+        update: (avaliacaoId: string, respostaId: string, comentarioId: string) =>
+          `${BASE}/avaliacoes/${avaliacaoId}/respostas/${respostaId}/comentarios/${comentarioId}`,
+        delete: (avaliacaoId: string, respostaId: string, comentarioId: string) =>
+          `${BASE}/avaliacoes/${avaliacaoId}/respostas/${respostaId}/comentarios/${comentarioId}`,
+        fixar: (avaliacaoId: string, respostaId: string, comentarioId: string) =>
+          `${BASE}/avaliacoes/${avaliacaoId}/respostas/${respostaId}/comentarios/${comentarioId}/fixar`,
+      },
     },
   },
 } as const;
-
 

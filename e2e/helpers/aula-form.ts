@@ -43,6 +43,45 @@ async function openSelect(page: Page, labelText: string, options?: { waitEnabled
   return allOptions;
 }
 
+async function clickVisibleCalendarDay(page: Page, day: number) {
+  const dayMatcher = new RegExp(`^${day}$`);
+  const cell = page
+    .locator("[role='grid']:visible [role='gridcell']:not([disabled])")
+    .filter({ hasText: dayMatcher })
+    .first();
+
+  await cell.waitFor({ state: "visible", timeout: 10000 });
+  await cell.scrollIntoViewIfNeeded();
+  await cell.click();
+}
+
+async function preencherPeriodoRange(page: Page, from: Date, to: Date) {
+  const container = await getFieldContainer(page, "Período");
+  const trigger = container
+    .locator("button, [role='button']")
+    .filter({ hasNotText: "Recarregar" })
+    .first();
+
+  await expect(trigger).toBeVisible({ timeout: 15000 });
+  await expect(trigger).toBeEnabled({ timeout: 20000 });
+  await trigger.click();
+
+  await page.locator("[role='grid']:visible").first().waitFor({ state: "visible" });
+  await clickVisibleCalendarDay(page, from.getDate());
+  await page.waitForTimeout(150);
+
+  if (
+    from.getFullYear() === to.getFullYear() &&
+    from.getMonth() === to.getMonth() &&
+    from.getDate() === to.getDate()
+  ) {
+    await page.keyboard.press('Escape');
+    return;
+  }
+
+  await clickVisibleCalendarDay(page, to.getDate());
+}
+
 async function selectFirstVisibleOption(
   options: ReturnType<Page['locator']>,
   opts?: { skipTexts?: string[] }
@@ -135,8 +174,10 @@ export async function preencherCamposBasicos(
   } else {
     duracaoInput = page.locator('input[type="number"]').first();
   }
-  
-  await duracaoInput.fill(duracaoMinutos);
+
+  if (await duracaoInput.isEnabled()) {
+    await duracaoInput.fill(duracaoMinutos);
+  }
   await page.waitForTimeout(200);
 }
 
@@ -278,54 +319,56 @@ export async function preencherPeriodo(
   page: Page,
   dataOffset: number = 1, // Dias a partir de hoje
   horaInicio: string = '10:00',
-  horaFim: string = '11:00'
+  horaFim: string = '11:00',
+  dataFimOffset: number = dataOffset
 ) {
-  // Data da aula - pode ser um date picker customizado
-  // Tentar encontrar pelo label primeiro
-  const dataLabel = page.locator('label:has-text("Data da Aula")').first();
-  let dataInput;
-  
-  if (await dataLabel.count() > 0) {
-    // Pode ser um input dentro do container do label
-    dataInput = dataLabel
-      .locator('..')
-      .locator('..')
-      .locator('input[type="date"], input[type="text"]')
-      .first();
-  } else {
-    // Fallback: procurar diretamente
-    dataInput = page.locator('input[type="date"], input[placeholder*="data" i], input[placeholder*="Data" i]').first();
-  }
-  
-  // Calcular data futura
   const data = new Date();
   data.setDate(data.getDate() + dataOffset);
-  const dataFormatada = data.toISOString().split('T')[0];
-  
-  // Se for um date picker customizado, pode precisar clicar primeiro
-  const dataInputCount = await dataInput.count();
-  if (dataInputCount === 0) {
-    // Em alguns fluxos (ex.: semipresencial + YouTube) não há período.
-    return;
+  data.setHours(0, 0, 0, 0);
+
+  const dataFim = new Date();
+  dataFim.setDate(dataFim.getDate() + dataFimOffset);
+  dataFim.setHours(0, 0, 0, 0);
+
+  if (await page.locator('label:has-text("Período")').first().count()) {
+    await preencherPeriodoRange(page, data, dataFim);
+  } else {
+    const dataLabel = page.locator('label:has-text("Data da Aula")').first();
+    let dataInput;
+
+    if (await dataLabel.count() > 0) {
+      dataInput = dataLabel
+        .locator('..')
+        .locator('..')
+        .locator('input[type="date"], input[type="text"]')
+        .first();
+    } else {
+      dataInput = page.locator('input[type="date"], input[placeholder*="data" i], input[placeholder*="Data" i]').first();
+    }
+
+    if ((await dataInput.count()) === 0) {
+      // Em alguns fluxos (ex.: semipresencial + YouTube) não há período.
+      return;
+    }
+
+    await dataInput.click();
+    await dataInput.fill(data.toISOString().split('T')[0]);
+    await page.keyboard.press('Enter');
   }
 
-  await dataInput.click();
-  await dataInput.fill(dataFormatada);
-  await page.keyboard.press('Enter');
-  
   await page.waitForTimeout(300);
   
   // Hora início - procurar pelo label
   const horaInicioLabel = page.locator('label:has-text("Hora de Início")').first();
-  let horaInicioInput;
-  
-  if (await horaInicioLabel.count() > 0) {
+  let horaInicioInput = page.locator('input[name="horaInicio"]').first();
+
+  if ((await horaInicioInput.count()) === 0 && (await horaInicioLabel.count()) > 0) {
     horaInicioInput = horaInicioLabel
       .locator('..')
       .locator('..')
       .locator('input[type="time"], input[type="text"]')
       .first();
-  } else {
+  } else if ((await horaInicioInput.count()) === 0) {
     horaInicioInput = page.locator('input[placeholder*="00:00"], input[name*="horaInicio" i]').first();
   }
   
@@ -333,15 +376,15 @@ export async function preencherPeriodo(
   
   // Hora fim
   const horaFimLabel = page.locator('label:has-text("Hora de Término")').first();
-  let horaFimInput;
-  
-  if (await horaFimLabel.count() > 0) {
+  let horaFimInput = page.locator('input[name="horaFim"]').first();
+
+  if ((await horaFimInput.count()) === 0 && (await horaFimLabel.count()) > 0) {
     horaFimInput = horaFimLabel
       .locator('..')
       .locator('..')
       .locator('input[type="time"], input[type="text"]')
       .first();
-  } else {
+  } else if ((await horaFimInput.count()) === 0) {
     horaFimInput = page.locator('input[placeholder*="00:00"], input[name*="horaFim" i]').first();
   }
   

@@ -13,13 +13,34 @@ export interface TextoItem {
 interface TextoBuilderProps {
   texto: TextoItem;
   onChange: (texto: TextoItem) => void;
+  title?: string;
+  description?: string;
+  fieldLabel?: string;
+  placeholder?: string;
+  tip?: string;
+  badgeLabel?: string;
+  previewLabel?: string;
+  emptySourceLabel?: string;
+  emptyTargetLabel?: string;
 }
 
 /**
  * Componente para construir atividade por pergunta e resposta
  * Design baseado no builder-manager da plataforma
  */
-export function TextoBuilder({ texto, onChange }: TextoBuilderProps) {
+export function TextoBuilder({
+  texto,
+  onChange,
+  title = "Pergunta e Resposta",
+  description = "Os alunos responderão com texto livre",
+  fieldLabel = "Pergunta da Atividade",
+  placeholder = "Digite a pergunta que os alunos deverão responder...",
+  tip = "Faça perguntas claras e objetivas. Os alunos poderão responder com texto livre, então seja específico sobre o que espera na resposta.",
+  badgeLabel = "Resposta Livre",
+  previewLabel = "Prévia da pergunta",
+  emptySourceLabel = "Pergunta",
+  emptyTargetLabel = "Resposta do Aluno",
+}: TextoBuilderProps) {
   const hasContent = texto.titulo.trim().length > 0;
 
   return (
@@ -33,10 +54,10 @@ export function TextoBuilder({ texto, onChange }: TextoBuilderProps) {
             </div>
             <div>
               <h3 className="text-base! font-semibold! text-gray-900! mb-0!">
-                Pergunta e Resposta
+                {title}
               </h3>
               <p className="text-xs! text-gray-500! mb-0!">
-                Os alunos responderão com texto livre
+                {description}
               </p>
             </div>
           </div>
@@ -45,7 +66,7 @@ export function TextoBuilder({ texto, onChange }: TextoBuilderProps) {
             className="bg-blue-50 text-blue-700 border-blue-200 text-xs"
           >
             <PenLine className="h-3 w-3 mr-1" />
-            Resposta Livre
+            {badgeLabel}
           </Badge>
         </div>
       </div>
@@ -60,7 +81,7 @@ export function TextoBuilder({ texto, onChange }: TextoBuilderProps) {
             </div>
             <div className="flex items-center gap-2">
               <span className="text-sm font-medium text-gray-700">
-                Pergunta da Atividade
+                {fieldLabel}
               </span>
               {hasContent && (
                 <Badge
@@ -79,7 +100,7 @@ export function TextoBuilder({ texto, onChange }: TextoBuilderProps) {
         <div className="p-5">
           <SimpleTextarea
             label=""
-            placeholder="Digite a pergunta que os alunos deverão responder..."
+            placeholder={placeholder}
             value={texto.titulo}
             onChange={(e) => onChange({ ...texto, titulo: e.target.value })}
             required
@@ -95,9 +116,7 @@ export function TextoBuilder({ texto, onChange }: TextoBuilderProps) {
               className="h-4 w-4 text-amber-400 shrink-0 mt-0.5"
             />
             <p className="mb-0! leading-relaxed">
-              <span className="font-medium text-gray-500">Dica:</span> Faça
-              perguntas claras e objetivas. Os alunos poderão responder com
-              texto livre, então seja específico sobre o que espera na resposta.
+              <span className="font-medium text-gray-500">Dica:</span> {tip}
             </p>
           </div>
         </div>
@@ -109,7 +128,7 @@ export function TextoBuilder({ texto, onChange }: TextoBuilderProps) {
           <div className="flex items-center gap-2 mb-3">
             <Icon name="Eye" className="h-4 w-4 text-blue-500" />
             <span className="text-xs font-medium text-blue-600">
-              Prévia da pergunta
+              {previewLabel}
             </span>
           </div>
           <div className="bg-white rounded-xl border border-blue-100 p-4">
@@ -128,14 +147,14 @@ export function TextoBuilder({ texto, onChange }: TextoBuilderProps) {
               <div className="w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center">
                 <MessageSquareText className="h-3.5 w-3.5 text-blue-600" />
               </div>
-              <span>Pergunta</span>
+              <span>{emptySourceLabel}</span>
             </div>
             <Icon name="ArrowRight" className="h-3 w-3" />
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 rounded-lg bg-emerald-100 flex items-center justify-center">
                 <PenLine className="h-3.5 w-3.5 text-emerald-600" />
               </div>
-              <span>Resposta do Aluno</span>
+              <span>{emptyTargetLabel}</span>
             </div>
           </div>
         </div>

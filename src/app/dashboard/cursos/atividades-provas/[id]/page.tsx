@@ -15,6 +15,7 @@ export const runtime = "nodejs";
 
 interface ProvaDetailsPageProps {
   params: Promise<{ id: string }>;
+  searchParams?: Promise<{ tab?: string | string[] }>;
 }
 
 const UUID_REGEX =
@@ -75,8 +76,14 @@ function mapAvaliacaoToTurmaProva(avaliacao: Awaited<ReturnType<typeof getAvalia
 
 export default async function ProvaDetailsPage({
   params,
+  searchParams,
 }: ProvaDetailsPageProps) {
   const { id: provaId } = await params;
+  const resolvedSearchParams = searchParams ? await searchParams : undefined;
+  const requestedTab = Array.isArray(resolvedSearchParams?.tab)
+    ? resolvedSearchParams.tab[0]
+    : resolvedSearchParams?.tab;
+  const initialTab = requestedTab === "respostas" ? "respostas" : "resumo";
 
   if (!provaId || typeof provaId !== "string") {
     notFound();
@@ -176,6 +183,7 @@ export default async function ProvaDetailsPage({
         turmaId={turmaId}
         provaId={provaId}
         initialProva={provaResponse!}
+        initialTab={initialTab}
       />
     </div>
   );

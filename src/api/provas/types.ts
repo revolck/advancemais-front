@@ -153,7 +153,7 @@ export interface AvaliacaoRespostaResumo {
   codigoInscricao?: string | null;
   aluno: AvaliacaoRespostaAlunoResumo;
   tipoAvaliacao?: "PROVA" | "ATIVIDADE";
-  tipoAtividade?: "QUESTOES" | "PERGUNTA_RESPOSTA" | "TEXTO" | null;
+  tipoAtividade?: "QUESTOES" | "PERGUNTA_RESPOSTA" | "ENVIO_MATERIAL" | "TEXTO" | null;
   statusCorrecao: StatusCorrecao;
   nota?: number | null;
   notaMaxima?: number | null;
@@ -261,7 +261,7 @@ export interface AvaliacaoRespostaDetalhe {
   inscricaoId?: string;
   aluno?: AvaliacaoRespostaAlunoResumo;
   tipoAvaliacao?: "PROVA" | "ATIVIDADE";
-  tipoAtividade?: "QUESTOES" | "PERGUNTA_RESPOSTA" | "TEXTO" | null;
+  tipoAtividade?: "QUESTOES" | "PERGUNTA_RESPOSTA" | "ENVIO_MATERIAL" | "TEXTO" | null;
   statusCorrecao?: StatusCorrecao;
   nota?: number | null;
   notaMaxima?: number | null;
@@ -307,4 +307,80 @@ export interface CorrigirAvaliacaoRespostaResponse {
     nota?: number | null;
     corrigidoEm?: string | null;
   };
+}
+
+export type AvaliacaoRespostaComentarioFiltro = "PRINCIPAL" | "RECENTES" | "MEUS_COMENTARIOS";
+
+export interface AvaliacaoRespostaComentarioAutor {
+  id: string;
+  nome: string;
+  role?: string | null;
+  avatarUrl?: string | null;
+}
+
+export interface AvaliacaoRespostaComentarioAnexo {
+  url: string;
+  nome: string;
+  tipo: string;
+  tamanho: number;
+}
+
+export interface AvaliacaoRespostaComentario {
+  id: string;
+  parentId?: string | null;
+  conteudo: string;
+  anexos: AvaliacaoRespostaComentarioAnexo[];
+  fixado: boolean;
+  criadoEm?: string | null;
+  atualizadoEm?: string | null;
+  autor: AvaliacaoRespostaComentarioAutor;
+  canEdit?: boolean;
+  canDelete?: boolean;
+  canPin?: boolean;
+  replies: AvaliacaoRespostaComentario[];
+}
+
+export interface ListAvaliacaoRespostaComentariosParams {
+  filtro?: AvaliacaoRespostaComentarioFiltro;
+  search?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface ListAvaliacaoRespostaComentariosResponse {
+  success: boolean;
+  data: AvaliacaoRespostaComentario[];
+  total?: number;
+  pagination?: {
+    page: number;
+    pageSize: number;
+    totalRoots: number;
+    totalPages: number;
+    hasMore: boolean;
+  };
+}
+
+export interface AvaliacaoRespostaComentarioPayload {
+  conteudo: string;
+  anexos?: AvaliacaoRespostaComentarioAnexo[];
+  parentId?: string | null;
+}
+
+export interface UpdateAvaliacaoRespostaComentarioPayload {
+  conteudo: string;
+  anexos?: AvaliacaoRespostaComentarioAnexo[];
+}
+
+export interface FixarAvaliacaoRespostaComentarioPayload {
+  fixado: boolean;
+}
+
+export interface AvaliacaoRespostaComentarioResponse {
+  success: boolean;
+  data: AvaliacaoRespostaComentario;
+}
+
+export interface DeleteAvaliacaoRespostaComentarioResponse {
+  success: boolean;
+  deletedAttachmentUrls?: string[];
 }

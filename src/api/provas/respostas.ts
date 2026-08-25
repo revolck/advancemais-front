@@ -15,8 +15,16 @@ import type {
   ListAvaliacaoRespostasResponse,
   AvaliacaoRespostaDetalhe,
   AvaliacaoRespostaDetalheResponse,
+  AvaliacaoRespostaComentario,
+  AvaliacaoRespostaComentarioPayload,
+  AvaliacaoRespostaComentarioResponse,
   CorrigirAvaliacaoRespostaPayload,
   CorrigirAvaliacaoRespostaResponse,
+  DeleteAvaliacaoRespostaComentarioResponse,
+  FixarAvaliacaoRespostaComentarioPayload,
+  ListAvaliacaoRespostaComentariosParams,
+  ListAvaliacaoRespostaComentariosResponse,
+  UpdateAvaliacaoRespostaComentarioPayload,
 } from "./types";
 
 function normalizeHeaders(headers?: HeadersInit): Record<string, string> {
@@ -251,4 +259,143 @@ export async function corrigirAvaliacaoResposta(
       cache: "no-cache",
     }
   );
+}
+
+export async function listAvaliacaoRespostaComentarios(
+  avaliacaoId: string,
+  respostaId: string,
+  params?: ListAvaliacaoRespostaComentariosParams,
+  options?: {
+    headers?: HeadersInit;
+    cache?: "no-cache" | "short" | "medium" | "long";
+  }
+): Promise<ListAvaliacaoRespostaComentariosResponse> {
+  const queryParams = new URLSearchParams();
+  if (params?.filtro) queryParams.set("filtro", params.filtro);
+  if (params?.search) queryParams.set("search", params.search);
+  if (params?.page) queryParams.set("page", String(params.page));
+  if (params?.pageSize) queryParams.set("pageSize", String(params.pageSize));
+
+  const endpoint = provasRoutes.avaliacoes.respostas.comentarios.list(
+    avaliacaoId,
+    respostaId
+  );
+  const url = queryParams.toString() ? `${endpoint}?${queryParams.toString()}` : endpoint;
+  const response = await apiFetch<ListAvaliacaoRespostaComentariosResponse>(url, {
+    init: {
+      method: "GET",
+      headers: buildHeaders(options?.headers),
+    },
+    cache: options?.cache || "no-cache",
+  });
+
+  return {
+    success: Boolean(response?.success ?? true),
+    data: Array.isArray(response?.data) ? response.data : [],
+    total: response?.total ?? 0,
+    pagination: response?.pagination,
+  };
+}
+
+export async function createAvaliacaoRespostaComentario(
+  avaliacaoId: string,
+  respostaId: string,
+  payload: AvaliacaoRespostaComentarioPayload,
+  options?: {
+    headers?: HeadersInit;
+  }
+): Promise<AvaliacaoRespostaComentario> {
+  const response = await apiFetch<AvaliacaoRespostaComentarioResponse>(
+    provasRoutes.avaliacoes.respostas.comentarios.create(avaliacaoId, respostaId),
+    {
+      init: {
+        method: "POST",
+        body: JSON.stringify(payload),
+        headers: buildHeaders(options?.headers),
+      },
+      cache: "no-cache",
+    }
+  );
+
+  return response.data;
+}
+
+export async function updateAvaliacaoRespostaComentario(
+  avaliacaoId: string,
+  respostaId: string,
+  comentarioId: string,
+  payload: UpdateAvaliacaoRespostaComentarioPayload,
+  options?: {
+    headers?: HeadersInit;
+  }
+): Promise<AvaliacaoRespostaComentario> {
+  const response = await apiFetch<AvaliacaoRespostaComentarioResponse>(
+    provasRoutes.avaliacoes.respostas.comentarios.update(
+      avaliacaoId,
+      respostaId,
+      comentarioId
+    ),
+    {
+      init: {
+        method: "PUT",
+        body: JSON.stringify(payload),
+        headers: buildHeaders(options?.headers),
+      },
+      cache: "no-cache",
+    }
+  );
+
+  return response.data;
+}
+
+export async function deleteAvaliacaoRespostaComentario(
+  avaliacaoId: string,
+  respostaId: string,
+  comentarioId: string,
+  options?: {
+    headers?: HeadersInit;
+  }
+): Promise<DeleteAvaliacaoRespostaComentarioResponse> {
+  return apiFetch<DeleteAvaliacaoRespostaComentarioResponse>(
+    provasRoutes.avaliacoes.respostas.comentarios.delete(
+      avaliacaoId,
+      respostaId,
+      comentarioId
+    ),
+    {
+      init: {
+        method: "DELETE",
+        headers: buildHeaders(options?.headers),
+      },
+      cache: "no-cache",
+    }
+  );
+}
+
+export async function fixarAvaliacaoRespostaComentario(
+  avaliacaoId: string,
+  respostaId: string,
+  comentarioId: string,
+  payload: FixarAvaliacaoRespostaComentarioPayload,
+  options?: {
+    headers?: HeadersInit;
+  }
+): Promise<AvaliacaoRespostaComentario> {
+  const response = await apiFetch<AvaliacaoRespostaComentarioResponse>(
+    provasRoutes.avaliacoes.respostas.comentarios.fixar(
+      avaliacaoId,
+      respostaId,
+      comentarioId
+    ),
+    {
+      init: {
+        method: "PATCH",
+        body: JSON.stringify(payload),
+        headers: buildHeaders(options?.headers),
+      },
+      cache: "no-cache",
+    }
+  );
+
+  return response.data;
 }

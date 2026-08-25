@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   CalendarClock,
   Eye,
@@ -10,17 +10,13 @@ import {
 } from "lucide-react";
 
 import {
-  corrigirAvaliacaoResposta,
-  getAvaliacaoRespostaById,
   listAvaliacaoRespostas,
   type AvaliacaoRespostaResumo,
-  type CorrigirAvaliacaoRespostaPayload,
   type StatusCorrecao,
 } from "@/api/provas";
 import { EmptyState, InputCustom } from "@/components/ui/custom";
 import { ButtonCustom } from "@/components/ui/custom/button";
 import { MultiSelectFilter } from "@/components/ui/custom/filters/MultiSelectFilter";
-import { toastCustom } from "@/components/ui/custom/toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -33,7 +29,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
-import { ModalCorrecaoAtividade } from "../components/ModalCorrecaoAtividade";
 
 interface RespostasTabProps {
   provaId: string;
@@ -85,15 +80,6 @@ function getInitials(name?: string | null) {
   return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
 }
 
-function parseNotaValue(value: unknown): number | null {
-  if (typeof value === "number" && Number.isFinite(value)) return value;
-  if (typeof value === "string" && value.trim() !== "") {
-    const parsed = Number(value.replace(",", "."));
-    return Number.isFinite(parsed) ? parsed : null;
-  }
-  return null;
-}
-
 const STATUS_META: Record<string, { label: string; className: string }> = {
   CORRIGIDA: {
     label: "Corrigida",
@@ -111,24 +97,10 @@ export function RespostasTab({
   provaId,
   tipoAvaliacaoContext = null,
 }: RespostasTabProps) {
-  const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [searchInput, setSearchInput] = useState("");
   const [searchApplied, setSearchApplied] = useState("");
   const [statusCorrecao, setStatusCorrecao] = useState<string[]>([]);
-  const [modalState, setModalState] = useState<{
-    respostaId: string;
-    startEditing: boolean;
-    tipoAvaliacao?: "PROVA" | "ATIVIDADE" | null;
-    submissionMeta?: {
-      concluidoEm?: string | null;
-      ipEnvio?: string | null;
-    };
-  } | null>(null);
-  const [nota, setNota] = useState("");
-  const [feedback, setFeedback] = useState("");
-  const [saveVersion, setSaveVersion] = useState(0);
-
   const {
     data: response,
     isLoading,
@@ -172,9 +144,6 @@ export function RespostasTab({
   };
 
   const hasActiveFilters = Boolean(searchApplied || statusCorrecao.length > 0);
-  const selectedRespostaId = modalState?.respostaId ?? null;
-  const isModalOpen = Boolean(modalState?.respostaId);
-
   const clearFilters = () => {
     setPage(1);
     setSearchInput("");
@@ -213,138 +182,8 @@ export function RespostasTab({
     return pages;
   }, [page, totalPages]);
 
-  const {
-    data: respostaDetalhe,
-    isLoading: isLoadingDetalhe,
-    error: detalheError,
-  } = useQuery({
-    queryKey: ["avaliacao-resposta", provaId, selectedRespostaId],
-    queryFn: () =>
-      getAvaliacaoRespostaById(provaId, selectedRespostaId!, {
-        cache: "no-cache",
-      }),
-    enabled: Boolean(selectedRespostaId),
-    staleTime: 30_000,
-    retry: false,
-  });
-
-  useEffect(() => {
-    if (!respostaDetalhe) return;
-    setNota(
-      typeof respostaDetalhe.nota === "number" ? String(respostaDetalhe.nota) : ""
-    );
-    setFeedback(respostaDetalhe.feedback?.trim() ?? "");
-  }, [respostaDetalhe]);
-
-  const corrigirMutation = useMutation({
-    mutationFn: (payload: CorrigirAvaliacaoRespostaPayload) =>
-      corrigirAvaliacaoResposta(provaId, selectedRespostaId!, payload),
-    onSuccess: async (response, variables) => {
-      let notaPersistida = parseNotaValue(response?.data?.nota);
-      const notaEnviada =
-        typeof variables?.nota === "number" && Number.isFinite(variables.nota)
-          ? variables.nota
-          : null;
-
-      if (notaEnviada !== null && selectedRespostaId) {
-        if (notaPersistida === null) {
-          const detalheAtualizado = await getAvaliacaoRespostaById(
-            provaId,
-            selectedRespostaId,
-            { cache: "no-cache" },
-          );
-          notaPersistida = parseNotaValue(detalheAtualizado?.nota);
-        }
-
-        const notaOk =
-          notaPersistida !== null &&
-          Math.abs(Number(notaPersistida) - Number(notaEnviada)) < 0.11;
-
-        if (!notaOk) {
-          toastCustom.error(
-            "A correção foi marcada, mas a nota não foi persistida pela API. Tente novamente.",
-          );
-          await Promise.all([
-            queryClient.invalidateQueries({
-              queryKey: ["avaliacao-respostas", provaId],
-            }),
-            queryClient.invalidateQueries({
-              queryKey: ["avaliacao-resposta", provaId, selectedRespostaId],
-            }),
-          ]);
-          return;
-        }
-      }
-
-      await Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: ["avaliacao-respostas", provaId],
-        }),
-        queryClient.invalidateQueries({
-          queryKey: ["avaliacao-resposta", provaId, selectedRespostaId],
-        }),
-      ]);
-      toastCustom.success("Nota aplicada com sucesso.");
-      setSaveVersion((previous) => previous + 1);
-    },
-    onError: (err) => {
-      const message =
-        err instanceof Error ? err.message : "Erro ao aplicar a nota.";
-      toastCustom.error(message);
-    },
-  });
-
-  const handleOpenModal = (
-    respostaId: string,
-    startEditing = false,
-    tipoAvaliacao?: "PROVA" | "ATIVIDADE" | null,
-    submissionMeta?: { concluidoEm?: string | null; ipEnvio?: string | null },
-  ) => {
-    setModalState({ respostaId, startEditing, tipoAvaliacao, submissionMeta });
-  };
-
-  const handleCloseModal = () => {
-    setModalState(null);
-    setNota("");
-    setFeedback("");
-  };
-
-  const submitCorrecao = () => {
-    if (!selectedRespostaId) return;
-    if (respostaDetalhe?.tipoAvaliacao === "PROVA") {
-      toastCustom.info(
-        "A nota da prova é calculada automaticamente pelo sistema.",
-      );
-      return;
-    }
-
-    const notaNormalizada = nota.trim().replace(",", ".");
-    let notaNumber: number | undefined;
-
-    if (notaNormalizada) {
-      const formatoValido = /^(10(\.0)?|[0-9](\.[0-9])?)$/.test(
-        notaNormalizada,
-      );
-      if (!formatoValido) {
-        toastCustom.error("Informe uma nota válida entre 0 e 10 (ex.: 8.5).");
-        return;
-      }
-
-      const parsed = Number(notaNormalizada);
-      if (!Number.isFinite(parsed) || parsed < 0 || parsed > 10) {
-        toastCustom.error("A nota deve estar entre 0 e 10.");
-        return;
-      }
-      notaNumber = parsed;
-    }
-
-    const payload: CorrigirAvaliacaoRespostaPayload = {
-      statusCorrecao: typeof notaNumber === "number" ? "CORRIGIDA" : "PENDENTE",
-      feedback: feedback.trim() || undefined,
-      nota: notaNumber,
-    };
-
-    corrigirMutation.mutate(payload);
+  const openCorrectionPage = (respostaId: string) => {
+    return `/dashboard/cursos/atividades-provas/${encodeURIComponent(provaId)}/respostas/${encodeURIComponent(respostaId)}`;
   };
 
   /* ── loading ── */
@@ -561,19 +400,9 @@ export function RespostasTab({
                     <TableCell className="py-4">
                       <div className="flex items-center justify-end">
                         <ButtonCustom
+                          asChild
                           variant="outline"
                           size="sm"
-                          onClick={() =>
-                            handleOpenModal(
-                              item.id,
-                              !isProva && item.statusCorrecao !== "CORRIGIDA",
-                              tipoAvaliacao,
-                              {
-                                concluidoEm: item.concluidoEm,
-                                ipEnvio: item.ipEnvio,
-                              },
-                            )
-                          }
                           className={cn(
                             "h-9 min-w-[190px] justify-center gap-1.5 px-3",
                             isProva
@@ -583,8 +412,14 @@ export function RespostasTab({
                                 : "!border-amber-200 !bg-amber-50 !text-amber-700 !hover:bg-amber-100",
                           )}
                         >
-                          <Eye className="h-3.5 w-3.5 shrink-0" />
-                          <span className="hidden sm:inline">{actionLabel}</span>
+                          <a
+                            href={openCorrectionPage(item.id)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <Eye className="h-3.5 w-3.5 shrink-0" />
+                            <span className="hidden sm:inline">{actionLabel}</span>
+                          </a>
                         </ButtonCustom>
                       </div>
                     </TableCell>
@@ -595,24 +430,6 @@ export function RespostasTab({
           </Table>
         </div>
       )}
-
-      <ModalCorrecaoAtividade
-        isOpen={isModalOpen}
-        startEditing={modalState?.startEditing ?? false}
-        submissionMeta={modalState?.submissionMeta ?? null}
-        respostaDetalhe={respostaDetalhe}
-        isLoading={isLoadingDetalhe}
-        error={detalheError instanceof Error ? detalheError : null}
-        nota={nota}
-        feedback={feedback}
-        saveVersion={saveVersion}
-        isSubmitting={corrigirMutation.isPending}
-        onClose={handleCloseModal}
-        onSubmit={submitCorrecao}
-        onNotaChange={setNota}
-        onFeedbackChange={setFeedback}
-        allowManualCorrection={modalState?.tipoAvaliacao !== "PROVA"}
-      />
 
       {/* paginação */}
       {totalPages > 1 && (

@@ -11,7 +11,11 @@ import {
   ClipboardList,
   FileCheck2,
   GraduationCap,
+  History,
+  Loader2,
+  Pencil,
   School,
+  Trash2,
 } from "lucide-react";
 
 import {
@@ -25,9 +29,19 @@ import {
   ButtonCustom,
   EmptyState,
   FilterBar,
+  toastCustom,
 } from "@/components/ui/custom";
 import type { FilterField } from "@/components/ui/custom/filters";
+import {
+  ModalBody,
+  ModalContentWrapper,
+  ModalCustom,
+  ModalFooter,
+  ModalHeader,
+  ModalTitle,
+} from "@/components/ui/custom/modal";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -36,7 +50,16 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { CreateNotaModal } from "../../lista-notas/components/CreateNotaModal";
+import { EditNotaModal } from "../../lista-notas/components/EditNotaModal";
+import { NotaHistoryModal } from "../../lista-notas/components/NotaHistoryModal";
+import { useUpdateNotaMutation } from "../../lista-notas/hooks/useUpdateNotaMutation";
 import type { InscricoesTabProps } from "../types";
 import { formatDate } from "../utils/formatters";
 
@@ -104,6 +127,20 @@ function getOrigemLabel(tipo?: NotaOrigemTipo | string | null) {
   return "Sem origem";
 }
 
+function getNotaId(item: NotaAlunoItem): string | null {
+  return item.notaId ?? item.id ?? null;
+}
+
+function getManualNotaValue(item: NotaAlunoItem): number | null {
+  const notaId = getNotaId(item);
+  const currentHistoryItem =
+    item.history?.find((event) => event.id === notaId) ?? item.history?.[0];
+  if (typeof currentHistoryItem?.nota === "number") {
+    return currentHistoryItem.nota;
+  }
+  return item.nota;
+}
+
 const ORIGEM_CONFIG: Record<
   NotaOrigemTipo,
   { label: string; icon: typeof BookOpen; badgeClassName: string }
@@ -168,7 +205,12 @@ async function fetchAlunoNotasPorInscricoes(params: {
   return (response.data?.items ?? []) as NotaAlunoItem[];
 }
 
-export function NotasTab({ aluno, inscricoes, isLoading }: InscricoesTabProps) {
+export function NotasTab({
+  aluno,
+  inscricoes,
+  isLoading,
+  canCreateNota = false,
+}: InscricoesTabProps) {
   const hasAutoSelectedCursoRef = useRef(false);
   const hasAutoSelectedTurmaRef = useRef(false);
   const [selectedCursoId, setSelectedCursoId] = useState<string | null>(null);
@@ -177,15 +219,21 @@ export function NotasTab({ aluno, inscricoes, isLoading }: InscricoesTabProps) {
   const [pendingSearch, setPendingSearch] = useState("");
   const [appliedSearch, setAppliedSearch] = useState("");
   const [page, setPage] = useState(1);
+  const [isCreateNotaOpen, setIsCreateNotaOpen] = useState(false);
+  const [editingNota, setEditingNota] = useState<NotaAlunoItem | null>(null);
+  const [historyNota, setHistoryNota] = useState<NotaAlunoItem | null>(null);
+  const [deletingNota, setDeletingNota] = useState<NotaAlunoItem | null>(null);
+  const updateNota = useUpdateNotaMutation();
 
   const pageSize = 10;
 
   const inscricoesValidas = useMemo(
     () =>
-      (inscricoes && inscricoes.length > 0 ? inscricoes : aluno.inscricoes).filter(
-        (inscricao) => inscricao.curso?.id && inscricao.turma?.id
-      ),
-    [aluno.inscricoes, inscricoes]
+      (inscricoes && inscricoes.length > 0
+        ? inscricoes
+        : aluno.inscricoes
+      ).filter((inscricao) => inscricao.curso?.id && inscricao.turma?.id),
+    [aluno.inscricoes, inscricoes],
   );
 
   const cursosOptions = useMemo(() => {
@@ -217,7 +265,7 @@ export function NotasTab({ aluno, inscricoes, isLoading }: InscricoesTabProps) {
   }, [selectedCursoId, cursosOptions]);
   const selectedTurmasSignature = useMemo(
     () => [...selectedTurmaIds].sort().join("|"),
-    [selectedTurmaIds]
+    [selectedTurmaIds],
   );
   const hasCursoSelecionado = Boolean(selectedCursoId);
   const hasTurmaFilter = hasCursoSelecionado && selectedTurmaIds.length > 0;
@@ -243,7 +291,7 @@ export function NotasTab({ aluno, inscricoes, isLoading }: InscricoesTabProps) {
   });
 
   const notas = useMemo(() => notasQuery.data ?? [], [notasQuery.data]);
-  const isTabLoading = isLoading || notasQuery.isLoading;
+  const isTabLoading = isLoading || notasQuery.isLoading || notasQuery.isFetching;
 
   const turmaOptions = useMemo(() => {
     const map = new Map<string, { turma: string; curso: string }>();
@@ -288,7 +336,7 @@ export function NotasTab({ aluno, inscricoes, isLoading }: InscricoesTabProps) {
       { value: "ATIVIDADE", label: "Atividade" },
       { value: "OUTRO", label: "Outro" },
     ],
-    []
+    [],
   );
 
   const filterFields = useMemo<FilterField[]>(
@@ -315,7 +363,7 @@ export function NotasTab({ aluno, inscricoes, isLoading }: InscricoesTabProps) {
         emptyPlaceholder: "Sem turmas disponíveis",
       },
     ],
-    [cursosOptions, origemOptions, selectedCursoId, turmaOptions]
+    [cursosOptions, origemOptions, selectedCursoId, turmaOptions],
   );
 
   const filterValues = useMemo(
@@ -324,14 +372,17 @@ export function NotasTab({ aluno, inscricoes, isLoading }: InscricoesTabProps) {
       turmaIds: selectedTurmaIds,
       origem: selectedOrigem,
     }),
-    [selectedCursoId, selectedOrigem, selectedTurmaIds]
+    [selectedCursoId, selectedOrigem, selectedTurmaIds],
   );
 
   const filteredNotas = useMemo(() => {
     const search = appliedSearch.trim().toLowerCase();
 
     return notas.filter((item) => {
-      if (selectedTurmaIds.length > 0 && !selectedTurmaIds.includes(item.turmaId)) {
+      if (
+        selectedTurmaIds.length > 0 &&
+        !selectedTurmaIds.includes(item.turmaId)
+      ) {
         return false;
       }
 
@@ -357,7 +408,7 @@ export function NotasTab({ aluno, inscricoes, isLoading }: InscricoesTabProps) {
 
   const resumo = useMemo(() => {
     const notasComValor = filteredNotas.filter(
-      (item) => typeof item.nota === "number" && Number.isFinite(item.nota)
+      (item) => typeof item.nota === "number" && Number.isFinite(item.nota),
     );
 
     const mediaGeral =
@@ -368,10 +419,10 @@ export function NotasTab({ aluno, inscricoes, isLoading }: InscricoesTabProps) {
 
     const ultimaAtualizacao =
       filteredNotas.length > 0
-        ? filteredNotas
+        ? (filteredNotas
             .map((item) => new Date(item.atualizadoEm).getTime())
             .filter((ts) => Number.isFinite(ts))
-            .sort((a, b) => b - a)[0] ?? null
+            .sort((a, b) => b - a)[0] ?? null)
         : null;
 
     return {
@@ -392,12 +443,12 @@ export function NotasTab({ aluno, inscricoes, isLoading }: InscricoesTabProps) {
 
   const pageItems = useMemo(
     () =>
-      filteredNotas.slice(
-        (currentPage - 1) * pageSize,
-        currentPage * pageSize
-      ),
-    [currentPage, filteredNotas]
+      filteredNotas.slice((currentPage - 1) * pageSize, currentPage * pageSize),
+    [currentPage, filteredNotas],
   );
+
+  const defaultTurmaIdForModal =
+    selectedTurmaIds.length === 1 ? selectedTurmaIds[0] : null;
 
   const visiblePages = useMemo(() => {
     const pages: number[] = [];
@@ -431,7 +482,8 @@ export function NotasTab({ aluno, inscricoes, isLoading }: InscricoesTabProps) {
       <Alert variant="destructive">
         <AlertCircle className="h-4 w-4" />
         <AlertDescription>
-          {notasQuery.error?.message ?? "Não foi possível carregar as notas do aluno."}
+          {notasQuery.error?.message ??
+            "Não foi possível carregar as notas do aluno."}
         </AlertDescription>
       </Alert>
     );
@@ -451,63 +503,86 @@ export function NotasTab({ aluno, inscricoes, isLoading }: InscricoesTabProps) {
 
   return (
     <div className="space-y-5">
+      {canCreateNota ? (
+        <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-end">
+          <ButtonCustom
+            variant="primary"
+            size="md"
+            icon="Plus"
+            fullWidth
+            className="sm:w-auto"
+            onClick={() => setIsCreateNotaOpen(true)}
+          >
+            Adicionar nota
+          </ButtonCustom>
+        </div>
+      ) : null}
+
       {hasTurmaFilter ? (
-      <section className="grid gap-3 md:grid-cols-3">
-        <article className="rounded-xl border border-blue-100 bg-blue-50/40 px-4 py-3">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-sm! font-medium! text-slate-700! mb-1!">Nota geral</p>
-              <p className="text-xl! font-semibold! text-slate-900! mb-0!">
-                {resumo.mediaGeral === null ? "—" : formatNota(resumo.mediaGeral)}
-              </p>
+        <section className="grid gap-3 md:grid-cols-3">
+          <article className="rounded-xl border border-blue-100 bg-blue-50/40 px-4 py-3">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm! font-medium! text-slate-700! mb-1!">
+                  Nota geral
+                </p>
+                <p className="text-xl! font-semibold! text-slate-900! mb-0!">
+                  {resumo.mediaGeral === null
+                    ? "—"
+                    : formatNota(resumo.mediaGeral)}
+                </p>
+              </div>
+              <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-blue-100 text-blue-700">
+                <GraduationCap className="h-4 w-4" />
+              </span>
             </div>
-            <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-blue-100 text-blue-700">
-              <GraduationCap className="h-4 w-4" />
-            </span>
-          </div>
-          <p className="mt-1 text-sm! text-slate-500! mb-0!">
-            Situação: {getSituacao(resumo.mediaGeral).label}
-          </p>
-        </article>
+            <p className="mt-1 text-sm! text-slate-500! mb-0!">
+              Situação: {getSituacao(resumo.mediaGeral).label}
+            </p>
+          </article>
 
-        <article className="rounded-xl border border-violet-100 bg-violet-50/40 px-4 py-3">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-sm! font-medium! text-slate-700! mb-1!">Notas por turma</p>
-              <p className="text-xl! font-semibold! text-slate-900! mb-0!">
-                {resumo.turmasComNota}/{resumo.totalTurmas}
-              </p>
+          <article className="rounded-xl border border-violet-100 bg-violet-50/40 px-4 py-3">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm! font-medium! text-slate-700! mb-1!">
+                  Notas por turma
+                </p>
+                <p className="text-xl! font-semibold! text-slate-900! mb-0!">
+                  {resumo.turmasComNota}/{resumo.totalTurmas}
+                </p>
+              </div>
+              <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-violet-100 text-violet-700">
+                <School className="h-4 w-4" />
+              </span>
             </div>
-            <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-violet-100 text-violet-700">
-              <School className="h-4 w-4" />
-            </span>
-          </div>
-          <p className="mt-1 text-sm! text-slate-500! mb-0!">
-            Turmas com nota consolidada
-          </p>
-        </article>
+            <p className="mt-1 text-sm! text-slate-500! mb-0!">
+              Turmas com nota consolidada
+            </p>
+          </article>
 
-        <article className="rounded-xl border border-amber-100 bg-amber-50/40 px-4 py-3">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-sm! font-medium! text-slate-700! mb-1!">Atualizado em</p>
-              <p className="text-sm! font-semibold! text-slate-900! mb-0!">
-                {formatDateTime(
-                  resumo.ultimaAtualizacao
-                    ? new Date(resumo.ultimaAtualizacao).toISOString()
-                    : null
-                )}
-              </p>
+          <article className="rounded-xl border border-amber-100 bg-amber-50/40 px-4 py-3">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm! font-medium! text-slate-700! mb-1!">
+                  Atualizado em
+                </p>
+                <p className="text-sm! font-semibold! text-slate-900! mb-0!">
+                  {formatDateTime(
+                    resumo.ultimaAtualizacao
+                      ? new Date(resumo.ultimaAtualizacao).toISOString()
+                      : null,
+                  )}
+                </p>
+              </div>
+              <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-amber-100 text-amber-700">
+                <CalendarDays className="h-4 w-4" />
+              </span>
             </div>
-            <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-amber-100 text-amber-700">
-              <CalendarDays className="h-4 w-4" />
-            </span>
-          </div>
-          <p className="mt-1 text-sm! text-slate-500! mb-0!">
-            Última atualização da listagem
-          </p>
-        </article>
-      </section>
+            <p className="mt-1 text-sm! text-slate-500! mb-0!">
+              Última atualização da listagem
+            </p>
+          </article>
+        </section>
       ) : null}
 
       <FilterBar
@@ -520,7 +595,9 @@ export function NotasTab({ aluno, inscricoes, isLoading }: InscricoesTabProps) {
             setSelectedCursoId((value as string) || null);
           }
           if (key === "turmaIds") {
-            setSelectedTurmaIds(Array.isArray(value) ? (value as string[]) : []);
+            setSelectedTurmaIds(
+              Array.isArray(value) ? (value as string[]) : [],
+            );
           }
           if (key === "origem") {
             setSelectedOrigem((value as string) || null);
@@ -576,7 +653,7 @@ export function NotasTab({ aluno, inscricoes, isLoading }: InscricoesTabProps) {
       ) : (
         <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
           <div className="overflow-x-auto">
-            <Table className="min-w-[900px]">
+            <Table className="min-w-[980px]">
               <TableHeader>
                 <TableRow className="border-gray-200 bg-gray-50/50">
                   <TableHead className="py-4 px-3 font-medium text-gray-700">
@@ -591,20 +668,44 @@ export function NotasTab({ aluno, inscricoes, isLoading }: InscricoesTabProps) {
                   <TableHead className="py-4 px-3 text-center font-medium text-gray-700">
                     Atualizado em
                   </TableHead>
+                  {canCreateNota ? (
+                    <TableHead className="py-4 px-3 text-right font-medium text-gray-700">
+                      <span className="sr-only">Ações</span>
+                    </TableHead>
+                  ) : null}
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {pageItems.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={4} className="py-8 text-center text-sm text-gray-500">
+                    <TableCell
+                      colSpan={canCreateNota ? 5 : 4}
+                      className="py-8 text-center text-sm text-gray-500"
+                    >
                       Nenhuma nota encontrada para os filtros aplicados.
                     </TableCell>
                   </TableRow>
                 ) : (
                   pageItems.map((item) => {
                     const situacao = getSituacao(item.nota);
+                    const notaId = getNotaId(item);
+                    const canManageNota =
+                      canCreateNota && item.isManual === true && Boolean(notaId);
+                    const canViewHistory =
+                      canCreateNota &&
+                      (item.historicoDisponivel === true ||
+                        Boolean(item.historicoNotaId) ||
+                        Boolean(notaId) ||
+                        (item.history?.length ?? 0) > 0);
+                    const isDeleting =
+                      updateNota.isPending &&
+                      updateNota.variables?.action === "delete" &&
+                      updateNota.variables.notaId === notaId;
                     return (
-                      <TableRow key={`${item.cursoId}-${item.turmaId}`} className="border-gray-100">
+                      <TableRow
+                        key={`${item.cursoId}-${item.turmaId}`}
+                        className="border-gray-100"
+                      >
                         <TableCell className="py-4 px-3">
                           <div className="flex min-w-0 items-start gap-2">
                             <BookOpen className="mt-0.5 h-4 w-4 shrink-0 text-gray-400" />
@@ -640,7 +741,13 @@ export function NotasTab({ aluno, inscricoes, isLoading }: InscricoesTabProps) {
                             <span className="font-semibold text-gray-900">
                               {formatNota(item.nota)}
                             </span>
-                            <Badge variant="outline" className={cn("text-xs font-medium", situacao.className)}>
+                            <Badge
+                              variant="outline"
+                              className={cn(
+                                "text-xs font-medium",
+                                situacao.className,
+                              )}
+                            >
                               {situacao.label}
                             </Badge>
                           </div>
@@ -651,9 +758,10 @@ export function NotasTab({ aluno, inscricoes, isLoading }: InscricoesTabProps) {
                             variant="outline"
                             className={cn(
                               "text-xs font-medium",
-                              item.origem?.tipo && ORIGEM_CONFIG[item.origem.tipo]
+                              item.origem?.tipo &&
+                                ORIGEM_CONFIG[item.origem.tipo]
                                 ? ORIGEM_CONFIG[item.origem.tipo].badgeClassName
-                                : "bg-slate-100 text-slate-700 border-slate-200"
+                                : "bg-slate-100 text-slate-700 border-slate-200",
                             )}
                           >
                             {getOrigemLabel(item.origem?.tipo)}
@@ -666,6 +774,84 @@ export function NotasTab({ aluno, inscricoes, isLoading }: InscricoesTabProps) {
                             {formatDate(item.atualizadoEm)}
                           </span>
                         </TableCell>
+
+                        {canCreateNota ? (
+                          <TableCell className="py-4 px-3">
+                            <div className="flex items-center justify-end gap-2">
+                              {canViewHistory ? (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="icon"
+                                      aria-label="Histórico"
+                                      onClick={() => setHistoryNota(item)}
+                                      className="h-8 w-8 rounded-full cursor-pointer text-gray-500 hover:text-white hover:bg-[var(--primary-color)]"
+                                    >
+                                      <History className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent sideOffset={8}>
+                                    Histórico
+                                  </TooltipContent>
+                                </Tooltip>
+                              ) : null}
+
+                              {canManageNota ? (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="icon"
+                                      aria-label="Editar"
+                                      disabled={updateNota.isPending}
+                                      onClick={() => {
+                                        if (!updateNota.isPending) {
+                                          setEditingNota(item);
+                                        }
+                                      }}
+                                      className="h-8 w-8 rounded-full cursor-pointer text-gray-500 hover:text-white hover:bg-[var(--primary-color)] disabled:cursor-wait disabled:opacity-50"
+                                    >
+                                      <Pencil className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent sideOffset={8}>
+                                    Editar
+                                  </TooltipContent>
+                                </Tooltip>
+                              ) : null}
+
+                              {canManageNota ? (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="icon"
+                                      aria-label="Excluir"
+                                      disabled={isDeleting}
+                                      onClick={() => {
+                                        if (!isDeleting) setDeletingNota(item);
+                                      }}
+                                      className="h-8 w-8 rounded-full cursor-pointer text-gray-500 hover:bg-red-50 hover:text-red-700 disabled:cursor-wait disabled:opacity-50"
+                                    >
+                                      {isDeleting ? (
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                      ) : (
+                                        <Trash2 className="h-4 w-4" />
+                                      )}
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent sideOffset={8}>
+                                    Excluir
+                                  </TooltipContent>
+                                </Tooltip>
+                              ) : null}
+                            </div>
+                          </TableCell>
+                        ) : null}
                       </TableRow>
                     );
                   })
@@ -677,7 +863,8 @@ export function NotasTab({ aluno, inscricoes, isLoading }: InscricoesTabProps) {
           {totalItems > 0 && totalPages > 1 ? (
             <div className="flex flex-col gap-4 border-t border-gray-200 bg-gray-50/30 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
               <span className="text-sm text-gray-600">
-                Mostrando {(currentPage - 1) * pageSize + 1} a {Math.min(currentPage * pageSize, totalItems)} de {totalItems}
+                Mostrando {(currentPage - 1) * pageSize + 1} a{" "}
+                {Math.min(currentPage * pageSize, totalItems)} de {totalItems}
               </span>
 
               <div className="flex items-center gap-2">
@@ -706,7 +893,9 @@ export function NotasTab({ aluno, inscricoes, isLoading }: InscricoesTabProps) {
                 <ButtonCustom
                   variant="outline"
                   size="sm"
-                  onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
+                  onClick={() =>
+                    setPage((prev) => Math.min(totalPages, prev + 1))
+                  }
                   disabled={currentPage === totalPages}
                   className="h-8 px-3"
                 >
@@ -718,6 +907,110 @@ export function NotasTab({ aluno, inscricoes, isLoading }: InscricoesTabProps) {
         </div>
       )}
 
+      {canCreateNota ? (
+        <CreateNotaModal
+          isOpen={isCreateNotaOpen}
+          onClose={() => setIsCreateNotaOpen(false)}
+          defaultCursoId={selectedCursoId}
+          defaultTurmaId={defaultTurmaIdForModal}
+          defaultAlunoId={aluno.id}
+        />
+      ) : null}
+
+      {editingNota && getNotaId(editingNota) ? (
+        <EditNotaModal
+          isOpen={Boolean(editingNota)}
+          onClose={() => setEditingNota(null)}
+          cursoId={editingNota.cursoId}
+          turmaId={editingNota.turmaId}
+          notaId={getNotaId(editingNota) as string}
+          alunoNome={aluno.nomeCompleto || aluno.nome || "Aluno"}
+          notaAtual={getManualNotaValue(editingNota)}
+          motivoAtual={editingNota.motivo}
+        />
+      ) : null}
+
+      {historyNota ? (
+        <NotaHistoryModal
+          isOpen={Boolean(historyNota)}
+          onClose={() => setHistoryNota(null)}
+          alunoNome={aluno.nomeCompleto || aluno.nome || "Aluno"}
+          alunoCpf={aluno.cpf}
+          alunoCodigo={aluno.codigo}
+          alunoAvatarUrl={aluno.avatarUrl}
+          notaAtual={historyNota.nota}
+          turmaNome={historyNota.turmaNome}
+          cursoId={historyNota.cursoId}
+          turmaId={historyNota.turmaId}
+          historicoNotaId={historyNota.historicoNotaId ?? getNotaId(historyNota)}
+          fallbackHistory={historyNota.history ?? []}
+        />
+      ) : null}
+
+      <ModalCustom
+        isOpen={Boolean(deletingNota)}
+        onClose={() => {
+          if (!updateNota.isPending) setDeletingNota(null);
+        }}
+        size="md"
+        backdrop="blur"
+      >
+        <ModalContentWrapper>
+          <ModalHeader>
+            <ModalTitle>Excluir nota</ModalTitle>
+          </ModalHeader>
+          <ModalBody>
+            <p className="text-sm text-gray-700">
+              Tem certeza que deseja excluir esta nota manual de{" "}
+              <strong>{aluno.nomeCompleto || aluno.nome || "Aluno"}</strong>?
+            </p>
+            <p className="mt-2 text-xs text-gray-500">
+              O registro de auditoria permanecerá disponível no histórico.
+            </p>
+          </ModalBody>
+          <ModalFooter>
+            <div className="flex w-full justify-end gap-2">
+              <ButtonCustom
+                variant="outline"
+                disabled={updateNota.isPending}
+                onClick={() => setDeletingNota(null)}
+              >
+                Cancelar
+              </ButtonCustom>
+              <ButtonCustom
+                variant="danger"
+                icon="Trash2"
+                isLoading={updateNota.isPending}
+                disabled={!deletingNota || updateNota.isPending}
+                onClick={async () => {
+                  if (!deletingNota) return;
+                  const notaId = getNotaId(deletingNota);
+                  if (!notaId) return;
+
+                  try {
+                    await updateNota.mutateAsync({
+                      action: "delete",
+                      cursoId: deletingNota.cursoId,
+                      turmaId: deletingNota.turmaId,
+                      notaId,
+                    });
+                    toastCustom.success("Nota excluída.");
+                    setDeletingNota(null);
+                  } catch (error) {
+                    toastCustom.error(
+                      error instanceof Error
+                        ? error.message
+                        : "Não foi possível excluir a nota.",
+                    );
+                  }
+                }}
+              >
+                Confirmar exclusão
+              </ButtonCustom>
+            </div>
+          </ModalFooter>
+        </ModalContentWrapper>
+      </ModalCustom>
     </div>
   );
 }

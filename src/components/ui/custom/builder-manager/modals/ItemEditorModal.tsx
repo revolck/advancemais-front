@@ -10,6 +10,7 @@ import {
 import { ButtonCustom } from "@/components/ui/custom/button";
 import { SelectCustom } from "@/components/ui/custom/select";
 import { DatePickerRangeCustom } from "@/components/ui/custom/date-picker";
+import { TimeInputCustom } from "@/components/ui/custom/time-input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { toastCustom } from "@/components/ui/custom";
@@ -38,6 +39,8 @@ interface ItemEditorModalProps {
     instrutorId?: string | null;
     dataInicio?: string;
     dataFim?: string;
+    horaInicio?: string;
+    horaFim?: string;
   }>;
   avaliacaoTemplates?: Array<{
     id: string;
@@ -50,6 +53,8 @@ interface ItemEditorModalProps {
     recuperacaoFinal?: boolean;
     dataInicio?: string;
     dataFim?: string;
+    horaInicio?: string;
+    horaTermino?: string;
   }>;
   onSave: (updates: Partial<BuilderItem>) => void;
   onClose: () => void;
@@ -77,6 +82,44 @@ function parseIsoToDate(iso?: string | null): Date | null {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return null;
   return d;
+}
+
+function extractTimeFromIso(iso?: string | null): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return `${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}`;
+}
+
+function combineDateAndTime(date: Date | null, time: string): Date | null {
+  if (!date || !time) return null;
+
+  const [hours, minutes] = time.split(":").map(Number);
+  if (
+    !Number.isFinite(hours) ||
+    !Number.isFinite(minutes) ||
+    hours < 0 ||
+    hours > 23 ||
+    minutes < 0 ||
+    minutes > 59
+  ) {
+    return null;
+  }
+
+  const combined = new Date(date);
+  combined.setHours(hours, minutes, 0, 0);
+  return combined;
+}
+
+function hasValidDateTimeRange(
+  startDate: Date | null,
+  endDate: Date | null,
+  horaInicio: string,
+  horaFim: string
+) {
+  const start = combineDateAndTime(startDate, horaInicio);
+  const end = combineDateAndTime(endDate, horaFim);
+  return Boolean(start && end && end.getTime() > start.getTime());
 }
 
 function formatCapsLabel(value?: string | null): string | null {
@@ -117,6 +160,8 @@ export function ItemEditorModal({
   const [recuperacaoFinal, setRecuperacaoFinal] = React.useState(false);
   const [startDate, setStartDate] = React.useState<Date | null>(null);
   const [endDate, setEndDate] = React.useState<Date | null>(null);
+  const [horaInicio, setHoraInicio] = React.useState("");
+  const [horaFim, setHoraFim] = React.useState("");
   const periodTouchedRef = React.useRef(false);
 
   React.useEffect(() => {
@@ -135,6 +180,8 @@ export function ItemEditorModal({
     setRecuperacaoFinal(Boolean(item.recuperacaoFinal ?? false));
     setStartDate(item.startDate ? new Date(item.startDate) : null);
     setEndDate(item.endDate ? new Date(item.endDate) : null);
+    setHoraInicio(item.horaInicio ?? "");
+    setHoraFim(item.horaFim ?? "");
   }, [item]);
 
   const usedTemplateIdsExcludingCurrent = useMemo(() => {
@@ -186,18 +233,42 @@ export function ItemEditorModal({
   const isDuplicateTemplateSelection =
     !!templateId && usedTemplateIdsExcludingCurrent.has(templateId);
 
+  const getTemplatePeriod = React.useCallback(
+    (id: string | null) => {
+      if (!id || !item) {
+        return {
+          start: null as Date | null,
+          end: null as Date | null,
+          horaInicio: "",
+          horaFim: "",
+        };
+      }
+      if (item.type === "AULA") {
+        const t = aulaTemplates.find((x) => x.id === id);
+        return {
+          start: parseIsoToDate(t?.dataInicio),
+          end: parseIsoToDate(t?.dataFim),
+          horaInicio: t?.horaInicio ?? extractTimeFromIso(t?.dataInicio),
+          horaFim: t?.horaFim ?? extractTimeFromIso(t?.dataFim),
+        };
+      }
+      if (item.type === "ATIVIDADE" || item.type === "PROVA") {
+        const t = avaliacaoTemplates.find((x) => x.id === id);
+        return {
+          start: parseIsoToDate(t?.dataInicio),
+          end: parseIsoToDate(t?.dataFim),
+          horaInicio: t?.horaInicio ?? extractTimeFromIso(t?.dataInicio),
+          horaFim: t?.horaTermino ?? extractTimeFromIso(t?.dataFim),
+        };
+      }
+      return { start: null, end: null, horaInicio: "", horaFim: "" };
+    },
+    [avaliacaoTemplates, aulaTemplates, item]
+  );
+
   const templatePeriod = useMemo(() => {
-    if (!templateId || !item) return { start: null as Date | null, end: null as Date | null };
-    if (item.type === "AULA") {
-      const t = aulaTemplates.find((x) => x.id === templateId);
-      return { start: parseIsoToDate(t?.dataInicio), end: parseIsoToDate(t?.dataFim) };
-    }
-    if (item.type === "ATIVIDADE" || item.type === "PROVA") {
-      const t = avaliacaoTemplates.find((x) => x.id === templateId);
-      return { start: parseIsoToDate(t?.dataInicio), end: parseIsoToDate(t?.dataFim) };
-    }
-    return { start: null, end: null };
-  }, [avaliacaoTemplates, aulaTemplates, item, templateId]);
+    return getTemplatePeriod(templateId);
+  }, [getTemplatePeriod, templateId]);
 
   // Se o item não tem período (ex.: dado legado), tenta pré-preencher com o período do template.
   React.useEffect(() => {
@@ -207,8 +278,12 @@ export function ItemEditorModal({
     if (!templatePeriod.start || !templatePeriod.end) return;
     setStartDate(templatePeriod.start);
     setEndDate(templatePeriod.end);
+    setHoraInicio(templatePeriod.horaInicio);
+    setHoraFim(templatePeriod.horaFim);
   }, [
     endDate,
+    templatePeriod.horaFim,
+    templatePeriod.horaInicio,
     item,
     startDate,
     templateId,
@@ -238,6 +313,15 @@ export function ItemEditorModal({
 
     return null;
   }, [_maxDate, _minDate, endDate, startDate]);
+
+  const timeError = useMemo(() => {
+    if (!horaInicio && !horaFim) return null;
+    if (!horaInicio || !horaFim) return "Informe hora de início e término.";
+    if (!hasValidDateTimeRange(startDate, endDate, horaInicio, horaFim)) {
+      return "Data e hora de término devem ser após o início.";
+    }
+    return null;
+  }, [endDate, horaFim, horaInicio, startDate]);
 
   const handleSave = () => {
     if (!item) return;
@@ -308,11 +392,21 @@ export function ItemEditorModal({
       return;
     }
 
+    if (timeError) {
+      toastCustom.error({
+        title: "Horário inválido",
+        description: timeError,
+      });
+      return;
+    }
+
     onSave({
       title: safeTitle,
       templateId,
       startDate: startDate?.toISOString() || null,
       endDate: endDate?.toISOString() || null,
+      horaInicio: horaInicio || null,
+      horaFim: horaFim || null,
       instructorIds: instructorId ? [instructorId] : [],
       instructorId: instructorId || null,
       obrigatoria,
@@ -422,22 +516,13 @@ export function ItemEditorModal({
 
                 // Ao selecionar o template, tenta preencher o período com o período do template.
                 periodTouchedRef.current = false;
-                const templateStart =
-                  item.type === "AULA"
-                    ? parseIsoToDate(aulaTemplates.find((a) => a.id === id)?.dataInicio)
-                    : parseIsoToDate(
-                        avaliacaoTemplates.find((a) => a.id === id)?.dataInicio
-                      );
-                const templateEnd =
-                  item.type === "AULA"
-                    ? parseIsoToDate(aulaTemplates.find((a) => a.id === id)?.dataFim)
-                    : parseIsoToDate(
-                        avaliacaoTemplates.find((a) => a.id === id)?.dataFim
-                      );
+                const nextPeriod = getTemplatePeriod(id);
+                setHoraInicio(nextPeriod.horaInicio);
+                setHoraFim(nextPeriod.horaFim);
 
-                if (templateStart && templateEnd) {
-                  setStartDate(templateStart);
-                  setEndDate(templateEnd);
+                if (nextPeriod.start && nextPeriod.end) {
+                  setStartDate(nextPeriod.start);
+                  setEndDate(nextPeriod.end);
                 } else {
                   // Se o template não tem período, o usuário deve definir.
                   setStartDate(null);
@@ -536,12 +621,32 @@ export function ItemEditorModal({
               minDate={_minDate ?? new Date()}
               maxDate={_maxDate ?? undefined}
               clearable
+              allowSingleDaySelection
               helperLabel="O período precisa ficar dentro do período da turma (ou do módulo, se definido)."
               helperText={
                 allowedRangeLabel ? `Período permitido: ${allowedRangeLabel}` : undefined
               }
               error={periodError ?? undefined}
             />
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <TimeInputCustom
+                label="Hora de início"
+                name="horaInicio"
+                value={horaInicio}
+                onChange={setHoraInicio}
+                placeholder="00:00"
+                error={timeError ?? undefined}
+              />
+              <TimeInputCustom
+                label="Hora de término"
+                name="horaFim"
+                value={horaFim}
+                onChange={setHoraFim}
+                placeholder="00:00"
+                error={timeError ?? undefined}
+              />
+            </div>
 
             <div className="space-y-1">
               <SelectCustom
@@ -611,6 +716,7 @@ export function ItemEditorModal({
               !templateId ||
               isDuplicateTemplateSelection ||
               !!periodError ||
+              !!timeError ||
               !startDate ||
               !endDate
             }

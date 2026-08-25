@@ -766,19 +766,19 @@ export function NotasDashboard({ className }: { className?: string }) {
 		                      turmaNome={turmaLabelById.get(item.turmaId) ?? undefined}
                           isRemoving={
                             updateNota.isPending &&
-                            updateNota.variables?.alunoId === item.alunoId &&
+                            updateNota.variables?.action === "delete" &&
                             updateNota.variables?.turmaId === item.turmaId &&
-                            updateNota.variables?.nota === null
+                            updateNota.variables?.notaId === item.notaId
                           }
                           onRemove={
-                            item.isManual === true
+                            item.isManual === true && item.notaId
                               ? () =>
                                   updateNota
                                     .mutateAsync({
+                                      action: "delete",
                                       cursoId: item.cursoId,
                                       turmaId: item.turmaId,
-                                      alunoId: item.alunoId,
-                                      nota: null,
+                                      notaId: item.notaId as string,
                                     })
                                     .then(() => undefined)
                               : undefined

@@ -16,6 +16,7 @@ import {
 import { cn } from "@/lib/utils";
 import type { NotaListItem } from "../hooks/useNotasDashboardQuery";
 import { NotaHistoryModal } from "./NotaHistoryModal";
+import { EditNotaModal } from "./EditNotaModal";
 import {
   Tooltip,
   TooltipContent,
@@ -27,9 +28,13 @@ import {
   CalendarDays,
   ChevronRight,
   GraduationCap,
+  History,
   Info,
   Loader2,
+  Pencil,
+  Trash2,
 } from "lucide-react";
+import { useUpdateNotaMutation } from "../hooks/useUpdateNotaMutation";
 
 interface NotaRowProps {
   item: NotaListItem;
@@ -99,6 +104,15 @@ function getOrigemLabel(tipo: string) {
   return tipo;
 }
 
+function getManualNotaValue(item: NotaListItem): number | null {
+  const currentHistoryItem =
+    item.history?.find((event) => event.id === item.notaId) ?? item.history?.[0];
+  if (typeof currentHistoryItem?.nota === "number") {
+    return currentHistoryItem.nota;
+  }
+  return item.nota;
+}
+
 export function NotaRow({
   item,
   cursoNome,
@@ -111,9 +125,19 @@ export function NotaRow({
   const router = useRouter();
   const situacao = useMemo(() => getSituacao(item.nota), [item.nota]);
   const [isHistoryOpen, setIsHistoryOpen] = React.useState(false);
+  const [isEditOpen, setIsEditOpen] = React.useState(false);
   const [isConfirmRemoveOpen, setIsConfirmRemoveOpen] = React.useState(false);
   const [isNavigating, setIsNavigating] = React.useState(false);
-  const canRemove = item.isManual === true;
+  const updateNota = useUpdateNotaMutation();
+  const canManage = item.isManual === true && Boolean(item.notaId);
+  const canRemove = canManage;
+  const canEdit = canManage;
+  const isRemovingCurrent =
+    isRemoving ||
+    (updateNota.isPending &&
+      updateNota.variables?.action === "delete" &&
+      updateNota.variables.notaId === item.notaId);
+  const manualNotaValue = useMemo(() => getManualNotaValue(item), [item]);
   const canViewHistory =
     item.historicoDisponivel === true ||
     Boolean(item.historicoNotaId) ||
@@ -127,11 +151,20 @@ export function NotaRow({
   const turmaCodigoExibicao = item.turmaCodigo;
 
   const handleConfirmRemove = async () => {
-    if (!onRemove) return;
+    if (!item.notaId && !onRemove) return;
     try {
-      await Promise.resolve(onRemove());
+      if (onRemove) {
+        await Promise.resolve(onRemove());
+      } else if (item.notaId) {
+        await updateNota.mutateAsync({
+          action: "delete",
+          cursoId: item.cursoId,
+          turmaId: item.turmaId,
+          notaId: item.notaId,
+        });
+      }
       onPersistHistoryAfterRemove?.(item);
-      toastCustom.success("Nota removida.");
+      toastCustom.success("Nota excluída.");
       setIsConfirmRemoveOpen(false);
     } catch (err) {
       const msg =
@@ -281,29 +314,69 @@ export function NotaRow({
       {showActionsColumn ? (
         <TableCell className="py-4 px-3">
           <div className="flex items-center justify-end gap-2">
-            {canViewHistory && (
-              <ButtonCustom
-                variant="outline"
-                size="sm"
-                icon="History"
-                onClick={() => setIsHistoryOpen(true)}
-              >
-                Histórico
-              </ButtonCustom>
-            )}
-            {canRemove && (
-              <ButtonCustom
-                variant="outline"
-                size="sm"
-                icon="Trash2"
-                isLoading={isRemoving}
-                disabled={!onRemove || isRemoving}
-                className="border-red-200 text-red-700 hover:bg-red-50 hover:text-red-800 hover:border-red-200"
-                onClick={() => setIsConfirmRemoveOpen(true)}
-              >
-                Remover
-              </ButtonCustom>
-            )}
+            {canViewHistory ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    aria-label="Histórico"
+                    onClick={() => setIsHistoryOpen(true)}
+                    className="h-8 w-8 rounded-full cursor-pointer text-gray-500 hover:text-white hover:bg-[var(--primary-color)]"
+                  >
+                    <History className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent sideOffset={8}>Histórico</TooltipContent>
+              </Tooltip>
+            ) : null}
+
+            {canEdit ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    aria-label="Editar"
+                    disabled={updateNota.isPending}
+                    onClick={() => {
+                      if (!updateNota.isPending) setIsEditOpen(true);
+                    }}
+                    className="h-8 w-8 rounded-full cursor-pointer text-gray-500 hover:text-white hover:bg-[var(--primary-color)] disabled:cursor-wait disabled:opacity-50"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent sideOffset={8}>Editar</TooltipContent>
+              </Tooltip>
+            ) : null}
+
+            {canRemove ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    aria-label="Excluir"
+                    disabled={isRemovingCurrent}
+                    onClick={() => {
+                      if (!isRemovingCurrent) setIsConfirmRemoveOpen(true);
+                    }}
+                    className="h-8 w-8 rounded-full cursor-pointer text-gray-500 hover:bg-red-50 hover:text-red-700 disabled:cursor-wait disabled:opacity-50"
+                  >
+                    {isRemovingCurrent ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-4 w-4" />
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent sideOffset={8}>Excluir</TooltipContent>
+              </Tooltip>
+            ) : null}
           </div>
         </TableCell>
       ) : null}
@@ -354,6 +427,19 @@ export function NotaRow({
         fallbackHistory={item.history ?? []}
       />
 
+      {item.notaId ? (
+        <EditNotaModal
+          isOpen={isEditOpen}
+          onClose={() => setIsEditOpen(false)}
+          cursoId={item.cursoId}
+          turmaId={item.turmaId}
+          notaId={item.notaId}
+          alunoNome={item.alunoNome}
+          notaAtual={manualNotaValue}
+          motivoAtual={item.motivo}
+        />
+      ) : null}
+
       <ModalCustom
         isOpen={isConfirmRemoveOpen}
         onClose={() => setIsConfirmRemoveOpen(false)}
@@ -362,7 +448,7 @@ export function NotaRow({
       >
         <ModalContentWrapper>
           <ModalHeader>
-            <ModalTitle>Remover nota</ModalTitle>
+          <ModalTitle>Excluir nota</ModalTitle>
           </ModalHeader>
           <ModalBody>
             <p className="text-sm text-gray-700">
@@ -379,7 +465,7 @@ export function NotaRow({
               <ButtonCustom
                 variant="outline"
                 onClick={() => setIsConfirmRemoveOpen(false)}
-                disabled={Boolean(isRemoving)}
+                disabled={Boolean(isRemovingCurrent)}
               >
                 Cancelar
               </ButtonCustom>
@@ -387,10 +473,10 @@ export function NotaRow({
                 variant="danger"
                 icon="Trash2"
                 onClick={handleConfirmRemove}
-                isLoading={isRemoving}
-                disabled={!onRemove || isRemoving}
+                isLoading={isRemovingCurrent}
+                disabled={isRemovingCurrent}
               >
-                Confirmar remoção
+                Confirmar exclusão
               </ButtonCustom>
             </div>
           </ModalFooter>

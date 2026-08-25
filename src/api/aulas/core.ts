@@ -551,17 +551,23 @@ export async function getGoogleOAuthStatus(
 
 /**
  * Iniciar fluxo de conexão Google OAuth
+ * `returnTo`: caminho relativo do frontend para onde o callback deve redirecionar
+ * ao final (ex: "/perfil"). Se omitido, o backend usa o padrão ("/dashboard/configuracoes").
  */
 export async function connectGoogle(
-  init?: RequestInit
+  options?: { returnTo?: string; init?: RequestInit }
 ): Promise<GoogleConnectResponse> {
+  const query = options?.returnTo
+    ? `?returnTo=${encodeURIComponent(options.returnTo)}`
+    : "";
+
   const response = await apiFetch<GoogleConnectResponse>(
-    "/api/v1/auth/google/connect",
+    `/api/v1/auth/google/connect${query}`,
     {
       init: {
         method: "GET",
-        ...init,
-        headers: buildHeaders(init?.headers, true),
+        ...options?.init,
+        headers: buildHeaders(options?.init?.headers, true),
       },
     }
   );

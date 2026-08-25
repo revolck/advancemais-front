@@ -256,6 +256,7 @@ export function NotaHistoryModal(props: {
   const [page, setPage] = useState(1);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const PAGE_SIZE = 4;
+  const hasRemoteHistoryTarget = Boolean(cursoId && turmaId && historicoNotaId);
 
   const historicoQuery = useQuery<NotaHistoricoItem[], Error>({
     queryKey: [
@@ -270,9 +271,10 @@ export function NotaHistoryModal(props: {
       fetchHistory
         ? fetchHistory(String(historicoNotaId))
         : getNotaHistorico(cursoId, turmaId, String(historicoNotaId)),
-    enabled: isOpen && Boolean(cursoId && turmaId && historicoNotaId),
-    staleTime: 30 * 1000,
+    enabled: isOpen && hasRemoteHistoryTarget,
+    staleTime: 0,
     gcTime: 5 * 60 * 1000,
+    refetchOnMount: "always",
     refetchOnWindowFocus: false,
   });
 
@@ -282,12 +284,8 @@ export function NotaHistoryModal(props: {
   );
 
   const items = useMemo(() => {
-    const merged = [...(historicoQuery.data ?? []), ...fallbackItems];
-    const unique = merged.filter(
-      (item, index, list) => list.findIndex((candidate) => candidate.id === item.id) === index
-    );
-
-    return sortHistory(unique);
+    const remoteItems = historicoQuery.data ?? [];
+    return sortHistory(remoteItems.length > 0 ? remoteItems : fallbackItems);
   }, [fallbackItems, historicoQuery.data]);
 
   useEffect(() => {
@@ -302,7 +300,8 @@ export function NotaHistoryModal(props: {
   const startIndex = (safePage - 1) * PAGE_SIZE;
   const pageItems = items.slice(startIndex, startIndex + PAGE_SIZE);
   const hasPagination = totalPages > 1;
-  const isLoading = historicoQuery.isLoading;
+  const isLoading =
+    hasRemoteHistoryTarget && (historicoQuery.isLoading || historicoQuery.isFetching);
   const remoteError = historicoQuery.isError ? historicoQuery.error?.message : null;
   const shouldUseScroll = items.length > 3;
 

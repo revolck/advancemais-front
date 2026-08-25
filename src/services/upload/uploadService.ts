@@ -19,6 +19,32 @@ export interface FileUploadResult {
   mimeType: string;
 }
 
+const MIME_TYPE_BY_EXTENSION: Record<string, string> = {
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  png: "image/png",
+  webp: "image/webp",
+  gif: "image/gif",
+  pdf: "application/pdf",
+  doc: "application/msword",
+  docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  xls: "application/vnd.ms-excel",
+  xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  csv: "text/csv",
+  ppt: "application/vnd.ms-powerpoint",
+  pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  odt: "application/vnd.oasis.opendocument.text",
+  ods: "application/vnd.oasis.opendocument.spreadsheet",
+  odp: "application/vnd.oasis.opendocument.presentation",
+  txt: "text/plain",
+};
+
+function resolveFileMimeType(file: File): string {
+  if (file.type && file.type !== "application/octet-stream") return file.type;
+  const extension = file.name.split(".").pop()?.toLowerCase() || "";
+  return MIME_TYPE_BY_EXTENSION[extension] || "application/octet-stream";
+}
+
 /**
  * Extrai um título amigável a partir da URL da imagem.
  */
@@ -27,17 +53,23 @@ export function getImageTitle(url: string): string {
   return fileName.replace(/\.[^/.]+$/, "");
 }
 
+async function deleteFileOrThrow(url: string): Promise<void> {
+  const response = await fetch(
+    `${routes.upload.base()}?file=${encodeURIComponent(url.replace(/^\/+/g, ""))}`,
+    { method: "DELETE" },
+  );
+
+  if (!response.ok) {
+    throw new Error(`Falha ao excluir arquivo (${response.status})`);
+  }
+}
+
 /**
  * Remove um arquivo existente informando sua URL.
  */
 export async function deleteFile(url: string): Promise<void> {
   try {
-    await fetch(
-      `${routes.upload.base()}?file=${encodeURIComponent(
-        url.replace(/^\/+/g, ""),
-      )}`,
-      { method: "DELETE" },
-    );
+    await deleteFileOrThrow(url);
   } catch {
     // Silencia erros de remoção para não impedir o fluxo principal
   }
@@ -159,7 +191,7 @@ export async function uploadFile(
     filename: result?.filename || file.name,
     originalName: file.name,
     size: file.size,
-    mimeType: file.type || "application/octet-stream",
+    mimeType: resolveFileMimeType(file),
   };
 }
 
@@ -200,4 +232,32 @@ export async function uploadFiles(
  */
 export async function deleteFiles(urls: string[]): Promise<void> {
   await Promise.all(urls.map((url) => deleteFile(url)));
+}
+
+/**
+ * Remove arquivos confirmando a resposta do blob storage.
+ * Repete falhas transitórias antes de devolver o erro ao fluxo chamador.
+ */
+export async function deleteFilesStrict(urls: string[]): Promise<void> {
+  const uniqueUrls = [...new Set(urls)];
+
+  await Promise.all(
+    uniqueUrls.map(async (url) => {
+      let lastError: unknown;
+
+      for (let attempt = 0; attempt < 3; attempt += 1) {
+        try {
+          await deleteFileOrThrow(url);
+          return;
+        } catch (error) {
+          lastError = error;
+          if (attempt < 2) {
+            await new Promise((resolve) => setTimeout(resolve, 250 * 2 ** attempt));
+          }
+        }
+      }
+
+      throw lastError;
+    }),
+  );
 }

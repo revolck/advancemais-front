@@ -3,18 +3,48 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   createNota,
+  deleteNota,
   deleteNotas,
+  updateNota,
   type NotaLancamento,
   type NotaOrigem,
 } from "@/api/cursos";
 
-export interface UpdateNotaVariables {
+export type UpdateNotaVariables =
+  | {
+      action?: "create";
+      cursoId: string;
+      turmaId: string;
+      alunoId: string;
+      nota: number;
+      motivo?: string | null;
+      origem?: NotaOrigem | null;
+    }
+  | {
+      action: "update";
+      cursoId: string;
+      turmaId: string;
+      notaId: string;
+      nota: number;
+      motivo?: string | null;
+    }
+  | {
+      action: "delete";
+      cursoId: string;
+      turmaId: string;
+      notaId: string;
+    }
+  | {
+      action?: "delete-bulk";
+      cursoId: string;
+      turmaId: string;
+      alunoId: string;
+      nota: null;
+    };
+
+interface NotaMutationContext {
   cursoId: string;
-  turmaId: string;
-  alunoId: string;
-  nota: number | null;
-  motivo?: string | null;
-  origem?: NotaOrigem | null;
+  turmaId?: string;
 }
 
 type ApiErrorLike = Error & {
@@ -39,7 +69,7 @@ type NormalizedApiError = Error & {
 
 function normalizeNotaMutationError(
   error: unknown,
-  action: "create" | "delete"
+  action: "create" | "update" | "delete",
 ): Error {
   const err = error as ApiErrorLike;
   const payload =
@@ -57,7 +87,9 @@ function normalizeNotaMutationError(
     backendMessage ||
       (action === "delete"
         ? "Não foi possível remover a nota."
-        : "Não foi possível salvar a nota.")
+        : action === "update"
+          ? "Não foi possível atualizar a nota."
+        : "Não foi possível salvar a nota."),
   ) as NormalizedApiError;
   normalized.status = err.status;
   normalized.code = backendCode;
@@ -69,7 +101,7 @@ function normalizeNotaMutationError(
   }
   if (backendCode === "NOTA_SYSTEM_LOCKED") {
     normalized.message =
-      "Não é possível alterar/remover notas geradas automaticamente pelo sistema."
+      "Não é possível alterar/remover notas geradas automaticamente pelo sistema.";
     return normalized;
   }
   if (backendCode === "NOTA_MAXIMA_ATINGIDA") {
@@ -111,33 +143,85 @@ function normalizeNotaMutationError(
 export function useUpdateNotaMutation() {
   const queryClient = useQueryClient();
 
-  return useMutation<NotaLancamento | null, Error, UpdateNotaVariables>({
-    mutationFn: async ({ cursoId, turmaId, alunoId, nota, motivo, origem }) => {
+  return useMutation<
+    NotaLancamento | null,
+    Error,
+    UpdateNotaVariables,
+    NotaMutationContext
+  >({
+    mutationFn: async (variables) => {
       try {
-        // Se nota for null, remove os lançamentos manuais do aluno
-        if (nota === null) {
-          await deleteNotas(cursoId, turmaId, { alunoId });
+        if (variables.action === "update") {
+          return updateNota(
+            variables.cursoId,
+            variables.turmaId,
+            variables.notaId,
+            {
+              nota: variables.nota,
+              titulo: variables.motivo?.trim() || "Lançamento manual",
+            },
+          );
+        }
+
+        if (variables.action === "delete") {
+          await deleteNota(
+            variables.cursoId,
+            variables.turmaId,
+            variables.notaId,
+          );
+          return null;
+        }
+
+        // Compatibilidade com o fluxo antigo: remove todos os lançamentos manuais do aluno.
+        if (variables.nota === null) {
+          await deleteNotas(variables.cursoId, variables.turmaId, {
+            alunoId: variables.alunoId,
+          });
           return null;
         }
 
         // Cria lançamento de nota manual (incremental)
-        return createNota(cursoId, turmaId, {
-          alunoId,
-          nota,
-          motivo: motivo ?? "Lançamento manual",
-          origem,
+        return createNota(variables.cursoId, variables.turmaId, {
+          alunoId: variables.alunoId,
+          nota: variables.nota,
+          motivo: variables.motivo ?? "Lançamento manual",
+          origem: variables.origem,
         });
       } catch (error) {
-        throw normalizeNotaMutationError(error, nota === null ? "delete" : "create");
+        const actionForError =
+          variables.action === "update"
+            ? "update"
+            : variables.action === "delete" ||
+                ("nota" in variables && variables.nota === null)
+              ? "delete"
+              : "create";
+        throw normalizeNotaMutationError(
+          error,
+          actionForError,
+        );
       }
     },
-    onSuccess: (_data, variables) => {
+    onMutate: (variables) => ({
+      cursoId: variables.cursoId,
+      turmaId: variables.turmaId,
+    }),
+    onSuccess: (_data, _variables, context) => {
       queryClient.invalidateQueries({ queryKey: ["notas", "dashboard"] });
-      queryClient.invalidateQueries({ queryKey: ["notas", "atuais-por-aluno"] });
-      queryClient.invalidateQueries({ queryKey: ["cursos", "notas"] });
+      queryClient.invalidateQueries({ queryKey: ["aluno-notas"] });
       queryClient.invalidateQueries({
-        queryKey: ["cursos", variables.cursoId, "notas"],
+        queryKey: ["notas", "atuais-por-aluno"],
       });
+      queryClient.invalidateQueries({ queryKey: ["cursos", "notas"] });
+      if (context?.cursoId) {
+        queryClient.invalidateQueries({
+          queryKey: ["cursos", context.cursoId, "notas"],
+        });
+      }
+      if (context?.turmaId) {
+        queryClient.invalidateQueries({
+          queryKey: ["notas", "historico"],
+        });
+      }
     },
   });
 }

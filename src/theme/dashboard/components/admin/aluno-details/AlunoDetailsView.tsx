@@ -98,6 +98,11 @@ export function AlunoDetailsView({
     userRole === UserRole.ADMIN ||
     userRole === UserRole.MODERADOR ||
     userRole === UserRole.PEDAGOGICO;
+  const canCreateNota =
+    userRole === UserRole.ADMIN ||
+    userRole === UserRole.MODERADOR ||
+    userRole === UserRole.PEDAGOGICO ||
+    userRole === UserRole.INSTRUTOR;
   const canLiberarAcessoAluno = useMemo(() => {
     const statusPendente = alunoData?.status?.toUpperCase() === "PENDENTE";
     if (!statusPendente) return false;
@@ -282,6 +287,7 @@ export function AlunoDetailsView({
                 aluno={alunoData}
                 inscricoes={inscricoes}
                 isLoading={isReloading}
+                canCreateNota={canCreateNota}
               />
             ),
           } satisfies HorizontalTabItem,

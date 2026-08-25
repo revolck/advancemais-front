@@ -26,6 +26,7 @@ interface ProvaDetailsViewProps {
   provaId: string;
   initialProva?: TurmaProva | null;
   initialError?: Error;
+  initialTab?: "resumo" | "respostas";
 }
 
 const PROVA_QUERY_STALE_TIME = 30 * 1000; // 30 segundos
@@ -37,6 +38,7 @@ export function ProvaDetailsView({
   provaId,
   initialProva,
   initialError,
+  initialTab = "resumo",
 }: ProvaDetailsViewProps) {
   const { user } = useAuth();
   const hasContext = Boolean(cursoId) && Boolean(turmaId);
@@ -230,7 +232,7 @@ export function ProvaDetailsView({
         userRole={effectiveUserRole}
         userId={effectiveUserId}
       />
-      <HorizontalTabs items={tabs} defaultValue={tabs[0]?.value ?? "resumo"} />
+      <HorizontalTabs items={tabs} defaultValue={initialTab} />
     </div>
   );
 }

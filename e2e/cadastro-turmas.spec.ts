@@ -168,9 +168,8 @@ async function criarAulaTemplate(
     body: JSON.stringify({
       titulo,
       descricao: "Template de aula criado automaticamente para o E2E de turma.",
-      modalidade: "ONLINE",
-      tipoLink: "YOUTUBE",
-      youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+      modalidade: "PRESENCIAL",
+      sala: "Sala E2E",
       duracaoMinutos: 60,
       obrigatoria: true,
       status: "RASCUNHO",
@@ -207,7 +206,7 @@ async function criarAvaliacaoTemplate(
       ? {
           tipo,
           titulo,
-          modalidade: "ONLINE",
+          modalidade: "PRESENCIAL",
           obrigatoria: true,
           valePonto: true,
           peso: 5,
@@ -232,7 +231,7 @@ async function criarAvaliacaoTemplate(
       : {
           tipo,
           titulo,
-          modalidade: "ONLINE",
+          modalidade: "PRESENCIAL",
           obrigatoria: true,
           valePonto: true,
           peso: 5,
@@ -363,9 +362,28 @@ async function pickFirstDialogComboboxOption(page: any, optionLabel: string) {
   await option.click();
 }
 
-async function pickRangeInOpenDialog(page: any, from: Date, to: Date) {
+async function expectDialogPeriodAndTimes(
+  page: any,
+  periodo: { inicio: Date; fim: Date },
+  horaInicio: string,
+  horaFim: string
+) {
   const dialog = page.getByRole("dialog").last();
-  await pickRangeByLabel(page, "Período", from, to, dialog);
+  const periodoContainer = dialog
+    .getByText("Período", { exact: true })
+    .locator("xpath=ancestor::div[contains(@class,'space-y-2')][1]")
+    .first();
+  const periodoTrigger = periodoContainer
+    .locator("button, [role='button']")
+    .filter({ hasNotText: "Recarregar" })
+    .first();
+
+  await expect(periodoTrigger).toContainText(
+    `${formatPtBr(periodo.inicio)} - ${formatPtBr(periodo.fim)}`,
+    { timeout: 15000 }
+  );
+  await expect(dialog.locator('input[name="horaInicio"]')).toHaveValue(horaInicio);
+  await expect(dialog.locator('input[name="horaFim"]')).toHaveValue(horaFim);
 }
 
 function getBuilderPalette(page: any) {
@@ -425,13 +443,13 @@ test.describe("Cadastro de Turmas", () => {
       const inscrFrom = addDays(today, 1);
       const inscrTo = addDays(today, 2);
       const turmaFrom = addDays(today, 3);
-      const turmaTo = addDays(today, 15);
+      const turmaTo = addDays(today, 6);
 
       await pickRangeByLabel(page, "Inscrições", inscrFrom, inscrTo);
       await pickRangeByLabel(page, "Período da Turma", turmaFrom, turmaTo);
 
       await pickFirstOptionFromSelect(page, "Turno");
-      await pickOptionFromSelectByLabel(page, "Modalidade", "Online");
+      await pickOptionFromSelectByLabel(page, "Modalidade", "Presencial");
 
       await page.getByRole("button", { name: /Avançar/i }).click();
 
@@ -442,7 +460,12 @@ test.describe("Cadastro de Turmas", () => {
       // Abrir o editor do primeiro item (aula) e selecionar uma aula
       await clickBuilderItemTitle(page, /Aula/i);
       await pickFirstDialogComboboxOption(page, templatesCriados.aula.titulo);
-      await pickRangeInOpenDialog(page, turmaFrom, addDays(turmaFrom, 1));
+      await expectDialogPeriodAndTimes(
+        page,
+        { inicio: addDays(today, 4), fim: addDays(today, 4) },
+        "10:00",
+        "11:00"
+      );
       await page.getByRole("button", { name: "Salvar" }).click();
 
       // Abrir o editor da prova e selecionar uma prova

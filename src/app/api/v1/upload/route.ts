@@ -4,6 +4,27 @@ import { serverEnv, env } from "@/lib/env";
 
 export const runtime = "nodejs";
 
+const COMMENT_MAX_FILE_SIZE = 5 * 1024 * 1024;
+const COMMENT_ALLOWED_EXTENSIONS = new Set([
+  "jpg",
+  "jpeg",
+  "png",
+  "webp",
+  "gif",
+  "pdf",
+  "doc",
+  "docx",
+  "xls",
+  "xlsx",
+  "csv",
+  "ppt",
+  "pptx",
+  "odt",
+  "ods",
+  "odp",
+  "txt",
+]);
+
 export async function POST(req: NextRequest) {
   try {
     if (!serverEnv.blobToken) {
@@ -19,6 +40,22 @@ export async function POST(req: NextRequest) {
 
     const rawPath = req.nextUrl.searchParams.get("path") || "";
     const safePath = rawPath.replace(/\.+/g, "").replace(/^\/+/g, "");
+    const isCommentUpload = safePath.startsWith("cursos/comentarios/");
+    const extension = file.name.split(".").pop()?.toLowerCase() || "";
+
+    if (isCommentUpload && file.size > COMMENT_MAX_FILE_SIZE) {
+      return NextResponse.json(
+        { error: "O arquivo ultrapassa o limite permitido" },
+        { status: 413 },
+      );
+    }
+
+    if (isCommentUpload && !COMMENT_ALLOWED_EXTENSIONS.has(extension)) {
+      return NextResponse.json(
+        { error: "Tipo de arquivo não permitido" },
+        { status: 415 },
+      );
+    }
     const safeName = file.name.replace(/[^a-zA-Z0-9.]/g, "_");
     const unique = `${Date.now()}-${safeName}`;
     const key = safePath ? `${safePath}/${unique}` : unique;

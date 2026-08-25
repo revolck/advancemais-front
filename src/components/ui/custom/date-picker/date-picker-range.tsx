@@ -26,6 +26,15 @@ export interface DateRange {
   to: Date | null;
 }
 
+function isSameCalendarDay(a?: Date | null, b?: Date | null) {
+  if (!a || !b) return false;
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
+}
+
 export interface DatePickerRangeCustomProps {
   label?: string;
   value: DateRange;
@@ -50,6 +59,8 @@ export interface DatePickerRangeCustomProps {
   helperLabel?: string; // Text to show in tooltip next to label
   className?: string;
   clearable?: boolean;
+  /** Permite finalizar o período com uma única data (from/to no mesmo dia). */
+  allowSingleDaySelection?: boolean;
   format?: string; // date-fns format string for display
   locale?: Locale;
   /**
@@ -107,6 +118,7 @@ export function DatePickerRangeCustom({
   helperLabel,
   className,
   clearable = true,
+  allowSingleDaySelection = false,
   format = "dd/MM/yyyy",
   locale = ptBR,
   popoverMatchTriggerWidth = false,
@@ -129,6 +141,9 @@ export function DatePickerRangeCustom({
       if (value.from && value.to) {
         const fromFormatted = formatDate(value.from, format, { locale });
         const toFormatted = formatDate(value.to, format, { locale });
+        if (allowSingleDaySelection && isSameCalendarDay(value.from, value.to)) {
+          return fromFormatted;
+        }
         return `${fromFormatted} - ${toFormatted}`;
       } else if (value.from) {
         const fromFormatted = formatDate(value.from, format, { locale });
@@ -148,7 +163,7 @@ export function DatePickerRangeCustom({
       }
       return "";
     }
-  }, [value, format, locale]);
+  }, [allowSingleDaySelection, value, format, locale]);
 
   const canSetToday = useMemo(() => {
     const today = new Date();
@@ -170,6 +185,13 @@ export function DatePickerRangeCustom({
       setTriggerWidth(triggerRef.current.offsetWidth);
     }
   }, [open]);
+
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (!nextOpen && allowSingleDaySelection && value.from && !value.to) {
+      onChange({ from: value.from, to: value.from });
+    }
+    setOpen(nextOpen);
+  };
 
   const handleDateSelect = (date: Date | undefined) => {
     if (!date) return;
@@ -224,7 +246,7 @@ export function DatePickerRangeCustom({
         </div>
       )}
 
-      <Popover open={open} onOpenChange={setOpen}>
+      <Popover open={open} onOpenChange={handleOpenChange}>
         <PopoverTrigger asChild>
           <button
             ref={triggerRef}
@@ -297,7 +319,12 @@ export function DatePickerRangeCustom({
             mode="range"
             selected={{
               from: value.from || undefined,
-              to: value.to || undefined,
+              to:
+                allowSingleDaySelection &&
+                open &&
+                isSameCalendarDay(value.from, value.to)
+                  ? undefined
+                  : value.to || undefined,
             }}
             showOutsideDays={showOutsideDays}
             numberOfMonths={1}
@@ -310,6 +337,10 @@ export function DatePickerRangeCustom({
                   // Range completo selecionado
                   onChange({ from: range.from, to: range.to });
                   setOpen(false);
+                } else if (allowSingleDaySelection) {
+                  // Um clique já define início e término no mesmo dia.
+                  // O popover fica aberto para permitir escolher outra data e transformar em intervalo.
+                  onChange({ from: range.from, to: range.from });
                 } else {
                   // Apenas data inicial selecionada
                   handleDateSelect(range.from);

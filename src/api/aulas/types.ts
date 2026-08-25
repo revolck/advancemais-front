@@ -289,8 +289,9 @@ export interface AgendaAniversariantesResponse {
 // Google OAuth
 export interface GoogleOAuthStatus {
   conectado: boolean;
-  email?: string;
-  expiresAt?: string;
+  expirado?: boolean;
+  calendarId?: string | null;
+  expiraEm?: string | null;
 }
 
 export interface GoogleConnectResponse {

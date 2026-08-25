@@ -34,6 +34,7 @@ interface CreateNotaModalProps {
   onClose: () => void;
   defaultCursoId?: string | null;
   defaultTurmaId?: string | null;
+  defaultAlunoId?: string | null;
 }
 
 interface FormErrors {
@@ -158,10 +159,14 @@ export function CreateNotaModal({
   onClose,
   defaultCursoId = null,
   defaultTurmaId = null,
+  defaultAlunoId = null,
 }: CreateNotaModalProps) {
+  const hasFixedAluno = Boolean(defaultAlunoId);
   const [cursoId, setCursoId] = useState<string | null>(defaultCursoId);
   const [turmaId, setTurmaId] = useState<string | null>(defaultTurmaId);
-  const [alunoId, setAlunoId] = useState<string | null>(null);
+  const [alunoId, setAlunoId] = useState<string | null>(
+    hasFixedAluno ? defaultAlunoId : null,
+  );
 
   const [origemTipo, setOrigemTipo] = useState<NotaOrigemTipo | "">("");
   const [origemId, setOrigemId] = useState<string | null>(null);
@@ -179,7 +184,7 @@ export function CreateNotaModal({
   const alunosQuery = useAlunosForTurmaSelect({ cursoId, turmaId });
   const notasAtuaisQuery = useNotasAtuaisPorAluno({ cursoId, turmaId });
   const notaAtualAluno = alunoId
-    ? notasAtuaisQuery.notaByAlunoId[alunoId] ?? 0
+    ? (notasAtuaisQuery.notaByAlunoId[alunoId] ?? 0)
     : 0;
   const maxAllowed = Math.max(
     0,
@@ -223,7 +228,7 @@ export function CreateNotaModal({
     if (!isOpen) return;
     setCursoId(defaultCursoId);
     setTurmaId(defaultTurmaId);
-    setAlunoId(null);
+    setAlunoId(hasFixedAluno ? defaultAlunoId : null);
     setOrigemTipo("");
     setOrigemId(null);
     setOrigemOutroTitulo("");
@@ -231,7 +236,7 @@ export function CreateNotaModal({
     setNotaInputInstanceKey((k) => k + 1);
     setMotivo("");
     setErrors({});
-  }, [defaultCursoId, defaultTurmaId, isOpen]);
+  }, [defaultAlunoId, defaultCursoId, defaultTurmaId, hasFixedAluno, isOpen]);
 
   useEffect(() => {
     setOrigemId(null);
@@ -241,7 +246,7 @@ export function CreateNotaModal({
   const resetForm = useCallback(() => {
     setCursoId(defaultCursoId);
     setTurmaId(defaultTurmaId);
-    setAlunoId(null);
+    setAlunoId(hasFixedAluno ? defaultAlunoId : null);
     setOrigemTipo("");
     setOrigemId(null);
     setOrigemOutroTitulo("");
@@ -249,7 +254,7 @@ export function CreateNotaModal({
     setNotaInputInstanceKey((k) => k + 1);
     setMotivo("");
     setErrors({});
-  }, [defaultCursoId, defaultTurmaId]);
+  }, [defaultAlunoId, defaultCursoId, defaultTurmaId, hasFixedAluno]);
 
   const validate = useCallback((): boolean => {
     const next: FormErrors = {};
@@ -330,7 +335,7 @@ export function CreateNotaModal({
     if (!validate()) return;
 
     const notaParsed = parseNota(notaInput);
-    if (notaParsed === "invalid") return;
+    if (notaParsed === "invalid" || notaParsed === null) return;
 
     try {
       const origemPayload =
@@ -417,7 +422,7 @@ export function CreateNotaModal({
               onChange={(v) => {
                 setCursoId(v);
                 setTurmaId(null);
-                setAlunoId(null);
+                setAlunoId(hasFixedAluno ? defaultAlunoId : null);
                 setOrigemTipo("");
                 setOrigemId(null);
                 setNotaInput("");
@@ -443,7 +448,7 @@ export function CreateNotaModal({
               searchThreshold={0}
               onChange={(v) => {
                 setTurmaId(v);
-                setAlunoId(null);
+                setAlunoId(hasFixedAluno ? defaultAlunoId : null);
                 setOrigemTipo("");
                 setOrigemId(null);
                 setNotaInput("");
@@ -467,34 +472,38 @@ export function CreateNotaModal({
               searchable
             />
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <SelectCustom
-                label="Aluno"
-                options={alunosOptions}
-                value={alunoId}
-                required
-                searchThreshold={0}
-                onChange={(v) => {
-                  setAlunoId(v);
-                  setOrigemTipo("");
-                  setOrigemId(null);
-                  setOrigemOutroTitulo("");
-                  setNotaInput("");
-                  setNotaInputInstanceKey((k) => k + 1);
-                  setMotivo("");
-                  setErrors((prev) => ({ ...prev, alunoId: undefined }));
-                }}
-                placeholder={
-                  !turmaId
-                    ? "Selecione uma turma"
-                    : alunosQuery.isLoading || alunosQuery.isFetching
-                      ? "Carregando..."
-                      : "Selecionar"
-                }
-                disabled={!turmaId || alunosQuery.isLoading}
-                error={errors.alunoId}
-                searchable
-              />
+            <div
+              className={`grid grid-cols-1 gap-4 ${hasFixedAluno ? "" : "md:grid-cols-2"}`}
+            >
+              {!hasFixedAluno ? (
+                <SelectCustom
+                  label="Aluno"
+                  options={alunosOptions}
+                  value={alunoId}
+                  required
+                  searchThreshold={0}
+                  onChange={(v) => {
+                    setAlunoId(v);
+                    setOrigemTipo("");
+                    setOrigemId(null);
+                    setOrigemOutroTitulo("");
+                    setNotaInput("");
+                    setNotaInputInstanceKey((k) => k + 1);
+                    setMotivo("");
+                    setErrors((prev) => ({ ...prev, alunoId: undefined }));
+                  }}
+                  placeholder={
+                    !turmaId
+                      ? "Selecione uma turma"
+                      : alunosQuery.isLoading || alunosQuery.isFetching
+                        ? "Carregando..."
+                        : "Selecionar"
+                  }
+                  disabled={!turmaId || alunosQuery.isLoading}
+                  error={errors.alunoId}
+                  searchable
+                />
+              ) : null}
               <SelectCustom
                 label="Origem da nota"
                 options={origemTipoOptions}
@@ -508,8 +517,14 @@ export function CreateNotaModal({
                   setNotaInputInstanceKey((k) => k + 1);
                   setErrors((prev) => ({ ...prev, origemTipo: undefined }));
                 }}
-                placeholder={!alunoId ? "Selecione um aluno" : "Selecionar"}
-                disabled={!alunoId}
+                placeholder={
+                  !turmaId
+                    ? "Selecione uma turma"
+                    : !alunoId
+                      ? "Selecione um aluno"
+                      : "Selecionar"
+                }
+                disabled={!turmaId || !alunoId}
                 error={errors.origemTipo}
               />
             </div>
@@ -649,10 +664,10 @@ export function CreateNotaModal({
                   !alunoId
                     ? undefined
                     : notasAtuaisQuery.isLoading
-                    ? "Carregando nota atual do aluno..."
-                    : maxAllowed <= 0
-                    ? "Aluno já possui nota final 10. Não é possível adicionar."
-                    : `Nota atual: ${formatNotaValue(notaAtualAluno)} • disponível para adicionar: ${formatNotaValue(maxAllowed)}`
+                      ? "Carregando nota atual do aluno..."
+                      : maxAllowed <= 0
+                        ? "Aluno já possui nota final 10. Não é possível adicionar."
+                        : `Nota atual: ${formatNotaValue(notaAtualAluno)} • disponível para adicionar: ${formatNotaValue(maxAllowed)}`
                 }
                 disabled={
                   !alunoId ||

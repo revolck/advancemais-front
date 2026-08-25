@@ -40,6 +40,7 @@ export interface InscricoesTabProps {
   aluno: AlunoDetailsData;
   inscricoes: AlunoInscricao[];
   isLoading?: boolean;
+  canCreateNota?: boolean;
 }
 
 export interface HorizontalTabItem {

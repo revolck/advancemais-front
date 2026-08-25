@@ -64,7 +64,19 @@ const TIPO_OPTIONS = [
 const TIPO_ATIVIDADE_OPTIONS = [
   { value: "QUESTOES", label: "Questões" },
   { value: "TEXTO", label: "Pergunta e Resposta" },
+  { value: "ENVIO_MATERIAL", label: "Envio de material/link" },
 ];
+
+type FormTipoAtividade = "QUESTOES" | "TEXTO" | "ENVIO_MATERIAL" | "";
+type ApiTipoAtividade = "QUESTOES" | "PERGUNTA_RESPOSTA" | "ENVIO_MATERIAL";
+
+const toApiTipoAtividade = (
+  tipoAtividade?: FormTipoAtividade
+): ApiTipoAtividade | undefined => {
+  if (!tipoAtividade) return undefined;
+  if (tipoAtividade === "TEXTO") return "PERGUNTA_RESPOSTA";
+  return tipoAtividade;
+};
 
 const MODALIDADE_OPTIONS = [
   { value: "ONLINE", label: "Online" },
@@ -83,6 +95,42 @@ const getTomorrowDate = (): Date => {
   tomorrow.setHours(0, 0, 0, 0);
   return tomorrow;
 };
+
+function combineDateAndTime(date: Date | null, time: string): Date | null {
+  if (!date || !time) return null;
+
+  const [hours, minutes] = time.split(":").map(Number);
+  if (
+    !Number.isFinite(hours) ||
+    !Number.isFinite(minutes) ||
+    hours < 0 ||
+    hours > 23 ||
+    minutes < 0 ||
+    minutes > 59
+  ) {
+    return null;
+  }
+
+  const combined = new Date(date);
+  combined.setHours(hours, minutes, 0, 0);
+  return combined;
+}
+
+function computeDuracaoFromPeriodo(
+  dataInicio: Date | null,
+  dataFim: Date | null,
+  horaInicio: string,
+  horaFim: string
+): number | null {
+  const inicio = combineDateAndTime(dataInicio, horaInicio);
+  const fim = combineDateAndTime(dataFim, horaFim);
+  if (!inicio || !fim) return null;
+
+  const diff = fim.getTime() - inicio.getTime();
+  if (diff <= 0) return null;
+
+  return Math.round(diff / 60000);
+}
 
 const toAvaliacaoQuestoes = (questoes?: QuestaoItem[]): AvaliacaoQuestaoInput[] | undefined => {
   if (!questoes || questoes.length === 0) return undefined;
@@ -228,7 +276,7 @@ function normalizeQuestoesForBuilder(rawQuestoes: unknown): QuestaoItem[] {
 
 interface FormData {
   tipo: "PROVA" | "ATIVIDADE" | "";
-  tipoAtividade?: "QUESTOES" | "TEXTO" | ""; // Apenas para ATIVIDADE
+  tipoAtividade?: FormTipoAtividade; // Apenas para ATIVIDADE
   titulo: string;
   etiqueta: string;
   valeNota: boolean;
@@ -630,11 +678,20 @@ export function CreateProvaForm({
       newErrors.horaFim = "Hora de término é obrigatória";
     }
 
-    // Validar que hora de término é após hora de início
-    if (formData.horaInicio && formData.horaFim) {
-      if (formData.horaInicio >= formData.horaFim) {
-        newErrors.horaFim = "Hora de término deve ser após a hora de início";
-      }
+    if (
+      formData.dataInicio &&
+      formData.dataFim &&
+      formData.horaInicio &&
+      formData.horaFim &&
+      !computeDuracaoFromPeriodo(
+        formData.dataInicio,
+        formData.dataFim,
+        formData.horaInicio,
+        formData.horaFim
+      )
+    ) {
+      newErrors.horaFim =
+        "Data e hora de término devem ser após data e hora de início";
     }
 
     // Obrigatória é obrigatório informar (sempre terá um valor, então não precisa validar)
@@ -675,9 +732,15 @@ export function CreateProvaForm({
               });
             });
           }
-        } else if (formData.tipoAtividade === "TEXTO") {
+        } else if (
+          formData.tipoAtividade === "TEXTO" ||
+          formData.tipoAtividade === "ENVIO_MATERIAL"
+        ) {
           if (!formData.texto?.titulo?.trim()) {
-            newErrors.textoTitulo = "Pergunta é obrigatória";
+            newErrors.textoTitulo =
+              formData.tipoAtividade === "ENVIO_MATERIAL"
+                ? "Instruções de envio são obrigatórias"
+                : "Pergunta é obrigatória";
           }
         }
       }
@@ -752,21 +815,15 @@ export function CreateProvaForm({
     setLoadingStep("Salvando prova...");
 
     try {
-      // Calcular duração quando há período (horaInicio e horaFim)
       let duracaoMinutos = Number(formData.duracaoMinutos) || 60;
-      if (formData.dataInicio && formData.horaInicio && formData.horaFim) {
-        const [horaIni, minIni] = formData.horaInicio.split(":").map(Number);
-        const [horaFimNum, minFim] = formData.horaFim.split(":").map(Number);
-
-        const minutosInicio = horaIni * 60 + minIni;
-        const minutosFim = horaFimNum * 60 + minFim;
-
-        duracaoMinutos = minutosFim - minutosInicio;
-
-        // Garantir que a duração seja positiva
-        if (duracaoMinutos <= 0) {
-          duracaoMinutos = 60; // Fallback para 1 hora
-        }
+      const duracaoPeriodo = computeDuracaoFromPeriodo(
+        formData.dataInicio,
+        formData.dataFim,
+        formData.horaInicio,
+        formData.horaFim
+      );
+      if (duracaoPeriodo) {
+        duracaoMinutos = duracaoPeriodo;
       }
 
       const dataInicio = formData.dataInicio
@@ -810,14 +867,17 @@ export function CreateProvaForm({
             tipoAtividade: formData.tipoAtividade as
               | "QUESTOES"
               | "TEXTO"
+              | "ENVIO_MATERIAL"
               | undefined,
             ...(formData.tipoAtividade === "QUESTOES" &&
               formData.questoes && {
                 questoes: formData.questoes,
               }),
-            ...(formData.tipoAtividade === "TEXTO" &&
+            ...((formData.tipoAtividade === "TEXTO" ||
+              formData.tipoAtividade === "ENVIO_MATERIAL") &&
               formData.texto && {
                 texto: formData.texto,
+                descricao: formData.texto.titulo.trim() || undefined,
               }),
           }),
         // Dados específicos de prova (legado)
@@ -851,10 +911,8 @@ export function CreateProvaForm({
           else {
           const valePontoEfetivo = formData.valeNota ? true : formData.valePonto;
           const tipoAtividadeApi =
-            formData.tipo === "ATIVIDADE" && formData.tipoAtividade
-              ? formData.tipoAtividade === "QUESTOES"
-                ? "QUESTOES"
-                : "PERGUNTA_RESPOSTA"
+            formData.tipo === "ATIVIDADE"
+              ? toApiTipoAtividade(formData.tipoAtividade)
               : undefined;
 
           const avaliacaoPayload: CreateAvaliacaoPayload = {
@@ -874,7 +932,9 @@ export function CreateProvaForm({
             ...(duracaoMinutos ? { duracaoMinutos } : {}),
             ...(formData.tipo === "PROVA" ? { recuperacaoFinal: formData.recuperacaoFinal } : {}),
             ...(formData.tipo === "ATIVIDADE" ? { tipoAtividade: tipoAtividadeApi as any } : {}),
-            ...(formData.tipo === "ATIVIDADE" && tipoAtividadeApi === "PERGUNTA_RESPOSTA"
+            ...(formData.tipo === "ATIVIDADE" &&
+            (tipoAtividadeApi === "PERGUNTA_RESPOSTA" ||
+              tipoAtividadeApi === "ENVIO_MATERIAL")
               ? { descricao: formData.texto?.titulo?.trim() || undefined }
               : {}),
             ...((formData.tipo === "PROVA" ||
@@ -947,6 +1007,11 @@ export function CreateProvaForm({
           }
           toastCustom.success(`${tipoLabel} criada com sucesso!`);
         }
+
+        const meetUrlCriado = (provaCriada as any)?.meetUrl as string | undefined;
+        if (meetUrlCriado) {
+          toastCustom.info(`Sala Google Meet criada: ${meetUrlCriado}`);
+        }
       } else {
         if (!provaId) {
           throw new Error("ID da prova é necessário para edição");
@@ -962,10 +1027,8 @@ export function CreateProvaForm({
         } else {
           const valePontoEfetivo = formData.valeNota ? true : formData.valePonto;
           const tipoAtividadeApi =
-            formData.tipo === "ATIVIDADE" && formData.tipoAtividade
-              ? formData.tipoAtividade === "QUESTOES"
-                ? "QUESTOES"
-                : "PERGUNTA_RESPOSTA"
+            formData.tipo === "ATIVIDADE"
+              ? toApiTipoAtividade(formData.tipoAtividade)
               : undefined;
 
           const avaliacaoPayload: UpdateAvaliacaoPayload = {
@@ -992,7 +1055,8 @@ export function CreateProvaForm({
               ? { tipoAtividade: tipoAtividadeApi as any }
               : {}),
             ...(formData.tipo === "ATIVIDADE" &&
-            tipoAtividadeApi === "PERGUNTA_RESPOSTA"
+            (tipoAtividadeApi === "PERGUNTA_RESPOSTA" ||
+              tipoAtividadeApi === "ENVIO_MATERIAL")
               ? { descricao: formData.texto?.titulo?.trim() || undefined }
               : {}),
             ...((formData.tipo === "PROVA" ||
@@ -1608,13 +1672,13 @@ export function CreateProvaForm({
                     onChange={(value) => {
                       handleInputChange(
                         "tipoAtividade",
-                        value as "QUESTOES" | "TEXTO" | ""
+                        value as FormTipoAtividade
                       );
                       // Limpar dados do tipo anterior ao mudar
                       if (value !== "QUESTOES") {
                         handleInputChange("questoes", []);
                       }
-                      if (value !== "TEXTO") {
+                      if (value !== "TEXTO" && value !== "ENVIO_MATERIAL") {
                         handleInputChange("texto", { titulo: "" });
                       }
                     }}
@@ -1713,6 +1777,26 @@ export function CreateProvaForm({
               )}
             </div>
 
+            {/* Meet Info — só para AO_VIVO (provas/atividades não suportam SEMIPRESENCIAL+Meet) */}
+            {formData.modalidade === "AO_VIVO" && (
+              <div className="rounded-xl border-2 border-blue-200 bg-blue-50 p-4">
+                <div className="flex items-start gap-3">
+                  <div className="shrink-0 w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                    <Info className="h-5 w-5 text-blue-600" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="text-sm! font-semibold! text-blue-900! mb-1!">
+                      Google Meet
+                    </h4>
+                    <p className="text-sm! text-blue-700! mb-0!">
+                      O link da sala será criado automaticamente quando você
+                      salvar {formData.tipo === "ATIVIDADE" ? "a atividade" : "a prova"}.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Linha 4: Período (Data Início e Fim), Horários e Obrigatória */}
             <div className="flex flex-col md:flex-row gap-4 w-full">
               {/* Período da Prova/Atividade (Data Início e Fim) */}
@@ -1732,6 +1816,7 @@ export function CreateProvaForm({
                   minDate={getTomorrowDate()}
                   required
                   clearable
+                  allowSingleDaySelection
                 />
               </div>
 
@@ -1830,11 +1915,57 @@ export function CreateProvaForm({
 
             {/* Builder de Texto - Apenas para ATIVIDADE */}
             {formData.tipo === "ATIVIDADE" &&
-              formData.tipoAtividade === "TEXTO" && (
+              (formData.tipoAtividade === "TEXTO" ||
+                formData.tipoAtividade === "ENVIO_MATERIAL") && (
                 <div className="space-y-4">
                   <TextoBuilder
                     texto={formData.texto || { titulo: "" }}
                     onChange={(texto) => handleInputChange("texto", texto)}
+                    title={
+                      formData.tipoAtividade === "ENVIO_MATERIAL"
+                        ? "Envio de material/link"
+                        : undefined
+                    }
+                    description={
+                      formData.tipoAtividade === "ENVIO_MATERIAL"
+                        ? "Os alunos enviarão um arquivo, um link ou os dois para correção"
+                        : undefined
+                    }
+                    fieldLabel={
+                      formData.tipoAtividade === "ENVIO_MATERIAL"
+                        ? "Instruções para entrega"
+                        : undefined
+                    }
+                    placeholder={
+                      formData.tipoAtividade === "ENVIO_MATERIAL"
+                        ? "Ex: envie o arquivo do Word produzido em aula ou cole o link do documento compartilhado..."
+                        : undefined
+                    }
+                    tip={
+                      formData.tipoAtividade === "ENVIO_MATERIAL"
+                        ? "Explique o formato esperado, tipos de arquivo aceitos, prazo e se o aluno pode enviar link externo."
+                        : undefined
+                    }
+                    badgeLabel={
+                      formData.tipoAtividade === "ENVIO_MATERIAL"
+                        ? "Arquivo ou Link"
+                        : undefined
+                    }
+                    previewLabel={
+                      formData.tipoAtividade === "ENVIO_MATERIAL"
+                        ? "Prévia das instruções"
+                        : undefined
+                    }
+                    emptySourceLabel={
+                      formData.tipoAtividade === "ENVIO_MATERIAL"
+                        ? "Instruções"
+                        : undefined
+                    }
+                    emptyTargetLabel={
+                      formData.tipoAtividade === "ENVIO_MATERIAL"
+                        ? "Entrega do Aluno"
+                        : undefined
+                    }
                   />
                 </div>
               )}

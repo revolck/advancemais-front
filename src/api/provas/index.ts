@@ -20,6 +20,11 @@ export {
   listAvaliacaoRespostas,
   getAvaliacaoRespostaById,
   corrigirAvaliacaoResposta,
+  listAvaliacaoRespostaComentarios,
+  createAvaliacaoRespostaComentario,
+  updateAvaliacaoRespostaComentario,
+  deleteAvaliacaoRespostaComentario,
+  fixarAvaliacaoRespostaComentario,
 } from "./respostas";
 
 // Rotas
@@ -58,4 +63,13 @@ export type {
   AvaliacaoRespostaDetalheResponse,
   CorrigirAvaliacaoRespostaPayload,
   CorrigirAvaliacaoRespostaResponse,
+  AvaliacaoRespostaComentarioFiltro,
+  AvaliacaoRespostaComentarioAutor,
+  AvaliacaoRespostaComentario,
+  ListAvaliacaoRespostaComentariosParams,
+  ListAvaliacaoRespostaComentariosResponse,
+  AvaliacaoRespostaComentarioPayload,
+  UpdateAvaliacaoRespostaComentarioPayload,
+  FixarAvaliacaoRespostaComentarioPayload,
+  AvaliacaoRespostaComentarioResponse,
 } from "./types";

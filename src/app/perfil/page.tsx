@@ -3,6 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getUserProfile, updateUserProfile } from "@/api/usuarios";
 import type { UsuarioProfileResponse } from "@/api/usuarios/types";
+import { getGoogleOAuthStatus, connectGoogle, disconnectGoogle } from "@/api/aulas";
 import { ProfileForm } from "@/theme/dashboard/components/profile/ProfileForm";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ButtonCustom } from "@/components/ui/custom";
@@ -16,10 +17,12 @@ import {
   ModalFooter,
   ModalTitle,
   FileUpload,
+  toastCustom,
 } from "@/components/ui/custom";
-import { useMemo, useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useMemo, useState, useCallback, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Pencil } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { FileUploadItem } from "@/components/ui/custom/file-upload/types";
 import { deleteFile, uploadImage } from "@/services/upload/uploadService";
 
@@ -38,6 +41,9 @@ export default function PerfilPage() {
   const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
   const [avatarFiles, setAvatarFiles] = useState<FileUploadItem[]>([]);
   const [pendingAvatarDelete, setPendingAvatarDelete] = useState(false);
+  const [isDisconnectGoogleModalOpen, setIsDisconnectGoogleModalOpen] =
+    useState(false);
+  const searchParams = useSearchParams();
 
   const validateAvatarFile = useCallback(
     async (file: File): Promise<{ isValid: boolean; error?: string }> => {
@@ -200,6 +206,58 @@ export default function PerfilPage() {
     },
   });
 
+  // Status da conexão com o Google (Calendar/Meet)
+  const { data: googleStatus, isLoading: isLoadingGoogleStatus } = useQuery({
+    queryKey: ["google-oauth-status"],
+    queryFn: () => getGoogleOAuthStatus(),
+    staleTime: 60 * 1000,
+  });
+  const isGoogleConectado = googleStatus?.conectado ?? false;
+
+  const connectGoogleMutation = useMutation({
+    mutationFn: () => connectGoogle({ returnTo: "/perfil" }),
+    onSuccess: (data) => {
+      window.location.href = data.authUrl;
+    },
+    onError: () => {
+      toastCustom.error(
+        "Não foi possível iniciar a conexão com o Google. Tente novamente."
+      );
+    },
+  });
+
+  const disconnectGoogleMutation = useMutation({
+    mutationFn: () => disconnectGoogle(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["google-oauth-status"] });
+      setIsDisconnectGoogleModalOpen(false);
+      toastCustom.success("Conta Google desconectada com sucesso.");
+    },
+    onError: () => {
+      toastCustom.error(
+        "Não foi possível desconectar sua conta Google. Tente novamente."
+      );
+    },
+  });
+
+  // Retorno do fluxo OAuth (?google=conectado|erro) — mostra o toast e limpa a URL
+  useEffect(() => {
+    const googleParam = searchParams?.get("google");
+    if (!googleParam) return;
+
+    if (googleParam === "conectado") {
+      toastCustom.success("Conta Google conectada com sucesso!");
+      queryClient.invalidateQueries({ queryKey: ["google-oauth-status"] });
+    } else if (googleParam === "erro") {
+      toastCustom.error(
+        "Não foi possível conectar sua conta Google. Tente novamente."
+      );
+    }
+
+    router.replace("/perfil");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
   const profile = useMemo(() => {
     if (!profileResponse || !("usuario" in profileResponse)) {
       return null;
@@ -302,35 +360,72 @@ export default function PerfilPage() {
     <>
       <div className="space-y-8 pb-8">
         <section className="rounded-3xl border border-gray-200 bg-white px-6 py-6 sm:px-8 sm:py-8">
-          <div className="flex items-center gap-4">
-            <div className="relative shrink-0">
-              <AvatarCustom
-                name={profile.nomeCompleto}
-                src={profile.avatarUrl ?? undefined}
-                size="xl"
-                withBorder
-                className="cursor-pointer transition-opacity hover:opacity-90"
-                onClick={() => setIsAvatarModalOpen(true)}
-              />
-              <button
-                type="button"
-                onClick={() => setIsAvatarModalOpen(true)}
-                className="absolute -bottom-1 -right-1 flex items-center justify-center w-6 h-6 rounded-full bg-white text-[var(--primary-color)] border-2 border-white hover:bg-[var(--secondary-color)] hover:text-white transition-all duration-300 ease-in-out cursor-pointer"
-                aria-label="Editar foto de perfil"
-              >
-                <Pencil className="w-3 h-3 transition-colors duration-300" />
-              </button>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-4">
+              <div className="relative shrink-0">
+                <AvatarCustom
+                  name={profile.nomeCompleto}
+                  src={profile.avatarUrl ?? undefined}
+                  size="xl"
+                  withBorder
+                  className="cursor-pointer transition-opacity hover:opacity-90"
+                  onClick={() => setIsAvatarModalOpen(true)}
+                />
+                <button
+                  type="button"
+                  onClick={() => setIsAvatarModalOpen(true)}
+                  className="absolute -bottom-1 -right-1 flex items-center justify-center w-6 h-6 rounded-full bg-white text-[var(--primary-color)] border-2 border-white hover:bg-[var(--secondary-color)] hover:text-white transition-all duration-300 ease-in-out cursor-pointer"
+                  aria-label="Editar foto de perfil"
+                >
+                  <Pencil className="w-3 h-3 transition-colors duration-300" />
+                </button>
+              </div>
+              <div className="space-y-1">
+                <h4 className="!text-xl font-semibold text-gray-900 !mb-0">
+                  {profile.nomeCompleto}
+                </h4>
+                {lastLoginLabel && (
+                  <p className="!text-xs text-gray-500 !mb-0">
+                    Último acesso: {lastLoginLabel}
+                  </p>
+                )}
+              </div>
             </div>
-            <div className="space-y-1">
-              <h4 className="!text-xl font-semibold text-gray-900 !mb-0">
-                {profile.nomeCompleto}
-              </h4>
-              {lastLoginLabel && (
-                <p className="!text-xs text-gray-500 !mb-0">
-                  Último acesso: {lastLoginLabel}
-                </p>
-              )}
-            </div>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <ButtonCustom
+                  type="button"
+                  variant={isGoogleConectado ? "outline" : "primary"}
+                  withAnimation={false}
+                  className={
+                    isGoogleConectado
+                      ? undefined
+                      : "!bg-red-500 hover:!bg-red-600 active:!bg-red-700"
+                  }
+                  size="md"
+                  icon={isGoogleConectado ? "Unlink" : "Link"}
+                  isLoading={
+                    isLoadingGoogleStatus || connectGoogleMutation.isPending
+                  }
+                  disabled={isLoadingGoogleStatus}
+                  onClick={() => {
+                    if (isGoogleConectado) {
+                      setIsDisconnectGoogleModalOpen(true);
+                    } else {
+                      connectGoogleMutation.mutate();
+                    }
+                  }}
+                >
+                  {isGoogleConectado ? "Desconectar do Google" : "Conectar ao Google"}
+                </ButtonCustom>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" sideOffset={8}>
+                {isGoogleConectado
+                  ? "Desconectar sua conta Google"
+                  : "Conectar Google Agenda"}
+              </TooltipContent>
+            </Tooltip>
           </div>
         </section>
 
@@ -498,6 +593,45 @@ export default function PerfilPage() {
               isLoading={updateProfileMutation.isPending}
             >
               Salvar
+            </ButtonCustom>
+          </ModalFooter>
+        </ModalContentWrapper>
+      </ModalCustom>
+
+      {/* Modal de confirmação de desconexão do Google */}
+      <ModalCustom
+        isOpen={isDisconnectGoogleModalOpen}
+        onOpenChange={setIsDisconnectGoogleModalOpen}
+        size="md"
+        backdrop="blur"
+      >
+        <ModalContentWrapper>
+          <ModalHeader>
+            <ModalTitle className="mb-0!">Desconectar conta Google</ModalTitle>
+          </ModalHeader>
+          <ModalBody>
+            <p className="text-sm text-gray-600">
+              Você deixará de conseguir usar recursos integrados à sua conta
+              Google (como Google Calendar e Google Meet) até reconectar.
+              Deseja continuar?
+            </p>
+          </ModalBody>
+          <ModalFooter>
+            <ButtonCustom
+              variant="outline"
+              size="md"
+              onClick={() => setIsDisconnectGoogleModalOpen(false)}
+              disabled={disconnectGoogleMutation.isPending}
+            >
+              Cancelar
+            </ButtonCustom>
+            <ButtonCustom
+              variant="primary"
+              size="md"
+              onClick={() => disconnectGoogleMutation.mutate()}
+              isLoading={disconnectGoogleMutation.isPending}
+            >
+              Desconectar
             </ButtonCustom>
           </ModalFooter>
         </ModalContentWrapper>

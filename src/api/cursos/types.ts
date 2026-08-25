@@ -93,6 +93,23 @@ export interface CursoModulo {
   cursoId?: number | string;
 }
 
+// Alertas de frequência/qualidade da turma
+export interface TurmaAlertaAluno {
+  alunoId: string;
+  nomeCompleto: string;
+  frequenciaPercentual: number;
+}
+
+export interface TurmaAlerta {
+  id: string;
+  checkpoint: number;
+  criadoEm: string;
+  expiraEm: string;
+  alunosAfetados: TurmaAlertaAluno[];
+  turma: { id: string; nome: string };
+  curso: { id: string; nome: string };
+}
+
 // Turmas
 export interface CursoTurma {
   id: string;
@@ -176,6 +193,8 @@ export interface CreateTurmaEstruturaItemPayload {
   ordem?: number;
   startDate?: string | null;
   endDate?: string | null;
+  horaInicio?: string | null;
+  horaFim?: string | null;
   instructorIds?: string[];
   /**
    * Status opcional do item instanciado.
@@ -385,6 +404,8 @@ export interface TurmaProva {
   moduloId?: string;
   modalidade?: "ONLINE" | "PRESENCIAL" | "AO_VIVO" | "SEMIPRESENCIAL";
   instrutorId?: string;
+  meetUrl?: string | null;
+  meetEventId?: string | null;
   criadoPorId?: string | null;
   curso?:
     | string
@@ -433,9 +454,10 @@ export interface TurmaProva {
 export interface CreateProvaPayload {
   titulo: string;
   etiqueta?: string;
+  descricao?: string;
   tipo?: "PROVA" | "ATIVIDADE";
   recuperacaoFinal?: boolean;
-  tipoAtividade?: "QUESTOES" | "TEXTO"; // Apenas para ATIVIDADE
+  tipoAtividade?: "QUESTOES" | "TEXTO" | "ENVIO_MATERIAL"; // Apenas para ATIVIDADE
   peso?: number;
   valeNota?: boolean;
   valePonto?: boolean;
@@ -1626,6 +1648,12 @@ export interface CreateNotaPayload {
   origem?: NotaOrigem | null;
 }
 
+export interface UpdateNotaPayload {
+  nota?: number | null;
+  titulo?: string | null;
+  observacoes?: string | null;
+}
+
 export interface DeleteNotasParams {
   alunoId: string;
 }
@@ -1635,7 +1663,10 @@ export interface DeleteNotasParams {
 // ===================================
 
 export type AvaliacaoTipo = "PROVA" | "ATIVIDADE";
-export type AvaliacaoTipoAtividade = "QUESTOES" | "PERGUNTA_RESPOSTA";
+export type AvaliacaoTipoAtividade =
+  | "QUESTOES"
+  | "PERGUNTA_RESPOSTA"
+  | "ENVIO_MATERIAL";
 export type AvaliacaoStatus =
   | "RASCUNHO"
   | "PUBLICADA"

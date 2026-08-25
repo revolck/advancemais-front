@@ -70,6 +70,10 @@ interface BuilderManagerProps {
     modalidade?: string;
     status?: string;
     instrutorId?: string | null;
+    dataInicio?: string;
+    dataFim?: string;
+    horaInicio?: string;
+    horaFim?: string;
   }>;
   avaliacaoTemplates?: Array<{
     id: string;
@@ -79,6 +83,10 @@ interface BuilderManagerProps {
     modalidade?: string;
     status?: string;
     instrutorId?: string | null;
+    dataInicio?: string;
+    dataFim?: string;
+    horaInicio?: string;
+    horaTermino?: string;
   }>;
 }
 

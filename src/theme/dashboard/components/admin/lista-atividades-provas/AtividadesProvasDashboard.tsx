@@ -604,7 +604,7 @@ export function AtividadesProvasDashboard({
                               sortField === "titulo" && "text-gray-900"
                             )}
                           >
-                            Prova
+                            Atividade/Prova
                           </button>
                         </TooltipTrigger>
                         <TooltipContent sideOffset={6}>

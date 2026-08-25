@@ -40,9 +40,7 @@ interface InscricoesTabProps {
   currentPage?: number;
   onPageChange?: (page: number) => void;
   onSearch?: (value: string) => void;
-  onLoadProgress?: () => void;
   isLoadingProgress?: boolean;
-  hasLoadedProgress?: boolean;
 }
 
 const getStatusColor = (status?: string) => {
@@ -142,9 +140,7 @@ export function InscricoesTab({
   currentPage: currentPageProp = 1,
   onPageChange,
   onSearch,
-  onLoadProgress,
   isLoadingProgress = false,
-  hasLoadedProgress = false,
 }: InscricoesTabProps) {
   // Estados de busca
   const [pendingSearchQuery, setPendingSearchQuery] = useState("");
@@ -319,20 +315,6 @@ export function InscricoesTab({
           >
             Pesquisar
           </ButtonCustom>
-          {onLoadProgress && (
-            <ButtonCustom
-              variant="outline"
-              size="lg"
-              onClick={onLoadProgress}
-              disabled={isLoadingProgress}
-            >
-              {isLoadingProgress
-                ? "Carregando andamento..."
-                : hasLoadedProgress
-                ? "Atualizar andamento"
-                : "Carregar andamento"}
-            </ButtonCustom>
-          )}
         </div>
       </div>
 
@@ -537,7 +519,9 @@ export function InscricoesTab({
                         </span>
                       </>
                     ) : (
-                      <span className="text-xs text-gray-500">—</span>
+                      <span className="text-xs text-gray-500">
+                        {isLoadingProgress ? "Atualizando..." : "—"}
+                      </span>
                     )}
                   </div>
                 </TableCell>

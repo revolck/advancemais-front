@@ -543,6 +543,8 @@ export function CreateTurmaForm({ onSuccess }: CreateTurmaFormProps) {
               ...(it.startDate && it.endDate
                 ? { startDate: it.startDate, endDate: it.endDate }
                 : {}),
+              ...(it.horaInicio ? { horaInicio: it.horaInicio } : {}),
+              ...(it.horaFim ? { horaFim: it.horaFim } : {}),
               ...(() => {
                 const status =
                   it.type === "AULA"
@@ -578,6 +580,8 @@ export function CreateTurmaForm({ onSuccess }: CreateTurmaFormProps) {
               ...(it.startDate && it.endDate
                 ? { startDate: it.startDate, endDate: it.endDate }
                 : {}),
+              ...(it.horaInicio ? { horaInicio: it.horaInicio } : {}),
+              ...(it.horaFim ? { horaFim: it.horaFim } : {}),
               ...(() => {
                 const status =
                   it.type === "AULA"

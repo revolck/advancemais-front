@@ -90,22 +90,19 @@ const SliderBasic: React.FC<SliderBasicProps> = ({
   // Autoplay básico
   useSliderAutoplay(emblaApi, SLIDER_CONFIG.autoplay);
 
-  // Enquanto carrega, mostra apenas um espaço reservado
-  if (isLoading) {
-    if (isMobile) {
-      return <div className="w-full aspect-square bg-[var(--primary-color)]" />;
-    }
-    const h = SLIDER_CONFIG.ui.height;
-    return <div className="w-full" style={{ height: h, minHeight: h, maxHeight: h }} />;
-  }
-
-  // Se não há slides, renderiza uma explicação do produto em vez de um placeholder vazio
-  if (!slides || slides.length === 0) {
+  // Enquanto carrega ou quando não há slides, mostra uma explicação do produto
+  // em vez de um placeholder vazio (garante que o HTML inicial sempre tenha
+  // texto real, mesmo antes do fetch client-side terminar)
+  if (isLoading || !slides || slides.length === 0) {
     const h = SLIDER_CONFIG.ui.height;
     return (
       <div
-        className="w-full bg-[var(--primary-color)] flex items-center justify-center px-4"
-        style={{ height: h, minHeight: h, maxHeight: h }}
+        className={
+          isMobile
+            ? "w-full aspect-square bg-[var(--primary-color)] flex items-center justify-center px-4"
+            : "w-full bg-[var(--primary-color)] flex items-center justify-center px-4"
+        }
+        style={isMobile ? undefined : { height: h, minHeight: h, maxHeight: h }}
       >
         <div className="flex flex-col items-center gap-2 text-center max-w-2xl">
           <h2 className="text-white text-2xl md:text-3xl font-bold">

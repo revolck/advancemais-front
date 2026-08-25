@@ -10,7 +10,7 @@ import {
   TimeInputCustom,
 } from "@/components/ui/custom";
 import { RichTextarea } from "@/components/ui/custom/text-area";
-import { DatePickerCustom } from "@/components/ui/custom/date-picker";
+import { DatePickerRangeCustom } from "@/components/ui/custom/date-picker";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -59,19 +59,50 @@ const TIPO_LINK_OPTIONS = [
   { value: "MEET", label: "Criar link do Google Meet" },
 ];
 
-function computeDuracaoFromHoras(inicio: string, fim: string): number | null {
-  if (!inicio || !fim) return null;
-  const [horaIni, minIni] = inicio.split(":").map(Number);
-  const [horaFim, minFim] = fim.split(":").map(Number);
+function combineDateAndTime(date: Date | null, time: string): Date | null {
+  if (!date || !time) return null;
+
+  const [hours, minutes] = time.split(":").map(Number);
   if (
-    [horaIni, minIni, horaFim, minFim].some((x) => !Number.isFinite(x) || x < 0)
+    !Number.isFinite(hours) ||
+    !Number.isFinite(minutes) ||
+    hours < 0 ||
+    hours > 23 ||
+    minutes < 0 ||
+    minutes > 59
   ) {
     return null;
   }
-  const minutosInicio = horaIni * 60 + minIni;
-  const minutosFim = horaFim * 60 + minFim;
-  const diff = minutosFim - minutosInicio;
-  return diff > 0 ? diff : null;
+
+  const combined = new Date(date);
+  combined.setHours(hours, minutes, 0, 0);
+  return combined;
+}
+
+function computeDuracaoFromPeriodo(
+  dataInicio: Date | null,
+  dataFim: Date | null,
+  horaInicio: string,
+  horaFim: string
+): number | null {
+  const inicio = combineDateAndTime(dataInicio, horaInicio);
+  const fim = combineDateAndTime(dataFim, horaFim);
+  if (!inicio || !fim) return null;
+
+  const diff = fim.getTime() - inicio.getTime();
+  if (diff <= 0) return null;
+
+  return Math.round(diff / 60000);
+}
+
+function formatDateForAPI(date: Date | string | null): string | undefined {
+  if (!date) return undefined;
+  const dateObj = typeof date === "string" ? new Date(date) : date;
+  if (Number.isNaN(dateObj.getTime())) return undefined;
+  const year = dateObj.getFullYear();
+  const month = String(dateObj.getMonth() + 1).padStart(2, "0");
+  const day = String(dateObj.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 /**
@@ -95,7 +126,8 @@ interface FormData {
   turmaId: string;
   instrutorId: string; // Novo campo para Admin/Mod/Ped
   moduloId: string;
-  dataAula: Date | null; // Data da aula (um dia)
+  dataInicio: Date | null;
+  dataFim: Date | null;
   horaInicio: string; // Hora início (HH:mm)
   horaFim: string; // Hora fim (HH:mm)
   sala: string; // Sala física (apenas PRESENCIAL)
@@ -114,7 +146,8 @@ const initialFormData: FormData = {
   turmaId: "",
   instrutorId: "",
   moduloId: "",
-  dataAula: null,
+  dataInicio: null,
+  dataFim: null,
   horaInicio: "",
   horaFim: "",
   sala: "",
@@ -161,7 +194,6 @@ export function CreateAulaForm({
   const [materialFiles, setMaterialFiles] = useState<FileUploadItem[]>([]);
   const [isInitializing, setIsInitializing] = useState(mode === "edit");
   const modalidadeAtualizadaRef = useRef(false); // Rastrear se já atualizamos a modalidade
-  const duracaoManualOverrideRef = useRef(false);
 
   // Verificar roles
   const isInstrutor = user?.role === "INSTRUTOR";
@@ -208,8 +240,9 @@ export function CreateAulaForm({
           });
         }
 
-        // Extrair data e horários
-        let dataAula: Date | null = null;
+        // Extrair período e horários
+        let dataInicioAula: Date | null = null;
+        let dataFimAula: Date | null = null;
         let horaInicio = "";
         let horaFim = "";
 
@@ -219,10 +252,10 @@ export function CreateAulaForm({
         } else if (aula.dataInicio) {
           // Fallback: extrair da data ISO se horaInicio não estiver disponível
           const dataInicio = new Date(aula.dataInicio);
-          horaInicio = `${String(dataInicio.getHours()).padStart(
+          horaInicio = `${String(dataInicio.getUTCHours()).padStart(
             2,
             "0"
-          )}:${String(dataInicio.getMinutes()).padStart(2, "0")}`;
+          )}:${String(dataInicio.getUTCMinutes()).padStart(2, "0")}`;
         }
 
         if (aula.horaFim) {
@@ -230,20 +263,28 @@ export function CreateAulaForm({
         } else if (aula.dataFim) {
           // Fallback: extrair da data ISO se horaFim não estiver disponível
           const dataFim = new Date(aula.dataFim);
-          horaFim = `${String(dataFim.getHours()).padStart(2, "0")}:${String(
-            dataFim.getMinutes()
+          horaFim = `${String(dataFim.getUTCHours()).padStart(2, "0")}:${String(
+            dataFim.getUTCMinutes()
           ).padStart(2, "0")}`;
         }
 
-        // Extrair apenas a data (sem hora) de dataInicio
         if (aula.dataInicio) {
           const dataInicio = new Date(aula.dataInicio);
-          // Criar nova data apenas com dia/mês/ano (zerar horas)
-          dataAula = new Date(
+          dataInicioAula = new Date(
             dataInicio.getFullYear(),
             dataInicio.getMonth(),
             dataInicio.getDate()
           );
+        }
+        if (aula.dataFim) {
+          const dataFim = new Date(aula.dataFim);
+          dataFimAula = new Date(
+            dataFim.getFullYear(),
+            dataFim.getMonth(),
+            dataFim.getDate()
+          );
+        } else if (dataInicioAula) {
+          dataFimAula = new Date(dataInicioAula);
         }
 
         // Se há turma vinculada, não preencher modalidade aqui - será preenchida pelo useEffect quando turmas carregarem
@@ -285,7 +326,8 @@ export function CreateAulaForm({
           turmaId: aula.turma?.id || "",
           instrutorId: aula.instrutor?.id || "",
           moduloId: aula.modulo?.id || "",
-          dataAula,
+          dataInicio: dataInicioAula,
+          dataFim: dataFimAula,
           horaInicio,
           horaFim,
           sala: aula.sala || "",
@@ -346,7 +388,8 @@ export function CreateAulaForm({
           tipoLink: "",
           youtubeUrl: "",
           ...(mode === "create" && {
-            dataAula: null,
+            dataInicio: null,
+            dataFim: null,
             horaInicio: "",
             horaFim: "",
           }),
@@ -516,10 +559,6 @@ export function CreateAulaForm({
   }, [formData.descricao, isInitializing, mode]);
 
   const handleInputChange = (field: keyof FormData, value: any) => {
-    if (field === "duracaoMinutos") {
-      const nextValue = String(value ?? "").trim();
-      duracaoManualOverrideRef.current = Boolean(nextValue);
-    }
     setFormData((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) {
       setErrors((prev) => {
@@ -541,21 +580,16 @@ export function CreateAulaForm({
         (prev.tipoLink || prev.youtubeUrl);
 
       const nextTipoLink = preservarLinks ? prev.tipoLink : "";
-      const needsPeriodo =
-        modalidade === "PRESENCIAL" ||
-        modalidade === "AO_VIVO" ||
-        (modalidade === "SEMIPRESENCIAL" && nextTipoLink === "MEET");
-
       return {
         ...prev,
         modalidade,
         // ✅ Preservar links se modalidade permite e já existem
         tipoLink: nextTipoLink,
         youtubeUrl: preservarLinks ? prev.youtubeUrl : "",
-        // Data/Horas só fazem sentido quando a modalidade exige período
-        dataAula: needsPeriodo ? (mode === "edit" ? prev.dataAula : null) : null,
-        horaInicio: needsPeriodo ? (mode === "edit" ? prev.horaInicio : "") : "",
-        horaFim: needsPeriodo ? (mode === "edit" ? prev.horaFim : "") : "",
+        dataInicio: mode === "edit" ? prev.dataInicio : null,
+        dataFim: mode === "edit" ? prev.dataFim : null,
+        horaInicio: mode === "edit" ? prev.horaInicio : "",
+        horaFim: mode === "edit" ? prev.horaFim : "",
         // Manter descrição sempre (tanto em criação quanto em edição)
         descricao: prev.descricao,
         // Sala só faz sentido no presencial
@@ -595,7 +629,8 @@ export function CreateAulaForm({
           ...(mode === "create" && {
             tipoLink: "",
             youtubeUrl: "",
-            dataAula: null,
+            dataInicio: null,
+            dataFim: null,
             horaInicio: "",
             horaFim: "",
           }),
@@ -611,7 +646,8 @@ export function CreateAulaForm({
         tipoLink: "",
         youtubeUrl: "",
         ...(mode === "create" && {
-          dataAula: null,
+          dataInicio: null,
+          dataFim: null,
           horaInicio: "",
           horaFim: "",
         }),
@@ -650,10 +686,7 @@ export function CreateAulaForm({
     formData.modalidade === "AO_VIVO" ||
     (formData.modalidade === "SEMIPRESENCIAL" && formData.tipoLink === "MEET");
 
-  const showPeriodoField =
-    formData.modalidade === "PRESENCIAL" ||
-    formData.modalidade === "AO_VIVO" ||
-    (formData.modalidade === "SEMIPRESENCIAL" && formData.tipoLink === "MEET");
+  const showPeriodoField = true;
 
   const showTipoLinkField = formData.modalidade === "SEMIPRESENCIAL";
 
@@ -661,33 +694,26 @@ export function CreateAulaForm({
     formData.modalidade === "AO_VIVO" ||
     (formData.modalidade === "SEMIPRESENCIAL" && formData.tipoLink === "MEET");
 
-  // UX: calcular duração automaticamente quando o usuário informar hora início + hora fim.
-  // Se o usuário editar a duração manualmente, não sobrescreve (até ele limpar o campo).
+  // UX: duração é derivada do período completo para cobrir aulas que atravessam dias.
   useEffect(() => {
     if (!showPeriodoField) return;
 
-    const duracao = computeDuracaoFromHoras(
+    const duracao = computeDuracaoFromPeriodo(
+      formData.dataInicio,
+      formData.dataFim,
       formData.horaInicio,
       formData.horaFim
     );
-    if (!duracao) return;
-
-    if (duracaoManualOverrideRef.current && formData.duracaoMinutos.trim()) {
-      return;
-    }
-
-    const duracaoStr = String(duracao);
+    const duracaoStr = duracao ? String(duracao) : "";
     setFormData((prev) => {
-      if (duracaoManualOverrideRef.current && prev.duracaoMinutos.trim()) {
-        return prev;
-      }
       if (prev.duracaoMinutos.trim() === duracaoStr) return prev;
       return { ...prev, duracaoMinutos: duracaoStr };
     });
   }, [
+    formData.dataInicio,
+    formData.dataFim,
     formData.horaInicio,
     formData.horaFim,
-    formData.duracaoMinutos,
     showPeriodoField,
   ]);
 
@@ -724,8 +750,28 @@ export function CreateAulaForm({
     }
 
     if (showPeriodoField) {
-      if (!formData.dataAula) {
-        newErrors.dataAula = "Selecione a data da aula";
+      if (!formData.dataInicio) {
+        newErrors.dataInicio = "Data de início é obrigatória";
+      }
+      if (!formData.dataFim) {
+        newErrors.dataFim = "Data de término é obrigatória";
+      }
+      if (formData.dataInicio && formData.dataFim) {
+        if (formData.dataFim < formData.dataInicio) {
+          newErrors.dataFim = "Data de término deve ser após a data de início";
+        }
+
+        const mustBeSameDay =
+          formData.modalidade === "AO_VIVO" ||
+          (formData.modalidade === "SEMIPRESENCIAL" &&
+            formData.tipoLink === "MEET");
+        if (
+          mustBeSameDay &&
+          formatDateForAPI(formData.dataInicio) !== formatDateForAPI(formData.dataFim)
+        ) {
+          newErrors.dataFim =
+            "Aulas ao vivo precisam começar e terminar no mesmo dia";
+        }
       }
       if (!formData.horaInicio) {
         newErrors.horaInicio = "Hora de início é obrigatória";
@@ -735,10 +781,16 @@ export function CreateAulaForm({
       }
     }
 
-    // Duração é obrigatória (int > 0). Pode ser calculada se houver horário.
-    const duracaoNum = Number.parseInt(formData.duracaoMinutos, 10);
-    const hasHoras = Boolean(formData.horaInicio && formData.horaFim);
-    if ((!Number.isFinite(duracaoNum) || duracaoNum <= 0) && !hasHoras) {
+    const duracaoCalculada = showPeriodoField
+      ? computeDuracaoFromPeriodo(
+          formData.dataInicio,
+          formData.dataFim,
+          formData.horaInicio,
+          formData.horaFim
+        )
+      : Number.parseInt(formData.duracaoMinutos, 10);
+
+    if (!duracaoCalculada || duracaoCalculada <= 0) {
       newErrors.duracaoMinutos = "Duração é obrigatória e deve ser maior que 0";
     }
 
@@ -758,13 +810,16 @@ export function CreateAulaForm({
       }
     }
 
-    // Validar horas
-    if (showPeriodoField) {
-      if (formData.horaInicio && formData.horaFim) {
-        if (formData.horaInicio >= formData.horaFim) {
-          newErrors.horaFim = "Hora de término deve ser após hora de início";
-        }
-      }
+    if (
+      showPeriodoField &&
+      formData.dataInicio &&
+      formData.dataFim &&
+      formData.horaInicio &&
+      formData.horaFim &&
+      !duracaoCalculada
+    ) {
+      newErrors.horaFim =
+        "Data e hora de término devem ser após data e hora de início";
     }
 
     setErrors(newErrors);
@@ -798,13 +853,16 @@ export function CreateAulaForm({
     const descricaoTrim = formData.descricao.trim();
 
     const duracaoFromInput = Number.parseInt(formData.duracaoMinutos, 10);
-    const duracaoFromHoras = showPeriodoField
-      ? computeDuracaoFromHoras(formData.horaInicio, formData.horaFim)
+    const duracaoMinutos = showPeriodoField
+      ? computeDuracaoFromPeriodo(
+          formData.dataInicio,
+          formData.dataFim,
+          formData.horaInicio,
+          formData.horaFim
+        )
+      : Number.isFinite(duracaoFromInput) && duracaoFromInput > 0
+      ? duracaoFromInput
       : null;
-    const duracaoMinutos =
-      (Number.isFinite(duracaoFromInput) && duracaoFromInput > 0
-        ? duracaoFromInput
-        : null) ?? duracaoFromHoras;
 
     if (!duracaoMinutos) {
       setErrors((prev) => ({
@@ -823,19 +881,14 @@ export function CreateAulaForm({
     const moduloId = normalizeOptionalId(formData.moduloId);
     const statusFinal = turmaId ? formData.status : "RASCUNHO";
 
-    // API espera data no formato YYYY-MM-DD (sem timezone) e horas separadas (HH:mm)
-    const formatDateToYmd = (date: Date | null): string | undefined => {
-      if (!date) return undefined;
-      const yyyy = date.getFullYear();
-      const mm = String(date.getMonth() + 1).padStart(2, "0");
-      const dd = String(date.getDate()).padStart(2, "0");
-      return `${yyyy}-${mm}-${dd}`;
-    };
-
     const horaInicio = showPeriodoField ? formData.horaInicio || undefined : undefined;
     const horaFim = showPeriodoField ? formData.horaFim || undefined : undefined;
-    const dataInicio = formatDateToYmd(formData.dataAula);
-    const dataFim = horaFim ? formatDateToYmd(formData.dataAula) : undefined;
+    const dataInicio = showPeriodoField
+      ? formatDateForAPI(formData.dataInicio)
+      : undefined;
+    const dataFim = showPeriodoField
+      ? formatDateForAPI(formData.dataFim)
+      : undefined;
     const cursoId = showCursoField ? (selectedCursoId ?? undefined) : undefined;
     const sala =
       formData.modalidade === "PRESENCIAL" && formData.sala.trim()
@@ -1445,7 +1498,7 @@ export function CreateAulaForm({
               </div>
             )}
 
-            {/* Linha: Data da aula, horários, duração e obrigatória */}
+            {/* Linha: Período, horários, duração e obrigatória */}
             {showPeriodoField ? (
               <>
                 <div
@@ -1456,14 +1509,22 @@ export function CreateAulaForm({
                       : "md:grid-cols-5"
                   )}
                 >
-                  <DatePickerCustom
-                    label="Data da Aula"
-                    value={formData.dataAula}
-                    onChange={(date) => handleInputChange("dataAula", date)}
-                    placeholder="Selecione"
-                    error={errors.dataAula}
+                  <DatePickerRangeCustom
+                    label="Período"
+                    value={{
+                      from: formData.dataInicio,
+                      to: formData.dataFim,
+                    }}
+                    onChange={(range) => {
+                      handleInputChange("dataInicio", range.from);
+                      handleInputChange("dataFim", range.to);
+                    }}
+                    placeholder="Selecione o período"
+                    error={errors.dataInicio || errors.dataFim}
                     minDate={getTomorrowDate()}
                     required
+                    clearable
+                    allowSingleDaySelection
                   />
 
                   <TimeInputCustom
@@ -1492,12 +1553,13 @@ export function CreateAulaForm({
                     label="Duração (minutos)"
                     type="number"
                     value={formData.duracaoMinutos}
-                    onChange={(e) =>
-                      handleInputChange("duracaoMinutos", e.target.value)
-                    }
+                    onChange={() => undefined}
                     placeholder="Ex: 60"
                     required
                     error={errors.duracaoMinutos}
+                    disabled
+                    readOnly
+                    helperText="Preenchida automaticamente pelo período e horários."
                   />
 
                   <SelectCustom

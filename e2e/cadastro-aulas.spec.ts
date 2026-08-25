@@ -99,6 +99,7 @@ test.describe('Cadastro de Aulas - Sem Vínculos', () => {
 
     await preencherCamposBasicos(page, titulo, descricao, '60');
     await selecionarModalidade(page, 'ONLINE');
+    await preencherPeriodo(page, 1, '10:00', '11:00');
     await preencherYouTubeUrl(page);
     await selecionarAulaObrigatoria(page, true);
     await submeterFormulario(page);
@@ -113,6 +114,32 @@ test.describe('Cadastro de Aulas - Sem Vínculos', () => {
     await preencherCamposBasicos(page, titulo, descricao, '90');
     await selecionarModalidade(page, 'PRESENCIAL');
     await preencherPeriodo(page, 1, '14:00', '15:30');
+    await preencherSala(page, 'Sala 101');
+    await selecionarAulaObrigatoria(page, true);
+    await submeterFormulario(page);
+    await verificarSucesso(page);
+  });
+
+  test('Calcula duração automaticamente quando aula atravessa dias', async ({ page }) => {
+    const timestamp = Date.now();
+    const titulo = `Aula Teste Presencial Virada ${timestamp}`;
+    const descricao = 'Descrição da aula de teste com período atravessando dias';
+
+    await preencherCamposBasicos(page, titulo, descricao, '60');
+    await selecionarModalidade(page, 'PRESENCIAL');
+    await preencherPeriodo(page, 1, '18:00', '07:00', 2);
+
+    const duracaoInput = page
+      .locator('label:has-text("Duração")')
+      .first()
+      .locator('..')
+      .locator('..')
+      .locator('input[type="number"]')
+      .first();
+
+    await expect(duracaoInput).toBeDisabled();
+    await expect(duracaoInput).toHaveValue('780');
+
     await preencherSala(page, 'Sala 101');
     await selecionarAulaObrigatoria(page, true);
     await submeterFormulario(page);
