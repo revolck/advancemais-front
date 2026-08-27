@@ -4,8 +4,8 @@ import { serverEnv, env } from "@/lib/env";
 
 export const runtime = "nodejs";
 
-const COMMENT_MAX_FILE_SIZE = 5 * 1024 * 1024;
-const COMMENT_ALLOWED_EXTENSIONS = new Set([
+const COURSE_FILE_MAX_SIZE = 5 * 1024 * 1024;
+const COURSE_ALLOWED_EXTENSIONS = new Set([
   "jpg",
   "jpeg",
   "png",
@@ -40,17 +40,19 @@ export async function POST(req: NextRequest) {
 
     const rawPath = req.nextUrl.searchParams.get("path") || "";
     const safePath = rawPath.replace(/\.+/g, "").replace(/^\/+/g, "");
-    const isCommentUpload = safePath.startsWith("cursos/comentarios/");
+    const isRestrictedCourseUpload =
+      safePath.startsWith("cursos/comentarios/") ||
+      safePath.startsWith("cursos/atividades/");
     const extension = file.name.split(".").pop()?.toLowerCase() || "";
 
-    if (isCommentUpload && file.size > COMMENT_MAX_FILE_SIZE) {
+    if (isRestrictedCourseUpload && file.size > COURSE_FILE_MAX_SIZE) {
       return NextResponse.json(
         { error: "O arquivo ultrapassa o limite permitido" },
         { status: 413 },
       );
     }
 
-    if (isCommentUpload && !COMMENT_ALLOWED_EXTENSIONS.has(extension)) {
+    if (isRestrictedCourseUpload && !COURSE_ALLOWED_EXTENSIONS.has(extension)) {
       return NextResponse.json(
         { error: "Tipo de arquivo não permitido" },
         { status: 415 },
@@ -76,12 +78,18 @@ export async function POST(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   const url = req.nextUrl.searchParams.get("file");
   if (!url) {
-    return NextResponse.json({ error: "File path is required" }, { status: 400 });
+    return NextResponse.json(
+      { error: "File path is required" },
+      { status: 400 },
+    );
   }
 
   try {
     // Verifica se a URL é do Vercel Blob Storage
-    if (!url.includes("blob.vercel-storage.com") && !url.includes("public.blob.vercel-storage.com")) {
+    if (
+      !url.includes("blob.vercel-storage.com") &&
+      !url.includes("public.blob.vercel-storage.com")
+    ) {
       // URL externa (ex: via.placeholder.com) - não precisa deletar
       if (env.isDevelopment) {
         console.log("/upload DELETE: URL externa ignorada:", url);
@@ -94,7 +102,7 @@ export async function DELETE(req: NextRequest) {
       if (env.isDevelopment) console.error("/upload DELETE:", msg);
       return NextResponse.json({ error: msg }, { status: 500 });
     }
-    
+
     await del(url, { token: serverEnv.blobToken });
     return new Response(null, { status: 204 });
   } catch (err: unknown) {

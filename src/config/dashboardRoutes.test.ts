@@ -11,46 +11,55 @@ describe("dashboardRoutes cursos", () => {
     expect(
       canAccessRoute(
         `/dashboard/cursos/alunos/cursos/${cursoId}/${turmaId}`,
-        UserRole.ALUNO_CANDIDATO
-      )
+        UserRole.ALUNO_CANDIDATO,
+      ),
     ).toBe(true);
     expect(
-      canAccessRoute(`/dashboard/cursos/${cursoId}`, UserRole.ALUNO_CANDIDATO)
+      canAccessRoute(
+        "/dashboard/cursos/alunos/cursos",
+        UserRole.ALUNO_CANDIDATO,
+      ),
+    ).toBe(true);
+    expect(
+      canAccessRoute(`/dashboard/cursos/${cursoId}`, UserRole.ALUNO_CANDIDATO),
     ).toBe(false);
     expect(
       canAccessRoute(
         `/dashboard/cursos/${cursoId}/editar`,
-        UserRole.ALUNO_CANDIDATO
-      )
+        UserRole.ALUNO_CANDIDATO,
+      ),
     ).toBe(false);
   });
 
   it("permite instrutor ver detalhes administrativos, mas não editar", () => {
-    expect(canAccessRoute(`/dashboard/cursos/${cursoId}`, UserRole.INSTRUTOR)).toBe(
-      true
-    );
     expect(
-      canAccessRoute(`/dashboard/cursos/${cursoId}/editar`, UserRole.INSTRUTOR)
+      canAccessRoute(`/dashboard/cursos/${cursoId}`, UserRole.INSTRUTOR),
+    ).toBe(true);
+    expect(
+      canAccessRoute(`/dashboard/cursos/${cursoId}/editar`, UserRole.INSTRUTOR),
     ).toBe(false);
   });
 });
 
 describe("dashboardRoutes config", () => {
   it("protege as rotas reais de configuração em /dashboard/config", () => {
+    expect(canAccessRoute("/dashboard/config/empresas", UserRole.ADMIN)).toBe(
+      true,
+    );
     expect(
-      canAccessRoute("/dashboard/config/empresas", UserRole.ADMIN)
-    ).toBe(true);
+      canAccessRoute("/dashboard/config/empresas", UserRole.ALUNO_CANDIDATO),
+    ).toBe(false);
     expect(
-      canAccessRoute("/dashboard/config/empresas", UserRole.ALUNO_CANDIDATO)
+      canAccessRoute("/dashboard/config/geral", UserRole.ALUNO_CANDIDATO),
     ).toBe(false);
   });
 
   it("mantem acesso pedagogico apenas em configuracoes de cursos", () => {
     expect(
-      canAccessRoute("/dashboard/config/cursos", UserRole.PEDAGOGICO)
+      canAccessRoute("/dashboard/config/cursos", UserRole.PEDAGOGICO),
     ).toBe(true);
     expect(
-      canAccessRoute("/dashboard/config/empresas", UserRole.PEDAGOGICO)
+      canAccessRoute("/dashboard/config/empresas", UserRole.PEDAGOGICO),
     ).toBe(false);
   });
 });

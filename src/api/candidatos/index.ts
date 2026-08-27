@@ -1,6 +1,7 @@
 import { apiFetch } from "../client";
 import { apiConfig, buildApiUrl } from "@/lib/env";
 import { CANDIDATOS_ROUTES } from "./routes";
+import type { Aula } from "@/api/aulas/types";
 import type {
   AplicarVagaPayload,
   AplicarVagaResponse,
@@ -33,6 +34,9 @@ import type {
   CurriculosListFilters,
   CandidatoCursosListFilters,
   CandidatoCursosResponse,
+  CandidatoTurmaEstruturaResponse,
+  CandidatoAtividadeDetalheResponse,
+  EnviarCandidatoAtividadeRespostaPayload,
 } from "./types";
 
 function normalizeHeaders(headers?: HeadersInit): Record<string, string> {
@@ -58,7 +62,7 @@ function getAuthHeader(): Record<string, string> {
 }
 
 function buildAuthHeaders(
-  additionalHeaders?: HeadersInit
+  additionalHeaders?: HeadersInit,
 ): Record<string, string> {
   return {
     ...apiConfig.headers,
@@ -72,7 +76,7 @@ function buildAuthHeaders(
 // ============================================================================
 
 export async function getCandidatosModuleInfo(
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<CandidatosModuleInfoResponse> {
   return apiFetch<CandidatosModuleInfoResponse>(CANDIDATOS_ROUTES.BASE, {
     init: {
@@ -92,7 +96,7 @@ export async function getCandidatosModuleInfo(
  * GET /api/v1/candidatos/dashboard
  */
 export async function getCandidatoDashboard(
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<CandidatoDashboardResponse> {
   return apiFetch<CandidatoDashboardResponse>(CANDIDATOS_ROUTES.DASHBOARD, {
     init: {
@@ -111,7 +115,7 @@ export async function getCandidatoDashboard(
  */
 export async function aplicarVaga(
   data: AplicarVagaPayload,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<AplicarVagaResponse> {
   return apiFetch<AplicarVagaResponse>(CANDIDATOS_ROUTES.APLICAR, {
     init: {
@@ -132,7 +136,7 @@ export async function aplicarVaga(
  */
 export async function verificarCandidatura(
   vagaId: string,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<VerificarCandidaturaResponse> {
   const searchParams = new URLSearchParams();
   searchParams.append("vagaId", vagaId);
@@ -157,7 +161,7 @@ export async function verificarCandidatura(
  */
 export async function listarMinhasCandidaturas(
   filters?: CandidaturasFilters,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<CandidaturaSimples[]> {
   const searchParams = new URLSearchParams();
 
@@ -189,7 +193,7 @@ export async function listarMinhasCandidaturas(
  */
 export async function listarCandidatosOverview(
   filters?: CandidatosFilters,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<CandidatosOverviewResponse> {
   const searchParams = new URLSearchParams();
 
@@ -222,7 +226,7 @@ export async function listarCandidatosOverview(
   if (filters?.onlyWithCandidaturas !== undefined) {
     searchParams.append(
       "onlyWithCandidaturas",
-      filters.onlyWithCandidaturas.toString()
+      filters.onlyWithCandidaturas.toString(),
     );
   }
 
@@ -253,7 +257,7 @@ export async function listarCandidatosOverview(
  */
 export async function listarCandidaturasRecebidas(
   filters?: CandidaturasFilters,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<CandidaturaSimples[]> {
   const searchParams = new URLSearchParams();
 
@@ -285,7 +289,7 @@ export async function listarCandidaturasRecebidas(
  */
 export async function buscarCandidatoPorId(
   candidatoId: string,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<CandidatoOverview | null> {
   try {
     const response = await listarCandidatosOverview(
@@ -294,7 +298,7 @@ export async function buscarCandidatoPorId(
         page: 1,
         pageSize: 1,
       },
-      init
+      init,
     );
 
     return (
@@ -312,7 +316,7 @@ export async function buscarCandidatoPorId(
 export async function atualizarStatusCandidatura(
   candidaturaId: string,
   status: CandidaturaStatus,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<CandidaturaSimples> {
   // Alinhado ao backend: PUT /api/v1/candidatos/candidaturas/{id}
   return apiFetch<CandidaturaSimples>(
@@ -327,7 +331,7 @@ export async function atualizarStatusCandidatura(
         body: JSON.stringify({ status }),
         ...init,
       },
-    }
+    },
   );
 }
 
@@ -336,7 +340,7 @@ export async function atualizarStatusCandidatura(
  */
 export async function getCandidaturaById(
   candidaturaId: string,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<CandidaturaSimples> {
   return apiFetch<CandidaturaSimples>(
     CANDIDATOS_ROUTES.CANDIDATURA(candidaturaId),
@@ -346,7 +350,7 @@ export async function getCandidaturaById(
         ...init,
         headers: buildAuthHeaders(init?.headers),
       },
-    }
+    },
   );
 }
 
@@ -355,7 +359,7 @@ export async function getCandidaturaById(
  */
 export async function getCandidaturaDetalhe(
   candidaturaId: string,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<CandidaturaDetalhe> {
   return apiFetch<CandidaturaDetalhe>(
     CANDIDATOS_ROUTES.CANDIDATURA(candidaturaId),
@@ -365,7 +369,7 @@ export async function getCandidaturaDetalhe(
         ...init,
         headers: buildAuthHeaders(init?.headers),
       },
-    }
+    },
   );
 }
 
@@ -375,7 +379,7 @@ export async function getCandidaturaDetalhe(
 export async function atualizarCandidatura(
   candidaturaId: string,
   payload: Partial<{ status: CandidaturaStatus; observacoes: string }> = {},
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<CandidaturaSimples> {
   return apiFetch<CandidaturaSimples>(
     CANDIDATOS_ROUTES.CANDIDATURA(candidaturaId),
@@ -389,7 +393,7 @@ export async function atualizarCandidatura(
         body: JSON.stringify(payload),
         ...init,
       },
-    }
+    },
   );
 }
 
@@ -398,7 +402,7 @@ export async function atualizarCandidatura(
  */
 export async function cancelarCandidatura(
   candidaturaId: string,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<void> {
   return apiFetch<void>(CANDIDATOS_ROUTES.CANDIDATURA(candidaturaId), {
     init: {
@@ -427,14 +431,16 @@ function isRequestInit(value: unknown): value is RequestInit {
 
 export async function listCurriculos(
   filters?: CurriculosListFilters,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<any[]>;
 export async function listCurriculos(init?: RequestInit): Promise<any[]>;
 export async function listCurriculos(
   arg1?: CurriculosListFilters | RequestInit,
-  arg2?: RequestInit
+  arg2?: RequestInit,
 ) {
-  const filters = isRequestInit(arg1) ? undefined : (arg1 as CurriculosListFilters | undefined);
+  const filters = isRequestInit(arg1)
+    ? undefined
+    : (arg1 as CurriculosListFilters | undefined);
   const init = isRequestInit(arg1) ? (arg1 as RequestInit) : arg2;
 
   const params = new URLSearchParams();
@@ -487,7 +493,7 @@ export async function getCurriculo(id: string, init?: RequestInit) {
 
 export async function createCurriculo(
   data: CreateCurriculoPayload,
-  init?: RequestInit
+  init?: RequestInit,
 ) {
   return apiFetch<any>(CANDIDATOS_ROUTES.CURRICULOS, {
     init: {
@@ -505,7 +511,7 @@ export async function createCurriculo(
 export async function updateCurriculo(
   id: string,
   data: UpdateCurriculoPayload,
-  init?: RequestInit
+  init?: RequestInit,
 ) {
   return apiFetch<any>(CANDIDATOS_ROUTES.CURRICULO(id), {
     init: {
@@ -553,7 +559,7 @@ export async function listAreasInteresse(init?: RequestInit) {
 
 export async function getAreaInteresse(
   id: number | string,
-  init?: RequestInit
+  init?: RequestInit,
 ) {
   return apiFetch<CandidatoAreaInteresse>(
     CANDIDATOS_ROUTES.AREA_INTERESSE(id),
@@ -563,13 +569,13 @@ export async function getAreaInteresse(
         ...init,
         headers: buildAuthHeaders(init?.headers),
       },
-    }
+    },
   );
 }
 
 export async function createAreaInteresse(
   data: CandidatoAreaInteresseCreateInput,
-  init?: RequestInit
+  init?: RequestInit,
 ) {
   return apiFetch<CandidatoAreaInteresse>(CANDIDATOS_ROUTES.AREAS_INTERESSE, {
     init: {
@@ -587,7 +593,7 @@ export async function createAreaInteresse(
 export async function updateAreaInteresse(
   id: number | string,
   data: CandidatoAreaInteresseUpdateInput,
-  init?: RequestInit
+  init?: RequestInit,
 ) {
   return apiFetch<CandidatoAreaInteresse>(
     CANDIDATOS_ROUTES.AREA_INTERESSE(id),
@@ -601,13 +607,13 @@ export async function updateAreaInteresse(
         body: JSON.stringify(data),
         ...init,
       },
-    }
+    },
   );
 }
 
 export async function deleteAreaInteresse(
   id: number | string,
-  init?: RequestInit
+  init?: RequestInit,
 ) {
   return apiFetch<void>(CANDIDATOS_ROUTES.AREA_INTERESSE(id), {
     init: {
@@ -621,7 +627,7 @@ export async function deleteAreaInteresse(
 export async function createSubareaInteresse(
   areaId: number | string,
   data: CandidatoSubareaInteresseCreateInput,
-  init?: RequestInit
+  init?: RequestInit,
 ) {
   return apiFetch<CandidatoSubareaInteresse>(
     CANDIDATOS_ROUTES.SUBAREAS_INTERESSE(areaId),
@@ -635,14 +641,14 @@ export async function createSubareaInteresse(
         body: JSON.stringify(data),
         ...init,
       },
-    }
+    },
   );
 }
 
 export async function updateSubareaInteresse(
   subareaId: number | string,
   data: CandidatoSubareaInteresseUpdateInput,
-  init?: RequestInit
+  init?: RequestInit,
 ) {
   return apiFetch<CandidatoSubareaInteresse>(
     CANDIDATOS_ROUTES.SUBAREA_INTERESSE(subareaId),
@@ -656,13 +662,13 @@ export async function updateSubareaInteresse(
         body: JSON.stringify(data),
         ...init,
       },
-    }
+    },
   );
 }
 
 export async function deleteSubareaInteresse(
   subareaId: number | string,
-  init?: RequestInit
+  init?: RequestInit,
 ) {
   return apiFetch<void>(CANDIDATOS_ROUTES.SUBAREA_INTERESSE(subareaId), {
     init: {
@@ -679,7 +685,7 @@ export async function deleteSubareaInteresse(
  */
 export async function listSubareasInteresse(
   areaId?: number | string,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<CandidatoSubareaInteresse[]> {
   const qs = areaId ? `?areaId=${encodeURIComponent(String(areaId))}` : "";
   return apiFetch<CandidatoSubareaInteresse[]>(
@@ -690,7 +696,7 @@ export async function listSubareasInteresse(
         ...init,
         headers: buildAuthHeaders(init?.headers),
       },
-    }
+    },
   );
 }
 
@@ -700,7 +706,7 @@ export async function listSubareasInteresse(
  */
 export async function createSubareaInteresseGlobal(
   payload: { areaId: number | string; nome: string },
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<CandidatoSubareaInteresse> {
   return apiFetch<CandidatoSubareaInteresse>(
     CANDIDATOS_ROUTES.SUBAREAS_INTERESSE_LIST,
@@ -714,7 +720,7 @@ export async function createSubareaInteresseGlobal(
         body: JSON.stringify(payload),
         ...init,
       },
-    }
+    },
   );
 }
 
@@ -724,7 +730,7 @@ export async function createSubareaInteresseGlobal(
 
 export async function listarVagasPublicas(
   filters?: VagaPublicaListFilters,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<VagasPublicasListResponse> {
   const params = new URLSearchParams();
   if (filters) {
@@ -786,6 +792,114 @@ export async function listarCursosCandidato(
   });
 }
 
+/**
+ * Buscar estrutura real de uma turma do aluno/candidato autenticado
+ * GET /api/v1/candidatos/cursos/:cursoId/turmas/:turmaId/estrutura
+ */
+export async function buscarEstruturaCursoCandidato(
+  cursoId: string,
+  turmaId: string,
+  init?: RequestInit,
+): Promise<CandidatoTurmaEstruturaResponse> {
+  return apiFetch<CandidatoTurmaEstruturaResponse>(
+    CANDIDATOS_ROUTES.CURSO_ESTRUTURA(cursoId, turmaId),
+    {
+      init: {
+        method: "GET",
+        ...init,
+        headers: buildAuthHeaders(init?.headers),
+      },
+      cache: "no-cache",
+      retries: 1,
+      silence403: true,
+      silence404: true,
+    },
+  );
+}
+
+/**
+ * Buscar aula real de uma turma do aluno/candidato autenticado
+ * GET /api/v1/candidatos/cursos/:cursoId/turmas/:turmaId/aulas/:aulaId
+ */
+export async function buscarAulaCursoCandidato(
+  cursoId: string,
+  turmaId: string,
+  aulaId: string,
+  init?: RequestInit,
+): Promise<Aula> {
+  const response = await apiFetch<{ success: boolean; aula: Aula } | Aula>(
+    CANDIDATOS_ROUTES.CURSO_AULA(cursoId, turmaId, aulaId),
+    {
+      init: {
+        method: "GET",
+        ...init,
+        headers: buildAuthHeaders(init?.headers),
+      },
+      cache: "no-cache",
+      retries: 1,
+      silence403: true,
+      silence404: true,
+    },
+  );
+
+  if (
+    response &&
+    typeof response === "object" &&
+    "success" in response &&
+    "aula" in response &&
+    (response as { success: boolean; aula: Aula }).success
+  ) {
+    return (response as { success: boolean; aula: Aula }).aula;
+  }
+
+  return response as Aula;
+}
+
+export async function buscarAtividadeCursoCandidato(
+  cursoId: string,
+  turmaId: string,
+  atividadeId: string,
+  init?: RequestInit,
+): Promise<CandidatoAtividadeDetalheResponse> {
+  return apiFetch<CandidatoAtividadeDetalheResponse>(
+    CANDIDATOS_ROUTES.CURSO_ATIVIDADE(cursoId, turmaId, atividadeId),
+    {
+      init: {
+        method: "GET",
+        ...init,
+        headers: buildAuthHeaders(init?.headers),
+      },
+      cache: "no-cache",
+      retries: 1,
+      silence403: true,
+      silence404: true,
+    },
+  );
+}
+
+export async function enviarRespostaAtividadeCursoCandidato(
+  cursoId: string,
+  turmaId: string,
+  atividadeId: string,
+  payload: EnviarCandidatoAtividadeRespostaPayload,
+  init?: RequestInit,
+): Promise<CandidatoAtividadeDetalheResponse> {
+  return apiFetch<CandidatoAtividadeDetalheResponse>(
+    CANDIDATOS_ROUTES.CURSO_ATIVIDADE_RESPOSTA(cursoId, turmaId, atividadeId),
+    {
+      init: {
+        method: "PUT",
+        ...init,
+        body: JSON.stringify(payload),
+        headers: buildAuthHeaders(init?.headers),
+      },
+      cache: "no-cache",
+      retries: 0,
+      silence409: true,
+    },
+  );
+}
+
 // ========================================
 // Status de Candidatura
 // ========================================
@@ -795,7 +909,7 @@ export async function listarCursosCandidato(
  * GET /api/v1/candidatos/candidaturas/status-disponiveis
  */
 export async function listarStatusCandidatura(
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<StatusCandidaturaDisponivelResponse> {
   return apiFetch<StatusCandidaturaDisponivelResponse>(
     CANDIDATOS_ROUTES.STATUS_DISPONIVEIS,
@@ -805,21 +919,21 @@ export async function listarStatusCandidatura(
         ...init,
         headers: buildAuthHeaders(init?.headers),
       },
-    }
+    },
   );
 }
 
 /**
  * Atualiza status de uma candidatura
  * PUT /api/v1/candidatos/candidaturas/{candidaturaId}
- * 
+ *
  * @param candidaturaId - ID da candidatura
  * @param statusId - UUID do status (não o nome!)
  */
 export async function atualizarStatusCandidaturaById(
   candidaturaId: string,
   statusId: string,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<AtualizarCandidaturaResponse> {
   return apiFetch<AtualizarCandidaturaResponse>(
     CANDIDATOS_ROUTES.CANDIDATURA(candidaturaId),
@@ -833,6 +947,6 @@ export async function atualizarStatusCandidaturaById(
         body: JSON.stringify({ status: statusId }), // Enviar UUID, não o nome!
         ...init,
       },
-    }
+    },
   );
 }

@@ -2,9 +2,10 @@
 
 import { useMemo, useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
-import { format, parse, isBefore, isAfter } from "date-fns";
+import { format, parse, isBefore, isAfter, isValid } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ButtonCustom } from "@/components/ui/custom";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import type { BuilderData } from "@/components/ui/custom/builder-manager/types";
 import { useRouter } from "next/navigation";
@@ -34,18 +35,30 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import {
-  getMockTurmaProgresso,
   getMockAlunoCursos,
   getMockAtividadeById,
   getMockProvaById,
   getMockAulaById,
-  type MockItemProgresso,
 } from "@/mockData/aluno-candidato";
+
+interface ItemProgresso {
+  status: "NAO_INICIADO" | "EM_PROGRESSO" | "CONCLUIDO";
+  percentualConcluido: number;
+  tempoAssistidoSegundos?: number;
+  tentativas?: number;
+  nota?: number | null;
+  dataConclusao?: string | null;
+  atualizadoEm?: string | null;
+}
 
 interface AlunoTurmaEstruturaViewProps {
   cursoId: string;
   turmaId: string;
   estrutura: BuilderData;
+  turmaInfo?: {
+    metodo?: string | null;
+    dataFim?: string | null;
+  } | null;
 }
 
 function getItemIcon(type: string) {
@@ -107,6 +120,61 @@ function getItemTypeBadgeClasses(type: string): string {
   }
 }
 
+function getDatePart(value?: string | null): string | null {
+  if (!value) return null;
+  return value.includes("T") ? value.split("T")[0] : value;
+}
+
+function buildPeriodoDateTime(
+  dateValue?: string | null,
+  timeValue?: string | null,
+): Date | null {
+  const datePart = getDatePart(dateValue);
+  if (!datePart || !timeValue) return null;
+
+  const parsed = parse(
+    `${datePart} ${timeValue}`,
+    "yyyy-MM-dd HH:mm",
+    new Date(),
+  );
+  return isValid(parsed) ? parsed : null;
+}
+
+function formatItemPeriodo(periodo: {
+  dataInicio: string;
+  dataFim: string;
+  horaInicio: string;
+  horaFim: string;
+}) {
+  const inicio = buildPeriodoDateTime(periodo.dataInicio, periodo.horaInicio);
+  const fim = buildPeriodoDateTime(periodo.dataFim, periodo.horaFim);
+
+  if (!inicio || !fim) return null;
+
+  const mesmaData = format(inicio, "yyyy-MM-dd") === format(fim, "yyyy-MM-dd");
+  if (mesmaData) {
+    return `${format(inicio, "dd/MM/yyyy", { locale: ptBR })}, ${format(
+      inicio,
+      "HH:mm",
+    )} às ${format(fim, "HH:mm")}`;
+  }
+
+  return `${format(inicio, "dd/MM/yyyy 'às' HH:mm", {
+    locale: ptBR,
+  })} até ${format(fim, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}`;
+}
+
+function getPeriodoFromEstruturaItem(item: any) {
+  if (!item?.startDate || !item?.endDate) return null;
+
+  return formatItemPeriodo({
+    dataInicio: item.startDate,
+    dataFim: item.endDate,
+    horaInicio: item.horaInicio || "00:00",
+    horaFim: item.horaFim || item.horaTermino || "23:59",
+  });
+}
+
 interface ItemRowProps {
   item: {
     id: string;
@@ -115,8 +183,13 @@ interface ItemRowProps {
     startDate?: string | null;
     endDate?: string | null;
     aulaId?: string | null;
+    situacaoAluno?:
+      | "AGUARDANDO_CORRECAO"
+      | "AGUARDANDO_GABARITO"
+      | "CORRIGIDA"
+      | null;
   };
-  progresso?: MockItemProgresso;
+  progresso?: ItemProgresso;
   cursoId: string;
   turmaId: string;
   turmaTipo?: "ONLINE" | "AO_VIVO" | "PRESENCIAL" | "SEMIPRESENCIAL";
@@ -137,15 +210,24 @@ function ItemRow({
   // Para turmas PRESENCIAIS, não permitir acesso direto - apenas mostrar período e nota
   const isPresencial = turmaTipo === "PRESENCIAL";
 
-  // Verificar se a atividade já foi respondida (para atividades de PERGUNTA_RESPOSTA)
+  // O envio da API é a fonte de verdade para atividades e provas.
   const atividadeJaRespondida = useMemo(() => {
+    if (
+      (item.type === "ATIVIDADE" || item.type === "PROVA") &&
+      (item.situacaoAluno === "AGUARDANDO_CORRECAO" ||
+        item.situacaoAluno === "AGUARDANDO_GABARITO" ||
+        item.situacaoAluno === "CORRIGIDA")
+    ) {
+      return true;
+    }
+
     if (item.type === "ATIVIDADE" && (item as any).platformActivityId) {
       const atividadeId = (item as any).platformActivityId;
       const atividade = getMockAtividadeById(atividadeId);
       if (atividade?.tipo === "PERGUNTA_RESPOSTA" && atividade.perguntas) {
         // Verificar se todas as perguntas já foram enviadas e não podem editar
         return atividade.perguntas.every(
-          (p) => p.respostaEnviada && !p.podeEditar
+          (p) => p.respostaEnviada && !p.podeEditar,
         );
       }
     }
@@ -250,16 +332,22 @@ function ItemRow({
 
       const agora = new Date();
       try {
-        const dataHoraInicio = parse(
-          `${itemPeriodo.dataInicio} ${itemPeriodo.horaInicio}`,
-          "yyyy-MM-dd HH:mm",
-          new Date()
+        const dataHoraInicio = buildPeriodoDateTime(
+          itemPeriodo.dataInicio,
+          itemPeriodo.horaInicio,
         );
-        const dataHoraFim = parse(
-          `${itemPeriodo.dataFim} ${itemPeriodo.horaFim}`,
-          "yyyy-MM-dd HH:mm",
-          new Date()
+        const dataHoraFim = buildPeriodoDateTime(
+          itemPeriodo.dataFim,
+          itemPeriodo.horaFim,
         );
+
+        if (!dataHoraInicio || !dataHoraFim) {
+          return {
+            itemDentroDoPeriodo: true,
+            estaAntesDoPeriodo: false,
+            estaDepoisDoPeriodo: false,
+          };
+        }
 
         // Verificar se está antes do início (comparação estrita: agora < dataHoraInicio)
         const antes = isBefore(agora, dataHoraInicio);
@@ -306,12 +394,12 @@ function ItemRow({
   const status = atividadeJaRespondidaConcluida
     ? "CONCLUIDO"
     : itemDentroDoPeriodo
-    ? progresso?.status || "NAO_INICIADO"
-    : estaAntesDoPeriodo
-    ? "NAO_DISPONIVEL"
-    : estaDepoisDoPeriodo && !podeAcessarEncerrado && !itemJaConcluido
-    ? "NAO_DISPONIVEL"
-    : progresso?.status || "NAO_INICIADO";
+      ? progresso?.status || "NAO_INICIADO"
+      : estaAntesDoPeriodo
+        ? "NAO_DISPONIVEL"
+        : estaDepoisDoPeriodo && !podeAcessarEncerrado && !itemJaConcluido
+          ? "NAO_DISPONIVEL"
+          : progresso?.status || "NAO_INICIADO";
 
   const handleClick = () => {
     // Para PRESENCIAL, nunca permite navegação
@@ -332,18 +420,18 @@ function ItemRow({
       // Se for AO_VIVO e estiver concluído com gravação disponível, abre para revisar o vídeo gravado
       // Se for ONLINE, abre normalmente
       router.push(
-        `/dashboard/cursos/alunos/cursos/${cursoId}/${turmaId}/${item.aulaId}`
+        `/dashboard/cursos/alunos/cursos/${cursoId}/${turmaId}/${item.aulaId}`,
       );
     } else if (item.type === "ATIVIDADE") {
       // Navegar para página de atividade
       // Usa o platformActivityId se disponível, senão usa o id do item
       const atividadeId = (item as any).platformActivityId || item.id;
       router.push(
-        `/dashboard/cursos/alunos/cursos/${cursoId}/${turmaId}/${atividadeId}`
+        `/dashboard/cursos/alunos/cursos/${cursoId}/${turmaId}/${atividadeId}`,
       );
     } else if (item.type === "PROVA") {
       router.push(
-        `/dashboard/cursos/alunos/cursos/${cursoId}/${turmaId}/${item.id}`
+        `/dashboard/cursos/alunos/cursos/${cursoId}/${turmaId}/${item.id}`,
       );
     }
   };
@@ -363,6 +451,18 @@ function ItemRow({
     !itemJaConcluido &&
     itemPeriodo &&
     !periodoCursoEncerrado;
+  const statusPeriodoLabel =
+    !itemDentroDoPeriodo &&
+    !itemJaConcluido &&
+    itemPeriodo &&
+    !periodoCursoEncerrado &&
+    !estaAntesDoPeriodo
+      ? estaDepoisDoPeriodo
+        ? podeAcessarEncerrado
+          ? "Somente visualização"
+          : "Encerrada"
+        : "Indisponível"
+      : null;
 
   const cardContent = (
     <div
@@ -373,15 +473,15 @@ function ItemRow({
         isPresencial
           ? "cursor-default"
           : estaDisponivel
-          ? "cursor-pointer"
-          : "cursor-not-allowed opacity-75",
+            ? "cursor-pointer"
+            : "cursor-not-allowed opacity-75",
         status === "CONCLUIDO"
           ? "border-gray-200 bg-gray-50/30 hover:bg-gray-50/50"
           : status === "NAO_DISPONIVEL"
-          ? "border-gray-200 bg-gray-50/50"
-          : isPresencial
-          ? "border-gray-200 bg-white"
-          : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50/80"
+            ? "border-gray-200 bg-gray-50/50"
+            : isPresencial
+              ? "border-gray-200 bg-white"
+              : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50/80",
       )}
       onClick={!isPresencial && estaDisponivel ? handleClick : undefined}
     >
@@ -389,7 +489,7 @@ function ItemRow({
       <div
         className={cn(
           "w-11 h-11 rounded-xl flex items-center justify-center shrink-0 transition-transform duration-200 group-hover:scale-105",
-          status === "CONCLUIDO" ? "bg-green-100" : bg
+          status === "CONCLUIDO" ? "bg-green-100" : bg,
         )}
       >
         {status === "CONCLUIDO" ? (
@@ -409,11 +509,41 @@ function ItemRow({
           <span
             className={cn(
               "text-xs font-semibold px-2.5 py-1 rounded-md border shrink-0",
-              getItemTypeBadgeClasses(item.type)
+              getItemTypeBadgeClasses(item.type),
             )}
           >
             {getItemTypeLabel(item.type)}
           </span>
+          {(item.type === "ATIVIDADE" || item.type === "PROVA") &&
+            item.situacaoAluno && (
+              <TooltipProvider delayDuration={200}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Badge
+                      variant="outline"
+                      className={cn(
+                        "h-6 cursor-help rounded-md px-2 text-xs! font-semibold!",
+                        item.situacaoAluno === "CORRIGIDA"
+                          ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                          : "border-sky-200 bg-sky-50 text-sky-700",
+                      )}
+                    >
+                      <CheckCircle2 className="h-3.5 w-3.5" />
+                      {item.situacaoAluno === "CORRIGIDA"
+                        ? "Corrigida"
+                        : "Respondida"}
+                    </Badge>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" sideOffset={6}>
+                    {item.situacaoAluno === "CORRIGIDA"
+                      ? "Correção concluída."
+                      : item.situacaoAluno === "AGUARDANDO_GABARITO"
+                        ? "Respostas enviadas. O gabarito será liberado após o encerramento."
+                        : "Resposta enviada. Aguardando correção do instrutor."}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
         </div>
         {/* Exibir período para provas, atividades e aulas (quando tiver período específico definido) */}
         {itemPeriodo && (
@@ -421,27 +551,7 @@ function ItemRow({
             <div className="flex items-center flex-wrap gap-1.5">
               <Calendar className="h-3.5 w-3.5 text-gray-500 shrink-0" />
               <span className="text-xs! text-gray-600 mb-0!">
-                {(() => {
-                  try {
-                    const dataHoraInicio = parse(
-                      `${itemPeriodo.dataInicio} ${itemPeriodo.horaInicio}`,
-                      "yyyy-MM-dd HH:mm",
-                      new Date()
-                    );
-                    const dataHoraFim = parse(
-                      `${itemPeriodo.dataFim} ${itemPeriodo.horaFim}`,
-                      "yyyy-MM-dd HH:mm",
-                      new Date()
-                    );
-                    return `${format(dataHoraInicio, "dd/MM/yyyy 'às' HH:mm", {
-                      locale: ptBR,
-                    })} até ${format(dataHoraFim, "dd/MM/yyyy 'às' HH:mm", {
-                      locale: ptBR,
-                    })}`;
-                  } catch (error) {
-                    return `${itemPeriodo.dataInicio} ${itemPeriodo.horaInicio} até ${itemPeriodo.dataFim} ${itemPeriodo.horaFim}`;
-                  }
-                })()}
+                {formatItemPeriodo(itemPeriodo) ?? "Período não informado"}
               </span>
             </div>
             {/* Para PRESENCIAL, mostrar sala e endereço */}
@@ -479,25 +589,6 @@ function ItemRow({
                 })()}
               </div>
             )}
-            {/* Só mostra badge "Encerrada" se:
-                - Não estiver dentro do período
-                - Item não foi concluído
-                - Tem período definido
-                - E período do curso NÃO encerrou (ou foi concluído)
-                - E NÃO está antes do período (para não mostrar badge, apenas tooltip) */}
-            {!itemDentroDoPeriodo &&
-              !itemJaConcluido &&
-              itemPeriodo &&
-              !periodoCursoEncerrado &&
-              !estaAntesDoPeriodo && (
-                <span className="px-2 py-0.5 !text-xs font-semibold bg-amber-100 text-amber-700 rounded shrink-0">
-                  {estaDepoisDoPeriodo
-                    ? podeAcessarEncerrado
-                      ? "Encerrada (somente visualização)"
-                      : "Encerrada"
-                    : "Indisponível"}
-                </span>
-              )}
           </div>
         )}
         {progresso?.nota !== null && progresso?.nota !== undefined && (
@@ -529,226 +620,277 @@ function ItemRow({
           )}
       </div>
 
-      {/* Botão de ação - alinhado com a barra de progresso */}
-      {/* Para PRESENCIAL, não mostra botão (apenas período e nota) */}
-      {/* Para ONLINE/AO_VIVO, permite acesso mesmo se estiver encerrada (mas não pode submeter) */}
-      {/* Para AO_VIVO concluído, só mostra botão se tiver gravação disponível */}
-      {/* Para AO_VIVO antes do período, mostra botão bloqueado com tooltip */}
-      {(() => {
-        // Determinar configuração do botão
-        let buttonConfig: { mostrar: boolean; bloqueado: boolean };
+      <div className="ml-auto flex min-w-[280px] shrink-0 items-center justify-end gap-3">
+        {statusPeriodoLabel && (
+          <span className="inline-flex min-w-[150px] items-center justify-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs! font-semibold text-amber-700">
+            <Clock className="h-3.5 w-3.5" />
+            {statusPeriodoLabel}
+          </span>
+        )}
 
-        // Para PRESENCIAL, nunca mostra botão
-        if (isPresencial) {
-          buttonConfig = { mostrar: false, bloqueado: false };
-        }
-        // Para AO_VIVO antes do período com meetUrl, mostrar botão bloqueado
-        else if (
-          estaAntesDoPeriodo &&
-          turmaTipo === "AO_VIVO" &&
-          item.type === "AULA" &&
-          item.aulaId
-        ) {
-          const mockAula = getMockAulaById(item.aulaId);
-          if (mockAula?.meetUrl) {
-            buttonConfig = { mostrar: true, bloqueado: true };
-          } else {
+        {/* Botão de ação - alinhado com a barra de progresso */}
+        {/* Para PRESENCIAL, não mostra botão (apenas período e nota) */}
+        {/* Para ONLINE/AO_VIVO, permite acesso mesmo se estiver encerrada (mas não pode submeter) */}
+        {/* Para AO_VIVO concluído, só mostra botão se tiver gravação disponível */}
+        {/* Para AO_VIVO antes do período, mostra botão bloqueado com tooltip */}
+        {(() => {
+          // Determinar configuração do botão
+          let buttonConfig: { mostrar: boolean; bloqueado: boolean };
+
+          // Para PRESENCIAL, nunca mostra botão
+          if (isPresencial) {
             buttonConfig = { mostrar: false, bloqueado: false };
           }
-        }
-        // Se estiver antes do período (e não for AO_VIVO com meetUrl), nunca mostra botão
-        else if (estaAntesDoPeriodo) {
-          buttonConfig = { mostrar: false, bloqueado: false };
-        }
-        // Se estiver dentro do período, sempre mostra botão (independente do tipo de turma ou status)
-        else if (itemDentroDoPeriodo) {
-          buttonConfig = { mostrar: true, bloqueado: false };
-        }
-        // Se estiver depois do período (encerrada)
-        else if (estaDepoisDoPeriodo) {
-          // Se já foi concluído, sempre mostra botão para revisar
-          if (itemJaConcluido) {
-            buttonConfig = { mostrar: true, bloqueado: false };
-          }
-          // Para ONLINE/AO_VIVO, permite acesso mesmo se estiver depois do período (encerrada)
-          else if (podeAcessarEncerrado) {
-            buttonConfig = { mostrar: true, bloqueado: false };
-          }
-          // Para AO_VIVO concluído, verificar se tem gravação disponível
+          // Para AO_VIVO antes do período com meetUrl, mostrar botão bloqueado
           else if (
-            status === "CONCLUIDO" &&
+            estaAntesDoPeriodo &&
             turmaTipo === "AO_VIVO" &&
             item.type === "AULA" &&
             item.aulaId
           ) {
             const mockAula = getMockAulaById(item.aulaId);
-            const temGravacao =
-              mockAula?.linkGravacao &&
-              mockAula?.statusGravacao === "DISPONIVEL";
-            buttonConfig = { mostrar: temGravacao, bloqueado: false };
+            if (mockAula?.meetUrl) {
+              buttonConfig = { mostrar: true, bloqueado: true };
+            } else {
+              buttonConfig = { mostrar: false, bloqueado: false };
+            }
           }
-          // Se não foi concluído e não pode acessar encerrado, não mostra botão
-          else {
+          // Se estiver antes do período (e não for AO_VIVO com meetUrl), nunca mostra botão
+          else if (estaAntesDoPeriodo) {
             buttonConfig = { mostrar: false, bloqueado: false };
           }
-        }
-        // Para outros casos, verifica se está disponível
-        else {
-          buttonConfig = {
-            mostrar: status !== "NAO_DISPONIVEL",
-            bloqueado: false,
-          };
-        }
+          // Se estiver dentro do período, sempre mostra botão (independente do tipo de turma ou status)
+          else if (itemDentroDoPeriodo) {
+            buttonConfig = { mostrar: true, bloqueado: false };
+          }
+          // Se estiver depois do período (encerrada)
+          else if (estaDepoisDoPeriodo) {
+            // Se já foi concluído, sempre mostra botão para revisar
+            if (itemJaConcluido) {
+              buttonConfig = { mostrar: true, bloqueado: false };
+            }
+            // Para ONLINE/AO_VIVO, permite acesso mesmo se estiver depois do período (encerrada)
+            else if (podeAcessarEncerrado) {
+              buttonConfig = { mostrar: true, bloqueado: false };
+            }
+            // Para AO_VIVO concluído, verificar se tem gravação disponível
+            else if (
+              status === "CONCLUIDO" &&
+              turmaTipo === "AO_VIVO" &&
+              item.type === "AULA" &&
+              item.aulaId
+            ) {
+              const mockAula = getMockAulaById(item.aulaId);
+              const temGravacao =
+                mockAula?.linkGravacao &&
+                mockAula?.statusGravacao === "DISPONIVEL";
+              buttonConfig = { mostrar: temGravacao, bloqueado: false };
+            }
+            // Se não foi concluído e não pode acessar encerrado, não mostra botão
+            else {
+              buttonConfig = { mostrar: false, bloqueado: false };
+            }
+          }
+          // Para outros casos, verifica se está disponível
+          else {
+            buttonConfig = {
+              mostrar: status !== "NAO_DISPONIVEL",
+              bloqueado: false,
+            };
+          }
 
-        // Renderizar botão baseado na configuração
-        if (!buttonConfig.mostrar) return null;
+          // Renderizar botão baseado na configuração
+          if (!buttonConfig.mostrar) return null;
 
-        // Se estiver bloqueado (AO_VIVO antes do período), mostrar botão com tooltip
-        if (buttonConfig.bloqueado) {
+          // Se estiver bloqueado (AO_VIVO antes do período), mostrar botão com tooltip
+          if (buttonConfig.bloqueado) {
+            return (
+              <div
+                className={cn(
+                  "shrink-0 flex items-center",
+                  status === "EM_PROGRESSO" && progresso?.percentualConcluido
+                    ? "self-end"
+                    : "self-center",
+                )}
+              >
+                <TooltipProvider delayDuration={200}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <ButtonCustom
+                        variant="default"
+                        size="sm"
+                        disabled
+                        className="w-full bg-gray-300 text-gray-600 cursor-not-allowed opacity-60 rounded-lg h-9 font-semibold shadow-none"
+                        withAnimation={false}
+                      >
+                        <Video className="h-4 w-4 mr-2" />
+                        Entrar na sala
+                      </ButtonCustom>
+                    </TooltipTrigger>
+                    <TooltipContent
+                      side="top"
+                      sideOffset={8}
+                      className="bg-gray-900 text-white text-xs font-medium px-3 py-2 shadow-lg border border-gray-700 max-w-xs"
+                    >
+                      Aula libera em breve
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+            );
+          }
+
+          // Botão normal (não bloqueado)
           return (
             <div
               className={cn(
                 "shrink-0 flex items-center",
                 status === "EM_PROGRESSO" && progresso?.percentualConcluido
                   ? "self-end"
-                  : "self-center"
+                  : "self-center",
               )}
             >
-              <TooltipProvider delayDuration={200}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <ButtonCustom
-                      variant="default"
-                      size="sm"
-                      disabled
-                      className="w-full bg-gray-300 text-gray-600 cursor-not-allowed opacity-60 rounded-lg h-9 font-semibold shadow-none"
-                      withAnimation={false}
-                    >
-                      <Video className="h-4 w-4 mr-2" />
-                      Entrar na sala
-                    </ButtonCustom>
-                  </TooltipTrigger>
-                  <TooltipContent
-                    side="top"
-                    sideOffset={8}
-                    className="bg-gray-900 text-white text-xs font-medium px-3 py-2 shadow-lg border border-gray-700 max-w-xs"
-                  >
-                    Aula libera em breve
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
-          );
-        }
-
-        // Botão normal (não bloqueado)
-        return (
-          <div
-            className={cn(
-              "shrink-0 flex items-center",
-              status === "EM_PROGRESSO" && progresso?.percentualConcluido
-                ? "self-end"
-                : "self-center"
-            )}
-          >
-            <ButtonCustom
-              variant={
-                status === "CONCLUIDO" || periodoCursoEncerrado
-                  ? "outline"
-                  : "default"
-              }
-              size="sm"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleClick();
-              }}
-              className={cn(
-                "transition-all duration-200",
-                // Se período encerrou, usar mesmo estilo de concluído ONLINE
-                periodoCursoEncerrado
-                  ? "border-gray-300 text-gray-700 hover:bg-[var(--primary-color)] hover:text-white hover:border-[var(--primary-color)]"
-                  : status === "CONCLUIDO" && turmaTipo === "ONLINE"
-                  ? "border-gray-300 text-gray-700 hover:bg-[var(--primary-color)] hover:text-white hover:border-[var(--primary-color)]"
-                  : status === "CONCLUIDO"
-                  ? "border-gray-300 text-gray-700 hover:bg-gray-100 hover:border-gray-400"
-                  : "bg-[var(--primary-color)] text-white hover:bg-[var(--primary-color)]/90"
-              )}
-              withAnimation={false}
-            >
-              {(() => {
-                // Se período do curso encerrou, sempre mostrar "Revisar" (mesmo estilo de concluído)
-                if (periodoCursoEncerrado) {
-                  return (
-                    <>
-                      <CheckCircle2 className="h-4 w-4 mr-1.5" />
-                      Revisar
-                    </>
-                  );
+              <ButtonCustom
+                variant={
+                  status === "CONCLUIDO" || periodoCursoEncerrado
+                    ? "outline"
+                    : "default"
                 }
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleClick();
+                }}
+                className={cn(
+                  "transition-all duration-200",
+                  // Se período encerrou, usar mesmo estilo de concluído ONLINE
+                  periodoCursoEncerrado
+                    ? "border-gray-300 text-gray-700 hover:bg-[var(--primary-color)] hover:text-white hover:border-[var(--primary-color)]"
+                    : status === "CONCLUIDO" && turmaTipo === "ONLINE"
+                      ? "border-gray-300 text-gray-700 hover:bg-[var(--primary-color)] hover:text-white hover:border-[var(--primary-color)]"
+                      : status === "CONCLUIDO"
+                        ? "border-gray-300 text-gray-700 hover:bg-gray-100 hover:border-gray-400"
+                        : "bg-[var(--primary-color)] text-white hover:bg-[var(--primary-color)]/90",
+                )}
+                withAnimation={false}
+              >
+                {(() => {
+                  // Se período do curso encerrou, sempre mostrar "Revisar" (mesmo estilo de concluído)
+                  if (periodoCursoEncerrado) {
+                    return (
+                      <>
+                        <CheckCircle2 className="h-4 w-4 mr-1.5" />
+                        Revisar
+                      </>
+                    );
+                  }
 
-                // Se está depois do período (encerrada) e foi concluído, mostrar "Revisar"
-                if (estaDepoisDoPeriodo && itemJaConcluido) {
-                  // Para AO_VIVO concluído com gravação
                   if (
-                    turmaTipo === "AO_VIVO" &&
-                    item.type === "AULA" &&
-                    item.aulaId
+                    (item.type === "ATIVIDADE" || item.type === "PROVA") &&
+                    item.situacaoAluno
                   ) {
-                    const mockAula = getMockAulaById(item.aulaId);
-                    const temGravacao =
-                      mockAula?.linkGravacao &&
-                      mockAula?.statusGravacao === "DISPONIVEL";
-                    if (temGravacao) {
+                    return (
+                      <>
+                        <CheckCircle2 className="h-4 w-4 mr-1.5" />
+                        {item.situacaoAluno === "CORRIGIDA"
+                          ? "Ver correção"
+                          : item.type === "PROVA"
+                            ? "Visualizar respostas"
+                            : "Visualizar resposta"}
+                      </>
+                    );
+                  }
+
+                  // Se está depois do período (encerrada) e foi concluído, mostrar "Revisar"
+                  if (estaDepoisDoPeriodo && itemJaConcluido) {
+                    // Para AO_VIVO concluído com gravação
+                    if (
+                      turmaTipo === "AO_VIVO" &&
+                      item.type === "AULA" &&
+                      item.aulaId
+                    ) {
+                      const mockAula = getMockAulaById(item.aulaId);
+                      const temGravacao =
+                        mockAula?.linkGravacao &&
+                        mockAula?.statusGravacao === "DISPONIVEL";
+                      if (temGravacao) {
+                        return (
+                          <>
+                            <Video className="h-4 w-4 mr-1.5" />
+                            Revisar Gravação
+                          </>
+                        );
+                      }
+                    }
+                    return (
+                      <>
+                        <CheckCircle2 className="h-4 w-4 mr-1.5" />
+                        Revisar
+                      </>
+                    );
+                  }
+
+                  // Se está depois do período (encerrada) mas não foi concluído e pode acessar (ONLINE/AO_VIVO)
+                  if (
+                    estaDepoisDoPeriodo &&
+                    podeAcessarEncerrado &&
+                    !itemJaConcluido
+                  ) {
+                    return (
+                      <>
+                        <PlayCircle className="h-4 w-4 mr-1.5" />
+                        Visualizar
+                      </>
+                    );
+                  }
+
+                  // Se está dentro do período
+                  if (itemDentroDoPeriodo) {
+                    // Para AO_VIVO dentro do período, mostrar "Entrar na sala"
+                    if (
+                      turmaTipo === "AO_VIVO" &&
+                      item.type === "AULA" &&
+                      item.aulaId
+                    ) {
+                      const mockAula = getMockAulaById(item.aulaId);
+                      if (mockAula?.meetUrl) {
+                        return (
+                          <>
+                            <Video className="h-4 w-4 mr-1.5" />
+                            Entrar na sala
+                          </>
+                        );
+                      }
+                    }
+
+                    // Para EM_PROGRESSO
+                    if (status === "EM_PROGRESSO") {
                       return (
                         <>
-                          <Video className="h-4 w-4 mr-1.5" />
-                          Revisar Gravação
+                          <PlayCircle className="h-4 w-4 mr-1.5" />
+                          Continuar
                         </>
                       );
                     }
-                  }
-                  return (
-                    <>
-                      <CheckCircle2 className="h-4 w-4 mr-1.5" />
-                      Revisar
-                    </>
-                  );
-                }
-
-                // Se está depois do período (encerrada) mas não foi concluído e pode acessar (ONLINE/AO_VIVO)
-                if (
-                  estaDepoisDoPeriodo &&
-                  podeAcessarEncerrado &&
-                  !itemJaConcluido
-                ) {
-                  return (
-                    <>
-                      <PlayCircle className="h-4 w-4 mr-1.5" />
-                      Visualizar
-                    </>
-                  );
-                }
-
-                // Se está dentro do período
-                if (itemDentroDoPeriodo) {
-                  // Para AO_VIVO dentro do período, mostrar "Entrar na sala"
-                  if (
-                    turmaTipo === "AO_VIVO" &&
-                    item.type === "AULA" &&
-                    item.aulaId
-                  ) {
-                    const mockAula = getMockAulaById(item.aulaId);
-                    if (mockAula?.meetUrl) {
+                    // Para CONCLUIDO dentro do período
+                    if (status === "CONCLUIDO") {
                       return (
                         <>
-                          <Video className="h-4 w-4 mr-1.5" />
-                          Entrar na sala
+                          <CheckCircle2 className="h-4 w-4 mr-1.5" />
+                          Revisar
                         </>
                       );
                     }
+                    // Para NAO_INICIADO dentro do período
+                    return (
+                      <>
+                        <PlayCircle className="h-4 w-4 mr-1.5" />
+                        Iniciar
+                      </>
+                    );
                   }
 
-                  // Para EM_PROGRESSO
+                  // Para outros casos (não deveria chegar aqui, mas mantém como fallback)
                   if (status === "EM_PROGRESSO") {
                     return (
                       <>
@@ -757,45 +899,19 @@ function ItemRow({
                       </>
                     );
                   }
-                  // Para CONCLUIDO dentro do período
-                  if (status === "CONCLUIDO") {
-                    return (
-                      <>
-                        <CheckCircle2 className="h-4 w-4 mr-1.5" />
-                        Revisar
-                      </>
-                    );
-                  }
-                  // Para NAO_INICIADO dentro do período
+                  // Para NAO_INICIADO
                   return (
                     <>
                       <PlayCircle className="h-4 w-4 mr-1.5" />
                       Iniciar
                     </>
                   );
-                }
-
-                // Para outros casos (não deveria chegar aqui, mas mantém como fallback)
-                if (status === "EM_PROGRESSO") {
-                  return (
-                    <>
-                      <PlayCircle className="h-4 w-4 mr-1.5" />
-                      Continuar
-                    </>
-                  );
-                }
-                // Para NAO_INICIADO
-                return (
-                  <>
-                    <PlayCircle className="h-4 w-4 mr-1.5" />
-                    Iniciar
-                  </>
-                );
-              })()}
-            </ButtonCustom>
-          </div>
-        );
-      })()}
+                })()}
+              </ButtonCustom>
+            </div>
+          );
+        })()}
+      </div>
     </div>
   );
 
@@ -824,6 +940,7 @@ export function AlunoTurmaEstruturaView({
   cursoId,
   turmaId,
   estrutura,
+  turmaInfo,
 }: AlunoTurmaEstruturaViewProps) {
   const router = useRouter();
   const [collapsedModules, setCollapsedModules] = useState<
@@ -835,32 +952,56 @@ export function AlunoTurmaEstruturaView({
   const cursoInfo = useMemo(() => {
     const cursos = getMockAlunoCursos();
     const curso = cursos.find(
-      (c) => c.cursoId === cursoId && c.turmaId === turmaId
+      (c) => c.cursoId === cursoId && c.turmaId === turmaId,
     );
     return curso;
   }, [cursoId, turmaId]);
 
-  const turmaTipo = cursoInfo?.turmaTipo;
+  const turmaTipo = useMemo(() => {
+    if (turmaInfo?.metodo === "LIVE") return "AO_VIVO";
+    return (
+      (turmaInfo?.metodo as
+        | "ONLINE"
+        | "AO_VIVO"
+        | "PRESENCIAL"
+        | "SEMIPRESENCIAL"
+        | undefined) ?? cursoInfo?.turmaTipo
+    );
+  }, [cursoInfo?.turmaTipo, turmaInfo?.metodo]);
 
   // Verificar se o período do curso encerrou
   const periodoCursoEncerrado = useMemo(() => {
-    if (!cursoInfo?.dataFim) return false;
+    const dataFim = turmaInfo?.dataFim ?? cursoInfo?.dataFim;
+    if (!dataFim) return false;
     const agora = new Date();
-    const dataFimCurso = new Date(cursoInfo.dataFim);
+    const dataFimCurso = new Date(dataFim);
     dataFimCurso.setHours(23, 59, 59, 999); // Fim do dia
     return agora > dataFimCurso;
-  }, [cursoInfo?.dataFim]);
+  }, [cursoInfo?.dataFim, turmaInfo?.dataFim]);
 
-  // Buscar progresso do aluno
+  // A estrutura da API é a fonte de verdade do progresso de cada item.
   const progressoMap = useMemo(() => {
-    return getMockTurmaProgresso(cursoId, turmaId);
-  }, [cursoId, turmaId]);
+    const result: Record<string, ItemProgresso> = {};
+    const items = [
+      ...estrutura.modules.flatMap((modulo) => modulo.items),
+      ...(estrutura.standaloneItems ?? []),
+    ];
+
+    items.forEach((item) => {
+      result[item.id] = item.progresso ?? {
+        status: "NAO_INICIADO",
+        percentualConcluido: 0,
+      };
+    });
+
+    return result;
+  }, [estrutura]);
 
   // Organizar itens
   const { proximoItem, todosItens, progressoGeral } = useMemo(() => {
     const todos: Array<{
       item: any;
-      progresso?: MockItemProgresso;
+      progresso?: ItemProgresso;
       moduloTitle?: string;
     }> = [];
 
@@ -898,7 +1039,7 @@ export function AlunoTurmaEstruturaView({
             const dataHoraInicio = parse(
               `${mockAula?.dataInicio} ${mockAula?.horaInicio}`,
               "yyyy-MM-dd HH:mm",
-              new Date()
+              new Date(),
             );
             return { ...i, dataHoraInicio };
           } catch {
@@ -907,18 +1048,19 @@ export function AlunoTurmaEstruturaView({
         })
         .filter((i): i is NonNullable<typeof i> => i !== null)
         .sort(
-          (a, b) => a.dataHoraInicio.getTime() - b.dataHoraInicio.getTime()
+          (a, b) => a.dataHoraInicio.getTime() - b.dataHoraInicio.getTime(),
         );
 
       // Buscar a primeira aula que ainda não começou
       const proximaAulaFutura = aulasComData.find((i) =>
-        isBefore(agora, i.dataHoraInicio)
+        isBefore(agora, i.dataHoraInicio),
       );
 
       const concluidos = todos.filter(
-        (i) => i.progresso?.status === "CONCLUIDO"
+        (i) => i.progresso?.status === "CONCLUIDO",
       ).length;
-      const progresso = Math.round((concluidos / todos.length) * 100);
+      const progresso =
+        todos.length > 0 ? Math.round((concluidos / todos.length) * 100) : 0;
 
       return {
         proximoItem: proximaAulaFutura || undefined,
@@ -929,12 +1071,13 @@ export function AlunoTurmaEstruturaView({
 
     // Para ONLINE/AO_VIVO, usar lógica padrão
     const proximo = todos.find(
-      (i) => !i.progresso || i.progresso.status === "NAO_INICIADO"
+      (i) => !i.progresso || i.progresso.status === "NAO_INICIADO",
     );
     const concluidos = todos.filter(
-      (i) => i.progresso?.status === "CONCLUIDO"
+      (i) => i.progresso?.status === "CONCLUIDO",
     ).length;
-    const progresso = Math.round((concluidos / todos.length) * 100);
+    const progresso =
+      todos.length > 0 ? Math.round((concluidos / todos.length) * 100) : 0;
 
     return {
       proximoItem: proximo,
@@ -989,10 +1132,10 @@ export function AlunoTurmaEstruturaView({
               statusAprovacao === "APROVADO"
                 ? "border-emerald-200 bg-gradient-to-br from-emerald-50/50 to-white"
                 : statusAprovacao === "RECUPERACAO"
-                ? "border-amber-200 bg-gradient-to-br from-amber-50/50 to-white"
-                : statusAprovacao === "REPROVADO"
-                ? "border-red-200 bg-gradient-to-br from-red-50/50 to-white"
-                : "border-gray-200 bg-gradient-to-br from-gray-50/50 to-white"
+                  ? "border-amber-200 bg-gradient-to-br from-amber-50/50 to-white"
+                  : statusAprovacao === "REPROVADO"
+                    ? "border-red-200 bg-gradient-to-br from-red-50/50 to-white"
+                    : "border-gray-200 bg-gradient-to-br from-gray-50/50 to-white",
             )}
           >
             <CardContent className="p-6">
@@ -1004,10 +1147,10 @@ export function AlunoTurmaEstruturaView({
                     statusAprovacao === "APROVADO"
                       ? "bg-emerald-500"
                       : statusAprovacao === "RECUPERACAO"
-                      ? "bg-amber-500"
-                      : statusAprovacao === "REPROVADO"
-                      ? "bg-red-500"
-                      : "bg-gray-400"
+                        ? "bg-amber-500"
+                        : statusAprovacao === "REPROVADO"
+                          ? "bg-red-500"
+                          : "bg-gray-400",
                   )}
                 >
                   {statusAprovacao === "APROVADO" ? (
@@ -1030,10 +1173,10 @@ export function AlunoTurmaEstruturaView({
                       statusAprovacao === "APROVADO"
                         ? "text-emerald-900!"
                         : statusAprovacao === "RECUPERACAO"
-                        ? "text-amber-900!"
-                        : statusAprovacao === "REPROVADO"
-                        ? "text-red-900!"
-                        : "text-gray-900!"
+                          ? "text-amber-900!"
+                          : statusAprovacao === "REPROVADO"
+                            ? "text-red-900!"
+                            : "text-gray-900!",
                     )}
                   >
                     Período do Curso Encerrado
@@ -1060,8 +1203,8 @@ export function AlunoTurmaEstruturaView({
                         statusAprovacao === "APROVADO"
                           ? "bg-emerald-50! border! border-emerald-200!"
                           : statusAprovacao === "RECUPERACAO"
-                          ? "bg-amber-50! border! border-amber-200!"
-                          : "bg-red-50! border! border-red-200!"
+                            ? "bg-amber-50! border! border-amber-200!"
+                            : "bg-red-50! border! border-red-200!",
                       )}
                     >
                       {notaMedia !== null ? (
@@ -1072,7 +1215,7 @@ export function AlunoTurmaEstruturaView({
                                 "h-4! w-4! shrink-0!",
                                 statusAprovacao === "APROVADO"
                                   ? "text-emerald-600!"
-                                  : "text-amber-600!"
+                                  : "text-amber-600!",
                               )}
                             />
                             <span className="text-sm! font-medium!">
@@ -1083,7 +1226,7 @@ export function AlunoTurmaEstruturaView({
                                 "text-lg! font-bold!",
                                 statusAprovacao === "APROVADO"
                                   ? "text-emerald-900!"
-                                  : "text-amber-900!"
+                                  : "text-amber-900!",
                               )}
                             >
                               {notaMedia.toFixed(1).replace(".", ",")}
@@ -1094,7 +1237,7 @@ export function AlunoTurmaEstruturaView({
                               "text-sm! font-semibold!",
                               statusAprovacao === "APROVADO"
                                 ? "text-emerald-700!"
-                                : "text-amber-700!"
+                                : "text-amber-700!",
                             )}
                           >
                             {statusAprovacao === "APROVADO"
@@ -1140,10 +1283,10 @@ export function AlunoTurmaEstruturaView({
                 progresso: progressoMap[item.id],
               }));
               const concluidosNoModulo = modulosItens.filter(
-                (i) => i.progresso?.status === "CONCLUIDO"
+                (i) => i.progresso?.status === "CONCLUIDO",
               ).length;
               const progressoModulo = Math.round(
-                (concluidosNoModulo / modulo.items.length) * 100
+                (concluidosNoModulo / modulo.items.length) * 100,
               );
 
               return (
@@ -1234,7 +1377,7 @@ export function AlunoTurmaEstruturaView({
       <div
         className={cn(
           "w-80 shrink-0 transition-all duration-300",
-          sidebarSticky && "sticky top-6"
+          sidebarSticky && "sticky top-6",
         )}
       >
         <div className="space-y-4">
@@ -1288,7 +1431,7 @@ export function AlunoTurmaEstruturaView({
                     <span className="!text-lg font-bold text-gray-900">
                       {
                         todosItens.filter(
-                          (i) => i.progresso?.status === "CONCLUIDO"
+                          (i) => i.progresso?.status === "CONCLUIDO",
                         ).length
                       }
                     </span>
@@ -1306,7 +1449,7 @@ export function AlunoTurmaEstruturaView({
                       <span className="!text-lg font-bold text-gray-900">
                         {
                           todosItens.filter(
-                            (i) => i.progresso?.status === "EM_PROGRESSO"
+                            (i) => i.progresso?.status === "EM_PROGRESSO",
                           ).length
                         }
                       </span>
@@ -1322,7 +1465,7 @@ export function AlunoTurmaEstruturaView({
                       <span className="!text-lg font-bold text-gray-900">
                         {
                           todosItens.filter(
-                            (i) => i.progresso?.status !== "CONCLUIDO"
+                            (i) => i.progresso?.status !== "CONCLUIDO",
                           ).length
                         }
                       </span>
@@ -1335,40 +1478,75 @@ export function AlunoTurmaEstruturaView({
 
           {/* Próximo Item */}
           {proximoItem && !periodoCursoEncerrado && (
-            <Card className="border border-gray-200 rounded-2xl overflow-hidden bg-gray-50 shadow-none">
+            <Card className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-none">
               <CardContent className="p-4">
-                <div className="space-y-3 mt-[-20px] mb-[-20px]">
-                  {/* Header "Próximo" */}
-                  <div className="inline-flex items-center gap-2 px-2.5 py-1 bg-blue-100 rounded-lg border border-blue-200">
-                    <TrendingUp className="h-3.5 w-3.5 text-blue-600" />
-                    <p className="!text-xs font-semibold text-blue-700 mb-0!">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="mb-0! text-sm! font-semibold text-gray-900">
+                        Próximo item
+                      </p>
+                      <p className="mb-0! mt-0.5 text-xs! text-gray-500">
+                        Continue de onde parou
+                      </p>
+                    </div>
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs! font-semibold text-blue-700">
+                      <TrendingUp className="h-3.5 w-3.5" />
                       Próximo
-                    </p>
+                    </span>
                   </div>
 
-                  {/* Card da Aula */}
-                  <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-none">
+                  <div className="rounded-xl border border-gray-200 bg-gray-50/70 p-4">
                     <div className="flex items-start gap-3">
-                      <div className="w-12 h-12 rounded-xl bg-blue-500 flex items-center justify-center shrink-0 shadow-sm">
-                        <PlayCircle className="h-6 w-6 text-white" />
+                      <div
+                        className={cn(
+                          "flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border",
+                          proximoItem.item.type === "AULA"
+                            ? "border-blue-200 bg-blue-100 text-blue-700"
+                            : proximoItem.item.type === "ATIVIDADE"
+                              ? "border-amber-200 bg-amber-100 text-amber-700"
+                              : "border-rose-200 bg-rose-100 text-rose-700",
+                        )}
+                      >
+                        {proximoItem.item.type === "ATIVIDADE" ? (
+                          <ClipboardList className="h-5 w-5" />
+                        ) : proximoItem.item.type === "PROVA" ? (
+                          <FileText className="h-5 w-5" />
+                        ) : (
+                          <PlayCircle className="h-5 w-5" />
+                        )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="inline-flex items-center gap-1.5 mb-1.5">
-                          <span className="px-2 py-0.5 !text-[10px] font-semibold bg-blue-100 text-blue-700 rounded border border-blue-200 uppercase tracking-wide">
+                        <div className="mb-2 flex items-center gap-2">
+                          <span
+                            className={cn(
+                              "rounded-md border px-2 py-0.5 text-[10px]! font-semibold uppercase",
+                              getItemTypeBadgeClasses(proximoItem.item.type),
+                            )}
+                          >
                             {getItemTypeLabel(proximoItem.item.type)}
                           </span>
                         </div>
-                        <p className="!text-sm font-bold text-gray-900 mb-0! line-clamp-2 leading-snug">
+                        <p className="mb-0! line-clamp-3 text-sm! font-semibold leading-snug text-gray-900">
                           {proximoItem.item.title}
                         </p>
+                        {getPeriodoFromEstruturaItem(proximoItem.item) && (
+                          <div className="mt-2 flex items-start gap-1.5">
+                            <Calendar className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gray-500" />
+                            <p className="mb-0! text-xs! leading-relaxed text-gray-600">
+                              {getPeriodoFromEstruturaItem(proximoItem.item)}
+                            </p>
+                          </div>
+                        )}
                         {/* Para PRESENCIAL, mostrar data e horário */}
                         {turmaTipo === "PRESENCIAL" &&
+                          !getPeriodoFromEstruturaItem(proximoItem.item) &&
                           proximoItem.item.type === "AULA" &&
                           proximoItem.item.aulaId && (
                             <div className="mt-2.5 pt-2.5 border-t border-gray-100">
                               {(() => {
                                 const mockAula = getMockAulaById(
-                                  proximoItem.item.aulaId
+                                  proximoItem.item.aulaId,
                                 );
                                 if (
                                   !mockAula?.dataInicio ||
@@ -1381,12 +1559,12 @@ export function AlunoTurmaEstruturaView({
                                   const dataInicio = parse(
                                     mockAula.dataInicio,
                                     "yyyy-MM-dd",
-                                    new Date()
+                                    new Date(),
                                   );
                                   const dataFim = parse(
                                     mockAula.dataFim || mockAula.dataInicio,
                                     "yyyy-MM-dd",
-                                    new Date()
+                                    new Date(),
                                   );
                                   const mesmoDia =
                                     format(dataInicio, "yyyy-MM-dd") ===
@@ -1439,7 +1617,7 @@ export function AlunoTurmaEstruturaView({
                           proximoItem.item.aulaId
                         ) {
                           const mockAula = getMockAulaById(
-                            proximoItem.item.aulaId
+                            proximoItem.item.aulaId,
                           );
                           if (
                             mockAula?.meetUrl &&
@@ -1452,14 +1630,14 @@ export function AlunoTurmaEstruturaView({
                               const dataHoraInicio = parse(
                                 `${mockAula.dataInicio} ${mockAula.horaInicio}`,
                                 "yyyy-MM-dd HH:mm",
-                                new Date()
+                                new Date(),
                               );
                               const dataHoraFim = parse(
                                 `${mockAula.dataFim || mockAula.dataInicio} ${
                                   mockAula.horaFim
                                 }`,
                                 "yyyy-MM-dd HH:mm",
-                                new Date()
+                                new Date(),
                               );
                               const estaDentroDoPeriodo =
                                 agora >= dataHoraInicio && agora <= dataHoraFim;
@@ -1474,7 +1652,7 @@ export function AlunoTurmaEstruturaView({
                                         window.open(
                                           mockAula.meetUrl,
                                           "_blank",
-                                          "noopener,noreferrer"
+                                          "noopener,noreferrer",
                                         );
                                       }
                                     }}
@@ -1499,7 +1677,7 @@ export function AlunoTurmaEstruturaView({
                           proximoItem.item.aulaId
                         ) {
                           const mockAula = getMockAulaById(
-                            proximoItem.item.aulaId
+                            proximoItem.item.aulaId,
                           );
                           if (
                             mockAula?.meetUrl &&
@@ -1512,7 +1690,7 @@ export function AlunoTurmaEstruturaView({
                               const dataHoraInicio = parse(
                                 `${mockAula.dataInicio} ${mockAula.horaInicio}`,
                                 "yyyy-MM-dd HH:mm",
-                                new Date()
+                                new Date(),
                               );
                               const estaAntesDoPeriodo = agora < dataHoraInicio;
 
@@ -1537,7 +1715,7 @@ export function AlunoTurmaEstruturaView({
                                 proximoItem.item.aulaId
                               ) {
                                 router.push(
-                                  `/dashboard/cursos/alunos/cursos/${cursoId}/${turmaId}/${proximoItem.item.aulaId}`
+                                  `/dashboard/cursos/alunos/cursos/${cursoId}/${turmaId}/${proximoItem.item.aulaId}`,
                                 );
                               } else if (
                                 proximoItem.item.type === "ATIVIDADE"
@@ -1546,11 +1724,11 @@ export function AlunoTurmaEstruturaView({
                                   (proximoItem.item as any)
                                     .platformActivityId || proximoItem.item.id;
                                 router.push(
-                                  `/dashboard/cursos/alunos/cursos/${cursoId}/${turmaId}/${atividadeId}`
+                                  `/dashboard/cursos/alunos/cursos/${cursoId}/${turmaId}/${atividadeId}`,
                                 );
                               } else if (proximoItem.item.type === "PROVA") {
                                 router.push(
-                                  `/dashboard/cursos/alunos/cursos/${cursoId}/${turmaId}/${proximoItem.item.id}`
+                                  `/dashboard/cursos/alunos/cursos/${cursoId}/${turmaId}/${proximoItem.item.id}`,
                                 );
                               }
                             }}

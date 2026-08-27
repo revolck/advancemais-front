@@ -5,17 +5,26 @@ import { fileUploadVariants } from "../variants";
 /**
  * Status possíveis para um arquivo durante o upload
  */
-export type FileUploadStatus = "idle" | "uploading" | "completed" | "failed" | "cancelled";
+export type FileUploadStatus =
+  | "idle"
+  | "uploading"
+  | "completed"
+  | "failed"
+  | "cancelled";
 
 /**
  * Tipos de arquivo aceitos pelo componente
  */
-export type AcceptedFileType = 
+export type AcceptedFileType =
   | "image/*"
   | "application/pdf"
   | "text/csv"
   | "application/vnd.ms-excel"
   | "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+  | "application/msword"
+  | "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+  | "application/vnd.ms-powerpoint"
+  | "application/vnd.openxmlformats-officedocument.presentationml.presentation"
   | "application/json"
   | ".csv"
   | ".xlsx"
@@ -25,6 +34,14 @@ export type AcceptedFileType =
   | ".jpeg"
   | ".png"
   | ".webp"
+  | ".doc"
+  | ".docx"
+  | ".ppt"
+  | ".pptx"
+  | ".odt"
+  | ".ods"
+  | ".odp"
+  | ".txt"
   | ".json";
 
 /**
@@ -79,7 +96,8 @@ export interface FileValidationConfig {
 /**
  * Propriedades do componente FileUpload
  */
-export interface FileUploadProps extends VariantProps<typeof fileUploadVariants> {
+export interface FileUploadProps
+  extends VariantProps<typeof fileUploadVariants> {
   /** Lista de arquivos já carregados */
   files?: FileUploadItem[];
   /** Configuração de validação */
@@ -94,6 +112,8 @@ export interface FileUploadProps extends VariantProps<typeof fileUploadVariants>
   dropzoneText?: ReactNode;
   /** Texto personalizado para o botão de browse */
   browseText?: string;
+  /** Se deve exibir formatos aceitos e limite de tamanho na área de seleção */
+  showValidationDetails?: boolean;
   /** Se deve mostrar preview de imagens */
   showPreview?: boolean;
   /** Se deve mostrar progresso detalhado */

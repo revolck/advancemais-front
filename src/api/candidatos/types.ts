@@ -338,7 +338,6 @@ export interface CandidaturasFilters {
   status?: CandidaturaStatus[];
 }
 
-
 // ========================
 // ÁREAS E SUBÁREAS DE INTERESSE
 // ========================
@@ -591,6 +590,165 @@ export interface CandidatoCursosResponse {
   };
 }
 
+export interface CandidatoTurmaEstruturaItem {
+  id: string;
+  title: string;
+  type: "AULA" | "PROVA" | "ATIVIDADE";
+  descricao?: string | null;
+  templateId?: string | null;
+  startDate?: string | null;
+  endDate?: string | null;
+  horaInicio?: string | null;
+  horaFim?: string | null;
+  aulaId?: string | null;
+  instructorId?: string | null;
+  instructorIds?: string[];
+  obrigatoria?: boolean;
+  obrigatorio?: boolean;
+  recuperacaoFinal?: boolean;
+  activityType?:
+    | "IMAGEM"
+    | "PDF"
+    | "PPT"
+    | "DOC"
+    | "LINK"
+    | "PLATAFORMA"
+    | null;
+  tipoAtividade?: "QUESTOES" | "PERGUNTA_RESPOSTA" | "ENVIO_MATERIAL" | null;
+  platformActivityId?: string | null;
+  situacaoAluno?:
+    | "AGUARDANDO_CORRECAO"
+    | "AGUARDANDO_GABARITO"
+    | "CORRIGIDA"
+    | null;
+  respondidaEm?: string | null;
+  progresso?: {
+    status: "NAO_INICIADO" | "EM_PROGRESSO" | "CONCLUIDO";
+    percentualConcluido: number;
+    tempoAssistidoSegundos?: number;
+    tentativas?: number;
+    nota?: number | null;
+    dataConclusao?: string | null;
+    atualizadoEm?: string | null;
+  };
+  modalidade?: string | null;
+  youtubeUrl?: string | null;
+  meetUrl?: string | null;
+  tipoLinkSemiPresencial?: "MEET" | "YOUTUBE" | null;
+}
+
+export interface CandidatoTurmaEstruturaModule {
+  id: string;
+  title: string;
+  items: CandidatoTurmaEstruturaItem[];
+}
+
+export interface CandidatoTurmaEstruturaResponse {
+  success: boolean;
+  data: {
+    inscricaoId: string;
+    cursoId: string;
+    turmaId: string;
+    curso: {
+      id: string;
+      nome: string;
+      descricao: string | null;
+      cargaHoraria: number;
+    };
+    turma: {
+      id: string;
+      nome: string;
+      metodo: string;
+      estruturaTipo: string;
+      dataInicio: string | null;
+      dataFim: string | null;
+    };
+    estrutura: {
+      modules: CandidatoTurmaEstruturaModule[];
+      standaloneItems?: CandidatoTurmaEstruturaItem[];
+    };
+  };
+}
+
+export interface CandidatoAtividadeQuestao {
+  id: string;
+  enunciado: string;
+  tipo: "TEXTO" | "MULTIPLA_ESCOLHA" | "ANEXO";
+  ordem: number;
+  obrigatoria: boolean;
+  alternativas: Array<{
+    id: string;
+    texto: string;
+    ordem: number;
+    correta?: boolean;
+  }>;
+  resposta: {
+    respostaTexto: string | null;
+    alternativaId: string | null;
+    anexoUrl: string | null;
+    anexoNome: string | null;
+    acertou?: boolean;
+    nota?: number | null;
+  } | null;
+}
+
+export type CandidatoAtividadeBloqueioMotivo =
+  | "CORRIGIDA"
+  | "LIMITE_ATINGIDO"
+  | null;
+
+export interface CandidatoAtividadeDetalhe {
+  id: string;
+  tipo: "ATIVIDADE" | "PROVA";
+  titulo: string;
+  descricao: string | null;
+  tipoAtividade: "QUESTOES" | "PERGUNTA_RESPOSTA" | "ENVIO_MATERIAL" | null;
+  dataInicio: string | null;
+  dataFim: string | null;
+  horaInicio: string | null;
+  horaFim: string | null;
+  realizadoEm: string | null;
+  nota: number | null;
+  feedback: string | null;
+  bloqueadoEdicaoEm: string | null;
+  tentativasEnvio: number;
+  tentativasRestantes: number;
+  limiteEnvios: number;
+  edicoesRealizadas: number;
+  edicoesRestantes: number;
+  limiteEdicoes: number;
+  ultimaEdicaoEm: string | null;
+  corrigida: boolean;
+  podeEditar: boolean;
+  bloqueioMotivo: CandidatoAtividadeBloqueioMotivo;
+  aguardandoGabarito: boolean;
+  gabaritoDisponivel: boolean;
+  gabaritoDisponivelEm: string | null;
+  resultado: {
+    totalQuestoes: number;
+    acertos: number;
+    percentual: number;
+    nota: number | null;
+    notaMaxima: number;
+  } | null;
+  questoes: CandidatoAtividadeQuestao[];
+}
+
+export interface CandidatoAtividadeDetalheResponse {
+  success: boolean;
+  data: CandidatoAtividadeDetalhe;
+}
+
+export interface EnviarCandidatoAtividadeRespostaPayload {
+  respostas: Array<{
+    questaoId: string;
+    respostaTexto?: string | null;
+    alternativaId?: string | null;
+    anexoUrl?: string | null;
+    anexoNome?: string | null;
+  }>;
+}
+
 export interface CandidaturaDetalheCandidato {
   id: string;
   nome: string;
@@ -688,4 +846,3 @@ export interface AtualizarCandidaturaResponse {
   success: boolean;
   candidatura: CandidaturaDetalhe;
 }
-

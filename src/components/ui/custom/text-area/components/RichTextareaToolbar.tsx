@@ -67,31 +67,49 @@ export interface RichTextareaToolbarProps {
   activeHeading: HeadingType | null;
   activeFormats: Set<string>;
   activeLink: { url: string; element: HTMLAnchorElement } | null;
+  onInteractionStart: () => void;
   onHeadingChange: (value: string) => void;
   onToolbarAction: (action: ToolbarAction) => void;
   showHeadingSelect?: boolean;
+  disabled?: boolean;
 }
 
 export function RichTextareaToolbar({
   activeHeading,
   activeFormats,
   activeLink,
+  onInteractionStart,
   onHeadingChange,
   onToolbarAction,
   showHeadingSelect = true,
+  disabled = false,
 }: RichTextareaToolbarProps) {
   return (
     <TooltipProvider delayDuration={300}>
-      <div className="flex items-center gap-1 border-b border-input p-2 flex-shrink-0 bg-background z-10">
+      <div
+        className="flex items-center gap-1 border-b border-input bg-background p-2 flex-shrink-0 z-10"
+        onPointerDownCapture={onInteractionStart}
+      >
         {showHeadingSelect ? (
           <>
-            <Select value={activeHeading || "p"} onValueChange={onHeadingChange}>
-              <SelectTrigger className="h-8 w-[140px] text-xs bg-white">
+            <Select
+              value={activeHeading || "p"}
+              onValueChange={onHeadingChange}
+              disabled={disabled}
+            >
+              <SelectTrigger
+                size="sm"
+                className="w-[132px] cursor-pointer border-input bg-background px-2.5 text-xs! font-medium shadow-none hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring/30 disabled:cursor-not-allowed"
+              >
                 <SelectValue placeholder="Parágrafo" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="w-[148px] rounded-md border-input bg-popover p-0 shadow-none">
                 {HEADING_OPTIONS.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
+                  <SelectItem
+                    key={option.value}
+                    value={option.value}
+                    className="cursor-pointer rounded-sm py-1.5 pr-7 pl-2.5 text-xs! font-normal text-foreground focus:bg-muted data-[state=checked]:font-medium"
+                  >
                     {option.label}
                   </SelectItem>
                 ))}
@@ -109,12 +127,13 @@ export function RichTextareaToolbar({
                 variant="ghost"
                 size="sm"
                 className={cn(
-                  "h-8 w-8 p-0 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors",
+                  "h-8 w-8 cursor-pointer p-0 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors",
                   activeFormats.has(button.action) &&
-                    "bg-accent text-foreground"
+                    "bg-accent text-foreground",
                 )}
                 onClick={() => onToolbarAction(button.action)}
                 type="button"
+                disabled={disabled}
               >
                 <button.icon className="h-4 w-4" />
               </Button>
@@ -138,11 +157,12 @@ export function RichTextareaToolbar({
               variant="ghost"
               size="sm"
               className={cn(
-                "h-8 w-8 p-0 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors",
-                activeLink && "bg-accent text-foreground"
+                "h-8 w-8 cursor-pointer p-0 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors",
+                activeLink && "bg-accent text-foreground",
               )}
               onClick={() => onToolbarAction("link")}
               type="button"
+              disabled={disabled}
             >
               <LinkIcon className="h-4 w-4" />
             </Button>
@@ -164,9 +184,10 @@ export function RichTextareaToolbar({
             <Button
               variant="ghost"
               size="sm"
-              className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+              className="h-8 w-8 cursor-pointer p-0 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
               onClick={() => onToolbarAction("clear")}
               type="button"
+              disabled={disabled}
             >
               <RemoveFormatting className="h-4 w-4" />
             </Button>
@@ -184,14 +205,3 @@ export function RichTextareaToolbar({
     </TooltipProvider>
   );
 }
-
-
-
-
-
-
-
-
-
-
-

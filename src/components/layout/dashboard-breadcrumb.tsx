@@ -9,13 +9,18 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { BreadcrumbItem as BreadcrumbItemType } from "@/config/breadcrumb";
 
 interface DashboardBreadcrumbProps {
   items: BreadcrumbItemType[];
+  isLastItemLoading?: boolean;
 }
 
-export function DashboardBreadcrumb({ items }: DashboardBreadcrumbProps) {
+export function DashboardBreadcrumb({
+  items,
+  isLastItemLoading = false,
+}: DashboardBreadcrumbProps) {
   return (
     <Breadcrumb>
       <BreadcrumbList>
@@ -29,9 +34,13 @@ export function DashboardBreadcrumb({ items }: DashboardBreadcrumbProps) {
                 {isLast ? (
                   <BreadcrumbPage className="flex items-center gap-2">
                     {item.icon && <Icon name={item.icon} className="size-4" />}
-                    <span className="font-semibold text-gray-800">
-                      {item.label}
-                    </span>
+                    {isLastItemLoading ? (
+                      <Skeleton className="h-4 w-44 rounded-md" />
+                    ) : (
+                      <span className="max-w-[220px] truncate font-semibold text-gray-800">
+                        {item.label}
+                      </span>
+                    )}
                   </BreadcrumbPage>
                 ) : item.href ? (
                   <BreadcrumbLink

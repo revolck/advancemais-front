@@ -62,7 +62,7 @@ const FileUploadItemComponent: React.FC<FileUploadItemProps> = ({
   const initialTypeLabel = React.useMemo(() => {
     const label = getReadableFileType(
       file.type || "",
-      file.name || ""
+      file.name || "",
     ).toUpperCase();
     if (label && label !== "ARQUIVO") return label;
     // tenta extrair do uploadedUrl
@@ -95,7 +95,7 @@ const FileUploadItemComponent: React.FC<FileUploadItemProps> = ({
         ) {
           const lbl = getReadableFileType(
             contentType,
-            file.name || ""
+            file.name || "",
           ).toUpperCase();
           if (lbl) setTypeLabel(lbl);
         }
@@ -160,7 +160,7 @@ const FileUploadItemComponent: React.FC<FileUploadItemProps> = ({
     switch (file.status) {
       case "uploading":
         return `${DEFAULT_UI_TEXTS.uploading} ${Math.round(
-          file.progress || 0
+          file.progress || 0,
         )}%`;
       case "completed":
         return DEFAULT_UI_TEXTS.completed;
@@ -186,7 +186,7 @@ const FileUploadItemComponent: React.FC<FileUploadItemProps> = ({
         fileItemVariants({
           status: file.status,
         }),
-        className
+        className,
       )}
     >
       {/* Preview/Icon - badge com a extensão */}
@@ -282,7 +282,7 @@ const FileUploadItemComponent: React.FC<FileUploadItemProps> = ({
             onClick={onRemove}
             className={cn(
               fileActionVariants({ variant: "ghost" }),
-              "bg-red-50 hover:bg-red-500 text-red-600 hover:text-white rounded-full w-8 h-8 p-0 flex items-center justify-center"
+              "bg-red-50 hover:bg-red-500 text-red-600 hover:text-white rounded-full w-8 h-8 p-0 flex items-center justify-center",
             )}
             title={DEFAULT_UI_TEXTS.remove}
           >
@@ -305,6 +305,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   disabled = false,
   dropzoneText,
   browseText = DEFAULT_UI_TEXTS.dropzoneBrowse,
+  showValidationDetails = true,
   showPreview = true,
   showProgress = true,
   allowCancel = true,
@@ -348,7 +349,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       ...DEFAULT_FILE_VALIDATION,
       ...validation,
     }),
-    [validation]
+    [validation],
   );
 
   const maxFilesLimit = maxFiles ?? validationConfig.maxFiles;
@@ -372,8 +373,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         errors.push(
           DEFAULT_ERROR_MESSAGES.fileTooLarge.replace(
             "{maxSize}",
-            formatFileSize(validationConfig.maxSize)
-          )
+            formatFileSize(validationConfig.maxSize),
+          ),
         );
       }
 
@@ -381,8 +382,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         errors.push(
           DEFAULT_ERROR_MESSAGES.fileTooSmall.replace(
             "{minSize}",
-            formatFileSize(validationConfig.minSize)
-          )
+            formatFileSize(validationConfig.minSize),
+          ),
         );
       }
 
@@ -406,8 +407,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         errors.push(
           DEFAULT_ERROR_MESSAGES.fileTypeNotAllowed.replace(
             "{allowedTypes}",
-            formatAcceptedTypes(validationConfig.accept)
-          )
+            formatAcceptedTypes(validationConfig.accept),
+          ),
         );
       }
 
@@ -416,7 +417,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         errors,
       };
     },
-    [validationConfig]
+    [validationConfig],
   );
 
   // Handle file updates
@@ -434,7 +435,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       }
       onFilesChange?.(newFiles);
     },
-    [isControlled, onFilesChange]
+    [isControlled, onFilesChange],
   );
 
   // Generate file preview URL
@@ -473,8 +474,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                       ? undefined
                       : DEFAULT_ERROR_MESSAGES.uploadFailed,
                   }
-                : file
-            )
+                : file,
+            ),
           );
 
           // Trigger callbacks
@@ -489,8 +490,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         } else {
           updateFiles(
             filesRef.current.map((file) =>
-              file.id === fileId ? { ...file, progress } : file
-            )
+              file.id === fileId ? { ...file, progress } : file,
+            ),
           );
 
           onUploadProgress?.(fileId, progress);
@@ -499,7 +500,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
 
       return interval;
     },
-    [updateFiles, onUploadComplete, onUploadError, onUploadProgress]
+    [updateFiles, onUploadComplete, onUploadError, onUploadProgress],
   );
 
   const uploadFile = useCallback(
@@ -513,8 +514,10 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           if (error) {
             updateFiles(
               filesRef.current.map((file) =>
-                file.id === fileId ? { ...file, status: "failed", error } : file
-              )
+                file.id === fileId
+                  ? { ...file, status: "failed", error }
+                  : file,
+              ),
             );
             onUploadError?.(fileId, error);
             return;
@@ -529,8 +532,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                     progress: 100,
                     uploadedUrl: url,
                   }
-                : file
-            )
+                : file,
+            ),
           );
           const updated = filesRef.current.find((f) => f.id === fileId);
           if (updated) {
@@ -556,8 +559,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         prog = Math.min(prog + 10, 95);
         updateFiles(
           filesRef.current.map((f) =>
-            f.id === fileId ? { ...f, progress: prog } : f
-          )
+            f.id === fileId ? { ...f, progress: prog } : f,
+          ),
         );
         onUploadProgress?.(fileId, prog);
       }, 150);
@@ -588,8 +591,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                     progress: 100,
                     uploadedUrl: url,
                   }
-                : file
-            )
+                : file,
+            ),
           );
           const updated = filesRef.current.find((f) => f.id === fileId);
           if (updated) onUploadComplete?.(updated);
@@ -599,8 +602,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           const error = DEFAULT_ERROR_MESSAGES.uploadFailed;
           updateFiles(
             filesRef.current.map((file) =>
-              file.id === fileId ? { ...file, status: "failed", error } : file
-            )
+              file.id === fileId ? { ...file, status: "failed", error } : file,
+            ),
           );
           onUploadError?.(fileId, error);
         });
@@ -614,7 +617,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       onUploadProgress,
       onUploadComplete,
       onUploadError,
-    ]
+    ],
   );
 
   // Handle file processing
@@ -626,7 +629,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           title: "Muitos arquivos!",
           description: DEFAULT_ERROR_MESSAGES.tooManyFiles.replace(
             "{maxFiles}",
-            maxFilesLimit.toString()
+            maxFilesLimit.toString(),
           ),
           duration: 5000,
         });
@@ -689,7 +692,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       onFilesAdded,
       uploadFile,
       autoUpload,
-    ]
+    ],
   );
 
   // Drag & Drop handlers
@@ -702,7 +705,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         setIsDragOver(true);
       }
     },
-    [disabled]
+    [disabled],
   );
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -731,7 +734,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       const droppedFiles = Array.from(e.dataTransfer.files);
       processFiles(droppedFiles);
     },
-    [disabled, processFiles]
+    [disabled, processFiles],
   );
 
   // File input handler
@@ -746,7 +749,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         fileInputRef.current.value = "";
       }
     },
-    [processFiles]
+    [processFiles],
   );
 
   // File action handlers
@@ -758,7 +761,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         `${routes.upload.base()}?file=${encodeURIComponent(relative)}`,
         {
           method: "DELETE",
-        }
+        },
       );
     } catch {}
   }, []);
@@ -770,12 +773,12 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         await removeFromServer(target);
       }
       const updatedFiles = filesRef.current.filter(
-        (file) => file.id !== fileId
+        (file) => file.id !== fileId,
       );
       updateFiles(updatedFiles);
       onFileRemove?.(fileId);
     },
-    [removeFromServer, updateFiles, onFileRemove, deleteOnRemove]
+    [removeFromServer, updateFiles, onFileRemove, deleteOnRemove],
   );
 
   const handleFileRetry = useCallback(
@@ -784,8 +787,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         filesRef.current.map((file) =>
           file.id === fileId
             ? { ...file, status: "uploading", progress: 0, error: undefined }
-            : file
-        )
+            : file,
+        ),
       );
 
       uploadFile(fileId);
@@ -795,15 +798,15 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         duration: 2000,
       });
     },
-    [updateFiles, uploadFile]
+    [updateFiles, uploadFile],
   );
 
   const handleFileCancel = useCallback(
     (fileId: string) => {
       updateFiles(
         filesRef.current.map((file) =>
-          file.id === fileId ? { ...file, status: "cancelled" } : file
-        )
+          file.id === fileId ? { ...file, status: "cancelled" } : file,
+        ),
       );
 
       toastCustom.info({
@@ -811,13 +814,13 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         duration: 2000,
       });
     },
-    [updateFiles]
+    [updateFiles],
   );
 
   // Generate accepted types string for display
   const acceptDisplay = useMemo(
     () => formatAcceptedTypes(validationConfig.accept),
-    [validationConfig.accept]
+    [validationConfig.accept],
   );
 
   // File display logic
@@ -844,7 +847,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       }}
       className={cn(
         fileUploadVariants({ variant, size }),
-        classNames.container
+        classNames.container,
       )}
     >
       {/* Dropzone */}
@@ -863,7 +866,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
               state: disabled ? "disabled" : isDragOver ? "dragOver" : "idle",
               size,
             }),
-            classNames.dropzone
+            classNames.dropzone,
           )}
           onDragEnter={handleDragEnter}
           onDragOver={handleDragOver}
@@ -886,7 +889,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                 name={isDragOver ? "FileUp" : "Upload"}
                 className={cn(
                   "w-5 h-5 transition-colors",
-                  isDragOver ? "text-white" : "text-white"
+                  isDragOver ? "text-white" : "text-white",
                 )}
               />
             </div>
@@ -901,14 +904,16 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                 </p>
               )}
 
-              <p className="text-xs text-muted-foreground">
-                {DEFAULT_UI_TEXTS.dropzoneDescription
-                  .replace("{acceptedTypes}", acceptDisplay)
-                  .replace(
-                    "{maxSize}",
-                    formatFileSize(validationConfig.maxSize)
-                  )}
-              </p>
+              {showValidationDetails && (
+                <p className="text-xs text-muted-foreground">
+                  {DEFAULT_UI_TEXTS.dropzoneDescription
+                    .replace("{acceptedTypes}", acceptDisplay)
+                    .replace(
+                      "{maxSize}",
+                      formatFileSize(validationConfig.maxSize),
+                    )}
+                </p>
+              )}
             </div>
           </div>
 
@@ -929,7 +934,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         <div
           className={cn(
             isMaxFilesReached ? "space-y-2" : "mt-4 space-y-2",
-            classNames.fileList
+            classNames.fileList,
           )}
         >
           <AnimatePresence>
@@ -961,7 +966,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                   ? DEFAULT_UI_TEXTS.showLess
                   : DEFAULT_UI_TEXTS.showMore.replace(
                       "{count}",
-                      (files.length - INITIAL_DISPLAY_COUNT).toString()
+                      (files.length - INITIAL_DISPLAY_COUNT).toString(),
                     )}
               </button>
             </div>
@@ -976,7 +981,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                     "{completed}",
                     files
                       .filter((f) => f.status === "completed")
-                      .length.toString()
+                      .length.toString(),
                   )
                   .replace("{total}", files.length.toString())}
                 {files.filter((f) => f.status === "failed").length > 0 &&

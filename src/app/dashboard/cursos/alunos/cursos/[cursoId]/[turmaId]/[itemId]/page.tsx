@@ -13,8 +13,16 @@ import {
   ChevronRight,
   ExternalLink,
 } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
-import { getAulaById } from "@/api/aulas";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { updateAulaProgresso } from "@/api/aulas";
+import {
+  buscarAulaCursoCandidato,
+  buscarEstruturaCursoCandidato,
+} from "@/api/candidatos";
+import type {
+  CandidatoTurmaEstruturaItem,
+  CandidatoTurmaEstruturaResponse,
+} from "@/api/candidatos/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/custom";
 import {
@@ -31,13 +39,6 @@ import { ptBR } from "date-fns/locale";
 import { Lock, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
 import AtividadePage from "./AtividadePage";
-function getCookieValue(name: string): string | null {
-  if (typeof document === "undefined") return null;
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop()?.split(";").shift() || null;
-  return null;
-}
 
 /**
  * Normaliza URL do YouTube para formato de embed
@@ -80,6 +81,22 @@ function normalizeYouTubeUrl(url: string): string {
   }
 }
 
+function normalizeTurmaTipo(
+  value?: string | null,
+): "ONLINE" | "AO_VIVO" | "PRESENCIAL" | "SEMIPRESENCIAL" | null {
+  if (!value) return null;
+  if (value === "LIVE") return "AO_VIVO";
+  if (
+    value === "ONLINE" ||
+    value === "AO_VIVO" ||
+    value === "PRESENCIAL" ||
+    value === "SEMIPRESENCIAL"
+  ) {
+    return value;
+  }
+  return null;
+}
+
 interface ItemPageProps {
   params: Promise<{
     cursoId: string;
@@ -88,8 +105,128 @@ interface ItemPageProps {
   }>;
 }
 
+type CandidatoTurmaEstruturaData = CandidatoTurmaEstruturaResponse["data"];
+type CandidatoTurmaEstrutura = CandidatoTurmaEstruturaData["estrutura"];
+
+function extractEstruturaCursoData(
+  payload?: CandidatoTurmaEstruturaData | CandidatoTurmaEstrutura | null,
+): CandidatoTurmaEstrutura | null {
+  if (!payload) return null;
+
+  if ("estrutura" in payload && payload.estrutura) {
+    return payload.estrutura;
+  }
+
+  if ("modules" in payload && Array.isArray(payload.modules)) {
+    return payload;
+  }
+
+  return null;
+}
+
+function AulaPageSkeleton() {
+  return (
+    <div className="w-full max-w-none rounded-2xl border border-gray-200 bg-white">
+      <div className="w-full p-5 md:p-6 xl:p-7">
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_340px] 2xl:grid-cols-[minmax(0,1fr)_360px]">
+          <div className="min-w-0 space-y-4">
+            <Skeleton className="aspect-video w-full rounded-2xl" />
+          </div>
+
+          <aside className="min-w-0">
+            <div className="space-y-4">
+              <div className="rounded-2xl border border-gray-200 bg-white p-5">
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-28 rounded-md" />
+                    <Skeleton className="h-3 w-36 rounded-md" />
+                  </div>
+                  <div className="flex gap-2 border-t border-gray-200 pt-4">
+                    <Skeleton className="h-8 w-20 rounded-full" />
+                    <Skeleton className="h-8 w-24 rounded-full" />
+                  </div>
+                  <div className="space-y-2 border-t border-gray-200 pt-4">
+                    <Skeleton className="h-3 w-full rounded-md" />
+                    <Skeleton className="h-3 w-4/5 rounded-md" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-gray-200 bg-white p-5">
+                <div className="mb-4 flex items-start justify-between gap-3">
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-32 rounded-md" />
+                    <Skeleton className="h-3 w-40 rounded-md" />
+                  </div>
+                  <Skeleton className="h-6 w-8 rounded-full" />
+                </div>
+                <div className="space-y-2.5">
+                  {Array.from({ length: 3 }).map((_, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 p-3.5"
+                    >
+                      <Skeleton className="h-9 w-9 rounded-lg" />
+                      <div className="min-w-0 flex-1 space-y-2">
+                        <Skeleton className="h-3.5 w-4/5 rounded-md" />
+                        <Skeleton className="h-3 w-2/5 rounded-md" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function getEstruturaItems(
+  estrutura?: {
+    modules?: Array<{ items?: CandidatoTurmaEstruturaItem[] }>;
+    standaloneItems?: CandidatoTurmaEstruturaItem[];
+  } | null,
+): CandidatoTurmaEstruturaItem[] {
+  const modules = Array.isArray(estrutura?.modules) ? estrutura.modules : [];
+  const standaloneItems = Array.isArray(estrutura?.standaloneItems)
+    ? estrutura.standaloneItems
+    : [];
+
+  return [
+    ...modules.flatMap((module) =>
+      Array.isArray(module.items) ? module.items : [],
+    ),
+    ...standaloneItems,
+  ];
+}
+
+function findEstruturaItem(
+  estrutura:
+    | {
+        modules?: Array<{ items?: CandidatoTurmaEstruturaItem[] }>;
+        standaloneItems?: CandidatoTurmaEstruturaItem[];
+      }
+    | null
+    | undefined,
+  itemId: string | null | undefined,
+): CandidatoTurmaEstruturaItem | null {
+  if (!itemId) return null;
+
+  return (
+    getEstruturaItems(estrutura).find(
+      (item) =>
+        item.id === itemId ||
+        item.aulaId === itemId ||
+        item.platformActivityId === itemId,
+    ) ?? null
+  );
+}
+
 export default function ItemPage({ params }: ItemPageProps) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [resolvedParams, setResolvedParams] = useState<{
     cursoId: string;
     turmaId: string;
@@ -107,6 +244,7 @@ export default function ItemPage({ params }: ItemPageProps) {
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number | null>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const lastSavedTimeRef = useRef(0);
 
   useEffect(() => {
     params.then(setResolvedParams);
@@ -120,26 +258,74 @@ export default function ItemPage({ params }: ItemPageProps) {
     ? getMockProvaById(resolvedParams.itemId)
     : null;
 
+  const { data: estruturaCursoPayload, isLoading: isEstruturaCursoLoading } =
+    useQuery({
+      queryKey: [
+        "turma-estrutura",
+        resolvedParams?.cursoId,
+        resolvedParams?.turmaId,
+      ],
+      queryFn: async () => {
+        if (!resolvedParams?.cursoId || !resolvedParams?.turmaId) {
+          throw new Error("Curso ou turma não encontrado");
+        }
+
+        const response = await buscarEstruturaCursoCandidato(
+          resolvedParams.cursoId,
+          resolvedParams.turmaId,
+        );
+        return response.success ? response.data : null;
+      },
+      enabled: Boolean(resolvedParams?.cursoId && resolvedParams?.turmaId),
+      staleTime: 30 * 1000,
+      retry: false,
+    });
+
+  const estruturaCursoData = extractEstruturaCursoData(estruturaCursoPayload);
+
+  const estruturaItem = findEstruturaItem(
+    estruturaCursoData,
+    resolvedParams?.itemId,
+  );
+
+  useEffect(() => {
+    const tempoPersistido =
+      estruturaItem?.progresso?.tempoAssistidoSegundos ?? 0;
+    setTempoAssistido(tempoPersistido);
+    lastSavedTimeRef.current = tempoPersistido;
+  }, [estruturaItem?.id, estruturaItem?.progresso?.tempoAssistidoSegundos]);
+
+  const isAtividadeOuProva =
+    Boolean(mockAtividade || mockProva) ||
+    estruturaItem?.type === "ATIVIDADE" ||
+    estruturaItem?.type === "PROVA";
+
   const {
     data: aulaResponse,
     isLoading,
     isError,
   } = useQuery({
-    queryKey: ["aula", resolvedParams?.itemId],
+    queryKey: [
+      "candidato-aula",
+      resolvedParams?.cursoId,
+      resolvedParams?.turmaId,
+      resolvedParams?.itemId,
+    ],
     queryFn: async () => {
-      if (!resolvedParams?.itemId) throw new Error("Item ID não encontrado");
+      if (
+        !resolvedParams?.cursoId ||
+        !resolvedParams?.turmaId ||
+        !resolvedParams?.itemId
+      ) {
+        throw new Error("Item ID não encontrado");
+      }
 
-      const token = getCookieValue("token");
-
-      // Tentar buscar da API primeiro
       try {
-        if (token) {
-          return await getAulaById(resolvedParams.itemId, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          });
-        }
+        return await buscarAulaCursoCandidato(
+          resolvedParams.cursoId,
+          resolvedParams.turmaId,
+          resolvedParams.itemId,
+        );
       } catch (error) {
         // Se falhar, tentar usar dados mockados
         console.log("API falhou, usando dados mockados:", error);
@@ -153,7 +339,12 @@ export default function ItemPage({ params }: ItemPageProps) {
 
       throw new Error("Aula não encontrada");
     },
-    enabled: !!resolvedParams?.itemId && !mockAtividade && !mockProva,
+    enabled:
+      !!resolvedParams?.itemId &&
+      !mockAtividade &&
+      !mockProva &&
+      !isEstruturaCursoLoading &&
+      (!estruturaItem || estruturaItem.type === "AULA"),
     staleTime: 5 * 60 * 1000,
     retry: false, // Não tentar novamente se falhar
   });
@@ -162,17 +353,23 @@ export default function ItemPage({ params }: ItemPageProps) {
 
   // Buscar tipo da turma para determinar regras de acesso
   useEffect(() => {
+    const tipoTurmaApi = normalizeTurmaTipo(aula?.turma?.metodo);
+    if (tipoTurmaApi) {
+      setTurmaTipo(tipoTurmaApi);
+      return;
+    }
+
     if (resolvedParams?.cursoId && resolvedParams?.turmaId) {
       const cursos = getMockAlunoCursos(resolvedParams.cursoId);
       const curso = cursos.find(
         (c) =>
           c.cursoId === resolvedParams.cursoId &&
-          c.turmaId === resolvedParams.turmaId
+          c.turmaId === resolvedParams.turmaId,
       );
       const tipoTurma = curso?.turmaTipo || null;
       setTurmaTipo(tipoTurma);
     }
-  }, [resolvedParams?.cursoId, resolvedParams?.turmaId]);
+  }, [aula?.turma?.metodo, resolvedParams?.cursoId, resolvedParams?.turmaId]);
 
   // Validação de período para aulas
   useEffect(() => {
@@ -188,20 +385,20 @@ export default function ItemPage({ params }: ItemPageProps) {
       // Buscar progresso da aula para verificar se já foi concluída
       const progressoMap = getMockTurmaProgresso(
         resolvedParams.cursoId,
-        resolvedParams.turmaId
+        resolvedParams.turmaId,
       );
 
       // Buscar itemId na estrutura
       const estrutura = getMockTurmaEstrutura(
         resolvedParams.cursoId,
-        resolvedParams.turmaId
+        resolvedParams.turmaId,
       );
       let itemId: string | null = null;
 
       if (estrutura) {
         for (const modulo of estrutura.modules || []) {
           const item = modulo.items.find(
-            (i: any) => i.aulaId === resolvedParams.itemId
+            (i: any) => i.aulaId === resolvedParams.itemId,
           );
           if (item) {
             itemId = item.id;
@@ -210,7 +407,7 @@ export default function ItemPage({ params }: ItemPageProps) {
         }
         if (!itemId && estrutura.standaloneItems) {
           const item = estrutura.standaloneItems.find(
-            (i: any) => i.aulaId === resolvedParams.itemId
+            (i: any) => i.aulaId === resolvedParams.itemId,
           );
           if (item) {
             itemId = item.id;
@@ -227,12 +424,12 @@ export default function ItemPage({ params }: ItemPageProps) {
         const dataHoraInicio = parse(
           `${aula.dataInicio} ${aula.horaInicio}`,
           "yyyy-MM-dd HH:mm",
-          new Date()
+          new Date(),
         );
         const dataHoraFim = parse(
           `${aula.dataFim} ${aula.horaFim}`,
           "yyyy-MM-dd HH:mm",
-          new Date()
+          new Date(),
         );
 
         const estaDentroDoPeriodo = isWithinInterval(agora, {
@@ -251,8 +448,8 @@ export default function ItemPage({ params }: ItemPageProps) {
             `Esta aula estará disponível a partir de ${format(
               dataHoraInicio,
               "dd/MM/yyyy 'às' HH:mm",
-              { locale: ptBR }
-            )}.`
+              { locale: ptBR },
+            )}.`,
           );
           return;
         }
@@ -267,8 +464,8 @@ export default function ItemPage({ params }: ItemPageProps) {
               `O período desta aula encerrou em ${format(
                 dataHoraFim,
                 "dd/MM/yyyy 'às' HH:mm",
-                { locale: ptBR }
-              )}.`
+                { locale: ptBR },
+              )}.`,
             );
             return;
           }
@@ -281,12 +478,12 @@ export default function ItemPage({ params }: ItemPageProps) {
               `O período desta aula encerrou em ${format(
                 dataHoraFim,
                 "dd/MM/yyyy 'às' HH:mm",
-                { locale: ptBR }
+                { locale: ptBR },
               )}. ${
                 jaConcluida
                   ? "Você pode revisar o conteúdo."
                   : "Você pode visualizar o conteúdo, mas não poderá ter nota."
-              }`
+              }`,
             );
             // Não return - permite continuar para ver o conteúdo
           } else {
@@ -297,8 +494,8 @@ export default function ItemPage({ params }: ItemPageProps) {
               `O período desta aula encerrou em ${format(
                 dataHoraFim,
                 "dd/MM/yyyy 'às' HH:mm",
-                { locale: ptBR }
-              )}.`
+                { locale: ptBR },
+              )}.`,
             );
             return;
           }
@@ -349,7 +546,7 @@ export default function ItemPage({ params }: ItemPageProps) {
           setIsVisible(entry.isIntersecting);
         });
       },
-      { threshold: 0.5 } // Considera visível se 50% do iframe está visível
+      { threshold: 0.5 }, // Considera visível se 50% do iframe está visível
     );
 
     observer.observe(iframeRef.current);
@@ -369,7 +566,7 @@ export default function ItemPage({ params }: ItemPageProps) {
       intervalRef.current = setInterval(() => {
         if (startTimeRef.current && aula?.duracaoMinutos) {
           const elapsed = Math.floor(
-            (Date.now() - startTimeRef.current) / 1000
+            (Date.now() - startTimeRef.current) / 1000,
           );
           setTempoAssistido((prev) => {
             const novo = prev + elapsed;
@@ -395,16 +592,76 @@ export default function ItemPage({ params }: ItemPageProps) {
     };
   }, [isPlaying, isVisible, aula?.duracaoMinutos, isYouTube]);
 
-  if (!resolvedParams) {
-    return (
-      <div className="h-screen w-full bg-white flex items-center justify-center">
-        <Skeleton className="h-full w-full" />
-      </div>
+  useEffect(() => {
+    const inscricaoId = estruturaCursoPayload?.inscricaoId;
+    const aulaId = estruturaItem?.aulaId ?? resolvedParams?.itemId;
+    const duracaoSegundos = (aula?.duracaoMinutos ?? 0) * 60;
+
+    if (
+      !inscricaoId ||
+      !aulaId ||
+      !isYouTube ||
+      duracaoSegundos <= 0 ||
+      tempoAssistido <= lastSavedTimeRef.current
+    ) {
+      return;
+    }
+
+    const percentualAssistido = Math.min(
+      100,
+      (tempoAssistido / duracaoSegundos) * 100,
     );
+    const atingiuConclusao = percentualAssistido >= 90;
+    if (!atingiuConclusao && tempoAssistido - lastSavedTimeRef.current < 10) {
+      return;
+    }
+
+    const tempoAnterior = lastSavedTimeRef.current;
+    lastSavedTimeRef.current = tempoAssistido;
+
+    void updateAulaProgresso(aulaId, {
+      inscricaoId,
+      percentualAssistido,
+      tempoAssistidoSegundos: tempoAssistido,
+      ultimaPosicao: tempoAssistido,
+    })
+      .then(() => {
+        void queryClient.invalidateQueries({
+          queryKey: [
+            "turma-estrutura",
+            resolvedParams?.cursoId,
+            resolvedParams?.turmaId,
+          ],
+        });
+        void queryClient.invalidateQueries({
+          queryKey: ["aluno-candidato", "cursos"],
+        });
+      })
+      .catch(() => {
+        lastSavedTimeRef.current = tempoAnterior;
+      });
+  }, [
+    aula?.duracaoMinutos,
+    estruturaCursoPayload?.inscricaoId,
+    estruturaItem?.aulaId,
+    isYouTube,
+    queryClient,
+    resolvedParams?.cursoId,
+    resolvedParams?.itemId,
+    resolvedParams?.turmaId,
+    tempoAssistido,
+  ]);
+
+  if (!resolvedParams) {
+    return <AulaPageSkeleton />;
+  }
+
+  if (!mockAtividade && !mockProva && isEstruturaCursoLoading) {
+    return <AulaPageSkeleton />;
   }
 
   // Se for uma atividade ou prova, renderizar componente de atividade
-  if (mockAtividade || mockProva) {
+  if (isAtividadeOuProva) {
     return (
       <AtividadePage
         params={Promise.resolve({
@@ -412,26 +669,20 @@ export default function ItemPage({ params }: ItemPageProps) {
           turmaId: resolvedParams.turmaId,
           atividadeId: resolvedParams.itemId,
         })}
+        initialItem={estruturaItem}
+        estrutura={estruturaCursoData}
       />
     );
   }
 
   if (isLoading) {
-    return (
-      <div className="h-screen w-full bg-black flex items-center justify-center">
-        <Skeleton className="h-full w-full" />
-      </div>
-    );
+    return <AulaPageSkeleton />;
   }
 
   if (!aula) {
     // Se ainda está carregando, mostrar skeleton
     if (isLoading) {
-      return (
-        <div className="h-screen w-full bg-black flex items-center justify-center">
-          <Skeleton className="h-full w-full" />
-        </div>
-      );
+      return <AulaPageSkeleton />;
     }
 
     return (
@@ -482,7 +733,7 @@ export default function ItemPage({ params }: ItemPageProps) {
                 <ButtonCustom
                   onClick={() =>
                     router.push(
-                      `/dashboard/cursos/alunos/cursos/${resolvedParams?.cursoId}/${resolvedParams?.turmaId}`
+                      `/dashboard/cursos/alunos/cursos/${resolvedParams?.cursoId}/${resolvedParams?.turmaId}`,
                     )
                   }
                   variant="default"
@@ -549,13 +800,19 @@ export default function ItemPage({ params }: ItemPageProps) {
                           <Clock className="h-5 w-5 text-green-600" />
                         </div>
                         <div className="text-left">
-                          <p className="text-xs text-gray-500 mb-0">Data e Horário</p>
+                          <p className="text-xs text-gray-500 mb-0">
+                            Data e Horário
+                          </p>
                           <p className="text-base font-semibold text-gray-900 mb-0">
                             {aula.dataInicio &&
                               format(
-                                parse(aula.dataInicio, "yyyy-MM-dd", new Date()),
+                                parse(
+                                  aula.dataInicio,
+                                  "yyyy-MM-dd",
+                                  new Date(),
+                                ),
                                 "dd/MM/yyyy",
-                                { locale: ptBR }
+                                { locale: ptBR },
                               )}{" "}
                             {aula.horaInicio && `às ${aula.horaInicio}`}
                             {aula.horaFim && ` até ${aula.horaFim}`}
@@ -583,7 +840,7 @@ export default function ItemPage({ params }: ItemPageProps) {
                     <ButtonCustom
                       onClick={() =>
                         router.push(
-                          `/dashboard/cursos/alunos/cursos/${resolvedParams?.cursoId}/${resolvedParams?.turmaId}`
+                          `/dashboard/cursos/alunos/cursos/${resolvedParams?.cursoId}/${resolvedParams?.turmaId}`,
                         )
                       }
                       variant="default"
@@ -616,7 +873,7 @@ export default function ItemPage({ params }: ItemPageProps) {
             <ButtonCustom
               onClick={() =>
                 router.push(
-                  `/dashboard/cursos/alunos/cursos/${resolvedParams?.cursoId}/${resolvedParams?.turmaId}`
+                  `/dashboard/cursos/alunos/cursos/${resolvedParams?.cursoId}/${resolvedParams?.turmaId}`,
                 )
               }
               variant="default"
@@ -644,30 +901,39 @@ export default function ItemPage({ params }: ItemPageProps) {
   }
 
   // Buscar estrutura para mostrar próximas aulas na sidebar
-  const estrutura = getMockTurmaEstrutura(
-    resolvedParams?.cursoId || "",
-    resolvedParams?.turmaId || ""
-  );
+  const estrutura =
+    estruturaCursoData ||
+    getMockTurmaEstrutura(
+      resolvedParams?.cursoId || "",
+      resolvedParams?.turmaId || "",
+    );
+
+  const estruturaModules = Array.isArray(estrutura?.modules)
+    ? estrutura.modules
+    : [];
+  const estruturaStandaloneItems = Array.isArray(estrutura?.standaloneItems)
+    ? estrutura.standaloneItems
+    : [];
 
   // Encontrar todas as aulas da estrutura
-  const todasAulas = estrutura
-    ? [
-        ...estrutura.modules.flatMap((mod) =>
-          mod.items.filter((item) => item.type === "AULA" && item.aulaId)
-        ),
-        ...(estrutura.standaloneItems?.filter(
-          (item) => item.type === "AULA" && item.aulaId
-        ) || []),
-      ]
-    : [];
+  const todasAulas = [
+    ...estruturaModules.flatMap((mod) =>
+      Array.isArray(mod.items)
+        ? mod.items.filter((item) => item.type === "AULA" && item.aulaId)
+        : [],
+    ),
+    ...estruturaStandaloneItems.filter(
+      (item) => item.type === "AULA" && item.aulaId,
+    ),
+  ];
 
   // Encontrar a aula atual e próximas
   const aulaAtualIndex = todasAulas.findIndex(
-    (a) => a.aulaId === resolvedParams?.itemId
+    (a) => a.aulaId === resolvedParams?.itemId,
   );
   const proximasAulas = todasAulas.slice(
     aulaAtualIndex + 1,
-    aulaAtualIndex + 4
+    aulaAtualIndex + 4,
   );
   const proximaAula = todasAulas[aulaAtualIndex + 1];
 
@@ -680,17 +946,23 @@ export default function ItemPage({ params }: ItemPageProps) {
       ? (tempoAssistido / duracaoTotalSegundos) * 100
       : 0;
   const podeAvancar =
-    aula?.modalidade === "ONLINE" && percentualAssistido >= 80;
+    aula?.modalidade === "ONLINE" &&
+    (percentualAssistido >= 80 ||
+      estruturaItem?.progresso?.status === "CONCLUIDO");
+  const podeIrParaProximaAula =
+    aula?.modalidade === "ONLINE" &&
+    Boolean(proximaAula?.aulaId) &&
+    (podeAvancar || aulaEncerrada);
 
   return (
-    <div className="container w-full bg-white rounded-xl">
-      <div className="w-full px-4 md:px-6 lg:px-8 py-6 pt-8 pb-8">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+    <div className="w-full max-w-none rounded-2xl border border-gray-200 bg-white">
+      <div className="w-full p-5 md:p-6 xl:p-7">
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_340px] 2xl:grid-cols-[minmax(0,1fr)_360px]">
           {/* Coluna principal - Vídeo (maior) */}
-          <div className="lg:col-span-3 space-y-4">
+          <div className="min-w-0 space-y-4">
             {/* Mensagem quando aula está encerrada mas acessível */}
             {aulaEncerrada && (
-              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+              <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
                 <div className="flex items-start gap-3">
                   <Calendar className="h-5 w-5 text-amber-600 shrink-0 mt-2" />
                   <div className="flex-1">
@@ -708,9 +980,9 @@ export default function ItemPage({ params }: ItemPageProps) {
             {/* Player de vídeo ou Card Google Meet */}
             {hasMeetUrl && !hasGravacao ? (
               // Google Meet não pode ser renderizado via iframe - abre em nova aba
-              <div className="aspect-video bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl overflow-hidden shadow-lg relative flex flex-col items-center justify-center p-8 border border-blue-200">
+              <div className="relative flex aspect-video flex-col items-center justify-center overflow-hidden rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50 p-8">
                 <div className="text-center space-y-6 max-w-md">
-                  <div className="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center mx-auto shadow-lg">
+                  <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-blue-600">
                     <Video className="h-10 w-10 text-white" />
                   </div>
                   <div>
@@ -728,7 +1000,7 @@ export default function ItemPage({ params }: ItemPageProps) {
                         window.open(
                           aula.meetUrl,
                           "_blank",
-                          "noopener,noreferrer"
+                          "noopener,noreferrer",
                         );
                       }
                     }}
@@ -743,7 +1015,7 @@ export default function ItemPage({ params }: ItemPageProps) {
               </div>
             ) : (
               // Player normal para gravações ou YouTube (podem usar iframe)
-              <div className="aspect-video bg-black rounded-xl overflow-hidden shadow-lg relative">
+              <div className="relative aspect-video overflow-hidden rounded-2xl border border-slate-900 bg-black">
                 <iframe
                   ref={iframeRef}
                   src={contentUrl}
@@ -768,31 +1040,40 @@ export default function ItemPage({ params }: ItemPageProps) {
           </div>
 
           {/* Sidebar - Informações e Próximas aulas */}
-          <div className="lg:col-span-1">
-            <div className="space-y-4 sticky top-6">
+          <aside className="min-w-0">
+            <div className="space-y-4">
               {/* Informações da aula */}
-              <div className="bg-white rounded-xl border border-gray-200 p-5">
+              <div className="rounded-2xl border border-gray-200 bg-white p-5">
                 <div className="space-y-4">
+                  <div>
+                    <p className="mb-1! text-sm! font-semibold text-gray-900">
+                      Informações
+                    </p>
+                    <p className="mb-0! text-xs! text-gray-500">
+                      Detalhes desta aula
+                    </p>
+                  </div>
+
                   {/* Duração e Modalidade - mesma linha */}
-                  <div className="flex items-center gap-3 flex-wrap">
+                  <div className="flex flex-wrap items-center gap-2 border-t border-gray-200 pt-4">
                     {aula.duracaoMinutos && (
-                      <div className="flex items-center gap-2 !text-sm text-gray-600">
+                      <div className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-sm! font-medium text-gray-700">
                         <Clock className="h-4 w-4" />
                         <span>{aula.duracaoMinutos} min</span>
                       </div>
                     )}
                     {aula.modalidade && (
                       <span
-                        className={`!text-xs font-semibold px-2.5 py-1 rounded-md capitalize ${
+                        className={`rounded-full border px-3 py-1.5 text-xs! font-semibold capitalize ${
                           aula.modalidade === "ONLINE"
-                            ? "bg-blue-100 text-blue-700"
+                            ? "border-blue-200 bg-blue-50 text-blue-700"
                             : aula.modalidade === "AO_VIVO"
-                            ? "bg-purple-100 text-purple-700"
-                            : aula.modalidade === "PRESENCIAL"
-                            ? "bg-green-100 text-green-700"
-                            : aula.modalidade === "SEMIPRESENCIAL"
-                            ? "bg-amber-100 text-amber-700"
-                            : "bg-gray-100 text-gray-700"
+                              ? "border-purple-200 bg-purple-50 text-purple-700"
+                              : aula.modalidade === "PRESENCIAL"
+                                ? "border-green-200 bg-green-50 text-green-700"
+                                : aula.modalidade === "SEMIPRESENCIAL"
+                                  ? "border-amber-200 bg-amber-50 text-amber-700"
+                                  : "border-gray-200 bg-gray-50 text-gray-700"
                         }`}
                       >
                         {aula.modalidade.replace("_", " ")}
@@ -802,8 +1083,8 @@ export default function ItemPage({ params }: ItemPageProps) {
 
                   {/* Descrição */}
                   {aula.descricao && (
-                    <div className="pt-4 border-t border-gray-200">
-                      <p className="!text-sm text-gray-700 leading-relaxed">
+                    <div className="border-t border-gray-200 pt-4">
+                      <p className="mb-0! text-sm! leading-relaxed text-gray-700">
                         {aula.descricao}
                       </p>
                     </div>
@@ -812,21 +1093,48 @@ export default function ItemPage({ params }: ItemPageProps) {
               </div>
 
               {/* Próximas Aulas */}
-              <div className="bg-white rounded-xl border border-gray-200 p-5">
-                <h3 className="!text-base font-semibold text-gray-900 mb-4">
-                  Próximas Aulas
-                </h3>
+              <div className="rounded-2xl border border-gray-200 bg-white p-5">
+                <div className="mb-4 flex items-start justify-between gap-3">
+                  <div>
+                    <h3 className="mb-1! text-base! font-semibold text-gray-900">
+                      Próximas aulas
+                    </h3>
+                    <p className="mb-0! text-xs! text-gray-500">
+                      Continue pela sequência
+                    </p>
+                  </div>
+                  {proximasAulas.length > 0 && (
+                    <span className="rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs! font-semibold text-gray-600">
+                      {proximasAulas.length}
+                    </span>
+                  )}
+                </div>
 
-                {proximasAulas.length > 0 ? (
+                {isEstruturaCursoLoading ? (
+                  <div className="space-y-2.5">
+                    {Array.from({ length: 2 }).map((_, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 p-3.5"
+                      >
+                        <Skeleton className="h-9 w-9 rounded-lg" />
+                        <div className="min-w-0 flex-1 space-y-2">
+                          <Skeleton className="h-3.5 w-4/5 rounded-md" />
+                          <Skeleton className="h-3 w-2/5 rounded-md" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : proximasAulas.length > 0 ? (
                   <div className="space-y-2.5">
                     {proximasAulas.map((proximaAula) => (
                       <div
                         key={proximaAula.id}
-                        className="relative w-full p-3.5 rounded-lg bg-gray-50 hover:bg-gray-100 border border-transparent hover:border-gray-200 transition-all duration-200 group overflow-hidden"
+                        className="group relative w-full overflow-hidden rounded-xl border border-gray-200 bg-gray-50 p-3.5 transition-colors duration-200 hover:bg-gray-100"
                       >
                         {/* Conteúdo da aula - opaco no hover */}
-                        <div className="flex items-center gap-3 group-hover:opacity-30 transition-opacity duration-200">
-                          <div className="w-9 h-9 rounded-full bg-white flex items-center justify-center shrink-0 shadow-sm">
+                        <div className="flex items-center gap-3 transition-opacity duration-200 group-hover:opacity-25">
+                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-blue-100 bg-blue-50">
                             <PlayCircle className="h-4.5 w-4.5 text-[var(--primary-color)]" />
                           </div>
                           <div className="flex-1 min-w-0">
@@ -842,7 +1150,7 @@ export default function ItemPage({ params }: ItemPageProps) {
                             onClick={() => {
                               if (proximaAula.aulaId) {
                                 router.push(
-                                  `/dashboard/cursos/alunos/cursos/${resolvedParams?.cursoId}/${resolvedParams?.turmaId}/${proximaAula.aulaId}`
+                                  `/dashboard/cursos/alunos/cursos/${resolvedParams?.cursoId}/${resolvedParams?.turmaId}/${proximaAula.aulaId}`,
                                 );
                               }
                             }}
@@ -859,28 +1167,28 @@ export default function ItemPage({ params }: ItemPageProps) {
                     ))}
                   </div>
                 ) : (
-                  <div className="text-center py-8">
-                    <CheckCircle2 className="h-12 w-12 text-green-500 mx-auto mb-3" />
-                    <p className="!text-sm text-gray-600">
+                  <div className="rounded-xl border border-green-100 bg-green-50/50 px-4 py-6 text-center">
+                    <CheckCircle2 className="mx-auto mb-3 h-10 w-10 text-green-500" />
+                    <p className="mb-0! text-sm! font-medium text-gray-700">
                       Você completou todas as aulas!
                     </p>
                   </div>
                 )}
               </div>
 
-              {/* Botão Próxima Aula - apenas para ONLINE e quando 80% assistido */}
+              {/* Botão Próxima Aula - apenas para ONLINE e quando concluída/liberada */}
               {aula?.modalidade === "ONLINE" && proximaAula && (
-                <div className="bg-white rounded-xl border border-gray-200 p-5">
+                <div className="rounded-2xl border border-gray-200 bg-white p-5">
                   <div className="space-y-3">
                     <div>
                       <p className="!text-sm font-semibold text-gray-900 mb-0!">
-                        Próxima Aula
+                        Ir para próxima aula
                       </p>
                       <p className="!text-xs text-gray-600 mb-0!">
                         {proximaAula.title}
                       </p>
                     </div>
-                    {!podeAvancar && (
+                    {!podeIrParaProximaAula && (
                       <p className="!text-xs text-amber-600 mt-[-10px]!">
                         Continue assistindo para desbloquear (
                         {Math.round(percentualAssistido)}% / 100%)
@@ -890,26 +1198,27 @@ export default function ItemPage({ params }: ItemPageProps) {
                       onClick={() => {
                         if (proximaAula.aulaId) {
                           router.push(
-                            `/dashboard/cursos/alunos/cursos/${resolvedParams?.cursoId}/${resolvedParams?.turmaId}/${proximaAula.aulaId}`
+                            `/dashboard/cursos/alunos/cursos/${resolvedParams?.cursoId}/${resolvedParams?.turmaId}/${proximaAula.aulaId}`,
                           );
                         }
                       }}
                       variant="default"
-                      disabled={!podeAvancar}
+                      disabled={!podeIrParaProximaAula}
                       className={cn(
                         "w-full bg-[var(--primary-color)] text-white hover:bg-[var(--primary-color)]/90",
-                        !podeAvancar && "opacity-50 cursor-not-allowed"
+                        !podeIrParaProximaAula &&
+                          "opacity-50 cursor-not-allowed",
                       )}
                       withAnimation={false}
                     >
-                      Próxima Aula
+                      Ir para próxima aula
                       <ChevronRight className="h-4 w-4 ml-2" />
                     </ButtonCustom>
                   </div>
                 </div>
               )}
             </div>
-          </div>
+          </aside>
         </div>
       </div>
     </div>

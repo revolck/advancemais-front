@@ -44,6 +44,11 @@ function formatDateTime(value?: string | null) {
   });
 }
 
+function formatEdicoes(value?: number | null) {
+  const total = Math.max(0, Number(value ?? 0));
+  return `${total} ${total === 1 ? "vez" : "vezes"}`;
+}
+
 function formatCpf(value?: string | null) {
   if (!value) return "-";
   const digits = value.replace(/\D/g, "");
@@ -60,17 +65,22 @@ function parseNotaValue(value: unknown): number | null {
   return null;
 }
 
-function serializeRespostaAluno(item: NonNullable<AvaliacaoRespostaDetalhe["itens"]>[number]) {
+function serializeRespostaAluno(
+  item: NonNullable<AvaliacaoRespostaDetalhe["itens"]>[number],
+) {
   const resposta = item.respostaAluno;
   if (!resposta) return "Sem resposta";
 
   if (resposta.texto) return resposta.texto;
   if (resposta.anexoUrl) return resposta.anexoNome || resposta.anexoUrl;
-  if (resposta.alternativaId) return `Alternativa ID: ${resposta.alternativaId}`;
+  if (resposta.alternativaId)
+    return `Alternativa ID: ${resposta.alternativaId}`;
   return "Sem resposta";
 }
 
-function serializeRespostaCorreta(item: NonNullable<AvaliacaoRespostaDetalhe["itens"]>[number]) {
+function serializeRespostaCorreta(
+  item: NonNullable<AvaliacaoRespostaDetalhe["itens"]>[number],
+) {
   const correta = item.respostaCorreta;
   if (!correta) return "-";
 
@@ -110,11 +120,11 @@ export function RespostaDetailsView({
       (resposta?.tipoAtividade === "PERGUNTA_RESPOSTA" ||
         resposta?.tipoAtividade === "TEXTO" ||
         resposta?.tipoAtividade === "ENVIO_MATERIAL"),
-    [resposta?.tipoAvaliacao, resposta?.tipoAtividade]
+    [resposta?.tipoAvaliacao, resposta?.tipoAtividade],
   );
 
   const [nota, setNota] = useState<string>(
-    typeof resposta?.nota === "number" ? String(resposta.nota) : ""
+    typeof resposta?.nota === "number" ? String(resposta.nota) : "",
   );
   const [feedback, setFeedback] = useState(resposta?.feedback?.trim() ?? "");
 
@@ -173,7 +183,8 @@ export function RespostaDetailsView({
       toastCustom.success("Correção salva com sucesso");
     },
     onError: (err) => {
-      const message = err instanceof Error ? err.message : "Erro ao salvar correção";
+      const message =
+        err instanceof Error ? err.message : "Erro ao salvar correção";
       toastCustom.error(message);
     },
   });
@@ -187,10 +198,13 @@ export function RespostaDetailsView({
     }
 
     const notaNormalizada = nota.trim().replace(",", ".");
-    const notaNumber = notaNormalizada === "" ? undefined : Number(notaNormalizada);
+    const notaNumber =
+      notaNormalizada === "" ? undefined : Number(notaNormalizada);
     if (
       notaNormalizada !== "" &&
-      (!Number.isFinite(notaNumber) || Number(notaNumber) < 0 || Number(notaNumber) > 10)
+      (!Number.isFinite(notaNumber) ||
+        Number(notaNumber) < 0 ||
+        Number(notaNumber) > 10)
     ) {
       toastCustom.error("A nota deve estar entre 0 e 10");
       return;
@@ -199,7 +213,10 @@ export function RespostaDetailsView({
     const payload: CorrigirAvaliacaoRespostaPayload = {
       statusCorrecao: "CORRIGIDA",
       feedback: feedback.trim() || undefined,
-      nota: typeof notaNumber === "number" && Number.isFinite(notaNumber) ? notaNumber : undefined,
+      nota:
+        typeof notaNumber === "number" && Number.isFinite(notaNumber)
+          ? notaNumber
+          : undefined,
     };
 
     corrigirMutation.mutate(payload);
@@ -252,7 +269,10 @@ export function RespostaDetailsView({
   }
 
   if (error || initialError) {
-    const message = (error as Error | undefined)?.message || initialError?.message || "Erro ao carregar resposta";
+    const message =
+      (error as Error | undefined)?.message ||
+      initialError?.message ||
+      "Erro ao carregar resposta";
     return (
       <Alert variant="destructive">
         <AlertDescription>{message}</AlertDescription>
@@ -277,7 +297,7 @@ export function RespostaDetailsView({
 
   const respostaContent = (
     <div className="divide-y divide-slate-100">
-      <div className="grid gap-5 pb-6 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-5 pb-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <div>
           <p className="mb-1! text-xs! font-medium text-slate-400">Aluno</p>
           <p className="mb-0! text-sm! font-semibold text-slate-900">
@@ -302,6 +322,20 @@ export function RespostaDetailsView({
           <p className="mb-1! text-xs! font-medium text-slate-400">IP</p>
           <p className="mb-0! text-sm! font-semibold text-slate-900 tabular-nums">
             {resposta.ipEnvio || "—"}
+          </p>
+        </div>
+        <div>
+          <p className="mb-1! text-xs! font-medium text-slate-400">Edições</p>
+          <p className="mb-0! text-sm! font-semibold text-slate-900 tabular-nums">
+            {formatEdicoes(resposta.edicoesRealizadas)}
+          </p>
+        </div>
+        <div>
+          <p className="mb-1! text-xs! font-medium text-slate-400">
+            Última edição
+          </p>
+          <p className="mb-0! text-sm! font-semibold text-slate-900 tabular-nums">
+            {formatDateTime(resposta.ultimaEdicaoEm)}
           </p>
         </div>
       </div>

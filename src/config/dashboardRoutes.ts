@@ -72,6 +72,10 @@ export const DASHBOARD_ROUTE_RULES: readonly RouteRule[] = Object.freeze([
       ),
   },
   {
+    pattern: "/dashboard/cursos/alunos/cursos{/*path}",
+    roles: [UserRole.ALUNO_CANDIDATO],
+  },
+  {
     pattern: "/dashboard/cursos/alunos/:id",
     roles: [
       UserRole.ADMIN,

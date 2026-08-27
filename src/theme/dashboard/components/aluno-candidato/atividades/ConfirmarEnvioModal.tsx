@@ -19,6 +19,7 @@ interface ConfirmarEnvioModalProps {
   mensagemEdicao?: string;
   mensagemProfessor?: string;
   textoBotao?: string;
+  isLoading?: boolean;
 }
 
 export function ConfirmarEnvioModal({
@@ -26,10 +27,11 @@ export function ConfirmarEnvioModal({
   onOpenChange,
   onConfirmar,
   titulo = "Confirmar envio da resposta",
-  pergunta = "Você tem certeza que deseja enviar sua resposta?",
-  mensagemEdicao = "Importante: Após enviar, você não poderá mais editar sua resposta.",
+  pergunta = "Revise a resposta antes de enviar.",
+  mensagemEdicao = "Você poderá editar enquanto houver entregas disponíveis.",
   mensagemProfessor = "O professor receberá sua resposta e dará a nota posteriormente.",
-  textoBotao = "Sim, enviar resposta",
+  textoBotao = "Enviar resposta",
+  isLoading = false,
 }: ConfirmarEnvioModalProps) {
   return (
     <ModalCustom
@@ -37,7 +39,7 @@ export function ConfirmarEnvioModal({
       onOpenChange={onOpenChange}
       size="md"
       backdrop="blur"
-      isDismissable={true}
+      isDismissable={!isLoading}
     >
       <ModalContentWrapper>
         <ModalHeader>
@@ -57,7 +59,7 @@ export function ConfirmarEnvioModal({
                   {mensagemEdicao}
                 </p>
               </div>
-              <div className="flex items-start gap-2">
+              <div className="flex items-start gap-2 mb-0!">
                 <FileQuestion className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
                 <p className="text-xs! text-amber-800 font-medium">
                   {mensagemProfessor}
@@ -70,6 +72,7 @@ export function ConfirmarEnvioModal({
               onClick={() => onOpenChange(false)}
               variant="outline"
               withAnimation={false}
+              disabled={isLoading}
             >
               Cancelar
             </ButtonCustom>
@@ -77,6 +80,8 @@ export function ConfirmarEnvioModal({
               onClick={onConfirmar}
               variant="default"
               withAnimation={false}
+              disabled={isLoading}
+              isLoading={isLoading}
             >
               <Send className="h-4 w-4 mr-2" />
               {textoBotao}

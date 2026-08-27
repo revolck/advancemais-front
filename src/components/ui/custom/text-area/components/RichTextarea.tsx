@@ -128,11 +128,7 @@ function getPlainText(element: HTMLElement): string {
   return text.replace(/\u00a0/g, " ");
 }
 
-function insertPastedContent(
-  range: Range,
-  html: string,
-  text: string,
-): void {
+function insertPastedContent(range: Range, html: string, text: string): void {
   range.deleteContents();
 
   const fragment = document.createDocumentFragment();
@@ -184,6 +180,7 @@ const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
       disabled,
       readOnly,
       onChange,
+      onBeforeInput,
       onKeyDown,
       onPaste,
       onFocus,
@@ -217,6 +214,7 @@ const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
     const hasAppliedDefaultValueRef = React.useRef(false);
     const lastEmittedHtmlRef = React.useRef("");
     const lastEmittedPlainTextRef = React.useRef("");
+    const lastEditorRangeRef = React.useRef<Range | null>(null);
     const [activeFormats, setActiveFormats] = React.useState<Set<string>>(
       new Set(),
     );
@@ -234,6 +232,66 @@ const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
     } | null>(null);
 
     const charCount = plainTextValue.length;
+
+    const isRangeInsideEditor = React.useCallback((range: Range) => {
+      const root = contentEditableRef.current;
+      return Boolean(
+        root &&
+          root.contains(range.startContainer) &&
+          root.contains(range.endContainer),
+      );
+    }, []);
+
+    const rememberEditorSelection = React.useCallback(() => {
+      if (!isEditable) return;
+      const selection = window.getSelection();
+      if (!selection || selection.rangeCount === 0) return;
+
+      const range = selection.getRangeAt(0);
+      if (isRangeInsideEditor(range)) {
+        lastEditorRangeRef.current = range.cloneRange();
+      }
+    }, [isEditable, isRangeInsideEditor]);
+
+    const getEditorRange = React.useCallback((): Range | null => {
+      const root = contentEditableRef.current;
+      if (!root) return null;
+
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount > 0) {
+        const currentRange = selection.getRangeAt(0);
+        if (isRangeInsideEditor(currentRange)) {
+          lastEditorRangeRef.current = currentRange.cloneRange();
+          return currentRange.cloneRange();
+        }
+      }
+
+      const savedRange = lastEditorRangeRef.current;
+      if (savedRange && isRangeInsideEditor(savedRange)) {
+        return savedRange.cloneRange();
+      }
+
+      const endRange = document.createRange();
+      endRange.selectNodeContents(root);
+      endRange.collapse(false);
+      return endRange;
+    }, [isRangeInsideEditor]);
+
+    const restoreEditorSelection = React.useCallback(
+      (range: Range) => {
+        if (!isRangeInsideEditor(range)) return false;
+
+        contentEditableRef.current?.focus();
+        const selection = window.getSelection();
+        if (!selection) return false;
+
+        selection.removeAllRanges();
+        selection.addRange(range);
+        lastEditorRangeRef.current = range.cloneRange();
+        return true;
+      },
+      [isRangeInsideEditor],
+    );
 
     // Constantes de altura
     const MIN_HEIGHT = minEditorHeight;
@@ -260,7 +318,7 @@ const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
       // Aplica a nova altura
       contentEditableRef.current.style.height = `${newHeight}px`;
       setContentHeight(newHeight);
-    }, []);
+    }, [MAX_HEIGHT, MIN_HEIGHT]);
 
     const setContentEditableNode = React.useCallback(
       (node: HTMLDivElement | null) => {
@@ -439,6 +497,8 @@ const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
 
       // Clona o range para não modificar a seleção original
       const range = selection.getRangeAt(0).cloneRange();
+      if (!isRangeInsideEditor(range)) return;
+      lastEditorRangeRef.current = range.cloneRange();
 
       // Se há texto selecionado, verifica formatação em ambos os pontos
       if (!range.collapsed) {
@@ -480,7 +540,7 @@ const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
           setActiveLink(null);
         }
       }
-    }, []);
+    }, [isRangeInsideEditor]);
 
     // Função auxiliar para restaurar cursor no final do conteúdo
     const restoreCursorToEnd = () => {
@@ -675,9 +735,8 @@ const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
     const toggleFormat = (format: ToolbarAction) => {
       if (!contentEditableRef.current) return;
 
-      contentEditableRef.current.focus();
-      const selection = window.getSelection();
-      if (!selection) return;
+      const range = getEditorRange();
+      if (!range || !restoreEditorSelection(range)) return;
 
       // Clear formatting é caso especial
       if (format === "clear") {
@@ -702,21 +761,6 @@ const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
       if (!tagName) return;
 
       // Obtém o range atual ou cria um no cursor
-      let range: Range;
-      if (selection.rangeCount === 0) {
-        // Se não há range, cria um no final do conteúdo
-        range = document.createRange();
-        if (contentEditableRef.current.lastChild) {
-          range.setStartAfter(contentEditableRef.current.lastChild);
-          range.collapse(true);
-        } else {
-          range.selectNodeContents(contentEditableRef.current);
-          range.collapse(false);
-        }
-      } else {
-        range = selection.getRangeAt(0);
-      }
-
       const selectedText = range.toString().trim();
 
       // Se há texto selecionado, aplica/remove formatação
@@ -751,10 +795,13 @@ const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
 
     // Nova função para limpar TODAS as formatações
     const handleClearFormatting = () => {
+      const editorRange = getEditorRange();
+      if (!editorRange || !restoreEditorSelection(editorRange)) return;
+
       const selection = window.getSelection();
       if (!selection || selection.rangeCount === 0) return;
 
-      let range = selection.getRangeAt(0);
+      let range = editorRange;
 
       // Se não há seleção, seleciona todo o conteúdo
       if (range.toString().trim() === "") {
@@ -801,6 +848,7 @@ const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
     };
 
     const handleToolbarAction = (action: ToolbarAction) => {
+      if (!isEditable) return;
       toggleFormat(action);
     };
 
@@ -808,114 +856,13 @@ const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
     const applyHeading = (headingType: HeadingType) => {
       if (!contentEditableRef.current) return;
 
-      contentEditableRef.current.focus();
-      const selection = window.getSelection();
-      if (!selection) return;
-
-      // Obtém o range atual ou cria um no cursor
-      let range: Range;
-      if (selection.rangeCount === 0) {
-        range = document.createRange();
-        if (contentEditableRef.current.lastChild) {
-          range.setStartAfter(contentEditableRef.current.lastChild);
-          range.collapse(true);
-        } else {
-          range.selectNodeContents(contentEditableRef.current);
-          range.collapse(false);
-        }
-      } else {
-        range = selection.getRangeAt(0);
-      }
+      const range = getEditorRange();
+      if (!range || !restoreEditorSelection(range)) return;
 
       try {
-        // Encontra o elemento pai que é um heading ou parágrafo
-        let currentNode: Node | null = range.startContainer;
-        let headingElement: HTMLElement | null = null;
-
-        while (currentNode && currentNode !== contentEditableRef.current) {
-          if (currentNode.nodeType === Node.ELEMENT_NODE) {
-            const element = currentNode as HTMLElement;
-            const tagName = element.tagName.toLowerCase();
-            if (["h1", "h2", "h3", "h4", "h5", "h6", "p"].includes(tagName)) {
-              headingElement = element;
-              break;
-            }
-          }
-          currentNode = currentNode.parentNode;
-        }
-
-        if (headingElement) {
-          // Se já existe um heading/parágrafo, substitui
-          const textContent = headingElement.textContent || "";
-
-          // Se o tipo é o mesmo, não faz nada
-          if (headingElement.tagName.toLowerCase() === headingType) {
-            return;
-          }
-
-          const newElement = document.createElement(headingType);
-
-          // Se há seleção, usa apenas o texto selecionado
-          if (!range.collapsed) {
-            const selectedText = range.toString();
-            newElement.textContent = selectedText;
-
-            // Remove o elemento antigo e insere o novo
-            headingElement.parentNode?.replaceChild(newElement, headingElement);
-          } else {
-            // Usa todo o conteúdo do elemento
-            newElement.textContent = textContent || "\u00A0";
-            headingElement.parentNode?.replaceChild(newElement, headingElement);
-          }
-
-          // Restaura cursor no final do novo elemento
-          const newRange = document.createRange();
-          newRange.selectNodeContents(newElement);
-          newRange.collapse(false);
-          selection.removeAllRanges();
-          selection.addRange(newRange);
-        } else {
-          // Não há heading/parágrafo pai - cria um novo
-          if (!range.collapsed) {
-            // Há seleção - envolve o texto selecionado
-            const selectedText = range.toString();
-            const newElement = document.createElement(headingType);
-            newElement.textContent = selectedText;
-            range.deleteContents();
-            range.insertNode(newElement);
-
-            // Restaura cursor no final
-            const newRange = document.createRange();
-            newRange.selectNodeContents(newElement);
-            newRange.collapse(false);
-            selection.removeAllRanges();
-            selection.addRange(newRange);
-          } else {
-            // Cria um novo elemento vazio
-            const newElement = document.createElement(headingType);
-            newElement.textContent = "\u00A0"; // Non-breaking space
-
-            // Insere após o nó atual ou no final
-            if (range.startContainer.nodeType === Node.TEXT_NODE) {
-              const textNode = range.startContainer as Text;
-              const parent = textNode.parentNode;
-              if (parent) {
-                parent.insertBefore(newElement, textNode.nextSibling);
-              } else {
-                contentEditableRef.current.appendChild(newElement);
-              }
-            } else {
-              contentEditableRef.current.appendChild(newElement);
-            }
-
-            // Move cursor para dentro do novo elemento
-            const newRange = document.createRange();
-            newRange.selectNodeContents(newElement);
-            newRange.collapse(false);
-            selection.removeAllRanges();
-            selection.addRange(newRange);
-          }
-        }
+        // Heading é um formato de parágrafo: aplica apenas aos blocos da
+        // seleção restaurada dentro deste editor, como em editores de texto.
+        document.execCommand("formatBlock", false, headingType);
 
         updateValues();
         setTimeout(() => {
@@ -928,6 +875,7 @@ const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
     };
 
     const handleHeadingChange = (value: string) => {
+      if (!isEditable) return;
       applyHeading(value as HeadingType);
     };
 
@@ -935,23 +883,10 @@ const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
     const handleLinkAction = () => {
       if (!contentEditableRef.current) return;
 
-      const selection = window.getSelection();
-      if (!selection) return;
+      const editorRange = getEditorRange();
+      if (!editorRange || !restoreEditorSelection(editorRange)) return;
 
-      let range: Range;
-      if (selection.rangeCount === 0) {
-        // Se não há range, cria um no cursor
-        range = document.createRange();
-        if (contentEditableRef.current.lastChild) {
-          range.setStartAfter(contentEditableRef.current.lastChild);
-          range.collapse(true);
-        } else {
-          range.selectNodeContents(contentEditableRef.current);
-          range.collapse(false);
-        }
-      } else {
-        range = selection.getRangeAt(0);
-      }
+      const range = editorRange;
 
       const selectedText = range.toString().trim();
 
@@ -988,23 +923,10 @@ const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
         finalUrl = `https://${finalUrl}`;
       }
 
-      contentEditableRef.current.focus();
+      const range = getEditorRange();
+      if (!range || !restoreEditorSelection(range)) return;
       const selection = window.getSelection();
       if (!selection) return;
-
-      let range: Range;
-      if (selection.rangeCount === 0) {
-        range = document.createRange();
-        if (contentEditableRef.current.lastChild) {
-          range.setStartAfter(contentEditableRef.current.lastChild);
-          range.collapse(true);
-        } else {
-          range.selectNodeContents(contentEditableRef.current);
-          range.collapse(false);
-        }
-      } else {
-        range = selection.getRangeAt(0);
-      }
 
       try {
         // Se há um link ativo, atualiza
@@ -1135,6 +1057,11 @@ const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
 
     const handleInput = (e: React.FormEvent<HTMLDivElement>) => {
       if (!contentEditableRef.current) return;
+      if (!isEditable) {
+        e.preventDefault();
+        contentEditableRef.current.innerHTML = htmlValue;
+        return;
+      }
 
       const currentPlainText = getPlainText(contentEditableRef.current);
 
@@ -1167,6 +1094,10 @@ const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
     };
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+      if (!isEditable) {
+        e.preventDefault();
+        return;
+      }
       onKeyDown?.(e);
       if (e.defaultPrevented) return;
 
@@ -1231,6 +1162,10 @@ const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
     };
 
     const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
+      if (!isEditable) {
+        e.preventDefault();
+        return;
+      }
       onPaste?.(e);
       if (e.defaultPrevented) return;
 
@@ -1261,11 +1196,7 @@ const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
         availableChars,
       );
 
-      insertPastedContent(
-        range,
-        contentToInsert.html,
-        contentToInsert.text,
-      );
+      insertPastedContent(range, contentToInsert.html, contentToInsert.text);
       updateValues();
       setTimeout(adjustHeight, 0);
       setTimeout(checkActiveFormats, 10);
@@ -1318,9 +1249,11 @@ const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
             activeHeading={activeHeading}
             activeFormats={activeFormats}
             activeLink={activeLink}
+            onInteractionStart={rememberEditorSelection}
             onHeadingChange={handleHeadingChange}
             onToolbarAction={handleToolbarAction}
             showHeadingSelect={showHeadingSelect}
+            disabled={!isEditable}
           />
 
           <div className="flex-1 overflow-hidden flex flex-col min-h-0 relative">
@@ -1344,6 +1277,8 @@ const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
               id={id}
               data-name={name}
               contentEditable={isEditable}
+              aria-disabled={!isEditable}
+              tabIndex={isEditable ? props.tabIndex : -1}
               className={cn(
                 textareaVariants({ size }),
                 "rich-textarea-content resize-none! min-w-full! max-w-full! w-full! overflow-y-auto! overflow-x-hidden!",
@@ -1353,6 +1288,13 @@ const RichTextarea = React.forwardRef<HTMLDivElement, RichTextareaProps>(
               )}
               style={contentEditableStyles}
               autoFocus={autoFocus}
+              onBeforeInput={(event) => {
+                if (!isEditable) {
+                  event.preventDefault();
+                  return;
+                }
+                onBeforeInput?.(event);
+              }}
               onInput={handleInput}
               onFocus={(event) => {
                 setIsFocused(true);

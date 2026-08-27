@@ -2,15 +2,7 @@
 
 import { useCallback, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import {
-  Calendar,
-  Crown,
-  Eye,
-  PenTool,
-  User,
-  Users,
-  X,
-} from "lucide-react";
+import { Calendar, Crown, Eye, PenTool, User, Users, X } from "lucide-react";
 
 import type { TurmaProva } from "@/api/cursos";
 import { getAvaliacaoStatusEfetivo } from "../../lista-atividades-provas/utils/avaliacaoStatus";
@@ -77,6 +69,7 @@ const ACTION_LABELS: Record<string, string> = {
   AVALIACAO_CRIADA: "Registro criado",
   AVALIACAO_ATUALIZADA: "Registro atualizado",
   RESPOSTA_ENVIADA: "Resposta enviada",
+  RESPOSTA_EDITADA: "Resposta editada",
   RESPOSTA_CORRIGIDA: "Resposta corrigida",
   CORRECAO_MANUAL: "Correção atualizada",
   NOTA_REGISTRADA: "Nota registrada",
@@ -126,7 +119,9 @@ const normalizeActionLabel = (action: string, actionLabel?: string) => {
 };
 
 const normalizeKind = (item: AvaliacaoHistoricoItem): EventKind => {
-  const raw = String(item.tipo || item.entidade || item.kind || "").toUpperCase();
+  const raw = String(
+    item.tipo || item.entidade || item.kind || "",
+  ).toUpperCase();
   const action = String(item.acao || item.action || "").toUpperCase();
   if (
     raw.includes("RESPOSTA") ||
@@ -141,7 +136,7 @@ const normalizeKind = (item: AvaliacaoHistoricoItem): EventKind => {
 };
 
 const normalizeTipoAvaliacao = (
-  item: AvaliacaoHistoricoItem
+  item: AvaliacaoHistoricoItem,
 ): "ATIVIDADE" | "PROVA" | null => {
   const metadata = (item.metadata || {}) as Record<string, unknown>;
   const raw = String(
@@ -149,7 +144,7 @@ const normalizeTipoAvaliacao = (
       metadata.tipoAvaliacao ||
       metadata.avaliacaoTipo ||
       metadata.tipo ||
-      ""
+      "",
   ).toUpperCase();
 
   if (raw.includes("ATIVIDADE")) return "ATIVIDADE";
@@ -159,7 +154,7 @@ const normalizeTipoAvaliacao = (
 
 const extractActor = (
   item: AvaliacaoHistoricoItem,
-  action: string
+  action: string,
 ): { actorName?: string; actorRole?: string } => {
   const isCorrectionAction =
     action.includes("NOTA") ||
@@ -169,12 +164,15 @@ const extractActor = (
     ? [item.corrigidoPor, item.ator, item.usuario, item.alteradoPor]
     : [item.ator, item.alteradoPor, item.usuario, item.corrigidoPor];
 
-  const parseActor = (value: AvaliacaoHistoricoActor | string | null | undefined) => {
+  const parseActor = (
+    value: AvaliacaoHistoricoActor | string | null | undefined,
+  ) => {
     if (!value) return null;
     if (typeof value === "string") {
       return { actorName: value, actorRole: undefined };
     }
-    const actorName = value.nome || value.name || value.nomeCompleto || undefined;
+    const actorName =
+      value.nome || value.name || value.nomeCompleto || undefined;
     const actorRole = value.role || value.papel || undefined;
     if (!actorName && !actorRole) return null;
     return { actorName, actorRole };
@@ -223,7 +221,7 @@ const extractActor = (
 
 const normalizeDescription = (
   item: AvaliacaoHistoricoItem,
-  action: string
+  action: string,
 ): string => {
   const tipoAvaliacao = normalizeTipoAvaliacao(item);
 
@@ -282,7 +280,7 @@ const normalizeDescription = (
 
 const normalizeTipoAvaliacaoLabel = (
   item: AvaliacaoHistoricoItem,
-  tipoAvaliacao: "ATIVIDADE" | "PROVA" | null
+  tipoAvaliacao: "ATIVIDADE" | "PROVA" | null,
 ): string | undefined => {
   const metadata = (item.metadata || {}) as Record<string, unknown>;
   const rawLabel =
@@ -297,7 +295,9 @@ const normalizeTipoAvaliacaoLabel = (
   return undefined;
 };
 
-const normalizeHistoryEvents = (items: AvaliacaoHistoricoItem[]): ProvaHistoryEvent[] => {
+const normalizeHistoryEvents = (
+  items: AvaliacaoHistoricoItem[],
+): ProvaHistoryEvent[] => {
   return items
     .map((item, index) => {
       const date = item.ocorridoEm || item.criadoEm || item.data || item.date;
@@ -309,7 +309,7 @@ const normalizeHistoryEvents = (items: AvaliacaoHistoricoItem[]): ProvaHistoryEv
       const tipoAvaliacao = normalizeTipoAvaliacao(item);
       const tipoAvaliacaoLabel = normalizeTipoAvaliacaoLabel(
         item,
-        tipoAvaliacao
+        tipoAvaliacao,
       );
 
       return {
@@ -320,7 +320,7 @@ const normalizeHistoryEvents = (items: AvaliacaoHistoricoItem[]): ProvaHistoryEv
         action,
         actionLabel: normalizeActionLabel(
           action,
-          String(item.acaoLabel || item.actionLabel || "")
+          String(item.acaoLabel || item.actionLabel || ""),
         ),
         description: normalizeDescription(item, action),
         date,
@@ -333,7 +333,7 @@ const normalizeHistoryEvents = (items: AvaliacaoHistoricoItem[]): ProvaHistoryEv
 
 const getKindBadgeColor = (
   kind: EventKind,
-  tipoAvaliacao?: "ATIVIDADE" | "PROVA" | null
+  tipoAvaliacao?: "ATIVIDADE" | "PROVA" | null,
 ): string => {
   if (tipoAvaliacao === "ATIVIDADE") {
     return "bg-indigo-50 text-indigo-700 border-indigo-200";
@@ -388,7 +388,7 @@ const formatRelativeTime = (dateString: string) => {
   const date = new Date(dateString);
   const now = new Date();
   const diffInMinutes = Math.floor(
-    (now.getTime() - date.getTime()) / (1000 * 60)
+    (now.getTime() - date.getTime()) / (1000 * 60),
   );
 
   if (diffInMinutes < 1) return "Agora";
@@ -426,7 +426,8 @@ function buildBaseEvents(prova: TurmaProva): ProvaHistoryEvent[] {
       }`,
       date: createdAt,
       actorName,
-      actorRole: actorName === "Sistema" ? "SISTEMA" : prova.criadoPor?.role || "ADMIN",
+      actorRole:
+        actorName === "Sistema" ? "SISTEMA" : prova.criadoPor?.role || "ADMIN",
     });
   }
 
@@ -466,7 +467,7 @@ export function HistoryTab({ prova }: HistoryTabProps) {
       listAvaliacaoHistorico(
         prova.id,
         { page: 1, pageSize: 200 },
-        { cache: "no-cache" }
+        { cache: "no-cache" },
       ),
     enabled: Boolean(prova.id),
     staleTime: 15_000,
@@ -475,7 +476,7 @@ export function HistoryTab({ prova }: HistoryTabProps) {
 
   const historicoApiEvents = useMemo<ProvaHistoryEvent[]>(
     () => normalizeHistoryEvents(historicoApiResponse || []),
-    [historicoApiResponse]
+    [historicoApiResponse],
   );
 
   const shouldLoadFallbackFromRespostas =
@@ -537,6 +538,22 @@ export function HistoryTab({ prova }: HistoryTabProps) {
         });
       }
 
+      if (item.ultimaEdicaoEm && Number(item.edicoesRealizadas ?? 0) > 0) {
+        const totalEdicoes = Number(item.edicoesRealizadas ?? 0);
+        events.push({
+          id: `resposta-editada-${item.id}`,
+          kind: "RESPOSTA",
+          tipoAvaliacao,
+          tipoAvaliacaoLabel: TIPO_AVALIACAO_LABELS[tipoAvaliacao],
+          action: "RESPOSTA_EDITADA",
+          actionLabel: ACTION_LABELS.RESPOSTA_EDITADA,
+          description: `Submissão ${item.codigoInscricao || item.id.slice(0, 8)} editada ${totalEdicoes} ${totalEdicoes === 1 ? "vez" : "vezes"}`,
+          date: item.ultimaEdicaoEm,
+          actorName: item.aluno?.nomeCompleto || "Aluno",
+          actorRole: "ALUNO_CANDIDATO",
+        });
+      }
+
       if (item.corrigidoEm) {
         events.push({
           id: `resposta-corrigida-${item.id}`,
@@ -558,7 +575,7 @@ export function HistoryTab({ prova }: HistoryTabProps) {
 
   const allEvents = useMemo(() => {
     const hasAvaliacaoEventsFromApi = historicoApiEvents.some(
-      (event) => event.kind === "AVALIACAO"
+      (event) => event.kind === "AVALIACAO",
     );
     const sourceEvents =
       historicoApiEvents.length > 0 ? historicoApiEvents : respostaEvents;
@@ -577,7 +594,7 @@ export function HistoryTab({ prova }: HistoryTabProps) {
         value: kind,
         label: KIND_LABELS[kind],
       })),
-    []
+    [],
   );
 
   const acaoOptions = useMemo(() => {
@@ -587,12 +604,15 @@ export function HistoryTab({ prova }: HistoryTabProps) {
         unique.set(item.action, item.actionLabel);
       }
     });
-    return Array.from(unique.entries()).map(([value, label]) => ({ value, label }));
+    return Array.from(unique.entries()).map(([value, label]) => ({
+      value,
+      label,
+    }));
   }, [allEvents]);
 
   const alteradoPorOptions = useMemo(() => {
     const names = Array.from(
-      new Set(allEvents.map((item) => item.actorName).filter(Boolean))
+      new Set(allEvents.map((item) => item.actorName).filter(Boolean)),
     ) as string[];
     return names.map((name) => ({ value: name, label: name }));
   }, [allEvents]);
@@ -608,7 +628,7 @@ export function HistoryTab({ prova }: HistoryTabProps) {
       }));
       setCurrentPage(1);
     },
-    []
+    [],
   );
 
   const filteredEvents = useMemo(() => {
@@ -704,7 +724,10 @@ export function HistoryTab({ prova }: HistoryTabProps) {
           </div>
           <div className="space-y-3 p-4">
             {Array.from({ length: 6 }).map((_, idx) => (
-              <div key={`history-row-skeleton-${idx}`} className="grid grid-cols-5 gap-4">
+              <div
+                key={`history-row-skeleton-${idx}`}
+                className="grid grid-cols-5 gap-4"
+              >
                 <Skeleton className="h-10 w-full" />
                 <Skeleton className="h-10 w-full" />
                 <Skeleton className="h-10 w-full" />
@@ -769,19 +792,25 @@ export function HistoryTab({ prova }: HistoryTabProps) {
             />
           </div>
           <div className="space-y-2">
-            <Label className="text-sm font-semibold text-gray-700">Alterado por</Label>
+            <Label className="text-sm font-semibold text-gray-700">
+              Alterado por
+            </Label>
             <MultiSelectFilter
               title="Alterado por"
               placeholder="Selecionar usuário"
               options={alteradoPorOptions}
               selectedValues={filters.alteradoPor}
-              onSelectionChange={(val) => handleFilterChange("alteradoPor", val)}
+              onSelectionChange={(val) =>
+                handleFilterChange("alteradoPor", val)
+              }
               showApplyButton
               className="w-full"
             />
           </div>
           <div className="space-y-2">
-            <Label className="text-sm font-semibold text-gray-700">Período</Label>
+            <Label className="text-sm font-semibold text-gray-700">
+              Período
+            </Label>
             <DatePickerRangeCustom
               value={filters.periodo}
               onChange={(range) => handleFilterChange("periodo", range)}
@@ -847,18 +876,31 @@ export function HistoryTab({ prova }: HistoryTabProps) {
           <Table>
             <TableHeader>
               <TableRow className="border-gray-100 bg-gray-50/50">
-                <TableHead className="font-semibold text-gray-700">Data</TableHead>
-                <TableHead className="font-semibold text-gray-700">Alterado por</TableHead>
-                <TableHead className="font-semibold text-gray-700">Ação</TableHead>
-                <TableHead className="font-semibold text-gray-700">Tipo</TableHead>
-                <TableHead className="font-semibold text-gray-700">Descrição</TableHead>
+                <TableHead className="font-semibold text-gray-700">
+                  Data
+                </TableHead>
+                <TableHead className="font-semibold text-gray-700">
+                  Alterado por
+                </TableHead>
+                <TableHead className="font-semibold text-gray-700">
+                  Ação
+                </TableHead>
+                <TableHead className="font-semibold text-gray-700">
+                  Tipo
+                </TableHead>
+                <TableHead className="font-semibold text-gray-700">
+                  Descrição
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {paginated.map((item) => {
                 const actorName = (item.actorName || "").trim();
-                const isSystemActor = !actorName || actorName.toLowerCase() === "sistema";
-                const normalizedRole = String(item.actorRole || "").toUpperCase();
+                const isSystemActor =
+                  !actorName || actorName.toLowerCase() === "sistema";
+                const normalizedRole = String(
+                  item.actorRole || "",
+                ).toUpperCase();
                 const tipoBadgeLabel =
                   item.tipoAvaliacaoLabel ||
                   (item.tipoAvaliacao
@@ -876,8 +918,12 @@ export function HistoryTab({ prova }: HistoryTabProps) {
                           <Calendar className="h-3 w-3 text-gray-600" />
                         </div>
                         <div className="text-sm">
-                          <div className="font-medium text-gray-900">{formatDate(item.date)}</div>
-                          <div className="text-xs text-gray-500">{formatRelativeTime(item.date)}</div>
+                          <div className="font-medium text-gray-900">
+                            {formatDate(item.date)}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {formatRelativeTime(item.date)}
+                          </div>
                         </div>
                       </div>
                     </TableCell>
@@ -885,21 +931,27 @@ export function HistoryTab({ prova }: HistoryTabProps) {
                     <TableCell className="py-4">
                       <div className="text-sm">
                         {!isSystemActor && (
-                          <div className="font-medium text-gray-900">{actorName}</div>
+                          <div className="font-medium text-gray-900">
+                            {actorName}
+                          </div>
                         )}
                         <div className="mt-1">
                           <span
                             className={cn(
                               "inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-xs font-medium",
-                              getRoleBadgeColor(isSystemActor ? "SISTEMA" : normalizedRole)
+                              getRoleBadgeColor(
+                                isSystemActor ? "SISTEMA" : normalizedRole,
+                              ),
                             )}
                           >
-                            {getRoleIcon(isSystemActor ? "SISTEMA" : normalizedRole)}
+                            {getRoleIcon(
+                              isSystemActor ? "SISTEMA" : normalizedRole,
+                            )}
                             {isSystemActor
                               ? "Sistema"
                               : normalizedRole
-                              ? getRoleLabel(normalizedRole)
-                              : "Usuário"}
+                                ? getRoleLabel(normalizedRole)
+                                : "Usuário"}
                           </span>
                         </div>
                       </div>
@@ -915,7 +967,7 @@ export function HistoryTab({ prova }: HistoryTabProps) {
                       <Badge
                         className={cn(
                           "border",
-                          getKindBadgeColor(item.kind, item.tipoAvaliacao)
+                          getKindBadgeColor(item.kind, item.tipoAvaliacao),
                         )}
                       >
                         {tipoBadgeLabel}
@@ -936,7 +988,8 @@ export function HistoryTab({ prova }: HistoryTabProps) {
       {totalPages > 1 && (
         <div className="flex items-center justify-between px-4 py-3">
           <div className="text-sm text-gray-700">
-            Mostrando {startIndex + 1} a {Math.min(endIndex, filteredEvents.length)} de{" "}
+            Mostrando {startIndex + 1} a{" "}
+            {Math.min(endIndex, filteredEvents.length)} de{" "}
             {filteredEvents.length} registros
           </div>
           <div className="flex items-center space-x-2">
@@ -963,7 +1016,9 @@ export function HistoryTab({ prova }: HistoryTabProps) {
             <ButtonCustom
               variant="outline"
               size="sm"
-              onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+              onClick={() =>
+                setCurrentPage(Math.min(totalPages, currentPage + 1))
+              }
               disabled={currentPage === totalPages}
               className="h-8 px-3"
             >

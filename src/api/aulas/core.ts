@@ -44,7 +44,7 @@ function getAuthHeader(): Record<string, string> {
 
 function buildHeaders(
   additional?: HeadersInit,
-  auth = false
+  auth = false,
 ): Record<string, string> {
   return {
     Accept: apiConfig.headers.Accept,
@@ -59,7 +59,7 @@ function buildHeaders(
  */
 export async function listAulas(
   params?: AulasListParams,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<AulasListResponse> {
   const searchParams = new URLSearchParams();
 
@@ -116,7 +116,7 @@ export async function listAulas(
     cache: "no-cache",
     retries: 1,
   });
-  
+
   // Debug: Log da resposta (apenas em desenvolvimento)
   if (process.env.NODE_ENV === "development") {
     console.log("[API_AULAS] URL chamada:", url);
@@ -141,7 +141,7 @@ export async function listAulas(
 export async function getAulaById(
   aulaId: string,
   init?: RequestInit,
-  options?: { noCache?: boolean }
+  options?: { noCache?: boolean },
 ): Promise<Aula> {
   const response = await apiFetch<{ success: boolean; aula: Aula } | Aula>(
     `${BASE_URL}/${aulaId}`,
@@ -154,7 +154,7 @@ export async function getAulaById(
       // Usar no-cache se solicitado, caso contrário usar short para performance
       cache: options?.noCache ? "no-cache" : "short",
       retries: 1,
-    }
+    },
   );
 
   // A API retorna { success: true, aula: {...} }
@@ -178,7 +178,7 @@ export async function getAulaById(
  */
 export async function createAula(
   payload: CreateAulaPayload,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<{ aula: Aula; meetUrl?: string }> {
   const response = await apiFetch<{ aula: Aula; meetUrl?: string }>(BASE_URL, {
     init: {
@@ -198,7 +198,7 @@ export async function createAula(
 export async function updateAula(
   aulaId: string,
   payload: UpdateAulaPayload,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<Aula> {
   // ✅ DEBUG: Log do payload que será enviado para a API
   if (process.env.NODE_ENV === "development") {
@@ -216,7 +216,7 @@ export async function updateAula(
   // ✅ GARANTIR que turmaId seja incluído se existe no payload
   // Criar uma cópia do payload para garantir que não seja modificado
   const finalPayload = { ...payload };
-  
+
   // ✅ Se turmaId existe no payload original, garantir que está na cópia
   if ("turmaId" in payload && payload.turmaId) {
     (finalPayload as any).turmaId = payload.turmaId;
@@ -243,7 +243,7 @@ export async function updateAula(
         headers: buildHeaders(init?.headers, true),
       },
       cache: "no-cache", // Não cachear atualizações
-    }
+    },
   );
 
   // A API pode retornar { success: true, aula: {...} }
@@ -267,7 +267,7 @@ export async function updateAula(
  */
 export async function deleteAula(
   aulaId: string,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<void> {
   await apiFetch<void>(`${BASE_URL}/${aulaId}`, {
     init: {
@@ -284,7 +284,7 @@ export async function deleteAula(
 export async function publicarAula(
   aulaId: string,
   publicar: boolean,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<Aula> {
   const response = await apiFetch<{ success: boolean; aula: Aula } | Aula>(
     `${BASE_URL}/${aulaId}/publicar`,
@@ -297,12 +297,12 @@ export async function publicarAula(
             "Content-Type": "application/json",
             ...init?.headers,
           },
-          true
+          true,
         ),
         body: JSON.stringify({ publicar }),
       },
       cache: "no-cache",
-    }
+    },
   );
 
   // A API retorna { success: true, aula: {...} }
@@ -325,7 +325,7 @@ export async function publicarAula(
  */
 export async function getAulaHistorico(
   aulaId: string,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<AulaHistorico[]> {
   const response = await apiFetch<
     | { success: boolean; historico: AulaHistorico[] }
@@ -367,7 +367,7 @@ export async function getAulaHistorico(
 export async function getAulaProgresso(
   aulaId: string,
   inscricaoId?: string,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<AulaProgresso[]> {
   const url = inscricaoId
     ? `${BASE_URL}/${aulaId}/progresso?inscricaoId=${inscricaoId}`
@@ -391,21 +391,21 @@ export async function getAulaProgresso(
 export async function updateAulaProgresso(
   aulaId: string,
   payload: UpdateProgressoPayload,
-  init?: RequestInit
-): Promise<AulaProgresso> {
-  const response = await apiFetch<AulaProgresso>(
-    `${BASE_URL}/${aulaId}/progresso`,
-    {
-      init: {
-        method: "POST",
-        body: JSON.stringify(payload),
-        ...init,
-        headers: buildHeaders(init?.headers, true),
-      },
-    }
-  );
+  init?: RequestInit,
+): Promise<Pick<AulaProgresso, "percentualAssistido" | "concluida">> {
+  const response = await apiFetch<{
+    success: boolean;
+    progresso: Pick<AulaProgresso, "percentualAssistido" | "concluida">;
+  }>(`${BASE_URL}/${aulaId}/progresso`, {
+    init: {
+      method: "POST",
+      body: JSON.stringify(payload),
+      ...init,
+      headers: buildHeaders(init?.headers, true),
+    },
+  });
 
-  return response;
+  return response.progresso;
 }
 
 /**
@@ -413,7 +413,7 @@ export async function updateAulaProgresso(
  */
 export async function getAulaPresencas(
   aulaId: string,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<AulaPresenca[]> {
   const response = await apiFetch<{ presencas: AulaPresenca[] }>(
     `${BASE_URL}/${aulaId}/presenca`,
@@ -424,7 +424,7 @@ export async function getAulaPresencas(
         headers: buildHeaders(init?.headers, true),
       },
       cache: "short",
-    }
+    },
   );
 
   return response.presencas;
@@ -436,7 +436,7 @@ export async function getAulaPresencas(
 export async function registrarPresenca(
   aulaId: string,
   payload: RegistrarPresencaPayload,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<AulaPresenca> {
   const response = await apiFetch<AulaPresenca>(
     `${BASE_URL}/${aulaId}/presenca`,
@@ -447,7 +447,7 @@ export async function registrarPresenca(
         ...init,
         headers: buildHeaders(init?.headers, true),
       },
-    }
+    },
   );
 
   return response;
@@ -458,7 +458,7 @@ export async function registrarPresenca(
  */
 export async function getAgenda(
   params: AgendaListParams,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<AgendaListResponse> {
   const searchParams = new URLSearchParams();
   searchParams.set("dataInicio", params.dataInicio);
@@ -467,19 +467,18 @@ export async function getAgenda(
     searchParams.set("tipos", params.tipos.join(","));
   }
 
-  const response = await apiFetch<AgendaListResponse | { success: boolean; data: AgendaListResponse }>(
-    `/api/v1/agenda?${searchParams.toString()}`,
-    {
-      init: {
-        method: "GET",
-        ...init,
-        headers: buildHeaders(init?.headers, true),
-      },
-      // A agenda precisa refletir rapidamente entrevistas recém-criadas.
-      // O cache de memória do apiFetch pode segurar resultados antigos mesmo após invalidateQueries.
-      cache: "no-cache",
-    }
-  );
+  const response = await apiFetch<
+    AgendaListResponse | { success: boolean; data: AgendaListResponse }
+  >(`/api/v1/agenda?${searchParams.toString()}`, {
+    init: {
+      method: "GET",
+      ...init,
+      headers: buildHeaders(init?.headers, true),
+    },
+    // A agenda precisa refletir rapidamente entrevistas recém-criadas.
+    // O cache de memória do apiFetch pode segurar resultados antigos mesmo após invalidateQueries.
+    cache: "no-cache",
+  });
 
   if (response && typeof response === "object" && "eventos" in response) {
     return response as AgendaListResponse;
@@ -495,7 +494,7 @@ export async function getAgenda(
  */
 export async function getAgendaAniversariantes(
   params: AgendaAniversariantesParams,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<AgendaAniversariantesResponse> {
   const searchParams = new URLSearchParams();
   searchParams.set("dataInicio", params.dataInicio);
@@ -508,7 +507,8 @@ export async function getAgendaAniversariantes(
   }
 
   const response = await apiFetch<
-    AgendaAniversariantesResponse | { success: boolean; data: AgendaAniversariantesResponse }
+    | AgendaAniversariantesResponse
+    | { success: boolean; data: AgendaAniversariantesResponse }
   >(`/api/v1/agenda/aniversariantes?${searchParams.toString()}`, {
     init: {
       method: "GET",
@@ -532,7 +532,7 @@ export async function getAgendaAniversariantes(
  * Verificar status da conexão Google
  */
 export async function getGoogleOAuthStatus(
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<GoogleOAuthStatus> {
   const response = await apiFetch<GoogleOAuthStatus>(
     "/api/v1/auth/google/status",
@@ -543,7 +543,7 @@ export async function getGoogleOAuthStatus(
         headers: buildHeaders(init?.headers, true),
       },
       cache: "short",
-    }
+    },
   );
 
   return response;
@@ -554,9 +554,10 @@ export async function getGoogleOAuthStatus(
  * `returnTo`: caminho relativo do frontend para onde o callback deve redirecionar
  * ao final (ex: "/perfil"). Se omitido, o backend usa o padrão ("/dashboard/configuracoes").
  */
-export async function connectGoogle(
-  options?: { returnTo?: string; init?: RequestInit }
-): Promise<GoogleConnectResponse> {
+export async function connectGoogle(options?: {
+  returnTo?: string;
+  init?: RequestInit;
+}): Promise<GoogleConnectResponse> {
   const query = options?.returnTo
     ? `?returnTo=${encodeURIComponent(options.returnTo)}`
     : "";
@@ -569,7 +570,7 @@ export async function connectGoogle(
         ...options?.init,
         headers: buildHeaders(options?.init?.headers, true),
       },
-    }
+    },
   );
 
   return response;
@@ -606,7 +607,7 @@ import type {
  */
 export async function listMateriais(
   aulaId: string,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<MateriaisListResponse> {
   const response = await apiFetch<MateriaisListResponse>(
     `${BASE_URL}/${aulaId}/materiais`,
@@ -619,7 +620,7 @@ export async function listMateriais(
       // Não cachear aqui: a tela já é cacheada pelo React Query.
       // O cache interno do apiFetch pode deixar a lista desatualizada após adicionar/remover (até dar F5).
       cache: "no-cache",
-    }
+    },
   );
 
   return response;
@@ -634,7 +635,7 @@ export async function createMaterialArquivo(
   titulo: string,
   descricao?: string,
   obrigatorio?: boolean,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<AulaMaterial> {
   const formData = new FormData();
   formData.append("file", file);
@@ -658,7 +659,7 @@ export async function createMaterialArquivo(
         ...init,
         headers,
       },
-    }
+    },
   );
 
   return response;
@@ -671,7 +672,7 @@ export async function createMaterialArquivo(
 export async function createMaterialArquivoFromUrl(
   aulaId: string,
   data: Omit<CreateMaterialArquivoUrlPayload, "tipo">,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<AulaMaterial> {
   const payload: CreateMaterialArquivoUrlPayload = {
     tipo: "ARQUIVO",
@@ -687,7 +688,7 @@ export async function createMaterialArquivoFromUrl(
         ...init,
         headers: buildHeaders(init?.headers, true),
       },
-    }
+    },
   );
 
   return response;
@@ -704,7 +705,7 @@ export async function createMaterialLink(
     descricao?: string;
     obrigatorio?: boolean;
   },
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<AulaMaterial> {
   const response = await apiFetch<AulaMaterial>(
     `${BASE_URL}/${aulaId}/materiais`,
@@ -715,7 +716,7 @@ export async function createMaterialLink(
         ...init,
         headers: buildHeaders(init?.headers, true),
       },
-    }
+    },
   );
 
   return response;
@@ -732,7 +733,7 @@ export async function createMaterialTexto(
     descricao?: string;
     obrigatorio?: boolean;
   },
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<AulaMaterial> {
   const response = await apiFetch<AulaMaterial>(
     `${BASE_URL}/${aulaId}/materiais`,
@@ -743,7 +744,7 @@ export async function createMaterialTexto(
         ...init,
         headers: buildHeaders(init?.headers, true),
       },
-    }
+    },
   );
 
   return response;
@@ -756,7 +757,7 @@ export async function updateMaterial(
   aulaId: string,
   materialId: string,
   payload: UpdateMaterialPayload,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<AulaMaterial> {
   const response = await apiFetch<AulaMaterial>(
     `${BASE_URL}/${aulaId}/materiais/${materialId}`,
@@ -767,7 +768,7 @@ export async function updateMaterial(
         ...init,
         headers: buildHeaders(init?.headers, true),
       },
-    }
+    },
   );
 
   return response;
@@ -779,7 +780,7 @@ export async function updateMaterial(
 export async function deleteMaterial(
   aulaId: string,
   materialId: string,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<void> {
   await apiFetch<void>(`${BASE_URL}/${aulaId}/materiais/${materialId}`, {
     init: {
@@ -796,7 +797,7 @@ export async function deleteMaterial(
 export async function reordenarMateriais(
   aulaId: string,
   payload: ReordenarMateriaisPayload,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<void> {
   await apiFetch<void>(`${BASE_URL}/${aulaId}/materiais/reordenar`, {
     init: {
@@ -814,7 +815,7 @@ export async function reordenarMateriais(
 export async function gerarTokenDownload(
   aulaId: string,
   materialId: string,
-  init?: RequestInit
+  init?: RequestInit,
 ): Promise<MaterialDownloadToken> {
   const response = await apiFetch<MaterialDownloadToken>(
     `${BASE_URL}/${aulaId}/materiais/${materialId}/gerar-token`,
@@ -824,7 +825,7 @@ export async function gerarTokenDownload(
         ...init,
         headers: buildHeaders(init?.headers, true),
       },
-    }
+    },
   );
 
   return response;
@@ -835,7 +836,7 @@ export async function gerarTokenDownload(
  */
 export function validarArquivo(
   file: File,
-  config: typeof MATERIAIS_CONFIG
+  config: typeof MATERIAIS_CONFIG,
 ): { valido: boolean; erro?: string } {
   // Validar tamanho
   if (file.size > config.MAX_TAMANHO_ARQUIVO) {
@@ -850,7 +851,7 @@ export function validarArquivo(
   // Validar tipo MIME
   if (
     !config.TIPOS_PERMITIDOS.includes(
-      file.type as (typeof config.TIPOS_PERMITIDOS)[number]
+      file.type as (typeof config.TIPOS_PERMITIDOS)[number],
     )
   ) {
     return {
@@ -863,7 +864,7 @@ export function validarArquivo(
   const extensao = `.${file.name.split(".").pop()?.toLowerCase()}`;
   if (
     !config.EXTENSOES_PERMITIDAS.includes(
-      extensao as (typeof config.EXTENSOES_PERMITIDAS)[number]
+      extensao as (typeof config.EXTENSOES_PERMITIDAS)[number],
     )
   ) {
     return {

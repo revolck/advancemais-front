@@ -2,12 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import {
-  CalendarClock,
-  Eye,
-  IdCard,
-  X,
-} from "lucide-react";
+import { CalendarClock, Eye, IdCard, X } from "lucide-react";
 
 import {
   listAvaliacaoRespostas,
@@ -72,6 +67,11 @@ function formatCpf(value?: string | null) {
   return digits.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
 }
 
+function formatEdicoes(value?: number | null) {
+  const total = Math.max(0, Number(value ?? 0));
+  return `Editado ${total} ${total === 1 ? "vez" : "vezes"}`;
+}
+
 function getInitials(name?: string | null) {
   if (!name) return "--";
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -115,14 +115,21 @@ export function RespostasTab({
       statusCorrecao,
     ],
     queryFn: () =>
-      listAvaliacaoRespostas(provaId, {
-        page,
-        pageSize: PAGE_SIZE,
-        search: searchApplied || undefined,
-        statusCorrecao: statusCorrecao.length === 1 ? (statusCorrecao[0] as StatusCorrecao) : undefined,
-        orderBy: "concluidoEm",
-        order: "desc",
-      }, { cache: "no-cache" }),
+      listAvaliacaoRespostas(
+        provaId,
+        {
+          page,
+          pageSize: PAGE_SIZE,
+          search: searchApplied || undefined,
+          statusCorrecao:
+            statusCorrecao.length === 1
+              ? (statusCorrecao[0] as StatusCorrecao)
+              : undefined,
+          orderBy: "concluidoEm",
+          order: "desc",
+        },
+        { cache: "no-cache" },
+      ),
     enabled: Boolean(provaId),
     staleTime: 30_000,
   });
@@ -155,7 +162,9 @@ export function RespostasTab({
   if (searchApplied)
     activeChips.push({ key: "search", label: `Busca: "${searchApplied}"` });
   if (statusCorrecao.length > 0) {
-    const labels = statusCorrecao.map((s) => STATUS_META[s]?.label ?? s).join(", ");
+    const labels = statusCorrecao
+      .map((s) => STATUS_META[s]?.label ?? s)
+      .join(", ");
     activeChips.push({ key: "status", label: `Status: ${labels}` });
   }
 
@@ -232,7 +241,9 @@ export function RespostasTab({
           />
 
           <div className="space-y-2">
-            <label className="text-sm! font-semibold! text-gray-700! block!">Status</label>
+            <label className="text-sm! font-semibold! text-gray-700! block!">
+              Status
+            </label>
             <MultiSelectFilter
               title="Status"
               placeholder="Selecionar status"
@@ -379,6 +390,14 @@ export function RespostasTab({
                               {formatRelativeTime(item.concluidoEm)}
                             </div>
                           )}
+                          {Number(item.edicoesRealizadas ?? 0) > 0 && (
+                            <div className="mt-1 text-xs! text-gray-500!">
+                              {formatEdicoes(item.edicoesRealizadas)}
+                              {item.ultimaEdicaoEm
+                                ? ` · Última edição ${formatDateTime(item.ultimaEdicaoEm)}`
+                                : ""}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </TableCell>
@@ -418,7 +437,9 @@ export function RespostasTab({
                             rel="noopener noreferrer"
                           >
                             <Eye className="h-3.5 w-3.5 shrink-0" />
-                            <span className="hidden sm:inline">{actionLabel}</span>
+                            <span className="hidden sm:inline">
+                              {actionLabel}
+                            </span>
                           </a>
                         </ButtonCustom>
                       </div>

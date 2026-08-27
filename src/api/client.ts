@@ -24,6 +24,10 @@ interface FetchOptions<T> {
    */
   silence403?: boolean;
   /**
+   * Silencia erros 409 esperados em regras de concorrência ou envio único.
+   */
+  silence409?: boolean;
+  /**
    * Silencia erros de conexão (ECONNREFUSED, network errors).
    * Útil para chamadas opcionais onde a API pode não estar disponível.
    */
@@ -58,8 +62,9 @@ export async function apiFetch<T = unknown>(
     skipLogoutOn401 = false,
     silence404 = false,
     silence403 = false,
+    silence409 = false,
     silenceConnectionErrors = false,
-  }: FetchOptions<T> = {}
+  }: FetchOptions<T> = {},
 ): Promise<T> {
   const url = endpoint.startsWith("http") ? endpoint : buildApiUrl(endpoint);
   const cacheKey = `${url}-${JSON.stringify(init)}`;
@@ -129,7 +134,8 @@ export async function apiFetch<T = unknown>(
 
         const isSilencedStatus =
           (res.status === 404 && silence404) ||
-          (res.status === 403 && silence403);
+          (res.status === 403 && silence403) ||
+          (res.status === 409 && silence409);
 
         const errorObj = new Error(errorMessage) as Error & {
           status?: number;
@@ -137,7 +143,7 @@ export async function apiFetch<T = unknown>(
         };
         errorObj.status = res.status;
         if (errorDetails) errorObj.details = errorDetails;
-        
+
         // 403/404 silenciados são casos esperados em alguns fluxos do painel.
         if (env.isDevelopment && !isSilencedStatus) {
           console.error(`API Error ${res.status} (${endpoint}):`, {
@@ -147,15 +153,19 @@ export async function apiFetch<T = unknown>(
             details: errorDetails,
           });
         }
-        
+
         if (res.status === 401 && !skipLogoutOn401) {
           logoutUser();
         }
-        
+
         // Marca o erro para não fazer retry em casos específicos
-        (errorObj as any).noRetry = res.status === 401 || res.status === 403 || res.status === 404;
+        (errorObj as any).noRetry =
+          res.status === 401 ||
+          res.status === 403 ||
+          res.status === 404 ||
+          res.status === 409;
         (errorObj as any).silenced = isSilencedStatus;
-        
+
         throw errorObj;
       }
 
@@ -180,14 +190,14 @@ export async function apiFetch<T = unknown>(
       return data as T;
     } catch (error) {
       lastError = error as Error;
-      
+
       // Detecta erros de conexão (ECONNREFUSED, network errors)
-      const isConnectionError = 
+      const isConnectionError =
         (error as any)?.cause?.code === "ECONNREFUSED" ||
         (error as any)?.code === "ECONNREFUSED" ||
         lastError?.message?.includes("fetch failed") ||
         lastError?.message?.includes("ECONNREFUSED");
-      
+
       // Marca como silenciado se for erro de conexão e a opção estiver ativa
       if (isConnectionError && silenceConnectionErrors) {
         (error as any).silenced = true;
@@ -215,7 +225,7 @@ export async function apiFetch<T = unknown>(
   if (lastError && (lastError as any)?.silenced) {
     throw lastError;
   }
-  
+
   if (lastError && (lastError as any)?.status === 401) {
     throw lastError;
   }
@@ -232,9 +242,15 @@ export async function apiFetch<T = unknown>(
   // Não loga se o erro foi silenciado
   if (!(lastError as any)?.silenced) {
     if (process.env.NODE_ENV === "development") {
-      console.warn(`❌ API Failed após ${maxAttempts} tentativa(s):`, lastError!);
+      console.warn(
+        `❌ API Failed após ${maxAttempts} tentativa(s):`,
+        lastError!,
+      );
     } else {
-      console.error(`❌ API Failed após ${maxAttempts} tentativa(s):`, lastError!);
+      console.error(
+        `❌ API Failed após ${maxAttempts} tentativa(s):`,
+        lastError!,
+      );
     }
   }
 

@@ -1,13 +1,23 @@
 "use client";
 
-import { ReactNode, useEffect, useState, useCallback } from "react";
+import {
+  ReactNode,
+  useEffect,
+  useState,
+  useCallback,
+  useMemo,
+  useRef,
+} from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { DashboardSidebar, DashboardHeader } from "@/theme";
+import { Skeleton } from "@/components/ui/skeleton";
 import { toastCustom, ToasterCustom } from "@/components/ui/custom";
 import { DashboardHeader as Breadcrumb } from "@/components/layout";
 import { BlockedUserWrapper } from "@/components/layout/BlockedUserWrapper";
+import { canAccessRoute } from "@/config/dashboardRoutes";
+import { useUserRole } from "@/hooks/useUserRole";
 import { ProfileOnboardingGate } from "@/theme/dashboard/components/profile/ProfileOnboardingGate";
 import {
   GoogleConnectedModalController,
@@ -130,6 +140,47 @@ const ConfettiExplosion = ({ isActive }: { isActive: boolean }) => {
   );
 };
 
+function DashboardChildrenSkeleton() {
+  return (
+    <div className="space-y-8">
+      <div className="rounded-2xl border border-gray-200 bg-white p-6">
+        <Skeleton className="h-7 w-64 rounded-md" />
+        <Skeleton className="mt-3 h-4 w-96 max-w-full rounded-md" />
+        <div className="mt-6 grid gap-4 md:grid-cols-3">
+          <Skeleton className="h-24 rounded-xl" />
+          <Skeleton className="h-24 rounded-xl" />
+          <Skeleton className="h-24 rounded-xl" />
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-gray-200 bg-white p-6">
+        <div className="flex items-center justify-between gap-4">
+          <div className="space-y-2">
+            <Skeleton className="h-5 w-40 rounded-md" />
+            <Skeleton className="h-3 w-64 rounded-md" />
+          </div>
+          <Skeleton className="h-10 w-32 rounded-md" />
+        </div>
+        <div className="mt-6 space-y-3">
+          {Array.from({ length: 5 }).map((_, index) => (
+            <div
+              key={index}
+              className="flex items-center gap-4 rounded-xl border border-gray-100 p-4"
+            >
+              <Skeleton className="h-10 w-10 rounded-lg" />
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-4 w-3/5 rounded-md" />
+                <Skeleton className="h-3 w-2/5 rounded-md" />
+              </div>
+              <Skeleton className="h-8 w-24 rounded-md" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /**
  * Layout específico para a seção de Dashboard
  */
@@ -145,10 +196,17 @@ export default function DashboardLayoutClient({
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
   const [confettiKey, setConfettiKey] = useState(0);
+  const lastDeniedPathRef = useRef<string | null>(null);
 
   const searchParams = useSearchParams();
   const pathname = usePathname() || "";
   const router = useRouter();
+  const role = useUserRole();
+
+  const canRenderCurrentRoute = useMemo(() => {
+    if (!role || !pathname) return false;
+    return canAccessRoute(pathname, role);
+  }, [pathname, role]);
 
   /**
    * Alterna o estado de colapso do sidebar
@@ -211,52 +269,87 @@ export default function DashboardLayoutClient({
     router,
   ]);
 
+  useEffect(() => {
+    if (!mounted || !role) return;
+
+    if (canRenderCurrentRoute) {
+      lastDeniedPathRef.current = null;
+      return;
+    }
+
+    if (lastDeniedPathRef.current === pathname) return;
+    lastDeniedPathRef.current = pathname;
+
+    toastCustom.error({
+      title: "Permissão insuficiente",
+      description: "Você não tem permissão para acessar esta página.",
+    });
+    router.replace("/dashboard");
+  }, [canRenderCurrentRoute, mounted, pathname, role, router]);
+
   // Evita problemas de hidratação SSR
   if (!mounted) {
     return null;
   }
 
-  return (
-    <BlockedUserWrapper>
-      <div className="flex h-screen">
-        {/* Sidebar principal do dashboard */}
-        <div className="flex-shrink-0">
-          <DashboardSidebar
-            isMobileMenuOpen={isMobileMenuOpen}
-            setIsMobileMenuOpen={setIsMobileMenuOpen}
-            isCollapsed={isCollapsed}
-          />
+  const renderDashboardShell = (
+    content: ReactNode,
+    options?: { showPageBreadcrumb?: boolean; showGlobalControllers?: boolean },
+  ) => {
+    const showPageBreadcrumb = options?.showPageBreadcrumb ?? true;
+    const showGlobalControllers = options?.showGlobalControllers ?? true;
+
+    return (
+      <BlockedUserWrapper>
+        <div className="flex h-screen">
+          <div className="flex-shrink-0">
+            <DashboardSidebar
+              isMobileMenuOpen={isMobileMenuOpen}
+              setIsMobileMenuOpen={setIsMobileMenuOpen}
+              isCollapsed={isCollapsed}
+            />
+          </div>
+
+          <div className="flex min-w-0 flex-1 flex-col bg-white transition-all duration-300 ease-in-out">
+            <DashboardHeader
+              toggleSidebar={toggleSidebar}
+              isCollapsed={isCollapsed}
+            />
+
+            <main className="flex-1 overflow-auto bg-gray-100 p-10">
+              <div className="min-h-full">
+                {showPageBreadcrumb && (
+                  <Breadcrumb showBreadcrumb={pathname !== "/empresas"} />
+                )}
+                {content}
+              </div>
+            </main>
+          </div>
         </div>
 
-        {/* Container principal de conteúdo */}
-        <div className="flex flex-1 flex-col bg-white transition-all duration-300 ease-in-out min-w-0">
-          {/* Header do Dashboard */}
-          <DashboardHeader
-            toggleSidebar={toggleSidebar}
-            isCollapsed={isCollapsed}
-          />
+        {showGlobalControllers && (
+          <>
+            <ProfileOnboardingGate />
+            <ConfettiExplosion key={confettiKey} isActive={showConfetti} />
+            <GoogleConnectedModalController
+              onConfettiChange={handleConfettiChange}
+            />
+            <RecoveryPaymentModalController />
+            <MarketingPopupRenderer scope="DASHBOARD" />
+          </>
+        )}
 
-          {/* Conteúdo principal */}
-          <main className="flex-1 overflow-auto bg-gray-100 p-10">
-            <div className="min-h-full">
-              <Breadcrumb showBreadcrumb={pathname !== "/empresas"} />
-              {children}
-            </div>
-          </main>
-        </div>
-      </div>
+        <ToasterCustom />
+      </BlockedUserWrapper>
+    );
+  };
 
-      {/* Componentes de onboarding e feedback */}
-      <ProfileOnboardingGate />
-      <ConfettiExplosion key={confettiKey} isActive={showConfetti} />
+  if (!canRenderCurrentRoute) {
+    return renderDashboardShell(<DashboardChildrenSkeleton />, {
+      showPageBreadcrumb: false,
+      showGlobalControllers: false,
+    });
+  }
 
-      {/* Modais globais do dashboard (isoladas como microfrontends) */}
-      <GoogleConnectedModalController onConfettiChange={handleConfettiChange} />
-      <RecoveryPaymentModalController />
-      <MarketingPopupRenderer scope="DASHBOARD" />
-
-      {/* Toast global */}
-      <ToasterCustom />
-    </BlockedUserWrapper>
-  );
+  return renderDashboardShell(children);
 }

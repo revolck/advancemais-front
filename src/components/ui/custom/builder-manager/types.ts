@@ -40,6 +40,15 @@ export interface BuilderItem {
   youtubeUrl?: string | null;
   meetUrl?: string | null;
   tipoLinkSemiPresencial?: "MEET" | "YOUTUBE" | null;
+  progresso?: {
+    status: "NAO_INICIADO" | "EM_PROGRESSO" | "CONCLUIDO";
+    percentualConcluido: number;
+    tempoAssistidoSegundos?: number;
+    tentativas?: number;
+    nota?: number | null;
+    dataConclusao?: string | null;
+    atualizadoEm?: string | null;
+  };
 }
 
 export interface BuilderModule {
@@ -81,9 +90,7 @@ export function getDefaultBuilder(template: BuilderTemplate): BuilderData {
 
   if (template === "MODULAR") {
     return {
-      modules: [
-        { id: `mod-1`, title: "Módulo 1", items: [aula(1), prova()] },
-      ],
+      modules: [{ id: `mod-1`, title: "Módulo 1", items: [aula(1), prova()] }],
       standaloneItems: [],
     };
   }

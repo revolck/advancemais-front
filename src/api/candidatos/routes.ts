@@ -14,7 +14,8 @@ export const CANDIDATOS_ROUTES = {
   // Candidatos - Currículos
   CURRICULOS: "/api/v1/candidatos/curriculos",
   CURRICULO: (id: string) => `/api/v1/candidatos/curriculos/${id}`,
-  CURRICULO_PRINCIPAL: (id: string) => `/api/v1/candidatos/curriculos/${id}/principal`,
+  CURRICULO_PRINCIPAL: (id: string) =>
+    `/api/v1/candidatos/curriculos/${id}/principal`,
   // NOTA: CURRICULO_PDF removido - endpoint não existe no backend
   // Use generateCurriculoPdf para gerar PDFs no frontend
 
@@ -33,4 +34,16 @@ export const CANDIDATOS_ROUTES = {
 
   // Candidatos - Cursos (ALUNO_CANDIDATO)
   CURSOS: "/api/v1/candidatos/cursos",
+  CURSO_ESTRUTURA: (cursoId: string, turmaId: string) =>
+    `/api/v1/candidatos/cursos/${cursoId}/turmas/${turmaId}/estrutura`,
+  CURSO_AULA: (cursoId: string, turmaId: string, aulaId: string) =>
+    `/api/v1/candidatos/cursos/${cursoId}/turmas/${turmaId}/aulas/${aulaId}`,
+  CURSO_ATIVIDADE: (cursoId: string, turmaId: string, atividadeId: string) =>
+    `/api/v1/candidatos/cursos/${cursoId}/turmas/${turmaId}/atividades/${atividadeId}`,
+  CURSO_ATIVIDADE_RESPOSTA: (
+    cursoId: string,
+    turmaId: string,
+    atividadeId: string,
+  ) =>
+    `/api/v1/candidatos/cursos/${cursoId}/turmas/${turmaId}/atividades/${atividadeId}/resposta`,
 } as const;

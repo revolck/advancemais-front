@@ -153,7 +153,12 @@ export interface AvaliacaoRespostaResumo {
   codigoInscricao?: string | null;
   aluno: AvaliacaoRespostaAlunoResumo;
   tipoAvaliacao?: "PROVA" | "ATIVIDADE";
-  tipoAtividade?: "QUESTOES" | "PERGUNTA_RESPOSTA" | "ENVIO_MATERIAL" | "TEXTO" | null;
+  tipoAtividade?:
+    | "QUESTOES"
+    | "PERGUNTA_RESPOSTA"
+    | "ENVIO_MATERIAL"
+    | "TEXTO"
+    | null;
   statusCorrecao: StatusCorrecao;
   nota?: number | null;
   notaMaxima?: number | null;
@@ -162,6 +167,9 @@ export interface AvaliacaoRespostaResumo {
   valePonto?: boolean | null;
   concluidoEm?: string | null;
   ipEnvio?: string | null;
+  tentativasEnvio?: number | null;
+  edicoesRealizadas?: number | null;
+  ultimaEdicaoEm?: string | null;
   resumo?: {
     questoesTotal?: number;
     questoesRespondidas?: number;
@@ -230,7 +238,13 @@ export interface AvaliacaoHistoricoItem {
 
 export interface ListAvaliacaoHistoricoResponse {
   success?: boolean;
-  data?: AvaliacaoHistoricoItem[] | { data?: AvaliacaoHistoricoItem[]; historico?: AvaliacaoHistoricoItem[]; items?: AvaliacaoHistoricoItem[] };
+  data?:
+    | AvaliacaoHistoricoItem[]
+    | {
+        data?: AvaliacaoHistoricoItem[];
+        historico?: AvaliacaoHistoricoItem[];
+        items?: AvaliacaoHistoricoItem[];
+      };
   items?: AvaliacaoHistoricoItem[];
   historico?: AvaliacaoHistoricoItem[];
 }
@@ -261,7 +275,12 @@ export interface AvaliacaoRespostaDetalhe {
   inscricaoId?: string;
   aluno?: AvaliacaoRespostaAlunoResumo;
   tipoAvaliacao?: "PROVA" | "ATIVIDADE";
-  tipoAtividade?: "QUESTOES" | "PERGUNTA_RESPOSTA" | "ENVIO_MATERIAL" | "TEXTO" | null;
+  tipoAtividade?:
+    | "QUESTOES"
+    | "PERGUNTA_RESPOSTA"
+    | "ENVIO_MATERIAL"
+    | "TEXTO"
+    | null;
   statusCorrecao?: StatusCorrecao;
   nota?: number | null;
   notaMaxima?: number | null;
@@ -270,6 +289,9 @@ export interface AvaliacaoRespostaDetalhe {
   valePonto?: boolean | null;
   concluidoEm?: string | null;
   ipEnvio?: string | null;
+  tentativasEnvio?: number | null;
+  edicoesRealizadas?: number | null;
+  ultimaEdicaoEm?: string | null;
   corrigidoEm?: string | null;
   corrigidoPor?: {
     id: string;
@@ -309,7 +331,10 @@ export interface CorrigirAvaliacaoRespostaResponse {
   };
 }
 
-export type AvaliacaoRespostaComentarioFiltro = "PRINCIPAL" | "RECENTES" | "MEUS_COMENTARIOS";
+export type AvaliacaoRespostaComentarioFiltro =
+  | "PRINCIPAL"
+  | "RECENTES"
+  | "MEUS_COMENTARIOS";
 
 export interface AvaliacaoRespostaComentarioAutor {
   id: string;
