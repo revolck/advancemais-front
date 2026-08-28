@@ -3024,6 +3024,7 @@ export function buildListMinhasNotasSearchParams(
 ) {
   const sp = new URLSearchParams();
   if (params.cursoId) sp.set("cursoId", params.cursoId);
+  if (params.turmaId) sp.set("turmaId", params.turmaId);
   if (params.situacao) sp.set("situacao", params.situacao);
   if (params.dataInicio) sp.set("dataInicio", params.dataInicio);
   if (params.dataFim) sp.set("dataFim", params.dataFim);

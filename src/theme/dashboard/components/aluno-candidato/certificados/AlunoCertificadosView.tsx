@@ -312,11 +312,26 @@ export function AlunoCertificadosView() {
                       </div>
                     </TableCell>
                     <TableCell className="text-sm text-gray-900">
-                      <div className="flex items-center gap-2">
-                        <BookOpen className="h-4 w-4 flex-shrink-0 text-gray-400" />
-                        <span>
-                          {cert.cursoNome} / {cert.turmaNome}
-                        </span>
+                      <div className="flex min-w-0 items-center gap-2">
+                        <BookOpen className="h-4 w-4 shrink-0 text-gray-400" />
+                        <div className="min-w-0 space-y-1">
+                          <div className="flex min-w-0 items-center gap-2">
+                            <span className="shrink-0 text-[11px]! text-gray-500!">
+                              Curso
+                            </span>
+                            <span className="min-w-0 truncate text-sm! text-gray-700!">
+                              {cert.cursoNome}
+                            </span>
+                          </div>
+                          <div className="flex min-w-0 items-center gap-2">
+                            <span className="shrink-0 text-[11px]! text-gray-500!">
+                              Turma
+                            </span>
+                            <span className="min-w-0 truncate text-sm! text-gray-700!">
+                              {cert.turmaNome}
+                            </span>
+                          </div>
+                        </div>
                       </div>
                     </TableCell>
                     <TableCell className="text-sm text-gray-900">

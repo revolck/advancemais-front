@@ -1,4 +1,6 @@
-import type { Frequencia, FrequenciaStatus } from "@/api/cursos";
+import type { Frequencia } from "@/api/cursos";
+
+export type AlunoFrequenciaStatus = "PRESENTE" | "AUSENTE";
 
 export interface AlunoFrequenciaListItem {
   id: string;
@@ -11,7 +13,7 @@ export interface AlunoFrequenciaListItem {
   aulaNome: string;
   inscricaoId: string;
   alunoId: string;
-  statusAtual: FrequenciaStatus;
+  statusAtual: AlunoFrequenciaStatus;
   justificativa?: string | null;
   observacoes?: string | null;
   dataReferencia: string;
@@ -36,7 +38,7 @@ export function mapMinhaFrequenciaToListItem(
     aulaNome: item.origemTitulo ?? "Aula",
     inscricaoId: item.inscricaoId,
     alunoId: item.alunoId ?? "",
-    statusAtual: item.status,
+    statusAtual: item.status === "PRESENTE" ? "PRESENTE" : "AUSENTE",
     justificativa: item.justificativa,
     observacoes: item.observacoes,
     dataReferencia: item.dataReferencia ?? item.criadoEm,

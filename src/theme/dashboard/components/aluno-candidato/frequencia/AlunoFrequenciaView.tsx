@@ -42,34 +42,15 @@ function getStatusConfig(status: AlunoFrequenciaListItem["statusAtual"]) {
         className: "bg-emerald-100 text-emerald-800 border-emerald-200",
       };
     case "AUSENTE":
+    default:
       return {
         label: "Ausente",
         className: "bg-red-100 text-red-800 border-red-200",
       };
-    case "JUSTIFICADO":
-      return {
-        label: "Justificado",
-        className: "bg-amber-100 text-amber-800 border-amber-200",
-      };
-    case "ATRASADO":
-      return {
-        label: "Atrasado",
-        className: "bg-orange-100 text-orange-800 border-orange-200",
-      };
-    default:
-      return {
-        label: "Pendente",
-        className: "bg-gray-100 text-gray-800 border-gray-200",
-      };
   }
 }
 
-type FrequenciaStatusFilter =
-  | "PRESENTE"
-  | "AUSENTE"
-  | "JUSTIFICADO"
-  | "ATRASADO"
-  | null;
+type FrequenciaStatusFilter = "PRESENTE" | "AUSENTE" | null;
 
 export function AlunoFrequenciaView() {
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
@@ -212,8 +193,6 @@ export function AlunoFrequenciaView() {
     () => [
       { value: "PRESENTE", label: "Presente" },
       { value: "AUSENTE", label: "Ausente" },
-      { value: "JUSTIFICADO", label: "Justificado" },
-      { value: "ATRASADO", label: "Atrasado" },
     ],
     []
   );
@@ -334,7 +313,10 @@ export function AlunoFrequenciaView() {
                       <Skeleton className="h-4 w-40" />
                     </TableCell>
                     <TableCell className="py-4 px-3">
-                      <Skeleton className="h-4 w-24" />
+                      <div className="space-y-2">
+                        <Skeleton className="h-3 w-52" />
+                        <Skeleton className="h-3 w-64" />
+                      </div>
                     </TableCell>
                     <TableCell className="py-4 px-3">
                       <Skeleton className="h-4 w-20" />
@@ -437,11 +419,26 @@ export function AlunoFrequenciaView() {
                         </div>
                       </TableCell>
                       <TableCell className="py-4 px-3">
-                        <div className="flex items-center gap-2 text-sm text-gray-700">
-                          <BookOpen className="h-4 w-4 flex-shrink-0 text-gray-400" />
-                          <span>
-                            {freq.cursoNome} / {freq.turmaNome}
-                          </span>
+                        <div className="flex min-w-0 items-center gap-2">
+                          <BookOpen className="h-4 w-4 shrink-0 text-gray-400" />
+                          <div className="min-w-0 space-y-1">
+                            <div className="flex min-w-0 items-center gap-2">
+                              <span className="shrink-0 text-[11px]! text-gray-500!">
+                                Curso
+                              </span>
+                              <span className="min-w-0 truncate text-sm! text-gray-700!">
+                                {freq.cursoNome}
+                              </span>
+                            </div>
+                            <div className="flex min-w-0 items-center gap-2">
+                              <span className="shrink-0 text-[11px]! text-gray-500!">
+                                Turma
+                              </span>
+                              <span className="min-w-0 truncate text-sm! text-gray-700!">
+                                {freq.turmaNome}
+                              </span>
+                            </div>
+                          </div>
                         </div>
                       </TableCell>
                       <TableCell className="py-4 px-3">

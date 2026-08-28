@@ -4,6 +4,7 @@ import { buildListMinhasNotasSearchParams } from "../../../../../api/cursos/core
 import {
   mapMinhaNotaToListItem,
   mapMinhasNotasCursosToOptions,
+  mapMinhasNotasTurmasToOptions,
   shouldShowNotasAsEmptyState,
   toApiDate,
 } from "./alunoNotas.mapper";
@@ -48,10 +49,33 @@ describe("alunoNotas mapper", () => {
           id: "curso-1",
           nome: "Curso Real",
           codigo: "CUR001",
-          turmas: [],
+          turmas: [
+            {
+              id: "turma-1",
+              nome: "Turma Real - 22/08/2026 14h",
+              codigo: "TRM001",
+            },
+          ],
         },
       ])
-    ).toEqual([{ value: "curso-1", label: "Curso Real • CUR001" }]);
+    ).toEqual([{ value: "curso-1", label: "Curso Real" }]);
+
+    expect(
+      mapMinhasNotasTurmasToOptions([
+        {
+          id: "curso-1",
+          nome: "Curso Real",
+          codigo: "CUR001",
+          turmas: [
+            {
+              id: "turma-1",
+              nome: "Turma Real - 22/08/2026 14h",
+              codigo: "TRM001",
+            },
+          ],
+        },
+      ])
+    ).toEqual([{ value: "turma-1", label: "Turma Real" }]);
 
     expect(toApiDate(new Date("2026-05-20T12:00:00.000Z"))).toBe(
       "2026-05-20"
@@ -69,6 +93,7 @@ describe("buildListMinhasNotasSearchParams", () => {
   it("gera query params dos filtros reais de notas do aluno", () => {
     const params = buildListMinhasNotasSearchParams({
       cursoId: "curso-1",
+      turmaId: "turma-1",
       situacao: "APROVADO",
       dataInicio: "2026-05-01",
       dataFim: "2026-05-31",
@@ -79,7 +104,7 @@ describe("buildListMinhasNotasSearchParams", () => {
     });
 
     expect(params.toString()).toBe(
-      "cursoId=curso-1&situacao=APROVADO&dataInicio=2026-05-01&dataFim=2026-05-31&page=2&pageSize=6&orderBy=atualizadoEm&order=desc"
+      "cursoId=curso-1&turmaId=turma-1&situacao=APROVADO&dataInicio=2026-05-01&dataFim=2026-05-31&page=2&pageSize=6&orderBy=atualizadoEm&order=desc"
     );
   });
 });

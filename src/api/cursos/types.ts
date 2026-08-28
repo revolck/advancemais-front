@@ -1437,6 +1437,7 @@ export type MinhasNotasSituacao = "APROVADO" | "RECUPERACAO" | "REPROVADO";
 
 export interface ListMinhasNotasParams {
   cursoId?: string | null;
+  turmaId?: string | null;
   situacao?: MinhasNotasSituacao | null;
   dataInicio?: string | null;
   dataFim?: string | null;

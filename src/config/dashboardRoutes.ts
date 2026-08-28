@@ -76,6 +76,22 @@ export const DASHBOARD_ROUTE_RULES: readonly RouteRule[] = Object.freeze([
     roles: [UserRole.ALUNO_CANDIDATO],
   },
   {
+    pattern: "/dashboard/cursos/alunos/notas{/*path}",
+    roles: [UserRole.ALUNO_CANDIDATO],
+  },
+  {
+    pattern: "/dashboard/cursos/alunos/frequencia{/*path}",
+    roles: [UserRole.ALUNO_CANDIDATO],
+  },
+  {
+    pattern: "/dashboard/cursos/alunos/certificados{/*path}",
+    roles: [UserRole.ALUNO_CANDIDATO],
+  },
+  {
+    pattern: "/dashboard/cursos/alunos/estagios{/*path}",
+    roles: [UserRole.ALUNO_CANDIDATO],
+  },
+  {
     pattern: "/dashboard/cursos/alunos/:id",
     roles: [
       UserRole.ADMIN,
@@ -169,6 +185,10 @@ export const DASHBOARD_ROUTE_RULES: readonly RouteRule[] = Object.freeze([
     ],
   },
   {
+    pattern: "/dashboard/cursos/pagamentos{/*path}",
+    roles: [UserRole.ALUNO_CANDIDATO],
+  },
+  {
     pattern: "/dashboard/cursos{/*path}",
     roles: [UserRole.ADMIN, UserRole.MODERADOR, UserRole.PEDAGOGICO],
   },
@@ -189,6 +209,7 @@ export const DASHBOARD_ROUTE_RULES: readonly RouteRule[] = Object.freeze([
       UserRole.MODERADOR,
       UserRole.EMPRESA,
       UserRole.SETOR_DE_VAGAS,
+      UserRole.ALUNO_CANDIDATO,
     ],
   },
   {

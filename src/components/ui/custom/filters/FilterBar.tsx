@@ -51,7 +51,9 @@ function findLabel(
     return null;
   }
   const found = field.options?.find((o) => o.value === value);
-  return found?.label ?? (value as string);
+  if (found?.label) return found.label;
+  if ((field.type ?? "select") === "select") return "Selecionado";
+  return value as string;
 }
 
 export function FilterBar({

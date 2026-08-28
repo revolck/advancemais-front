@@ -67,8 +67,38 @@ export function mapMinhaNotaToListItem(nota: NotaLancamento): AlunoNotaListItem 
 export function mapMinhasNotasCursosToOptions(cursos: MinhasNotasCursoFilter[]) {
   return cursos.map((curso) => ({
     value: curso.id,
-    label: curso.codigo ? `${curso.nome} • ${curso.codigo}` : curso.nome,
+    label: curso.nome,
   }));
+}
+
+export function formatTurmaNomeFiltro(nome: string) {
+  const trimmed = nome.trim();
+  const dateSeparatorIndex = trimmed.search(/\s-\s\d{2}\/\d{2}\/\d{4}/);
+  if (dateSeparatorIndex === -1) return trimmed;
+  return trimmed.slice(0, dateSeparatorIndex).trim();
+}
+
+export function mapMinhasNotasTurmasToOptions(
+  cursos: MinhasNotasCursoFilter[],
+  cursoId?: string | null,
+) {
+  const turmas = cursoId
+    ? (cursos.find((curso) => curso.id === cursoId)?.turmas ?? [])
+    : cursos.flatMap((curso) => curso.turmas);
+
+  const uniqueById = new Map<string, { value: string; label: string }>();
+  for (const turma of turmas) {
+    if (!uniqueById.has(turma.id)) {
+      uniqueById.set(turma.id, {
+        value: turma.id,
+        label: formatTurmaNomeFiltro(turma.nome),
+      });
+    }
+  }
+
+  return Array.from(uniqueById.values()).sort((left, right) =>
+    left.label.localeCompare(right.label, "pt-BR"),
+  );
 }
 
 export function toApiDate(value: Date | string | null | undefined) {

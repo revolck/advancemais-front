@@ -41,6 +41,23 @@ describe("alunoFrequencia mapper", () => {
     });
   });
 
+  it("normaliza qualquer status diferente de presente como ausente para o aluno", () => {
+    const item = mapMinhaFrequenciaToListItem({
+      id: "frequencia-2",
+      cursoId: "curso-1",
+      turmaId: "turma-1",
+      aulaId: "aula-1",
+      alunoId: "aluno-1",
+      inscricaoId: "inscricao-1",
+      status: "JUSTIFICADO",
+      origemTitulo: "Aula Presencial",
+      dataReferencia: "2026-05-20T12:00:00.000Z",
+      criadoEm: "2026-05-20T12:00:00.000Z",
+    } as never);
+
+    expect(item.statusAtual).toBe("AUSENTE");
+  });
+
   it("converte datas e trata indisponibilidade da rota pessoal como lista vazia", () => {
     expect(toApiDate(new Date("2026-05-20T12:00:00.000Z"))).toBe(
       "2026-05-20"

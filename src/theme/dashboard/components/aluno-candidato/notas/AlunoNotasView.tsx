@@ -11,9 +11,15 @@ import { getUserProfile } from "@/api/usuarios";
 import { getMinhaNotaHistorico, listMinhasNotas } from "@/api/cursos";
 import { NotaHistoryModal } from "@/theme/dashboard/components/admin/lista-notas/components/NotaHistoryModal";
 import { Skeleton } from "@/components/ui/skeleton";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import { Calendar, TrendingUp } from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { BookOpen, CalendarDays, History } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -23,6 +29,7 @@ import type { DateRange } from "@/components/ui/custom/date-picker";
 import {
   mapMinhaNotaToListItem,
   mapMinhasNotasCursosToOptions,
+  mapMinhasNotasTurmasToOptions,
   shouldShowNotasAsEmptyState,
   toApiDate,
   type AlunoNotaListItem,
@@ -42,28 +49,32 @@ function getSituacao(nota: number | null) {
   if (nota === null) {
     return {
       label: "Sem nota",
-      className: "bg-gray-100 text-gray-800 border-gray-200",
-      color: "text-gray-600",
+      detail: "Aguardando lançamento",
+      tooltip: "Ainda não há nota registrada para esta turma.",
+      className: "border-gray-200 bg-gray-100 text-gray-700",
     };
   }
   if (nota >= 7) {
     return {
       label: "Aprovado",
-      className: "bg-emerald-100 text-emerald-800 border-emerald-200",
-      color: "text-emerald-600",
+      detail: "Média atingida",
+      tooltip: "Nota igual ou acima de 7.",
+      className: "border-emerald-200 bg-emerald-50 text-emerald-700",
     };
   }
   if (nota >= 5) {
     return {
       label: "Recuperação",
-      className: "bg-red-100 text-red-800 border-red-200",
-      color: "text-red-600",
+      detail: "Entre 5 e 6,9",
+      tooltip: "Nota entre 5 e 6,9.",
+      className: "border-amber-200 bg-amber-50 text-amber-700",
     };
   }
   return {
     label: "Reprovado",
-    className: "bg-red-100 text-red-800 border-red-200",
-    color: "text-red-600",
+    detail: "Abaixo da média",
+    tooltip: "Nota abaixo de 5.",
+    className: "border-red-200 bg-red-50 text-red-700",
   };
 }
 
@@ -76,19 +87,46 @@ function formatNota(nota: number | null): string {
   });
 }
 
+const dateTimeFormatter = new Intl.DateTimeFormat("pt-BR", {
+  dateStyle: "short",
+  timeStyle: "short",
+});
+
+function formatAtualizacao(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Data indisponível";
+  return dateTimeFormatter.format(date);
+}
+
+function shouldShowMotivo(motivo?: string | null) {
+  const value = motivo?.trim();
+  if (!value) return false;
+  return (
+    value.toLocaleLowerCase("pt-BR") !==
+    "nota consolidada automaticamente pelo sistema"
+  );
+}
+
 type SituacaoFilter = "APROVADO" | "RECUPERACAO" | "REPROVADO" | null;
 
 export function AlunoNotasView() {
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
+  const [selectedCourseLabel, setSelectedCourseLabel] = useState<string | null>(
+    null,
+  );
+  const [selectedTurmaId, setSelectedTurmaId] = useState<string | null>(null);
+  const [selectedTurmaLabel, setSelectedTurmaLabel] = useState<string | null>(
+    null,
+  );
   const [selectedSituacao, setSelectedSituacao] =
     useState<SituacaoFilter>(null);
   const [selectedDateRange, setSelectedDateRange] = useState<DateRange>(
-    createEmptyDateRange()
+    createEmptyDateRange(),
   );
   const [selectedNotaHistory, setSelectedNotaHistory] =
     useState<AlunoNotaListItem | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 6;
+  const pageSize = 10;
 
   const token = useMemo(() => getCookieValue("token"), []);
 
@@ -105,11 +143,11 @@ export function AlunoNotasView() {
 
   const dataInicio = useMemo(
     () => toApiDate(selectedDateRange.from),
-    [selectedDateRange.from]
+    [selectedDateRange.from],
   );
   const dataFim = useMemo(
     () => toApiDate(selectedDateRange.to),
-    [selectedDateRange.to]
+    [selectedDateRange.to],
   );
 
   const {
@@ -122,6 +160,7 @@ export function AlunoNotasView() {
     queryKey: [
       "aluno-notas-reais",
       selectedCourseId,
+      selectedTurmaId,
       selectedSituacao,
       dataInicio,
       dataFim,
@@ -132,6 +171,7 @@ export function AlunoNotasView() {
       try {
         const response = await listMinhasNotas({
           cursoId: selectedCourseId,
+          turmaId: selectedTurmaId,
           situacao: selectedSituacao,
           dataInicio,
           dataFim,
@@ -174,8 +214,92 @@ export function AlunoNotasView() {
 
   const cursosUnicos = useMemo(
     () => mapMinhasNotasCursosToOptions(notasData?.filters.cursos ?? []),
-    [notasData?.filters.cursos]
+    [notasData?.filters.cursos],
   );
+
+  const turmasUnicas = useMemo(
+    () =>
+      mapMinhasNotasTurmasToOptions(
+        notasData?.filters.cursos ?? [],
+        selectedCourseId,
+      ),
+    [notasData?.filters.cursos, selectedCourseId],
+  );
+
+  useEffect(() => {
+    if (!selectedCourseId) {
+      setSelectedCourseLabel(null);
+      return;
+    }
+
+    const selectedOption = cursosUnicos.find(
+      (curso) => curso.value === selectedCourseId,
+    );
+    if (selectedOption?.label) {
+      setSelectedCourseLabel(selectedOption.label);
+    }
+  }, [cursosUnicos, selectedCourseId]);
+
+  useEffect(() => {
+    if (!selectedTurmaId) {
+      setSelectedTurmaLabel(null);
+      return;
+    }
+
+    const selectedOption = turmasUnicas.find(
+      (turma) => turma.value === selectedTurmaId,
+    );
+    if (selectedOption?.label) {
+      setSelectedTurmaLabel(selectedOption.label);
+    }
+  }, [selectedTurmaId, turmasUnicas]);
+
+  useEffect(() => {
+    if (
+      selectedTurmaId &&
+      turmasUnicas.length > 0 &&
+      !turmasUnicas.some((turma) => turma.value === selectedTurmaId)
+    ) {
+      setSelectedTurmaId(null);
+      setSelectedTurmaLabel(null);
+    }
+  }, [selectedTurmaId, turmasUnicas]);
+
+  const cursoOptions = useMemo(() => {
+    if (
+      !selectedCourseId ||
+      !selectedCourseLabel ||
+      cursosUnicos.some((curso) => curso.value === selectedCourseId)
+    ) {
+      return cursosUnicos;
+    }
+
+    return [
+      {
+        value: selectedCourseId,
+        label: selectedCourseLabel,
+      },
+      ...cursosUnicos,
+    ];
+  }, [cursosUnicos, selectedCourseId, selectedCourseLabel]);
+
+  const turmaOptions = useMemo(() => {
+    if (
+      !selectedTurmaId ||
+      !selectedTurmaLabel ||
+      turmasUnicas.some((turma) => turma.value === selectedTurmaId)
+    ) {
+      return turmasUnicas;
+    }
+
+    return [
+      {
+        value: selectedTurmaId,
+        label: selectedTurmaLabel,
+      },
+      ...turmasUnicas,
+    ];
+  }, [selectedTurmaId, selectedTurmaLabel, turmasUnicas]);
 
   const isLoading = isLoadingNotas;
   const notasFiltradas = notasData?.items ?? [];
@@ -195,7 +319,7 @@ export function AlunoNotasView() {
   // Reset página quando filtro muda
   useEffect(() => {
     setCurrentPage(1);
-  }, [selectedCourseId, selectedSituacao, dataInicio, dataFim]);
+  }, [selectedCourseId, selectedTurmaId, selectedSituacao, dataInicio, dataFim]);
 
   const handlePageChange = useCallback(
     (page: number) => {
@@ -203,7 +327,7 @@ export function AlunoNotasView() {
       setCurrentPage(nextPage);
       window.scrollTo({ top: 0, behavior: "smooth" });
     },
-    [totalPages]
+    [totalPages],
   );
 
   const visiblePages = useMemo(() => {
@@ -232,7 +356,7 @@ export function AlunoNotasView() {
       { value: "RECUPERACAO", label: "Recuperação" },
       { value: "REPROVADO", label: "Reprovado" },
     ],
-    []
+    [],
   );
 
   const filterFields: FilterField[] = useMemo(
@@ -241,10 +365,21 @@ export function AlunoNotasView() {
         key: "cursoId",
         label: "Curso",
         mode: "single" as const,
-        options: cursosUnicos,
-        placeholder: isLoadingNotas ? "Carregando..." : "Selecionar",
-        disabled: isLoadingNotas && cursosUnicos.length === 0,
+        options: cursoOptions,
+        placeholder: isLoadingNotas ? "Carregando…" : "Selecionar",
+        disabled: isLoadingNotas && cursoOptions.length === 0,
         emptyPlaceholder: "Sem cursos disponíveis",
+      },
+      {
+        key: "turmaId",
+        label: "Turma",
+        mode: "single" as const,
+        options: turmaOptions,
+        placeholder: isLoadingNotas ? "Carregando…" : "Selecionar turma",
+        disabled: isLoadingNotas && turmaOptions.length === 0,
+        emptyPlaceholder: selectedCourseId
+          ? "Sem turmas neste curso"
+          : "Sem turmas disponíveis",
       },
       {
         key: "situacao",
@@ -260,62 +395,126 @@ export function AlunoNotasView() {
         placeholder: "Selecionar período",
       },
     ],
-    [cursosUnicos, isLoadingNotas, situacaoOptions]
+    [cursoOptions, isLoadingNotas, selectedCourseId, situacaoOptions, turmaOptions],
   );
 
   const filterValues = useMemo(
     () => ({
       cursoId: selectedCourseId,
+      turmaId: selectedTurmaId,
       situacao: selectedSituacao,
       periodo: selectedDateRange,
     }),
-    [selectedCourseId, selectedSituacao, selectedDateRange]
+    [selectedCourseId, selectedTurmaId, selectedSituacao, selectedDateRange],
   );
 
   return (
-    <div className="space-y-8 pb-8">
-      {/* Filtros */}
+    <div className="space-y-6 pb-8">
       {shouldShowFilters && (
-        <div>
-          <FilterBar
-            className="[&>div]:lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.2fr)_auto]"
-            fields={filterFields}
-            values={filterValues}
-            onChange={(key, value) => {
-              if (key === "cursoId") {
-                setSelectedCourseId((value as string) || null);
+        <FilterBar
+          className="[&>div]:lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,1.1fr)_auto]"
+          fields={filterFields}
+          values={filterValues}
+          onChange={(key, value) => {
+            if (key === "cursoId") {
+              const nextCourseId = (value as string) || null;
+              const nextCourseLabel =
+                cursoOptions.find((curso) => curso.value === nextCourseId)
+                  ?.label ?? null;
+              setSelectedCourseId(nextCourseId);
+              setSelectedCourseLabel(nextCourseLabel);
+              if (nextCourseId !== selectedCourseId) {
+                setSelectedTurmaId(null);
+                setSelectedTurmaLabel(null);
               }
-              if (key === "situacao") {
-                setSelectedSituacao((value as SituacaoFilter) || null);
-              }
-              if (key === "periodo") {
-                setSelectedDateRange(
-                  (value as DateRange) || createEmptyDateRange()
-                );
-              }
-            }}
-            onClearAll={() => {
-              setSelectedCourseId(null);
-              setSelectedSituacao(null);
-              setSelectedDateRange(createEmptyDateRange());
-            }}
-          />
-        </div>
+            }
+            if (key === "turmaId") {
+              const nextTurmaId = (value as string) || null;
+              const nextTurmaLabel =
+                turmaOptions.find((turma) => turma.value === nextTurmaId)
+                  ?.label ?? null;
+              setSelectedTurmaId(nextTurmaId);
+              setSelectedTurmaLabel(nextTurmaLabel);
+            }
+            if (key === "situacao") {
+              setSelectedSituacao((value as SituacaoFilter) || null);
+            }
+            if (key === "periodo") {
+              setSelectedDateRange(
+                (value as DateRange) || createEmptyDateRange(),
+              );
+            }
+          }}
+          onClearAll={() => {
+            setSelectedCourseId(null);
+            setSelectedCourseLabel(null);
+            setSelectedTurmaId(null);
+            setSelectedTurmaLabel(null);
+            setSelectedSituacao(null);
+            setSelectedDateRange(createEmptyDateRange());
+          }}
+        />
       )}
 
-      {/* Loading */}
       {isLoading && (
-        <div className="rounded-xl bg-white p-4 md:p-6 border border-gray-200/60">
-          <div className="space-y-4">
-            <Skeleton className="h-32 w-full" />
-            <Skeleton className="h-32 w-full" />
-            <Skeleton className="h-32 w-full" />
+        <div
+          className="overflow-hidden rounded-xl border border-gray-200 bg-white"
+          role="status"
+          aria-live="polite"
+          aria-label="Carregando notas"
+        >
+          <div className="overflow-x-auto">
+            <Table className="min-w-[820px]">
+              <TableHeader>
+                <TableRow className="border-gray-200 bg-gray-50/50">
+                  <TableHead className="px-3 py-4 font-medium text-gray-700">
+                    Curso/Turma
+                  </TableHead>
+                  <TableHead className="px-3 py-4 text-center font-medium text-gray-700">
+                    Nota/Situação
+                  </TableHead>
+                  <TableHead className="px-3 py-4 text-center font-medium text-gray-700">
+                    Atualizado em
+                  </TableHead>
+                  <TableHead className="w-16 px-3 py-4 text-right font-medium text-gray-700">
+                    <span className="sr-only">Ações</span>
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {[1, 2, 3, 4].map((item) => (
+                  <TableRow
+                    key={item}
+                    className="border-gray-100 transition-colors hover:bg-gray-50/50"
+                  >
+                    <TableCell className="px-3 py-4">
+                      <div className="flex min-w-0 items-start gap-2">
+                        <Skeleton className="mt-0.5 h-4 w-4 shrink-0 rounded" />
+                        <div className="min-w-0 space-y-2">
+                          <Skeleton className="h-4 w-64" />
+                          <Skeleton className="h-3 w-80" />
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="px-3 py-4 text-center">
+                      <Skeleton className="mx-auto h-6 w-28 rounded-full" />
+                    </TableCell>
+                    <TableCell className="px-3 py-4 text-center">
+                      <Skeleton className="mx-auto h-4 w-32" />
+                    </TableCell>
+                    <TableCell className="px-3 py-4 text-right">
+                      <Skeleton className="ml-auto h-8 w-8 rounded-full" />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </div>
         </div>
       )}
 
       {isNotasError && (
-        <div className="rounded-xl border border-red-200 bg-red-50 p-5 text-sm text-red-700">
+        <div className="rounded-lg border border-red-200 bg-red-50 p-5 text-sm text-red-700">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <span>
               {notasError?.message || "Não foi possível carregar suas notas."}
@@ -332,141 +531,186 @@ export function AlunoNotasView() {
         </div>
       )}
 
-      {/* Empty State */}
       {showEmptyState && (
-        <div className="rounded-xl bg-white p-8 border border-gray-200/60">
+        <div className="rounded-lg border border-gray-200 bg-white p-8">
           <EmptyState
             illustration="fileNotFound"
             title="Nenhuma nota encontrada"
             description={
               selectedCourseId ||
+              selectedTurmaId ||
               selectedSituacao ||
               selectedDateRange.from ||
               selectedDateRange.to
-                ? "Nenhuma nota encontrada com os filtros aplicados. Tente ajustar os filtros."
-                : "Você ainda não possui notas registradas"
+                ? "Nenhuma nota corresponde aos filtros selecionados."
+                : "Suas notas aparecerão aqui quando forem registradas."
             }
           />
         </div>
       )}
 
-      {/* Lista de Notas */}
       {!isLoading && !isNotasError && notas.length > 0 && (
-        <div className="rounded-xl bg-white border border-gray-200/60 overflow-hidden">
-          <div className="divide-y divide-gray-200/60">
-            {notas.map((nota) => {
-              const situacao = getSituacao(nota.nota);
-              const hasHistory =
-                Boolean(nota.historicoNotaId || nota.notaId) ||
-                (nota.history?.length ?? 0) > 0;
+        <section
+          className="overflow-hidden rounded-xl border border-gray-200 bg-white"
+          aria-label="Notas"
+        >
+          <div className="overflow-x-auto">
+            <Table className="min-w-[820px]">
+              <TableHeader>
+                <TableRow className="border-gray-200 bg-gray-50/50">
+                  <TableHead className="px-3 py-4 font-medium text-gray-700">
+                    Curso/Turma
+                  </TableHead>
+                  <TableHead className="px-3 py-4 text-center font-medium text-gray-700">
+                    Nota/Situação
+                  </TableHead>
+                  <TableHead className="px-3 py-4 text-center font-medium text-gray-700">
+                    Atualizado em
+                  </TableHead>
+                  <TableHead className="w-16 px-3 py-4 text-right font-medium text-gray-700">
+                    <span className="sr-only">Ações</span>
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {notas.map((nota) => {
+                  const situacao = getSituacao(nota.nota);
+                  const showMotivo = shouldShowMotivo(nota.motivo);
+                  const hasHistory =
+                    nota.nota !== null &&
+                    (Boolean(nota.historicoNotaId || nota.notaId) ||
+                      (nota.history?.length ?? 0) > 0);
 
-              return (
-                <div
-                  key={nota.key}
-                  className="p-5 md:p-6 hover:bg-gray-50/50 transition-colors"
-                >
-                  <div className="flex flex-col lg:flex-row lg:items-center gap-5">
-                    {/* Nota - Destaque */}
-                    <div className="flex items-center gap-4 shrink-0">
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <div
-                            className={cn(
-                              "w-16 h-16 rounded-xl flex items-center justify-center font-bold text-2xl cursor-help",
-                              situacao.className
-                                .replace("text-", "bg-")
-                                .replace("-800", "-100"),
-                              situacao.color
-                            )}
-                          >
-                            {formatNota(nota.nota)}
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent sideOffset={8}>
-                          Nota: {formatNota(nota.nota)} / 10
-                        </TooltipContent>
-                      </Tooltip>
-                    </div>
-
-                    {/* Informações Principais */}
-                    <div className="flex-1 min-w-0 space-y-2.5">
-                      {/* Curso e Badge */}
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <h5 className="mb-0!">{nota.cursoNome}</h5>
-                            <Badge
-                              variant="outline"
-                              className={cn(
-                                "text-xs font-medium shrink-0",
-                                situacao.className
-                              )}
-                            >
-                              {situacao.label}
-                            </Badge>
-                          </div>
-
-                          {/* Informações da Turma */}
-                          <div className="mt-1 mb-0 flex items-center gap-2 text-sm">
-                            <div className="flex items-center gap-1.5 text-gray-600">
-                              <Calendar className="h-4 w-4 shrink-0 text-gray-400" />
-                              <span className="font-medium text-gray-700">
+                  return (
+                    <TableRow
+                      key={nota.key}
+                      className="border-gray-100 transition-colors hover:bg-gray-50/50"
+                    >
+                      <TableCell className="px-3 py-4">
+                        <div className="flex min-w-0 items-center gap-2">
+                          <BookOpen className="h-4 w-4 shrink-0 text-gray-400" />
+                          <div className="min-w-0 space-y-1">
+                            <div className="flex min-w-0 items-center gap-2">
+                              <span className="shrink-0 text-[11px]! text-gray-500!">
+                                Curso
+                              </span>
+                              <span className="min-w-0 truncate text-sm! text-gray-700!">
+                                {nota.cursoNome}
+                              </span>
+                            </div>
+                            <div className="flex min-w-0 items-center gap-2">
+                              <span className="shrink-0 text-[11px]! text-gray-500!">
+                                Turma
+                              </span>
+                              <span className="min-w-0 truncate text-sm! text-gray-700!">
                                 {nota.turmaNome}
                               </span>
                             </div>
+                            {showMotivo && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <p className="mb-0! line-clamp-1 max-w-[520px] cursor-help text-xs! text-gray-500!">
+                                    {nota.motivo}
+                                  </p>
+                                </TooltipTrigger>
+                                <TooltipContent
+                                  sideOffset={8}
+                                  className="max-w-sm text-xs"
+                                >
+                                  {nota.motivo}
+                                </TooltipContent>
+                              </Tooltip>
+                            )}
                           </div>
                         </div>
-                      </div>
+                      </TableCell>
 
-                      {/* Data de Atualização */}
-                      <div className="mt-[-5px] flex items-center gap-2 text-sm text-gray-500">
-                        <TrendingUp className="h-3.5 w-3.5 shrink-0 text-gray-400" />
-                        <span>
-                          Atualizado em{" "}
-                          <span className="font-medium text-gray-600">
-                            {format(
-                              new Date(nota.atualizadoEm),
-                              "dd 'de' MMMM 'de' yyyy",
-                              {
-                                locale: ptBR,
-                              }
-                            )}
+                      <TableCell className="px-3 py-4 text-center">
+                        <div className="inline-flex min-w-[150px] flex-col items-center gap-1">
+                          <span className="inline-flex items-baseline gap-1 text-sm! font-medium! text-gray-900!">
+                            <strong className="text-3xl! leading-none! font-semibold! tabular-nums text-gray-950!">
+                              {formatNota(nota.nota)}
+                            </strong>
+                            {nota.nota !== null ? (
+                              <span className="text-sm! font-normal! text-gray-500!">
+                                /10
+                              </span>
+                            ) : null}
                           </span>
-                        </span>
-                      </div>
-                    </div>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div className="inline-flex cursor-help flex-col items-center gap-1">
+                                <Badge
+                                  variant="outline"
+                                  className={cn(
+                                    "h-5 rounded px-1.5 text-[11px]! leading-none! font-medium!",
+                                    situacao.className,
+                                  )}
+                                >
+                                  {situacao.label}
+                                </Badge>
+                                <span className="text-[11px]! leading-none! text-gray-500!">
+                                  {situacao.detail}
+                                </span>
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent sideOffset={8}>
+                              {situacao.tooltip}
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+                      </TableCell>
 
-                    {/* Ações */}
-                    <div className="shrink-0 lg:ml-auto">
-                      {hasHistory && (
-                        <ButtonCustom
-                          variant="outline"
-                          size="sm"
-                          icon="History"
-                          onClick={() => setSelectedNotaHistory(nota)}
-                          className="w-full lg:w-auto"
-                        >
-                          Histórico
-                        </ButtonCustom>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+                      <TableCell className="whitespace-nowrap px-3 py-4 text-center">
+                        <span className="inline-flex items-center gap-2 text-sm! text-gray-700!">
+                          <CalendarDays className="h-4 w-4 text-gray-400" />
+                          {formatAtualizacao(nota.atualizadoEm)}
+                        </span>
+                      </TableCell>
+
+                      <TableCell className="w-16 px-3 py-4 text-right">
+                        {hasHistory ? (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <ButtonCustom
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                withAnimation={false}
+                                aria-label={`Ver histórico de ${nota.cursoNome}`}
+                                onClick={() => setSelectedNotaHistory(nota)}
+                                className="h-8 w-8 cursor-pointer rounded-full bg-transparent text-gray-500 hover:bg-[var(--primary-color)] hover:text-white"
+                              >
+                                <History
+                                  className="h-4 w-4"
+                                  aria-hidden="true"
+                                />
+                              </ButtonCustom>
+                            </TooltipTrigger>
+                            <TooltipContent sideOffset={8}>
+                              Histórico
+                            </TooltipContent>
+                          </Tooltip>
+                        ) : null}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
           </div>
 
-          {/* Paginação */}
           {totalItems > 0 && (
-            <div className="flex flex-col gap-4 px-4 md:px-6 py-4 border-t border-gray-200/60 bg-gray-50/30 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-4 border-t border-gray-200 bg-gray-50/50 px-4 py-4 sm:flex-row sm:items-center sm:justify-between md:px-5">
               <div className="flex items-center gap-2 text-sm text-gray-600">
                 <span>
-                  Mostrando {startIndex} a {endIndex} de {totalItems}
+                  Mostrando {startIndex} a {endIndex} de {totalItems} nota
+                  {totalItems === 1 ? "" : "s"}
                 </span>
               </div>
 
               {totalPages > 1 && (
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <ButtonCustom
                     variant="outline"
                     size="sm"
@@ -537,7 +781,7 @@ export function AlunoNotasView() {
               )}
             </div>
           )}
-        </div>
+        </section>
       )}
 
       {/* Modal de Histórico */}

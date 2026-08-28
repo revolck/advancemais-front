@@ -17,8 +17,8 @@ import {
   BookOpen,
   MapPin,
   Clock,
-  Phone,
   Eye,
+  ExternalLink,
 } from "lucide-react";
 import type { DateRange } from "@/components/ui/custom/date-picker";
 import {
@@ -205,6 +205,13 @@ export function AlunoEstagiosView() {
     return parts.join(", ");
   };
 
+  const getGoogleMapsUrl = (estagio: AlunoEstagioListItem): string => {
+    const query = [formatEndereco(estagio), estagio.cep]
+      .filter(Boolean)
+      .join(" ");
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+  };
+
   return (
     <div className="space-y-8 pb-8">
       {/* Filtros */}
@@ -297,10 +304,7 @@ export function AlunoEstagiosView() {
                     Endereço
                   </TableHead>
                   <TableHead className="text-sm font-semibold text-gray-700">
-                    Período
-                  </TableHead>
-                  <TableHead className="text-sm font-semibold text-gray-700">
-                    Horário
+                    Período/Horário
                   </TableHead>
                   <TableHead className="text-sm font-semibold text-gray-700">
                     Status
@@ -319,27 +323,38 @@ export function AlunoEstagiosView() {
                       className="border-gray-100 bg-white hover:bg-blue-50/40"
                     >
                       <TableCell className="text-sm text-gray-900">
-                        <div className="flex items-center gap-2">
-                          <Briefcase className="h-4 w-4 flex-shrink-0 text-gray-400" />
-                          <div>
-                            <div className="font-medium">
+                        <div className="flex min-w-0 items-center gap-3">
+                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-blue-100 bg-blue-50">
+                            <Briefcase className="h-4 w-4 text-blue-700" />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="truncate text-sm! font-semibold! text-gray-900!">
                               {estagio.empresaNome}
                             </div>
-                            {estagio.empresaTelefone && (
-                              <div className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
-                                <Phone className="h-3 w-3" />
-                                {estagio.empresaTelefone}
-                              </div>
-                            )}
                           </div>
                         </div>
                       </TableCell>
                       <TableCell className="text-sm text-gray-900">
-                        <div className="flex items-center gap-2">
-                          <BookOpen className="h-4 w-4 flex-shrink-0 text-gray-400" />
-                          <span>
-                            {estagio.cursoNome} / {estagio.turmaNome}
-                          </span>
+                        <div className="flex min-w-0 items-center gap-2">
+                          <BookOpen className="h-4 w-4 shrink-0 text-gray-400" />
+                          <div className="min-w-0 space-y-1">
+                            <div className="flex min-w-0 items-center gap-2">
+                              <span className="shrink-0 text-[11px]! text-gray-500!">
+                                Curso
+                              </span>
+                              <span className="min-w-0 truncate text-sm! text-gray-700!">
+                                {estagio.cursoNome}
+                              </span>
+                            </div>
+                            <div className="flex min-w-0 items-center gap-2">
+                              <span className="shrink-0 text-[11px]! text-gray-500!">
+                                Turma
+                              </span>
+                              <span className="min-w-0 truncate text-sm! text-gray-700!">
+                                {estagio.turmaNome}
+                              </span>
+                            </div>
+                          </div>
                         </div>
                       </TableCell>
                       <TableCell className="text-sm text-gray-900">
@@ -369,10 +384,14 @@ export function AlunoEstagiosView() {
                         </div>
                       </TableCell>
                       <TableCell className="text-sm text-gray-900">
-                        <div className="flex items-center gap-2">
-                          <Calendar className="h-4 w-4 flex-shrink-0 text-gray-400" />
-                          <div>
-                            <div>
+                        <div className="flex min-w-0 items-center gap-2">
+                          <Calendar className="h-4 w-4 shrink-0 text-gray-400" />
+                          <div className="min-w-0 space-y-1">
+                            <div className="flex min-w-0 items-center gap-2">
+                              <span className="shrink-0 text-[11px]! text-gray-500!">
+                                Período
+                              </span>
+                              <span className="min-w-0 truncate text-sm! text-gray-700!">
                               {format(
                                 new Date(estagio.dataInicioPrevista),
                                 "dd/MM/yyyy",
@@ -384,16 +403,17 @@ export function AlunoEstagiosView() {
                                 "dd/MM/yyyy",
                                 { locale: ptBR }
                               )}
+                              </span>
+                            </div>
+                            <div className="flex min-w-0 items-center gap-2">
+                              <span className="shrink-0 text-[11px]! text-gray-500!">
+                                Horário
+                              </span>
+                              <span className="min-w-0 truncate text-sm! text-gray-700!">
+                                {estagio.horarioInicio} - {estagio.horarioFim}
+                              </span>
                             </div>
                           </div>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-sm text-gray-900">
-                        <div className="flex items-center gap-2">
-                          <Clock className="h-4 w-4 flex-shrink-0 text-gray-400" />
-                          <span>
-                            {estagio.horarioInicio} - {estagio.horarioFim}
-                          </span>
                         </div>
                       </TableCell>
                       <TableCell>
@@ -505,42 +525,27 @@ export function AlunoEstagiosView() {
               <ModalTitle>Detalhes do Estágio</ModalTitle>
             </ModalHeader>
             <ModalBody className="p-6">
-              <div className="space-y-4">
-                {/* Grid de informações principais */}
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {/* Empresa */}
-                  <div className="rounded-lg border border-gray-200/70 bg-gray-50/80 px-4 py-3">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1.5">
-                      Empresa
-                    </p>
-                    <div className="space-y-1.5">
-                      <div className="flex items-center gap-2">
-                        <Briefcase className="h-4 w-4 flex-shrink-0 text-gray-400" />
-                        <p className="text-sm font-semibold text-gray-900">
-                          {selectedEstagio.empresaNome}
-                        </p>
-                      </div>
-                      {selectedEstagio.empresaTelefone && (
-                        <div className="flex items-center gap-2 ml-6">
-                          <Phone className="h-3.5 w-3.5 flex-shrink-0 text-gray-400" />
-                          <p className="text-sm text-gray-600">
-                            {selectedEstagio.empresaTelefone}
-                          </p>
+              <div className="space-y-5">
+                <section className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+                  <div className="border-b border-gray-100 bg-gray-50/80 px-5 py-4">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="flex min-w-0 items-center gap-3">
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-blue-100 bg-blue-50">
+                          <Briefcase className="h-5 w-5 text-blue-700" />
                         </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Status */}
-                  <div className="rounded-lg border border-gray-200/70 bg-gray-50/80 px-4 py-3">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1.5">
-                      Status
-                    </p>
-                    <div className="mt-1">
+                        <div className="min-w-0">
+                          <p className="mb-1! text-xs! font-semibold! uppercase! tracking-wide! text-gray-500!">
+                            Empresa
+                          </p>
+                          <h3 className="mb-0! truncate text-lg! font-semibold! text-gray-950!">
+                            {selectedEstagio.empresaNome}
+                          </h3>
+                        </div>
+                      </div>
                       <Badge
                         variant="outline"
                         className={cn(
-                          "text-xs font-medium border",
+                          "w-fit shrink-0 text-xs! font-medium! border",
                           getStatusConfig(selectedEstagio.status).className
                         )}
                       >
@@ -549,92 +554,126 @@ export function AlunoEstagiosView() {
                     </div>
                   </div>
 
-                  {/* Curso/Turma */}
-                  <div className="rounded-lg border border-gray-200/70 bg-gray-50/80 px-4 py-3">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1.5">
-                      Curso/Turma
-                    </p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <BookOpen className="h-4 w-4 flex-shrink-0 text-gray-400" />
-                      <p className="text-sm font-semibold text-gray-900">
-                        {selectedEstagio.cursoNome} /{" "}
-                        {selectedEstagio.turmaNome}
-                      </p>
-                    </div>
-                  </div>
+                  <div className="divide-y divide-gray-100">
+                    <div className="grid gap-0 sm:grid-cols-2 sm:divide-x sm:divide-gray-100">
+                      <div className="px-5 py-4">
+                        <div className="mb-3 flex items-center gap-2">
+                          <BookOpen className="h-4 w-4 shrink-0 text-gray-400" />
+                          <p className="mb-0! text-xs! font-semibold! uppercase! tracking-wide! text-gray-500!">
+                            Curso e turma
+                          </p>
+                        </div>
+                        <div className="min-w-0 space-y-2 pl-6">
+                          <div className="min-w-0">
+                            <span className="block text-[11px]! text-gray-500!">
+                              Curso
+                            </span>
+                            <p className="mb-0! truncate text-sm! font-semibold! text-gray-900!">
+                              {selectedEstagio.cursoNome}
+                            </p>
+                          </div>
+                          <div className="min-w-0">
+                            <span className="block text-[11px]! text-gray-500!">
+                              Turma
+                            </span>
+                            <p className="mb-0! truncate text-sm! text-gray-700!">
+                              {selectedEstagio.turmaNome}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
 
-                  {/* Horário */}
-                  <div className="rounded-lg border border-gray-200/70 bg-gray-50/80 px-4 py-3">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1.5">
-                      Horário
-                    </p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Clock className="h-4 w-4 flex-shrink-0 text-gray-400" />
-                      <p className="text-sm font-semibold text-gray-900">
-                        {selectedEstagio.horarioInicio} às{" "}
-                        {selectedEstagio.horarioFim}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Período */}
-                <div className="rounded-lg border border-gray-200/70 bg-white px-4 py-3 shadow-sm">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">
-                    Período
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 flex-shrink-0 text-gray-400" />
-                    <p className="text-sm text-gray-900">
-                      {format(
-                        new Date(selectedEstagio.dataInicioPrevista),
-                        "dd 'de' MMMM 'de' yyyy",
-                        { locale: ptBR }
-                      )}{" "}
-                      até{" "}
-                      {format(
-                        new Date(selectedEstagio.dataFimPrevista),
-                        "dd 'de' MMMM 'de' yyyy",
-                        { locale: ptBR }
-                      )}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Endereço */}
-                <div className="rounded-lg border border-gray-200/70 bg-white px-4 py-3 shadow-sm">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">
-                    Endereço
-                  </p>
-                  <div className="space-y-1.5">
-                    <div className="flex items-start gap-2">
-                      <MapPin className="h-4 w-4 flex-shrink-0 text-gray-400 mt-0.5" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm text-gray-900">
-                          {formatEndereco(selectedEstagio)}
-                        </p>
-                        <p className="text-sm text-gray-600 mt-1">
-                          CEP: {selectedEstagio.cep}
-                        </p>
+                      <div className="border-t border-gray-100 px-5 py-4 sm:border-t-0">
+                        <div className="mb-3 flex items-center gap-2">
+                          <Calendar className="h-4 w-4 shrink-0 text-gray-400" />
+                          <p className="mb-0! text-xs! font-semibold! uppercase! tracking-wide! text-gray-500!">
+                            Período e horário
+                          </p>
+                        </div>
+                        <div className="space-y-2 pl-6">
+                          <div>
+                            <span className="block text-[11px]! text-gray-500!">
+                              Período
+                            </span>
+                            <p className="mb-0! text-sm! font-semibold! text-gray-900!">
+                              {format(
+                                new Date(selectedEstagio.dataInicioPrevista),
+                                "dd/MM/yyyy",
+                                { locale: ptBR }
+                              )}{" "}
+                              até{" "}
+                              {format(
+                                new Date(selectedEstagio.dataFimPrevista),
+                                "dd/MM/yyyy",
+                                { locale: ptBR }
+                              )}
+                            </p>
+                          </div>
+                          <div>
+                            <span className="block text-[11px]! text-gray-500!">
+                              Horário
+                            </span>
+                            <p className="mb-0! flex items-center gap-1 text-sm! text-gray-700!">
+                              <Clock className="h-3.5 w-3.5 text-gray-400" />
+                              {selectedEstagio.horarioInicio} às{" "}
+                              {selectedEstagio.horarioFim}
+                            </p>
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </div>
 
-                {/* Observações */}
-                {selectedEstagio.observacoes && (
-                  <div className="rounded-lg border border-gray-200/70 bg-white px-4 py-3 shadow-sm">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">
-                      Observações
-                    </p>
-                    <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">
-                      {selectedEstagio.observacoes}
-                    </p>
-                  </div>
-                )}
+                    <div className="px-5 py-4">
+                      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="min-w-0">
+                          <div className="mb-3 flex items-center gap-2">
+                            <MapPin className="h-4 w-4 shrink-0 text-gray-400" />
+                            <p className="mb-0! text-xs! font-semibold! uppercase! tracking-wide! text-gray-500!">
+                              Local do estágio
+                            </p>
+                          </div>
+                          <div className="space-y-1 pl-6">
+                            <p className="mb-0! text-sm! font-medium! text-gray-900!">
+                              {formatEndereco(selectedEstagio)}
+                            </p>
+                            <p className="mb-0! text-sm! text-gray-500!">
+                              CEP: {selectedEstagio.cep}
+                            </p>
+                          </div>
+                        </div>
+                        <ButtonCustom
+                          variant="outline"
+                          size="sm"
+                          className="h-9 shrink-0 cursor-pointer border-blue-200 text-blue-700 hover:bg-blue-50"
+                          onClick={() =>
+                            window.open(
+                              getGoogleMapsUrl(selectedEstagio),
+                              "_blank",
+                              "noopener,noreferrer"
+                            )
+                          }
+                          withAnimation={false}
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                          Ver no Google Maps
+                        </ButtonCustom>
+                      </div>
+                    </div>
 
-                {/* Botão de fechar */}
-                <div className="flex justify-end gap-3 pt-2 border-t border-gray-200/60">
+                    {selectedEstagio.observacoes && (
+                      <div className="px-5 py-4">
+                        <p className="mb-2! text-xs! font-semibold! uppercase! tracking-wide! text-gray-500!">
+                          Observações
+                        </p>
+                        <p className="mb-0! whitespace-pre-line text-sm! leading-relaxed! text-gray-700!">
+                          {selectedEstagio.observacoes}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </section>
+
+                <div className="flex justify-end gap-3 border-t border-gray-200/70 pt-4">
                   <ButtonCustom
                     variant="outline"
                     onClick={() => setSelectedEstagio(null)}

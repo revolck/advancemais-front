@@ -31,6 +31,56 @@ describe("dashboardRoutes cursos", () => {
     ).toBe(false);
   });
 
+  it("permite ao aluno acessar somente a própria tela de notas", () => {
+    expect(
+      canAccessRoute(
+        "/dashboard/cursos/alunos/notas",
+        UserRole.ALUNO_CANDIDATO,
+      ),
+    ).toBe(true);
+    expect(
+      canAccessRoute("/dashboard/cursos/alunos/notas", UserRole.ADMIN),
+    ).toBe(false);
+    expect(
+      canAccessRoute("/dashboard/cursos/notas", UserRole.ALUNO_CANDIDATO),
+    ).toBe(false);
+  });
+
+  it("permite ao aluno acessar somente as próprias telas acadêmicas", () => {
+    const alunoRoutes = [
+      "/dashboard/cursos/alunos/frequencia",
+      "/dashboard/cursos/alunos/certificados",
+      "/dashboard/cursos/alunos/estagios",
+      "/dashboard/cursos/pagamentos",
+    ];
+
+    for (const route of alunoRoutes) {
+      expect(canAccessRoute(route, UserRole.ALUNO_CANDIDATO)).toBe(true);
+      expect(canAccessRoute(route, UserRole.ADMIN)).toBe(false);
+    }
+  });
+
+  it("permite ao aluno acessar as vagas do próprio portal", () => {
+    expect(canAccessRoute("/dashboard/vagas", UserRole.ALUNO_CANDIDATO)).toBe(
+      true,
+    );
+    expect(
+      canAccessRoute(
+        "/dashboard/vagas/7a973d5b-0ec3-4025-9f37-325aaee6d5bf",
+        UserRole.ALUNO_CANDIDATO,
+      ),
+    ).toBe(true);
+  });
+
+  it("mantem rotas administrativas de cursos bloqueadas para aluno", () => {
+    expect(canAccessRoute("/dashboard/cursos", UserRole.ALUNO_CANDIDATO)).toBe(
+      false,
+    );
+    expect(
+      canAccessRoute("/dashboard/cursos/turmas", UserRole.ALUNO_CANDIDATO),
+    ).toBe(false);
+  });
+
   it("permite instrutor ver detalhes administrativos, mas não editar", () => {
     expect(
       canAccessRoute(`/dashboard/cursos/${cursoId}`, UserRole.INSTRUTOR),
