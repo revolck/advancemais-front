@@ -37,13 +37,13 @@ const getStatusLabel = (status?: string) => {
   // Mapeamento direto dos status da API
   const statusMap: Record<string, string> = {
     RASCUNHO: "Rascunho",
-    PUBLICADO: "Publicado",
+    PUBLICADO: "Publicada",
     INSCRICOES_ABERTAS: "Inscrições Abertas",
     INSCRICOES_ENCERRADAS: "Inscrições Encerradas",
     EM_ANDAMENTO: "Em Andamento",
-    CONCLUIDO: "Concluído",
-    SUSPENSO: "Suspenso",
-    CANCELADO: "Cancelado",
+    CONCLUIDO: "Concluída",
+    SUSPENSO: "Suspensa",
+    CANCELADO: "Cancelada",
   };
   
   // Retorna o label mapeado ou formata o status
