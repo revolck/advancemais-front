@@ -362,6 +362,8 @@ export async function changeUserPassword(
         body: JSON.stringify(payload),
       },
       cache: "no-cache",
+      // Troca de senha não deve ser repetida: cada tentativa conta no rate limit
+      retries: 0,
     }
   );
 }
