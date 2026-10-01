@@ -35,13 +35,13 @@ import { turmaHasInstrutorVinculado } from "./utils/instrutores";
 
 const TURMA_STATUS_OPTIONS = [
   { value: "RASCUNHO", label: "Rascunho" },
-  { value: "PUBLICADO", label: "Publicado" },
+  { value: "PUBLICADO", label: "Publicada" },
   { value: "INSCRICOES_ABERTAS", label: "Inscrições abertas" },
   { value: "INSCRICOES_ENCERRADAS", label: "Inscrições encerradas" },
   { value: "EM_ANDAMENTO", label: "Em andamento" },
-  { value: "CONCLUIDO", label: "Concluído" },
-  { value: "SUSPENSO", label: "Suspenso" },
-  { value: "CANCELADO", label: "Cancelado" },
+  { value: "CONCLUIDO", label: "Concluída" },
+  { value: "SUSPENSO", label: "Suspensa" },
+  { value: "CANCELADO", label: "Cancelada" },
 ];
 
 const TURNO_OPTIONS = [

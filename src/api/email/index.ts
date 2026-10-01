@@ -1,23 +1,21 @@
 import { apiFetch } from "@/api/client";
-import { brevoRoutes } from "@/api/routes";
+import { emailRoutes } from "@/api/routes";
 import { buildAuthHeaders } from "@/lib/auth-utils";
 import { apiConfig } from "@/lib/env";
 
 import type {
-  BrevoResendVerificationPayload,
-  BrevoResendVerificationResponse,
-  BrevoStatusResponse,
-  BrevoVerificationResponse,
-  BrevoModuleInfoResponse,
-  BrevoHealthResponse,
-  BrevoConfigResponse,
-  BrevoTestEmailPayload,
-  BrevoTestEmailResponse,
-  BrevoSandboxEmailPayload,
-  BrevoSandboxEmailResponse,
-  BrevoSandboxEmailRotinasResponse,
-  BrevoTestSmsPayload,
-  BrevoTestSmsResponse,
+  EmailResendVerificationPayload,
+  EmailResendVerificationResponse,
+  EmailStatusResponse,
+  EmailVerificationResponse,
+  EmailModuleInfoResponse,
+  EmailHealthResponse,
+  EmailConfigResponse,
+  EmailTestEmailPayload,
+  EmailTestEmailResponse,
+  EmailSandboxEmailPayload,
+  EmailSandboxEmailResponse,
+  EmailSandboxEmailRotinasResponse,
 } from "./types";
 
 const ACCEPT_HEADER = { Accept: apiConfig.headers.Accept } as const;
@@ -28,9 +26,9 @@ const JSON_HEADERS = {
 
 export async function verifyEmail(
   token: string,
-): Promise<BrevoVerificationResponse> {
-  return apiFetch<BrevoVerificationResponse>(
-    brevoRoutes.verification.verifyEmail(token),
+): Promise<EmailVerificationResponse> {
+  return apiFetch<EmailVerificationResponse>(
+    emailRoutes.verification.verifyEmail(token),
     {
       init: {
         method: "GET",
@@ -44,9 +42,9 @@ export async function verifyEmail(
 
 export async function verifyEmailAlias(
   token: string,
-): Promise<BrevoVerificationResponse> {
-  return apiFetch<BrevoVerificationResponse>(
-    brevoRoutes.verification.alias.verifyEmail(token),
+): Promise<EmailVerificationResponse> {
+  return apiFetch<EmailVerificationResponse>(
+    emailRoutes.verification.alias.verifyEmail(token),
     {
       init: {
         method: "GET",
@@ -59,10 +57,10 @@ export async function verifyEmailAlias(
 }
 
 export async function resendVerificationEmail(
-  payload: BrevoResendVerificationPayload,
-): Promise<BrevoResendVerificationResponse> {
-  return apiFetch<BrevoResendVerificationResponse>(
-    brevoRoutes.verification.resendVerification(),
+  payload: EmailResendVerificationPayload,
+): Promise<EmailResendVerificationResponse> {
+  return apiFetch<EmailResendVerificationResponse>(
+    emailRoutes.verification.resendVerification(),
     {
       init: {
         method: "POST",
@@ -76,10 +74,10 @@ export async function resendVerificationEmail(
 }
 
 export async function resendVerificationEmailAlias(
-  payload: BrevoResendVerificationPayload,
-): Promise<BrevoResendVerificationResponse> {
-  return apiFetch<BrevoResendVerificationResponse>(
-    brevoRoutes.verification.alias.resendVerification(),
+  payload: EmailResendVerificationPayload,
+): Promise<EmailResendVerificationResponse> {
+  return apiFetch<EmailResendVerificationResponse>(
+    emailRoutes.verification.alias.resendVerification(),
     {
       init: {
         method: "POST",
@@ -94,9 +92,9 @@ export async function resendVerificationEmailAlias(
 
 export async function getVerificationStatusByUserId(
   userId: string,
-): Promise<BrevoStatusResponse> {
-  return apiFetch<BrevoStatusResponse>(
-    brevoRoutes.verification.statusByUserId(userId),
+): Promise<EmailStatusResponse> {
+  return apiFetch<EmailStatusResponse>(
+    emailRoutes.verification.statusByUserId(userId),
     {
       init: {
         method: "GET",
@@ -109,9 +107,9 @@ export async function getVerificationStatusByUserId(
 
 export async function getVerificationStatusByEmail(
   email: string,
-): Promise<BrevoStatusResponse> {
-  return apiFetch<BrevoStatusResponse>(
-    brevoRoutes.verification.statusByEmail(email),
+): Promise<EmailStatusResponse> {
+  return apiFetch<EmailStatusResponse>(
+    emailRoutes.verification.statusByEmail(email),
     {
       init: {
         method: "GET",
@@ -126,8 +124,8 @@ export async function getVerificationStatusByEmail(
 // Module info, health, config
 // ----------------------------------------------------------------------------
 
-export async function getModuleInfo(): Promise<BrevoModuleInfoResponse> {
-  return apiFetch<BrevoModuleInfoResponse>(brevoRoutes.info(), {
+export async function getModuleInfo(): Promise<EmailModuleInfoResponse> {
+  return apiFetch<EmailModuleInfoResponse>(emailRoutes.info(), {
     init: {
       method: "GET",
       headers: ACCEPT_HEADER,
@@ -136,8 +134,8 @@ export async function getModuleInfo(): Promise<BrevoModuleInfoResponse> {
   });
 }
 
-export async function getHealthStatus(): Promise<BrevoHealthResponse> {
-  return apiFetch<BrevoHealthResponse>(brevoRoutes.health(), {
+export async function getHealthStatus(): Promise<EmailHealthResponse> {
+  return apiFetch<EmailHealthResponse>(emailRoutes.health(), {
     init: {
       method: "GET",
       headers: ACCEPT_HEADER,
@@ -146,8 +144,8 @@ export async function getHealthStatus(): Promise<BrevoHealthResponse> {
   });
 }
 
-export async function getConfigStatus(): Promise<BrevoConfigResponse> {
-  return apiFetch<BrevoConfigResponse>(brevoRoutes.config(), {
+export async function getConfigStatus(): Promise<EmailConfigResponse> {
+  return apiFetch<EmailConfigResponse>(emailRoutes.config(), {
     init: {
       method: "GET",
       headers: {
@@ -164,27 +162,9 @@ export async function getConfigStatus(): Promise<BrevoConfigResponse> {
 // ----------------------------------------------------------------------------
 
 export async function sendTestEmail(
-  payload: BrevoTestEmailPayload,
-): Promise<BrevoTestEmailResponse> {
-  return apiFetch<BrevoTestEmailResponse>(brevoRoutes.test.email(), {
-    init: {
-      method: "POST",
-      headers: {
-        ...JSON_HEADERS,
-        ...buildAuthHeaders(),
-      },
-      body: JSON.stringify(payload),
-    },
-    cache: "no-cache",
-    silence403: true,
-    retries: 1,
-  });
-}
-
-export async function sendTestSms(
-  payload: BrevoTestSmsPayload,
-): Promise<BrevoTestSmsResponse> {
-  return apiFetch<BrevoTestSmsResponse>(brevoRoutes.test.sms(), {
+  payload: EmailTestEmailPayload,
+): Promise<EmailTestEmailResponse> {
+  return apiFetch<EmailTestEmailResponse>(emailRoutes.test.email(), {
     init: {
       method: "POST",
       headers: {
@@ -203,9 +183,9 @@ export async function sendTestSms(
 // Sandbox de emails (produção, somente ADMIN)
 // ----------------------------------------------------------------------------
 
-export async function getSandboxEmailRotinas(): Promise<BrevoSandboxEmailRotinasResponse> {
-  return apiFetch<BrevoSandboxEmailRotinasResponse>(
-    brevoRoutes.sandbox.emailRotinas(),
+export async function getSandboxEmailRotinas(): Promise<EmailSandboxEmailRotinasResponse> {
+  return apiFetch<EmailSandboxEmailRotinasResponse>(
+    emailRoutes.sandbox.emailRotinas(),
     {
       init: {
         method: "GET",
@@ -221,9 +201,9 @@ export async function getSandboxEmailRotinas(): Promise<BrevoSandboxEmailRotinas
 }
 
 export async function sendSandboxEmail(
-  payload: BrevoSandboxEmailPayload,
-): Promise<BrevoSandboxEmailResponse> {
-  return apiFetch<BrevoSandboxEmailResponse>(brevoRoutes.sandbox.email(), {
+  payload: EmailSandboxEmailPayload,
+): Promise<EmailSandboxEmailResponse> {
+  return apiFetch<EmailSandboxEmailResponse>(emailRoutes.sandbox.email(), {
     init: {
       method: "POST",
       headers: {

@@ -31,7 +31,7 @@ const getStatusBadge = (status: string) => {
     INSCRICOES_ABERTAS: { label: "Inscrições Abertas", variant: "default" },
     INSCRICOES_ENCERRADAS: { label: "Inscrições Encerradas", variant: "secondary" },
     EM_ANDAMENTO: { label: "Em Andamento", variant: "default" },
-    CONCLUIDA: { label: "Concluída", variant: "outline" },
+    CONCLUIDO: { label: "Concluída", variant: "outline" },
   };
 
   const mapped = statusMap[status] || { label: status, variant: "outline" };

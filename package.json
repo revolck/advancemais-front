@@ -14,7 +14,6 @@
     "build:analyze": "ANALYZE=true npm run build",
     "env:check": "tsx scripts/env-check.ts",
     "env:example": "cp .env.example .env.local",
-    "brevo:test": "tsx scripts/test-brevo-api.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",

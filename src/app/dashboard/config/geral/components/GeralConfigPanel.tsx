@@ -3,7 +3,7 @@
 import React from "react";
 import { Info, RotateCcw, Save, TestTube2 } from "lucide-react";
 
-import { sendTestEmail } from "@/api/brevo";
+import { sendTestEmail } from "@/api/email";
 import {
   testarConfiguracaoGeral,
   updateConfiguracaoGeral,
@@ -224,40 +224,24 @@ const FIELD_HELPERS: Partial<Record<string, string>> = {
   cron_cobranca_enabled: "Liga ou desliga a rotina automática de cobrança.",
   cron_cobranca_schedule:
     "Define com que frequência a rotina de cobrança deve rodar.",
-  brevo_api_key:
-    "Chave privada da Brevo usada para enviar e-mails e outras mensagens automáticas.",
-  brevo_from_email:
-    "E-mail que aparece como remetente nas mensagens enviadas pelo sistema.",
-  brevo_from_name: "Nome exibido como remetente para o usuário final.",
-  brevo_smtp_host:
-    "Endereço do servidor SMTP usado como apoio para envio de e-mails.",
-  brevo_smtp_port:
-    "Porta do servidor SMTP. Normalmente 587 para conexão segura padrão.",
-  brevo_smtp_user:
-    "Usuário da conta SMTP usado para autenticar o envio de e-mails.",
-  brevo_smtp_password: "Senha da conta SMTP usada no envio de e-mails.",
-  brevo_password_recovery_expiration_hours:
+  smtp_host:
+    "Endereço do servidor SMTP usado para enviar os e-mails do sistema (ex.: smtp.hostinger.com).",
+  smtp_port:
+    "Porta do servidor SMTP. Use 465 para SSL direto ou 587 para STARTTLS.",
+  smtp_user:
+    "Caixa de e-mail usada para autenticar no servidor SMTP (ex.: noreply@advancemais.com).",
+  smtp_password: "Senha da caixa de e-mail usada para autenticar no SMTP.",
+  smtp_from_email:
+    "E-mail que aparece como remetente. Precisa ser a caixa autenticada ou um alias dela.",
+  smtp_from_name: "Nome exibido como remetente para o usuário final.",
+  smtp_timeout:
+    "Tempo máximo que o sistema espera pelo servidor SMTP antes de considerar falha.",
+  password_recovery_expiration_hours:
     "Define por quantas horas o link de recuperação de senha continua válido.",
-  brevo_password_recovery_max_attempts:
+  password_recovery_max_attempts:
     "Quantidade máxima de pedidos de recuperação antes de bloquear novas tentativas por segurança.",
-  brevo_password_recovery_cooldown_minutes:
+  password_recovery_cooldown_minutes:
     "Tempo mínimo de espera entre dois pedidos de recuperação de senha.",
-  brevo_max_retries:
-    "Número máximo de novas tentativas quando o envio de e-mail falhar.",
-  brevo_retry_delay:
-    "Tempo de espera entre uma nova tentativa e outra quando houver falha no envio.",
-  brevo_timeout:
-    "Tempo máximo que o sistema espera pela resposta do serviço de e-mail antes de considerar falha.",
-  brevo_daily_email_limit:
-    "Limite diário de e-mails que o sistema pode enviar.",
-  brevo_daily_sms_limit: "Limite diário de SMS que o sistema pode enviar.",
-  brevo_sms_sender: "Nome curto exibido como remetente das mensagens SMS.",
-  brevo_sms_unicode:
-    "Permite usar caracteres especiais em SMS, como acentos e símbolos.",
-  brevo_template_cache:
-    "Mantém modelos de e-mail em memória para acelerar o envio.",
-  brevo_preload_templates:
-    "Carrega os modelos principais logo no início da aplicação.",
   email_verification_required:
     "Exige que o usuário confirme o e-mail antes de acessar a conta.",
   email_verification_expiration_hours:
@@ -455,14 +439,14 @@ export function GeralConfigPanel({
   const buildEmailTestFailureMessage = React.useCallback(
     (errorMessage?: string | null) => {
       if (!errorMessage) {
-        return "A Brevo não confirmou o envio real. Revise a chave ativa, o remetente e os IPs autorizados.";
+        return "O servidor SMTP não confirmou o envio real. Revise host, porta, usuário, senha e remetente.";
       }
 
-      if (errorMessage.includes("HTTP request failed")) {
-        return "A Brevo não confirmou o envio real. A chamada da API falhou antes da entrega. Verifique os IPs autorizados e a chave ativa.";
+      if (/authentication failed|invalid login|535/i.test(errorMessage)) {
+        return "O servidor SMTP recusou o usuário ou a senha. Revise as credenciais da caixa de e-mail.";
       }
 
-      return `A Brevo não confirmou o envio real. Detalhe: ${errorMessage}`;
+      return `O servidor SMTP não confirmou o envio real. Detalhe: ${errorMessage}`;
     },
     [],
   );

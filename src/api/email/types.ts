@@ -1,9 +1,9 @@
-export interface BrevoSuccessResponse {
+export interface EmailSuccessResponse {
   success: true;
   message: string;
 }
 
-export type BrevoErrorCode =
+export type EmailErrorCode =
   | "MISSING_TOKEN"
   | "INVALID_TOKEN"
   | "TOKEN_EXPIRED"
@@ -12,46 +12,45 @@ export type BrevoErrorCode =
   | "INVALID_EMAIL"
   | "USER_NOT_FOUND"
   | "ACCOUNT_INACTIVE"
-  | "MISSING_PHONE"
   | "MISSING_PASSWORD"
   | "PRODUCTION_BLOCKED"
   | "INSUFFICIENT_PERMISSIONS"
   | "INVALID_PASSWORD"
   | "INVALID_SANDBOX_ROUTINE"
-  | "BREVO_DELIVERY_FAILED"
+  | "EMAIL_DELIVERY_FAILED"
   | "SEND_ERROR"
   | "INTERNAL_ERROR";
 
-export interface BrevoErrorResponse {
+export interface EmailErrorResponse {
   success: false;
   message: string;
-  code?: BrevoErrorCode;
+  code?: EmailErrorCode;
   error?: string;
 }
 
-export interface BrevoVerificationSuccess extends BrevoSuccessResponse {
+export interface EmailVerificationSuccess extends EmailSuccessResponse {
   redirectUrl: string;
   userId: string;
 }
 
-export type BrevoVerificationResponse =
-  | BrevoVerificationSuccess
-  | BrevoErrorResponse;
+export type EmailVerificationResponse =
+  | EmailVerificationSuccess
+  | EmailErrorResponse;
 
-export interface BrevoResendVerificationSuccess extends BrevoSuccessResponse {
+export interface EmailResendVerificationSuccess extends EmailSuccessResponse {
   simulated: boolean;
   messageId: string;
 }
 
-export type BrevoResendVerificationResponse =
-  | BrevoResendVerificationSuccess
-  | BrevoErrorResponse;
+export type EmailResendVerificationResponse =
+  | EmailResendVerificationSuccess
+  | EmailErrorResponse;
 
-export interface BrevoResendVerificationPayload {
+export interface EmailResendVerificationPayload {
   email: string;
 }
 
-export interface BrevoVerificationStatus {
+export interface EmailVerificationStatus {
   userId: string;
   email: string;
   emailVerified: boolean;
@@ -67,21 +66,21 @@ export interface BrevoVerificationStatus {
   };
 }
 
-export interface BrevoStatusSuccessResponse {
+export interface EmailStatusSuccessResponse {
   success: true;
-  data: BrevoVerificationStatus;
+  data: EmailVerificationStatus;
   message?: string;
 }
 
-export type BrevoStatusResponse =
-  | BrevoStatusSuccessResponse
-  | BrevoErrorResponse;
+export type EmailStatusResponse =
+  | EmailStatusSuccessResponse
+  | EmailErrorResponse;
 
 // ----------------------------------------------------------------------------
-// Informações do módulo (GET /api/v1/brevo)
+// Informações do módulo (GET /api/v1/email)
 // ----------------------------------------------------------------------------
 
-export interface BrevoModuleInfoResponse extends BrevoSuccessResponse {
+export interface EmailModuleInfoResponse extends EmailSuccessResponse {
   module: string;
   version: string;
   timestamp: string;
@@ -89,7 +88,6 @@ export interface BrevoModuleInfoResponse extends BrevoSuccessResponse {
   features?: {
     emailVerification?: boolean;
     welcomeEmail?: boolean;
-    sms?: boolean;
     testEndpoints?: boolean;
   };
   endpoints?: {
@@ -108,36 +106,38 @@ export interface BrevoModuleInfoResponse extends BrevoSuccessResponse {
     };
     test?: {
       email?: string;
-      sms?: string;
     };
   };
 }
 
 // ----------------------------------------------------------------------------
-// Health check (GET /api/v1/brevo/health)
+// Health check (GET /api/v1/email/health)
 // ----------------------------------------------------------------------------
 
-export interface BrevoHealthSuccess extends BrevoSuccessResponse {
+export interface EmailHealthSuccess extends EmailSuccessResponse {
   status: "HEALTHY" | "DEGRADED";
   uptime?: number;
   timestamp?: string;
   module?: string;
 }
 
-export type BrevoHealthResponse = BrevoHealthSuccess | BrevoErrorResponse;
+export type EmailHealthResponse = EmailHealthSuccess | EmailErrorResponse;
 
 // ----------------------------------------------------------------------------
-// Config (GET /api/v1/brevo/config) - somente dev
+// Config (GET /api/v1/email/config) - somente dev
 // ----------------------------------------------------------------------------
 
-export interface BrevoConfigStatusResponse {
+export interface EmailConfigStatusResponse {
   module: string;
   timestamp: string;
   configuration: {
     isConfigured: boolean;
     environment: string;
-    apiKeyProvided: boolean;
-    fromEmailConfigured: boolean;
+    smtpHost: string;
+    smtpPort: number;
+    smtpUser: string;
+    smtpPasswordProvided: boolean;
+    fromEmail: string;
     fromName: string;
   };
   emailVerification: {
@@ -158,21 +158,21 @@ export interface BrevoConfigStatusResponse {
   healthInfo: any;
 }
 
-export type BrevoConfigResponse =
-  | BrevoConfigStatusResponse
-  | BrevoErrorResponse;
+export type EmailConfigResponse =
+  | EmailConfigStatusResponse
+  | EmailErrorResponse;
 
 // ----------------------------------------------------------------------------
-// Testes (POST /api/v1/brevo/test/email, /api/v1/brevo/test/sms)
+// Testes (POST /api/v1/email/test/email)
 // ----------------------------------------------------------------------------
 
-export interface BrevoTestEmailPayload {
+export interface EmailTestEmailPayload {
   email: string;
   name?: string;
   type?: string;
 }
 
-export interface BrevoTestSuccessResponse {
+export interface EmailTestSuccessResponse {
   success: true;
   message: string;
   data: {
@@ -184,24 +184,15 @@ export interface BrevoTestSuccessResponse {
   timestamp: string;
 }
 
-export type BrevoTestEmailResponse =
-  | BrevoTestSuccessResponse
-  | BrevoErrorResponse;
-
-export interface BrevoTestSmsPayload {
-  to: string;
-  message?: string;
-}
-
-export type BrevoTestSmsResponse =
-  | BrevoTestSuccessResponse
-  | BrevoErrorResponse;
+export type EmailTestEmailResponse =
+  | EmailTestSuccessResponse
+  | EmailErrorResponse;
 
 // ----------------------------------------------------------------------------
 // Sandbox de emails (produção, somente ADMIN)
 // ----------------------------------------------------------------------------
 
-export type BrevoSandboxEmailRotina =
+export type EmailSandboxEmailRotina =
   | "NOVO_CADASTRO"
   | "RECUPERACAO_SENHA"
   | "CREDENCIAIS_EMPRESA_ADMIN"
@@ -221,35 +212,35 @@ export type BrevoSandboxEmailRotina =
   | "USUARIO_BLOQUEADO"
   | "USUARIO_DESBLOQUEADO";
 
-export interface BrevoSandboxEmailRotinaItem {
-  value: BrevoSandboxEmailRotina;
+export interface EmailSandboxEmailRotinaItem {
+  value: EmailSandboxEmailRotina;
   label: string;
   group: string;
   description?: string;
 }
 
-export interface BrevoSandboxEmailRotinasResponse {
+export interface EmailSandboxEmailRotinasResponse {
   success: true;
-  data: BrevoSandboxEmailRotinaItem[];
+  data: EmailSandboxEmailRotinaItem[];
 }
 
-export interface BrevoSandboxEmailPayload {
-  rotina: BrevoSandboxEmailRotina;
+export interface EmailSandboxEmailPayload {
+  rotina: EmailSandboxEmailRotina;
   destinatarioEmail: string;
   senha: string;
 }
 
-export interface BrevoSandboxEmailSuccessResponse {
+export interface EmailSandboxEmailSuccessResponse {
   success: true;
   message: string;
   data: {
-    rotina: BrevoSandboxEmailRotina;
+    rotina: EmailSandboxEmailRotina;
     recipient: string;
     simulated?: boolean;
     messageId?: string;
   };
 }
 
-export type BrevoSandboxEmailResponse =
-  | BrevoSandboxEmailSuccessResponse
-  | BrevoErrorResponse;
+export type EmailSandboxEmailResponse =
+  | EmailSandboxEmailSuccessResponse
+  | EmailErrorResponse;

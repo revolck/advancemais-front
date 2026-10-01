@@ -340,53 +340,52 @@ export const dashboardRoutes = {
 };
 
 /**
- * Endpoints for Brevo email verification flows.
+ * Endpoints for the email module (SMTP): verification, tests and sandbox.
  * Centraliza aliases e variações utilizadas no front.
  */
-export const brevoRoutes = {
-  base: () => `${prefix}/brevo`,
-  info: () => `${prefix}/brevo`,
-  health: () => `${prefix}/brevo/health`,
-  config: () => `${prefix}/brevo/config`,
+export const emailRoutes = {
+  base: () => `${prefix}/email`,
+  info: () => `${prefix}/email`,
+  health: () => `${prefix}/email/health`,
+  config: () => `${prefix}/email/config`,
   verification: {
     /**
-     * GET /api/v1/brevo/verificar-email?token=...
+     * GET /api/v1/email/verificar-email?token=...
      */
     verifyEmail: (token: string) =>
-      `${prefix}/brevo/verificar-email?token=${encodeURIComponent(token)}`,
+      `${prefix}/email/verificar-email?token=${encodeURIComponent(token)}`,
     /**
-     * POST /api/v1/brevo/reenviar-verificacao
+     * POST /api/v1/email/reenviar-verificacao
      */
-    resendVerification: () => `${prefix}/brevo/reenviar-verificacao`,
+    resendVerification: () => `${prefix}/email/reenviar-verificacao`,
     /**
-     * GET /api/v1/brevo/status-verificacao/{userId}
+     * GET /api/v1/email/status-verificacao/{userId}
      */
     statusByUserId: (userId: string) =>
-      `${prefix}/brevo/status-verificacao/${encodeURIComponent(userId)}`,
+      `${prefix}/email/status-verificacao/${encodeURIComponent(userId)}`,
     /**
-     * GET /api/v1/brevo/status/{email}
+     * GET /api/v1/email/status/{email}
      */
     statusByEmail: (email: string) =>
-      `${prefix}/brevo/status/${encodeURIComponent(email)}`,
+      `${prefix}/email/status/${encodeURIComponent(email)}`,
     alias: {
       /**
-       * GET /api/v1/brevo/verificar?token=...
+       * GET /api/v1/email/verificar?token=...
        */
       verifyEmail: (token: string) =>
-        `${prefix}/brevo/verificar?token=${encodeURIComponent(token)}`,
+        `${prefix}/email/verificar?token=${encodeURIComponent(token)}`,
       /**
-       * POST /api/v1/brevo/reenviar
+       * POST /api/v1/email/reenviar
        */
-      resendVerification: () => `${prefix}/brevo/reenviar`,
+      resendVerification: () => `${prefix}/email/reenviar`,
     },
   },
   test: {
-    email: () => `${prefix}/brevo/test/email`,
-    sms: () => `${prefix}/brevo/test/sms`,
+    email: () => `${prefix}/email/test/email`,
   },
   sandbox: {
-    emailRotinas: () => `${prefix}/brevo/sandbox/email-rotinas`,
-    email: () => `${prefix}/brevo/sandbox/email`,
+    emailRotinas: () => `${prefix}/email/sandbox/email-rotinas`,
+    email: () => `${prefix}/email/sandbox/email`,
   },
 };
 
@@ -460,10 +459,10 @@ export const usuarioRoutes = {
     reset: () => `${prefix}/usuarios/recuperar-senha/redefinir`,
   },
   verification: {
-    verify: brevoRoutes.verification.verifyEmail,
-    resend: brevoRoutes.verification.resendVerification,
-    status: brevoRoutes.verification.statusByUserId,
-    alias: brevoRoutes.verification.alias,
+    verify: emailRoutes.verification.verifyEmail,
+    resend: emailRoutes.verification.resendVerification,
+    status: emailRoutes.verification.statusByUserId,
+    alias: emailRoutes.verification.alias,
   },
   admin: {
     candidatos: {
@@ -678,7 +677,7 @@ export const routes = {
   vagas: vagasRoutes,
   usuarios: usuarioRoutes,
   mercadopago: mercadoPagoRoutes,
-  brevo: brevoRoutes,
+  email: emailRoutes,
   permissoes: permissoesRoutes,
   upload: uploadRoutes,
   statusProcesso: statusProcessoRoutes,

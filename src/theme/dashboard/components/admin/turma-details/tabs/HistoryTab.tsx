@@ -67,13 +67,13 @@ const AULA_ACAO_LABELS: Record<string, string> = {
 
 const TURMA_STATUS_LABELS: Record<string, string> = {
   RASCUNHO: "Rascunho",
-  PUBLICADO: "Publicado",
-  INSCRICOES_ABERTAS: "Inscricoes abertas",
-  INSCRICOES_ENCERRADAS: "Inscricoes encerradas",
+  PUBLICADO: "Publicada",
+  INSCRICOES_ABERTAS: "Inscrições abertas",
+  INSCRICOES_ENCERRADAS: "Inscrições encerradas",
   EM_ANDAMENTO: "Em andamento",
-  CONCLUIDO: "Concluido",
-  SUSPENSO: "Suspenso",
-  CANCELADO: "Cancelado",
+  CONCLUIDO: "Concluída",
+  SUSPENSO: "Suspensa",
+  CANCELADO: "Cancelada",
 };
 
 const KIND_LABELS: Record<EventKind, string> = {
