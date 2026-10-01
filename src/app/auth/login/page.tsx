@@ -9,6 +9,7 @@ import { ALL_ROLES, UserRole } from "@/config/roles";
 import { getLoginImageDataClient } from "@/api/websites/components";
 import { getUserProfile, loginUser } from "@/api/usuarios";
 import { normalizeLoginDocument } from "@/lib/documentos";
+import { getPrimeiroAcessoUrl } from "@/lib/primeiro-acesso";
 
 const SignInPageDemo = () => {
   const [userName, setUserName] = useState<string | null>(null);
@@ -82,6 +83,7 @@ const SignInPageDemo = () => {
         setIsRedirecting(true);
 
         let userRole: UserRole | undefined;
+        let precisaTrocarSenha = Boolean(res.usuario?.precisaTrocarSenha);
         // Busca nome e role do usuário para saudar em futuros logins
         try {
           const profile = await getUserProfile(res.token);
@@ -93,6 +95,8 @@ const SignInPageDemo = () => {
               const [firstName] = fullName.split(" ");
               localStorage.setItem("userName", firstName);
             }
+            precisaTrocarSenha =
+              precisaTrocarSenha || Boolean(profile.usuario.precisaTrocarSenha);
             const candidateRoles = [profile.usuario.role].filter(
               Boolean
             ) as string[];
@@ -116,6 +120,15 @@ const SignInPageDemo = () => {
         document.cookie = `refresh_token=${res.refreshToken}; path=/; domain=${domain}${maxAge};`;
         if (userRole) {
           document.cookie = `user_role=${userRole}; path=/; domain=${domain}${maxAge};`;
+        }
+
+        // Senha provisória: primeiro acesso exige criar uma nova senha
+        if (precisaTrocarSenha) {
+          toastCustom.success("Bem-vindo! Crie sua nova senha para continuar.");
+          setTimeout(() => {
+            window.location.href = getPrimeiroAcessoUrl();
+          }, 1000);
+          return;
         }
 
         // Redireciona para o subdomínio app

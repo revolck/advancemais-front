@@ -16,6 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toastCustom, ToasterCustom } from "@/components/ui/custom";
 import { DashboardHeader as Breadcrumb } from "@/components/layout";
 import { BlockedUserWrapper } from "@/components/layout/BlockedUserWrapper";
+import { PasswordChangeGate } from "@/components/layout/PasswordChangeGate";
 import { canAccessRoute } from "@/config/dashboardRoutes";
 import { useUserRole } from "@/hooks/useUserRole";
 import { ProfileOnboardingGate } from "@/theme/dashboard/components/profile/ProfileOnboardingGate";
@@ -300,47 +301,49 @@ export default function DashboardLayoutClient({
     const showGlobalControllers = options?.showGlobalControllers ?? true;
 
     return (
-      <BlockedUserWrapper>
-        <div className="flex h-screen">
-          <div className="flex-shrink-0">
-            <DashboardSidebar
-              isMobileMenuOpen={isMobileMenuOpen}
-              setIsMobileMenuOpen={setIsMobileMenuOpen}
-              isCollapsed={isCollapsed}
-            />
+      <PasswordChangeGate>
+        <BlockedUserWrapper>
+          <div className="flex h-screen">
+            <div className="flex-shrink-0">
+              <DashboardSidebar
+                isMobileMenuOpen={isMobileMenuOpen}
+                setIsMobileMenuOpen={setIsMobileMenuOpen}
+                isCollapsed={isCollapsed}
+              />
+            </div>
+
+            <div className="flex min-w-0 flex-1 flex-col bg-white transition-all duration-300 ease-in-out">
+              <DashboardHeader
+                toggleSidebar={toggleSidebar}
+                isCollapsed={isCollapsed}
+              />
+
+              <main className="flex-1 overflow-auto bg-gray-100 p-10">
+                <div className="min-h-full">
+                  {showPageBreadcrumb && (
+                    <Breadcrumb showBreadcrumb={pathname !== "/empresas"} />
+                  )}
+                  {content}
+                </div>
+              </main>
+            </div>
           </div>
 
-          <div className="flex min-w-0 flex-1 flex-col bg-white transition-all duration-300 ease-in-out">
-            <DashboardHeader
-              toggleSidebar={toggleSidebar}
-              isCollapsed={isCollapsed}
-            />
+          {showGlobalControllers && (
+            <>
+              <ProfileOnboardingGate />
+              <ConfettiExplosion key={confettiKey} isActive={showConfetti} />
+              <GoogleConnectedModalController
+                onConfettiChange={handleConfettiChange}
+              />
+              <RecoveryPaymentModalController />
+              <MarketingPopupRenderer scope="DASHBOARD" />
+            </>
+          )}
 
-            <main className="flex-1 overflow-auto bg-gray-100 p-10">
-              <div className="min-h-full">
-                {showPageBreadcrumb && (
-                  <Breadcrumb showBreadcrumb={pathname !== "/empresas"} />
-                )}
-                {content}
-              </div>
-            </main>
-          </div>
-        </div>
-
-        {showGlobalControllers && (
-          <>
-            <ProfileOnboardingGate />
-            <ConfettiExplosion key={confettiKey} isActive={showConfetti} />
-            <GoogleConnectedModalController
-              onConfettiChange={handleConfettiChange}
-            />
-            <RecoveryPaymentModalController />
-            <MarketingPopupRenderer scope="DASHBOARD" />
-          </>
-        )}
-
-        <ToasterCustom />
-      </BlockedUserWrapper>
+          <ToasterCustom />
+        </BlockedUserWrapper>
+      </PasswordChangeGate>
     );
   };
 

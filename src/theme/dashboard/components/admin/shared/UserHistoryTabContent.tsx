@@ -78,6 +78,8 @@ const TYPE_LABELS: Record<string, string> = {
   USUARIO_EMAIL_LIBERADO: "Validação de e-mail liberada",
   USUARIO_EMAIL_VERIFICADO: "E-mail verificado",
   USUARIO_SENHA_RESETADA: "Senha resetada",
+  USUARIO_SENHA_ALTERADA: "Senha alterada",
+  USUARIO_SENHA_PROVISORIA_DEFINIDA: "Senha provisória definida",
   USUARIO_LOGIN: "Login",
   USUARIO_LOGOUT: "Logout",
   USUARIO_ENDERECO_ATUALIZADO: "Endereço atualizado",

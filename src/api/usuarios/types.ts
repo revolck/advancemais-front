@@ -220,6 +220,8 @@ export interface UsuarioLoginResponse extends UsuarioResponseBase {
     authId: string;
     emailVerificado: boolean;
     ultimoLogin: string;
+    /** Senha provisória: precisa trocar antes de usar a plataforma */
+    precisaTrocarSenha?: boolean;
     telefone?: string;
     celular?: string;
     genero?: string | null;
@@ -258,6 +260,8 @@ export interface UsuarioRefreshResponse extends UsuarioResponseBase {
     tipoUsuario: TipoUsuario;
     emailVerificado: boolean;
     ultimoLogin: string;
+    /** Senha provisória: precisa trocar antes de usar a plataforma */
+    precisaTrocarSenha?: boolean;
     socialLinks: UsuarioSocialLinks;
     enderecos: UsuarioEndereco[];
   };
@@ -309,6 +313,8 @@ export interface UsuarioProfileResponse extends UsuarioResponseBase {
     emailVerificado: boolean;
     emailVerificadoEm: string | null;
     ultimoLogin: string | null;
+    /** Senha provisória: precisa trocar antes de usar a plataforma */
+    precisaTrocarSenha?: boolean;
     cpf?: string | null;
     cnpj?: string | null;
     codUsuario?: string;
@@ -831,6 +837,8 @@ export type UsuarioHistoricoTipo =
   | "USUARIO_EMAIL_LIBERADO"
   | "USUARIO_EMAIL_VERIFICADO"
   | "USUARIO_SENHA_RESETADA"
+  | "USUARIO_SENHA_ALTERADA"
+  | "USUARIO_SENHA_PROVISORIA_DEFINIDA"
   | "USUARIO_LOGIN"
   | "USUARIO_LOGOUT"
   | "USUARIO_ENDERECO_ATUALIZADO"

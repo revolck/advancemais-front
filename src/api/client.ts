@@ -1,5 +1,6 @@
 import { buildApiUrl, env, ApiFallback } from "@/lib/env";
 import { logoutUser } from "@/lib/auth";
+import { PASSWORD_CHANGE_REQUIRED, redirectToPrimeiroAcesso } from "@/lib/primeiro-acesso";
 
 interface FetchOptions<T> {
   init?: RequestInit;
@@ -156,6 +157,11 @@ export async function apiFetch<T = unknown>(
 
         if (res.status === 401 && !skipLogoutOn401) {
           logoutUser();
+        }
+
+        // Senha provisória ainda não trocada: leva para o primeiro acesso
+        if (res.status === 403 && errorDetails?.code === PASSWORD_CHANGE_REQUIRED) {
+          redirectToPrimeiroAcesso();
         }
 
         // Marca o erro para não fazer retry em casos específicos
