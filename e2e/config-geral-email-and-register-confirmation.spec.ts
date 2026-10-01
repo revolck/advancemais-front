@@ -8,7 +8,7 @@ test.describe("Config Geral e cadastro", () => {
   }) => {
     let capturedBody: Record<string, unknown> | null = null;
 
-    await page.route("**/api/v1/brevo/test/email", async (route) => {
+    await page.route("**/api/v1/email/test/email", async (route) => {
       capturedBody = route.request().postDataJSON() as Record<string, unknown>;
       await route.fulfill({
         status: 200,

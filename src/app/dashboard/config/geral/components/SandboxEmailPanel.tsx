@@ -3,11 +3,11 @@
 import React from "react";
 import { Send, ShieldCheck } from "lucide-react";
 
-import { getSandboxEmailRotinas, sendSandboxEmail } from "@/api/brevo";
+import { getSandboxEmailRotinas, sendSandboxEmail } from "@/api/email";
 import type {
-  BrevoSandboxEmailRotina,
-  BrevoSandboxEmailRotinaItem,
-} from "@/api/brevo/types";
+  EmailSandboxEmailRotina,
+  EmailSandboxEmailRotinaItem,
+} from "@/api/email/types";
 import { getUserProfile } from "@/api/usuarios";
 import {
   ButtonCustom,
@@ -39,8 +39,8 @@ function errorMessageFor(error: unknown) {
   }
   if (code === "INVALID_SANDBOX_ROUTINE") return "Rotina inválida.";
   if (code === "INVALID_EMAIL") return "Email de destino inválido.";
-  if (code === "BREVO_DELIVERY_FAILED") {
-    return "A Brevo recusou o envio. Verifique a configuração e tente novamente.";
+  if (code === "EMAIL_DELIVERY_FAILED") {
+    return "O servidor SMTP recusou o envio. Verifique a configuração e tente novamente.";
   }
 
   return error instanceof Error
@@ -50,10 +50,10 @@ function errorMessageFor(error: unknown) {
 
 export function SandboxEmailPanel() {
   const { user } = useAuth();
-  const [rotinas, setRotinas] = React.useState<BrevoSandboxEmailRotinaItem[]>(
+  const [rotinas, setRotinas] = React.useState<EmailSandboxEmailRotinaItem[]>(
     [],
   );
-  const [rotina, setRotina] = React.useState<BrevoSandboxEmailRotina | null>(
+  const [rotina, setRotina] = React.useState<EmailSandboxEmailRotina | null>(
     null,
   );
   const [recipient, setRecipient] = React.useState("");
@@ -227,7 +227,7 @@ export function SandboxEmailPanel() {
           mode="single"
           label="Rotina"
           value={rotina}
-          onChange={(next) => setRotina(next as BrevoSandboxEmailRotina | null)}
+          onChange={(next) => setRotina(next as EmailSandboxEmailRotina | null)}
           options={options}
           placeholder="Selecione a rotina"
           searchable

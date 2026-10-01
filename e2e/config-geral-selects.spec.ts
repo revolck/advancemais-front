@@ -85,9 +85,6 @@ const SELECT_CASES: Array<{
     tabLabel: "Mercado Pago",
     key: "cron_cobranca_enabled",
   },
-  { category: "emails", tabLabel: "E-mails", key: "brevo_sms_unicode" },
-  { category: "emails", tabLabel: "E-mails", key: "brevo_template_cache" },
-  { category: "emails", tabLabel: "E-mails", key: "brevo_preload_templates" },
   {
     category: "emails",
     tabLabel: "E-mails",

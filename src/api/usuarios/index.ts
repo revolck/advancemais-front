@@ -371,7 +371,7 @@ export async function changeUserPassword(
 // ============================================================================
 
 /**
- * GET /api/v1/brevo/verificar-email?token=xxx
+ * GET /api/v1/email/verificar-email?token=xxx
  * Verifica email usando token de verificação
  *
  * @param payload - Token de verificação
@@ -394,7 +394,7 @@ export async function verifyUserEmail(
 }
 
 /**
- * POST /api/v1/brevo/reenviar-verificacao
+ * POST /api/v1/email/reenviar-verificacao
  * Reenvia email de verificação
  *
  * @param payload - Email ou ID do usuário
@@ -418,7 +418,7 @@ export async function resendEmailVerification(
 }
 
 /**
- * GET /api/v1/brevo/status-verificacao/{userId}
+ * GET /api/v1/email/status-verificacao/{userId}
  * Obtém status de verificação de email do usuário
  *
  * @param userId - ID do usuário
