@@ -16,6 +16,11 @@ import type {
   EmailSandboxEmailPayload,
   EmailSandboxEmailResponse,
   EmailSandboxEmailRotinasResponse,
+  ComunicadoAcaoAlunoResultado,
+  ComunicadoPainel,
+  ComunicadoPendencias,
+  ComunicadoResponse,
+  ComunicadoTipoPendencia,
 } from "./types";
 
 const ACCEPT_HEADER = { Accept: apiConfig.headers.Accept } as const;
@@ -215,4 +220,93 @@ export async function sendSandboxEmail(
     cache: "no-cache",
     retries: 1,
   });
+}
+
+// Comunicado de primeiro acesso -------------------------------------------------
+
+const comunicadoRoutes = emailRoutes.comunicadoPrimeiroAcesso;
+
+function comunicadoRequest<T>(
+  url: string,
+  method: "GET" | "POST",
+  body?: unknown,
+): Promise<ComunicadoResponse<T>> {
+  return apiFetch<ComunicadoResponse<T>>(url, {
+    init: {
+      method,
+      headers: {
+        ...(body ? JSON_HEADERS : ACCEPT_HEADER),
+        ...buildAuthHeaders(),
+      },
+      body: body ? JSON.stringify(body) : undefined,
+    },
+    cache: "no-cache",
+    // ações mudam dados ou disparam envio: nunca repetir automaticamente
+    retries: method === "GET" ? 1 : 0,
+  });
+}
+
+export function getComunicadoPainel() {
+  return comunicadoRequest<ComunicadoPainel>(comunicadoRoutes.painel(), "GET");
+}
+
+export function getComunicadoPendencias(params: {
+  tipo?: ComunicadoTipoPendencia | null;
+  busca?: string;
+  page?: number;
+  pageSize?: number;
+}) {
+  const query = new URLSearchParams();
+  if (params.tipo) query.set("tipo", params.tipo);
+  if (params.busca?.trim()) query.set("busca", params.busca.trim());
+  query.set("page", String(params.page ?? 1));
+  query.set("pageSize", String(params.pageSize ?? 20));
+  return comunicadoRequest<ComunicadoPendencias>(
+    `${comunicadoRoutes.pendencias()}?${query.toString()}`,
+    "GET",
+  );
+}
+
+export function sincronizarComunicadoComBrevo() {
+  return comunicadoRequest<Record<string, number | string>>(
+    comunicadoRoutes.sincronizar(),
+    "POST",
+  );
+}
+
+export function validarFilaComunicado(limite = 5000) {
+  return comunicadoRequest<{ iniciado: boolean }>(
+    comunicadoRoutes.validar(),
+    "POST",
+    {
+      limite,
+    },
+  );
+}
+
+export function corrigirEmailComunicado(
+  usuarioId: string,
+  payload: { email: string; enviarAgora: boolean },
+) {
+  return comunicadoRequest<ComunicadoAcaoAlunoResultado>(
+    comunicadoRoutes.corrigirEmail(usuarioId),
+    "POST",
+    payload,
+  );
+}
+
+export function reenviarComunicado(usuarioId: string) {
+  return comunicadoRequest<ComunicadoAcaoAlunoResultado>(
+    comunicadoRoutes.reenviar(usuarioId),
+    "POST",
+    {},
+  );
+}
+
+export function revogarSenhaComunicado(usuarioId: string, motivo: string) {
+  return comunicadoRequest<{ revogada: boolean }>(
+    comunicadoRoutes.revogarSenha(usuarioId),
+    "POST",
+    { motivo },
+  );
 }

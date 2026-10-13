@@ -244,3 +244,164 @@ export interface EmailSandboxEmailSuccessResponse {
 export type EmailSandboxEmailResponse =
   | EmailSandboxEmailSuccessResponse
   | EmailErrorResponse;
+
+// ---------------------------------------------------------------------------
+// Comunicado de primeiro acesso (alunos migrados)
+// ---------------------------------------------------------------------------
+
+export type ComunicadoResultadoValidacao =
+  | "VALIDO"
+  | "INVALIDO"
+  | "RISCO"
+  | "DESCONHECIDO"
+  | "TEMPORARIO"
+  | "BLOQUEADO"
+  | "PENDENTE"
+  | "SEM_VALIDACAO";
+
+export interface ComunicadoSituacao {
+  codigo: string;
+  titulo: string;
+  detalhe: string;
+  condicoesRetomada: string[];
+}
+
+export interface ComunicadoTaxaDevolucao {
+  enviados: number;
+  devolvidos: number;
+  taxaPercentual: number;
+  pausado: boolean;
+}
+
+export interface ComunicadoPainel {
+  comunicado: string;
+  geradoEm: string;
+  situacao: ComunicadoSituacao;
+  alertas: ComunicadoSituacao[];
+  configuracao: {
+    ativo: boolean;
+    lotePorCiclo: number;
+    maxDevolucao: number;
+    rampaInicial: number;
+    maxDiario: number;
+    validador: string | null;
+    validadorConfigurado: boolean;
+  };
+  totalAlunos: number;
+  fila: {
+    restantes: number;
+    prontosParaEnvio: number;
+    aguardandoValidacao: number;
+    precisamCorrecao: number;
+    senhasPossivelmenteExpostas: number;
+  };
+  validacao: Record<ComunicadoResultadoValidacao, number>;
+  envios: {
+    realizados: number;
+    entregues: number;
+    devolvidosDefinitivos: number;
+    devolvidosTemporarios: number;
+    falhas: number;
+    incertos: number;
+    reabertos: number;
+    revogados: number;
+    emProcessamento: number;
+    porStatus: Record<string, number>;
+  };
+  devolucao: {
+    ultimas24h: ComunicadoTaxaDevolucao & { previsaoFim: string | null };
+    total: ComunicadoTaxaDevolucao;
+    limite: number;
+  };
+  rampa: {
+    diasComEnvio: number;
+    enviadosHoje: number;
+    limiteHoje: number;
+    disponivelHoje: number;
+    inicioDoDia: string;
+  };
+  brevo: {
+    creditos: number | null;
+    reserva: number;
+    disponiveisParaComunicado: number | null;
+    erro: string | null;
+  };
+  execucao: {
+    emExecucao: boolean;
+    validacaoEmExecucao: boolean;
+    ultimaExecucao: {
+      em: string;
+      resultado: { enviados: number; interrompidoPor: string | null };
+    } | null;
+    ultimaSincronizacao: {
+      em: string;
+      ok: boolean;
+      erro: string | null;
+    } | null;
+    ultimaValidacao: {
+      em: string;
+      resumo: {
+        provedor: string | null;
+        processados: number;
+        porResultado: Partial<Record<ComunicadoResultadoValidacao, number>>;
+        interrompidoPor: string | null;
+        erro: string | null;
+      } | null;
+      erro: string | null;
+    } | null;
+  };
+}
+
+export type ComunicadoTipoPendencia =
+  | "SENHA_POSSIVELMENTE_EXPOSTA"
+  | "EMAIL_DEVOLVIDO"
+  | "SENHA_REVOGADA"
+  | "ENVIO_INCERTO"
+  | "FALHA_NO_ENVIO"
+  | "DEVOLUCAO_TEMPORARIA_PERSISTENTE"
+  | "EMAIL_INVALIDO"
+  | "EMAIL_BLOQUEADO"
+  | "EMAIL_DE_RISCO"
+  | "VALIDACAO_INCONCLUSIVA";
+
+export interface ComunicadoPendencia {
+  usuarioId: string;
+  nomeCompleto: string;
+  email: string;
+  cpf: string | null;
+  telefone: string | null;
+  tipo: ComunicadoTipoPendencia;
+  motivo: string;
+  sugestao: string | null;
+  senhaProvisoriaNaoRecebida: boolean;
+  statusEnvio: string | null;
+}
+
+export interface ComunicadoPendencias {
+  total: number;
+  page: number;
+  pageSize: number;
+  porTipo: Record<ComunicadoTipoPendencia, number>;
+  itens: ComunicadoPendencia[];
+}
+
+export interface ComunicadoAcaoAlunoResultado {
+  email: string;
+  reaberto?: boolean;
+  validacao: {
+    resultado: ComunicadoResultadoValidacao;
+    motivo: string | null;
+    sugestao: string | null;
+    fonte: string;
+  } | null;
+  validadorIndisponivel: string | null;
+  liberadoParaEnvio: boolean;
+  envio: { enviados: number; interrompidoPor: string | null } | null;
+}
+
+export interface ComunicadoResponse<T> {
+  success: boolean;
+  data: T;
+  message?: string;
+  code?: string;
+}

@@ -14,6 +14,7 @@ import { toastCustom } from "@/components/ui/custom/toast";
 import { UserRole } from "@/config/roles";
 import { useUserRole } from "@/hooks/useUserRole";
 import { GeralConfigPanel } from "./components/GeralConfigPanel";
+import { ComunicadoPrimeiroAcessoPanel } from "./components/ComunicadoPrimeiroAcessoPanel";
 import { SandboxEmailPanel } from "./components/SandboxEmailPanel";
 
 const TAB_META: Record<
@@ -96,6 +97,15 @@ export default function GeralConfigPage() {
       />
     ),
   }));
+
+  if (role === UserRole.ADMIN || role === UserRole.MODERADOR) {
+    items.push({
+      value: "comunicado",
+      label: "Comunicado",
+      icon: "Megaphone",
+      content: <ComunicadoPrimeiroAcessoPanel />,
+    });
+  }
 
   if (role === UserRole.ADMIN) {
     items.push({

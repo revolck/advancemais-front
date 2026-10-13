@@ -387,6 +387,19 @@ export const emailRoutes = {
     emailRotinas: () => `${prefix}/email/sandbox/email-rotinas`,
     email: () => `${prefix}/email/sandbox/email`,
   },
+  comunicadoPrimeiroAcesso: {
+    painel: () => `${prefix}/email/comunicados/primeiro-acesso`,
+    pendencias: () => `${prefix}/email/comunicados/primeiro-acesso/pendencias`,
+    sincronizar: () =>
+      `${prefix}/email/comunicados/primeiro-acesso/sincronizar`,
+    validar: () => `${prefix}/email/comunicados/primeiro-acesso/validar`,
+    corrigirEmail: (usuarioId: string) =>
+      `${prefix}/email/comunicados/primeiro-acesso/alunos/${encodeURIComponent(usuarioId)}/corrigir-email`,
+    reenviar: (usuarioId: string) =>
+      `${prefix}/email/comunicados/primeiro-acesso/alunos/${encodeURIComponent(usuarioId)}/reenviar`,
+    revogarSenha: (usuarioId: string) =>
+      `${prefix}/email/comunicados/primeiro-acesso/alunos/${encodeURIComponent(usuarioId)}/revogar-senha`,
+  },
 };
 
 /**
