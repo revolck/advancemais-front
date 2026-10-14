@@ -20,6 +20,10 @@ import { SimpleTextarea } from "@/components/ui/custom/text-area";
 import { SelectCustom } from "@/components/ui/custom/select";
 import { InputCustom } from "@/components/ui/custom/input";
 import { toastCustom } from "@/components/ui/custom/toast";
+import {
+  MIN_OBSERVACOES_BLOQUEIO,
+  mensagemErroBloqueio,
+} from "../../shared/bloqueio";
 import type { BanType, BanReason } from "@/api/empresas/admin/types";
 import { useCompanyMutations } from "../hooks/useCompanyMutations";
 
@@ -191,11 +195,10 @@ export function BloquearEmpresaModal({
     if (isSubmitting) return;
 
     const trimmedObservations = state.observacoes.trim();
-    if (!trimmedObservations) {
+    if (trimmedObservations.length < MIN_OBSERVACOES_BLOQUEIO) {
       toastCustom.error({
         title: "Informe as observações",
-        description:
-          "Descreva as observações do banimento (máximo 250 caracteres).",
+        description: `Escreva pelo menos ${MIN_OBSERVACOES_BLOQUEIO} caracteres explicando o bloqueio.`,
       });
       return;
     }
@@ -219,8 +222,10 @@ export function BloquearEmpresaModal({
       console.error("Erro ao banir empresa", error);
       toastCustom.error({
         title: "Erro ao aplicar bloqueio",
-        description:
+        description: mensagemErroBloqueio(
+          error,
           "Não foi possível bloquear a empresa agora. Tente novamente em instantes.",
+        ),
       });
     }
   }, [

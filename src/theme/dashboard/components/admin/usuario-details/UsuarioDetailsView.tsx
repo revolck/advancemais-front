@@ -52,6 +52,8 @@ import {
   funcoesDisponiveis,
   mensagemErroTrocaDeFuncao,
 } from "./utils/funcoes";
+import { podeBloquear } from "../shared/bloqueio";
+import { contaDoToken, lerCookie } from "@/lib/auth-cookies";
 
 export function UsuarioDetailsView({
   usuarioId,
@@ -362,10 +364,10 @@ export function UsuarioDetailsView({
       funcoesDisponiveis(
         currentUserRole,
         usuarioData?.role,
-        user?.id ?? null,
+        contaDoToken(lerCookie("token")),
         usuarioData?.id ?? null,
       ),
-    [currentUserRole, user?.id, usuarioData?.id, usuarioData?.role],
+    [currentUserRole, usuarioData?.id, usuarioData?.role],
   );
 
   const canAlterarFuncao =
@@ -510,7 +512,16 @@ export function UsuarioDetailsView({
         onLiberarAcessoUsuario={
           canLiberarAcesso ? () => setIsLiberarAcessoOpen(true) : undefined
         }
-        onBloquearUsuario={() => setIsBloquearModalOpen(true)}
+        onBloquearUsuario={
+          podeBloquear(
+            currentUserRole,
+            usuarioData.role,
+            contaDoToken(lerCookie("token")),
+            usuarioData.id,
+          )
+            ? () => setIsBloquearModalOpen(true)
+            : undefined
+        }
         onDesbloquearUsuario={() => setIsDesbloquearModalOpen(true)}
       />
 
