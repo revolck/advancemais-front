@@ -30,17 +30,31 @@ import {
   normalizeEstadoUf,
 } from "@/lib/brasil-localidades";
 import { MaskService } from "@/services";
+import { isPessoaJuridica } from "./profile-onboarding.utils";
 
 // Schema de validação
-const profileSchema = z.object({
-  nomeCompleto: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
-  email: z.string().email("Email inválido"),
-  telefone: z.string().min(1, "Telefone é obrigatório"),
-  dataNasc: z.string().min(1, "Data de nascimento é obrigatória"),
-  genero: z.string().optional(),
-  descricao: z.string().optional(),
-  socialLinks: z.record(z.string()),
-});
+const profileSchema = z
+  .object({
+    /** Empresa (pessoa jurídica) não tem gênero nem data de nascimento */
+    exigeDadosPessoais: z.boolean().optional(),
+    nomeCompleto: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
+    email: z.string().email("Email inválido"),
+    telefone: z.string().min(1, "Telefone é obrigatório"),
+    dataNasc: z.string().optional(),
+    genero: z.string().optional(),
+    descricao: z.string().optional(),
+    socialLinks: z.record(z.string()),
+  })
+  .superRefine((data, ctx) => {
+    if (data.exigeDadosPessoais === false) return;
+    if (!data.dataNasc?.trim()) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["dataNasc"],
+        message: "Data de nascimento é obrigatória",
+      });
+    }
+  });
 
 // Schema de validação para endereço
 const addressSchema = z.object({
@@ -163,6 +177,11 @@ export function ProfileForm({
     return new Date(today.getFullYear() - 70, today.getMonth(), today.getDate());
   }, []);
   const maskService = useMemo(() => MaskService.getInstance(), []);
+  const ehEmpresa = isPessoaJuridica(profile);
+  const documento = ehEmpresa ? profile?.cnpj : profile?.cpf;
+  const documentoFormatado = documento
+    ? maskService.processInput(documento, "cpfCnpj")
+    : "Não informado";
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmittingPassword, setIsSubmittingPassword] = useState(false);
   const [isSubmittingAddress, setIsSubmittingAddress] = useState(false);
@@ -288,6 +307,7 @@ export function ProfileForm({
   // Criar defaultValues iniciais vazios
   const emptyDefaultValues: ProfileFormData = useMemo(
     () => ({
+      exigeDadosPessoais: true,
       nomeCompleto: "",
       email: "",
       telefone: "",
@@ -363,6 +383,7 @@ export function ProfileForm({
     const descricao = (profileAny.descricao ?? informacoes.descricao) || "";
 
     const newValues: ProfileFormData = {
+      exigeDadosPessoais: !isPessoaJuridica(profile),
       nomeCompleto: profile.nomeCompleto || "",
       email: profile.email || "",
       telefone: telefone,
@@ -701,8 +722,8 @@ export function ProfileForm({
             icon: "User",
             content: (
               <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-6">
-                {/* Primeira linha: Nome completo, Email */}
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                {/* Primeira linha: Nome, Email e CPF/CNPJ (não editável) */}
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   <Controller
                     control={control}
                     name="nomeCompleto"
@@ -710,7 +731,7 @@ export function ProfileForm({
                       <InputCustom
                         ref={field.ref}
                         name={field.name}
-                        label="Nome completo"
+                        label={ehEmpresa ? "Nome da empresa" : "Nome completo"}
                         value={(field.value as string) ?? ""}
                         onChange={(event) =>
                           setProfileValue("nomeCompleto", event.target.value)
@@ -743,10 +764,32 @@ export function ProfileForm({
                       />
                     )}
                   />
+
+                  <InputCustom
+                    name="documento"
+                    label={ehEmpresa ? "CNPJ" : "CPF"}
+                    value={documentoFormatado}
+                    onChange={() => undefined}
+                    icon={ehEmpresa ? "Building2" : "IdCard"}
+                    disabled
+                    helperText={
+                      ehEmpresa
+                        ? "O CNPJ não pode ser alterado"
+                        : "O CPF não pode ser alterado"
+                    }
+                  />
                 </div>
 
-                {/* Segunda linha: Gênero, Telefone/Whatsapp, Data de nascimento */}
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {/* Segunda linha: Gênero, Telefone/Whatsapp, Data de nascimento
+                    (empresa: só telefone) */}
+                <div
+                  className={
+                    ehEmpresa
+                      ? "grid grid-cols-1 gap-4 sm:grid-cols-2"
+                      : "grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
+                  }
+                >
+                  {!ehEmpresa && (
                   <Controller
                     control={control}
                     name="genero"
@@ -787,6 +830,7 @@ export function ProfileForm({
                       );
                     }}
                   />
+                  )}
 
                   <Controller
                     control={control}
@@ -810,6 +854,7 @@ export function ProfileForm({
                     )}
                   />
 
+                  {!ehEmpresa && (
                   <Controller
                     control={control}
                     name="dataNasc"
@@ -850,6 +895,7 @@ export function ProfileForm({
                       );
                     }}
                   />
+                  )}
                 </div>
 
                 {/* Descrição */}
@@ -859,7 +905,11 @@ export function ProfileForm({
                   render={({ field }) => (
                     <SimpleTextarea
                       label="Descrição"
-                      placeholder="Conte um pouco sobre você..."
+                      placeholder={
+                        ehEmpresa
+                          ? "Conte um pouco sobre a empresa..."
+                          : "Conte um pouco sobre você..."
+                      }
                       rows={5}
                       value={field.value ?? ""}
                       onChange={(event) =>

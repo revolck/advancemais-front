@@ -73,25 +73,25 @@ export function AssistenteAdvance({
                 type="button"
                 onClick={onFechar}
                 aria-label="Fechar assistente"
-                className="rounded-md p-1 text-white/80 hover:bg-white/10 hover:text-white"
+                className="cursor-pointer rounded-md p-1.5 text-white/80 hover:bg-white/10 hover:text-white"
               >
                 <X className="h-4 w-4" />
               </button>
             </header>
 
-            <div className="max-h-[50vh] space-y-2 overflow-y-auto bg-gray-50 px-4 py-4">
+            <div className="flex max-h-[55vh] flex-col gap-3 overflow-y-auto bg-gray-50 px-4 py-5 sm:max-h-[50vh]">
               {conversa.mensagens.slice(0, visiveis).map((mensagem, i) => (
                 <motion.p
                   key={`${conversa.motivo}-${i}`}
                   initial={{ opacity: 0, y: 6 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="!mb-0 w-fit max-w-[90%] rounded-2xl rounded-tl-sm bg-white px-3 py-2 text-sm leading-relaxed text-gray-800 shadow-sm"
+                  className="!mb-0 w-fit max-w-[92%] rounded-2xl rounded-tl-md border border-gray-100 bg-white px-4 py-3 !text-sm !leading-relaxed text-gray-800 shadow-sm"
                 >
                   {mensagem}
                 </motion.p>
               ))}
               {digitando && (
-                <div className="flex w-fit gap-1 rounded-2xl rounded-tl-sm bg-white px-3 py-3 shadow-sm">
+                <div className="flex w-fit gap-1 rounded-2xl rounded-tl-md border border-gray-100 bg-white px-4 py-3.5 shadow-sm">
                   {[0, 1, 2].map((i) => (
                     <motion.span
                       key={i}
@@ -108,7 +108,7 @@ export function AssistenteAdvance({
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="flex flex-col gap-2 border-t border-gray-100 bg-white p-3"
+                className="flex flex-col gap-2 border-t border-gray-100 bg-white p-4"
               >
                 {conversa.botoes.map((botao) => (
                   <button
@@ -116,7 +116,7 @@ export function AssistenteAdvance({
                     type="button"
                     onClick={() => onAcao(botao.acao)}
                     className={cn(
-                      "w-full rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                      "w-full cursor-pointer rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
                       botao.principal
                         ? "bg-[var(--primary-color)] text-white hover:opacity-90"
                         : "border border-gray-200 text-gray-700 hover:bg-gray-50"
@@ -139,9 +139,9 @@ export function AssistenteAdvance({
         whileTap={{ scale: 0.95 }}
         animate={temNovidade && !aberto ? { y: [0, -6, 0] } : { y: 0 }}
         transition={temNovidade && !aberto ? { duration: 1.2, repeat: Infinity } : {}}
-        className="relative flex size-14 items-center justify-center rounded-full bg-[var(--primary-color)] text-white shadow-xl ring-4 ring-white"
+        className="relative flex size-12 cursor-pointer items-center justify-center rounded-full bg-[var(--primary-color)] text-white shadow-xl ring-4 ring-white sm:size-14"
       >
-        <Bot className="h-7 w-7" />
+        <Bot className="h-6 w-6 sm:h-7 sm:w-7" />
         {temNovidade && !aberto && (
           <span className="absolute right-0 top-0 size-3.5 rounded-full border-2 border-white bg-rose-500" />
         )}
