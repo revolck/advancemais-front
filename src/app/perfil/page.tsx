@@ -5,6 +5,8 @@ import { getUserProfile, updateUserProfile } from "@/api/usuarios";
 import type { UsuarioProfileResponse } from "@/api/usuarios/types";
 import { getGoogleOAuthStatus, connectGoogle, disconnectGoogle } from "@/api/aulas";
 import { ProfileForm } from "@/theme/dashboard/components/profile/ProfileForm";
+import { isPessoaJuridica } from "@/theme/dashboard/components/profile/profile-onboarding.utils";
+import { formatCnpj, formatCpf } from "@/lib/documentos";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ButtonCustom } from "@/components/ui/custom";
 import {
@@ -384,6 +386,14 @@ export default function PerfilPage() {
                 <h4 className="!text-xl font-semibold text-gray-900 !mb-0">
                   {profile.nomeCompleto}
                 </h4>
+                {/* Mesmo padrão do detalhe da empresa no admin */}
+                {(profile.cnpj || profile.cpf) && (
+                  <p className="!mb-0 font-mono !text-xs text-gray-400">
+                    {isPessoaJuridica(profile)
+                      ? `CNPJ: ${formatCnpj(profile.cnpj)}`
+                      : `CPF: ${formatCpf(profile.cpf)}`}
+                  </p>
+                )}
                 {lastLoginLabel && (
                   <p className="!text-xs text-gray-500 !mb-0">
                     Último acesso: {lastLoginLabel}
