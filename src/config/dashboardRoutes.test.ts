@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { canAccessRoute } from "./dashboardRoutes";
+import { canAccessRoute, rotaDoPainel } from "./dashboardRoutes";
 import { UserRole } from "./roles";
 
 const cursoId = "2e035bc5-f6b8-4f2a-84e3-009b9db34780";
@@ -111,5 +111,23 @@ describe("dashboardRoutes config", () => {
     expect(
       canAccessRoute("/dashboard/config/empresas", UserRole.PEDAGOGICO),
     ).toBe(false);
+  });
+});
+
+describe("caminho do painel no subdomínio app.", () => {
+  it("raiz e caminhos curtos viram o caminho do painel", () => {
+    expect(rotaDoPainel("/")).toBe("/dashboard");
+    expect(rotaDoPainel("")).toBe("/dashboard");
+    expect(rotaDoPainel("/empresas/vagas")).toBe("/dashboard/empresas/vagas");
+    expect(rotaDoPainel("/dashboard/config/geral")).toBe("/dashboard/config/geral");
+    expect(rotaDoPainel("/dashboard")).toBe("/dashboard");
+  });
+
+  it("empresa e aluno entram pela raiz do app sem ser barrados", () => {
+    for (const papel of [UserRole.EMPRESA, UserRole.ALUNO_CANDIDATO, UserRole.ADMIN]) {
+      expect(canAccessRoute(rotaDoPainel("/"), papel)).toBe(true);
+    }
+    expect(canAccessRoute(rotaDoPainel("/empresas/vagas"), UserRole.EMPRESA)).toBe(true);
+    expect(canAccessRoute(rotaDoPainel("/config/geral"), UserRole.EMPRESA)).toBe(false);
   });
 });

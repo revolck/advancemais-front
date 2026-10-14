@@ -20,7 +20,7 @@ import { PasswordChangeGate } from "@/components/layout/PasswordChangeGate";
 import { useQuery } from "@tanstack/react-query";
 import { getUserProfile } from "@/api/usuarios";
 import type { UsuarioProfileResponse } from "@/api/usuarios/types";
-import { canAccessRoute } from "@/config/dashboardRoutes";
+import { canAccessRoute, rotaDoPainel } from "@/config/dashboardRoutes";
 import type { UserRole } from "@/config/roles";
 import { contaDoToken, gravarPapel, lerCookie } from "@/lib/auth-cookies";
 import { logoutUser } from "@/lib/auth";
@@ -246,7 +246,8 @@ export default function DashboardLayoutClient({
 
   const canRenderCurrentRoute = useMemo(() => {
     if (!papelEfetivo || !pathname) return false;
-    return canAccessRoute(pathname, papelEfetivo);
+    // No app. o navegador mostra "/" para o início do painel (/dashboard)
+    return canAccessRoute(rotaDoPainel(pathname), papelEfetivo);
   }, [pathname, papelEfetivo]);
 
   // Detecta troca de conta em outra aba (mesmo navegador)
@@ -259,11 +260,14 @@ export default function DashboardLayoutClient({
         logoutUser();
         return;
       }
+      // Abre o início da conta nova: recarregar a página atual levaria a nova conta
+      // para uma tela de outro perfil (ex.: empresa na configuração do admin)
       toastCustom.info({
         title: "Você entrou com outra conta",
-        description: "Esta aba vai ser atualizada para a conta atual.",
+        description:
+          "Abas e janelas anônimas do mesmo navegador dividem a sessão. Abrindo o painel da conta atual.",
       });
-      setTimeout(() => window.location.reload(), 1200);
+      setTimeout(() => window.location.replace("/dashboard"), 1500);
     };
     const intervalo = setInterval(verificar, 1500);
     window.addEventListener("focus", verificar);
@@ -357,9 +361,9 @@ export default function DashboardLayoutClient({
     if (lastDeniedPathRef.current === pathname) return;
     lastDeniedPathRef.current = pathname;
 
-    toastCustom.error({
-      title: "Permissão insuficiente",
-      description: "Você não tem permissão para acessar esta página.",
+    toastCustom.info({
+      title: "Página indisponível para o seu perfil",
+      description: "Abrimos o início do seu painel.",
     });
     router.replace("/dashboard");
   }, [

@@ -298,6 +298,17 @@ export function getRoutePermissions(path: string): readonly UserRole[] {
   return rule?.roles ?? [];
 }
 
+/**
+ * Caminho real dentro do painel. No subdomínio app. o middleware serve o painel sem o
+ * prefixo (app.../ é /dashboard, app.../vagas é /dashboard/vagas), mas o navegador
+ * continua mostrando o caminho curto.
+ */
+export function rotaDoPainel(pathname: string): string {
+  const caminho = pathname.split("?")[0] || "/";
+  if (caminho === "/dashboard" || caminho.startsWith("/dashboard/")) return caminho;
+  return caminho === "/" ? "/dashboard" : `/dashboard${caminho}`;
+}
+
 /** Verifica se um papel possui acesso à rota informada */
 export function canAccessRoute(path: string, role: UserRole): boolean {
   return getRoutePermissions(path).includes(role);
