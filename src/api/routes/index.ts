@@ -446,6 +446,10 @@ const usuarioLogout = () => `${prefix}/usuarios/logout`;
 const usuarioRefresh = () => `${prefix}/usuarios/refresh`;
 
 export const usuarioRoutes = {
+  tutoriais: {
+    list: () => `${prefix}/usuarios/tutoriais`,
+    update: (chave: string) => `${prefix}/usuarios/tutoriais/${encodeURIComponent(chave)}`,
+  },
   /**
    * Retorna o endpoint raiz do módulo de usuários.
    * Deve ser usado para recuperar as informações gerais do serviço

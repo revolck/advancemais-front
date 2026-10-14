@@ -59,7 +59,12 @@ export function MenuItem({
     return (
       <div className="relative group">
         {item.route && !hasSubmenu ? (
-          <Link href={item.route} onClick={handleItemNavigation} className="block">
+          <Link
+            href={item.route}
+            onClick={handleItemNavigation}
+            className="block"
+            data-tour={item.route}
+          >
             {menuContent}
           </Link>
         ) : (
@@ -153,6 +158,7 @@ export function MenuItem({
         <Link
           href={item.route}
           onClick={handleItemNavigation}
+          data-tour={item.route}
           data-popup-target="dashboard-sidebar-item"
           className={cn(
             "flex items-center px-4 py-2.5 text-sm rounded-md transition-colors w-full",

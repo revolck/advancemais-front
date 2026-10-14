@@ -20,7 +20,7 @@ import { PasswordChangeGate } from "@/components/layout/PasswordChangeGate";
 import { canAccessRoute } from "@/config/dashboardRoutes";
 import { useUserRole } from "@/hooks/useUserRole";
 import { ProfileOnboardingGate } from "@/theme/dashboard/components/profile/ProfileOnboardingGate";
-import { BonificacaoEmpresaModalController } from "@/theme/dashboard/components/empresas/bonificacao/BonificacaoEmpresaModalController";
+import { AssistenteController } from "@/theme/dashboard/components/assistente/AssistenteController";
 import {
   GoogleConnectedModalController,
   RecoveryPaymentModalController,
@@ -337,9 +337,7 @@ export default function DashboardLayoutClient({
               <GoogleConnectedModalController
                 onConfettiChange={handleConfettiChange}
               />
-              <BonificacaoEmpresaModalController
-                onConfettiChange={handleConfettiChange}
-              />
+              <AssistenteController onConfettiChange={handleConfettiChange} />
               <RecoveryPaymentModalController />
               <MarketingPopupRenderer scope="DASHBOARD" />
             </>

@@ -137,7 +137,11 @@ export function NotificationButton({ className }: NotificationButtonProps) {
         <Tooltip>
           <TooltipTrigger asChild>
             <DropdownMenuTrigger asChild>
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                data-tour="notificacoes"
+              >
                 <Button
                   variant="ghost"
                   size="icon"
