@@ -177,7 +177,7 @@ export function escolherConversaEquipe({
         `${ola} Eu sou o assistente da Advance+.`,
         "Aqui eu mostro as suas pendências do dia, com atalhos para resolver cada uma.",
         ...situacao,
-        "Se eu estiver atrapalhando, é só me ocultar no ícone de olho aqui em cima. 😉",
+        "Se eu estiver atrapalhando, é só clicar em “Ocultar assistente”, aqui embaixo. 😉",
       ],
       botoes: [...atalhos, { acao: "AGORA_NAO", rotulo: "Agora não" }],
     };

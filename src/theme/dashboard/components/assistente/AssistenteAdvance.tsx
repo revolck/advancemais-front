@@ -63,9 +63,9 @@ export function AssistenteAdvance({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 16, scale: 0.97 }}
             transition={{ duration: 0.2 }}
-            className="w-[min(380px,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl"
+            className="flex max-h-[calc(100dvh-11rem)] w-[min(380px,calc(100vw-2rem))] flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl"
           >
-            <header className="flex items-center justify-between bg-[var(--primary-color)] px-4 py-3 text-white">
+            <header className="flex shrink-0 items-center justify-between bg-[var(--primary-color)] px-4 py-3 text-white">
               <div className="flex items-center gap-2">
                 <div className="flex size-8 items-center justify-center rounded-full bg-white/15">
                   <Bot className="h-4 w-4" />
@@ -79,32 +79,20 @@ export function AssistenteAdvance({
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-1">
-                <button
-                  type="button"
-                  onClick={() => setConfirmandoOcultar(true)}
-                  aria-label="Ocultar assistente"
-                  title="Ocultar assistente (mostre de novo pelo menu da sua foto)"
-                  className="flex cursor-pointer items-center gap-1.5 rounded-md px-2 py-1.5 text-xs text-white/80 hover:bg-white/10 hover:text-white"
-                >
-                  <EyeOff className="h-4 w-4" />
-                  <span className="hidden sm:inline">Ocultar</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={onFechar}
-                  aria-label="Fechar assistente"
-                  title="Fechar"
-                  className="cursor-pointer rounded-md p-1.5 text-white/80 hover:bg-white/10 hover:text-white"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={onFechar}
+                aria-label="Fechar assistente"
+                title="Fechar"
+                className="cursor-pointer rounded-md p-1.5 text-white/80 hover:bg-white/10 hover:text-white"
+              >
+                <X className="h-4 w-4" />
+              </button>
             </header>
 
             {confirmandoOcultar ? (
               <>
-                <div className="flex flex-col gap-3 bg-gray-50 px-4 py-5">
+                <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto bg-gray-50 px-4 py-5">
                   {[
                     "Tudo bem! Vou me esconder para não atrapalhar. 🙈",
                     "Quando quiser me chamar de novo, clique na sua foto no topo da tela e escolha “Mostrar assistente”.",
@@ -117,7 +105,7 @@ export function AssistenteAdvance({
                     </p>
                   ))}
                 </div>
-                <div className="flex flex-col gap-2 border-t border-gray-100 bg-white p-4">
+                <div className="flex shrink-0 flex-col gap-2 border-t border-gray-100 bg-white p-4">
                   <button
                     type="button"
                     onClick={onOcultar}
@@ -136,7 +124,7 @@ export function AssistenteAdvance({
               </>
             ) : (
               <>
-                <div className="flex max-h-[55vh] flex-col gap-3 overflow-y-auto bg-gray-50 px-4 py-5 sm:max-h-[50vh]">
+                <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto bg-gray-50 px-4 py-5">
                   {conversa.mensagens.slice(0, visiveis).map((mensagem, i) => (
                     <motion.p
                       key={`${conversa.motivo}-${i}`}
@@ -169,7 +157,7 @@ export function AssistenteAdvance({
                   <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    className="flex flex-col gap-2 border-t border-gray-100 bg-white p-4"
+                    className="flex shrink-0 flex-col gap-2 border-t border-gray-100 bg-white p-4"
                   >
                     {conversa.botoes.map((botao) => (
                       <button
@@ -186,6 +174,14 @@ export function AssistenteAdvance({
                         {botao.rotulo}
                       </button>
                     ))}
+                    <button
+                      type="button"
+                      onClick={() => setConfirmandoOcultar(true)}
+                      className="mx-auto mt-1 flex cursor-pointer items-center gap-1.5 rounded-md px-2 py-1 text-xs text-gray-400 transition-colors hover:text-gray-600"
+                    >
+                      <EyeOff className="size-3.5" />
+                      Ocultar assistente
+                    </button>
                   </motion.div>
                 )}
               </>

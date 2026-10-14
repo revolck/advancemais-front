@@ -21,7 +21,7 @@ describe("assistente da equipe", () => {
   it("primeiro acesso: abre sozinho uma vez e ensina a ocultar", () => {
     const c = conversa("ADMIN", { vagasEmAnalise: 0, usuariosPendentes: 0, empresasNovas7Dias: 0 }, {});
     expect(c).toMatchObject({ motivo: "BOAS_VINDAS", abrirSozinho: true, marcaTutorial: BOAS_VINDAS_EQUIPE });
-    expect(c.mensagens.join(" ")).toContain("ocultar");
+    expect(c.mensagens.join(" ")).toContain("Ocultar assistente");
   });
 
   it("admin: vagas para aprovar e acessos para liberar, com atalhos", () => {

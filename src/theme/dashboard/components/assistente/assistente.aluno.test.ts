@@ -35,7 +35,7 @@ describe("assistente do aluno/candidato", () => {
   it("primeiro acesso: abre sozinho, se apresenta e ensina a ocultar", () => {
     const c = conversa(aluno(), {});
     expect(c).toMatchObject({ motivo: "BOAS_VINDAS", abrirSozinho: true, marcaTutorial: BOAS_VINDAS_ALUNO });
-    expect(c.mensagens.join(" ")).toContain("ocultar");
+    expect(c.mensagens.join(" ")).toContain("Ocultar assistente");
   });
 
   it("sem curso e sem currículo: criar currículo e conhecer cursos (no site)", () => {

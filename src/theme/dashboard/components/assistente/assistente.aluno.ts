@@ -171,7 +171,7 @@ export function escolherConversaAluno({
         `${ola} Eu sou o assistente da Advance+.`,
         "Estou aqui para te ajudar com seus cursos, seu currículo e as vagas de emprego.",
         ...resumo(aluno, agora),
-        "Se eu estiver atrapalhando, é só me ocultar no ícone de olho aqui em cima. 😉",
+        "Se eu estiver atrapalhando, é só clicar em “Ocultar assistente”, aqui embaixo. 😉",
       ],
       botoes: [...passos, { acao: "AGORA_NAO", rotulo: "Agora não" }],
     };
