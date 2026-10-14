@@ -31,6 +31,8 @@ export interface HeaderInfoProps {
   onBloquearCandidato?: () => void;
   onDesbloquearCandidato?: () => void;
   onUpdateStatus?: (candidaturaId: string, status: string) => void;
+  /** Só admin e moderador: tira a pessoa de aluno/candidato */
+  onAlterarFuncao?: () => void;
 }
 
 export interface AboutTabProps {

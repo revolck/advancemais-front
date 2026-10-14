@@ -511,6 +511,8 @@ export const usuarioRoutes = {
         `${prefix}/usuarios/usuarios/${encodeURIComponent(userId)}/historico`,
       updateRole: (userId: string) =>
         `${prefix}/usuarios/usuarios/${encodeURIComponent(userId)}/role`,
+      roleImpacto: (userId: string) =>
+        `${prefix}/usuarios/usuarios/${encodeURIComponent(userId)}/role/impacto`,
       updateStatus: (userId: string) =>
         `${prefix}/usuarios/usuarios/${encodeURIComponent(userId)}/status`,
       vinculosRecrutador: {

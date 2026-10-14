@@ -997,6 +997,19 @@ export async function updateUsuarioRole(
 }
 
 /**
+ * GET /api/v1/usuarios/usuarios/:userId/role/impacto
+ * Inscrições ativas, cursos concluídos, currículos e candidaturas da pessoa.
+ */
+export async function getImpactoTrocaDeFuncao(
+  userId: string
+): Promise<{ success: boolean; data: import("./types").ImpactoTrocaDeFuncao }> {
+  return apiFetch(usuarioRoutes.admin.usuarios.roleImpacto(userId), {
+    init: { method: "GET", headers: buildAuthHeaders() },
+    cache: "no-cache",
+  });
+}
+
+/**
  * GET /api/v1/usuarios/usuarios/:userId/historico
  * Busca o histórico completo do usuário no painel administrativo.
  *

@@ -21,6 +21,7 @@ import {
   ChevronLeft,
   KeyRound,
   MapPin,
+  Crown,
   Shield,
   ShieldOff,
   UserCog,
@@ -38,6 +39,7 @@ export function HeaderInfo({
   onLiberarAcessoAluno,
   onBloquearAluno,
   onDesbloquearAluno,
+  onAlterarFuncao,
 }: HeaderInfoProps) {
   const [isActionsOpen, setIsActionsOpen] = useState(false);
   const alunoNome = formatReadableText(
@@ -49,7 +51,8 @@ export function HeaderInfo({
     onResetSenha ||
     onLiberarAcessoAluno ||
     onBloquearAluno ||
-    onDesbloquearAluno,
+    onDesbloquearAluno ||
+    onAlterarFuncao,
   );
   // Status não está disponível em CursoAlunoDetalhes, usando valor padrão
   const isBloqueado = false; // Valor padrão
@@ -147,6 +150,15 @@ export function HeaderInfo({
                   >
                     <Shield className="h-4 w-4 text-gray-500" />
                     <span>Resetar senha</span>
+                  </DropdownMenuItem>
+                )}
+                {onAlterarFuncao && (
+                  <DropdownMenuItem
+                    onSelect={onAlterarFuncao}
+                    className="cursor-pointer"
+                  >
+                    <Crown className="h-4 w-4 text-gray-500" />
+                    <span>Alterar função</span>
                   </DropdownMenuItem>
                 )}
                 {onLiberarAcessoAluno && (

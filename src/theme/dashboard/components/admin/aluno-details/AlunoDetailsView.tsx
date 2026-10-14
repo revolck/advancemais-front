@@ -41,6 +41,10 @@ import {
 } from "./modal-acoes";
 import { LiberarEmailUsuarioModal as LiberarAcessoUsuarioModal } from "../usuario-details/modal-acoes/LiberarEmailUsuarioModal";
 import type { AlunoDetailsData, AlunoDetailsViewProps } from "./types";
+import {
+  AlterarFuncaoDeAluno,
+  usePodeAlterarFuncaoDeAluno,
+} from "../shared/AlterarFuncaoDeAluno";
 
 const ALUNO_QUERY_STALE_TIME = 30 * 1000;
 const ALUNO_QUERY_GC_TIME = 30 * 60 * 1000;
@@ -53,6 +57,8 @@ export function AlunoDetailsView({
   initialData,
 }: AlunoDetailsViewProps) {
   const userRole = useUserRole();
+  const podeAlterarFuncao = usePodeAlterarFuncaoDeAluno();
+  const [isAlterarFuncaoOpen, setIsAlterarFuncaoOpen] = useState(false);
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const queryKey = useMemo(() => buildAlunoQueryKey(alunoId), [alunoId]);
@@ -370,9 +376,20 @@ export function AlunoDetailsView({
         onDesbloquearAluno={
           canManageAluno ? () => setIsDesbloquearModalOpen(true) : undefined
         }
+        onAlterarFuncao={
+          podeAlterarFuncao ? () => setIsAlterarFuncaoOpen(true) : undefined
+        }
       />
 
       <HorizontalTabs items={tabs} defaultValue={defaultTabValue} />
+
+      {podeAlterarFuncao ? (
+        <AlterarFuncaoDeAluno
+          isOpen={isAlterarFuncaoOpen}
+          onOpenChange={setIsAlterarFuncaoOpen}
+          usuario={{ id: alunoData.id, nome: alunoNome, email: alunoData.email }}
+        />
+      ) : null}
 
       <EditarAlunoModal
         isOpen={isEditModalOpen}

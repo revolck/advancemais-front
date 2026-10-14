@@ -24,6 +24,8 @@ export interface HeaderInfoProps {
   onLiberarAcessoAluno?: () => void;
   onBloquearAluno?: () => void;
   onDesbloquearAluno?: () => void;
+  /** Só admin e moderador: tira a pessoa de aluno/candidato */
+  onAlterarFuncao?: () => void;
 }
 
 export interface AboutTabProps {

@@ -25,6 +25,10 @@ import {
 import type { CandidaturaStatus } from "@/api/candidatos/types";
 import { queryKeys } from "@/lib/react-query/queryKeys";
 import { HeaderInfo } from "./components/HeaderInfo";
+import {
+  AlterarFuncaoDeAluno,
+  usePodeAlterarFuncaoDeAluno,
+} from "../shared/AlterarFuncaoDeAluno";
 import { AboutTab } from "./tabs/AboutTab";
 import { CandidaturasTab } from "./tabs/CandidaturasTab";
 import { CurriculosTab } from "./tabs/CurriculosTab";
@@ -57,6 +61,8 @@ export function CandidatoDetailsView({
   initialConsolidated,
 }: CandidatoDetailsViewProps) {
   const userRole = useUserRole();
+  const podeAlterarFuncao = usePodeAlterarFuncaoDeAluno();
+  const [isAlterarFuncaoOpen, setIsAlterarFuncaoOpen] = useState(false);
   const queryClient = useQueryClient();
   const queryKey = useMemo(
     () => queryKeys.candidatos.detail(candidatoId),
@@ -455,9 +461,26 @@ export function CandidatoDetailsView({
             : undefined
         }
         onUpdateStatus={handleUpdateStatus}
+        onAlterarFuncao={
+          podeAlterarFuncao && candidatoData.role === "ALUNO_CANDIDATO"
+            ? () => setIsAlterarFuncaoOpen(true)
+            : undefined
+        }
       />
 
       <HorizontalTabs items={tabs} defaultValue="sobre" />
+
+      {podeAlterarFuncao && candidatoData.role === "ALUNO_CANDIDATO" ? (
+        <AlterarFuncaoDeAluno
+          isOpen={isAlterarFuncaoOpen}
+          onOpenChange={setIsAlterarFuncaoOpen}
+          usuario={{
+            id: candidatoData.id,
+            nome: candidatoData.nomeCompleto,
+            email: candidatoData.email,
+          }}
+        />
+      ) : null}
 
       {canManageCandidato && (
         <>

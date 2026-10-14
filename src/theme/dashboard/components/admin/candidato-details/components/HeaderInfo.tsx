@@ -21,6 +21,7 @@ import {
   ChevronDown,
   ChevronLeft,
   MapPin,
+  Crown,
   Shield,
   ShieldOff,
   UserCog,
@@ -38,9 +39,12 @@ export function HeaderInfo({
   onBloquearCandidato,
   onDesbloquearCandidato,
   onUpdateStatus,
+  onAlterarFuncao,
 }: HeaderInfoProps) {
   const [isActionsOpen, setIsActionsOpen] = useState(false);
-  const hasEditActions = Boolean(onEditCandidato || onEditEndereco || onResetSenha);
+  const hasEditActions = Boolean(
+    onEditCandidato || onEditEndereco || onResetSenha || onAlterarFuncao,
+  );
   const hasBlockActions = Boolean(onBloquearCandidato || onDesbloquearCandidato);
   const hasAnyActions = hasEditActions || hasBlockActions;
   const candidatoNome = formatReadableText(
@@ -167,6 +171,15 @@ export function HeaderInfo({
                   >
                     <Shield className="h-4 w-4 text-gray-500" />
                     <span>Resetar senha</span>
+                  </DropdownMenuItem>
+                )}
+                {onAlterarFuncao && (
+                  <DropdownMenuItem
+                    onSelect={onAlterarFuncao}
+                    className="cursor-pointer"
+                  >
+                    <Crown className="h-4 w-4 text-gray-500" />
+                    <span>Alterar função</span>
                   </DropdownMenuItem>
                 )}
 

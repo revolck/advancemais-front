@@ -48,56 +48,10 @@ import {
   ResetarSenhaUsuarioModal,
 } from "./modal-acoes";
 import type { UsuarioDetailsData, UsuarioDetailsViewProps } from "./types";
-
-const ALL_MANAGEABLE_ROLES: Role[] = [
-  "ADMIN",
-  "MODERADOR",
-  "EMPRESA",
-  "ALUNO_CANDIDATO",
-  "INSTRUTOR",
-  "PEDAGOGICO",
-  "SETOR_DE_VAGAS",
-  "RECRUTADOR",
-  "FINANCEIRO",
-];
-
-const MODERADOR_BLOCKED_ROLES: Role[] = ["ADMIN", "MODERADOR"];
-const MODERADOR_ALLOWED_ROLES: Role[] = ALL_MANAGEABLE_ROLES.filter(
-  (role) => !MODERADOR_BLOCKED_ROLES.includes(role),
-);
-const PEDAGOGICO_ALLOWED_ROLES: Role[] = ["ALUNO_CANDIDATO", "INSTRUTOR"];
-
-function getAvailableRoleTransitions(
-  actorRole: string | null,
-  targetRole: Role | undefined,
-  actorUserId?: string | null,
-  targetUserId?: string | null,
-): Role[] {
-  if (!actorRole || !targetRole) return [];
-  if (actorUserId && targetUserId && actorUserId === targetUserId) return [];
-
-  switch (actorRole) {
-    case "ADMIN":
-      return ALL_MANAGEABLE_ROLES;
-
-    case "MODERADOR": {
-      if (MODERADOR_BLOCKED_ROLES.includes(targetRole)) {
-        return [];
-      }
-
-      return MODERADOR_ALLOWED_ROLES;
-    }
-
-    case "PEDAGOGICO": {
-      return PEDAGOGICO_ALLOWED_ROLES.includes(targetRole)
-        ? PEDAGOGICO_ALLOWED_ROLES
-        : [];
-    }
-
-    default:
-      return [];
-  }
-}
+import {
+  funcoesDisponiveis,
+  mensagemErroTrocaDeFuncao,
+} from "./utils/funcoes";
 
 export function UsuarioDetailsView({
   usuarioId,
@@ -405,7 +359,7 @@ export function UsuarioDetailsView({
 
   const availableRoleTransitions = useMemo(
     () =>
-      getAvailableRoleTransitions(
+      funcoesDisponiveis(
         currentUserRole,
         usuarioData?.role,
         user?.id ?? null,
@@ -422,41 +376,8 @@ export function UsuarioDetailsView({
     async (payload: UpdateUsuarioRolePayload) => {
       try {
         await alterarFuncaoMutation.mutateAsync(payload);
-      } catch (error: any) {
-        const code = error?.response?.data?.code;
-        const message =
-          error?.response?.data?.message ||
-          error?.message ||
-          "Não foi possível alterar a função do usuário.";
-
-        if (code === "FORBIDDEN_SELF_ROLE_CHANGE") {
-          toastCustom.error("Você não pode alterar a própria função.");
-          throw error;
-        }
-
-        if (code === "FORBIDDEN_USER_ROLE") {
-          toastCustom.error(
-            "Você não tem permissão para aplicar essa função a este usuário.",
-          );
-          throw error;
-        }
-
-        if (code === "USER_ROLE_UPDATE_BLOCKED") {
-          toastCustom.error(
-            "Essa alteração de função precisa de outro fluxo administrativo.",
-          );
-          throw error;
-        }
-
-        if (code === "INVALID_ROLE_FOR_USER_TYPE") {
-          toastCustom.error(
-            message ||
-              "A função selecionada é incompatível com o tipo de usuário.",
-          );
-          throw error;
-        }
-
-        toastCustom.error(message);
+      } catch (error) {
+        toastCustom.error(mensagemErroTrocaDeFuncao(error));
         throw error;
       }
     },
@@ -644,6 +565,7 @@ export function UsuarioDetailsView({
           <AlterarFuncaoUsuarioModal
             isOpen={isAlterarFuncaoOpen}
             onOpenChange={setIsAlterarFuncaoOpen}
+            usuarioId={usuarioData.id}
             usuarioNome={usuarioData.nomeCompleto}
             usuarioEmail={usuarioData.email}
             tipoUsuario={usuarioData.tipoUsuario}

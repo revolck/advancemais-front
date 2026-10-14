@@ -709,6 +709,15 @@ export interface LiberarUsuarioAcessoResponse extends UsuarioResponseBase {
   };
 }
 
+/** O que a pessoa tem como aluno/candidato antes de trocar a função (nada é apagado) */
+export interface ImpactoTrocaDeFuncao {
+  role: Role;
+  inscricoesAtivas: number;
+  cursosConcluidos: number;
+  curriculos: number;
+  candidaturas: number;
+}
+
 export interface UpdateUsuarioRolePayload {
   role: Role;
   motivo?: string;
