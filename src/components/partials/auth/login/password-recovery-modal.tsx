@@ -114,15 +114,27 @@ export function PasswordRecoveryModal({
 
     setIsSubmitting(true);
     try {
-      await requestPasswordRecovery(buildPayload(trimmed));
+      const response = await requestPasswordRecovery(buildPayload(trimmed));
+      const emailMascarado =
+        "emailMascarado" in response ? response.emailMascarado : undefined;
       toastCustom.success(
-        "Se existir uma conta, enviaremos as instruções por e-mail."
+        emailMascarado
+          ? {
+              title: `Enviamos o link para ${emailMascarado}`,
+              description:
+                "Confira também o spam. Se esse e-mail não for seu, fale com o suporte.",
+            }
+          : "Se existir uma conta, enviaremos as instruções por e-mail."
       );
       onOpenChange(false);
     } catch (err) {
       console.error("Erro ao solicitar recuperação de senha:", err);
       const status = (err as { status?: number }).status;
-      if (status === 404) {
+      const detalhe = (err as { details?: { message?: string } }).details;
+      if (status === 422 && detalhe?.message) {
+        // e-mail do cadastro inexistente ou que não recebe mensagens
+        setError(detalhe.message);
+      } else if (status === 404) {
         setError(
           "Não encontramos uma conta com esses dados. Verifique e tente novamente."
         );

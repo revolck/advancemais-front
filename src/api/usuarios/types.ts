@@ -105,6 +105,8 @@ export interface UsuarioPasswordRecoveryRequestPayload {
 export interface UsuarioPasswordRecoveryResponse extends UsuarioResponseBase {
   success: boolean;
   message: string;
+  /** Para onde o link foi enviado, mascarado (ex.: al***@gmail.com) */
+  emailMascarado?: string;
   data: {
     email: string;
     tokenExpirationMinutes: number;

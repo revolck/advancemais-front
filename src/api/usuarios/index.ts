@@ -145,6 +145,8 @@ export async function requestPasswordRecovery(
       },
       cache: "no-cache",
       skipLogoutOn401: true,
+      // cada tentativa pode disparar um e-mail: nunca repetir automaticamente
+      retries: 0,
     }
   );
 }
