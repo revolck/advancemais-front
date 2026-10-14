@@ -160,7 +160,8 @@ const SignInPageDemo = () => {
         if (status === 404) {
           message = "Usuário não encontrado. Verifique suas credenciais.";
         } else if (status === 401) {
-          message = "Credenciais inválidas. Verifique e tente novamente.";
+          message =
+            "CPF/CNPJ ou senha incorretos. Empresas entram com o CNPJ cadastrado; alunos e candidatos, com o CPF.";
         } else if (error instanceof Error && error.message) {
           message = error.message;
         }

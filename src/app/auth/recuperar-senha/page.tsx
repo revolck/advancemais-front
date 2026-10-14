@@ -52,6 +52,10 @@ export default function PasswordResetPage() {
   const emailParam = searchParams?.get("ep") ?? undefined;
 
   const [pageState, setPageState] = useState<PageState>("loading");
+  const [loginInfo, setLoginInfo] = useState<{
+    tipo: "CPF" | "CNPJ";
+    mascarado: string;
+  } | null>(null);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
@@ -147,18 +151,22 @@ export default function PasswordResetPage() {
     setIsSubmitting(true);
 
     try {
-      await resetPasswordWithToken({
+      const resposta = await resetPasswordWithToken({
         token: tokenParam,
         novaSenha: password,
         confirmarSenha: confirmPassword,
       });
+      const login =
+        resposta && "login" in resposta ? (resposta.login ?? null) : null;
+      setLoginInfo(login);
       setPageState("success");
-      toastCustom.success(
-        "Senha redefinida com sucesso! Faça login novamente."
-      );
-      setTimeout(() => {
-        router.push("/login");
-      }, 2000);
+      toastCustom.success("Senha redefinida com sucesso!");
+      // Sem orientação de documento, segue o fluxo antigo; com ela, a pessoa lê e clica
+      if (!login) {
+        setTimeout(() => {
+          router.push("/login");
+        }, 2000);
+      }
     } catch (error) {
       console.error("Erro ao redefinir senha", error);
       setFormError(
@@ -236,10 +244,17 @@ export default function PasswordResetPage() {
           <CheckCircle2 className="h-12 w-12 text-emerald-500" aria-hidden />
           <div className="space-y-2">
             <h1 className="!mb-0">Senha redefinida!</h1>
-            <p className="!leading-normal">
-              Estamos redirecionando você para a página de login. Caso não
-              aconteça automaticamente, clique no botão abaixo.
-            </p>
+            {loginInfo ? (
+              <p className="!leading-normal">
+                Para entrar, use o seu <strong>{loginInfo.tipo}</strong>{" "}
+                <strong>({loginInfo.mascarado})</strong> e a nova senha.
+              </p>
+            ) : (
+              <p className="!leading-normal">
+                Estamos redirecionando você para a página de login. Caso não
+                aconteça automaticamente, clique no botão abaixo.
+              </p>
+            )}
           </div>
           <ButtonCustom asChild variant="primary" size="md" className="px-6">
             <Link href="/login">Ir para o login</Link>

@@ -133,6 +133,8 @@ export interface UsuarioPasswordResetPayload {
 export interface UsuarioPasswordResetResponse extends UsuarioResponseBase {
   success: boolean;
   message: string;
+  /** Com qual documento entrar (mascarado) */
+  login?: { tipo: "CPF" | "CNPJ"; mascarado: string } | null;
   data: {
     userId: string;
     email: string;

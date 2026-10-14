@@ -37,7 +37,8 @@ export function PasswordRecoveryModal({
   onOpenChange,
 }: PasswordRecoveryModalProps) {
   const maskService = useMemo(() => MaskService.getInstance(), []);
-  const [mode, setMode] = useState<RecoveryMode>("email");
+  // O login é por CPF/CNPJ: buscar por documento acha o cadastro mesmo com e-mail antigo
+  const [mode, setMode] = useState<RecoveryMode>("document");
   const [identifier, setIdentifier] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -45,7 +46,7 @@ export function PasswordRecoveryModal({
   useEffect(() => {
     if (!open) {
       setIdentifier("");
-      setMode("email");
+      setMode("document");
       setError(null);
       setIsSubmitting(false);
     }
@@ -136,7 +137,9 @@ export function PasswordRecoveryModal({
         setError(detalhe.message);
       } else if (status === 404) {
         setError(
-          "Não encontramos uma conta com esses dados. Verifique e tente novamente."
+          isEmailMode
+            ? "Não encontramos uma conta com esse e-mail. O cadastro pode estar com um e-mail antigo: tente pelo CNPJ da empresa ou pelo seu CPF."
+            : "Não encontramos uma conta com esse CPF/CNPJ. Confira o número ou fale com o suporte da Advance+."
         );
       } else if (status === 429) {
         setError(
@@ -225,7 +228,7 @@ export function PasswordRecoveryModal({
                 onClick={handleModeToggle}
               >
                 {isEmailMode
-                  ? "Não tenho acesso ao e-mail. Usar CPF ou CNPJ"
+                  ? "Usar CPF ou CNPJ"
                   : "Prefiro tentar com meu e-mail"}
               </ButtonCustom>
 
