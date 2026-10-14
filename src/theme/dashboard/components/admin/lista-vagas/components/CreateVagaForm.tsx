@@ -33,6 +33,10 @@ import {
   isErrorResponse,
   parseMultiline,
   containsProhibitedInfo,
+  campoDoFormulario,
+  LIMITES_VAGA,
+  problemaNaLista,
+  problemaNoTamanho,
 } from "../utils/formUtils";
 import { SECTION_FIELD_MAP, FORM_STEPS } from "../constants/formConstants";
 import type {
@@ -239,6 +243,9 @@ export function CreateVagaForm({
         }
         if (!formData.titulo.trim()) {
           sectionErrors.titulo = "Título é obrigatório";
+        } else {
+          const tituloLongo = problemaNoTamanho(formData.titulo, LIMITES_VAGA.titulo);
+          if (tituloLongo) sectionErrors.titulo = tituloLongo;
         }
         if (!formData.modalidade) {
           sectionErrors.modalidade = "Selecione a modalidade";
@@ -346,6 +353,28 @@ export function CreateVagaForm({
           if (value && containsProhibitedInfo(value)) {
             sectionErrors[key] = "Remova links, e-mails ou telefones do texto.";
           }
+        });
+
+        // Mesmos limites da API: avisa aqui, no campo certo, em vez de "Dados inválidos"
+        const listas = [
+          "requisitosObrigatorios",
+          "requisitosDesejaveis",
+          "atividadesPrincipais",
+          "atividadesExtras",
+          "beneficiosLista",
+        ] as const;
+        listas.forEach((key) => {
+          const problema = problemaNaLista(formData[key]);
+          if (problema && !sectionErrors[key]) sectionErrors[key] = problema;
+        });
+        const textos = [
+          ["descricao", LIMITES_VAGA.descricao],
+          ["observacoes", LIMITES_VAGA.observacoes],
+          ["beneficiosObservacoes", LIMITES_VAGA.observacoesBeneficios],
+        ] as const;
+        textos.forEach(([key, maximo]) => {
+          const problema = problemaNoTamanho(formData[key], maximo);
+          if (problema && !sectionErrors[key]) sectionErrors[key] = problema;
         });
       }
 
@@ -495,18 +524,31 @@ export function CreateVagaForm({
       const response = await createVaga(payload);
 
       if (isErrorResponse(response)) {
+        const campos =
+          "campos" in response && Array.isArray(response.campos)
+            ? (response.campos as { campo: string; mensagem: string }[])
+            : [];
         const apiErrors = "issues" in response ? (response.issues ?? {}) : {};
+        const errosDosCampos: Record<string, string> = {};
+        campos.forEach(({ campo, mensagem }) => {
+          const chave = campoDoFormulario(campo);
+          if (!errosDosCampos[chave]) errosDosCampos[chave] = mensagem;
+        });
+        Object.entries(apiErrors).forEach(([key, value]) => {
+          const chave = campoDoFormulario(key);
+          if (!errosDosCampos[chave] && Array.isArray(value) && value.length > 0) {
+            errosDosCampos[chave] = value[0];
+          }
+        });
 
-        if (Object.keys(apiErrors).length > 0) {
-          setErrors((prev) => {
-            const merged = { ...prev };
-            Object.entries(apiErrors).forEach(([key, value]) => {
-              if (Array.isArray(value) && value.length > 0) {
-                merged[key] = value[0];
-              }
-            });
-            return merged;
-          });
+        if (Object.keys(errosDosCampos).length > 0) {
+          setErrors((prev) => ({ ...prev, ...errosDosCampos }));
+          // Abre o passo do formulário onde está o primeiro erro
+          const primeiro = Object.keys(errosDosCampos)[0];
+          const passo = FORM_STEPS.findIndex((step) =>
+            SECTION_FIELD_MAP[step.id].includes(primeiro)
+          );
+          if (passo >= 0) setCurrentStep(passo);
         }
 
         toastCustom.error(response.message || "Não foi possível criar a vaga.");

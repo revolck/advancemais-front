@@ -30,6 +30,10 @@ import {
   parseMultiline,
   toNumericOrString,
   containsProhibitedInfo,
+  campoDoFormulario,
+  LIMITES_VAGA,
+  problemaNaLista,
+  problemaNoTamanho,
 } from "@/theme/dashboard/components/admin/lista-vagas/utils/formUtils";
 import {
   SECTION_FIELD_MAP,
@@ -175,6 +179,9 @@ export function EditVagaTab({ vaga, onSuccess, onCancel }: EditVagaTabProps) {
             newErrors[field] = "Título deve ter pelo menos 5 caracteres";
           } else if (containsProhibitedInfo(value as string)) {
             newErrors[field] = "Título contém informações proibidas";
+          } else {
+            const longo = problemaNoTamanho(value as string, LIMITES_VAGA.titulo);
+            if (longo) newErrors[field] = longo;
           }
           break;
         case "descricao":
@@ -184,8 +191,31 @@ export function EditVagaTab({ vaga, onSuccess, onCancel }: EditVagaTabProps) {
             newErrors[field] = "Descrição deve ter pelo menos 20 caracteres";
           } else if (containsProhibitedInfo(value as string)) {
             newErrors[field] = "Descrição contém informações proibidas";
+          } else {
+            const longa = problemaNoTamanho(value as string, LIMITES_VAGA.descricao);
+            if (longa) newErrors[field] = longa;
           }
           break;
+        // Mesmos limites da API: avisa no campo certo, em vez de "Dados inválidos"
+        case "requisitosObrigatorios":
+        case "requisitosDesejaveis":
+        case "atividadesPrincipais":
+        case "atividadesExtras":
+        case "beneficiosLista": {
+          const problema = problemaNaLista(String(value ?? ""));
+          if (problema) newErrors[field] = problema;
+          break;
+        }
+        case "observacoes":
+        case "beneficiosObservacoes": {
+          const maximo =
+            field === "observacoes"
+              ? LIMITES_VAGA.observacoes
+              : LIMITES_VAGA.observacoesBeneficios;
+          const problema = problemaNoTamanho(String(value ?? ""), maximo);
+          if (problema) newErrors[field] = problema;
+          break;
+        }
         case "areaInteresseId":
           if (!value || (value as string).trim().length === 0) {
             newErrors[field] = "Área de interesse é obrigatória";
@@ -343,9 +373,22 @@ export function EditVagaTab({ vaga, onSuccess, onCancel }: EditVagaTabProps) {
       const response = await updateVaga(vaga.id, payload);
 
       if (isErrorResponse(response)) {
+        const campos =
+          "campos" in response && Array.isArray(response.campos)
+            ? (response.campos as { campo: string; mensagem: string }[])
+            : [];
+        if (campos.length > 0) {
+          const errosDosCampos: FormErrors = {};
+          campos.forEach(({ campo, mensagem }) => {
+            const chave = campoDoFormulario(campo);
+            if (!errosDosCampos[chave]) errosDosCampos[chave] = mensagem;
+          });
+          setErrors((prev) => ({ ...prev, ...errosDosCampos }));
+        }
         toastCustom.error({
           title: "Erro ao atualizar vaga",
-          description: response.error || "Ocorreu um erro inesperado.",
+          description:
+            response.message || response.error || "Ocorreu um erro inesperado.",
         });
         return;
       }
