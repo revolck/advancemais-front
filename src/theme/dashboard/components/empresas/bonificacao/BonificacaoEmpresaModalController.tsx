@@ -13,7 +13,7 @@ import { getUserProfile } from "@/api/usuarios";
 import type { UsuarioProfileResponse } from "@/api/usuarios/types";
 import { UserRole } from "@/config/roles";
 import { useUserRole } from "@/hooks/useUserRole";
-import { isProfileCompleteForOnboarding } from "@/theme/dashboard/components/profile/ProfileOnboardingGate";
+import { isProfileCompleteForOnboarding } from "@/theme/dashboard/components/profile/profile-onboarding.utils";
 import { BonificacaoInauguracaoModal } from "./BonificacaoInauguracaoModal";
 import { PlanoGratuitoExpiradoModal } from "./PlanoGratuitoExpiradoModal";
 

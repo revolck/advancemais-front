@@ -34,6 +34,11 @@ import {
 import { toastCustom } from "@/components/ui/custom/toast";
 import { getUserProfile, updateUserProfile } from "@/api/usuarios";
 import type { UsuarioProfileResponse } from "@/api/usuarios/types";
+import {
+  getPrimaryEndereco,
+  isPessoaJuridica,
+  isProfileCompleteForOnboarding,
+} from "./profile-onboarding.utils";
 import { lookupCep, normalizeCep, isValidCep } from "@/lib/cep";
 import { MaskService } from "@/services";
 
@@ -87,10 +92,13 @@ function normalizeText(value: string): string {
     .toLowerCase();
 }
 
-const onboardingSchema = z.object({
-  genero: z.string().min(1, "Gênero é obrigatório"),
+const onboardingSchema = z
+  .object({
+  /** Empresa (pessoa jurídica) não informa gênero nem data de nascimento */
+  exigeDadosPessoais: z.boolean(),
+  genero: z.string().optional(),
   telefone: z.string().min(1, "Telefone é obrigatório"),
-  dataNasc: z.date({ required_error: "Data de nascimento é obrigatória" }),
+  dataNasc: z.date().nullable().optional(),
   descricao: z.string().optional(),
   endereco: z.object({
     cep: z
@@ -106,7 +114,20 @@ const onboardingSchema = z.object({
       .min(2, "UF é obrigatória")
       .max(2, "UF deve ter 2 letras"),
   }),
-});
+})
+  .superRefine((data, ctx) => {
+    if (!data.exigeDadosPessoais) return;
+    if (!data.genero?.trim()) {
+      ctx.addIssue({ code: "custom", path: ["genero"], message: "Gênero é obrigatório" });
+    }
+    if (!data.dataNasc) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["dataNasc"],
+        message: "Data de nascimento é obrigatória",
+      });
+    }
+  });
 
 type OnboardingFormData = z.infer<typeof onboardingSchema>;
 
@@ -116,36 +137,8 @@ function parseDate(value?: string | null): Date | null {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
-function getPrimaryEndereco(
-  usuario?: UsuarioProfileResponse["usuario"]
-): any | null {
-  const enderecos = usuario?.enderecos ?? [];
-  return enderecos.length > 0 ? enderecos[0] : null;
-}
-
-export function isProfileCompleteForOnboarding(
-  usuario?: UsuarioProfileResponse["usuario"],
-  stats?: UsuarioProfileResponse["stats"]
-): boolean {
-  if (!usuario || !stats) return true;
-
-  const telefoneDigits = (usuario.telefone ?? "").replace(/\D/g, "");
-  const hasTelefone = telefoneDigits.length > 0;
-  const hasDataNasc = Boolean(usuario.dataNasc);
-  const hasGenero = Boolean(usuario.genero && String(usuario.genero).trim());
-
-  const endereco = getPrimaryEndereco(usuario);
-  const hasEndereco =
-    stats.hasAddress &&
-    Boolean(endereco?.cep) &&
-    Boolean(endereco?.logradouro) &&
-    Boolean(endereco?.numero) &&
-    Boolean(endereco?.bairro) &&
-    Boolean(endereco?.cidade) &&
-    Boolean(endereco?.estado);
-
-  return hasTelefone && hasDataNasc && hasGenero && hasEndereco;
-}
+// Regras puras em arquivo próprio (testáveis sem carregar o componente)
+export { isPessoaJuridica, isProfileCompleteForOnboarding };
 
 export function ProfileOnboardingGate() {
   const queryClient = useQueryClient();
@@ -189,6 +182,7 @@ export function ProfileOnboardingGate() {
   });
 
   const usuario = useMemo(() => profileResponse?.usuario, [profileResponse]);
+  const ehEmpresa = isPessoaJuridica(usuario);
   const stats = useMemo(() => profileResponse?.stats, [profileResponse]);
 
   const shouldShowModal = useMemo(() => {
@@ -207,6 +201,7 @@ export function ProfileOnboardingGate() {
   } = useForm<OnboardingFormData>({
     resolver: zodResolver(onboardingSchema),
     defaultValues: {
+      exigeDadosPessoais: true,
       genero: "",
       telefone: "",
       dataNasc: null as any,
@@ -315,6 +310,7 @@ export function ProfileOnboardingGate() {
     const initialUf = (endereco?.estado ?? "").toUpperCase();
 
     reset({
+      exigeDadosPessoais: !isPessoaJuridica(usuario),
       genero: normalizeGeneroValue(usuario.genero),
       telefone: maskService.processInput(usuario.telefone ?? "", "phone"),
       dataNasc: parseDate(usuario.dataNasc) as any,
@@ -343,8 +339,12 @@ export function ProfileOnboardingGate() {
       const cepDigits = data.endereco.cep.replace(/\D/g, "");
       const payload = {
         telefone: telefoneDigits,
-        genero: normalizeGeneroValue(data.genero),
-        dataNasc: data.dataNasc.toISOString(),
+        ...(data.exigeDadosPessoais && data.dataNasc
+          ? {
+              genero: normalizeGeneroValue(data.genero),
+              dataNasc: data.dataNasc.toISOString(),
+            }
+          : {}),
         descricao: data.descricao?.trim() ?? "",
         endereco: {
           cep: cepDigits || null,
@@ -437,20 +437,22 @@ export function ProfileOnboardingGate() {
   };
 
   const validateStep1 = useCallback(async () => {
-    const ok = await trigger(["genero", "telefone", "dataNasc"] as any, {
-      shouldFocus: true,
-    });
+    const ok = await trigger(
+      (ehEmpresa ? ["telefone"] : ["genero", "telefone", "dataNasc"]) as any,
+      { shouldFocus: true }
+    );
     if (!ok) {
       toastCustom.error({
         title: "Complete os campos obrigatórios",
-        description:
-          "Preencha gênero, telefone e data de nascimento antes de continuar.",
+        description: ehEmpresa
+          ? "Preencha o telefone antes de continuar."
+          : "Preencha gênero, telefone e data de nascimento antes de continuar.",
       });
       return false;
     }
     setHasCompletedStep1(true);
     return true;
-  }, [trigger]);
+  }, [ehEmpresa, trigger]);
 
   const handleNext = useCallback(async () => {
     if (activeStep === 1) {
@@ -546,23 +548,29 @@ export function ProfileOnboardingGate() {
                     value={1}
                     className="space-y-6 animate-in fade-in-0 slide-in-from-right-2 duration-200"
                   >
-                    <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
-                      <Controller
-                        control={control}
-                        name="genero"
-                        render={({ field }) => (
-                          <SelectCustom
-                            mode="single"
-                            label="Gênero"
-                            required
-                            placeholder="Selecione..."
-                            options={GENERO_OPTIONS}
-                            value={(field.value || null) as any}
-                            onChange={(val) => field.onChange(val ?? "")}
-                            error={errors.genero?.message}
-                          />
-                        )}
-                      />
+                    <div
+                      className={`grid grid-cols-1 gap-5 ${
+                        ehEmpresa ? "sm:grid-cols-2" : "sm:grid-cols-3"
+                      }`}
+                    >
+                      {!ehEmpresa && (
+                        <Controller
+                          control={control}
+                          name="genero"
+                          render={({ field }) => (
+                            <SelectCustom
+                              mode="single"
+                              label="Gênero"
+                              required
+                              placeholder="Selecione..."
+                              options={GENERO_OPTIONS}
+                              value={(field.value || null) as any}
+                              onChange={(val) => field.onChange(val ?? "")}
+                              error={errors.genero?.message}
+                            />
+                          )}
+                        />
+                      )}
 
                       <Controller
                         control={control}
@@ -585,24 +593,26 @@ export function ProfileOnboardingGate() {
                         )}
                       />
 
-                      <Controller
-                        control={control}
-                        name="dataNasc"
-                        render={({ field }) => (
-                          <DatePickerCustom
-                            label="Data de nascimento"
-                            required
-                            years="old"
-                            maxDate={new Date()}
-                            minDate={minBirthDate}
-                            value={field.value ?? null}
-                            onChange={(d) => field.onChange(d)}
-                            placeholder="Selecione a data"
-                            error={errors.dataNasc?.message as any}
-                            disabled={isBusy}
-                          />
-                        )}
-                      />
+                      {!ehEmpresa && (
+                        <Controller
+                          control={control}
+                          name="dataNasc"
+                          render={({ field }) => (
+                            <DatePickerCustom
+                              label="Data de nascimento"
+                              required
+                              years="old"
+                              maxDate={new Date()}
+                              minDate={minBirthDate}
+                              value={field.value ?? null}
+                              onChange={(d) => field.onChange(d)}
+                              placeholder="Selecione a data"
+                              error={errors.dataNasc?.message as any}
+                              disabled={isBusy}
+                            />
+                          )}
+                        />
+                      )}
                     </div>
 
                     <Controller
