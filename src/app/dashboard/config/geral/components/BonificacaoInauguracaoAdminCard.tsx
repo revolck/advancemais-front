@@ -56,9 +56,11 @@ export function BonificacaoInauguracaoAdminCard() {
       const { data: r } = await aplicarBonificacaoInauguracao();
       toastCustom.success({
         title: "Bonificação aplicada",
-        description: `${numero(r.criadas)} empresa(s) receberam o plano ${r.plano} e ${numero(
+        description: `${numero(r.criadas)} empresa(s) receberam 1 mês grátis do plano ${r.plano}${
           r.convertidas
-        )} mês(es) grátis do admin foram ajustados. Válido até ${data(r.validoAte)}.`,
+            ? ` e ${numero(r.convertidas)} empresa(s) que já tinham 1 mês grátis do admin entraram na bonificação`
+            : ""
+        }. Válido até ${data(r.validoAte)}.`,
       });
       setConfirmar(false);
       await carregar();
@@ -107,7 +109,7 @@ export function BonificacaoInauguracaoAdminCard() {
       <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
         {[
           ["Vão receber agora", previa.elegiveis],
-          ["Mês grátis do admin a ajustar", previa.concessoesAdminParaConverter],
+          ["Empresas com mês grátis do admin a ajustar", previa.concessoesAdminParaConverter],
           ["Já com a bonificação", previa.jaBonificadas],
           ["Com plano próprio (mantido)", previa.comPlanoAtivo],
         ].map(([rotulo, valor]) => (
@@ -137,10 +139,17 @@ export function BonificacaoInauguracaoAdminCard() {
           </ModalHeader>
           <ModalBody className="space-y-2 text-sm">
             <p className="!mb-0">
-              <strong>{numero(previa.elegiveis)}</strong> empresa(s) recebem o plano{" "}
-              {previa.plano?.nome} até {data(previa.validoAte)}, e{" "}
-              <strong>{numero(previa.concessoesAdminParaConverter)}</strong> mês(es)
-              grátis lançados pelo admin viram a bonificação (sem cobrança).
+              <strong>{numero(previa.elegiveis)}</strong> empresa(s) recebem{" "}
+              <strong>1 mês grátis</strong> do plano {previa.plano?.nome}, até{" "}
+              {data(previa.validoAte)}.
+              {previa.concessoesAdminParaConverter > 0 ? (
+                <>
+                  {" "}
+                  As <strong>{numero(previa.concessoesAdminParaConverter)}</strong>{" "}
+                  empresa(s) que já tinham 1 mês grátis lançado pelo admin entram na
+                  mesma bonificação (mesmo prazo, sem cobrança).
+                </>
+              ) : null}
             </p>
             <p className="!mb-0 text-muted-foreground">
               Nenhum e-mail é enviado agora. A empresa vê o presente ao entrar na
