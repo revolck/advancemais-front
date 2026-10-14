@@ -267,6 +267,12 @@ export const websiteRoutes = {
  * Endpoints for empresas-related operations.
  */
 export const empresasRoutes = {
+  bonificacao: {
+    minha: () => `${prefix}/empresas/bonificacao/minha`,
+    minhaExibida: () => `${prefix}/empresas/bonificacao/minha/exibida`,
+    inauguracao: () => `${prefix}/empresas/bonificacao/inauguracao`,
+    inauguracaoAplicar: () => `${prefix}/empresas/bonificacao/inauguracao/aplicar`,
+  },
   planosEmpresariais: {
     list: () => `${prefix}/empresas/planos-empresariais`,
     create: () => `${prefix}/empresas/planos-empresariais`,

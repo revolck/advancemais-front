@@ -14,6 +14,7 @@ import { toastCustom } from "@/components/ui/custom/toast";
 import { UserRole } from "@/config/roles";
 import { useUserRole } from "@/hooks/useUserRole";
 import { GeralConfigPanel } from "./components/GeralConfigPanel";
+import { BonificacaoInauguracaoAdminCard } from "./components/BonificacaoInauguracaoAdminCard";
 import { ComunicadoPrimeiroAcessoPanel } from "./components/ComunicadoPrimeiroAcessoPanel";
 import { SandboxEmailPanel } from "./components/SandboxEmailPanel";
 
@@ -103,7 +104,15 @@ export default function GeralConfigPage() {
       value: "comunicado",
       label: "Comunicado",
       icon: "Megaphone",
-      content: <ComunicadoPrimeiroAcessoPanel />,
+      content:
+        role === UserRole.ADMIN ? (
+          <div className="space-y-8">
+            <BonificacaoInauguracaoAdminCard />
+            <ComunicadoPrimeiroAcessoPanel />
+          </div>
+        ) : (
+          <ComunicadoPrimeiroAcessoPanel />
+        ),
     });
   }
 

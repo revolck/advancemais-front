@@ -123,7 +123,7 @@ function getPrimaryEndereco(
   return enderecos.length > 0 ? enderecos[0] : null;
 }
 
-function isProfileCompleteForOnboarding(
+export function isProfileCompleteForOnboarding(
   usuario?: UsuarioProfileResponse["usuario"],
   stats?: UsuarioProfileResponse["stats"]
 ): boolean {
