@@ -273,6 +273,13 @@ export interface ComunicadoTaxaDevolucao {
   pausado: boolean;
 }
 
+export type ComunicadoFaixaProgresso =
+  | "precisamAtencao"
+  | "jaAcessaram"
+  | "receberamComunicado"
+  | "aguardandoPrimeiroAcesso"
+  | "emAndamento";
+
 export interface ComunicadoPainel {
   comunicado: string;
   geradoEm: string;
@@ -288,6 +295,8 @@ export interface ComunicadoPainel {
     validadorConfigurado: boolean;
   };
   totalAlunos: number;
+  /** Cada aluno em uma faixa; a soma é o total. Ausente em versões antigas da API */
+  progresso?: Record<ComunicadoFaixaProgresso, number>;
   fila: {
     restantes: number;
     prontosParaEnvio: number;
@@ -305,6 +314,7 @@ export interface ComunicadoPainel {
     incertos: number;
     reabertos: number;
     revogados: number;
+    ativaramPeloCpf?: number;
     emProcessamento: number;
     porStatus: Record<string, number>;
   };

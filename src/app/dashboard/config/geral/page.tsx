@@ -14,8 +14,7 @@ import { toastCustom } from "@/components/ui/custom/toast";
 import { UserRole } from "@/config/roles";
 import { useUserRole } from "@/hooks/useUserRole";
 import { GeralConfigPanel } from "./components/GeralConfigPanel";
-import { BonificacaoInauguracaoAdminCard } from "./components/BonificacaoInauguracaoAdminCard";
-import { ComunicadoPrimeiroAcessoPanel } from "./components/ComunicadoPrimeiroAcessoPanel";
+import { ComunicadoTab } from "./components/ComunicadoTab";
 import { SandboxEmailPanel } from "./components/SandboxEmailPanel";
 
 const TAB_META: Record<
@@ -99,20 +98,13 @@ export default function GeralConfigPage() {
     ),
   }));
 
+  // Só administrador e moderador (a API também barra os outros papéis)
   if (role === UserRole.ADMIN || role === UserRole.MODERADOR) {
     items.push({
       value: "comunicado",
       label: "Comunicado",
       icon: "Megaphone",
-      content:
-        role === UserRole.ADMIN ? (
-          <div className="space-y-8">
-            <BonificacaoInauguracaoAdminCard />
-            <ComunicadoPrimeiroAcessoPanel />
-          </div>
-        ) : (
-          <ComunicadoPrimeiroAcessoPanel />
-        ),
+      content: <ComunicadoTab />,
     });
   }
 

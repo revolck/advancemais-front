@@ -3,8 +3,14 @@ import { describe, expect, it } from "vitest";
 import type { ComunicadoAcaoAlunoResultado } from "@/api/email/types";
 import {
   ACOES_POR_TIPO,
+  GRAVIDADE_PENDENCIA,
   TIPO_PENDENCIA_LABEL,
   descreverResultadoAcao,
+  formatarPercentual,
+  iniciais,
+  percentual,
+  prazoCampanha,
+  segmentosProgresso,
   tonalidadeSituacao,
 } from "./comunicado.utils";
 
@@ -85,5 +91,67 @@ describe("comunicado.utils", () => {
     expect(tonalidadeSituacao("COTA_BREVO_INSUFICIENTE")).toBe("perigo");
     expect(tonalidadeSituacao("SEM_VALIDADOR")).toBe("alerta");
     expect(tonalidadeSituacao("DESLIGADO")).toBe("neutro");
+  });
+});
+
+describe("painel: progresso e lista", () => {
+  it("percentual com uma casa e sem divisão por zero", () => {
+    expect(percentual(1, 3)).toBe(33.3);
+    expect(percentual(5, 0)).toBe(0);
+    expect(formatarPercentual(33.3)).toBe("33,3%");
+  });
+
+  it("barra de progresso segue a ordem das faixas e soma 100%", () => {
+    const segmentos = segmentosProgresso({
+      jaAcessaram: 50,
+      receberamComunicado: 20,
+      emAndamento: 0,
+      aguardandoPrimeiroAcesso: 25,
+      precisamAtencao: 5,
+    });
+    expect(segmentos.map((s) => s.chave)).toEqual([
+      "jaAcessaram",
+      "receberamComunicado",
+      "emAndamento",
+      "aguardandoPrimeiroAcesso",
+      "precisamAtencao",
+    ]);
+    expect(segmentos.reduce((soma, s) => soma + s.percentual, 0)).toBe(100);
+  });
+
+  it("todo tipo de pendência tem gravidade; senha exposta é crítica", () => {
+    for (const tipo of Object.keys(TIPO_PENDENCIA_LABEL)) {
+      expect(GRAVIDADE_PENDENCIA).toHaveProperty(tipo);
+    }
+    expect(GRAVIDADE_PENDENCIA.SENHA_POSSIVELMENTE_EXPOSTA).toBe("critica");
+  });
+
+  it("iniciais do aluno para o avatar", () => {
+    expect(iniciais("maria da silva souza")).toBe("MS");
+    expect(iniciais("Ana")).toBe("A");
+    expect(iniciais("  ")).toBe("?");
+  });
+});
+
+describe("prazo da campanha de inauguração", () => {
+  const inicio = "2026-10-14T03:00:00.000Z";
+  const fim = "2026-11-15T02:59:59.999Z"; // fim do dia 14/11 em Brasília
+
+  it("no primeiro dia faltam 31 dias", () => {
+    expect(prazoCampanha(inicio, fim, new Date("2026-10-14T18:00:00Z"))).toMatchObject({
+      totalDias: 31,
+      faltam: 31,
+      encerrada: false,
+      percentual: 0,
+    });
+  });
+
+  it("no último dia ainda vale; no dia seguinte está encerrada", () => {
+    expect(prazoCampanha(inicio, fim, new Date("2026-11-14T23:00:00Z"))).toMatchObject({
+      faltam: 0,
+      encerrada: false,
+      percentual: 100,
+    });
+    expect(prazoCampanha(inicio, fim, new Date("2026-11-15T12:00:00Z")).encerrada).toBe(true);
   });
 });

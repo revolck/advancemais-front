@@ -1,5 +1,6 @@
 import type {
   ComunicadoAcaoAlunoResultado,
+  ComunicadoFaixaProgresso,
   ComunicadoResultadoValidacao,
   ComunicadoTipoPendencia,
 } from "@/api/email/types";
@@ -106,5 +107,115 @@ export function descreverResultadoAcao(
       validacao?.resultado === "PENDENTE"
         ? "Configure o validador de e-mails para liberar o envio."
         : `Não será enviado automaticamente${validacao?.motivo ? ` (${validacao.motivo})` : ""}. Confirme o endereço com o aluno.`,
+  };
+}
+
+export type Gravidade = "critica" | "alta" | "media";
+
+/** Cor do selo na lista: senha exposta é urgente; e-mail ruim impede o acesso */
+export const GRAVIDADE_PENDENCIA: Record<ComunicadoTipoPendencia, Gravidade> = {
+  SENHA_POSSIVELMENTE_EXPOSTA: "critica",
+  EMAIL_DEVOLVIDO: "alta",
+  SENHA_REVOGADA: "alta",
+  EMAIL_INVALIDO: "alta",
+  EMAIL_BLOQUEADO: "alta",
+  ENVIO_INCERTO: "media",
+  FALHA_NO_ENVIO: "media",
+  DEVOLUCAO_TEMPORARIA_PERSISTENTE: "media",
+  EMAIL_DE_RISCO: "media",
+  VALIDACAO_INCONCLUSIVA: "media",
+};
+
+/** Ordem da barra de progresso: do melhor para o que precisa de ação */
+export const FAIXAS_PROGRESSO: {
+  chave: ComunicadoFaixaProgresso;
+  rotulo: string;
+  descricao: string;
+  cor: string;
+}[] = [
+  {
+    chave: "jaAcessaram",
+    rotulo: "Já acessaram",
+    descricao: "Entraram ou criaram a senha pelo CPF",
+    cor: "bg-emerald-500",
+  },
+  {
+    chave: "receberamComunicado",
+    rotulo: "Receberam o comunicado",
+    descricao: "Ainda não entraram",
+    cor: "bg-sky-500",
+  },
+  {
+    chave: "emAndamento",
+    rotulo: "Em andamento",
+    descricao: "Envio em processamento ou nova tentativa",
+    cor: "bg-indigo-300",
+  },
+  {
+    chave: "aguardandoPrimeiroAcesso",
+    rotulo: "Aguardando primeiro acesso",
+    descricao: "Podem entrar em “Esqueci minha senha” com o CPF",
+    cor: "bg-slate-300",
+  },
+  {
+    chave: "precisamAtencao",
+    rotulo: "Precisam de atenção",
+    descricao: "E-mail com problema: corrigir com o aluno",
+    cor: "bg-amber-500",
+  },
+];
+
+/** Percentual com uma casa (pt-BR); 0 quando não há base */
+export function percentual(parte: number, total: number) {
+  if (!total) return 0;
+  return Math.round((parte / total) * 1000) / 10;
+}
+
+export const formatarPercentual = (valor: number) =>
+  `${valor.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`;
+
+/** Segmentos da barra (só os que têm alunos), com largura em % */
+export function segmentosProgresso(
+  progresso: Record<ComunicadoFaixaProgresso, number>,
+) {
+  const total = FAIXAS_PROGRESSO.reduce(
+    (soma, faixa) => soma + (progresso[faixa.chave] ?? 0),
+    0,
+  );
+  return FAIXAS_PROGRESSO.map((faixa) => ({
+    ...faixa,
+    valor: progresso[faixa.chave] ?? 0,
+    percentual: percentual(progresso[faixa.chave] ?? 0, total),
+  }));
+}
+
+/** Iniciais para o avatar da lista de pendências */
+export function iniciais(nome: string) {
+  const partes = nome.trim().split(/\s+/).filter(Boolean);
+  if (partes.length === 0) return "?";
+  const primeira = partes[0][0] ?? "";
+  const ultima = partes.length > 1 ? (partes[partes.length - 1][0] ?? "") : "";
+  return (primeira + ultima).toUpperCase();
+}
+
+const DIA_MS = 86_400_000;
+const diaEmSaoPaulo = (data: Date) =>
+  data.toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+const diasEntre = (de: string, ate: string) =>
+  Math.round((Date.parse(ate) - Date.parse(de)) / DIA_MS);
+
+/** Andamento de uma campanha por dia do calendário de Brasília */
+export function prazoCampanha(inicioIso: string, fimIso: string, agora = new Date()) {
+  const inicio = diaEmSaoPaulo(new Date(inicioIso));
+  const fim = diaEmSaoPaulo(new Date(fimIso));
+  const hoje = diaEmSaoPaulo(agora);
+  const totalDias = Math.max(1, diasEntre(inicio, fim));
+  const faltam = diasEntre(hoje, fim);
+  const decorridos = Math.min(totalDias, Math.max(0, diasEntre(inicio, hoje)));
+  return {
+    totalDias,
+    faltam: Math.max(0, faltam),
+    encerrada: faltam < 0,
+    percentual: percentual(decorridos, totalDias),
   };
 }
