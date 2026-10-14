@@ -1,5 +1,6 @@
 "use client";
 
+import { apagarCookie, gravarPapel } from "@/lib/auth-cookies";
 import { useTransition, useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { SignInPage } from "@/components/partials/auth/login/sign-in";
@@ -82,7 +83,12 @@ const SignInPageDemo = () => {
         // Isso mantém o formulário bloqueado até o redirect acontecer
         setIsRedirecting(true);
 
-        let userRole: UserRole | undefined;
+        // O próprio login já traz o papel; o perfil só complementa
+        let userRole: UserRole | undefined = ALL_ROLES.includes(
+          res.usuario?.role as UserRole
+        )
+          ? (res.usuario?.role as UserRole)
+          : undefined;
         let precisaTrocarSenha = Boolean(res.usuario?.precisaTrocarSenha);
         // Busca nome e role do usuário para saudar em futuros logins
         try {
@@ -100,9 +106,10 @@ const SignInPageDemo = () => {
             const candidateRoles = [profile.usuario.role].filter(
               Boolean
             ) as string[];
-            userRole = candidateRoles.find((roleCandidate) =>
-              ALL_ROLES.includes(roleCandidate as UserRole)
-            ) as UserRole | undefined;
+            userRole =
+              (candidateRoles.find((roleCandidate) =>
+                ALL_ROLES.includes(roleCandidate as UserRole)
+              ) as UserRole | undefined) ?? userRole;
           }
         } catch (profileError) {
           console.error("Erro ao buscar perfil:", profileError);
@@ -119,7 +126,10 @@ const SignInPageDemo = () => {
         document.cookie = `token=${res.token}; path=/; domain=${domain}${maxAge};`;
         document.cookie = `refresh_token=${res.refreshToken}; path=/; domain=${domain}${maxAge};`;
         if (userRole) {
-          document.cookie = `user_role=${userRole}; path=/; domain=${domain}${maxAge};`;
+          gravarPapel(userRole, rememberPreference ? 2592000 : undefined);
+        } else {
+          // Sem papel conhecido, não deixa o da conta anterior
+          apagarCookie("user_role");
         }
 
         // Senha provisória: primeiro acesso exige criar uma nova senha

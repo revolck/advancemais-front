@@ -1,5 +1,6 @@
 "use client";
 
+import { limparCookiesDeSessao } from "@/lib/auth-cookies";
 import { useState, useEffect } from "react";
 
 interface User {
@@ -45,9 +46,7 @@ export const useAuth = () => {
 
   const logout = async () => {
     // Limpar cookies/tokens
-    document.cookie = "token=; path=/; max-age=0";
-    document.cookie = "refresh_token=; path=/; max-age=0";
-    document.cookie = "user_role=; path=/; max-age=0";
+    limparCookiesDeSessao();
 
     setUser(null);
   };

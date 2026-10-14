@@ -17,7 +17,13 @@ import { toastCustom, ToasterCustom } from "@/components/ui/custom";
 import { DashboardHeader as Breadcrumb } from "@/components/layout";
 import { BlockedUserWrapper } from "@/components/layout/BlockedUserWrapper";
 import { PasswordChangeGate } from "@/components/layout/PasswordChangeGate";
+import { useQuery } from "@tanstack/react-query";
+import { getUserProfile } from "@/api/usuarios";
+import type { UsuarioProfileResponse } from "@/api/usuarios/types";
 import { canAccessRoute } from "@/config/dashboardRoutes";
+import type { UserRole } from "@/config/roles";
+import { contaDoToken, gravarPapel, lerCookie } from "@/lib/auth-cookies";
+import { logoutUser } from "@/lib/auth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { ProfileOnboardingGate } from "@/theme/dashboard/components/profile/ProfileOnboardingGate";
 import { AssistenteController } from "@/theme/dashboard/components/assistente/AssistenteController";
@@ -205,10 +211,75 @@ export default function DashboardLayoutClient({
   const router = useRouter();
   const role = useUserRole();
 
+  // Conta desta aba (id dentro do token). Se outra aba entrar com outra conta no mesmo
+  // navegador, os cookies mudam e esta aba precisa recarregar, não acusar "sem permissão".
+  const contaDaAbaRef = useRef<string | null | undefined>(undefined);
+  const trocandoContaRef = useRef(false);
+  const sessaoMudou = useCallback(() => {
+    if (contaDaAbaRef.current === undefined) return false;
+    return contaDoToken(lerCookie("token")) !== contaDaAbaRef.current;
+  }, []);
+
+  // O papel real vem do perfil; o cookie pode ter sobrado de outra conta
+  const { data: perfilSessao, isLoading: carregandoPerfilSessao } =
+    useQuery<UsuarioProfileResponse>({
+      queryKey: ["user-profile"],
+      queryFn: async () => {
+        const response = await getUserProfile();
+        if (
+          !response ||
+          !("success" in response) ||
+          response.success !== true ||
+          !("usuario" in response) ||
+          !("stats" in response)
+        ) {
+          throw new Error("Erro ao carregar perfil");
+        }
+        return response as UsuarioProfileResponse;
+      },
+      enabled: Boolean(role),
+      staleTime: 5 * 60 * 1000,
+      retry: 1,
+    });
+  const papelDoPerfil = perfilSessao?.usuario?.role as UserRole | undefined;
+  const papelEfetivo = papelDoPerfil ?? role;
+
   const canRenderCurrentRoute = useMemo(() => {
-    if (!role || !pathname) return false;
-    return canAccessRoute(pathname, role);
-  }, [pathname, role]);
+    if (!papelEfetivo || !pathname) return false;
+    return canAccessRoute(pathname, papelEfetivo);
+  }, [pathname, papelEfetivo]);
+
+  // Detecta troca de conta em outra aba (mesmo navegador)
+  useEffect(() => {
+    contaDaAbaRef.current = contaDoToken(lerCookie("token"));
+    const verificar = () => {
+      if (trocandoContaRef.current || !sessaoMudou()) return;
+      trocandoContaRef.current = true;
+      if (!lerCookie("token")) {
+        logoutUser();
+        return;
+      }
+      toastCustom.info({
+        title: "Você entrou com outra conta",
+        description: "Esta aba vai ser atualizada para a conta atual.",
+      });
+      setTimeout(() => window.location.reload(), 1200);
+    };
+    const intervalo = setInterval(verificar, 1500);
+    window.addEventListener("focus", verificar);
+    return () => {
+      clearInterval(intervalo);
+      window.removeEventListener("focus", verificar);
+    };
+  }, [sessaoMudou]);
+
+  // Corrige o cookie de papel quando ele não bate com o perfil da conta logada
+  useEffect(() => {
+    if (!papelDoPerfil || !role || papelDoPerfil === role || sessaoMudou()) {
+      return;
+    }
+    gravarPapel(papelDoPerfil, 2592000);
+  }, [papelDoPerfil, role, sessaoMudou]);
 
   /**
    * Alterna o estado de colapso do sidebar
@@ -279,6 +350,10 @@ export default function DashboardLayoutClient({
       return;
     }
 
+    // Só acusa falta de permissão com o papel confirmado pelo perfil, e nunca
+    // durante uma troca de conta em outra aba
+    if (carregandoPerfilSessao || sessaoMudou() || trocandoContaRef.current) return;
+
     if (lastDeniedPathRef.current === pathname) return;
     lastDeniedPathRef.current = pathname;
 
@@ -287,7 +362,15 @@ export default function DashboardLayoutClient({
       description: "Você não tem permissão para acessar esta página.",
     });
     router.replace("/dashboard");
-  }, [canRenderCurrentRoute, mounted, pathname, role, router]);
+  }, [
+    canRenderCurrentRoute,
+    carregandoPerfilSessao,
+    mounted,
+    pathname,
+    role,
+    router,
+    sessaoMudou,
+  ]);
 
   // Evita problemas de hidratação SSR
   if (!mounted) {
