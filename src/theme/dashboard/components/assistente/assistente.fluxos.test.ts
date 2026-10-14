@@ -1,7 +1,14 @@
 import { describe, expect, it } from "vitest";
 
 import type { SituacaoBonificacao } from "@/api/empresas/bonificacao";
-import { TOUR_EMPRESA, conversaTourConcluido, escolherConversa } from "./assistente.fluxos";
+import type { ContextoEmpresa } from "@/api/usuarios/assistente";
+import {
+  TOUR_EMPRESA,
+  conversaTourConcluido,
+  escolherConversa,
+  quando,
+  situacaoDePublicacao,
+} from "./assistente.fluxos";
 
 const bonus = (exibir = true): SituacaoBonificacao => ({
   bonificacao: {
@@ -67,5 +74,65 @@ describe("assistente: o que dizer para a empresa", () => {
 
   it("fim do tour convida a publicar a primeira vaga", () => {
     expect(conversaTourConcluido().botoes[0].acao).toBe("PUBLICAR_VAGA");
+  });
+});
+
+describe("assistente: empresa só vê o que pode fazer", () => {
+  const contexto = (extra: Partial<ContextoEmpresa> = {}): ContextoEmpresa => ({
+    plano: { nome: "Inicial", modo: "CLIENTE", fim: null, limiteVagas: 3 },
+    vagasIlimitadas: false,
+    vagas: { publicadas: 1, emAnalise: 0, rascunhos: 0 },
+    candidatosNovos7Dias: 0,
+    entrevistas: { proximos7Dias: 0, proxima: null },
+    ...extra,
+  });
+  const ajuda = (c: ContextoEmpresa) =>
+    escolherConversa({
+      ...base,
+      situacao: { bonificacao: null, gratuitoExpirado: null },
+      tutoriais: tourFeito,
+      contexto: c,
+    });
+
+  it("sem plano: não oferece publicar vaga, oferece escolher um plano", () => {
+    const c = ajuda(contexto({ plano: null }));
+    expect(c.botoes.some((b) => b.acao === "PUBLICAR_VAGA")).toBe(false);
+    expect(c.botoes[0]).toMatchObject({ acao: "VER_PLANOS", rotulo: "Escolher um plano" });
+    expect(c.mensagens.join(" ")).toContain("precisa de um plano ativo");
+  });
+
+  it("limite do plano atingido (publicadas + em análise): oferece upgrade", () => {
+    const c = ajuda(contexto({ vagas: { publicadas: 2, emAnalise: 1, rascunhos: 0 } }));
+    expect(c.botoes.some((b) => b.acao === "PUBLICAR_VAGA")).toBe(false);
+    expect(c.botoes[0]).toMatchObject({ acao: "VER_PLANOS", rotulo: "Fazer upgrade do plano" });
+    expect(c.mensagens.join(" ")).toContain("3 de 3 vagas");
+  });
+
+  it("com vaga livre: publicar vaga em primeiro, uso do plano e atalhos do dia", () => {
+    const c = ajuda(
+      contexto({
+        candidatosNovos7Dias: 2,
+        entrevistas: { proximos7Dias: 1, proxima: "2026-10-20T13:00:00.000Z" },
+      })
+    );
+    expect(c.botoes[0].acao).toBe("PUBLICAR_VAGA");
+    expect(c.mensagens.join(" ")).toContain("1 de 3 vagas em uso");
+    expect(c.mensagens.join(" ")).toContain("2 candidatos novos");
+    expect(c.botoes.map((b) => b.href)).toContain("/dashboard/empresas/candidatos");
+  });
+
+  it("vagas ilimitadas (recursos premium) publicam mesmo sem plano", () => {
+    expect(situacaoDePublicacao(contexto({ plano: null, vagasIlimitadas: true })).pode).toBe(true);
+  });
+
+  it("fim do tour sem plano leva para os planos", () => {
+    expect(conversaTourConcluido(contexto({ plano: null })).botoes[0].acao).toBe("VER_PLANOS");
+  });
+
+  it("quando: hoje, amanhã ou data", () => {
+    const agora = new Date("2026-10-14T15:00:00Z");
+    expect(quando("2026-10-14T20:00:00Z", agora)).toBe("hoje às 17:00");
+    expect(quando("2026-10-15T13:30:00Z", agora)).toBe("amanhã às 10:30");
+    expect(quando("2026-10-20T13:00:00Z", agora)).toBe("20 de outubro às 10:00");
   });
 });

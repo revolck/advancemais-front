@@ -10,19 +10,29 @@ import {
   type SituacaoBonificacao,
 } from "@/api/empresas/bonificacao";
 import { getUserProfile } from "@/api/usuarios";
-import { getTutoriais, registrarTutorial, type TutoriaisUsuario } from "@/api/usuarios/tutoriais";
+import { getContextoAssistente, type ContextoAssistente } from "@/api/usuarios/assistente";
+import { registrarTutorial, type TutoriaisUsuario } from "@/api/usuarios/tutoriais";
 import type { UsuarioProfileResponse } from "@/api/usuarios/types";
 import { UserRole } from "@/config/roles";
 import { useUserRole } from "@/hooks/useUserRole";
 import { isProfileCompleteForOnboarding } from "@/theme/dashboard/components/profile/profile-onboarding.utils";
 import { AssistenteAdvance } from "./AssistenteAdvance";
+import { escolherConversaAluno } from "./assistente.aluno";
+import { escolherConversaEquipe } from "./assistente.equipe";
 import {
+  CENTRAL_DE_AJUDA,
   TOUR_EMPRESA,
   conversaTourConcluido,
   escolherConversa,
-  type AcaoAssistente,
+  type BotaoAssistente,
   type Conversa,
 } from "./assistente.fluxos";
+import {
+  EVENTO_ABRIR_ASSISTENTE,
+  urlDoSite,
+  useTutoriaisAssistente,
+  useVisibilidadeAssistente,
+} from "./assistente.visibilidade";
 import { iniciarTourEmpresa } from "./tourEmpresa";
 
 interface ConfettiConfig {
@@ -37,38 +47,42 @@ interface AssistenteControllerProps {
 const PUBLICAR_VAGA = "/dashboard/empresas/vagas/cadastrar";
 const PLANOS = "/dashboard/upgrade";
 
+// "Agora não" em avisos importantes vale até o fim do dia (neste aparelho)
 const hoje = () => new Date().toISOString().slice(0, 10);
-const chaveDispensa = (planoId: string) => `plano-gratuito-expirado:${planoId}`;
-function lerDispensa(planoId?: string) {
-  if (!planoId) return false;
+const chaveDispensa = (chave: string) => `assistente-dispensa:${chave}`;
+function lerDispensa(chave?: string) {
+  if (!chave) return false;
   try {
-    return window.localStorage.getItem(chaveDispensa(planoId)) === hoje();
+    return window.localStorage.getItem(chaveDispensa(chave)) === hoje();
   } catch {
     return false;
   }
 }
-function gravarDispensa(planoId: string) {
+function gravarDispensa(chave: string) {
   try {
-    window.localStorage.setItem(chaveDispensa(planoId), hoje());
+    window.localStorage.setItem(chaveDispensa(chave), hoje());
   } catch {
     // sem armazenamento: o aviso volta na próxima visita
   }
 }
 
 /**
- * Assistente das empresas: depois do onboarding, dá as boas-vindas, apresenta o mês
- * grátis da inauguração (com a animação de compra aprovada), oferece o tour de primeiro
- * acesso e avisa quando o plano gratuito termina. Fica disponível no canto da tela.
+ * Assistente Advance+ para todas as funções. Empresa: presente de inauguração, tour e
+ * plano (só oferece publicar vaga se o plano permite). Aluno/candidato: cursos,
+ * pagamento, currículo, vagas e entrevistas. Equipe: pendências do dia.
+ * Pode ser oculto no próprio chat e mostrado de novo pelo menu do avatar.
  */
 export function AssistenteController({ onConfettiChange }: AssistenteControllerProps) {
   const role = useUserRole();
   const isEmpresa = role === UserRole.EMPRESA;
+  const isAluno = role === UserRole.ALUNO_CANDIDATO;
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { oculto, ocultar } = useVisibilidadeAssistente();
   const [aberto, setAberto] = useState(false);
   const [conversaManual, setConversaManual] = useState<Conversa | null>(null);
   const [emTour, setEmTour] = useState(false);
-  const [expiradoDispensado, setExpiradoDispensado] = useState(false);
+  const [dispensas, setDispensas] = useState(0);
   const abriuSozinho = useRef(false);
 
   const { data: perfil } = useQuery<UsuarioProfileResponse>({
@@ -86,7 +100,7 @@ export function AssistenteController({ onConfettiChange }: AssistenteControllerP
       }
       return response as UsuarioProfileResponse;
     },
-    enabled: isEmpresa,
+    enabled: Boolean(role),
     staleTime: 5 * 60 * 1000,
     retry: 1,
   });
@@ -95,8 +109,9 @@ export function AssistenteController({ onConfettiChange }: AssistenteControllerP
   const perfilCompleto = Boolean(
     perfil && isProfileCompleteForOnboarding(perfil.usuario, perfil.stats)
   );
+  const liberado = Boolean(role) && perfilCompleto;
 
-  const { data: situacao } = useQuery<SituacaoBonificacao>({
+  const { data: situacao, status: statusSituacao } = useQuery<SituacaoBonificacao>({
     queryKey: ["empresa-bonificacao"],
     queryFn: async () => (await getMinhaBonificacao()).data,
     enabled: isEmpresa && perfilCompleto,
@@ -104,37 +119,75 @@ export function AssistenteController({ onConfettiChange }: AssistenteControllerP
     retry: 1,
   });
 
-  const { data: tutoriais } = useQuery<TutoriaisUsuario>({
-    queryKey: ["usuario-tutoriais"],
-    queryFn: async () => (await getTutoriais()).data,
-    enabled: isEmpresa && perfilCompleto,
-    staleTime: 10 * 60 * 1000,
+  const { data: contexto, status: statusContexto } = useQuery<ContextoAssistente>({
+    queryKey: ["assistente-contexto"],
+    queryFn: async () => (await getContextoAssistente()).data,
+    enabled: liberado,
+    staleTime: 5 * 60 * 1000,
     retry: 1,
   });
 
-  const pronto = isEmpresa && perfilCompleto && Boolean(situacao) && Boolean(tutoriais);
+  const { data: tutoriais } = useTutoriaisAssistente(liberado);
+
+  // Sem contexto (API fora do ar), segue com a ajuda genérica
+  const pronto =
+    liberado &&
+    Boolean(tutoriais) &&
+    statusContexto !== "pending" &&
+    (!isEmpresa || statusSituacao !== "pending");
 
   const conversaAutomatica = useMemo(() => {
-    if (!pronto || !perfil) return null;
-    return escolherConversa({
-      nomeEmpresa: perfil.usuario.nomeCompleto,
-      situacao: situacao ?? null,
+    if (!pronto || !perfil || !role) return null;
+    const nome = perfil.usuario.nomeCompleto;
+    if (isEmpresa) {
+      const planoId = situacao?.gratuitoExpirado?.planoId;
+      return escolherConversa({
+        nomeEmpresa: nome,
+        situacao: situacao ?? null,
+        tutoriais: tutoriais ?? {},
+        expiradoDispensadoHoje: Boolean(planoId) && lerDispensa(`plano-gratuito-expirado:${planoId}`),
+        contexto: contexto?.empresa,
+      });
+    }
+    if (isAluno) {
+      return escolherConversaAluno({
+        nome,
+        aluno: contexto?.aluno,
+        tutoriais: tutoriais ?? {},
+        urlCursosDoSite: urlDoSite("/cursos"),
+        dispensadaHoje: lerDispensa,
+      });
+    }
+    return escolherConversaEquipe({
+      role,
+      nome,
+      equipe: contexto?.equipe,
       tutoriais: tutoriais ?? {},
-      expiradoDispensadoHoje:
-        expiradoDispensado || lerDispensa(situacao?.gratuitoExpirado?.planoId),
     });
-  }, [pronto, perfil, situacao, tutoriais, expiradoDispensado]);
+    // dispensas: recalcula depois de um "agora não"
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pronto, perfil, role, isEmpresa, isAluno, situacao, tutoriais, contexto, dispensas]);
 
   const conversa = conversaManual ?? conversaAutomatica;
 
-  // Abre sozinho uma vez por carregamento quando há algo para a empresa
+  // Abre sozinho uma vez por carregamento quando há algo importante
   useEffect(() => {
-    if (!conversaAutomatica || abriuSozinho.current || emTour) return;
+    if (!conversaAutomatica || abriuSozinho.current || emTour || oculto) return;
     if (!conversaAutomatica.abrirSozinho) return;
     abriuSozinho.current = true;
     const timer = setTimeout(() => setAberto(true), 600);
     return () => clearTimeout(timer);
-  }, [conversaAutomatica, emTour]);
+  }, [conversaAutomatica, emTour, oculto]);
+
+  // "Mostrar assistente" no menu do avatar
+  useEffect(() => {
+    const abrir = () => {
+      setConversaManual(null);
+      setAberto(true);
+    };
+    window.addEventListener(EVENTO_ABRIR_ASSISTENTE, abrir);
+    return () => window.removeEventListener(EVENTO_ABRIR_ASSISTENTE, abrir);
+  }, []);
 
   // Animação de compra aprovada junto com o presente
   useEffect(() => {
@@ -160,44 +213,62 @@ export function AssistenteController({ onConfettiChange }: AssistenteControllerP
     }
   }, [queryClient, situacao]);
 
-  const salvarTour = useCallback(
-    async (status: "CONCLUIDO" | "PULADO") => {
+  const salvarTutorial = useCallback(
+    async (chave: string, status: "CONCLUIDO" | "PULADO") => {
       queryClient.setQueryData<TutoriaisUsuario>(["usuario-tutoriais"], (atual) => ({
         ...(atual ?? {}),
-        [TOUR_EMPRESA]: { status, em: new Date().toISOString() },
+        [chave]: { status, em: new Date().toISOString() },
       }));
       try {
-        await registrarTutorial(TOUR_EMPRESA, status);
+        await registrarTutorial(chave, status);
       } catch {
-        // se falhar, o tour é oferecido de novo no próximo acesso
+        // se falhar, a mensagem aparece de novo no próximo acesso
       }
     },
     [queryClient]
+  );
+
+  /** O que vale para qualquer saída da conversa (fechar ou clicar em um botão) */
+  const registrarVisto = useCallback(
+    (atual: Conversa | null) => {
+      if (!atual) return;
+      if (atual.motivo === "BONIFICACAO") void marcarPresenteVisto();
+      // Fechar a oferta de tour vale como "agora não": não volta a abrir sozinha
+      if (atual.motivo === "PRIMEIRO_ACESSO" && !tutoriais?.[TOUR_EMPRESA]) {
+        void salvarTutorial(TOUR_EMPRESA, "PULADO");
+      }
+      if (atual.marcaTutorial) void salvarTutorial(atual.marcaTutorial, "CONCLUIDO");
+      if (atual.dispensaDiaria) {
+        gravarDispensa(atual.dispensaDiaria);
+        setDispensas((n) => n + 1);
+      }
+    },
+    [marcarPresenteVisto, salvarTutorial, tutoriais]
   );
 
   const fechar = useCallback(() => {
     setAberto(false);
     setConversaManual(null);
     onConfettiChange?.({ showConfetti: false, confettiKey: 0 });
-    if (conversa?.motivo === "BONIFICACAO") void marcarPresenteVisto();
-  }, [conversa, marcarPresenteVisto, onConfettiChange]);
+    registrarVisto(conversa);
+  }, [conversa, onConfettiChange, registrarVisto]);
 
   const onAcao = useCallback(
-    (acao: AcaoAssistente) => {
+    (botao: BotaoAssistente) => {
       const motivo = conversa?.motivo;
-      if (motivo === "BONIFICACAO") void marcarPresenteVisto();
 
-      switch (acao) {
+      switch (botao.acao) {
         case "INICIAR_TOUR":
+          registrarVisto(conversa);
           setAberto(false);
           setConversaManual(null);
           onConfettiChange?.({ showConfetti: false, confettiKey: 0 });
           setEmTour(true);
           iniciarTourEmpresa((concluiu) => {
             setEmTour(false);
-            void salvarTour(concluiu ? "CONCLUIDO" : "PULADO");
+            void salvarTutorial(TOUR_EMPRESA, concluiu ? "CONCLUIDO" : "PULADO");
             if (concluiu) {
-              setConversaManual(conversaTourConcluido());
+              setConversaManual(conversaTourConcluido(contexto?.empresa));
               setAberto(true);
             }
           });
@@ -207,29 +278,50 @@ export function AssistenteController({ onConfettiChange }: AssistenteControllerP
           router.push(PUBLICAR_VAGA);
           return;
         case "VER_PLANOS":
-          if (situacao?.gratuitoExpirado) gravarDispensa(situacao.gratuitoExpirado.planoId);
-          setExpiradoDispensado(true);
+          if (motivo === "PLANO_GRATUITO_EXPIRADO" && situacao?.gratuitoExpirado) {
+            gravarDispensa(`plano-gratuito-expirado:${situacao.gratuitoExpirado.planoId}`);
+            setDispensas((n) => n + 1);
+          }
           fechar();
           router.push(PLANOS);
           return;
+        case "IR":
+          fechar();
+          if (!botao.href) return;
+          if (botao.externo) window.open(botao.href, "_blank", "noopener,noreferrer");
+          else router.push(botao.href);
+          return;
+        case "AJUDA":
+          window.open(CENTRAL_DE_AJUDA, "_blank", "noopener,noreferrer");
+          fechar();
+          return;
         case "AGORA_NAO":
           if (motivo === "PLANO_GRATUITO_EXPIRADO" && situacao?.gratuitoExpirado) {
-            gravarDispensa(situacao.gratuitoExpirado.planoId);
-            setExpiradoDispensado(true);
+            gravarDispensa(`plano-gratuito-expirado:${situacao.gratuitoExpirado.planoId}`);
+            setDispensas((n) => n + 1);
           }
-          if (motivo === "PRIMEIRO_ACESSO" || motivo === "BONIFICACAO") void salvarTour("PULADO");
+          if (isEmpresa && (motivo === "PRIMEIRO_ACESSO" || motivo === "BONIFICACAO")) {
+            void salvarTutorial(TOUR_EMPRESA, "PULADO");
+          }
           fechar();
           return;
         default:
           fechar();
       }
     },
-    [conversa, fechar, marcarPresenteVisto, onConfettiChange, router, salvarTour, situacao]
+    [contexto, conversa, fechar, isEmpresa, onConfettiChange, registrarVisto, router, salvarTutorial, situacao]
   );
 
-  if (!pronto || !conversa || emTour) return null;
+  const onOcultar = useCallback(() => {
+    fechar();
+    void ocultar();
+  }, [fechar, ocultar]);
 
-  const temNovidade = Boolean(conversaAutomatica?.abrirSozinho);
+  if (oculto || !pronto || !conversa || emTour) return null;
+
+  const temNovidade = Boolean(
+    conversaAutomatica?.abrirSozinho || conversaAutomatica?.novidade
+  );
 
   return (
     <AssistenteAdvance
@@ -238,6 +330,7 @@ export function AssistenteController({ onConfettiChange }: AssistenteControllerP
       temNovidade={temNovidade}
       onAbrir={() => setAberto(true)}
       onFechar={fechar}
+      onOcultar={onOcultar}
       onAcao={onAcao}
     />
   );

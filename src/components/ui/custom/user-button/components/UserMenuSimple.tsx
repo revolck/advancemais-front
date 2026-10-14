@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo } from "react";
-import { ChevronDown } from "lucide-react";
+import { Bot, ChevronDown } from "lucide-react";
 import Link from "next/link";
 import { MENU_ACCOUNT, MENU_LOGOUT, MENU_UPGRADE } from "../constants";
 
@@ -19,6 +19,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { getUserProfile, logoutUserSession } from "@/api/usuarios";
 import { logoutUser } from "@/lib/auth";
 import { useQuery } from "@tanstack/react-query";
+import { useVisibilidadeAssistente } from "@/theme/dashboard/components/assistente/assistente.visibilidade";
 
 interface User {
   name: string;
@@ -31,6 +32,7 @@ export default function UserMenuSimple() {
   const [open, setOpen] = React.useState(false);
   const [user, setUser] = React.useState<User | null>(null);
   const [isLoggingOut, setIsLoggingOut] = React.useState(false);
+  const assistente = useVisibilidadeAssistente();
 
   const token = useMemo(() => {
     if (typeof document === "undefined") return undefined;
@@ -215,6 +217,20 @@ export default function UserMenuSimple() {
               </DropdownMenuItem>
             );
           })}
+          {/* O assistente pode ser oculto no chat; aqui ele volta */}
+          {assistente.carregado && (
+            <DropdownMenuItem
+              onClick={() =>
+                void (assistente.oculto ? assistente.mostrar() : assistente.ocultar())
+              }
+              className="cursor-pointer"
+            >
+              <Bot className="size-4" />
+              <span>
+                {assistente.oculto ? "Mostrar assistente" : "Ocultar assistente"}
+              </span>
+            </DropdownMenuItem>
+          )}
         </DropdownMenuGroup>
 
         <DropdownMenuSeparator />

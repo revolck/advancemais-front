@@ -3,7 +3,8 @@ import { usuarioRoutes } from "@/api/routes";
 import { buildAuthHeaders } from "@/lib/auth-utils";
 import { apiConfig } from "@/lib/env";
 
-export type StatusTutorial = "CONCLUIDO" | "PULADO";
+/** CONCLUIDO/PULADO para tours; OCULTO/VISIVEL para a chave ASSISTENTE */
+export type StatusTutorial = "CONCLUIDO" | "PULADO" | "OCULTO" | "VISIVEL";
 export type TutoriaisUsuario = Record<string, { status: StatusTutorial; em: string }>;
 
 interface Resposta<T> {

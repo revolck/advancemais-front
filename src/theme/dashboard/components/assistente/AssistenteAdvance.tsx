@@ -2,19 +2,21 @@
 
 import React, { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Bot, X } from "lucide-react";
+import { Bot, EyeOff, X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import type { AcaoAssistente, Conversa } from "./assistente.fluxos";
+import type { BotaoAssistente, Conversa } from "./assistente.fluxos";
 
 interface AssistenteAdvanceProps {
   aberto: boolean;
   conversa: Conversa;
-  /** Destaca o robô (bolinha) quando há algo novo para a empresa */
+  /** Destaca o robô (bolinha) quando há algo novo */
   temNovidade: boolean;
   onAbrir: () => void;
   onFechar: () => void;
-  onAcao: (acao: AcaoAssistente) => void;
+  /** Some com o robô até a pessoa pedir "Mostrar assistente" no menu do avatar */
+  onOcultar: () => void;
+  onAcao: (botao: BotaoAssistente) => void;
 }
 
 /** Robô no canto da tela com as mensagens em forma de chat */
@@ -24,6 +26,7 @@ export function AssistenteAdvance({
   temNovidade,
   onAbrir,
   onFechar,
+  onOcultar,
   onAcao,
 }: AssistenteAdvanceProps) {
   // Mensagens aparecem uma a uma, como se o assistente estivesse digitando
@@ -40,7 +43,14 @@ export function AssistenteAdvance({
     return () => timers.forEach(clearTimeout);
   }, [aberto, conversa]);
 
-  const digitando = aberto && visiveis < conversa.mensagens.length;
+  // "Ocultar" pede confirmação no próprio chat, ensinando como trazer de volta
+  const [confirmandoOcultar, setConfirmandoOcultar] = useState(false);
+  useEffect(() => {
+    if (!aberto) setConfirmandoOcultar(false);
+  }, [aberto]);
+
+  const digitando =
+    aberto && !confirmandoOcultar && visiveis < conversa.mensagens.length;
 
   return (
     <div className="fixed bottom-4 right-4 z-[60] flex flex-col items-end gap-3 sm:bottom-6 sm:right-6">
@@ -69,63 +79,116 @@ export function AssistenteAdvance({
                   </p>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={onFechar}
-                aria-label="Fechar assistente"
-                className="cursor-pointer rounded-md p-1.5 text-white/80 hover:bg-white/10 hover:text-white"
-              >
-                <X className="h-4 w-4" />
-              </button>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => setConfirmandoOcultar(true)}
+                  aria-label="Ocultar assistente"
+                  title="Ocultar assistente (mostre de novo pelo menu da sua foto)"
+                  className="flex cursor-pointer items-center gap-1.5 rounded-md px-2 py-1.5 text-xs text-white/80 hover:bg-white/10 hover:text-white"
+                >
+                  <EyeOff className="h-4 w-4" />
+                  <span className="hidden sm:inline">Ocultar</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={onFechar}
+                  aria-label="Fechar assistente"
+                  title="Fechar"
+                  className="cursor-pointer rounded-md p-1.5 text-white/80 hover:bg-white/10 hover:text-white"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
             </header>
 
-            <div className="flex max-h-[55vh] flex-col gap-3 overflow-y-auto bg-gray-50 px-4 py-5 sm:max-h-[50vh]">
-              {conversa.mensagens.slice(0, visiveis).map((mensagem, i) => (
-                <motion.p
-                  key={`${conversa.motivo}-${i}`}
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="!mb-0 w-fit max-w-[92%] rounded-2xl rounded-tl-md border border-gray-100 bg-white px-4 py-3 !text-sm !leading-relaxed text-gray-800 shadow-sm"
-                >
-                  {mensagem}
-                </motion.p>
-              ))}
-              {digitando && (
-                <div className="flex w-fit gap-1 rounded-2xl rounded-tl-md border border-gray-100 bg-white px-4 py-3.5 shadow-sm">
-                  {[0, 1, 2].map((i) => (
-                    <motion.span
-                      key={i}
-                      className="size-1.5 rounded-full bg-gray-400"
-                      animate={{ opacity: [0.3, 1, 0.3] }}
-                      transition={{ duration: 1, repeat: Infinity, delay: i * 0.2 }}
-                    />
+            {confirmandoOcultar ? (
+              <>
+                <div className="flex flex-col gap-3 bg-gray-50 px-4 py-5">
+                  {[
+                    "Tudo bem! Vou me esconder para não atrapalhar. 🙈",
+                    "Quando quiser me chamar de novo, clique na sua foto no topo da tela e escolha “Mostrar assistente”.",
+                  ].map((mensagem) => (
+                    <p
+                      key={mensagem}
+                      className="!mb-0 w-fit max-w-[92%] rounded-2xl rounded-tl-md border border-gray-100 bg-white px-4 py-3 !text-sm !leading-relaxed text-gray-800 shadow-sm"
+                    >
+                      {mensagem}
+                    </p>
                   ))}
                 </div>
-              )}
-            </div>
-
-            {!digitando && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="flex flex-col gap-2 border-t border-gray-100 bg-white p-4"
-              >
-                {conversa.botoes.map((botao) => (
+                <div className="flex flex-col gap-2 border-t border-gray-100 bg-white p-4">
                   <button
-                    key={botao.acao}
                     type="button"
-                    onClick={() => onAcao(botao.acao)}
-                    className={cn(
-                      "w-full cursor-pointer rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
-                      botao.principal
-                        ? "bg-[var(--primary-color)] text-white hover:opacity-90"
-                        : "border border-gray-200 text-gray-700 hover:bg-gray-50"
-                    )}
+                    onClick={onOcultar}
+                    className="w-full cursor-pointer rounded-lg bg-[var(--primary-color)] px-3 py-2.5 text-sm font-medium text-white transition-colors hover:opacity-90"
                   >
-                    {botao.rotulo}
+                    Ocultar assistente
                   </button>
-                ))}
-              </motion.div>
+                  <button
+                    type="button"
+                    onClick={() => setConfirmandoOcultar(false)}
+                    className="w-full cursor-pointer rounded-lg border border-gray-200 px-3 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex max-h-[55vh] flex-col gap-3 overflow-y-auto bg-gray-50 px-4 py-5 sm:max-h-[50vh]">
+                  {conversa.mensagens.slice(0, visiveis).map((mensagem, i) => (
+                    <motion.p
+                      key={`${conversa.motivo}-${i}`}
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="!mb-0 w-fit max-w-[92%] rounded-2xl rounded-tl-md border border-gray-100 bg-white px-4 py-3 !text-sm !leading-relaxed text-gray-800 shadow-sm"
+                    >
+                      {mensagem}
+                    </motion.p>
+                  ))}
+                  {digitando && (
+                    <div className="flex w-fit gap-1 rounded-2xl rounded-tl-md border border-gray-100 bg-white px-4 py-3.5 shadow-sm">
+                      {[0, 1, 2].map((i) => (
+                        <motion.span
+                          key={i}
+                          className="size-1.5 rounded-full bg-gray-400"
+                          animate={{ opacity: [0.3, 1, 0.3] }}
+                          transition={{
+                            duration: 1,
+                            repeat: Infinity,
+                            delay: i * 0.2,
+                          }}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {!digitando && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="flex flex-col gap-2 border-t border-gray-100 bg-white p-4"
+                  >
+                    {conversa.botoes.map((botao) => (
+                      <button
+                        key={`${botao.acao}-${botao.href ?? botao.rotulo}`}
+                        type="button"
+                        onClick={() => onAcao(botao)}
+                        className={cn(
+                          "w-full cursor-pointer rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                          botao.principal
+                            ? "bg-[var(--primary-color)] text-white hover:opacity-90"
+                            : "border border-gray-200 text-gray-700 hover:bg-gray-50",
+                        )}
+                      >
+                        {botao.rotulo}
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+              </>
             )}
           </motion.section>
         )}
@@ -138,7 +201,9 @@ export function AssistenteAdvance({
         whileHover={{ scale: 1.06 }}
         whileTap={{ scale: 0.95 }}
         animate={temNovidade && !aberto ? { y: [0, -6, 0] } : { y: 0 }}
-        transition={temNovidade && !aberto ? { duration: 1.2, repeat: Infinity } : {}}
+        transition={
+          temNovidade && !aberto ? { duration: 1.2, repeat: Infinity } : {}
+        }
         className="relative flex size-12 cursor-pointer items-center justify-center rounded-full bg-[var(--primary-color)] text-white shadow-xl ring-4 ring-white sm:size-14"
       >
         <Bot className="h-6 w-6 sm:h-7 sm:w-7" />

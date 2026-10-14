@@ -450,6 +450,9 @@ export const usuarioRoutes = {
     list: () => `${prefix}/usuarios/tutoriais`,
     update: (chave: string) => `${prefix}/usuarios/tutoriais/${encodeURIComponent(chave)}`,
   },
+  assistente: {
+    contexto: () => `${prefix}/usuarios/assistente/contexto`,
+  },
   /**
    * Retorna o endpoint raiz do módulo de usuários.
    * Deve ser usado para recuperar as informações gerais do serviço
