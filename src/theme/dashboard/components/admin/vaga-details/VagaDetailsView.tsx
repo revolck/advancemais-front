@@ -59,7 +59,11 @@ export function VagaDetailsView({ vagaId, initialData }: VagaDetailsViewProps) {
       return "data" in response ? response.data : response;
     },
     initialData: initialQueryData,
-    staleTime: 5 * 60 * 1000,
+    // O status muda por outras pessoas (o setor de vagas aprova): mostra o que está em
+    // cache na hora, mas sempre confere com a API ao abrir a página e ao voltar para a aba
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
     gcTime: 30 * 60 * 1000,
     enabled: Boolean(vagaId),
   });

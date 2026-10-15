@@ -9,7 +9,7 @@ import {
   Users,
   type LucideIcon,
 } from "lucide-react";
-import { formatDate } from "../utils";
+import { formatDate, formatVagaStatus } from "../utils";
 
 export function AboutTab({ vaga }: AboutTabProps) {
   const vagaDescription = vaga.descricao?.trim();
@@ -22,7 +22,7 @@ export function AboutTab({ vaga }: AboutTabProps) {
     { label: "Código da vaga", value: vaga.codigo ?? "—", icon: Tag },
     {
       label: "Status",
-      value: vaga.status ?? "—",
+      value: formatVagaStatus(vaga.status),
       icon: CheckCircle,
     },
     {

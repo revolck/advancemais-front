@@ -54,6 +54,7 @@ import {
 } from "@/components/ui/table";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { formatVagaStatus } from "@/theme/dashboard/components/admin/vaga-details/utils";
 import { ViewCurriculoModal } from "@/theme/dashboard/components/admin/candidato-details/modal-acoes/ViewCurriculoModal";
 import { normalizeCurriculoDetail } from "@/lib/candidatos/normalizeCurriculoDetail";
 import { EntrevistaModalView } from "@/theme/dashboard/components/admin/lista-entrevistas/components/EntrevistaModalView";
@@ -491,7 +492,7 @@ function CandidateCandidaturasSection({
                               getStatusClasses(candidatura.vaga.status)
                             )}
                           >
-                            {candidatura.vaga.status}
+                            {formatVagaStatus(candidatura.vaga.status)}
                           </Badge>
                         )}
                       </div>

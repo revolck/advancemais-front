@@ -178,7 +178,7 @@ function InfoAside({ vaga }: { vaga: RecrutadorVagaResumo }) {
     },
     {
       label: "Status",
-      value: vaga.status ? vaga.status.toUpperCase() : "—",
+      value: formatVagaStatus(vaga.status),
       icon: CheckCircle,
     },
     {
