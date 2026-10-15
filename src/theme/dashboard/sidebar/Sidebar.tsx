@@ -290,7 +290,9 @@ export function Sidebar({
           "h-full flex flex-col overflow-hidden",
           isMobileMenuOpen ? "translate-x-0" : "-translate-x-full",
           "transition-all duration-300 ease-in-out",
-          isCollapsed ? "w-16" : "w-64"
+          isCollapsed ? "w-16" : "w-64",
+          // Celular: gaveta por cima do cabeçalho, mais larga para o toque
+          "max-md:z-[70] max-md:w-[min(18rem,85vw)] max-md:shadow-2xl"
         )}
       >
         {/* Cabeçalho do Sidebar */}
@@ -315,7 +317,7 @@ export function Sidebar({
       {/* Overlay móvel semi-transparente */}
       {isMobileMenuOpen && (
         <div
-          className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40 lg:hidden transition-opacity duration-300"
+          className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40 max-md:z-[60] lg:hidden transition-opacity duration-300"
           onClick={() => setIsMobileMenuOpen(false)}
           aria-hidden="true"
         />

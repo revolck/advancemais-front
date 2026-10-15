@@ -406,7 +406,8 @@ export default function DashboardLayoutClient({
                 isCollapsed={isCollapsed}
               />
 
-              <main className="flex-1 overflow-auto bg-gray-100 p-10">
+              {/* Celular: margens menores e espaço embaixo para o botão do assistente */}
+              <main className="flex-1 overflow-auto bg-gray-100 p-10 max-md:px-4 max-md:pt-5 max-md:pb-24">
                 <div className="min-h-full">
                   {showPageBreadcrumb && (
                     <Breadcrumb showBreadcrumb={pathname !== "/empresas"} />

@@ -30,7 +30,9 @@ export function SidebarHeader({
     <div
       className={cn(
         "h-20 flex items-center justify-between transition-all duration-300",
-        isCollapsed ? "px-3" : "px-6"
+        isCollapsed ? "px-3" : "px-6",
+        // Celular: referência do "X" de fechar (antes ele flutuava no meio da gaveta)
+        "max-md:relative"
       )}
     >
       <div

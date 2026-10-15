@@ -8,6 +8,7 @@ import { NotificationButton } from "./components/NotificationButton";
 import { UserMenuSimple } from "@/components/ui/custom/user-button";
 import { DashboardHeaderProps } from "./types/header.types";
 import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { connectGoogle, getGoogleOAuthStatus, type GoogleOAuthStatus } from "@/api/aulas";
 import {
   Tooltip,
@@ -19,6 +20,7 @@ export function DashboardHeader({
   toggleSidebar,
   isCollapsed,
 }: DashboardHeaderProps) {
+  const isMobile = useIsMobile();
   const { data: googleStatus, isLoading: isLoadingGoogle, isFetching: isFetchingGoogle } =
     useQuery<GoogleOAuthStatus>({
       queryKey: ["google-oauth-status"],
@@ -42,7 +44,7 @@ export function DashboardHeader({
   return (
     <>
       {/* Header Principal */}
-      <header className="h-16 flex border-l border-[#314e93] items-center justify-between px-6 bg-sidebar text-sidebar-foreground z-50">
+      <header className="h-16 flex border-l border-[#314e93] items-center justify-between px-6 max-md:px-3 bg-sidebar text-sidebar-foreground z-50">
         {/* Seção Esquerda - Toggle Sidebar */}
         <div className="flex items-center">
           <motion.button
@@ -55,9 +57,14 @@ export function DashboardHeader({
             )}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            aria-label={isCollapsed ? "Expandir sidebar" : "Recolher sidebar"}
+            aria-label={
+              isMobile ? "Abrir menu" : isCollapsed ? "Expandir sidebar" : "Recolher sidebar"
+            }
           >
+            {/* Celular: o botão abre o menu lateral (ícone de menu) */}
+            <Icon name="Menu" size={22} className="text-white md:hidden" />
             <motion.div
+              className="max-md:hidden"
               animate={{ rotate: isCollapsed ? 180 : 0 }}
               transition={{ duration: 0.3, ease: "easeInOut" }}
             >
@@ -76,7 +83,7 @@ export function DashboardHeader({
         </div>
 
         {/* Seção Direita - Ações do Usuário */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 max-md:gap-1">
           {shouldShowGoogleButton && (
             <Tooltip open>
               <TooltipTrigger asChild>
@@ -115,7 +122,8 @@ export function DashboardHeader({
                   />
                 </motion.button>
               </TooltipTrigger>
-              <TooltipContent side="bottom" sideOffset={8} className="text-white">
+              {/* Sempre aberta no desktop; no celular cobria a página (sem "passar o mouse") */}
+              <TooltipContent side="bottom" sideOffset={8} className="text-white max-md:hidden">
                 Conectar Google Agenda
               </TooltipContent>
             </Tooltip>
@@ -132,7 +140,8 @@ export function DashboardHeader({
                   "flex items-center justify-center w-10 h-10 rounded-lg",
                   "hover:bg-white/10 active:bg-white/20",
                   "transition-all duration-200 ease-in-out",
-                  "focus:outline-none focus:ring-2 focus:ring-white/20"
+                  "focus:outline-none focus:ring-2 focus:ring-white/20",
+                  "max-md:hidden" // no celular fica no menu do usuário
                 )}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -161,7 +170,8 @@ export function DashboardHeader({
                   "flex items-center justify-center w-10 h-10 rounded-lg",
                   "hover:bg-white/10 active:bg-white/20",
                   "transition-all duration-200 ease-in-out",
-                  "focus:outline-none focus:ring-2 focus:ring-white/20"
+                  "focus:outline-none focus:ring-2 focus:ring-white/20",
+                  "max-md:hidden" // no celular fica no menu do usuário
                 )}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -183,7 +193,7 @@ export function DashboardHeader({
           <NotificationButton />
 
           {/* Separador */}
-          <div className="w-px h-6 bg-white/20 mx-2" />
+          <div className="w-px h-6 bg-white/20 mx-2 max-md:hidden" />
 
           {/* Botão do Usuário */}
           <UserMenuSimple />

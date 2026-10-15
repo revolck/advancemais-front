@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo } from "react";
-import { Bot, ChevronDown } from "lucide-react";
+import { Bot, ChevronDown, HelpCircle, Video } from "lucide-react";
 import Link from "next/link";
 import { MENU_ACCOUNT, MENU_LOGOUT, MENU_UPGRADE } from "../constants";
 
@@ -135,12 +135,13 @@ export default function UserMenuSimple() {
               {initials}
             </AvatarFallback>
           </Avatar>
-          <div className="flex flex-col items-start min-w-0 max-w-[140px]">
+          {/* Celular: só o avatar (o nome cortado disputava espaço com os ícones) */}
+          <div className="flex flex-col items-start min-w-0 max-w-[140px] max-md:hidden">
             <span className="text-sm font-medium text-white truncate w-full">
               {user.name}
             </span>
           </div>
-          <ChevronDown className="size-4 text-white/60 group-hover:text-white/90 group-hover:translate-y-0.5 transition-all duration-200 shrink-0" />
+          <ChevronDown className="size-4 text-white/60 group-hover:text-white/90 group-hover:translate-y-0.5 transition-all duration-200 shrink-0 max-md:hidden" />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent
@@ -231,6 +232,33 @@ export default function UserMenuSimple() {
               </span>
             </DropdownMenuItem>
           )}
+        </DropdownMenuGroup>
+
+        {/* Celular: Ajuda e Vídeos saem do cabeçalho e ficam aqui */}
+        <DropdownMenuGroup className="md:hidden">
+          <DropdownMenuSeparator />
+          <DropdownMenuItem asChild>
+            <a
+              href="https://ajuda.advancemais.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="cursor-pointer"
+            >
+              <HelpCircle className="size-4" />
+              <span>Ajuda</span>
+            </a>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <a
+              href="https://academia.advancemais.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="cursor-pointer"
+            >
+              <Video className="size-4" />
+              <span>Vídeos</span>
+            </a>
+          </DropdownMenuItem>
         </DropdownMenuGroup>
 
         <DropdownMenuSeparator />

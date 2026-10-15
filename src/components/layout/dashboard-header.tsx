@@ -260,7 +260,14 @@ export function DashboardHeader({
   }, [cursoTitle, isAulaPage, isEstruturaCursoPage, itemTitle, items]);
 
   return (
-    <header className={cn("flex items-center justify-between pb-6", className)}>
+    <header
+      className={cn(
+        "flex items-center justify-between pb-6",
+        // Celular: título em cima, data/breadcrumb embaixo (lado a lado cortava tudo)
+        "max-md:flex-col max-md:items-start max-md:gap-2 max-md:pb-4",
+        className,
+      )}
+    >
       {/* Lado esquerdo - Título */}
       <div className="flex min-w-0 items-center gap-3">
         {(isEstruturaCursoPage ||
@@ -280,7 +287,7 @@ export function DashboardHeader({
             <Skeleton className="mt-[-12px] h-8 w-[min(52vw,420px)] rounded-md" />
           ) : (
             <h1
-              className="max-w-[min(52vw,680px)] truncate !text-2xl font-semibold leading-tight tracking-tight text-gray-800"
+              className="max-w-[min(52vw,680px)] truncate !text-2xl font-semibold leading-tight tracking-tight text-gray-800 max-md:max-w-full max-md:!text-xl"
               title={typeof headerTitle === "string" ? headerTitle : undefined}
             >
               {headerTitle}
@@ -300,7 +307,7 @@ export function DashboardHeader({
       </div>
 
       {/* Lado direito - Data/Hora, Breadcrumb e conteúdo customizável */}
-      <div className="flex items-center gap-6">
+      <div className="flex items-center gap-6 max-md:w-full max-md:min-w-0 max-md:flex-wrap max-md:gap-x-4 max-md:gap-y-2">
         {/* Data e Hora - apenas na página inicial do dashboard */}
         {isDashboardPage && <DashboardDateTime />}
 
@@ -308,7 +315,7 @@ export function DashboardHeader({
         {shouldShowBreadcrumb && (
           <>
             {/* Separador antes do breadcrumb se houver data/hora antes */}
-            {isDashboardPage && <div className="h-6 w-px bg-gray-300" />}
+            {isDashboardPage && <div className="h-6 w-px bg-gray-300 max-md:hidden" />}
             <DashboardBreadcrumb
               items={breadcrumbItems}
               isLastItemLoading={isEstruturaHeaderLoading}
@@ -321,7 +328,7 @@ export function DashboardHeader({
           <>
             {/* Separador antes de children se houver data/hora ou breadcrumb antes */}
             {(isDashboardPage || shouldShowBreadcrumb) && (
-              <div className="h-6 w-px bg-gray-300" />
+              <div className="h-6 w-px bg-gray-300 max-md:hidden" />
             )}
             <div className="flex items-center gap-4">{children}</div>
           </>

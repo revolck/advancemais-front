@@ -225,7 +225,9 @@ export function VerticalTabs({
       className={cn(
         verticalTabsVariants({ variant, size, orientation }),
         classNames.root,
-        className
+        className,
+        // Celular: seletor em cima e conteúdo embaixo (lado a lado espremia o conteúdo)
+        showMobileSelect && "max-sm:flex-col max-sm:gap-0"
       )}
     >
       {/* Navigation Sidebar - Desktop */}
@@ -234,7 +236,10 @@ export function VerticalTabs({
         className={cn(
           "hidden sm:flex",
           tabsListVariants({ variant, tabsWidth }),
-          classNames.tabsList
+          classNames.tabsList,
+          // O "flex" das variantes anulava o "hidden": a lista aparecia no celular junto
+          // com o seletor. max-sm não conflita com flex.
+          showMobileSelect && "max-sm:hidden"
         )}
       >
         {renderTriggers(items)}
