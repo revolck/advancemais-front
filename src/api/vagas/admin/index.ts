@@ -7,6 +7,7 @@ import type {
   VagaUpdateApiResponse,
   VagaDeleteApiResponse,
   VagaCreateApiResponse,
+  VagaDetail,
   VagaListParams,
   CreateVagaPayload,
   UpdateVagaPayload,
@@ -219,5 +220,26 @@ export async function deleteVaga(
       headers: buildAuthHeaders(init?.headers),
     },
     cache: "no-cache",
+  });
+}
+
+/**
+ * Envia um rascunho (ou vaga despublicada) para a fila de aprovação do setor de vagas.
+ * A API confere o dono da vaga e o limite do plano (publicadas + em análise).
+ */
+export async function enviarVagaParaAnalise(id: string): Promise<VagaDetail> {
+  return apiFetch<VagaDetail>(routes.vagas.enviarParaAnalise(id), {
+    init: { method: "POST", headers: buildAuthHeaders() },
+    cache: "no-cache",
+    retries: 0,
+  });
+}
+
+/** Publicada → despublicada; em análise → volta a rascunho */
+export async function despublicarVaga(id: string): Promise<VagaDetail> {
+  return apiFetch<VagaDetail>(routes.vagas.despublicar(id), {
+    init: { method: "POST", headers: buildAuthHeaders() },
+    cache: "no-cache",
+    retries: 0,
   });
 }

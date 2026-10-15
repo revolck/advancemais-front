@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 interface UseUnsavedChangesProps<T> {
   formData: T;
@@ -15,6 +15,8 @@ interface UseUnsavedChangesReturn {
   handleConfirmExit: () => void;
   handleCancelExit: () => void;
   isExiting: boolean;
+  /** Chame depois de salvar, antes de navegar: desliga a proteção de saída */
+  liberarNavegacao: () => void;
 }
 
 export function useUnsavedChanges<T>({
@@ -24,11 +26,20 @@ export function useUnsavedChanges<T>({
 }: UseUnsavedChangesProps<T>): UseUnsavedChangesReturn {
   const [showExitModal, setShowExitModal] = useState(false);
   const [isExiting, setIsExiting] = useState(false);
+  // Ref (e não estado) para valer já no mesmo tick do router.push
+  const navegacaoLiberadaRef = useRef(false);
+  const [navegacaoLiberada, setNavegacaoLiberada] = useState(false);
+
+  const liberarNavegacao = useCallback(() => {
+    navegacaoLiberadaRef.current = true;
+    setNavegacaoLiberada(true);
+  }, []);
 
   // Detecta se há mudanças não salvas no formulário
   const hasUnsavedChanges = useMemo(() => {
+    if (navegacaoLiberada) return false;
     return JSON.stringify(formData) !== JSON.stringify(initialData);
-  }, [formData, initialData]);
+  }, [formData, initialData, navegacaoLiberada]);
 
   // Intercepta eventos de refresh para mostrar modal customizada
   useEffect(() => {
@@ -56,7 +67,12 @@ export function useUnsavedChanges<T>({
 
     // Intercepta tentativas de navegação - usa beforeunload para mostrar modal nativa como fallback
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-      if (hasUnsavedChanges && !isSubmitting && !isExiting) {
+      if (
+        hasUnsavedChanges &&
+        !isSubmitting &&
+        !isExiting &&
+        !navegacaoLiberadaRef.current
+      ) {
         setShowExitModal(true);
 
         event.preventDefault();
@@ -116,7 +132,7 @@ export function useUnsavedChanges<T>({
 
     // Intercepta mudanças no histórico do navegador
     const handlePopState = (event: PopStateEvent) => {
-      if (hasUnsavedChanges && !isSubmitting) {
+      if (hasUnsavedChanges && !isSubmitting && !navegacaoLiberadaRef.current) {
         event.preventDefault();
         setShowExitModal(true);
         // Adiciona uma entrada ao histórico para interceptar o próximo popstate
@@ -125,7 +141,8 @@ export function useUnsavedChanges<T>({
     };
 
     // Adiciona uma entrada ao histórico para capturar eventos de navegação
-    if (hasUnsavedChanges && !isSubmitting) {
+    // (nunca depois de salvar: empilhar a URL atual cancelaria o router.push em andamento)
+    if (hasUnsavedChanges && !isSubmitting && !navegacaoLiberadaRef.current) {
       history.pushState(null, "", window.location.href);
     }
 
@@ -165,5 +182,6 @@ export function useUnsavedChanges<T>({
     handleConfirmExit,
     handleCancelExit,
     isExiting,
+    liberarNavegacao,
   };
 }

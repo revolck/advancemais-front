@@ -7,8 +7,16 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { HorizontalTabs } from "@/components/ui/custom";
 import type { HorizontalTabItem } from "@/components/ui/custom";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getVagaById } from "@/api/vagas/admin";
+import {
+  despublicarVaga,
+  enviarVagaParaAnalise,
+  getVagaById,
+} from "@/api/vagas/admin";
 import type { VagaDetail } from "@/api/vagas/admin/types";
+import { aprovarSolicitacao } from "@/api/vagas/solicitacoes";
+import { toastCustom } from "@/components/ui/custom/toast";
+import { useUserRole } from "@/hooks/useUserRole";
+import { UserRole } from "@/config/roles";
 import { queryKeys } from "@/lib/react-query/queryKeys";
 import { HeaderInfo } from "./components/HeaderInfo";
 import { AboutTab } from "./tabs/AboutTab";
@@ -25,6 +33,12 @@ import type { VagaDetailsViewProps } from "./types";
 export function VagaDetailsView({ vagaId, initialData }: VagaDetailsViewProps) {
   const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
+  const [acaoEmAndamento, setAcaoEmAndamento] = useState(false);
+  const role = useUserRole();
+  const podeAprovar =
+    role === UserRole.ADMIN ||
+    role === UserRole.MODERADOR ||
+    role === UserRole.SETOR_DE_VAGAS;
 
   const queryKey = useMemo(() => queryKeys.vagas.detail(vagaId), [vagaId]);
 
@@ -82,17 +96,67 @@ export function VagaDetailsView({ vagaId, initialData }: VagaDetailsViewProps) {
     console.log("Excluir vaga:", vagaData.id);
   }, [vagaData]);
 
-  const handlePublishVaga = useCallback(() => {
-    if (!vagaData) return;
-    // TODO: Implementar lógica de publicação
-    console.log("Publicar vaga:", vagaData.id);
-  }, [vagaData]);
+  /** Roda a ação, avisa o resultado e recarrega a vaga. true = deu certo */
+  const executarAcao = useCallback(
+    async (acao: () => Promise<string>) => {
+      setAcaoEmAndamento(true);
+      try {
+        const mensagem = await acao();
+        toastCustom.success(mensagem);
+        return true;
+      } catch (err) {
+        toastCustom.error(
+          err instanceof Error && err.message
+            ? err.message
+            : "Não foi possível concluir a ação. Tente novamente.",
+        );
+        return false;
+      } finally {
+        // Recarrega também no erro: um passo pode ter dado certo (ex.: enviada, mas não aprovada)
+        await queryClient.invalidateQueries({ queryKey });
+        void queryClient.invalidateQueries({ queryKey: ["admin-vagas-list"] });
+        setAcaoEmAndamento(false);
+      }
+    },
+    [queryClient, queryKey],
+  );
 
-  const handleUnpublishVaga = useCallback(() => {
-    if (!vagaData) return;
-    // TODO: Implementar lógica de despublicação
-    console.log("Despublicar vaga:", vagaData.id);
-  }, [vagaData]);
+  // Empresa: envia para a fila de aprovação. Equipe: publica (aprovando na sequência).
+  const handlePublishVaga = useCallback(() => {
+    if (!vagaData || acaoEmAndamento) return;
+    const id = vagaData.id;
+
+    if (vagaData.status === "EM_ANALISE") {
+      if (!podeAprovar) return;
+      void executarAcao(async () => {
+        await aprovarSolicitacao(id);
+        return "Vaga aprovada e publicada.";
+      });
+      return;
+    }
+
+    void executarAcao(async () => {
+      const enviada = await enviarVagaParaAnalise(id);
+      if (enviada.status === "PUBLICADO") return "Vaga publicada.";
+      if (podeAprovar) {
+        await aprovarSolicitacao(id);
+        return "Vaga publicada.";
+      }
+      return "Vaga enviada para aprovação do setor de vagas.";
+    });
+  }, [vagaData, acaoEmAndamento, podeAprovar, executarAcao]);
+
+  const handleUnpublishVaga = useCallback(async () => {
+    if (!vagaData) return false;
+    const id = vagaData.id;
+    const estavaEmAnalise = vagaData.status === "EM_ANALISE";
+    return executarAcao(async () => {
+      await despublicarVaga(id);
+      return estavaEmAnalise
+        ? "Envio cancelado. A vaga voltou para rascunho."
+        : "Vaga despublicada.";
+    });
+  }, [vagaData, executarAcao]);
 
   if (isPending) {
     return (
@@ -246,6 +310,8 @@ export function VagaDetailsView({ vagaId, initialData }: VagaDetailsViewProps) {
           onDeleteVaga={handleDeleteVaga}
           onPublishVaga={handlePublishVaga}
           onUnpublishVaga={handleUnpublishVaga}
+          podeAprovar={podeAprovar}
+          acaoEmAndamento={acaoEmAndamento}
         />
 
         <div className="flex-1 min-h-0">
@@ -267,6 +333,8 @@ export function VagaDetailsView({ vagaId, initialData }: VagaDetailsViewProps) {
         onDeleteVaga={handleDeleteVaga}
         onPublishVaga={handlePublishVaga}
         onUnpublishVaga={handleUnpublishVaga}
+        podeAprovar={podeAprovar}
+        acaoEmAndamento={acaoEmAndamento}
       />
 
       <HorizontalTabs items={tabs} defaultValue="sobre" />

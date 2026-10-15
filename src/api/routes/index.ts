@@ -648,6 +648,10 @@ export const vagasRoutes = {
   get: (id: string) => `${prefix}/empresas/vagas/${id}`,
   update: (id: string) => `${prefix}/empresas/vagas/${id}`,
   delete: (id: string) => `${prefix}/empresas/vagas/${id}`,
+  enviarParaAnalise: (id: string) =>
+    `${prefix}/empresas/vagas/${encodeURIComponent(id)}/enviar-para-analise`,
+  despublicar: (id: string) =>
+    `${prefix}/empresas/vagas/${encodeURIComponent(id)}/despublicar`,
   processos: {
     list: (vagaId: string) =>
       `${prefix}/empresas/vagas/${encodeURIComponent(vagaId)}/processos`,

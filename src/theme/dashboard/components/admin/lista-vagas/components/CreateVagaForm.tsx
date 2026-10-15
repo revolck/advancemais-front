@@ -43,6 +43,7 @@ import type {
   CreateVagaFormProps,
   FormState,
   FormErrors,
+  VagaCriada,
 } from "../types/formTypes";
 import type { SectionKey } from "../types/formTypes";
 import {
@@ -107,6 +108,7 @@ export function CreateVagaForm({
     setShowExitModal,
     handleConfirmExit,
     handleCancelExit,
+    liberarNavegacao,
   } = useUnsavedChanges({
     formData,
     initialData: getInitialFormState(),
@@ -493,8 +495,10 @@ export function CreateVagaForm({
         complemento: formData.localizacao.complemento.trim() || undefined,
         referencia: formData.localizacao.referencia.trim() || undefined,
       },
+      // "yyyy-MM-dd" do calendário = até o fim do dia em Brasília
+      // (new Date("yyyy-MM-dd") seria meia-noite UTC, ou seja, 21h do dia anterior)
       inscricoesAte: formData.inscricoesAte
-        ? new Date(formData.inscricoesAte).toISOString()
+        ? new Date(`${formData.inscricoesAte}T23:59:59-03:00`).toISOString()
         : undefined,
       inseridaEm: new Date().toISOString(),
       salarioMin: salarioMin ? salarioMin.replace(",", ".") : undefined,
@@ -517,6 +521,7 @@ export function CreateVagaForm({
 
     setIsSubmitting(true);
     setLoadingStep("Criando vaga...");
+    let criada = false;
 
     try {
       const payload = buildPayload();
@@ -555,13 +560,24 @@ export function CreateVagaForm({
         return;
       }
 
-      setLoadingStep("Finalizando...");
-      toastCustom.success("Vaga criada com sucesso!");
-      onSuccess();
+      const vaga = response as VagaCriada;
+      if (vaga.status === "EM_ANALISE") {
+        toastCustom.success(
+          "Vaga criada e enviada para aprovação do setor de vagas.",
+        );
+      } else if (vaga.status === "PUBLICADO") {
+        toastCustom.success("Vaga criada e publicada!");
+      } else if (vaga.avisoStatus) {
+        toastCustom.warning(vaga.avisoStatus);
+      } else {
+        toastCustom.success("Vaga criada com sucesso!");
+      }
 
-      setFormData(getInitialFormState());
-      setErrors({});
-      setCurrentStep(0);
+      // Mantém o formulário travado enquanto abre a página da vaga (evita criar duas vezes)
+      criada = true;
+      setLoadingStep("Abrindo a vaga...");
+      liberarNavegacao();
+      onSuccess(vaga);
     } catch (error) {
       console.error("Erro ao criar vaga:", error);
       const message =
@@ -570,8 +586,10 @@ export function CreateVagaForm({
           : "Erro inesperado ao criar a vaga. Tente novamente.";
       toastCustom.error(message);
     } finally {
-      setIsSubmitting(false);
-      setLoadingStep("");
+      if (!criada) {
+        setIsSubmitting(false);
+        setLoadingStep("");
+      }
     }
   };
 

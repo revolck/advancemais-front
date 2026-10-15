@@ -1,5 +1,13 @@
+/** O que a API devolve ao criar: a vaga e, se ficou como rascunho, o motivo */
+export interface VagaCriada {
+  id: string;
+  status?: string;
+  avisoStatus?: string | null;
+}
+
 export interface CreateVagaFormProps {
-  onSuccess: () => void;
+  /** Recebe a vaga criada (para abrir a página dela) */
+  onSuccess: (vaga: VagaCriada) => void;
   isSubmitting: boolean;
   setIsSubmitting: (value: boolean) => void;
 }

@@ -23,6 +23,10 @@ import {
   Eye,
   EyeOff,
   Accessibility,
+  Clock,
+  Send,
+  Undo2,
+  Info,
 } from "lucide-react";
 import { formatCnpj as formatCnpjDocument } from "@/lib/documentos";
 import { cn } from "@/lib/utils";
@@ -43,13 +47,32 @@ export function HeaderInfo({
   onDeleteVaga,
   onPublishVaga,
   onUnpublishVaga,
+  podeAprovar = false,
+  acaoEmAndamento = false,
 }: VagaHeaderInfoProps) {
   const [isActionsOpen, setIsActionsOpen] = useState(false);
   const [isUnpublishModalOpen, setIsUnpublishModalOpen] = useState(false);
 
   const isVagaPublished = vaga.status === "PUBLICADO";
+  const isEmAnalise = vaga.status === "EM_ANALISE";
+  const podeEnviar = vaga.status === "RASCUNHO" || vaga.status === "DESPUBLICADA";
   const statusColor = isVagaPublished ? "bg-emerald-500" : "bg-amber-500";
-  const statusLabel = isVagaPublished ? "Vaga publicada" : "Vaga não publicada";
+  const statusLabel = isVagaPublished
+    ? "Vaga publicada"
+    : isEmAnalise
+      ? "Aguardando aprovação"
+      : "Vaga não publicada";
+
+  // Aviso do próximo passo, para a empresa saber o que acontece com a vaga
+  const avisoDoStatus = isEmAnalise
+    ? podeAprovar
+      ? "Esta vaga está aguardando aprovação. Revise e aprove para publicar."
+      : "Sua vaga está na fila de aprovação do setor de vagas. Assim que for aprovada, ela é publicada."
+    : vaga.status === "RASCUNHO"
+      ? podeAprovar
+        ? "Esta vaga é um rascunho e não está visível para candidatos."
+        : "Esta vaga é um rascunho. Quando estiver pronta, envie para aprovação em Ações."
+      : null;
 
   const statusBadge = (
     <Badge
@@ -78,7 +101,8 @@ export function HeaderInfo({
   };
 
   const handleUnpublishConfirm = async () => {
-    await onUnpublishVaga?.();
+    const ok = await onUnpublishVaga?.();
+    if (ok !== false) setIsUnpublishModalOpen(false);
   };
 
   // Debug: Verificar estrutura da empresa
@@ -165,24 +189,58 @@ export function HeaderInfo({
                 <Edit className="h-4 w-4 text-gray-500" />
                 <span>Editar vaga</span>
               </DropdownMenuItem>
-              <DropdownMenuItem
-                onSelect={
-                  isVagaPublished ? handleUnpublishClick : onPublishVaga
-                }
-                className="cursor-pointer"
-              >
-                {isVagaPublished ? (
-                  <>
-                    <EyeOff className="h-4 w-4 text-gray-500" />
-                    <span>Despublicar</span>
-                  </>
-                ) : (
-                  <>
+              {isVagaPublished && (
+                <DropdownMenuItem
+                  onSelect={handleUnpublishClick}
+                  disabled={acaoEmAndamento}
+                  className="cursor-pointer"
+                >
+                  <EyeOff className="h-4 w-4 text-gray-500" />
+                  <span>Despublicar</span>
+                </DropdownMenuItem>
+              )}
+              {podeEnviar && (
+                <DropdownMenuItem
+                  onSelect={onPublishVaga}
+                  disabled={acaoEmAndamento}
+                  className="cursor-pointer"
+                >
+                  {podeAprovar ? (
                     <Eye className="h-4 w-4 text-gray-500" />
-                    <span>Publicar</span>
-                  </>
-                )}
-              </DropdownMenuItem>
+                  ) : (
+                    <Send className="h-4 w-4 text-gray-500" />
+                  )}
+                  <span>{podeAprovar ? "Publicar" : "Enviar para aprovação"}</span>
+                </DropdownMenuItem>
+              )}
+              {isEmAnalise && podeAprovar && (
+                <DropdownMenuItem
+                  onSelect={onPublishVaga}
+                  disabled={acaoEmAndamento}
+                  className="cursor-pointer"
+                >
+                  <Eye className="h-4 w-4 text-gray-500" />
+                  <span>Aprovar e publicar</span>
+                </DropdownMenuItem>
+              )}
+              {isEmAnalise && !podeAprovar && (
+                <>
+                  <DropdownMenuItem disabled>
+                    <Clock className="h-4 w-4 text-gray-500" />
+                    <span>Aguardando aprovação</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onSelect={() => {
+                      void onUnpublishVaga?.();
+                    }}
+                    disabled={acaoEmAndamento}
+                    className="cursor-pointer"
+                  >
+                    <Undo2 className="h-4 w-4 text-gray-500" />
+                    <span>Cancelar envio</span>
+                  </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
           <Button
@@ -201,11 +259,19 @@ export function HeaderInfo({
         </div>
       </div>
 
+      {avisoDoStatus && (
+        <div className="mx-6 mb-6 flex items-start gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 sm:mx-8">
+          <Info className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" aria-hidden="true" />
+          <p className="!mb-0 !text-sm !leading-normal text-amber-900">{avisoDoStatus}</p>
+        </div>
+      )}
+
       {/* Modal de Despublicação */}
       <DespublicarVagaModal
         isOpen={isUnpublishModalOpen}
         onOpenChange={setIsUnpublishModalOpen}
         onConfirmUnpublish={handleUnpublishConfirm}
+        isUnpublishing={acaoEmAndamento}
         vaga={vaga}
       />
     </section>

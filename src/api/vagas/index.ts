@@ -1,4 +1,12 @@
-export { listVagas, getVagaById, createVaga, updateVaga, deleteVaga } from "./admin";
+export {
+  listVagas,
+  getVagaById,
+  createVaga,
+  updateVaga,
+  deleteVaga,
+  enviarVagaParaAnalise,
+  despublicarVaga,
+} from "./admin";
 
 export type {
   VagaDetail,

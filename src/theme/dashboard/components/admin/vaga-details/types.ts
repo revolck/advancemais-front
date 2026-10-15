@@ -43,6 +43,11 @@ export interface VagaHeaderInfoProps {
   onEditVaga?: () => void;
   onDeleteVaga?: () => void;
   onToggleStatus?: () => void;
+  /** Empresa: envia para aprovação. Equipe: publica (ou aprova, se em análise) */
   onPublishVaga?: () => void;
-  onUnpublishVaga?: () => void;
+  /** Publicada → despublicada; em análise → volta a rascunho. true = deu certo */
+  onUnpublishVaga?: () => Promise<boolean> | void;
+  /** Admin, moderador e setor de vagas aprovam/publicam direto */
+  podeAprovar?: boolean;
+  acaoEmAndamento?: boolean;
 }
