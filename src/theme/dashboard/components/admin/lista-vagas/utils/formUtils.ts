@@ -119,3 +119,26 @@ export function campoDoFormulario(caminho: string): string {
   if (caminho.startsWith("localizacao.")) return caminho.split(".").slice(0, 2).join(".");
   return caminho.split(".")[0];
 }
+
+/**
+ * "Inscrições até": o calendário trabalha com "yyyy-MM-dd" e o prazo vale até o fim
+ * desse dia em Brasília. (new Date("yyyy-MM-dd") seria meia-noite UTC = 21h do dia anterior.)
+ */
+export function fimDoDiaEmBrasilia(dia: string): string | undefined {
+  if (!dia) return undefined;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dia)) return dia; // já é data completa
+  return new Date(`${dia}T23:59:59-03:00`).toISOString();
+}
+
+/** Data salva na API (ISO) → "yyyy-MM-dd" do dia em Brasília, para o calendário */
+export function diaEmBrasilia(iso?: string | null): string {
+  if (!iso) return "";
+  const data = new Date(iso);
+  if (Number.isNaN(data.getTime())) return "";
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(data);
+}

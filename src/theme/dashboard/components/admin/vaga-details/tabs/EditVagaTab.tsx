@@ -17,7 +17,9 @@ import {
 } from "@/components/ui/custom";
 import { UnsavedChangesModal } from "@/theme/dashboard/components/admin/lista-vagas/components/modals";
 import { updateVaga, type UpdateVagaPayload } from "@/api/vagas";
-import { Check, Loader2 } from "lucide-react";
+import { Check, Info, Loader2 } from "lucide-react";
+import { useUserRole } from "@/hooks/useUserRole";
+import { UserRole } from "@/config/roles";
 import {
   useEmpresasForSelect,
   useVagaCategorias,
@@ -25,6 +27,8 @@ import {
   useUnsavedChanges,
 } from "@/theme/dashboard/components/admin/lista-vagas/hooks";
 import {
+  diaEmBrasilia,
+  fimDoDiaEmBrasilia,
   isErrorResponse,
   slugify,
   parseMultiline,
@@ -89,7 +93,7 @@ function vagaToFormState(vaga: VagaDetail): FormState {
     maxCandidaturasPorUsuario: String(vaga.maxCandidaturasPorUsuario ?? ""),
     limitarCandidaturas:
       (vaga.maxCandidaturasPorUsuario ?? 0) > 0 ? "SIM" : "NAO",
-    inscricoesAte: vaga.inscricoesAte || "",
+    inscricoesAte: diaEmBrasilia(vaga.inscricoesAte),
     localizacao: {
       logradouro: vaga.localizacao?.logradouro || "",
       numero: vaga.localizacao?.numero || "",
@@ -111,11 +115,16 @@ export function EditVagaTab({ vaga, onSuccess, onCancel }: EditVagaTabProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Empresa edita a própria vaga: sem seletor de empresa (lista é só da equipe)
+  const isEmpresaRole = useUserRole() === UserRole.EMPRESA;
+  // Regra: vaga publicada editada pela empresa sai do ar e volta para aprovação
+  const voltaParaAnalise = isEmpresaRole && vaga.status === "PUBLICADO";
+
   const {
     empresas,
     isLoading: isLoadingEmpresas,
     error: empresasError,
-  } = useEmpresasForSelect();
+  } = useEmpresasForSelect(!isEmpresaRole);
 
   const {
     categoriaOptions,
@@ -124,7 +133,7 @@ export function EditVagaTab({ vaga, onSuccess, onCancel }: EditVagaTabProps) {
     error: categoriasError,
   } = useVagaCategorias();
 
-  const { empresaDetails } = useEmpresaDetails(formData.usuarioId || null);
+  useEmpresaDetails(isEmpresaRole ? null : formData.usuarioId || null);
 
   const subcategoriaOptions = useMemo(
     () => getSubcategoriasOptions(formData.areaInteresseId || null),
@@ -133,6 +142,7 @@ export function EditVagaTab({ vaga, onSuccess, onCancel }: EditVagaTabProps) {
 
   // Hook para gerenciar mudanças não salvas
   const {
+    hasUnsavedChanges,
     showExitModal,
     setShowExitModal,
     handleConfirmExit,
@@ -305,13 +315,20 @@ export function EditVagaTab({ vaga, onSuccess, onCancel }: EditVagaTabProps) {
       return;
     }
 
+    // Salvar sem mudar nada não deve tirar a vaga do ar à toa
+    if (!hasUnsavedChanges) {
+      toastCustom.info("Nenhuma alteração para salvar.");
+      return;
+    }
+
     setIsSubmitting(true);
     setErrors({});
 
     try {
       const payload: UpdateVagaPayload = {
         // básicos
-        usuarioId: formData.usuarioId || undefined,
+        // A empresa não troca o dono da vaga (a API também ignora)
+        usuarioId: isEmpresaRole ? undefined : formData.usuarioId || undefined,
         titulo: formData.titulo.trim(),
         descricao: formData.descricao.trim(),
         observacoes: formData.observacoes.trim() || undefined,
@@ -361,7 +378,7 @@ export function EditVagaTab({ vaga, onSuccess, onCancel }: EditVagaTabProps) {
           extras: parseMultiline(formData.atividadesExtras),
         },
         paraPcd: formData.paraPcd,
-        inscricoesAte: formData.inscricoesAte || undefined,
+        inscricoesAte: fimDoDiaEmBrasilia(formData.inscricoesAte),
         vagaEmDestaque: formData.vagaEmDestaque,
         modoAnonimo: formData.modoAnonimo,
         maxCandidaturasPorUsuario:
@@ -398,17 +415,41 @@ export function EditVagaTab({ vaga, onSuccess, onCancel }: EditVagaTabProps) {
           ? (response.data as VagaDetail)
           : (response as VagaDetail);
 
-      toastCustom.success({
-        title: "Vaga atualizada com sucesso!",
-        description: "As informações da vaga foram atualizadas.",
-      });
+      const avisoStatus = (updatedVaga as { avisoStatus?: string | null })
+        .avisoStatus;
+      if (avisoStatus) {
+        toastCustom.warning({
+          title: "Vaga enviada para aprovação",
+          description: avisoStatus,
+        });
+      } else {
+        toastCustom.success({
+          title: "Vaga atualizada com sucesso!",
+          description: "As informações da vaga foram atualizadas.",
+        });
+      }
 
       onSuccess(updatedVaga);
     } catch (error) {
       console.error("Erro ao atualizar vaga:", error);
+      // apiFetch lança no erro HTTP: a mensagem e os campos vêm da API
+      const detalhes = (error as { details?: { campos?: unknown } })?.details;
+      if (detalhes && Array.isArray(detalhes.campos)) {
+        const errosDosCampos: FormErrors = {};
+        (detalhes.campos as { campo: string; mensagem: string }[]).forEach(
+          ({ campo, mensagem }) => {
+            const chave = campoDoFormulario(campo);
+            if (!errosDosCampos[chave]) errosDosCampos[chave] = mensagem;
+          },
+        );
+        setErrors((prev) => ({ ...prev, ...errosDosCampos }));
+      }
       toastCustom.error({
         title: "Erro ao atualizar vaga",
-        description: "Ocorreu um erro inesperado. Tente novamente.",
+        description:
+          error instanceof Error && error.message
+            ? error.message
+            : "Ocorreu um erro inesperado. Tente novamente.",
       });
     } finally {
       setIsSubmitting(false);
@@ -520,6 +561,20 @@ export function EditVagaTab({ vaga, onSuccess, onCancel }: EditVagaTabProps) {
         </Stepper>
       </div>
 
+      {voltaParaAnalise && (
+        <div className="flex flex-shrink-0 items-start gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
+          <Info
+            className="mt-0.5 h-4 w-4 shrink-0 text-amber-600"
+            aria-hidden="true"
+          />
+          <p className="!mb-0 !text-sm !leading-normal text-amber-900">
+            Esta vaga está publicada. Ao salvar as alterações, ela sai do ar e
+            volta para a aprovação do setor de vagas. As candidaturas recebidas
+            continuam na vaga.
+          </p>
+        </div>
+      )}
+
       {/* Container para o formulário */}
       <div className="bg-white rounded-3xl p-7 flex flex-col flex-1 min-h-0">
         {/* Form */}
@@ -540,6 +595,7 @@ export function EditVagaTab({ vaga, onSuccess, onCancel }: EditVagaTabProps) {
                   formData={formData}
                   errors={errors}
                   isSubmitting={isSubmitting}
+                  isEmpresaRole={isEmpresaRole}
                   isLoadingEmpresas={isLoadingEmpresas}
                   isLoadingCategorias={isLoadingCategorias}
                   empresasError={empresasError || undefined}
@@ -631,7 +687,11 @@ export function EditVagaTab({ vaga, onSuccess, onCancel }: EditVagaTabProps) {
                     disabled={isSubmitting}
                     withAnimation
                   >
-                    {isSubmitting ? "Salvando..." : "Salvar alterações"}
+                    {isSubmitting
+                      ? "Salvando..."
+                      : voltaParaAnalise
+                        ? "Salvar e enviar para aprovação"
+                        : "Salvar alterações"}
                   </ButtonCustom>
                 )}
               </div>

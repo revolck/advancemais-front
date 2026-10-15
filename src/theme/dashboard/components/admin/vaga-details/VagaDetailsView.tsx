@@ -78,6 +78,7 @@ export function VagaDetailsView({ vagaId, initialData }: VagaDetailsViewProps) {
   const handleEditSuccess = useCallback(
     (updatedVaga: VagaDetail) => {
       queryClient.setQueryData(queryKey, updatedVaga);
+      void queryClient.invalidateQueries({ queryKey });
       void queryClient.invalidateQueries({
         queryKey: ["admin-vagas-list"],
       });

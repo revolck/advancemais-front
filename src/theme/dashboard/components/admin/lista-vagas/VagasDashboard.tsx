@@ -60,7 +60,9 @@ export function VagasDashboard({
 
   const [pendingSearchTerm, setPendingSearchTerm] = useState("");
   const [appliedSearchTerm, setAppliedSearchTerm] = useState("");
-  const [selectedStatuses, setSelectedStatuses] = useState<VagaStatus[]>(["PUBLICADO"]);
+  // Sem filtro = todas as situações. Abrir só em "Publicada" escondia rascunhos e vagas
+  // em análise (como a que acabou de ser criada) e a lista parecia vazia.
+  const [selectedStatuses, setSelectedStatuses] = useState<VagaStatus[]>([]);
   const [selectedCompanies, setSelectedCompanies] = useState<string[]>([]);
   const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
   const [isNavigating, setIsNavigating] = useState(false);
@@ -303,7 +305,7 @@ export function VagasDashboard({
           label: "Status",
           mode: "multiple",
           options: STATUS_FILTER_OPTIONS,
-          placeholder: "Selecione status",
+          placeholder: "Todos os status",
         },
       ];
 

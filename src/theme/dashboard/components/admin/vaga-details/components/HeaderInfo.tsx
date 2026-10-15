@@ -56,6 +56,9 @@ export function HeaderInfo({
   const isVagaPublished = vaga.status === "PUBLICADO";
   const isEmAnalise = vaga.status === "EM_ANALISE";
   const podeEnviar = vaga.status === "RASCUNHO" || vaga.status === "DESPUBLICADA";
+  // Encerrada/expirada: o processo acabou, a empresa não edita mais (a equipe pode)
+  const podeEditar =
+    podeAprovar || (vaga.status !== "ENCERRADA" && vaga.status !== "EXPIRADO");
   const statusColor = isVagaPublished ? "bg-emerald-500" : "bg-amber-500";
   const statusLabel = isVagaPublished
     ? "Vaga publicada"
@@ -182,13 +185,15 @@ export function HeaderInfo({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuItem
-                onSelect={onEditVaga}
-                className="cursor-pointer"
-              >
-                <Edit className="h-4 w-4 text-gray-500" />
-                <span>Editar vaga</span>
-              </DropdownMenuItem>
+              {podeEditar && (
+                <DropdownMenuItem
+                  onSelect={onEditVaga}
+                  className="cursor-pointer"
+                >
+                  <Edit className="h-4 w-4 text-gray-500" />
+                  <span>Editar vaga</span>
+                </DropdownMenuItem>
+              )}
               {isVagaPublished && (
                 <DropdownMenuItem
                   onSelect={handleUnpublishClick}

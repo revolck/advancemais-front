@@ -37,6 +37,7 @@ import {
   LIMITES_VAGA,
   problemaNaLista,
   problemaNoTamanho,
+  fimDoDiaEmBrasilia,
 } from "../utils/formUtils";
 import { SECTION_FIELD_MAP, FORM_STEPS } from "../constants/formConstants";
 import type {
@@ -495,11 +496,7 @@ export function CreateVagaForm({
         complemento: formData.localizacao.complemento.trim() || undefined,
         referencia: formData.localizacao.referencia.trim() || undefined,
       },
-      // "yyyy-MM-dd" do calendário = até o fim do dia em Brasília
-      // (new Date("yyyy-MM-dd") seria meia-noite UTC, ou seja, 21h do dia anterior)
-      inscricoesAte: formData.inscricoesAte
-        ? new Date(`${formData.inscricoesAte}T23:59:59-03:00`).toISOString()
-        : undefined,
+      inscricoesAte: fimDoDiaEmBrasilia(formData.inscricoesAte),
       inseridaEm: new Date().toISOString(),
       salarioMin: salarioMin ? salarioMin.replace(",", ".") : undefined,
       salarioMax: salarioMax ? salarioMax.replace(",", ".") : undefined,
