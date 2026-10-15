@@ -749,6 +749,8 @@ export async function listarVagasPublicas(
       ...init,
       headers: { Accept: apiConfig.headers.Accept, ...(init?.headers as any) },
     },
+    // Sem cache em memória: vaga despublicada ou expirada precisa sumir na hora
+    cache: "no-cache",
   });
 }
 

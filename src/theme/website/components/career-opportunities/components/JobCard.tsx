@@ -2,8 +2,7 @@
 
 "use client";
 
-import React, { useState } from "react";
-import Image from "next/image";
+import React from "react";
 import { cn } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -24,6 +23,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import type { JobCardProps } from "../types";
+import { EmpresaAvatar } from "./EmpresaAvatar";
 
 export const JobCard: React.FC<JobCardProps> = ({
   job,
@@ -35,14 +35,9 @@ export const JobCard: React.FC<JobCardProps> = ({
   applyLabel,
   applyBlockedReason,
 }) => {
-  const [logoError, setLogoError] = useState(false);
 
   const handleApply = () => onApply?.(job.id);
   const handleViewDetails = () => onViewDetails?.(job);
-  const effectiveLogo =
-    job.empresaLogo && !job.empresaAnonima && !logoError
-      ? job.empresaLogo
-      : "/images/company-placeholder.svg";
 
   const salaryLabel = job.salario
     ? `R$ ${job.salario.min?.toLocaleString()} - R$ ${job.salario.max?.toLocaleString()}`
@@ -70,23 +65,15 @@ export const JobCard: React.FC<JobCardProps> = ({
         <div className="flex items-start justify-between gap-4">
           <div className="flex gap-4">
             <div className="w-14 h-14 rounded-2xl bg-gray-50 border border-gray-200 flex items-center justify-center overflow-hidden">
-              <Image
-                src={effectiveLogo}
-                alt={
-                  job.empresaAnonima
-                    ? "Logo empresa anônima"
-                    : `Logo ${job.empresa}`
-                }
-                width={56}
-                height={56}
-                className="w-full h-full object-cover"
-                onError={() => setLogoError(true)}
-                unoptimized={effectiveLogo.startsWith("http")}
+              <EmpresaAvatar
+                nome={job.empresa}
+                logoUrl={job.empresaLogo}
+                confidencial={job.empresaAnonima}
               />
             </div>
             <div className="space-y-1 mt-1">
               <p className="!text-xs !font-semibold !uppercase !text-gray-400 !mb-0">
-                {job.empresaAnonima ? "Empresa anônima" : job.empresa}
+                {job.empresaAnonima ? "Empresa confidencial" : job.empresa}
               </p>
               <h3 className="!sm:text-xl !font-semibold !text-gray-900">
                 {job.titulo}

@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
-import Image from "next/image";
+import React, { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import { cn } from "@/lib/utils";
@@ -26,6 +25,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import type { JobData } from "@/theme/website/components/career-opportunities/types";
+import { EmpresaAvatar } from "@/theme/website/components/career-opportunities/components/EmpresaAvatar";
 
 function isUuid(value: string): boolean {
   return /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(
@@ -54,15 +54,9 @@ export function AlunoVagaCard({
   isApplicationBlocked = false,
   applicationBlockedReason,
 }: AlunoVagaCardProps) {
-  const [logoError, setLogoError] = useState(false);
 
   const handleApply = () => onApply?.(job.id);
   const handleViewDetails = () => onViewDetails?.(job);
-
-  const effectiveLogo =
-    job.empresaLogo && !job.empresaAnonima && !logoError
-      ? job.empresaLogo
-      : "/images/company-placeholder.svg";
 
   const salaryLabel = job.salario
     ? `R$ ${job.salario.min?.toLocaleString()} - R$ ${job.salario.max?.toLocaleString()}`
@@ -148,23 +142,15 @@ export function AlunoVagaCard({
         <div className="flex items-start justify-between gap-4">
           <div className="flex gap-4">
             <div className="w-14 h-14 rounded-2xl bg-gray-50 border border-gray-200 flex items-center justify-center overflow-hidden">
-              <Image
-                src={effectiveLogo}
-                alt={
-                  job.empresaAnonima
-                    ? "Logo empresa anônima"
-                    : `Logo ${job.empresa}`
-                }
-                width={56}
-                height={56}
-                className="w-full h-full object-cover"
-                onError={() => setLogoError(true)}
-                unoptimized={effectiveLogo.startsWith("http")}
+              <EmpresaAvatar
+                nome={job.empresa}
+                logoUrl={job.empresaLogo}
+                confidencial={job.empresaAnonima}
               />
             </div>
             <div className="space-y-1 mt-1 min-w-0">
               <p className="!text-xs !font-semibold !uppercase !text-gray-400 !mb-0 truncate">
-                {job.empresaAnonima ? "Empresa anônima" : job.empresa}
+                {job.empresaAnonima ? "Empresa confidencial" : job.empresa}
               </p>
               <h3 className="!sm:text-xl !font-semibold !text-gray-900 truncate">
                 {job.titulo}

@@ -23,7 +23,7 @@ import {
 import { verificarCandidatura } from "@/api/candidatos";
 import type { VerificarCandidaturaResponse } from "@/api/candidatos/types";
 import type { JobData } from "@/theme/website/components/career-opportunities/types";
-import { CompanyLogo } from "@/theme/website/components/career-opportunities/components/CompanyLogo";
+import { EmpresaAvatar } from "@/theme/website/components/career-opportunities/components/EmpresaAvatar";
 import {
   MapPin,
   DollarSign,
@@ -75,7 +75,7 @@ function normalizeList(value: any): string[] {
 function mapVagaToJob(vaga: any): JobData {
   const empresaAnonima = Boolean(vaga?.modoAnonimo);
   const empresa = empresaAnonima
-    ? "Empresa anônima"
+    ? "Empresa confidencial"
     : vaga?.empresa?.nome || "Empresa";
   const empresaLogo = empresaAnonima
     ? undefined
@@ -203,15 +203,15 @@ async function fetchVagaByIdOrSlug(idOrSlug: string): Promise<JobData | null> {
         id: listBySlug?.id?.toString() || "",
         slug: listBySlug?.slug || undefined,
         titulo: listBySlug?.titulo || "Vaga",
-        empresa: Boolean(listBySlug?.empresa?.modoAnonimo)
-          ? "Empresa anônima"
+        empresa: Boolean(listBySlug?.modoAnonimo ?? listBySlug?.empresa?.modoAnonimo)
+          ? "Empresa confidencial"
           : listBySlug?.empresa?.nome || "Empresa",
-        empresaLogo: Boolean(listBySlug?.empresa?.modoAnonimo)
+        empresaLogo: Boolean(listBySlug?.modoAnonimo ?? listBySlug?.empresa?.modoAnonimo)
           ? undefined
           : listBySlug?.empresa?.avatarUrl ||
             listBySlug?.empresa?.logoUrl ||
             undefined,
-        empresaAnonima: Boolean(listBySlug?.empresa?.modoAnonimo),
+        empresaAnonima: Boolean(listBySlug?.modoAnonimo ?? listBySlug?.empresa?.modoAnonimo),
         localizacao: localizacao || "Não informado",
         tipoContrato: listBySlug?.regimeDeTrabalho || "Não informado",
         modalidade: listBySlug?.modalidade || "Não informado",
@@ -367,20 +367,16 @@ export function ViewVagaModal({
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-start gap-4 min-w-0">
               <div className="w-14 h-14 rounded-2xl border border-gray-200 bg-gray-50 flex items-center justify-center overflow-hidden flex-shrink-0">
-                <CompanyLogo
-                  src={job?.empresaLogo}
-                  alt={
-                    job?.empresaAnonima
-                      ? "Logo empresa anônima"
-                      : `Logo ${job?.empresa || "Empresa"}`
-                  }
-                  size={56}
+                <EmpresaAvatar
+                  nome={job?.empresa}
+                  logoUrl={job?.empresaLogo}
+                  confidencial={job?.empresaAnonima}
                 />
               </div>
               <div className="min-w-0">
                 <p className="!text-xs !font-semibold !uppercase !text-gray-400 !mb-0 truncate">
                   {job?.empresaAnonima
-                    ? "Empresa anônima"
+                    ? "Empresa confidencial"
                     : job?.empresa || "—"}
                 </p>
                 <ModalTitle className="!text-base sm:!text-lg !font-semibold !mb-0 !text-gray-900 truncate">

@@ -16,12 +16,13 @@ import type { JobData, JobFilters } from "../types";
 function mapVagaToJobData(
   vaga: VagaPublicaItem & { inseridaEm?: string }
 ): JobData {
-  const empresaAnonima = Boolean(vaga.empresa?.modoAnonimo);
+  // A lista pública informa modoAnonimo na vaga e na empresa
+  const empresaAnonima = Boolean(vaga.modoAnonimo ?? vaga.empresa?.modoAnonimo);
   return {
     id: (vaga.id || "").toString(),
     slug: vaga.slug || undefined,
     titulo: vaga.titulo,
-    empresa: empresaAnonima ? "Empresa anônima" : vaga.empresa?.nome || "Empresa",
+    empresa: empresaAnonima ? "Empresa confidencial" : vaga.empresa?.nome || "Empresa",
     empresaLogo: empresaAnonima
       ? undefined
       : vaga.empresa?.logoUrl || vaga.empresa?.avatarUrl || undefined,

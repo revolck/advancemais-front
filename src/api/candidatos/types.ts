@@ -429,6 +429,8 @@ export interface VagaPublicaItem {
   inscricoesAte?: string | null;
   cidade?: string | null;
   estado?: string | null;
+  /** Vaga confidencial: a empresa vem anônima */
+  modoAnonimo?: boolean;
   empresa?: {
     nome?: string;
     logoUrl?: string | null;

@@ -17,7 +17,7 @@ import {
   Sparkles,
   CalendarDays,
 } from "lucide-react";
-import { CompanyLogo } from "@/theme/website/components/career-opportunities/components/CompanyLogo";
+import { EmpresaAvatar } from "@/theme/website/components/career-opportunities/components/EmpresaAvatar";
 import { ShareJobButton } from "@/theme/website/components/career-opportunities/components/ShareJobButton";
 import { VagaApplyAction } from "@/theme/website/components/career-opportunities/components/VagaApplyAction";
 import { env } from "@/lib/env";
@@ -54,7 +54,7 @@ function normalizeList(value: any): string[] {
 function mapVagaToJob(vaga: any): JobData {
   const empresaAnonima = Boolean(vaga?.modoAnonimo);
   const empresa = empresaAnonima
-    ? "Empresa anônima"
+    ? "Empresa confidencial"
     : vaga?.empresa?.nome || "Empresa";
   const empresaLogo = empresaAnonima
     ? undefined
@@ -192,19 +192,23 @@ async function fetchVagaByIdOrSlug(
       const cidade = listBySlug?.cidade || "";
       const estado = listBySlug?.estado || "";
       const localizacao = [cidade, estado].filter(Boolean).join(", ");
+      // Confidencial: a vaga informa modoAnonimo (a empresa vem anônima da API)
+      const vagaConfidencial = Boolean(
+        listBySlug?.modoAnonimo ?? listBySlug?.empresa?.modoAnonimo
+      );
       const mappedFromList: JobData = {
         id: listBySlug?.id?.toString() || "",
         slug: listBySlug?.slug || undefined,
         titulo: listBySlug?.titulo || "Vaga",
-        empresa: Boolean(listBySlug?.empresa?.modoAnonimo)
-          ? "Empresa anônima"
+        empresa: vagaConfidencial
+          ? "Empresa confidencial"
           : listBySlug?.empresa?.nome || "Empresa",
-        empresaLogo: Boolean(listBySlug?.empresa?.modoAnonimo)
+        empresaLogo: vagaConfidencial
           ? undefined
           : listBySlug?.empresa?.avatarUrl ||
             listBySlug?.empresa?.logoUrl ||
             undefined,
-        empresaAnonima: Boolean(listBySlug?.empresa?.modoAnonimo),
+        empresaAnonima: vagaConfidencial,
         localizacao: localizacao || "Não informado",
         tipoContrato: listBySlug?.regimeDeTrabalho || "Não informado",
         modalidade: listBySlug?.modalidade || "Não informado",
@@ -343,19 +347,15 @@ export default async function JobDetailsPage({
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-4">
                 <div className="w-14 h-14 rounded-2xl border border-gray-200 bg-gray-50 flex items-center justify-center overflow-hidden">
-                  <CompanyLogo
-                    src={job.empresaLogo}
-                    alt={
-                      job.empresaAnonima
-                        ? "Logo empresa anônima"
-                        : `Logo ${job.empresa}`
-                    }
-                    size={56}
+                  <EmpresaAvatar
+                    nome={job.empresa}
+                    logoUrl={job.empresaLogo}
+                    confidencial={job.empresaAnonima}
                   />
                 </div>
                 <div>
                   <p className="!text-xs !font-semibold !uppercase !text-gray-400 !mb-0">
-                    {job.empresaAnonima ? "Empresa anônima" : job.empresa}
+                    {job.empresaAnonima ? "Empresa confidencial" : job.empresa}
                   </p>
                   <h3 className="!mb-0">{job.titulo}</h3>
                 </div>
