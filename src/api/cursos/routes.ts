@@ -112,6 +112,8 @@ export const cursosRoutes = {
           `${BASE}/${cursoId}/turmas/${turmaId}/inscricoes`,
         delete: (cursoId: number | string, turmaId: string, alunoId: string) =>
           `${BASE}/${cursoId}/turmas/${turmaId}/inscricoes/${alunoId}`,
+        situacao: (cursoId: number | string, turmaId: string) =>
+          `${BASE}/${cursoId}/turmas/${turmaId}/inscricoes/situacao`,
       },
       modulos: {
         list: (cursoId: number | string, turmaId: string) =>
@@ -217,6 +219,8 @@ export const cursosRoutes = {
           `${BASE}/${cursoId}/turmas/${turmaId}/certificados`,
         create: (cursoId: number | string, turmaId: string) =>
           `${BASE}/${cursoId}/turmas/${turmaId}/certificados`,
+        concluintes: (cursoId: number | string, turmaId: string) =>
+          `${BASE}/${cursoId}/turmas/${turmaId}/certificados/concluintes`,
       },
       regrasAvaliacao: {
         get: (cursoId: number | string, turmaId: string) =>

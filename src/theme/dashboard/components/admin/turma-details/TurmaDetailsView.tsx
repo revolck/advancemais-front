@@ -16,6 +16,7 @@ import { HeaderInfo } from "./components/HeaderInfo";
 import { AboutTab } from "./tabs/AboutTab";
 import { EstruturaTab } from "./tabs/EstruturaTab";
 import { InscricoesTab } from "./tabs/InscricoesTab";
+import { GestaoSituacaoTurma } from "./situacao/GestaoSituacaoTurma";
 import { HistoryTab } from "./tabs/HistoryTab";
 import { LinkedInstructorsTab } from "./tabs/LinkedInstructorsTab";
 
@@ -83,13 +84,15 @@ async function fetchInscricoesCursoPage(
   turmaId: string,
   page: number,
   includeProgress: boolean,
-  search?: string
+  search?: string,
+  status?: string
 ): Promise<InscricoesQueryData> {
   const response = await listInscricoesCurso(cursoId, {
     turmaId,
     page,
     pageSize: INSCRICOES_PAGE_SIZE,
     ...(search ? { search } : {}),
+    ...(status ? { status } : {}),
     ...(includeProgress ? { includeProgress: true } : {}),
   });
 
@@ -171,6 +174,9 @@ export function TurmaDetailsView({
   const [activeTab, setActiveTab] = useState("sobre");
   const [inscricoesPage, setInscricoesPage] = useState(1);
   const [inscricoesSearch, setInscricoesSearch] = useState("");
+  const [inscricoesStatus, setInscricoesStatus] = useState("");
+  // Alunos marcados para ação em lote (ids das inscrições; valem entre páginas)
+  const [selecionados, setSelecionados] = useState<Set<string>>(() => new Set());
   const queryKey = useMemo(
     () => queryKeys.turmas.detail(cursoId, turmaId),
     [cursoId, turmaId]
@@ -209,6 +215,8 @@ export function TurmaDetailsView({
       inscricoesPage,
       "search",
       inscricoesSearch,
+      "status",
+      inscricoesStatus,
     ],
     queryFn: async () => {
       try {
@@ -217,7 +225,8 @@ export function TurmaDetailsView({
           turmaId,
           inscricoesPage,
           false,
-          inscricoesSearch
+          inscricoesSearch,
+          inscricoesStatus
         );
         // Log temporário para depuração
         if (process.env.NODE_ENV === "development") {
@@ -281,6 +290,8 @@ export function TurmaDetailsView({
       inscricoesPage,
       "search",
       inscricoesSearch,
+      "status",
+      inscricoesStatus,
       "progress",
     ],
     queryFn: async () =>
@@ -290,7 +301,8 @@ export function TurmaDetailsView({
           turmaId,
           inscricoesPage,
           true,
-          inscricoesSearch
+          inscricoesSearch,
+          inscricoesStatus
         )
       ).items,
     enabled:
@@ -469,6 +481,42 @@ export function TurmaDetailsView({
         setInscricoesSearch(value);
       }}
       isLoadingProgress={inscricoesProgressQuery.isFetching}
+      filtroStatus={inscricoesStatus}
+      onFiltroStatus={(status) => {
+        setInscricoesPage(1);
+        setInscricoesStatus(status);
+      }}
+      selecao={
+        canManageTurma
+          ? {
+              selecionados,
+              alternar: (id) =>
+                setSelecionados((atual) => {
+                  const proximo = new Set(atual);
+                  if (proximo.has(id)) proximo.delete(id);
+                  else proximo.add(id);
+                  return proximo;
+                }),
+              alternarPagina: (ids, marcar) =>
+                setSelecionados((atual) => {
+                  const proximo = new Set(atual);
+                  ids.forEach((id) => (marcar ? proximo.add(id) : proximo.delete(id)));
+                  return proximo;
+                }),
+            }
+          : undefined
+      }
+      barraDeAcoes={
+        canManageTurma ? (
+          <GestaoSituacaoTurma
+            cursoId={cursoId}
+            turmaId={turmaId}
+            selecionados={Array.from(selecionados)}
+            onLimparSelecao={() => setSelecionados(new Set())}
+            onAlterado={() => void invalidateTurma()}
+          />
+        ) : undefined
+      }
     />
   );
 

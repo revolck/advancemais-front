@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, type ReactNode } from "react";
 import { EmptyState } from "@/components/ui/custom";
 import { Skeleton } from "@/components/ui/skeleton";
 import { InputCustom } from "@/components/ui/custom/input";
@@ -41,7 +41,27 @@ interface InscricoesTabProps {
   onPageChange?: (page: number) => void;
   onSearch?: (value: string) => void;
   isLoadingProgress?: boolean;
+  /** Seleção de alunos para ações em lote (só para quem gerencia a turma) */
+  selecao?: {
+    selecionados: Set<string>;
+    alternar: (inscricaoId: string) => void;
+    alternarPagina: (inscricaoIds: string[], marcar: boolean) => void;
+  };
+  /** Filtro por situação (vazio = todas) */
+  filtroStatus?: string;
+  onFiltroStatus?: (status: string) => void;
+  /** Barra de ações em lote, logo acima da tabela */
+  barraDeAcoes?: ReactNode;
 }
+
+const FILTROS_STATUS = [
+  { valor: "", rotulo: "Todas as situações" },
+  { valor: "INSCRITO", rotulo: "Inscrito (cursando)" },
+  { valor: "CONCLUIDO", rotulo: "Concluído" },
+  { valor: "CANCELADO", rotulo: "Cancelado (não concluiu)" },
+  { valor: "REPROVADO", rotulo: "Reprovado" },
+  { valor: "TRANCADO", rotulo: "Trancado" },
+];
 
 const getStatusColor = (status?: string) => {
   if (!status) return "bg-gray-100 text-gray-800 border-gray-200";
@@ -80,7 +100,7 @@ const getStatusLabel = (status?: string) => {
     CONCLUIDO: "Concluído",
     REPROVADO: "Reprovado",
     EM_ESTAGIO: "Em Estágio",
-    CANCELADO: "Cancelado",
+    CANCELADO: "Cancelado (não concluiu)",
     TRANCADO: "Trancado",
   };
   
@@ -141,6 +161,10 @@ export function InscricoesTab({
   onPageChange,
   onSearch,
   isLoadingProgress = false,
+  selecao,
+  filtroStatus = "",
+  onFiltroStatus,
+  barraDeAcoes,
 }: InscricoesTabProps) {
   // Estados de busca
   const [pendingSearchQuery, setPendingSearchQuery] = useState("");
@@ -273,7 +297,7 @@ export function InscricoesTab({
     );
   }
 
-  if (inscricoes.length === 0) {
+  if (inscricoes.length === 0 && !appliedSearchQuery && !filtroStatus) {
     return (
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
         <EmptyState
@@ -315,14 +339,51 @@ export function InscricoesTab({
           >
             Pesquisar
           </ButtonCustom>
+          {onFiltroStatus ? (
+            <label className="flex flex-col gap-1 text-sm font-medium text-gray-700">
+              Situação
+              <select
+                value={filtroStatus}
+                onChange={(event) => onFiltroStatus(event.target.value)}
+                className="h-12 cursor-pointer rounded-md border border-gray-200 bg-white px-3 text-sm text-gray-800"
+              >
+                {FILTROS_STATUS.map((f) => (
+                  <option key={f.valor} value={f.valor}>
+                    {f.rotulo}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
         </div>
       </div>
+
+      {barraDeAcoes}
 
       {/* Tabela */}
       <div className="overflow-x-auto">
         <Table className="min-w-[1100px]">
           <TableHeader>
             <TableRow className="border-gray-200 bg-gray-50/50">
+              {selecao ? (
+                <TableHead className="w-10 pl-4">
+                  <input
+                    type="checkbox"
+                    aria-label="Selecionar todos desta página"
+                    className="size-4 cursor-pointer accent-[var(--primary-color)]"
+                    checked={
+                      paginatedInscricoes.length > 0 &&
+                      paginatedInscricoes.every((i) => selecao.selecionados.has(i.id))
+                    }
+                    onChange={(event) =>
+                      selecao.alternarPagina(
+                        paginatedInscricoes.map((i) => i.id),
+                        event.target.checked
+                      )
+                    }
+                  />
+                </TableHead>
+              ) : null}
               <TableHead
                 className="font-medium text-gray-700 py-4"
                 aria-sort={
@@ -422,7 +483,7 @@ export function InscricoesTab({
           <TableBody>
             {paginatedInscricoes.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="py-8 text-center text-sm text-gray-500">
+                <TableCell colSpan={selecao ? 9 : 8} className="py-8 text-center text-sm text-gray-500">
                   {appliedSearchQuery ? (
                     <>Nenhum aluno encontrado com o termo "{appliedSearchQuery}"</>
                   ) : (
@@ -434,8 +495,22 @@ export function InscricoesTab({
               paginatedInscricoes.map((inscricao) => (
                 <TableRow
                   key={inscricao.id}
-                  className="border-gray-100 hover:bg-gray-50/50 transition-colors"
+                  className={cn(
+                    "border-gray-100 hover:bg-gray-50/50 transition-colors",
+                    selecao?.selecionados.has(inscricao.id) && "bg-[var(--primary-color)]/5"
+                  )}
                 >
+                  {selecao ? (
+                    <TableCell className="w-10 pl-4">
+                      <input
+                        type="checkbox"
+                        aria-label={`Selecionar ${inscricao.aluno?.nomeCompleto || inscricao.aluno?.nome || "aluno"}`}
+                        className="size-4 cursor-pointer accent-[var(--primary-color)]"
+                        checked={selecao.selecionados.has(inscricao.id)}
+                        onChange={() => selecao.alternar(inscricao.id)}
+                      />
+                    </TableCell>
+                  ) : null}
                   <TableCell className="py-4">
                     <div className="flex items-center gap-3">
                       <AvatarCustom
