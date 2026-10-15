@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import {
   ArrowRight,
+  CalendarX,
   CheckCircle2,
   EyeOff,
   FilePlus2,
@@ -44,6 +45,11 @@ const ACOES: Record<string, { titulo: string; icone: LucideIcon; cor: string }> 
     icone: Undo2,
     cor: "bg-slate-100 text-slate-600",
   },
+  VAGA_EXPIRADA: {
+    titulo: "Prazo de inscrições encerrado",
+    icone: CalendarX,
+    cor: "bg-slate-100 text-slate-600",
+  },
   VAGA_EXCLUIDA: { titulo: "Vaga excluída", icone: Trash2, cor: "bg-red-50 text-red-600" },
 };
 
@@ -79,6 +85,9 @@ function SeloStatus({ status }: { status: string }) {
 }
 
 function Autor({ entrada }: { entrada: EntradaHistoricoVaga }) {
+  if (!entrada.autor && entrada.origem === "HISTORICO") {
+    return <span className="text-gray-400">Automático (sistema)</span>;
+  }
   if (!entrada.autor) {
     return (
       <span className="text-gray-400">

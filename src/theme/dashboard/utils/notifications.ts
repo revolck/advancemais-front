@@ -49,6 +49,46 @@ export const TYPE_META: Record<
     tagBg: "bg-violet-50",
     tagText: "text-violet-700",
   },
+  VAGA_EM_ANALISE: {
+    label: "Em análise",
+    icon: "Hourglass",
+    bgColor: "bg-amber-100",
+    textColor: "text-amber-600",
+    tagBg: "bg-amber-50",
+    tagText: "text-amber-700",
+  },
+  VAGA_DESPUBLICADA: {
+    label: "Vaga despublicada",
+    icon: "EyeOff",
+    bgColor: "bg-orange-100",
+    textColor: "text-orange-600",
+    tagBg: "bg-orange-50",
+    tagText: "text-orange-700",
+  },
+  VAGA_EXPIRADA: {
+    label: "Vaga expirada",
+    icon: "CalendarX",
+    bgColor: "bg-slate-100",
+    textColor: "text-slate-600",
+    tagBg: "bg-slate-50",
+    tagText: "text-slate-700",
+  },
+  VAGA_SITUACAO_ALTERADA: {
+    label: "Situação da vaga",
+    icon: "RefreshCw",
+    bgColor: "bg-sky-100",
+    textColor: "text-sky-600",
+    tagBg: "bg-sky-50",
+    tagText: "text-sky-700",
+  },
+  VAGA_LIMITE_PLANO: {
+    label: "Limite do plano",
+    icon: "Gauge",
+    bgColor: "bg-rose-100",
+    textColor: "text-rose-600",
+    tagBg: "bg-rose-50",
+    tagText: "text-rose-700",
+  },
   PLANO_EXPIRANDO: {
     label: "Plano expirando",
     icon: "Clock",
@@ -184,6 +224,11 @@ export const VAGA_TYPES: NotificacaoTipo[] = [
   "VAGA_APROVADA",
   "NOVO_CANDIDATO",
   "VAGA_PREENCHIDA",
+  "VAGA_EM_ANALISE",
+  "VAGA_DESPUBLICADA",
+  "VAGA_EXPIRADA",
+  "VAGA_SITUACAO_ALTERADA",
+  "VAGA_LIMITE_PLANO",
 ];
 
 export const SISTEMA_TYPES: NotificacaoTipo[] = [
@@ -433,6 +478,8 @@ export function getNotificationAction(notification: Notificacao): {
       label = "Ver pagamento";
     } else if (notification.tipo === "RECUPERACAO_FINAL_PAGAMENTO_PENDENTE") {
       label = "Pagar";
+    } else if (notification.tipo === "VAGA_LIMITE_PLANO") {
+      label = "Ver planos";
     } else if (
       notification.tipo.startsWith("VAGA_") ||
       notification.tipo === "NOVO_CANDIDATO" ||

@@ -76,4 +76,20 @@ describe("dashboard notification utilities", () => {
     );
     expect(action.href).toBe("/dashboard/empresas/vagas/v-1");
   });
+
+  it("aviso de limite do plano leva aos planos; os demais avisos de vaga abrem a vaga", () => {
+    const limite = getNotificationAction(
+      buildNotification({ tipo: "VAGA_LIMITE_PLANO", linkAcao: "/dashboard/upgrade" })
+    );
+    expect(limite).toEqual({ href: "/dashboard/upgrade", label: "Ver planos" });
+
+    for (const tipo of ["VAGA_EM_ANALISE", "VAGA_DESPUBLICADA", "VAGA_EXPIRADA"] as const) {
+      const action = getNotificationAction(
+        buildNotification({ tipo, linkAcao: "/dashboard/empresas/vagas/v-1" })
+      );
+      expect(action).toEqual({ href: "/dashboard/empresas/vagas/v-1", label: "Ver vaga" });
+      expect(getNotificationMeta(buildNotification({ tipo })).label).not.toBe("Notificação");
+    }
+  });
 });
+
