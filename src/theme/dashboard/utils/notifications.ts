@@ -395,6 +395,18 @@ export function getNotificationMeta(
   );
 }
 
+/**
+ * Notificações de vaga antigas foram gravadas com "/empresa/vagas/{id}[/editar|/candidatos]",
+ * rota que não existe no painel (dava 404). Traduz para a página da vaga.
+ */
+export function corrigirLinkLegado(href: string): string {
+  const legado = href.match(/^\/empresa\/vagas\/([^/?#]+)(?:\/(editar|candidatos))?\/?$/);
+  if (!legado) return href;
+  const [, vagaId, sufixo] = legado;
+  const destino = `/dashboard/empresas/vagas/${vagaId}`;
+  return sufixo === "candidatos" ? `${destino}?tab=candidatos` : destino;
+}
+
 export function getNotificationAction(notification: Notificacao): {
   href?: string;
   label?: string;
@@ -404,7 +416,7 @@ export function getNotificationAction(notification: Notificacao): {
     getCandidaturaStatusNotificationData(notification);
   const explicitHref =
     typeof notification.linkAcao === "string" && notification.linkAcao.trim()
-      ? notification.linkAcao.trim()
+      ? corrigirLinkLegado(notification.linkAcao.trim())
       : null;
 
   if (explicitHref) {

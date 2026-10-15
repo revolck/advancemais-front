@@ -52,4 +52,28 @@ describe("dashboard notification utilities", () => {
       label: "Ver pagamento",
     });
   });
+
+  it("links antigos de vaga (/empresa/vagas/...) abrem a página da vaga no painel", () => {
+    const aprovada = getNotificationAction(
+      buildNotification({ tipo: "VAGA_APROVADA", linkAcao: "/empresa/vagas/v-1" })
+    );
+    expect(aprovada).toEqual({ href: "/dashboard/empresas/vagas/v-1", label: "Ver vaga" });
+
+    const rejeitada = getNotificationAction(
+      buildNotification({ tipo: "VAGA_REJEITADA", linkAcao: "/empresa/vagas/v-1/editar" })
+    );
+    expect(rejeitada.href).toBe("/dashboard/empresas/vagas/v-1");
+
+    const candidato = getNotificationAction(
+      buildNotification({ tipo: "NOVO_CANDIDATO", linkAcao: "/empresa/vagas/v-1/candidatos" })
+    );
+    expect(candidato.href).toBe("/dashboard/empresas/vagas/v-1?tab=candidatos");
+  });
+
+  it("links que já estão certos não mudam", () => {
+    const action = getNotificationAction(
+      buildNotification({ tipo: "VAGA_APROVADA", linkAcao: "/dashboard/empresas/vagas/v-1" })
+    );
+    expect(action.href).toBe("/dashboard/empresas/vagas/v-1");
+  });
 });

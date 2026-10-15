@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useSearchParams } from "next/navigation";
 import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { HorizontalTabs } from "@/components/ui/custom";
@@ -34,6 +35,8 @@ export function VagaDetailsView({ vagaId, initialData }: VagaDetailsViewProps) {
   const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
   const [acaoEmAndamento, setAcaoEmAndamento] = useState(false);
+  // ?tab=candidatos (ex.: notificação de novo candidato) abre direto na aba
+  const abaInicial = useSearchParams()?.get("tab") ?? null;
   const role = useUserRole();
   const podeAprovar =
     role === UserRole.ADMIN ||
@@ -342,7 +345,12 @@ export function VagaDetailsView({ vagaId, initialData }: VagaDetailsViewProps) {
         acaoEmAndamento={acaoEmAndamento}
       />
 
-      <HorizontalTabs items={tabs} defaultValue="sobre" />
+      <HorizontalTabs
+        items={tabs}
+        defaultValue={
+          tabs.some((tab) => tab.value === abaInicial) ? abaInicial! : "sobre"
+        }
+      />
 
       {/* TODO: Adicionar modais de edição e exclusão quando necessário */}
     </div>
