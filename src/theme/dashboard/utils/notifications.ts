@@ -89,6 +89,14 @@ export const TYPE_META: Record<
     tagBg: "bg-rose-50",
     tagText: "text-rose-700",
   },
+  VAGA_AGUARDANDO_APROVACAO: {
+    label: "Fila de aprovação",
+    icon: "ListChecks",
+    bgColor: "bg-indigo-100",
+    textColor: "text-indigo-600",
+    tagBg: "bg-indigo-50",
+    tagText: "text-indigo-700",
+  },
   PLANO_EXPIRANDO: {
     label: "Plano expirando",
     icon: "Clock",
@@ -229,6 +237,7 @@ export const VAGA_TYPES: NotificacaoTipo[] = [
   "VAGA_EXPIRADA",
   "VAGA_SITUACAO_ALTERADA",
   "VAGA_LIMITE_PLANO",
+  "VAGA_AGUARDANDO_APROVACAO",
 ];
 
 export const SISTEMA_TYPES: NotificacaoTipo[] = [
@@ -480,6 +489,8 @@ export function getNotificationAction(notification: Notificacao): {
       label = "Pagar";
     } else if (notification.tipo === "VAGA_LIMITE_PLANO") {
       label = "Ver planos";
+    } else if (notification.tipo === "VAGA_AGUARDANDO_APROVACAO") {
+      label = "Ver fila";
     } else if (
       notification.tipo.startsWith("VAGA_") ||
       notification.tipo === "NOVO_CANDIDATO" ||

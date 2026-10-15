@@ -91,5 +91,15 @@ describe("dashboard notification utilities", () => {
       expect(getNotificationMeta(buildNotification({ tipo })).label).not.toBe("Notificação");
     }
   });
+
+  it("aviso da fila de aprovação leva para as solicitações", () => {
+    const action = getNotificationAction(
+      buildNotification({
+        tipo: "VAGA_AGUARDANDO_APROVACAO",
+        linkAcao: "/dashboard/empresas/solicitacoes",
+      })
+    );
+    expect(action).toEqual({ href: "/dashboard/empresas/solicitacoes", label: "Ver fila" });
+  });
 });
 
