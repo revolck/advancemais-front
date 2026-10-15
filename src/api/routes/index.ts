@@ -652,6 +652,8 @@ export const vagasRoutes = {
     `${prefix}/empresas/vagas/${encodeURIComponent(id)}/enviar-para-analise`,
   despublicar: (id: string) =>
     `${prefix}/empresas/vagas/${encodeURIComponent(id)}/despublicar`,
+  historico: (id: string) =>
+    `${prefix}/empresas/vagas/${encodeURIComponent(id)}/historico`,
   processos: {
     list: (vagaId: string) =>
       `${prefix}/empresas/vagas/${encodeURIComponent(vagaId)}/processos`,

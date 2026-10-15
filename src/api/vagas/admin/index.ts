@@ -8,6 +8,7 @@ import type {
   VagaDeleteApiResponse,
   VagaCreateApiResponse,
   VagaDetail,
+  EntradaHistoricoVaga,
   VagaListParams,
   CreateVagaPayload,
   UpdateVagaPayload,
@@ -243,3 +244,16 @@ export async function despublicarVaga(id: string): Promise<VagaDetail> {
     retries: 0,
   });
 }
+
+/** Histórico da vaga (equipe: todas; empresa: só as próprias) */
+export async function getHistoricoVaga(id: string): Promise<EntradaHistoricoVaga[]> {
+  const resposta = await apiFetch<{ success: boolean; data: EntradaHistoricoVaga[] }>(
+    routes.vagas.historico(id),
+    {
+      init: { method: "GET", headers: buildAuthHeaders() },
+      cache: "no-cache",
+    },
+  );
+  return resposta.data ?? [];
+}
+

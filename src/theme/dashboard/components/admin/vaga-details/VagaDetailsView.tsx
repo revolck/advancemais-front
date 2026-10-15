@@ -29,6 +29,7 @@ import { LocalizacaoTab } from "./tabs/LocalizacaoTab";
 import { DetailsTab } from "./tabs/DetailsTab";
 import { CandidatosTab } from "./tabs/CandidatosTab";
 import { EditVagaTab } from "./tabs/EditVagaTab";
+import { HistoricoTab, historicoVagaQueryKey } from "./tabs/HistoricoTab";
 import type { VagaDetailsViewProps } from "./types";
 
 export function VagaDetailsView({ vagaId, initialData }: VagaDetailsViewProps) {
@@ -87,11 +88,14 @@ export function VagaDetailsView({ vagaId, initialData }: VagaDetailsViewProps) {
       queryClient.setQueryData(queryKey, updatedVaga);
       void queryClient.invalidateQueries({ queryKey });
       void queryClient.invalidateQueries({
+        queryKey: historicoVagaQueryKey(vagaId),
+      });
+      void queryClient.invalidateQueries({
         queryKey: ["admin-vagas-list"],
       });
       setIsEditing(false);
     },
-    [queryClient, queryKey],
+    [queryClient, queryKey, vagaId],
   );
 
   const handleEditCancel = useCallback(() => {
@@ -123,10 +127,13 @@ export function VagaDetailsView({ vagaId, initialData }: VagaDetailsViewProps) {
         // Recarrega também no erro: um passo pode ter dado certo (ex.: enviada, mas não aprovada)
         await queryClient.invalidateQueries({ queryKey });
         void queryClient.invalidateQueries({ queryKey: ["admin-vagas-list"] });
+        void queryClient.invalidateQueries({
+          queryKey: historicoVagaQueryKey(vagaId),
+        });
         setAcaoEmAndamento(false);
       }
     },
-    [queryClient, queryKey],
+    [queryClient, queryKey, vagaId],
   );
 
   // Empresa: envia para a fila de aprovação. Equipe: publica (aprovando na sequência).
@@ -306,6 +313,12 @@ export function VagaDetailsView({ vagaId, initialData }: VagaDetailsViewProps) {
       label: "Detalhes Técnicos",
       icon: "Settings",
       content: <DetailsTab vaga={vagaData} />,
+    },
+    {
+      value: "historico",
+      label: "Histórico",
+      icon: "History",
+      content: <HistoricoTab vagaId={vagaData.id} />,
     },
   ];
 

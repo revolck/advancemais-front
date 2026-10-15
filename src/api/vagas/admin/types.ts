@@ -118,6 +118,10 @@ export interface VagaUltimoCandidato {
 export interface VagaListItem {
   id: string;
   codigo: string;
+  /** Moderação (só no painel): motivo da última rejeição, observação da aprovação */
+  motivoRejeicao?: string | null;
+  observacoesAprovacao?: string | null;
+  moderadaEm?: string | null;
   slug: string;
   usuarioId: string;
   empresa: VagaEmpresa;
@@ -308,3 +312,30 @@ export interface VagaLimitReachedError extends VagaErrorResponse {
   message: "O limite de vagas em destaque do plano foi atingido.";
   limite: number;
 }
+
+// ============================================================================
+// HISTÓRICO DA VAGA
+// ============================================================================
+
+export interface EntradaHistoricoVaga {
+  id: string;
+  acao:
+    | "VAGA_CRIADA"
+    | "VAGA_EDITADA"
+    | "VAGA_ENVIADA_PARA_ANALISE"
+    | "VAGA_APROVADA"
+    | "VAGA_REJEITADA"
+    | "VAGA_DESPUBLICADA"
+    | "VAGA_ENVIO_CANCELADO"
+    | "VAGA_EXCLUIDA"
+    | string;
+  descricao: string;
+  de: VagaStatus | null;
+  para: VagaStatus | null;
+  criadoEm: string;
+  /** null = não registrado (ação anterior ao histórico) */
+  autor: { nome: string; papel: string } | null;
+  detalhes: { motivoRejeicao?: string; observacoes?: string; campos?: string[] };
+  origem: "HISTORICO" | "NOTIFICACAO" | "CADASTRO";
+}
+

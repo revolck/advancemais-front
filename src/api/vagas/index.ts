@@ -6,10 +6,12 @@ export {
   deleteVaga,
   enviarVagaParaAnalise,
   despublicarVaga,
+  getHistoricoVaga,
 } from "./admin";
 
 export type {
   VagaDetail,
+  EntradaHistoricoVaga,
   VagaDetailResponse,
   VagaListItem,
   VagaPagination,

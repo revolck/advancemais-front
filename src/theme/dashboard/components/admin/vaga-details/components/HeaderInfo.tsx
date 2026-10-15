@@ -66,8 +66,14 @@ export function HeaderInfo({
       ? "Aguardando aprovação"
       : "Vaga não publicada";
 
+  // Rejeitada: rascunho com o motivo que o setor de vagas deixou
+  const motivoRejeicao =
+    vaga.status === "RASCUNHO" ? vaga.motivoRejeicao?.trim() || null : null;
+
   // Aviso do próximo passo, para a empresa saber o que acontece com a vaga
-  const avisoDoStatus = isEmAnalise
+  const avisoDoStatus = motivoRejeicao
+    ? null
+    : isEmAnalise
     ? podeAprovar
       ? "Esta vaga está aguardando aprovação. Revise e aprove para publicar."
       : "Sua vaga está na fila de aprovação do setor de vagas. Assim que for aprovada, ela é publicada."
@@ -263,6 +269,27 @@ export function HeaderInfo({
           </Button>
         </div>
       </div>
+
+      {motivoRejeicao && (
+        <div className="mx-6 mb-6 flex items-start gap-2 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 sm:mx-8">
+          <Info className="mt-0.5 h-4 w-4 shrink-0 text-red-600" aria-hidden="true" />
+          <div className="space-y-1">
+            <p className="!mb-0 !text-sm font-semibold !leading-normal text-red-900">
+              {podeAprovar
+                ? "Vaga rejeitada pelo setor de vagas"
+                : "O setor de vagas rejeitou esta vaga"}
+            </p>
+            <p className="!mb-0 !text-sm !leading-normal text-red-900 whitespace-pre-line">
+              Motivo: {motivoRejeicao}
+            </p>
+            {!podeAprovar && (
+              <p className="!mb-0 !text-sm !leading-normal text-red-900">
+                Ajuste a vaga em Ações → Editar vaga e envie para aprovação de novo.
+              </p>
+            )}
+          </div>
+        </div>
+      )}
 
       {avisoDoStatus && (
         <div className="mx-6 mb-6 flex items-start gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 sm:mx-8">
