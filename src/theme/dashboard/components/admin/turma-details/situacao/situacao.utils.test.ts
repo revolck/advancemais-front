@@ -4,7 +4,7 @@ import type { ResultadoAdicao } from "@/api/cursos/situacao";
 import {
   adicaoPedeCiencia,
   ehTurmaMigrada,
-  frasesDaAdicao,
+  alertasDaAdicao,
   frasesDaRemocao,
   frasesDoResumo,
   motivoSemCobranca,
@@ -66,14 +66,8 @@ describe("matrícula pela equipe", () => {
     expect(termoDeBusca("Luana Liz")).toBe("Luana Liz");
   });
 
-  it("prévia de quem entra: quem entra, quem volta, vagas", () => {
-    const { frases, alertas } = frasesDaAdicao(
-      adicao({ reativar: [{ alunoId: "a2", nome: "Bia" }], vagas: { ocupadas: 10, limite: 30, depois: 12 } })
-    );
-    expect(frases).toContain("1 aluno entra na turma.");
-    expect(frases.join(" ")).toContain("1 aluno volta para a turma (tinha sido removido)");
-    expect(frases).toContain("Vagas: 10 de 30 ocupadas; ficam 12.");
-    expect(alertas).toEqual([]);
+  it("prévia sem nada fora do comum não tem alertas", () => {
+    expect(alertasDaAdicao(adicao())).toEqual([]);
   });
 
   it("turma concluída e vagas estouradas pedem ciência", () => {
@@ -87,7 +81,7 @@ describe("matrícula pela equipe", () => {
       },
       vagas: { ocupadas: 30, limite: 30, depois: 31 },
     });
-    const { alertas } = frasesDaAdicao(r);
+    const alertas = alertasDaAdicao(r);
     expect(alertas[0]).toMatch(/já foi concluída/);
     // Concluída já diz tudo: não repete "já começou" nem "prazo"
     expect(alertas.join(" ")).not.toMatch(/já começou|prazo/);

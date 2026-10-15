@@ -282,8 +282,11 @@ test.describe("turma: matrículas pela equipe (desktop)", () => {
     await expect(modal(page).getByText("Conta bloqueada")).toBeVisible();
 
     await modal(page).getByRole("button", { name: /Luana Liz Galvão/ }).click();
-    await expect(modal(page).getByTestId("previa-adicao")).toContainText("1 aluno entra na turma.");
+    await expect(modal(page).getByTestId("previa-entram")).toContainText("1");
+    await expect(modal(page).getByTestId("previa-vagas")).toContainText("3/40");
     await expect(modal(page).getByTestId("previa-adicao")).toContainText("A turma já começou");
+    // O rodapé diz o que falta
+    await expect(modal(page).getByText("Falta: pagamento, motivo.")).toBeVisible();
 
     const confirmar = modal(page).getByRole("button", { name: "Adicionar 1 aluno" });
     await expect(confirmar).toBeDisabled(); // falta pagamento e motivo
@@ -351,7 +354,7 @@ test.describe("turma: matrículas pela equipe (desktop)", () => {
     await expect(page.getByRole("menuitem", { name: "Remover da turma" })).toHaveCount(0);
     await page.getByRole("menuitem", { name: "Adicionar de volta à turma" }).click();
     await expect(modal(page).getByText("Caio Reis").first()).toBeVisible();
-    await expect(modal(page).getByTestId("previa-adicao")).toContainText("1 aluno volta para a turma");
+    await expect(modal(page).getByTestId("previa-voltam")).toContainText("1");
   });
 
   test("turma concluída: cobrança pelo site indisponível e avisos pedem confirmação", async ({ page }) => {
@@ -373,6 +376,7 @@ test.describe("turma: matrículas pela equipe (desktop)", () => {
     await expect(confirmar).toBeDisabled();
     await modal(page).getByText("Estou ciente dos avisos acima").click();
     await expect(confirmar).toBeEnabled();
+    if (CAPTURAS) await page.screenshot({ path: `${CAPTURAS}/turma-concluida-avisos.png` });
   });
 });
 
@@ -415,9 +419,10 @@ test.describe("aluno: associar a uma turma", () => {
 
     // Turma migrada: aviso desligado
     await expect(modal(page).getByRole("switch", { name: "Avisar o aluno" })).not.toBeChecked();
-    await expect(modal(page).getByTestId("previa-adicao")).toContainText("1 aluno entra na turma.");
+    await expect(modal(page).getByTestId("previa-entram")).toContainText("1");
     await modal(page).getByRole("radio", { name: /Cobrança pendente/ }).click();
     await modal(page).getByLabel("Motivo").fill("Vai pagar pelo site");
+    if (CAPTURAS) await page.screenshot({ path: `${CAPTURAS}/aluno-associar.png` });
     await modal(page).getByRole("button", { name: "Associar à turma" }).click();
 
     await expect(modal(page)).toHaveCount(0);

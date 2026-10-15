@@ -12,9 +12,12 @@ export const PREVIA = "Prévia da alteração";
 export const MOTIVO_MINIMO = 5;
 
 export const mensagemDoErro = (erro: unknown) =>
-  erro instanceof Error && erro.message ? erro.message : "Não foi possível concluir. Tente novamente.";
+  erro instanceof Error && erro.message
+    ? erro.message
+    : "Não foi possível concluir. Tente novamente.";
 
-export const motivoValido = (motivo: string) => motivo.trim().length >= MOTIVO_MINIMO;
+export const motivoValido = (motivo: string) =>
+  motivo.trim().length >= MOTIVO_MINIMO;
 
 export function CampoMotivo({
   valor,
@@ -38,7 +41,9 @@ export function CampoMotivo({
         rows={2}
         aria-label="Motivo"
       />
-      <div className={cn("text-xs", curto ? "text-amber-700" : "text-gray-500")}>
+      <div
+        className={cn("text-xs", curto ? "text-amber-700" : "text-gray-500")}
+      >
         {curto
           ? `Escreva pelo menos ${MOTIVO_MINIMO} caracteres.`
           : "Fica registrado no histórico de cada aluno."}
@@ -62,7 +67,12 @@ export function CampoAvisar({
 }) {
   return (
     <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-gray-200 p-3">
-      <Switch checked={valor} onCheckedChange={onChange} aria-label="Avisar o aluno" className="mt-0.5" />
+      <Switch
+        checked={valor}
+        onCheckedChange={onChange}
+        aria-label="Avisar o aluno"
+        className="mt-0.5"
+      />
       <span className="text-sm">
         <span className="font-medium text-gray-900">Avisar o aluno</span>
         <span className="block text-xs text-gray-500">
@@ -89,7 +99,8 @@ const OPCOES_PAGAMENTO: {
   {
     valor: "COBRANCA_PENDENTE",
     titulo: "Cobrança pendente",
-    texto: "A vaga fica reservada; o acesso libera quando o aluno pagar pelo site.",
+    texto:
+      "A vaga fica reservada; o acesso libera quando o aluno pagar pelo site.",
     Icone: CreditCard,
   },
 ];
@@ -105,13 +116,17 @@ export function CampoPagamento({
   semCobranca?: string | null;
 }) {
   return (
-    <fieldset className="space-y-1.5">
-      <legend className="mb-1.5 text-sm font-medium text-gray-900">
-        Pagamento <span className="text-red-500">*</span>
-      </legend>
-      <div className="grid gap-2 sm:grid-cols-2">
+    <fieldset>
+      {/* O título visível é o da etapa */}
+      <legend className="sr-only">Pagamento</legend>
+      <div
+        role="radiogroup"
+        aria-label="Pagamento"
+        className="grid gap-2 sm:grid-cols-2"
+      >
         {OPCOES_PAGAMENTO.map(({ valor: opcao, titulo, texto, Icone }) => {
-          const bloqueada = opcao === "COBRANCA_PENDENTE" && Boolean(semCobranca);
+          const bloqueada =
+            opcao === "COBRANCA_PENDENTE" && Boolean(semCobranca);
           const marcada = valor === opcao;
           return (
             <button
@@ -122,18 +137,45 @@ export function CampoPagamento({
               disabled={bloqueada}
               onClick={() => onChange(opcao)}
               className={cn(
-                "flex cursor-pointer items-start gap-2 rounded-xl border p-3 text-left text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-60",
+                "relative flex cursor-pointer items-start gap-3 rounded-xl border p-3 pr-9 text-left text-sm transition-colors disabled:cursor-not-allowed disabled:bg-gray-50 disabled:opacity-70",
                 marcada
                   ? "border-[var(--primary-color)] bg-[var(--primary-color)]/5 ring-1 ring-[var(--primary-color)]"
-                  : "border-gray-200 hover:bg-gray-50"
+                  : "border-gray-200 hover:border-gray-300 hover:bg-gray-50",
               )}
             >
-              <Icone className="mt-0.5 size-4 shrink-0 text-[var(--primary-color)]" />
+              <span
+                className={cn(
+                  "flex size-8 shrink-0 items-center justify-center rounded-lg",
+                  marcada
+                    ? "bg-[var(--primary-color)] text-white"
+                    : "bg-gray-100 text-gray-500",
+                )}
+              >
+                <Icone className="size-4" />
+              </span>
               <span>
-                <span className="block font-semibold text-gray-900">{titulo}</span>
-                <span className="mt-0.5 block text-xs leading-relaxed text-gray-600">
+                <span className="block font-semibold text-gray-900">
+                  {titulo}
+                </span>
+                <span
+                  className={cn(
+                    "mt-0.5 block text-xs leading-relaxed",
+                    bloqueada ? "text-amber-700" : "text-gray-600",
+                  )}
+                >
                   {bloqueada ? semCobranca : texto}
                 </span>
+              </span>
+              <span
+                aria-hidden
+                className={cn(
+                  "absolute right-3 top-3 flex size-4 items-center justify-center rounded-full border",
+                  marcada ? "border-[var(--primary-color)]" : "border-gray-300",
+                )}
+              >
+                {marcada ? (
+                  <span className="size-2 rounded-full bg-[var(--primary-color)]" />
+                ) : null}
               </span>
             </button>
           );
@@ -178,7 +220,10 @@ export function CaixaPrevia({
 }
 
 /** Lista curta de nomes ("Ana, Bia e mais 3") */
-export function nomesResumidos(nomes: (string | null | undefined)[], limite = 6): string {
+export function nomesResumidos(
+  nomes: (string | null | undefined)[],
+  limite = 6,
+): string {
   const validos = nomes.map((nome) => nome?.trim()).filter(Boolean) as string[];
   if (validos.length <= limite) return validos.join(", ");
   return `${validos.slice(0, limite).join(", ")} e mais ${validos.length - limite}`;

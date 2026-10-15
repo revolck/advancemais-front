@@ -103,40 +103,8 @@ export function termoDeBusca(texto: string): string {
 
 const v = (valor: number, um: string, varios: string) => (valor === 1 ? um : varios);
 
-/** Prévia de quem entra: o que acontece (frases) e o que pede atenção (alertas) */
-export function frasesDaAdicao(r: ResultadoAdicao): { frases: string[]; alertas: string[] } {
-  const frases: string[] = [];
-  if (r.adicionar.length > 0) {
-    frases.push(`${n(r.adicionar.length, "aluno entra", "alunos entram")} na turma.`);
-  }
-  if (r.reativar.length > 0) {
-    frases.push(
-      `${n(r.reativar.length, "aluno volta", "alunos voltam")} para a turma (${v(
-        r.reativar.length,
-        "tinha sido removido",
-        "tinham sido removidos"
-      )}), com a situação de antes.`
-    );
-  }
-  if (r.jaNaTurma.length > 0) {
-    frases.push(
-      `${n(r.jaNaTurma.length, "aluno já está", "alunos já estão")} na turma e ${v(
-        r.jaNaTurma.length,
-        "fica",
-        "ficam"
-      )} como ${v(r.jaNaTurma.length, "está", "estão")}.`
-    );
-  }
-  frases.push(
-    r.vagas.limite === null
-      ? "Vagas ilimitadas."
-      : `Vagas: ${r.vagas.ocupadas} de ${r.vagas.limite} ocupadas; ${v(
-          r.vagas.depois,
-          "fica",
-          "ficam"
-        )} ${r.vagas.depois}.`
-  );
-
+/** Prévia de quem entra: o que pede atenção antes de confirmar */
+export function alertasDaAdicao(r: ResultadoAdicao): string[] {
   const alertas: string[] = [];
   const { avisos } = r;
   if (avisos.turmaConcluida) {
@@ -157,7 +125,7 @@ export function frasesDaAdicao(r: ResultadoAdicao): { frases: string[]; alertas:
   avisos.outrasTurmasDoCurso.forEach((o) => {
     alertas.push(`${o.nome} já está em outra turma deste curso (${o.turma}).`);
   });
-  return { frases, alertas };
+  return alertas;
 }
 
 /** Turma concluída ou vagas estouradas: a equipe confirma que viu */
