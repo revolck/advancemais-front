@@ -56,6 +56,16 @@ const scrollBehaviorClasses: Record<ModalScrollBehavior, string> = {
   outside: "overflow-y-visible",
 };
 
+/**
+ * Layout do conteúdo. Com scroll "inside", o modal nunca passa da altura da tela
+ * (antes crescia além dela no celular e cabeçalho/rodapé ficavam inalcançáveis):
+ * só o ModalBody rola; sem ModalBody, o próprio conteúdo rola.
+ */
+const layoutDoConteudo = (scrollBehavior: ModalScrollBehavior) =>
+  scrollBehavior === "inside"
+    ? "flex flex-col max-h-[calc(100dvh-2rem)]"
+    : "grid";
+
 // Mapeamento de posições para classes
 const placementClasses: Record<ModalPlacement, string> = {
   auto: "top-[50%] left-[50%] translate-x-[-50%] translate-y-[-50%]",
@@ -462,7 +472,8 @@ export function ModalContent({
         }
       }}
       className={cn(
-        "fixed z-[101] grid w-full gap-4 border p-6 bg-background",
+        "fixed z-[101] w-full gap-4 border p-6 bg-background",
+        layoutDoConteudo(scrollBehavior),
         sizeClasses[size],
         radiusClasses[radius],
         shadowClasses[resolvedShadow],
@@ -639,7 +650,8 @@ export function ModalContentWrapper({
             if (shouldPreventDismiss) e.preventDefault();
           }}
           className={cn(
-            "fixed z-[101] grid w-full gap-4 p-6 bg-white transform-gpu will-change-transform",
+            "fixed z-[101] w-full gap-4 p-6 bg-white transform-gpu will-change-transform",
+            layoutDoConteudo(scrollBehavior),
             sizeClasses[size],
             radiusClasses[radius],
             shadowClasses[resolvedShadow],
@@ -763,6 +775,8 @@ export function ModalBody({
       data-slot="modal-body"
       className={cn(
         scrollBehaviorClasses[scrollBehavior],
+        // Com scroll "inside", o corpo ocupa o espaço que sobra e rola
+        scrollBehavior === "inside" && "min-h-0 flex-1",
         "py-2",
         classNames.body,
         className

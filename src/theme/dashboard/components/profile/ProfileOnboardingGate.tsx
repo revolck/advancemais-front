@@ -17,7 +17,7 @@ import {
   InputCustom,
   SelectCustom,
   SimpleTextarea,
-  DatePickerCustom,
+  DataDigitavelInput,
   type SelectOption,
 } from "@/components/ui/custom";
 import {
@@ -149,14 +149,16 @@ export function ProfileOnboardingGate() {
   const [hasCompletedStep1, setHasCompletedStep1] = useState(false);
   const cidadesCacheRef = useRef<Record<string, SelectOption[]>>({});
   const maskService = useMemo(() => MaskService.getInstance(), []);
+  // Até 110 anos atrás (antes 70: quem tinha mais de 70 anos não conseguia continuar)
   const minBirthDate = useMemo(() => {
     const today = new Date();
     return new Date(
-      today.getFullYear() - 70,
+      today.getFullYear() - 110,
       today.getMonth(),
       today.getDate()
     );
   }, []);
+  const maxBirthDate = useMemo(() => new Date(), []);
 
   const {
     data: profileResponse,
@@ -502,8 +504,27 @@ export function ProfileOnboardingGate() {
               orientation="vertical"
               className="space-y-6"
             >
+              {/* Celular: progresso compacto (a lista vertical de etapas ocupava a tela
+                  e o título "Endereço" ficava em cima dos campos da etapa 1) */}
+              <div className="md:hidden" data-testid="onboarding-progresso">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-gray-500">Etapa {activeStep} de 2</span>
+                  <span className="font-semibold text-gray-900">
+                    {activeStep === 1 ? "Informações" : "Endereço"}
+                  </span>
+                </div>
+                <div className="mt-2 grid grid-cols-2 gap-1.5" aria-hidden="true">
+                  <span className="h-1.5 rounded-full bg-[var(--primary-color)]" />
+                  <span
+                    className={`h-1.5 rounded-full ${
+                      activeStep === 2 ? "bg-[var(--primary-color)]" : "bg-gray-200"
+                    }`}
+                  />
+                </div>
+              </div>
+
               <div className="grid gap-2 md:grid-cols-[200px_1fr]">
-                <StepperNav className="gap-1 rounded-xl border border-transparent bg-white p-0 [&_[aria-hidden='true']]:bg-[var(--primary-color)]/20">
+                <StepperNav className="hidden md:flex gap-1 rounded-xl border border-transparent bg-white p-0 [&_[aria-hidden='true']]:bg-[var(--primary-color)]/20">
                   <StepperItem step={1} completed={hasCompletedStep1}>
                     <StepperTrigger className="w-full rounded-lg border border-transparent px-3 py-3 text-center transition-all data-[state=active]:border-transparent0 data-[state=active]:bg-white flex flex-col items-center gap-2">
                       <StepperIndicator className="data-[state=active]:border-[var(--primary-color)] data-[state=active]:bg-[var(--primary-color)] data-[state=active]:text-white data-[state=completed]:border-[var(--primary-color)] data-[state=completed]:bg-[var(--primary-color)] data-[state=completed]:text-white">
@@ -543,7 +564,7 @@ export function ProfileOnboardingGate() {
                   </StepperItem>
                 </StepperNav>
 
-                <StepperPanel className="rounded-xl border border-gray-100 bg-white p-5 sm:p-6">
+                <StepperPanel className="rounded-xl border border-gray-100 bg-white p-4 sm:p-6">
                   <StepperContent
                     value={1}
                     className="space-y-6 animate-in fade-in-0 slide-in-from-right-2 duration-200"
@@ -598,15 +619,15 @@ export function ProfileOnboardingGate() {
                           control={control}
                           name="dataNasc"
                           render={({ field }) => (
-                            <DatePickerCustom
+                            <DataDigitavelInput
+                              name="dataNasc"
                               label="Data de nascimento"
                               required
-                              years="old"
-                              maxDate={new Date()}
                               minDate={minBirthDate}
+                              maxDate={maxBirthDate}
+                              mensagemMax="A data de nascimento não pode ser no futuro."
                               value={field.value ?? null}
                               onChange={(d) => field.onChange(d)}
-                              placeholder="Selecione a data"
                               error={errors.dataNasc?.message as any}
                               disabled={isBusy}
                             />
@@ -627,8 +648,8 @@ export function ProfileOnboardingGate() {
                           error={errors.descricao?.message}
                           placeholder="Conte um pouco sobre você..."
                           maxLength={500}
-                          rows={7}
-                          className="min-h-[200px]!"
+                          rows={4}
+                          className="min-h-[120px]! sm:min-h-[200px]!"
                         />
                       )}
                     />

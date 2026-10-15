@@ -33,6 +33,8 @@ export interface DatePickerCustomProps {
   showOutsideDays?: boolean;
   minDate?: Date;
   maxDate?: Date;
+  /** Mês em que o calendário abre quando ainda não há data escolhida */
+  defaultMonth?: Date;
   disabledDates?: Date[];
   /**
    * Controle de faixa de anos no seletor (dropdown).
@@ -87,6 +89,7 @@ export function DatePickerCustom({
   showOutsideDays = false,
   minDate,
   maxDate,
+  defaultMonth,
   disabledDates,
   years = "default",
   error,
@@ -141,6 +144,17 @@ export function DatePickerCustom({
     }
     return true;
   }, [maxDate, minDate]);
+
+  // Sem data escolhida, abre no mês pedido ou em hoje (dentro do intervalo permitido).
+  // Antes abria no minDate: data de nascimento começava em 1956 e a pessoa tinha que
+  // atravessar décadas no calendário.
+  const mesInicial = useMemo(() => {
+    if (value) return value;
+    const alvo = defaultMonth ?? new Date();
+    if (minDate && alvo < minDate) return minDate;
+    if (maxDate && alvo > maxDate) return maxDate;
+    return alvo;
+  }, [defaultMonth, maxDate, minDate, value]);
 
   // Update trigger width when component mounts or when open state changes
   React.useEffect(() => {
@@ -222,16 +236,17 @@ export function DatePickerCustom({
         <PopoverContent
           className="z-[120] rounded-lg border border-gray-200 bg-white p-0 shadow-xl"
           style={{
-            width:
-              triggerWidth > 0 ? `${Math.max(triggerWidth, 400)}px` : "400px",
+            // Nunca mais largo que a tela (no celular, 400px fixos vazavam da tela)
+            width: `min(${Math.max(triggerWidth, 320)}px, calc(100vw - 1rem))`,
             maxWidth: "520px",
           }}
+          collisionPadding={8}
           align="start"
         >
           <Calendar
             mode="single"
             selected={value ?? undefined}
-            defaultMonth={value || minDate || new Date()}
+            defaultMonth={mesInicial}
             onSelect={(date) => {
               onChange(date ?? null);
               setOpen(false);

@@ -16,7 +16,7 @@ import {
   InputCustom,
   SelectCustom,
   SimpleTextarea,
-  DatePickerCustom,
+  DataDigitavelInput,
   type SelectOption,
 } from "@/components/ui/custom";
 import { toastCustom } from "@/components/ui/custom/toast";
@@ -174,7 +174,8 @@ export function ProfileForm({
 }: ProfileFormProps) {
   const minBirthDate = useMemo(() => {
     const today = new Date();
-    return new Date(today.getFullYear() - 70, today.getMonth(), today.getDate());
+    // Até 110 anos atrás (antes 70: quem tinha mais de 70 anos não conseguia salvar)
+    return new Date(today.getFullYear() - 110, today.getMonth(), today.getDate());
   }, []);
   const maskService = useMemo(() => MaskService.getInstance(), []);
   const ehEmpresa = isPessoaJuridica(profile);
@@ -873,7 +874,8 @@ export function ProfileForm({
                           : null;
 
                       return (
-                        <DatePickerCustom
+                        <DataDigitavelInput
+                          name="dataNasc"
                           label="Data de nascimento"
                           required
                           value={validDate}
@@ -887,9 +889,9 @@ export function ProfileForm({
                               setProfileValue("dataNasc", "");
                             }
                           }}
-                          placeholder="Selecione a data de nascimento"
                           error={errors.dataNasc?.message}
                           maxDate={new Date()} // Não permite datas futuras
+                          mensagemMax="A data de nascimento não pode ser no futuro."
                           minDate={minBirthDate}
                         />
                       );
