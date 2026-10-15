@@ -1,5 +1,6 @@
 "use client";
 
+import { useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import {
@@ -22,7 +23,10 @@ export interface NormalizedVagaFilters {
 }
 
 export interface VagasQueryResult {
+  /** Vagas da página atual (já filtradas) */
   vagas: VagaListItem[];
+  /** Todas as vagas das situações escolhidas: base das opções de empresa/localização */
+  todas: VagaListItem[];
   pagination: {
     page: number;
     pageSize: number;
@@ -42,47 +46,26 @@ const ALL_STATUSES: VagaStatus[] = [
   "EXPIRADO",
 ];
 
-function buildParams(filters: NormalizedVagaFilters): VagaListParams {
-  const params: VagaListParams = {
-    page: filters.page,
-    pageSize: filters.pageSize,
-  };
-
-  // Se não há status selecionado, enviar TODOS os status (API retorna PUBLICADO por padrão)
-  // Se há status selecionado, enviar o(s) status para filtrar
-  if (filters.statuses.length === 0) {
-    // Equipe (admin, moderador, setor de vagas) vê todas as situações, inclusive
-    // rascunho; a empresa vê as próprias (a API restringe)
-    params.status = ALL_STATUSES;
-  } else if (filters.statuses.length === 1) {
-    params.status = filters.statuses[0];
-  } else {
-    params.status = filters.statuses;
-  }
-
-  return params;
+/** Situações pedidas à API (sem filtro = todas) */
+function statusParaApi(filters: NormalizedVagaFilters): VagaListParams["status"] {
+  if (filters.statuses.length === 0) return ALL_STATUSES;
+  return filters.statuses.length === 1 ? filters.statuses[0] : filters.statuses;
 }
 
 function applyClientFilters(
   vagas: VagaListItem[],
-  filters: NormalizedVagaFilters,
-  userRole: UserRole | null
+  filters: NormalizedVagaFilters
 ): VagaListItem[] {
   const searchTerm = filters.search?.toLowerCase();
   const locationTerm = filters.location?.toLowerCase();
   const companyTerm = filters.company?.toLowerCase();
 
   return vagas.filter((vaga) => {
-    // SETOR_DE_VAGAS não pode ver vagas RASCUNHO
-    if (userRole === UserRole.SETOR_DE_VAGAS && vaga.status === "RASCUNHO") {
-      return false;
-    }
-
     const matchesStatus =
       filters.statuses.length === 0 || filters.statuses.includes(vaga.status);
 
     const matchesCompany =
-      !companyTerm || vaga.empresa.nome.toLowerCase() === companyTerm;
+      !companyTerm || vaga.empresa?.nome?.toLowerCase() === companyTerm;
 
     let matchesLocation = true;
     if (locationTerm) {
@@ -97,118 +80,68 @@ function applyClientFilters(
       matchesSearch =
         vaga.titulo.toLowerCase().includes(searchTerm) ||
         vaga.codigo.toLowerCase().includes(searchTerm) ||
-        vaga.empresa.nome.toLowerCase().includes(searchTerm);
+        Boolean(vaga.empresa?.nome?.toLowerCase().includes(searchTerm));
     }
 
     return matchesStatus && matchesCompany && matchesLocation && matchesSearch;
   });
 }
 
+/** Filtra e pagina no navegador, sobre todas as vagas carregadas */
+export function paginarVagas(
+  todas: VagaListItem[],
+  filters: NormalizedVagaFilters
+): VagasQueryResult {
+  const filtradas = applyClientFilters(todas, filters);
+  const total = filtradas.length;
+  const totalPages = Math.max(1, Math.ceil(total / filters.pageSize));
+  const page = Math.min(Math.max(1, filters.page), totalPages);
+  const inicio = (page - 1) * filters.pageSize;
+  return {
+    vagas: filtradas.slice(inicio, inicio + filters.pageSize),
+    todas,
+    pagination: { page, pageSize: filters.pageSize, total, totalPages },
+  };
+}
+
+/**
+ * Lista de vagas do painel. Busca TODAS as vagas das situações escolhidas (a API
+ * devolvia só a página pedida, sem total, e a tela mostrava 10 sem próxima página;
+ * busca e filtros de empresa/localização só olhavam essas 10). Paginação, busca e
+ * filtros rodam sobre o conjunto inteiro; trocar de página não chama a API de novo.
+ */
 export function useVagasDashboardQuery(
   filters: NormalizedVagaFilters,
   enabled: boolean
 ) {
   const userRole = useUserRole();
+  const status = statusParaApi(filters);
+  const { page, pageSize, statuses, company, location, search } = filters;
 
-  // Serializa os filtros para garantir que a queryKey seja diferente quando os valores mudam
-  const serializedFilters = JSON.stringify({
-    page: filters.page,
-    pageSize: filters.pageSize,
-    statuses: filters.statuses,
-    company: filters.company,
-    location: filters.location,
-    search: filters.search,
-    userRole, // Incluir role na queryKey para re-fetch quando mudar
-  });
+  // select estável: o React Query só recalcula a página quando os dados ou os filtros
+  // mudam (um objeto novo a cada render dispararia os efeitos que dependem de `data`)
+  const selecionar = useCallback(
+    (todas: VagaListItem[]) =>
+      paginarVagas(todas, { page, pageSize, statuses, company, location, search }),
+    // statuses entra pelo conteúdo, não pela referência do array
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [page, pageSize, statuses.join(","), company, location, search]
+  );
 
-  return useQuery<VagasQueryResult, Error>({
-    queryKey: ["admin-vagas-list", serializedFilters],
+  return useQuery<VagaListItem[], Error, VagasQueryResult>({
+    queryKey: ["admin-vagas-list", { status, userRole }],
     queryFn: async () => {
-      let vagas: VagaListItem[] = [];
-      let pagination = {
-        page: filters.page,
-        pageSize: filters.pageSize,
-        total: 0,
-        totalPages: 1,
-      };
-
-      // Se for EMPRESA, usa a rota específica /empresas/vagas/minhas
+      // Empresa: só as próprias (rota /minhas, já restrita pelo token)
       if (userRole === UserRole.EMPRESA) {
-        const params = buildParams(filters);
-        const response = await listMyCompanyVacancies({
-          page: params.page,
-          pageSize: params.pageSize,
-          status: params.status as any,
-        });
-
-        if ("data" in response) {
-          vagas = (response.data ?? []) as VagaListItem[];
-          pagination = {
-            page: response.pagination?.page ?? filters.page,
-            pageSize: response.pagination?.pageSize ?? filters.pageSize,
-            total: response.pagination?.total ?? vagas.length,
-            totalPages:
-              response.pagination?.totalPages ??
-              Math.max(1, Math.ceil((response.pagination?.total ?? vagas.length) / filters.pageSize)),
-          };
-        }
-      } else {
-        // Para outras roles, usa a rota padrão
-        const params = buildParams(filters);
-        const response = await listVagas(params);
-
-        if (Array.isArray(response)) {
-          vagas = response;
-          pagination.total = response.length;
-          pagination.totalPages = Math.max(
-            1,
-            Math.ceil(response.length / filters.pageSize)
-          );
-        } else {
-          vagas = response.data ?? [];
-          pagination = {
-            page: response.pagination?.page ?? filters.page,
-            pageSize: response.pagination?.pageSize ?? filters.pageSize,
-            total: response.pagination?.total ?? vagas.length,
-            totalPages:
-              response.pagination?.totalPages ??
-              Math.max(1, Math.ceil((response.pagination?.total ?? vagas.length) / filters.pageSize)),
-          };
-        }
+        const response = await listMyCompanyVacancies({ status: status as any });
+        return "data" in response ? ((response.data ?? []) as VagaListItem[]) : [];
       }
-
-      const filtered = applyClientFilters(vagas, filters, userRole);
-      const total = filtered.length;
-      const totalPages = Math.max(1, Math.ceil(total / filters.pageSize));
-
-      const hasClientFilters =
-        filters.statuses.length > 0 ||
-        !!filters.company ||
-        !!filters.location ||
-        !!filters.search;
-
-      const effectivePagination = hasClientFilters
-        ? {
-            page: Math.min(filters.page, totalPages),
-            pageSize: filters.pageSize,
-            total,
-            totalPages,
-          }
-        : {
-            page: pagination.page,
-            pageSize: pagination.pageSize,
-            total: pagination.total,
-            totalPages: pagination.totalPages,
-          };
-
-      return {
-        vagas: filtered,
-        pagination: effectivePagination,
-      } satisfies VagasQueryResult;
+      const response = await listVagas({ status });
+      return Array.isArray(response) ? response : (response.data ?? []);
     },
+    select: selecionar,
     enabled,
-    // Remover placeholderData para forçar re-render quando filtros mudam
-    staleTime: 0, // Sempre buscar dados frescos quando filtros mudam
+    staleTime: 0,
     gcTime: 5 * 60 * 1000,
   });
 }

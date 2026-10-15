@@ -121,6 +121,12 @@ export function VagasDashboard({
 
   const fetchedVagas = vagasQuery.data?.vagas ?? [];
   const vagas = vagasProp ?? fetchedVagas;
+  // Opções de empresa/localização a partir de todas as vagas, não só da página atual
+  const todasCarregadas = vagasQuery.data?.todas;
+  const vagasParaOpcoes = useMemo(
+    () => vagasProp ?? todasCarregadas ?? [],
+    [vagasProp, todasCarregadas]
+  );
 
   const pagination = shouldFetch
     ? vagasQuery.data?.pagination ?? {
@@ -169,17 +175,17 @@ export function VagasDashboard({
 
   const companyOptions = useMemo(() => {
     const companies = new Set<string>();
-    vagas.forEach((vaga) => {
-      companies.add(vaga.empresa.nome);
+    vagasParaOpcoes.forEach((vaga) => {
+      if (vaga.empresa?.nome) companies.add(vaga.empresa.nome);
     });
     return Array.from(companies)
       .sort((a, b) => a.localeCompare(b, "pt-BR"))
       .map((company) => ({ value: company, label: company }));
-  }, [vagas]);
+  }, [vagasParaOpcoes]);
 
   const locationOptions = useMemo(() => {
     const locations = new Set<string>();
-    vagas.forEach((vaga) => {
+    vagasParaOpcoes.forEach((vaga) => {
       const cidade = vaga.localizacao?.cidade ?? "—";
       const estado = vaga.localizacao?.estado ?? "—";
       locations.add(`${cidade}, ${estado}`);
@@ -187,7 +193,7 @@ export function VagasDashboard({
     return Array.from(locations)
       .sort((a, b) => a.localeCompare(b, "pt-BR"))
       .map((location) => ({ value: location, label: location }));
-  }, [vagas]);
+  }, [vagasParaOpcoes]);
 
   useEffect(() => {
     if (selectedCompanies.length > 0) {
