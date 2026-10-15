@@ -5,8 +5,8 @@ const BASE_URL =
   `http://localhost:${process.env.PLAYWRIGHT_PORT ?? process.env.PORT ?? 3001}`;
 
 const PERFIL_CREDENTIALS = {
-  documento: process.env.E2E_PERFIL_DOCUMENTO ?? "08705420440",
-  senha: process.env.E2E_PERFIL_SENHA ?? "Fili25061995*",
+  documento: process.env.E2E_PERFIL_DOCUMENTO ?? "",
+  senha: process.env.E2E_PERFIL_SENHA ?? "",
 };
 
 type LoginResponse = {
@@ -25,6 +25,11 @@ function escapeRegExp(value: string) {
 }
 
 async function loginPerfilUser(page: Page) {
+  // Conta de teste só por variável de ambiente (nunca credencial real no código)
+  if (!PERFIL_CREDENTIALS.documento || !PERFIL_CREDENTIALS.senha) {
+    test.skip(true, "Defina E2E_PERFIL_DOCUMENTO e E2E_PERFIL_SENHA (conta de teste).");
+    return;
+  }
   const response = await fetch(`${BASE_URL}/api/v1/usuarios/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },

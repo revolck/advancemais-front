@@ -31,8 +31,8 @@ const E2E_PREFIX = "E2E Avaliacao Sem Turma";
 const BASE_URL =
   process.env.PLAYWRIGHT_BASE_URL ||
   `http://localhost:${process.env.PLAYWRIGHT_PORT ?? process.env.PORT ?? 3001}`;
-const ADMIN_DOCUMENTO = process.env.E2E_ADMIN_DOCUMENTO ?? "08705420440";
-const ADMIN_SENHA = process.env.E2E_ADMIN_SENHA ?? "Fili25061995*";
+const ADMIN_DOCUMENTO = process.env.E2E_ADMIN_DOCUMENTO ?? "11111111111";
+const ADMIN_SENHA = process.env.E2E_ADMIN_SENHA ?? "AdminTeste@123";
 
 async function loginAsAdminOrSkip(page: Page) {
   await loginAsAdmin(page);

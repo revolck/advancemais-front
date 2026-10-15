@@ -51,3 +51,5 @@ next-env.d.ts
 
 # Keep only the example
 !.env.example
+# Tokens de login dos testes e2e (gerados localmente)
+.tmp/
