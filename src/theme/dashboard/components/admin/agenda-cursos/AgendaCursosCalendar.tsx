@@ -6,6 +6,7 @@ import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
+import listPlugin from "@fullcalendar/list";
 import ptBrLocale from "@fullcalendar/core/locales/pt-br";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -23,6 +24,7 @@ import {
 import { MultiSelectFilter } from "@/components/ui/custom/filters";
 import { ButtonCustom } from "@/components/ui/custom";
 import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useUserRole } from "@/hooks/useUserRole";
 import { UserRole } from "@/config/roles";
 import {
@@ -84,8 +86,26 @@ export function AgendaCursosCalendar() {
     "TURMA_FIM",
   ]);
   const [selectedEvent, setSelectedEvent] = useState<AgendaEvento | null>(null);
-  const [calendarView, setCalendarView] = useState<"dayGridMonth" | "timeGridWeek" | "timeGridDay">("dayGridMonth");
+  const [calendarView, setCalendarView] = useState<
+    "dayGridMonth" | "timeGridWeek" | "timeGridDay" | "listMonth"
+  >("dayGridMonth");
   const calendarRef = React.useRef<any>(null);
+  const isMobile = useIsMobile();
+
+  // Celular: abre em lista (grade de 7 colunas num celular deixava os eventos ilegíveis).
+  // Desktop continua como sempre (Mês); a lista só existe no celular.
+  useEffect(() => {
+    const trocar = (visao: typeof calendarView) => {
+      setCalendarView(visao);
+      calendarRef.current?.getApi()?.changeView(visao);
+    };
+    if (isMobile && (calendarView === "dayGridMonth" || calendarView === "timeGridWeek")) {
+      trocar("listMonth");
+    } else if (!isMobile && calendarView === "listMonth") {
+      trocar("dayGridMonth");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isMobile]);
   const [isNavigating, setIsNavigating] = useState(false);
   const expectedDateRef = React.useRef<Date | null>(null);
 
@@ -259,9 +279,9 @@ export function AgendaCursosCalendar() {
     <div className="space-y-6">
       {/* Card Principal */}
       <Card className="border border-gray-200/80 shadow-sm">
-        <CardContent className="p-6 pt-5">
-          {/* Header Customizado */}
-          <div className="mb-6 flex items-center justify-between pb-4 border-b border-gray-100">
+        <CardContent className="p-6 pt-5 max-md:p-3">
+          {/* Header Customizado (celular: data em cima, controles em linhas que cabem na tela) */}
+          <div className="mb-6 flex items-center justify-between pb-4 border-b border-gray-100 max-md:mb-3 max-md:flex-col max-md:items-stretch max-md:gap-3 max-md:pb-3">
             {/* Lado Esquerdo - Data */}
             <div className="flex items-center gap-3">
               <div className="flex flex-col items-center justify-center rounded-md bg-gray-100 px-2.5 py-1.5 min-w-[48px]">
@@ -277,7 +297,7 @@ export function AgendaCursosCalendar() {
                   {format(currentMonth, "MMMM yyyy", { locale: ptBR })}
                 </span>
                 {calendarView === "dayGridMonth" && (
-                  <span className="text-xs text-gray-500">
+                  <span className="text-xs text-gray-500 max-md:hidden">
                     {format(startOfMonth(currentMonth), "d 'de' MMM", { locale: ptBR })} - {format(endOfMonth(currentMonth), "d 'de' MMM, yyyy", { locale: ptBR })}
                   </span>
                 )}
@@ -285,8 +305,8 @@ export function AgendaCursosCalendar() {
             </div>
 
             {/* Lado Direito - Navegação e Filtros */}
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-0.5 rounded-md border border-gray-200 bg-white p-0.5">
+            <div className="flex items-center gap-3 max-md:grid max-md:grid-cols-2 max-md:gap-2">
+              <div className="flex items-center gap-0.5 rounded-md border border-gray-200 bg-white p-0.5 max-md:justify-between">
                 <button
                   onClick={() => {
                     const calendarApi = calendarRef.current?.getApi();
@@ -316,7 +336,7 @@ export function AgendaCursosCalendar() {
                 </button>
               </div>
               {/* Selects de Mês e Ano */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 max-md:order-2 max-md:col-span-2 max-md:grid max-md:grid-cols-[1fr_auto]">
                 <SelectCustom
                   mode="single"
                   value={String(currentMonth.getMonth())}
@@ -343,7 +363,7 @@ export function AgendaCursosCalendar() {
                   }}
                   options={monthOptions}
                   placeholder="Mês"
-                  className="w-[140px]"
+                  className="w-[140px] max-md:w-full"
                   size="sm"
                 />
                 <SelectCustom
@@ -386,16 +406,25 @@ export function AgendaCursosCalendar() {
                     calendarApi?.changeView(value);
                   }
                 }}
-                options={[
-                  { value: "dayGridMonth", label: "Mês" },
-                  { value: "timeGridWeek", label: "Semana" },
-                  { value: "timeGridDay", label: "Dia" },
-                ]}
+                options={
+                  isMobile
+                    ? [
+                        // Celular: Semana tem 7 colunas de horário, não cabe
+                        { value: "listMonth", label: "Lista" },
+                        { value: "dayGridMonth", label: "Mês" },
+                        { value: "timeGridDay", label: "Dia" },
+                      ]
+                    : [
+                        { value: "dayGridMonth", label: "Mês" },
+                        { value: "timeGridWeek", label: "Semana" },
+                        { value: "timeGridDay", label: "Dia" },
+                      ]
+                }
                 placeholder="Month view"
-                className="w-[140px]"
+                className="w-[140px] max-md:w-full"
                 size="sm"
               />
-              <div className="[&_button]:!h-10 [&_button]:!text-sm [&_button]:!py-2">
+              <div className="[&_button]:!h-10 [&_button]:!text-sm [&_button]:!py-2 max-md:order-3 max-md:col-span-2 max-md:[&_button]:w-full">
                 <MultiSelectFilter
                   title="Tipos"
                   placeholder="Tipos"
@@ -412,11 +441,11 @@ export function AgendaCursosCalendar() {
                         : nextValues.filter((tipo) => tipo !== "ENTREVISTA")
                     );
                   }}
-                  className="w-auto min-w-[180px]"
+                  className="w-auto min-w-[180px] max-md:w-full"
                 />
               </div>
               {incluirAniversariantes && (
-                <div className="inline-flex items-center gap-1.5 rounded-md border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-medium text-emerald-700">
+                <div className="inline-flex items-center gap-1.5 rounded-md border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-medium text-emerald-700 max-md:order-4 max-md:col-span-2 max-md:justify-center">
                   <Cake className="h-3.5 w-3.5" />
                   <span>{totalAniversariantes} aniversariante(s)</span>
                 </div>
@@ -425,7 +454,20 @@ export function AgendaCursosCalendar() {
           </div>
 
           {isLoading ? (
-            <div className="space-y-2">
+            <>
+            {/* Celular: esqueleto em lista, como a agenda vai aparecer */}
+            <div className="space-y-2 md:hidden">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-3 rounded-lg border border-gray-200/60 bg-white p-3">
+                  <Skeleton className="h-10 w-10 rounded-md" />
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-3 w-2/3 rounded" />
+                    <Skeleton className="h-3 w-1/3 rounded" />
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="space-y-2 max-md:hidden">
               {/* Skeleton dos dias da semana */}
               <div className="grid grid-cols-7 gap-2 mb-3">
                 {Array.from({ length: 7 }).map((_, i) => (
@@ -454,11 +496,12 @@ export function AgendaCursosCalendar() {
                 </div>
               ))}
             </div>
+            </>
           ) : (
             <div className="fullcalendar-wrapper">
               <FullCalendar
                 ref={calendarRef}
-                plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+                plugins={[dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin]}
                 initialView={calendarView}
                 initialDate={today}
                 locale={ptBrLocale}
@@ -512,7 +555,8 @@ export function AgendaCursosCalendar() {
                 allDayText="Dia inteiro"
                 weekends={true}
                 firstDay={0} // Domingo
-                dayMaxEvents={3}
+                // Celular, visão Mês: 1 evento por dia + "+N mais" (3 não cabiam na célula)
+                dayMaxEvents={isMobile ? 1 : 3}
                 moreLinkText={(num) => `+${num} mais`}
                 loading={(isLoading) => {
                   // Callback de loading do FullCalendar

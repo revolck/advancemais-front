@@ -1,4 +1,5 @@
-import { expect, test, type Page, type Route } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
+import { capturar, prepararPainelDoAluno, TELAS } from "./helpers/painel";
 
 /**
  * Painel no celular (cabeçalho, menu lateral e conteúdo) sem mudar o desktop.
@@ -6,85 +7,11 @@ import { expect, test, type Page, type Route } from "@playwright/test";
  * capturas (relógio congelado e animações desligadas, para comparar pixel a pixel).
  */
 
-const BASE_URL =
-  process.env.PLAYWRIGHT_BASE_URL ||
-  `http://localhost:${process.env.PLAYWRIGHT_PORT ?? process.env.PORT ?? 3001}`;
-const CAPTURAS = process.env.E2E_CAPTURAS_DIR;
-const AGORA = new Date("2026-10-15T17:55:00.000Z");
-
-const json = (route: Route, body: unknown) =>
-  route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(body) });
-
-async function prepararPainelDoAluno(page: Page) {
-  await page.clock.setFixedTime(AGORA);
-  await page.context().addCookies([
-    { name: "token", value: "e2e-token", url: BASE_URL },
-    { name: "user_role", value: "ALUNO_CANDIDATO", url: BASE_URL },
-  ]);
-  await page.addInitScript(() => window.localStorage.setItem("userName", "Luana"));
-
-  await page.route("**/api/v1/**", async (route) => {
-    const url = new URL(route.request().url());
-    if (url.pathname === "/api/v1/usuarios/perfil") {
-      return json(route, {
-        success: true,
-        message: "Perfil carregado",
-        usuario: {
-          id: "aluno-1",
-          email: "luana@teste.com",
-          nomeCompleto: "Luana Liz Galvão",
-          role: "ALUNO_CANDIDATO",
-          tipoUsuario: "PESSOA_FISICA",
-          authId: "auth-1",
-          emailVerificado: true,
-          telefone: "82999990000",
-          genero: "FEMININO",
-          dataNasc: "1995-06-25T03:00:00.000Z",
-          enderecos: [
-            { id: "e1", cep: "57084028", logradouro: "Rua Teste", numero: "245", bairro: "Benedito Bentes", cidade: "Maceió", estado: "AL" },
-          ],
-        },
-        stats: {
-          accountAge: 1,
-          hasCompletedProfile: true,
-          hasAddress: true,
-          totalOrders: 0,
-          totalSubscriptions: 0,
-          emailVerificationStatus: { verified: true, verifiedAt: null, tokenExpiration: null },
-        },
-      });
-    }
-    if (url.pathname === "/api/v1/candidatos/dashboard") {
-      return json(route, {
-        metricas: { cursosEmProgresso: 2, cursosConcluidos: 5, totalCursos: 7, totalCandidaturas: 12 },
-        cursos: [],
-        candidaturas: [],
-      });
-    }
-    if (url.pathname === "/api/v1/auth/google/status") return json(route, { conectado: false });
-    if (url.pathname === "/api/v1/notificacoes/contador") return json(route, { success: true, naoLidas: 3 });
-    if (url.pathname === "/api/v1/website/popups/active") return json(route, []);
-    return json(route, { success: true, data: [] });
-  });
-}
-
 async function abrirPainel(page: Page) {
   await page.goto("/dashboard", { waitUntil: "domcontentloaded" });
   await expect(page.getByText("Cursos em Progresso").first()).toBeVisible({ timeout: 60000 });
   await page.waitForTimeout(800); // fontes e transições
 }
-
-async function capturar(page: Page, nome: string) {
-  if (!CAPTURAS) return;
-  await page.screenshot({ path: `${CAPTURAS}/${nome}.png`, animations: "disabled" });
-}
-
-const TELAS = [
-  { nome: "desktop-1440", viewport: { width: 1440, height: 900 }, celular: false },
-  { nome: "desktop-1024", viewport: { width: 1024, height: 768 }, celular: false },
-  { nome: "tablet-800", viewport: { width: 800, height: 1000 }, celular: false },
-  { nome: "celular-390", viewport: { width: 390, height: 844 }, celular: true },
-];
 
 for (const tela of TELAS) {
   test.describe(`painel ${tela.nome}`, () => {
