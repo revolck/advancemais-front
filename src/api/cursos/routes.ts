@@ -114,6 +114,13 @@ export const cursosRoutes = {
           `${BASE}/${cursoId}/turmas/${turmaId}/inscricoes/${alunoId}`,
         situacao: (cursoId: number | string, turmaId: string) =>
           `${BASE}/${cursoId}/turmas/${turmaId}/inscricoes/situacao`,
+        /** Matrícula pela equipe: adicionar/reativar, remover e histórico */
+        equipe: (cursoId: number | string, turmaId: string) =>
+          `${BASE}/${cursoId}/turmas/${turmaId}/inscricoes/equipe`,
+        remover: (cursoId: number | string, turmaId: string) =>
+          `${BASE}/${cursoId}/turmas/${turmaId}/inscricoes/remover`,
+        historico: (cursoId: number | string, turmaId: string) =>
+          `${BASE}/${cursoId}/turmas/${turmaId}/inscricoes/historico`,
       },
       modulos: {
         list: (cursoId: number | string, turmaId: string) =>

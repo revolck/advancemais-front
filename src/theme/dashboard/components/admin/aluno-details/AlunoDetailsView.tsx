@@ -247,6 +247,14 @@ export function AlunoDetailsView({
           aluno={alunoData}
           inscricoes={inscricoes}
           isLoading={isReloading}
+          podeGerenciarTurmas={canViewHistory}
+          onTurmasAlteradas={() => {
+            void invalidateAluno();
+            void queryClient.invalidateQueries({
+              queryKey: ["usuarios", "historico", alunoId],
+              exact: false,
+            });
+          }}
         />
       ),
     },

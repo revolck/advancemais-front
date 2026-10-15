@@ -101,5 +101,28 @@ describe("dashboard notification utilities", () => {
     );
     expect(action).toEqual({ href: "/dashboard/empresas/solicitacoes", label: "Ver fila" });
   });
+  it("matrícula feita pela equipe: acesso liberado abre o curso; cobrança pendente vai pagar no site", () => {
+    const liberada = getNotificationAction(
+      buildNotification({
+        tipo: "TURMA_MATRICULA_ADICIONADA",
+        linkAcao: "/dashboard/cursos/alunos/cursos/c1/t1",
+      })
+    );
+    expect(liberada).toEqual({
+      href: "/dashboard/cursos/alunos/cursos/c1/t1",
+      label: "Acessar curso",
+    });
+
+    const pendente = getNotificationAction(
+      buildNotification({
+        tipo: "TURMA_MATRICULA_ADICIONADA",
+        linkAcao: "https://advancemais.com/cursos/c1",
+      })
+    );
+    expect(pendente).toEqual({ href: "https://advancemais.com/cursos/c1", label: "Pagar e começar" });
+    expect(getNotificationMeta(buildNotification({ tipo: "TURMA_MATRICULA_REMOVIDA" })).label).toBe(
+      "Curso"
+    );
+  });
 });
 

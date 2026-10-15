@@ -1,21 +1,26 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import Link from "next/link";
 import {
-  AlertTriangle,
   Award,
   CheckCircle2,
   ChevronDown,
-  ClipboardList,
+  History,
   Info,
+  MoreVertical,
+  RotateCcw,
+  UserMinus,
+  UserPlus,
   UserX,
   X,
 } from "lucide-react";
 
+import { createCertificado } from "@/api/cursos";
+import type { TurmaInscricao } from "@/api/cursos";
 import {
   alterarSituacaoInscricoes,
   emitirCertificadosConcluintes,
-  type AlterarSituacaoPayload,
   type ResultadoEmissaoConcluintes,
   type ResumoSituacao,
   type SituacaoInscricao,
@@ -29,21 +34,29 @@ import {
   ModalHeader,
   ModalTitle,
 } from "@/components/ui/custom/modal";
-import { SimpleTextarea } from "@/components/ui/custom/text-area";
 import { toastCustom } from "@/components/ui/custom/toast";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { extrairCpfs, frasesDoResumo, opcaoDa, OPCOES_SITUACAO } from "./situacao.utils";
+import { CampoAvisar, CampoMotivo, mensagemDoErro, motivoValido, PREVIA } from "./campos";
+import {
+  ModalAdicionarAlunos,
+  ModalRemoverAlunos,
+  type AlunoEscolhido,
+  type TurmaDaAcao,
+} from "./MatriculaEquipe";
+import { ehTurmaMigrada, frasesDoResumo, opcaoDa, OPCOES_SITUACAO } from "./situacao.utils";
 
 interface GestaoSituacaoTurmaProps {
   cursoId: number | string;
-  turmaId: string;
+  turma: TurmaDaAcao;
   selecionados: string[];
   onLimparSelecao: () => void;
   /** Recarrega a lista e os dados da turma depois de uma mudança */
@@ -51,18 +64,24 @@ interface GestaoSituacaoTurmaProps {
 }
 
 type Modal =
-  | { tipo: "selecionados"; situacao: SituacaoInscricao }
-  | { tipo: "cpfs" }
+  | { tipo: "situacao"; situacao: SituacaoInscricao }
+  | { tipo: "remover" }
+  | { tipo: "adicionar" }
   | { tipo: "emitir" }
   | null;
 
-const mensagemDoErro = (erro: unknown) =>
-  erro instanceof Error && erro.message ? erro.message : "Não foi possível concluir. Tente novamente.";
+/** Situação que a equipe escolhe, a partir do status da inscrição */
+const SITUACAO_DO_STATUS: Record<string, SituacaoInscricao> = {
+  CONCLUIDO: "CONCLUIU",
+  CANCELADO: "NAO_CONCLUIU",
+  REPROVADO: "REPROVADO",
+  TRANCADO: "TRANCADO",
+  INSCRITO: "CURSANDO",
+  EM_ANDAMENTO: "CURSANDO",
+};
 
-const PREVIA = "Prévia da alteração";
-
-/** Caixa com as frases da prévia */
-function Previa({ resumo, titulo }: { resumo: ResumoSituacao; titulo?: string }) {
+/** Caixa com as frases da prévia de situação */
+function Previa({ resumo }: { resumo: ResumoSituacao }) {
   const revoga = resumo.certificadosARevogar > 0;
   return (
     <div
@@ -71,7 +90,6 @@ function Previa({ resumo, titulo }: { resumo: ResumoSituacao; titulo?: string })
         revoga ? "border-amber-200 bg-amber-50/70 text-amber-950" : "border-gray-200 bg-gray-50 text-gray-800"
       )}
     >
-      {titulo ? <div className="mb-1 font-semibold">{titulo}</div> : null}
       <ul className="space-y-1 pl-4 [list-style:disc]">
         {frasesDoResumo(resumo).map((frase) => (
           <li key={frase}>{frase}</li>
@@ -81,30 +99,17 @@ function Previa({ resumo, titulo }: { resumo: ResumoSituacao; titulo?: string })
   );
 }
 
-function CampoMotivo({ valor, onChange }: { valor: string; onChange: (v: string) => void }) {
-  return (
-    <div className="space-y-1.5">
-      <div className="text-sm font-medium text-gray-900">
-        Motivo <span className="text-red-500">*</span>
-      </div>
-      <SimpleTextarea
-        value={valor}
-        onChange={(event) => onChange(event.target.value.slice(0, 480))}
-        placeholder="Ex.: não concluiu o curso na plataforma antiga"
-        rows={2}
-      />
-      <div className="text-xs text-gray-500">Fica registrado no histórico de cada aluno.</div>
-    </div>
-  );
-}
+/** Botão simples: o ButtonCustom (animado) dentro do gatilho do menu entra em laço */
+const GATILHO =
+  "inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-md border border-gray-200 bg-white px-3 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50";
 
 /**
- * Ações da equipe sobre os alunos da turma: mudar a situação (selecionados ou lista de
- * CPFs) e emitir os certificados de quem concluiu. Toda alteração mostra a prévia antes.
+ * Ações da equipe sobre os alunos da turma: adicionar, remover, mudar a situação dos
+ * selecionados e emitir os certificados de quem concluiu. Toda alteração mostra a prévia antes.
  */
 export function GestaoSituacaoTurma({
   cursoId,
-  turmaId,
+  turma,
   selecionados,
   onLimparSelecao,
   onAlterado,
@@ -129,7 +134,7 @@ export function GestaoSituacaoTurma({
             <ButtonCustom
               size="sm"
               variant="outline"
-              onClick={() => setModal({ tipo: "selecionados", situacao: "CONCLUIU" })}
+              onClick={() => setModal({ tipo: "situacao", situacao: "CONCLUIU" })}
             >
               <CheckCircle2 className="size-4 text-emerald-600" />
               Concluiu
@@ -137,18 +142,14 @@ export function GestaoSituacaoTurma({
             <ButtonCustom
               size="sm"
               variant="outline"
-              onClick={() => setModal({ tipo: "selecionados", situacao: "NAO_CONCLUIU" })}
+              onClick={() => setModal({ tipo: "situacao", situacao: "NAO_CONCLUIU" })}
             >
               <UserX className="size-4 text-red-600" />
-              Não concluiu (desvincular)
+              Não concluiu
             </ButtonCustom>
             <DropdownMenu>
-              {/* Botão simples: o ButtonCustom (animado) dentro do gatilho do menu entra em laço */}
               <DropdownMenuTrigger asChild>
-                <button
-                  type="button"
-                  className="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-md border border-gray-200 bg-white px-3 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
-                >
+                <button type="button" className={GATILHO}>
                   Outras situações
                   <ChevronDown className="size-4" />
                 </button>
@@ -160,13 +161,17 @@ export function GestaoSituacaoTurma({
                   <DropdownMenuItem
                     key={o.valor}
                     className="cursor-pointer"
-                    onSelect={() => setModal({ tipo: "selecionados", situacao: o.valor })}
+                    onSelect={() => setModal({ tipo: "situacao", situacao: o.valor })}
                   >
                     {o.rotulo}
                   </DropdownMenuItem>
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
+            <ButtonCustom size="sm" variant="outline" onClick={() => setModal({ tipo: "remover" })}>
+              <UserMinus className="size-4 text-red-600" />
+              Remover da turma
+            </ButtonCustom>
             <ButtonCustom size="sm" variant="ghost" onClick={onLimparSelecao}>
               <X className="size-4" />
               Limpar seleção
@@ -175,13 +180,13 @@ export function GestaoSituacaoTurma({
         ) : (
           <div className="flex items-center gap-2 text-sm text-gray-500">
             <Info className="size-4 shrink-0" />
-            Marque alunos na lista para mudar a situação, ou use uma lista de CPFs.
+            Marque alunos na lista para mudar a situação ou remover da turma.
           </div>
         )}
         <div className="flex flex-wrap gap-2">
-          <ButtonCustom size="sm" variant="outline" onClick={() => setModal({ tipo: "cpfs" })}>
-            <ClipboardList className="size-4" />
-            Atualizar por lista de CPFs
+          <ButtonCustom size="sm" variant="outline" onClick={() => setModal({ tipo: "adicionar" })}>
+            <UserPlus className="size-4" />
+            Adicionar alunos
           </ButtonCustom>
           <ButtonCustom size="sm" variant="primary" onClick={() => setModal({ tipo: "emitir" })}>
             <Award className="size-4" />
@@ -190,23 +195,41 @@ export function GestaoSituacaoTurma({
         </div>
       </div>
 
-      {modal?.tipo === "selecionados" ? (
-        <ModalSelecionados
+      {modal?.tipo === "situacao" ? (
+        <ModalSituacao
           cursoId={cursoId}
-          turmaId={turmaId}
+          turma={turma}
           situacao={modal.situacao}
           inscricaoIds={selecionados}
           onFechar={fechar}
           onConcluido={concluir}
         />
       ) : null}
-      {modal?.tipo === "cpfs" ? (
-        <ModalListaCpfs cursoId={cursoId} turmaId={turmaId} onFechar={fechar} onConcluido={concluir} />
+      {modal?.tipo === "remover" ? (
+        <ModalRemoverAlunos
+          cursoId={cursoId}
+          turma={turma}
+          inscricaoIds={selecionados}
+          onFechar={fechar}
+          onConcluido={concluir}
+        />
+      ) : null}
+      {modal?.tipo === "adicionar" ? (
+        <ModalAdicionarAlunos
+          cursoId={cursoId}
+          turma={turma}
+          onFechar={fechar}
+          onConcluido={(mensagem) => {
+            toastCustom.success(mensagem);
+            onAlterado();
+            fechar();
+          }}
+        />
       ) : null}
       {modal?.tipo === "emitir" ? (
         <ModalEmitir
           cursoId={cursoId}
-          turmaId={turmaId}
+          turmaId={turma.id}
           onFechar={fechar}
           onConcluido={(mensagem) => {
             toastCustom.success(mensagem);
@@ -219,33 +242,198 @@ export function GestaoSituacaoTurma({
 }
 
 // ---------------------------------------------------------------------------
+// Ações de um aluno (menu da linha)
+// ---------------------------------------------------------------------------
 
-function ModalSelecionados({
+type ModalDaLinha =
+  | { tipo: "situacao"; situacao: SituacaoInscricao }
+  | { tipo: "remover" }
+  | { tipo: "devolver" }
+  | { tipo: "certificado" }
+  | null;
+
+export function AcoesDoAluno({
   cursoId,
-  turmaId,
+  turma,
+  inscricao,
+  onAlterado,
+  mostrarHistorico = true,
+  className,
+}: {
+  cursoId: number | string;
+  turma: TurmaDaAcao;
+  inscricao: TurmaInscricao;
+  onAlterado: () => void;
+  /** Link para o histórico do aluno (dispensável quando já se está na página dele) */
+  mostrarHistorico?: boolean;
+  className?: string;
+}) {
+  const [modal, setModal] = useState<ModalDaLinha>(null);
+  const fechar = () => setModal(null);
+  const concluir = (mensagem: string) => {
+    toastCustom.success(mensagem);
+    onAlterado();
+    fechar();
+  };
+
+  const nome = inscricao.aluno?.nomeCompleto || inscricao.aluno?.nome || "Aluno";
+  const alunoId = inscricao.alunoId || inscricao.aluno?.id || "";
+  const status = (inscricao.statusInscricao || inscricao.status || "").toUpperCase();
+  const situacaoAtual = SITUACAO_DO_STATUS[status];
+  const removida = Boolean(inscricao.removidaEm);
+
+  return (
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            type="button"
+            aria-label={`Ações para ${nome}`}
+            className={cn(
+              "inline-flex size-8 cursor-pointer items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900",
+              className
+            )}
+          >
+            <MoreVertical className="size-4" />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="min-w-56">
+          <DropdownMenuLabel className="truncate text-xs font-normal text-gray-500">{nome}</DropdownMenuLabel>
+          {removida ? (
+            <DropdownMenuItem className="cursor-pointer" onSelect={() => setModal({ tipo: "devolver" })}>
+              <RotateCcw className="size-4" />
+              Adicionar de volta à turma
+            </DropdownMenuItem>
+          ) : (
+            <>
+              {OPCOES_SITUACAO.filter((o) => o.valor !== situacaoAtual).map((o) => (
+                <DropdownMenuItem
+                  key={o.valor}
+                  className="cursor-pointer"
+                  onSelect={() => setModal({ tipo: "situacao", situacao: o.valor })}
+                >
+                  {o.valor === "CONCLUIU" ? (
+                    <CheckCircle2 className="size-4 text-emerald-600" />
+                  ) : o.valor === "NAO_CONCLUIU" ? (
+                    <UserX className="size-4 text-red-600" />
+                  ) : (
+                    <span className="size-4" />
+                  )}
+                  {o.rotulo}
+                </DropdownMenuItem>
+              ))}
+              {status === "CONCLUIDO" ? (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="cursor-pointer"
+                    onSelect={() => setModal({ tipo: "certificado" })}
+                  >
+                    <Award className="size-4" />
+                    Emitir certificado
+                  </DropdownMenuItem>
+                </>
+              ) : null}
+            </>
+          )}
+          <DropdownMenuSeparator />
+          {alunoId && mostrarHistorico ? (
+            <DropdownMenuItem asChild className="cursor-pointer">
+              <Link href={`/dashboard/cursos/alunos/${alunoId}?tab=historico`}>
+                <History className="size-4" />
+                Ver histórico do aluno
+              </Link>
+            </DropdownMenuItem>
+          ) : null}
+          {!removida ? (
+            <DropdownMenuItem
+              variant="destructive"
+              className="cursor-pointer"
+              onSelect={() => setModal({ tipo: "remover" })}
+            >
+              <UserMinus className="size-4" />
+              Remover da turma
+            </DropdownMenuItem>
+          ) : null}
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      {modal?.tipo === "situacao" ? (
+        <ModalSituacao
+          cursoId={cursoId}
+          turma={turma}
+          situacao={modal.situacao}
+          inscricaoIds={[inscricao.id]}
+          nomeDoAluno={nome}
+          onFechar={fechar}
+          onConcluido={concluir}
+        />
+      ) : null}
+      {modal?.tipo === "remover" ? (
+        <ModalRemoverAlunos
+          cursoId={cursoId}
+          turma={turma}
+          inscricaoIds={[inscricao.id]}
+          onFechar={fechar}
+          onConcluido={concluir}
+        />
+      ) : null}
+      {modal?.tipo === "devolver" ? (
+        <ModalAdicionarAlunos
+          cursoId={cursoId}
+          turma={turma}
+          alunosIniciais={[{ id: alunoId, nome } satisfies AlunoEscolhido]}
+          onFechar={fechar}
+          onConcluido={concluir}
+        />
+      ) : null}
+      {modal?.tipo === "certificado" ? (
+        <ModalCertificadoDoAluno
+          cursoId={cursoId}
+          turmaId={turma.id}
+          alunoId={alunoId}
+          nome={nome}
+          onFechar={fechar}
+          onConcluido={concluir}
+        />
+      ) : null}
+    </>
+  );
+}
+
+// ---------------------------------------------------------------------------
+
+function ModalSituacao({
+  cursoId,
+  turma,
   situacao,
   inscricaoIds,
+  nomeDoAluno,
   onFechar,
   onConcluido,
 }: {
   cursoId: number | string;
-  turmaId: string;
+  turma: TurmaDaAcao;
   situacao: SituacaoInscricao;
   inscricaoIds: string[];
+  /** Ação de um aluno só (menu da linha) */
+  nomeDoAluno?: string;
   onFechar: () => void;
   onConcluido: (mensagem: string) => void;
 }) {
   const opcao = opcaoDa(situacao);
+  const migrada = ehTurmaMigrada(turma.codigo);
   // Os selecionados do momento em que o modal abriu (a lista ao fundo recarrega sozinha)
   const [ids] = useState(() => [...inscricaoIds]);
   const [motivo, setMotivo] = useState("");
+  const [avisar, setAvisar] = useState(!migrada);
   const [resumo, setResumo] = useState<ResumoSituacao | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [aplicando, setAplicando] = useState(false);
 
   useEffect(() => {
     let ativo = true;
-    alterarSituacaoInscricoes(cursoId, turmaId, {
+    alterarSituacaoInscricoes(cursoId, turma.id, {
       inscricaoIds: ids,
       situacao,
       motivo: PREVIA,
@@ -256,19 +444,24 @@ function ModalSelecionados({
     return () => {
       ativo = false;
     };
-  }, [cursoId, turmaId, ids, situacao]);
+  }, [cursoId, turma.id, ids, situacao]);
 
   const aplicar = async () => {
     if (!resumo) return;
     setAplicando(true);
     try {
-      const r = await alterarSituacaoInscricoes(cursoId, turmaId, {
+      const r = await alterarSituacaoInscricoes(cursoId, turma.id, {
         inscricaoIds: ids,
         situacao,
         motivo: motivo.trim(),
+        avisar,
         totalEsperado: resumo.atingidos,
       });
-      onConcluido(`${r.mudam} aluno(s) marcados como “${opcao.rotulo}”.`);
+      onConcluido(
+        nomeDoAluno
+          ? `${nomeDoAluno} marcado como “${opcao.rotulo}”.`
+          : `${r.mudam} aluno(s) marcados como “${opcao.rotulo}”.`
+      );
     } catch (e) {
       toastCustom.error(mensagemDoErro(e));
     } finally {
@@ -277,10 +470,16 @@ function ModalSelecionados({
   };
 
   return (
-    <ModalCustom isOpen onOpenChange={(aberto) => !aberto && !aplicando && onFechar()} size="lg" backdrop="blur">
+    <ModalCustom
+      isOpen
+      onOpenChange={(aberto) => !aberto && !aplicando && onFechar()}
+      size="lg"
+      backdrop="blur"
+      scrollBehavior="inside"
+    >
       <ModalContentWrapper>
         <ModalHeader>
-          <ModalTitle>{opcao.rotulo}</ModalTitle>
+          <ModalTitle>{nomeDoAluno ? `${opcao.rotulo}: ${nomeDoAluno}` : opcao.rotulo}</ModalTitle>
         </ModalHeader>
         <ModalBody className="space-y-4">
           <div className="flex items-start gap-2 text-sm text-gray-600">
@@ -295,6 +494,12 @@ function ModalSelecionados({
             <Skeleton className="h-16 w-full rounded-xl" />
           )}
           <CampoMotivo valor={motivo} onChange={setMotivo} />
+          <CampoAvisar
+            valor={avisar}
+            onChange={setAvisar}
+            migrada={migrada}
+            texto="Notificação no painel do aluno com a nova situação."
+          />
         </ModalBody>
         <ModalFooter>
           <div className="flex w-full flex-col-reverse gap-2 sm:flex-row sm:justify-end">
@@ -306,7 +511,7 @@ function ModalSelecionados({
               onClick={aplicar}
               isLoading={aplicando}
               loadingText="Aplicando..."
-              disabled={!resumo || resumo.mudam === 0 || motivo.trim().length < 3}
+              disabled={!resumo || resumo.mudam === 0 || !motivoValido(motivo)}
             >
               Aplicar para {resumo?.mudam ?? 0} aluno(s)
             </ButtonCustom>
@@ -319,214 +524,53 @@ function ModalSelecionados({
 
 // ---------------------------------------------------------------------------
 
-type ModoLista = "NAO_CONCLUIRAM" | "SO_ESTES_CONCLUIRAM" | "CONCLUIRAM";
-
-const MODOS_LISTA: { valor: ModoLista; titulo: string; texto: string }[] = [
-  {
-    valor: "NAO_CONCLUIRAM",
-    titulo: "Estes alunos NÃO concluíram",
-    texto: "Os CPFs da lista saem da turma (sem apagar o histórico) e perdem o certificado.",
-  },
-  {
-    valor: "SO_ESTES_CONCLUIRAM",
-    titulo: "Somente estes concluíram",
-    texto: "Os CPFs da lista ficam como concluídos; todos os outros da turma passam a “não concluiu”.",
-  },
-  {
-    valor: "CONCLUIRAM",
-    titulo: "Estes alunos concluíram",
-    texto: "Os CPFs da lista ficam como concluídos. Os demais não mudam.",
-  },
-];
-
-const operacoesDoModo = (
-  modo: ModoLista,
-  cpfs: string[]
-): Omit<AlterarSituacaoPayload, "motivo">[] => {
-  if (modo === "NAO_CONCLUIRAM") return [{ cpfs, situacao: "NAO_CONCLUIU" }];
-  if (modo === "CONCLUIRAM") return [{ cpfs, situacao: "CONCLUIU" }];
-  return [
-    { cpfs, situacao: "CONCLUIU" },
-    { cpfs, situacao: "NAO_CONCLUIU", aplicarAosDemais: true },
-  ];
-};
-
-function ModalListaCpfs({
+function ModalCertificadoDoAluno({
   cursoId,
   turmaId,
+  alunoId,
+  nome,
   onFechar,
   onConcluido,
 }: {
   cursoId: number | string;
   turmaId: string;
+  alunoId: string;
+  nome: string;
   onFechar: () => void;
   onConcluido: (mensagem: string) => void;
 }) {
-  const [texto, setTexto] = useState("");
-  const [modo, setModo] = useState<ModoLista>("NAO_CONCLUIRAM");
-  const [motivo, setMotivo] = useState("");
-  const [previas, setPrevias] = useState<ResumoSituacao[] | null>(null);
-  const [carregando, setCarregando] = useState(false);
-  const [aplicando, setAplicando] = useState(false);
-  const cpfs = useMemo(() => extrairCpfs(texto), [texto]);
-  const operacoes = useMemo(() => operacoesDoModo(modo, cpfs), [modo, cpfs]);
+  const [emitindo, setEmitindo] = useState(false);
 
-  // Mudou a lista ou o modo: a prévia antiga não vale
-  useEffect(() => setPrevias(null), [texto, modo]);
-
-  const verPrevia = async () => {
-    setCarregando(true);
+  const emitir = async () => {
+    setEmitindo(true);
     try {
-      const resultados: ResumoSituacao[] = [];
-      for (const op of operacoes) {
-        resultados.push(
-          await alterarSituacaoInscricoes(cursoId, turmaId, { ...op, motivo: PREVIA, simular: true })
-        );
-      }
-      setPrevias(resultados);
+      await createCertificado(cursoId, turmaId, { alunoId });
+      onConcluido(`Certificado de ${nome} emitido.`);
     } catch (e) {
       toastCustom.error(mensagemDoErro(e));
     } finally {
-      setCarregando(false);
+      setEmitindo(false);
     }
   };
-
-  const aplicar = async () => {
-    if (!previas) return;
-    setAplicando(true);
-    try {
-      let total = 0;
-      for (const [i, op] of operacoes.entries()) {
-        if (previas[i].mudam === 0) continue;
-        const r = await alterarSituacaoInscricoes(cursoId, turmaId, {
-          ...op,
-          motivo: motivo.trim(),
-          totalEsperado: previas[i].atingidos,
-        });
-        total += r.mudam;
-      }
-      onConcluido(`Lista aplicada: ${total} aluno(s) atualizados.`);
-    } catch (e) {
-      toastCustom.error(mensagemDoErro(e));
-    } finally {
-      setAplicando(false);
-    }
-  };
-
-  const naoEncontrados = previas?.[0]?.naoEncontrados ?? [];
-  const invalidos = previas?.[0]?.cpfsInvalidos ?? [];
-  const mudancas = previas?.reduce((soma, p) => soma + p.mudam, 0) ?? 0;
 
   return (
-    <ModalCustom
-      isOpen
-      onOpenChange={(aberto) => !aberto && !aplicando && onFechar()}
-      size="2xl"
-      backdrop="blur"
-      scrollBehavior="inside"
-    >
+    <ModalCustom isOpen onOpenChange={(aberto) => !aberto && !emitindo && onFechar()} size="md" backdrop="blur">
       <ModalContentWrapper>
         <ModalHeader>
-          <ModalTitle>Atualizar por lista de CPFs</ModalTitle>
+          <ModalTitle>Emitir certificado</ModalTitle>
         </ModalHeader>
-        <ModalBody className="space-y-4">
-          <div className="space-y-1.5">
-            <div className="text-sm font-medium text-gray-900">CPFs</div>
-            <SimpleTextarea
-              value={texto}
-              onChange={(event) => setTexto(event.target.value)}
-              placeholder={"Cole a coluna de CPFs da planilha (um por linha)\n111.111.111-11\n22222222222"}
-              rows={6}
-            />
-            <div className="text-xs text-gray-500">
-              {cpfs.length} CPF(s) na lista. Pontos e traços são ignorados; zeros que o Excel tirou do
-              começo são completados.
-            </div>
-          </div>
-
-          <div className="grid gap-2 sm:grid-cols-3">
-            {MODOS_LISTA.map((m) => (
-              <button
-                key={m.valor}
-                type="button"
-                onClick={() => setModo(m.valor)}
-                aria-pressed={modo === m.valor}
-                className={cn(
-                  "cursor-pointer rounded-xl border p-3 text-left text-sm transition-colors",
-                  modo === m.valor
-                    ? "border-[var(--primary-color)] bg-[var(--primary-color)]/5 ring-1 ring-[var(--primary-color)]"
-                    : "border-gray-200 hover:bg-gray-50"
-                )}
-              >
-                <div className="font-semibold text-gray-900">{m.titulo}</div>
-                <div className="mt-1 text-xs leading-relaxed text-gray-600">{m.texto}</div>
-              </button>
-            ))}
-          </div>
-
-          {previas ? (
-            <div className="space-y-2">
-              {previas.map((p, i) => (
-                <Previa
-                  key={i}
-                  resumo={p}
-                  titulo={
-                    operacoes[i].aplicarAosDemais
-                      ? "Demais alunos da turma → Não concluiu"
-                      : `CPFs da lista → ${opcaoDa(operacoes[i].situacao).rotulo}`
-                  }
-                />
-              ))}
-              {naoEncontrados.length > 0 || invalidos.length > 0 ? (
-                <div className="flex items-start gap-2 rounded-xl border border-gray-200 p-3 text-xs text-gray-600">
-                  <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-500" />
-                  <div>
-                    {naoEncontrados.length > 0 ? (
-                      <div>
-                        <strong>{naoEncontrados.length}</strong> CPF(s) não estão nesta turma:{" "}
-                        {naoEncontrados.slice(0, 15).join(", ")}
-                        {naoEncontrados.length > 15 ? "…" : ""}
-                      </div>
-                    ) : null}
-                    {invalidos.length > 0 ? (
-                      <div>
-                        <strong>{invalidos.length}</strong> valor(es) não são CPF: {invalidos.slice(0, 10).join(", ")}
-                      </div>
-                    ) : null}
-                  </div>
-                </div>
-              ) : null}
-            </div>
-          ) : null}
-
-          {previas ? <CampoMotivo valor={motivo} onChange={setMotivo} /> : null}
+        <ModalBody className="text-sm text-gray-700">
+          Emitir o certificado de <strong>{nome}</strong> nesta turma? Ele passa a valer na consulta pública
+          e o aluno pode baixar pelo painel.
         </ModalBody>
         <ModalFooter>
           <div className="flex w-full flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-            <ButtonCustom variant="outline" onClick={onFechar} disabled={aplicando}>
+            <ButtonCustom variant="outline" onClick={onFechar} disabled={emitindo}>
               Cancelar
             </ButtonCustom>
-            {previas ? (
-              <ButtonCustom
-                variant={previas.some((p) => p.certificadosARevogar > 0) ? "danger" : "primary"}
-                onClick={aplicar}
-                isLoading={aplicando}
-                loadingText="Aplicando..."
-                disabled={mudancas === 0 || motivo.trim().length < 3}
-              >
-                Aplicar para {mudancas} aluno(s)
-              </ButtonCustom>
-            ) : (
-              <ButtonCustom
-                variant="primary"
-                onClick={verPrevia}
-                isLoading={carregando}
-                loadingText="Conferindo..."
-                disabled={cpfs.length === 0}
-              >
-                Ver prévia
-              </ButtonCustom>
-            )}
+            <ButtonCustom variant="primary" onClick={emitir} isLoading={emitindo} loadingText="Emitindo...">
+              Emitir certificado
+            </ButtonCustom>
           </div>
         </ModalFooter>
       </ModalContentWrapper>

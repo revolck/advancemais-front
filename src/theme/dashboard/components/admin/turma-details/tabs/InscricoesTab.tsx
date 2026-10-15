@@ -52,6 +52,8 @@ interface InscricoesTabProps {
   onFiltroStatus?: (status: string) => void;
   /** Barra de ações em lote, logo acima da tabela */
   barraDeAcoes?: ReactNode;
+  /** Menu de ações de cada aluno (só para quem gerencia a turma) */
+  acoesDaLinha?: (inscricao: TurmaInscricao) => ReactNode;
 }
 
 const FILTROS_STATUS = [
@@ -61,7 +63,16 @@ const FILTROS_STATUS = [
   { valor: "CANCELADO", rotulo: "Cancelado (não concluiu)" },
   { valor: "REPROVADO", rotulo: "Reprovado" },
   { valor: "TRANCADO", rotulo: "Trancado" },
+  { valor: "REMOVIDOS", rotulo: "Removidos da turma" },
 ];
+
+const dataHora = (valor?: string | null) =>
+  valor
+    ? `${new Date(valor).toLocaleDateString("pt-BR")} ${new Date(valor).toLocaleTimeString("pt-BR", {
+        hour: "2-digit",
+        minute: "2-digit",
+      })}`
+    : "—";
 
 const getStatusColor = (status?: string) => {
   if (!status) return "bg-gray-100 text-gray-800 border-gray-200";
@@ -165,6 +176,7 @@ export function InscricoesTab({
   filtroStatus = "",
   onFiltroStatus,
   barraDeAcoes,
+  acoesDaLinha,
 }: InscricoesTabProps) {
   // Estados de busca
   const [pendingSearchQuery, setPendingSearchQuery] = useState("");
@@ -300,6 +312,8 @@ export function InscricoesTab({
   if (inscricoes.length === 0 && !appliedSearchQuery && !filtroStatus) {
     return (
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        {/* A equipe adiciona os primeiros alunos por aqui */}
+        {barraDeAcoes}
         <EmptyState
           illustration="userProfiles"
           illustrationAlt="Nenhuma inscrição encontrada"
@@ -477,7 +491,7 @@ export function InscricoesTab({
               <TableHead className="font-medium text-gray-700">Pagamento</TableHead>
               <TableHead className="font-medium text-gray-700">Andamento</TableHead>
               <TableHead className="font-medium text-gray-700">Inscrito em</TableHead>
-              <TableHead className="w-12" />
+              <TableHead className={acoesDaLinha ? "w-20" : "w-12"} />
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -549,15 +563,32 @@ export function InscricoesTab({
                   </span>
                 </TableCell>
                 <TableCell className="py-4">
-                  <Badge
-                    variant="outline"
-                    className={cn(
-                      "text-xs font-medium",
-                      getStatusColor(inscricao.statusInscricao || inscricao.status)
-                    )}
-                  >
-                    {getStatusLabel(inscricao.statusInscricao || inscricao.status)}
-                  </Badge>
+                  {inscricao.removidaEm ? (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Badge
+                          variant="outline"
+                          className="cursor-help border-gray-300 bg-gray-100 text-xs font-medium text-gray-700"
+                        >
+                          Removido da turma
+                        </Badge>
+                      </TooltipTrigger>
+                      <TooltipContent sideOffset={6} className="max-w-xs">
+                        Removido em {dataHora(inscricao.removidaEm)}
+                        {inscricao.motivoRemocao ? `: ${inscricao.motivoRemocao}` : ""}
+                      </TooltipContent>
+                    </Tooltip>
+                  ) : (
+                    <Badge
+                      variant="outline"
+                      className={cn(
+                        "text-xs font-medium",
+                        getStatusColor(inscricao.statusInscricao || inscricao.status)
+                      )}
+                    >
+                      {getStatusLabel(inscricao.statusInscricao || inscricao.status)}
+                    </Badge>
+                  )}
                 </TableCell>
                 <TableCell className="py-4">
                   <Badge
@@ -603,15 +634,13 @@ export function InscricoesTab({
                 <TableCell className="py-4">
                   <div className="flex items-center gap-2 text-sm text-gray-900">
                     <Calendar className="h-4 w-4 flex-shrink-0 text-gray-400" />
-                    <span>
-                      {inscricao.criadoEm
-                        ? `${new Date(inscricao.criadoEm).toLocaleDateString("pt-BR")} ${new Date(inscricao.criadoEm).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`
-                        : "—"}
-                    </span>
+                    <span>{dataHora(inscricao.criadoEm)}</span>
                   </div>
                 </TableCell>
                 <TableCell className="py-4">
-                  {inscricao.aluno?.id && (
+                  <div className="flex items-center justify-end gap-1">
+                    {acoesDaLinha?.(inscricao)}
+                    {inscricao.aluno?.id && (
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
@@ -632,7 +661,8 @@ export function InscricoesTab({
                         Visualizar aluno
                       </TooltipContent>
                     </Tooltip>
-                  )}
+                    )}
+                  </div>
                 </TableCell>
               </TableRow>
             ))

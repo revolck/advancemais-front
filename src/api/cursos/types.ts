@@ -309,6 +309,11 @@ export interface TurmaInscricao {
   progresso?: number;
   criadoEm?: string;
   observacoes?: string;
+  /** EQUIPE quando a matrícula foi feita pela equipe */
+  origem?: string | null;
+  /** Preenchidos quando a equipe tirou o aluno da turma (o registro continua) */
+  removidaEm?: string | null;
+  motivoRemocao?: string | null;
   aluno?: {
     id: string;
     nome?: string;
@@ -752,6 +757,10 @@ export interface CursoAlunoInscricao {
   id: string;
   statusInscricao?: string;
   status?: string;
+  statusPagamento?: string | null;
+  origem?: string | null;
+  removidaEm?: string | null;
+  motivoRemocao?: string | null;
   progresso?: number;
   criadoEm?: string;
   dataInscricao?: string;
@@ -969,6 +978,8 @@ export interface ListInscricoesCursoParams {
   search?: string;
   turmaId?: string | string[];
   cidade?: string | string[];
+  /** Removidos da turma pela equipe: escondidos por padrão */
+  removidas?: "somente" | "incluir";
 }
 
 export interface GetTurmaByIdParams {

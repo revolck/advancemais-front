@@ -21,6 +21,8 @@ export interface AlterarSituacaoPayload {
   simular?: boolean;
   /** Quantos a prévia mostrou (a API recusa se a turma mudou) */
   totalEsperado?: number;
+  /** Notificação no painel para quem teve a situação alterada */
+  avisar?: boolean;
 }
 
 export interface ResumoSituacao {
@@ -83,3 +85,117 @@ export async function emitirCertificadosConcluintes(
   );
   return resposta.data;
 }
+
+// ---------------------------------------------------------------------------
+// Matrícula pela equipe
+// ---------------------------------------------------------------------------
+
+/** Concedido pela equipe (acesso liberado) ou cobrança pendente (aluno paga pelo site) */
+export type PagamentoMatricula = "CONCEDIDO" | "COBRANCA_PENDENTE";
+
+export interface AlunoDaAcao {
+  alunoId: string;
+  nome: string | null;
+}
+
+export interface ResultadoAdicao {
+  aplicado: boolean;
+  adicionar: AlunoDaAcao[];
+  reativar: AlunoDaAcao[];
+  jaNaTurma: AlunoDaAcao[];
+  recusados: (AlunoDaAcao & { motivo: string })[];
+  avisos: {
+    turmaConcluida: boolean;
+    turmaIniciada: boolean;
+    prazoDeInscricaoEncerrado: boolean;
+    excedeVagas: boolean;
+    outrasTurmasDoCurso: { alunoId: string; nome: string; turma: string }[];
+  };
+  vagas: { ocupadas: number; limite: number | null; depois: number };
+}
+
+export interface ResultadoRemocao {
+  aplicado: boolean;
+  remover: { inscricaoId: string; alunoId: string; nome: string }[];
+  jaRemovidas: number;
+  naoEncontradas: number;
+  certificadosARevogar: number;
+  cobrancasACancelar: number;
+}
+
+export interface EntradaHistoricoInscricao {
+  id: string;
+  inscricaoId: string | null;
+  /** INSCRICAO_ADICIONADA_PELA_EQUIPE, INSCRICAO_REATIVADA, INSCRICAO_REMOVIDA, INSCRICAO_SITUACAO_ALTERADA… */
+  acao: string;
+  descricao: string;
+  criadoEm: string;
+  aluno: { id: string | null; nome: string | null };
+  motivo: string | null;
+  origem: string | null;
+  /** Ao adicionar: CONCEDIDO ou COBRANCA_PENDENTE */
+  pagamento: PagamentoMatricula | null;
+  antes: Record<string, unknown> | null;
+  depois: Record<string, unknown> | null;
+  ator: { id: string; nome: string; role: string } | null;
+}
+
+/** Adiciona ou reativa alunos na turma (ou só mostra a prévia, com `simular`) */
+export async function adicionarAlunosTurma(
+  cursoId: number | string,
+  turmaId: string,
+  payload: {
+    alunoIds: string[];
+    motivo: string;
+    pagamento: PagamentoMatricula;
+    avisar?: boolean;
+    simular?: boolean;
+    origem?: "TURMA" | "ALUNO";
+  }
+): Promise<ResultadoAdicao> {
+  const resposta = await apiFetch<{ success: boolean; data: ResultadoAdicao }>(
+    cursosRoutes.cursos.turmas.inscricoes.equipe(cursoId, turmaId),
+    {
+      init: { method: "POST", headers: headers(), body: JSON.stringify(payload) },
+      cache: "no-cache",
+      retries: 0,
+    }
+  );
+  return resposta.data;
+}
+
+/** Remove alunos da turma sem apagar o histórico (ou só mostra a prévia) */
+export async function removerAlunosTurma(
+  cursoId: number | string,
+  turmaId: string,
+  payload: {
+    inscricaoIds: string[];
+    motivo: string;
+    avisar?: boolean;
+    simular?: boolean;
+    totalEsperado?: number;
+  }
+): Promise<ResultadoRemocao> {
+  const resposta = await apiFetch<{ success: boolean; data: ResultadoRemocao }>(
+    cursosRoutes.cursos.turmas.inscricoes.remover(cursoId, turmaId),
+    {
+      init: { method: "POST", headers: headers(), body: JSON.stringify(payload) },
+      cache: "no-cache",
+      retries: 0,
+    }
+  );
+  return resposta.data;
+}
+
+/** Entradas, saídas e mudanças de situação registradas na turma */
+export async function historicoInscricoesTurma(
+  cursoId: number | string,
+  turmaId: string
+): Promise<EntradaHistoricoInscricao[]> {
+  const resposta = await apiFetch<{ success: boolean; data: EntradaHistoricoInscricao[] }>(
+    cursosRoutes.cursos.turmas.inscricoes.historico(cursoId, turmaId),
+    { init: { method: "GET", headers: headers() }, cache: "no-cache" }
+  );
+  return resposta.data ?? [];
+}
+

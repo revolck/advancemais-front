@@ -38,6 +38,7 @@ import {
   Crown,
   Eye,
   Globe,
+  GraduationCap,
   LogIn,
   LogOut,
   MailCheck,
@@ -91,6 +92,9 @@ const TYPE_LABELS: Record<string, string> = {
   USUARIO_RECRUTADOR_VINCULO_EMPRESA_REMOVIDO: "Vínculo por empresa removido",
   USUARIO_RECRUTADOR_VINCULO_VAGA_CRIADO: "Vínculo por vaga adicionado",
   USUARIO_RECRUTADOR_VINCULO_VAGA_REMOVIDO: "Vínculo por vaga removido",
+  USUARIO_TURMA_ADICIONADO: "Adicionado a uma turma",
+  USUARIO_TURMA_REMOVIDO: "Removido de uma turma",
+  USUARIO_TURMA_SITUACAO_ALTERADA: "Situação na turma alterada",
 };
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -100,6 +104,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   ACESSO: "Acesso",
   STATUS: "Status",
   ADMINISTRATIVO: "Administrativo",
+  CURSOS: "Cursos e turmas",
 };
 
 const TYPE_OPTIONS = Object.entries(TYPE_LABELS).map(([value, label]) => ({
@@ -216,6 +221,7 @@ function getActionIcon(acao: string) {
   if (normalized.includes("RECRUTADOR_VINCULO")) {
     return <Link2 className="h-3 w-3" />;
   }
+  if (normalized.includes("_TURMA_")) return <GraduationCap className="h-3 w-3" />;
   if (normalized.includes("LOGIN")) return <LogIn className="h-3 w-3" />;
   if (normalized.includes("LOGOUT")) return <LogOut className="h-3 w-3" />;
   if (normalized.includes("ACESSO")) return <MailCheck className="h-3 w-3" />;
@@ -231,6 +237,12 @@ function getActionBadgeColors(acao: string) {
 
   if (normalized.includes("RECRUTADOR_VINCULO")) {
     return "bg-blue-50 text-blue-700 border-blue-200";
+  }
+  if (normalized.includes("_TURMA_REMOVIDO")) {
+    return "bg-rose-50 text-rose-700 border-rose-200";
+  }
+  if (normalized.includes("_TURMA_")) {
+    return "bg-violet-50 text-violet-700 border-violet-200";
   }
   if (normalized.includes("LOGIN") || normalized.includes("LOGOUT")) {
     return "bg-cyan-50 text-cyan-700 border-cyan-200";

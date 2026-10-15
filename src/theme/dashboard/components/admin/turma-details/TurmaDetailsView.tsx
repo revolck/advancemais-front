@@ -16,7 +16,7 @@ import { HeaderInfo } from "./components/HeaderInfo";
 import { AboutTab } from "./tabs/AboutTab";
 import { EstruturaTab } from "./tabs/EstruturaTab";
 import { InscricoesTab } from "./tabs/InscricoesTab";
-import { GestaoSituacaoTurma } from "./situacao/GestaoSituacaoTurma";
+import { AcoesDoAluno, GestaoSituacaoTurma } from "./situacao/GestaoSituacaoTurma";
 import { HistoryTab } from "./tabs/HistoryTab";
 import { LinkedInstructorsTab } from "./tabs/LinkedInstructorsTab";
 
@@ -34,6 +34,8 @@ const INSCRICOES_PAGE_SIZE = 50;
 const INSCRICOES_HISTORY_PAGE_SIZE = 200;
 const INSCRICOES_HISTORY_FETCH_CONCURRENCY = 3;
 const INSCRICOES_PROGRESS_REFETCH_INTERVAL = 15 * 1000;
+/** Filtro de situação que mostra só quem a equipe tirou da turma */
+const FILTRO_REMOVIDOS = "REMOVIDOS";
 
 interface InscricoesPagination {
   total: number;
@@ -57,6 +59,9 @@ function mapInscricaoItemToTurmaInscricao(item: any): TurmaInscricao {
     progresso: typeof item.progresso === "number" ? item.progresso : undefined,
     criadoEm: item.criadoEm,
     observacoes: item.observacoes,
+    origem: item.origem ?? null,
+    removidaEm: item.removidaEm ?? null,
+    motivoRemocao: item.motivoRemocao ?? null,
     aluno: item.aluno
       ? {
           id: String(item.aluno.id ?? item.alunoId ?? ""),
@@ -92,7 +97,11 @@ async function fetchInscricoesCursoPage(
     page,
     pageSize: INSCRICOES_PAGE_SIZE,
     ...(search ? { search } : {}),
-    ...(status ? { status } : {}),
+    ...(status === FILTRO_REMOVIDOS
+      ? { removidas: "somente" as const }
+      : status
+        ? { status }
+        : {}),
     ...(includeProgress ? { includeProgress: true } : {}),
   });
 
@@ -469,6 +478,13 @@ export function TurmaDetailsView({
     />
   );
 
+  const turmaDaAcao = {
+    id: turmaId,
+    nome: turma.nome,
+    codigo: turma.codigo,
+    status: turma.status,
+  };
+
   const inscricoesTabContent = (
     <InscricoesTab
       inscricoes={inscricoesComProgresso ?? (inscricoesQuery.status === "error" ? [] : [])}
@@ -485,9 +501,11 @@ export function TurmaDetailsView({
       onFiltroStatus={(status) => {
         setInscricoesPage(1);
         setInscricoesStatus(status);
+        setSelecionados(new Set());
       }}
       selecao={
-        canManageTurma
+        // Removidos não mudam de situação: voltam pela ação "Adicionar de volta"
+        canManageTurma && inscricoesStatus !== FILTRO_REMOVIDOS
           ? {
               selecionados,
               alternar: (id) =>
@@ -510,18 +528,31 @@ export function TurmaDetailsView({
         canManageTurma ? (
           <GestaoSituacaoTurma
             cursoId={cursoId}
-            turmaId={turmaId}
+            turma={turmaDaAcao}
             selecionados={Array.from(selecionados)}
             onLimparSelecao={() => setSelecionados(new Set())}
             onAlterado={() => void invalidateTurma()}
           />
         ) : undefined
       }
+      acoesDaLinha={
+        canManageTurma
+          ? (inscricao) => (
+              <AcoesDoAluno
+                cursoId={cursoId}
+                turma={turmaDaAcao}
+                inscricao={inscricao}
+                onAlterado={() => void invalidateTurma()}
+              />
+            )
+          : undefined
+      }
     />
   );
 
   const historyTabContent = (
     <HistoryTab
+      cursoId={cursoId}
       turma={turma}
       inscricoes={historyInscricoesQuery.data ?? []}
       isLoading={

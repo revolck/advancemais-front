@@ -217,6 +217,30 @@ export const TYPE_META: Record<
     tagBg: "bg-red-50",
     tagText: "text-red-700",
   },
+  TURMA_MATRICULA_ADICIONADA: {
+    label: "Curso",
+    icon: "GraduationCap",
+    bgColor: "bg-emerald-100",
+    textColor: "text-emerald-600",
+    tagBg: "bg-emerald-50",
+    tagText: "text-emerald-700",
+  },
+  TURMA_MATRICULA_REMOVIDA: {
+    label: "Curso",
+    icon: "UserMinus",
+    bgColor: "bg-slate-100",
+    textColor: "text-slate-600",
+    tagBg: "bg-slate-50",
+    tagText: "text-slate-700",
+  },
+  TURMA_SITUACAO_ALTERADA: {
+    label: "Curso",
+    icon: "RefreshCw",
+    bgColor: "bg-blue-100",
+    textColor: "text-blue-600",
+    tagBg: "bg-blue-50",
+    tagText: "text-blue-700",
+  },
   SISTEMA: {
     label: "Sistema",
     icon: "Bell",
@@ -256,6 +280,9 @@ export const SISTEMA_TYPES: NotificacaoTipo[] = [
   "CURSO_PAGAMENTO_CANCELADO",
   "CURSO_PAGAMENTO_ESTORNADO",
   "CURSO_PAGAMENTO_CONTESTADO",
+  "TURMA_MATRICULA_ADICIONADA",
+  "TURMA_MATRICULA_REMOVIDA",
+  "TURMA_SITUACAO_ALTERADA",
   "SISTEMA",
 ];
 
@@ -483,6 +510,9 @@ export function getNotificationAction(notification: Notificacao): {
       label = recruiterLinkData.tipoVinculo === "VAGA" ? "Ver vaga" : "Ver empresas";
     } else if (notification.tipo === "CURSO_PAGAMENTO_APROVADO") {
       label = "Acessar curso";
+    } else if (notification.tipo === "TURMA_MATRICULA_ADICIONADA") {
+      // Cobrança pendente leva para a página do curso no site, onde o aluno paga
+      label = /^https?:\/\//.test(explicitHref) ? "Pagar e começar" : "Acessar curso";
     } else if (isCursoPagamentoType(notification.tipo)) {
       label = "Ver pagamento";
     } else if (notification.tipo === "RECUPERACAO_FINAL_PAGAMENTO_PENDENTE") {

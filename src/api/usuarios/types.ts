@@ -863,6 +863,9 @@ export type UsuarioHistoricoTipo =
   | "USUARIO_RECRUTADOR_VINCULO_EMPRESA_REMOVIDO"
   | "USUARIO_RECRUTADOR_VINCULO_VAGA_CRIADO"
   | "USUARIO_RECRUTADOR_VINCULO_VAGA_REMOVIDO"
+  | "USUARIO_TURMA_ADICIONADO"
+  | "USUARIO_TURMA_REMOVIDO"
+  | "USUARIO_TURMA_SITUACAO_ALTERADA"
   | (string & {});
 
 export type UsuarioHistoricoCategoria =
@@ -872,6 +875,7 @@ export type UsuarioHistoricoCategoria =
   | "ACESSO"
   | "STATUS"
   | "ADMINISTRATIVO"
+  | "CURSOS"
   | (string & {});
 
 export interface UsuarioHistoricoActor {

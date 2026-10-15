@@ -1139,6 +1139,9 @@ export async function listInscricoesCurso(
       : [params.status];
     searchParams.append("status", statusArray.join(","));
   }
+  if (params?.removidas) {
+    searchParams.append("removidas", params.removidas);
+  }
   if (params?.statusPagamento) {
     const statusPagamentoArray = Array.isArray(params.statusPagamento)
       ? params.statusPagamento

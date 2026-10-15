@@ -43,6 +43,10 @@ export interface InscricoesTabProps {
   inscricoes: AlunoInscricao[];
   isLoading?: boolean;
   canCreateNota?: boolean;
+  /** Equipe (admin, moderador, pedagógico): associa a turmas e gerencia cada matrícula */
+  podeGerenciarTurmas?: boolean;
+  /** Recarrega o aluno depois de uma mudança nas turmas */
+  onTurmasAlteradas?: () => void;
 }
 
 export interface HorizontalTabItem {

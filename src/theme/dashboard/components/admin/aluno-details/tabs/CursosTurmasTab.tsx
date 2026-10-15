@@ -14,7 +14,11 @@ import {
   PlayCircle,
   CheckCircle2,
   XCircle,
+  Link2,
 } from "lucide-react";
+import { toastCustom } from "@/components/ui/custom/toast";
+import { AcoesDoAluno } from "../../turma-details/situacao/GestaoSituacaoTurma";
+import { ModalAssociarTurma } from "../../turma-details/situacao/MatriculaEquipe";
 import type { InscricoesTabProps } from "../types";
 import { formatDate, getStatusBadge } from "../utils/formatters";
 import { useMemo, useState, useEffect } from "react";
@@ -61,7 +65,12 @@ export function CursosTurmasTab({
   aluno,
   inscricoes,
   isLoading,
+  podeGerenciarTurmas = false,
+  onTurmasAlteradas,
 }: InscricoesTabProps) {
+  const [associando, setAssociando] = useState(false);
+  const alunoNome = aluno.nomeCompleto || aluno.nome || "Aluno";
+  const recarregar = () => onTurmasAlteradas?.();
   const inscricoesData = useMemo(
     () => (inscricoes && inscricoes.length > 0 ? inscricoes : aluno.inscricoes) || [],
     [inscricoes, aluno.inscricoes]
@@ -214,20 +223,47 @@ export function CursosTurmasTab({
     { value: "CANCELADOS", label: "Reprovados" },
   ];
 
+  const barraDaEquipe = podeGerenciarTurmas ? (
+    <div className="flex justify-end">
+      <ButtonCustom variant="outline" size="md" onClick={() => setAssociando(true)}>
+        <Link2 className="size-4" />
+        Associar a uma turma
+      </ButtonCustom>
+    </div>
+  ) : null;
+
+  const modalAssociar = associando ? (
+    <ModalAssociarTurma
+      aluno={{ id: aluno.id, nome: alunoNome }}
+      onFechar={() => setAssociando(false)}
+      onConcluido={(mensagem) => {
+        toastCustom.success(mensagem);
+        setAssociando(false);
+        recarregar();
+      }}
+    />
+  ) : null;
+
   if (inscricoesData.length === 0) {
     return (
-      <EmptyState
-        illustration="books"
-        illustrationAlt="Ilustração sem cursos/turmas"
-        title="Nenhuma inscrição encontrada"
-        description="Este aluno ainda não possui cursos/turmas associados."
-        className="rounded-2xl border border-gray-200/60 bg-white p-6"
-      />
+      <div className="space-y-4">
+        {barraDaEquipe}
+        <EmptyState
+          illustration="books"
+          illustrationAlt="Ilustração sem cursos/turmas"
+          title="Nenhuma inscrição encontrada"
+          description="Este aluno ainda não possui cursos/turmas associados."
+          className="rounded-2xl border border-gray-200/60 bg-white p-6"
+        />
+        {modalAssociar}
+      </div>
     );
   }
 
   return (
     <div className="space-y-6">
+      {barraDaEquipe}
+      {modalAssociar}
       {/* Estatísticas criativas e coloridas */}
       <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         {/* Total */}
@@ -404,8 +440,41 @@ export function CursosTurmasTab({
 
                     {/* Status badge suave */}
                     <div className="absolute right-2.5 top-2.5">
-                      {statusBadge}
+                      {inscricao.removidaEm ? (
+                        <span
+                          className="rounded-full border border-gray-300 bg-white/95 px-2.5 py-1 text-xs font-medium text-gray-700"
+                          title={inscricao.motivoRemocao ?? undefined}
+                        >
+                          Removido da turma
+                        </span>
+                      ) : (
+                        statusBadge
+                      )}
                     </div>
+
+                    {podeGerenciarTurmas && inscricao.turma?.id && inscricao.curso?.id ? (
+                      <div className="absolute left-2.5 top-2.5">
+                        <AcoesDoAluno
+                          cursoId={inscricao.curso.id}
+                          turma={{
+                            id: inscricao.turma.id,
+                            nome: inscricao.turma.nome,
+                            codigo: inscricao.turma.codigo,
+                            status: inscricao.turma.status,
+                          }}
+                          inscricao={{
+                            id: inscricao.id,
+                            alunoId: aluno.id,
+                            statusInscricao: inscricao.statusInscricao,
+                            removidaEm: inscricao.removidaEm ?? null,
+                            aluno: { id: aluno.id, nomeCompleto: alunoNome },
+                          }}
+                          onAlterado={recarregar}
+                          mostrarHistorico={false}
+                          className="bg-white/95 text-gray-700 shadow-sm hover:bg-white"
+                        />
+                      </div>
+                    ) : null}
                   </div>
 
                   {/* Conteúdo minimalista */}

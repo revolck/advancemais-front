@@ -5,6 +5,8 @@ import { useQuery } from "@tanstack/react-query";
 
 import type { CursoTurma, TurmaInscricao } from "@/api/cursos";
 import { getAulaHistorico, type AulaHistorico } from "@/api/aulas";
+import { historicoInscricoesTurma, type EntradaHistoricoInscricao } from "@/api/cursos/situacao";
+import { queryKeys } from "@/lib/react-query/queryKeys";
 import { EmptyState } from "@/components/ui/custom";
 import { ButtonCustom } from "@/components/ui/custom/button";
 import { MultiSelectFilter } from "@/components/ui/custom/filters/MultiSelectFilter";
@@ -49,6 +51,7 @@ interface FilterValues {
 }
 
 interface HistoryTabProps {
+  cursoId: number | string;
   turma: CursoTurma;
   inscricoes?: TurmaInscricao[];
   isLoading?: boolean;
@@ -74,6 +77,25 @@ const TURMA_STATUS_LABELS: Record<string, string> = {
   CONCLUIDO: "Concluída",
   SUSPENSO: "Suspensa",
   CANCELADO: "Cancelada",
+};
+
+/** Registros da equipe sobre as inscrições (adicionar, remover, situação) */
+const INSCRICAO_ACAO_LABELS: Record<string, string> = {
+  INSCRICAO_ADICIONADA_PELA_EQUIPE: "Aluno adicionado pela equipe",
+  INSCRICAO_REATIVADA: "Aluno adicionado de volta",
+  INSCRICAO_REMOVIDA: "Aluno removido da turma",
+  INSCRICAO_SITUACAO_ALTERADA: "Situação do aluno alterada",
+};
+
+const SITUACAO_LABELS: Record<string, string> = {
+  AGUARDANDO_PAGAMENTO: "Aguardando pagamento",
+  INSCRITO: "Cursando",
+  EM_ANDAMENTO: "Cursando",
+  CONCLUIDO: "Concluiu",
+  CANCELADO: "Não concluiu",
+  REPROVADO: "Reprovado",
+  TRANCADO: "Trancado",
+  EM_ESTAGIO: "Em estágio",
 };
 
 const KIND_LABELS: Record<EventKind, string> = {
@@ -173,9 +195,39 @@ const extractAulaIds = (turma: CursoTurma): string[] => {
   return Array.from(ids).sort();
 };
 
+const situacaoLabel = (valor: unknown) =>
+  typeof valor === "string" ? SITUACAO_LABELS[valor] ?? valor : null;
+
+const buildInscricaoAuditEvents = (
+  entradas: EntradaHistoricoInscricao[]
+): TurmaHistoryEvent[] =>
+  entradas.map((entrada) => {
+    const partes = [`Aluno: ${entrada.aluno.nome ?? "—"}`];
+    const de = situacaoLabel(entrada.antes?.status);
+    const para = situacaoLabel(entrada.depois?.status);
+    if (entrada.acao === "INSCRICAO_SITUACAO_ALTERADA" && de && para) {
+      partes.push(`${de} → ${para}`);
+    }
+    if (entrada.pagamento === "COBRANCA_PENDENTE") partes.push("Cobrança pendente");
+    if (entrada.pagamento === "CONCEDIDO") partes.push("Concedido pela equipe");
+    if (entrada.motivo) partes.push(`Motivo: ${entrada.motivo}`);
+    return {
+      id: `auditoria-${entrada.id}`,
+      kind: "INSCRICAO" as const,
+      action: entrada.acao,
+      actionLabel: INSCRICAO_ACAO_LABELS[entrada.acao] ?? entrada.descricao,
+      description: partes.join(" | "),
+      date: entrada.criadoEm,
+      actorName: entrada.ator?.nome,
+      actorRole: entrada.ator?.role,
+    };
+  });
+
 const buildTurmaEvents = (
   turma: CursoTurma,
-  inscricoes: TurmaInscricao[]
+  inscricoes: TurmaInscricao[],
+  /** Inscrições com registro da equipe: o "Inscrição registrada" sem autor seria repetido */
+  registradasPelaEquipe: Set<string> = new Set()
 ): TurmaHistoryEvent[] => {
   const turmaAny = turma as any;
   const events: TurmaHistoryEvent[] = [];
@@ -216,7 +268,7 @@ const buildTurmaEvents = (
   }
 
   inscricoes.forEach((inscricao) => {
-    if (!inscricao.criadoEm) return;
+    if (!inscricao.criadoEm || registradasPelaEquipe.has(String(inscricao.id))) return;
     const alunoNome =
       inscricao.aluno?.nomeCompleto ||
       inscricao.aluno?.nome ||
@@ -264,6 +316,7 @@ const buildAulaEvents = (
 };
 
 export function HistoryTab({
+  cursoId,
   turma,
   inscricoes = [],
   isLoading = false,
@@ -329,14 +382,31 @@ export function HistoryTab({
     gcTime: 5 * 60 * 1000,
   });
 
+  // Mesmo prefixo da lista de inscrições: recarrega junto depois de adicionar ou remover
+  const { data: auditoriaInscricoes = [] } = useQuery<EntradaHistoricoInscricao[], Error>({
+    queryKey: [...queryKeys.cursos.listInscricoes(cursoId, turmaId), "auditoria"],
+    queryFn: () => historicoInscricoesTurma(cursoId, turmaId),
+    staleTime: 15 * 1000,
+    gcTime: 5 * 60 * 1000,
+  });
+
   const allEvents = useMemo(() => {
-    const turmaEvents = buildTurmaEvents(turma, inscricoes);
-    return [...turmaEvents, ...aulaEvents].sort((a, b) => {
+    const registradasPelaEquipe = new Set(
+      auditoriaInscricoes
+        .filter((e) => e.acao === "INSCRICAO_ADICIONADA_PELA_EQUIPE" && e.inscricaoId)
+        .map((e) => String(e.inscricaoId))
+    );
+    const turmaEvents = buildTurmaEvents(turma, inscricoes, registradasPelaEquipe);
+    return [
+      ...turmaEvents,
+      ...buildInscricaoAuditEvents(auditoriaInscricoes),
+      ...aulaEvents,
+    ].sort((a, b) => {
       const aTime = new Date(a.date).getTime();
       const bTime = new Date(b.date).getTime();
       return bTime - aTime;
     });
-  }, [aulaEvents, inscricoes, turma]);
+  }, [aulaEvents, auditoriaInscricoes, inscricoes, turma]);
 
   const tipoOptions = useMemo(
     () =>
