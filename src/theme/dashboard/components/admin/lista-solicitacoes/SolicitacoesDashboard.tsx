@@ -61,7 +61,8 @@ const STATUS_FILTER_OPTIONS: { value: SolicitacaoStatus; label: string }[] = [
   { value: "PENDENTE", label: "Em Análise" },
   { value: "APROVADA", label: "Aprovada" },
   { value: "REJEITADA", label: "Rejeitada" },
-  { value: "CANCELADA", label: "Cancelada" },
+  // Rascunho: ainda não enviada para aprovação (ou envio cancelado pela empresa)
+  { value: "CANCELADA", label: "Rascunho" },
 ];
 
 type SortField = "vaga" | "empresa" | "dataSolicitacao" | null;

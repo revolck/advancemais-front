@@ -35,6 +35,8 @@ import { useTenantCompany } from "@/hooks/useTenantCompany";
 const STATUS_FILTER_OPTIONS: { value: VagaStatus; label: string }[] = [
   { value: "PUBLICADO", label: "Publicada" },
   { value: "EM_ANALISE", label: "Em Análise" },
+  { value: "RASCUNHO", label: "Rascunho" },
+  { value: "DESPUBLICADA", label: "Despublicada" },
   { value: "PAUSADA", label: "Pausada" },
   { value: "ENCERRADA", label: "Encerrada" },
   { value: "EXPIRADO", label: "Expirada" },

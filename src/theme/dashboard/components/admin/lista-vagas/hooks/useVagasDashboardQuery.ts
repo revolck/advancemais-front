@@ -42,20 +42,7 @@ const ALL_STATUSES: VagaStatus[] = [
   "EXPIRADO",
 ];
 
-// Status disponíveis para SETOR_DE_VAGAS (sem RASCUNHO)
-const SETOR_DE_VAGAS_STATUSES: VagaStatus[] = [
-  "EM_ANALISE",
-  "PUBLICADO",
-  "DESPUBLICADA",
-  "PAUSADA",
-  "ENCERRADA",
-  "EXPIRADO",
-];
-
-function buildParams(
-  filters: NormalizedVagaFilters,
-  userRole: UserRole | null
-): VagaListParams {
+function buildParams(filters: NormalizedVagaFilters): VagaListParams {
   const params: VagaListParams = {
     page: filters.page,
     pageSize: filters.pageSize,
@@ -64,13 +51,9 @@ function buildParams(
   // Se não há status selecionado, enviar TODOS os status (API retorna PUBLICADO por padrão)
   // Se há status selecionado, enviar o(s) status para filtrar
   if (filters.statuses.length === 0) {
-    // SETOR_DE_VAGAS não pode ver RASCUNHO
-    // Apenas EMPRESA pode ver seus próprios rascunhos (API já faz essa validação)
-    const statusList = userRole === UserRole.SETOR_DE_VAGAS 
-      ? SETOR_DE_VAGAS_STATUSES 
-      : ALL_STATUSES;
-    
-    params.status = statusList;
+    // Equipe (admin, moderador, setor de vagas) vê todas as situações, inclusive
+    // rascunho; a empresa vê as próprias (a API restringe)
+    params.status = ALL_STATUSES;
   } else if (filters.statuses.length === 1) {
     params.status = filters.statuses[0];
   } else {
@@ -151,7 +134,7 @@ export function useVagasDashboardQuery(
 
       // Se for EMPRESA, usa a rota específica /empresas/vagas/minhas
       if (userRole === UserRole.EMPRESA) {
-        const params = buildParams(filters, userRole);
+        const params = buildParams(filters);
         const response = await listMyCompanyVacancies({
           page: params.page,
           pageSize: params.pageSize,
@@ -171,7 +154,7 @@ export function useVagasDashboardQuery(
         }
       } else {
         // Para outras roles, usa a rota padrão
-        const params = buildParams(filters, userRole);
+        const params = buildParams(filters);
         const response = await listVagas(params);
 
         if (Array.isArray(response)) {

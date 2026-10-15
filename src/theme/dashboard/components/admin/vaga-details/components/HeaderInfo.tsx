@@ -79,7 +79,7 @@ export function HeaderInfo({
       : "Sua vaga está na fila de aprovação do setor de vagas. Assim que for aprovada, ela é publicada."
     : vaga.status === "RASCUNHO"
       ? podeAprovar
-        ? "Esta vaga é um rascunho e não está visível para candidatos."
+        ? "Rascunho da empresa: ainda não foi enviada para aprovação e não está visível para candidatos. Para publicar, use Ações → Publicar."
         : "Esta vaga é um rascunho. Quando estiver pronta, envie para aprovação em Ações."
       : null;
 
